@@ -18,14 +18,14 @@ export const usePlannerStore=create<PlannerState>((set,get)=>{
  const snap=():SceneSnapshot=>({walls:get().walls,openings:get().openings,furniture:get().furniture,floorColor:get().floorColor,wallColor:get().wallColor});
  const commit=(next:SceneSnapshot)=>set(s=>{const history=s.history.slice(0,s.historyIndex+1).concat(next).slice(-200);const floors=s.floors.map(f=>f.id===s.activeFloorId?{...f,scene:next}:f);return{...next,floors,history,historyIndex:history.length-1}});
  const mutate=(patch:Partial<SceneSnapshot>)=>commit({...snap(),...patch});
- return {...initial,tool:'wall',view:'2d',cameraMode:'orbit',selectedWallId:null,selectedFurnitureId:null,draftStart:null,floors:[{id:'ground',name:'Ground floor',scene:initial}],activeFloorId:'ground',history:[initial],historyIndex:0,
+ return {...initial,tool:'select',view:'2d',cameraMode:'orbit',selectedWallId:null,selectedFurnitureId:null,draftStart:null,floors:[{id:'ground',name:'Ground floor',scene:initial}],activeFloorId:'ground',history:[initial],historyIndex:0,
   setTool:(tool)=>set({tool,draftStart:null}),setView:(view)=>set({view,draftStart:null}),setCameraMode:(cameraMode)=>set({cameraMode}),setDraftStart:(draftStart)=>set({draftStart}),
   addWall:(start,end)=>{if(Math.hypot(end.x-start.x,end.y-start.y)<20)return;mutate({walls:[...get().walls,{id:crypto.randomUUID(),start,end,thickness:.15,height:2.7}]})},
   updateWall:(id,patch)=>mutate({walls:get().walls.map(w=>w.id===id?{...w,...patch}:w)}),
   selectWall:(selectedWallId)=>set({selectedWallId,selectedFurnitureId:null}),
   addOpening:(wallId,type)=>mutate({openings:[...get().openings,{id:crypto.randomUUID(),wallId,type,offset:.5,width:type==='door'?.9:1.2,height:type==='door'?2.1:1.1,sill:type==='door'?0:.9}]}),
   updateOpening:(id,patch)=>mutate({openings:get().openings.map(o=>o.id===id?{...o,...patch,offset:patch.offset===undefined?o.offset:Math.max(.05,Math.min(.95,patch.offset))}:o)}),deleteOpening:(id)=>mutate({openings:get().openings.filter(o=>o.id!==id)}),
-  addFurniture:(catalogId,name,category,[width,depth,height],color,x=0,z=0)=>mutate({furniture:[...get().furniture,{id:crypto.randomUUID(),catalogId,name,category,x,y:0,z,rotation:0,color,width,depth,height}]}),
+  addFurniture:(catalogId,name,category,[width,depth,height],color,x=0,z=0)=>{const id=crypto.randomUUID();mutate({furniture:[...get().furniture,{id,catalogId,name,category,x,y:0,z,rotation:0,color,width,depth,height}]});set({selectedFurnitureId:id,selectedWallId:null})},
   selectFurniture:(selectedFurnitureId)=>set({selectedFurnitureId,selectedWallId:null}),
   updateFurnitureLive:(id,patch)=>set(s=>({furniture:s.furniture.map(f=>f.id===id?{...f,...patch}:f)})),
   updateFurniture:(id,patch)=>mutate({furniture:get().furniture.map(f=>f.id===id?{...f,...patch,x:patch.x===undefined?f.x:Math.round(patch.x*4)/4,z:patch.z===undefined?f.z:Math.round(patch.z*4)/4}:f)}),
