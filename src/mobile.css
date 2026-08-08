@@ -3,7 +3,7 @@ html,body,#root{width:100%;height:100%;overscroll-behavior:none}
 button{touch-action:manipulation}
 .app-shell{height:100dvh}
 .mobile-properties,.mobile-drawer-close,.mobile-nav-label,.mobile-add-label,.mobile-builder-hint{display:none}
-.scene-host{touch-action:none}
+.scene-host,.canvas-host,.canvas-host canvas{touch-action:none;overscroll-behavior:contain;-webkit-user-select:none;user-select:none}
 .scene-help{pointer-events:none}
 .catalog-panel,.chips{-webkit-overflow-scrolling:touch}
 .app-error{min-height:100dvh;display:grid;place-content:center;gap:12px;padding:28px;text-align:center;background:#f6f7f5;color:#26342e}
