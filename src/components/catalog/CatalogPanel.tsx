@@ -3,7 +3,7 @@ import {useMemo,useState,type CSSProperties} from 'react';
 import {usePlannerStore} from '../../store/plannerStore';
 import {catalog} from './catalogData';
 
-const categories=['All','Appliances','Cabinetry','Surfaces','Paneling','Seating','Tables','Storage','Bedroom','Lighting','Decor'];
+const categories=['All','Appliances','Cabinetry','Surfaces','Tile','Plumbing','Paneling','Seating','Tables','Storage','Bedroom','Lighting','Decor'];
 const money=new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0});
 
 export function CatalogPanel({close}:{close:()=>void}){
