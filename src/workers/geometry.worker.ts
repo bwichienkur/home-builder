@@ -1,0 +1,2 @@
+/// <reference lib="webworker" />
+self.onmessage=(event:MessageEvent)=>{const {type,payload}=event.data;if(type==='collisions'){const items=payload.items;const collisions:string[][]=[];for(let i=0;i<items.length;i++)for(let j=i+1;j<items.length;j++){const a=items[i],b=items[j];if(Math.abs(a.x-b.x)<(a.width+b.width)/2&&Math.abs(a.z-b.z)<(a.depth+b.depth)/2)collisions.push([a.id,b.id])}self.postMessage({type:'collisions',collisions})}else if(type==='extrude'){self.postMessage({type:'extrude',walls:payload.walls})}};
