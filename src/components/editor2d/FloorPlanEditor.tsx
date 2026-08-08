@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Circle, Layer, Line, Stage } from 'react-konva';
 import type Konva from 'konva';
 import { snapWallPoint } from '../../lib/geometry/snapping';
@@ -8,12 +8,12 @@ import { WallShape } from './WallShape';
 
 export function FloorPlanEditor(){
  const host=useRef<HTMLDivElement>(null),nextCursor=useRef({x:0,y:0}),frame=useRef<number|null>(null),gesture=useRef<{x:number;y:number;time:number;point:{x:number;y:number};onStage:boolean}|null>(null);
- const [size,setSize]=useState({width:900,height:650}),[cursor,setCursor]=useState({x:0,y:0});
+ const [size,setSize]=useState({width:1,height:1}),[cursor,setCursor]=useState({x:0,y:0});
  const walls=usePlannerStore(s=>s.walls),openings=usePlannerStore(s=>s.openings),tool=usePlannerStore(s=>s.tool),draftStart=usePlannerStore(s=>s.draftStart),selectedWallId=usePlannerStore(s=>s.selectedWallId);
  const setDraftStart=usePlannerStore(s=>s.setDraftStart),addWall=usePlannerStore(s=>s.addWall),updateWall=usePlannerStore(s=>s.updateWall),selectWall=usePlannerStore(s=>s.selectWall),addOpening=usePlannerStore(s=>s.addOpening);
  const openingsByWall=useMemo(()=>{const map=new Map<string,typeof openings>();for(const opening of openings){const list=map.get(opening.wallId);if(list)list.push(opening);else map.set(opening.wallId,[opening])}return map},[openings]);
  const scale=size.width<650?Math.max(.42,size.width/760):1,logicalWidth=size.width/scale,logicalHeight=size.height/scale;
- useEffect(()=>{const ro=new ResizeObserver(([e])=>setSize({width:e.contentRect.width,height:e.contentRect.height}));if(host.current)ro.observe(host.current);return()=>ro.disconnect()},[]);
+ useLayoutEffect(()=>{const el=host.current;if(!el)return;const measure=()=>{const r=el.getBoundingClientRect();setSize({width:Math.max(1,r.width),height:Math.max(1,r.height)})};measure();const ro=new ResizeObserver(measure);ro.observe(el);return()=>ro.disconnect()},[]);
  useEffect(()=>()=>{if(frame.current!==null)cancelAnimationFrame(frame.current)},[]);
  const point=(stage:Konva.Stage,excludeWallId?:string)=>snapWallPoint(stage.getRelativePointerPosition()??{x:0,y:0},walls,excludeWallId);
  const move=(e:Konva.KonvaEventObject<PointerEvent>)=>{if(!e.evt.isPrimary||e.evt.pointerType==='touch')return;nextCursor.current=point(e.target.getStage()!);if(frame.current===null)frame.current=requestAnimationFrame(()=>{frame.current=null;setCursor(nextCursor.current)})};
