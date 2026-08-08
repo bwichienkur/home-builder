@@ -1,10 +1,11 @@
 import { Circle, Group, Label, Line, Tag, Text } from 'react-konva';
-import { memo } from 'react';
+import { memo, useRef } from 'react';
 import type { Opening, Tool, Wall } from '../../types';
 import { wallLengthMeters } from '../../lib/geometry/snapping';
 export const WallShape=memo(function WallShape({wall,selected,onSelect,onOpening,onEndpointMove,tool,openings}:{wall:Wall;selected:boolean;onSelect:()=>void;onOpening:(type:'door'|'window')=>void;onEndpointMove:(end:'start'|'end',x:number,y:number)=>void;tool:Tool;openings:Opening[]}){
  const mid={x:(wall.start.x+wall.end.x)/2,y:(wall.start.y+wall.end.y)/2};
- const click=(e:any)=>{e.cancelBubble=true;if(tool==='door'||tool==='window')onOpening(tool);else onSelect()};
+ const lastAction=useRef(0);
+ const click=(e:any)=>{e.cancelBubble=true;const now=performance.now();if(now-lastAction.current<350)return;lastAction.current=now;if(tool==='door'||tool==='window')onOpening(tool);else onSelect()};
  return <Group onClick={click} onTap={click}>
   <Line points={[wall.start.x,wall.start.y,wall.end.x,wall.end.y]} stroke={selected?'#d56d3b':'#26342e'} strokeWidth={selected?11:9} lineCap="round" hitStrokeWidth={22}/>
   <Label x={mid.x} y={mid.y-25} offsetX={31}><Tag fill="#fff" stroke="#dfe4df" cornerRadius={6} shadowBlur={4} shadowOpacity={.08}/><Text text={`${wallLengthMeters(wall.start,wall.end).toFixed(2)} m`} padding={6} fontSize={11} fontStyle="bold" fill="#35423c"/></Label>
