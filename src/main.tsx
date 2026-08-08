@@ -7,4 +7,5 @@ import './loading.css';
 import './advanced.css';
 import './openings.css';
 import './catalog.css';
+import './mobile.css';
 ReactDOM.createRoot(document.getElementById('root')!).render(<React.StrictMode><App /></React.StrictMode>);
