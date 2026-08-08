@@ -1,0 +1,3 @@
+import {describe,expect,it} from 'vitest'; import {detectRoomPolygons,roomArea,validatePlan} from './rooms'; import type {Wall} from '../../types';
+const walls:Wall[]=[['a',0,0,400,0],['b',400,0,400,320],['c',400,320,0,320],['d',0,320,0,0]].map(([id,x1,y1,x2,y2])=>({id:String(id),start:{x:+x1,y:+y1},end:{x:+x2,y:+y2},thickness:.15,height:2.7}));
+describe('room geometry',()=>{it('detects a closed room',()=>expect(detectRoomPolygons(walls)).toHaveLength(1));it('calculates square meters',()=>expect(roomArea(detectRoomPolygons(walls)[0])).toBeCloseTo(20));it('flags an open plan',()=>expect(validatePlan(walls.slice(0,3)).valid).toBe(false))});
