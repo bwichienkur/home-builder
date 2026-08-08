@@ -1,0 +1,6 @@
+.catalog-disclaimer{font-size:9px;line-height:1.45;color:#6e7972;margin:8px 0 0}
+.catalog-grid .catalog-brand{font-size:8px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#98603e}
+.catalog-grid small{font-size:8px;line-height:1.35;color:#6d7771}
+.catalog-grid a{display:flex;align-items:center;gap:3px;color:#4d695c;font-size:8px;font-weight:700;text-decoration:none;margin:2px 0}
+.catalog-grid a:hover{text-decoration:underline}
+.catalog-grid .thumb{background:linear-gradient(145deg,color-mix(in srgb,var(--product-color,#f3f0e9) 28%,#fff),color-mix(in srgb,var(--product-color,#e3e8e3) 45%,#eef1ee))}
