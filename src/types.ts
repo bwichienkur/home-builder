@@ -4,4 +4,5 @@ export type Opening = { id: string; wallId: string; type: 'door'|'window'; offse
 export type FurnitureItem = { id:string; catalogId:string; name:string; category:string; x:number; y:number; z:number; rotation:number; color:string; width:number; depth:number; height:number };
 export type CameraMode = 'top'|'orbit'|'walk';
 export type Tool = 'select' | 'wall' | 'door' | 'window';
+export type RoomType = 'Bedroom'|'Living room'|'Bathroom'|'Kitchen'|'Dining room'|'Office'|'Children’s room'|'Hallway'|'Outdoor';
 export type SceneSnapshot = { walls: Wall[]; openings:Opening[]; furniture:FurnitureItem[]; floorColor:string; wallColor:string };
