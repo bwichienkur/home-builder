@@ -1,4 +1,5 @@
-export type CatalogItem={id:string;name:string;brand?:string;model?:string;category:string;dims:[number,number,number];color:string;price?:number;emoji:string;sourceUrl?:string;sourceLabel?:string;note?:string};
+export type PriceUnit='each'|'set'|'box'|'sq ft'|'linear ft'|'allowance';
+export type CatalogItem={id:string;sku?:string;vendorId?:string;name:string;brand?:string;model?:string;category:string;subcategory?:string;roomTypes?:string[];tags?:string[];dims:[number,number,number];color:string;price?:number;msrp?:number;cost?:number;laborCost?:number;currency?:string;priceUnit?:PriceUnit;priceVerifiedAt?:string;sellable?:boolean;placeholderOnly?:boolean;mountingType?:string;placementSurfaces?:string[];finish?:string;material?:string;variantGroup?:string;variantName?:string;availability?:string;leadTimeDays?:number;thumbnailUrl?:string;modelUrl?:string;lowPolyModelUrl?:string;emoji:string;sourceUrl?:string;sourceLabel?:string;note?:string};
 
 export const catalog:CatalogItem[]=[
  {id:'nord-chair',name:'Nord Dining Chair',category:'Seating',dims:[.52,.56,.82],color:'#b26c45',price:129,emoji:'🪑'},
