@@ -409,7 +409,8 @@ function Furniture() {
                 onSelect={(e) => {
                   e.stopPropagation();
                   select(i.id);
-                  openSurfaceProperties();
+                  // Product card + FABs handle furniture; inspector opens via Modify.
+                  window.dispatchEvent(new Event('roomcraft-open-product-card'));
                 }}
               />
               {i.showClearance && <ClearanceVolume item={i} />}
@@ -462,6 +463,7 @@ function Furniture() {
             <FurnitureVisual
               item={selected}
               {...urlsFor(selected)}
+              selected
               colliding={collisions.has(selected.id)}
               onPointerDown={beginTouchDrag}
               onPointerMove={moveTouchDrag}
@@ -610,15 +612,15 @@ function GhostPlacement() {
       <group position={[pending.x, pending.y, pending.z]} rotation={[0, pending.rotation, 0]}>
         <mesh position={[0, pending.height / 2, 0]}>
           <boxGeometry args={[pending.width, pending.height, pending.depth]} />
-          <meshStandardMaterial color={pending.color} transparent opacity={0.38} depthWrite={false} />
+          <meshStandardMaterial color={pending.color} transparent opacity={0.55} depthWrite={false} />
         </mesh>
         <lineSegments position={[0, pending.height / 2, 0]}>
           <edgesGeometry args={[new THREE.BoxGeometry(pending.width, pending.height, pending.depth)]} />
-          <lineBasicMaterial color="#0058a3" />
+          <lineBasicMaterial color="#0058a3" linewidth={2} />
         </lineSegments>
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.015, 0]}>
-          <ringGeometry args={[Math.max(pending.width, pending.depth) * 0.35, Math.max(pending.width, pending.depth) * 0.42, 48]} />
-          <meshBasicMaterial color="#0058a3" transparent opacity={0.35} depthWrite={false} />
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
+          <ringGeometry args={[Math.max(pending.width, pending.depth) * 0.38, Math.max(pending.width, pending.depth) * 0.5, 48]} />
+          <meshBasicMaterial color="#0058a3" transparent opacity={0.55} depthWrite={false} />
         </mesh>
       </group>
     </group>
