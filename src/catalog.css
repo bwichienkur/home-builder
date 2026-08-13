@@ -212,6 +212,26 @@
   min-height: 44px;
   margin-top: auto;
 }
+.mount-badge {
+  display: inline-flex !important;
+  width: fit-content;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-ink) !important;
+  padding: 2px 8px;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+}
+.mount-badge.model { background: #e8f7ef; color: #0b7a3e !important; }
+.catalog-load-more {
+  width: 100%;
+  margin: 14px 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--soft);
+  min-height: 44px;
+  font-weight: 800;
+}
 
 .inventory-open-button {
   width: 100%;

@@ -1,17 +1,21 @@
 import { Canvas, useThree } from '@react-three/fiber';
-import { Bvh, Environment, Grid, OrbitControls, OrthographicCamera, PerspectiveCamera, PivotControls } from '@react-three/drei';
+import { Bvh, Environment, Grid, Line, OrbitControls, OrthographicCamera, PerspectiveCamera, PivotControls, Text } from '@react-three/drei';
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { usePlannerStore } from '../../store/plannerStore';
 import { catalog } from '../catalog/catalogData';
 import type { FurnitureItem } from '../../types';
 import { detectRoomPolygons, roomShape } from '../../lib/geometry/rooms';
+import { alignmentGuides, WORLD_ORIGIN } from '../../lib/geometry/placement';
+import { PIXELS_PER_METER } from '../../lib/geometry/snapping';
 import { useInventoryStore } from '../../store/inventoryStore';
 import { FurnitureVisual } from './CatalogModel';
+import type { ReactElement } from 'react';
 
-const PX = 80;
-const ORIGIN = { x: 420, y: 330 };
-const world = (x: number, y: number): [number, number] => [(x - ORIGIN.x) / PX, (y - ORIGIN.y) / PX];
+const world = (x: number, y: number): [number, number] => [
+  (x - WORLD_ORIGIN.x) / PIXELS_PER_METER,
+  (y - WORLD_ORIGIN.y) / PIXELS_PER_METER,
+];
 const openSurfaceProperties = () => window.dispatchEvent(new Event('roomcraft-open-properties'));
 
 function CameraRig() {
@@ -114,6 +118,39 @@ function CameraRig() {
   );
 }
 
+function DoorLeaf({
+  x,
+  z,
+  angle,
+  width,
+  height,
+  swing,
+}: {
+  x: number;
+  z: number;
+  angle: number;
+  width: number;
+  height: number;
+  swing: 'left' | 'right' | 'none';
+}) {
+  if (swing === 'none') return null;
+  const open = swing === 'left' ? Math.PI / 2.4 : -Math.PI / 2.4;
+  return (
+    <group position={[x, 0, z]} rotation={[0, angle, 0]}>
+      <group position={[swing === 'left' ? -width / 2 : width / 2, 0, 0]} rotation={[0, open, 0]}>
+        <mesh position={[swing === 'left' ? width / 2 : -width / 2, height / 2, 0]} castShadow>
+          <boxGeometry args={[width, height, 0.04]} />
+          <meshStandardMaterial color="#c4a574" roughness={0.7} />
+        </mesh>
+      </group>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
+        <ringGeometry args={[0.02, width, 24, 1, swing === 'left' ? 0 : -Math.PI / 2, Math.PI / 2]} />
+        <meshBasicMaterial color="#0058a3" transparent opacity={0.22} side={THREE.DoubleSide} />
+      </mesh>
+    </group>
+  );
+}
+
 function WallMeshes() {
   const walls = usePlannerStore((s) => s.walls);
   const openings = usePlannerStore((s) => s.openings);
@@ -170,7 +207,7 @@ function WallMeshes() {
           const t = c / length;
           const x = sx + (ex - sx) * t;
           const z = sz + (ez - sz) * t;
-          const parts = [];
+          const parts: ReactElement[] = [];
           if (o.sill > 0)
             parts.push(
               <mesh key={o.id + 'sill'} position={[x, o.sill / 2, z]} rotation={[0, angle, 0]}>
@@ -193,10 +230,48 @@ function WallMeshes() {
                 <meshPhysicalMaterial color="#bce4ec" transparent opacity={0.32} transmission={0.65} roughness={0.05} />
               </mesh>,
             );
+          if (o.type === 'door')
+            parts.push(
+              <DoorLeaf key={o.id + 'door'} x={x} z={z} angle={angle} width={o.width} height={o.height} swing={o.swing ?? 'left'} />,
+            );
           return parts;
         });
         return [...base, ...fills];
       })}
+    </>
+  );
+}
+
+function ClearanceVolume({ item }: { item: FurnitureItem }) {
+  const c = item.clearance ?? { front: 0.6, back: 0.05, left: 0.1, right: 0.1 };
+  const front = c.front ?? 0;
+  const back = c.back ?? 0;
+  const left = c.left ?? 0;
+  const right = c.right ?? 0;
+  const width = item.width + left + right;
+  const depth = item.depth + front + back;
+  return (
+    <mesh position={[(right - left) / 2, 0.02, (front - back) / 2]} rotation={[-Math.PI / 2, 0, 0]}>
+      <planeGeometry args={[width, depth]} />
+      <meshBasicMaterial color="#0058a3" transparent opacity={0.14} depthWrite={false} />
+    </mesh>
+  );
+}
+
+function Guides({ selected, others }: { selected: FurnitureItem; others: FurnitureItem[] }) {
+  const guides = useMemo(() => alignmentGuides(selected, others), [selected, others]);
+  return (
+    <>
+      {guides.map((g, i) => (
+        <group key={i}>
+          <Line points={[g.a, g.b]} color={g.kind === 'gap' ? '#0b7a3e' : '#0058a3'} lineWidth={2} dashed dashSize={0.08} gapSize={0.06} />
+          {g.label && (
+            <Text position={[(g.a[0] + g.b[0]) / 2, 0.12, (g.a[2] + g.b[2]) / 2]} fontSize={0.12} color="#0b7a3e" anchorX="center" anchorY="middle">
+              {g.label}
+            </Text>
+          )}
+        </group>
+      ))}
     </>
   );
 }
@@ -208,10 +283,7 @@ function Furniture() {
   const update = usePlannerStore((s) => s.updateFurniture);
   const updateLive = usePlannerStore((s) => s.updateFurnitureLive);
   const custom = useInventoryStore((s) => s.items);
-  const catalogById = useMemo(() => {
-    const map = new Map([...catalog, ...custom].map((c) => [c.id, c]));
-    return map;
-  }, [custom]);
+  const catalogById = useMemo(() => new Map([...catalog, ...custom].map((c) => [c.id, c])), [custom]);
   const selected = items.find((i) => i.id === selectedId);
   const pending = useRef<Partial<FurnitureItem> | null>(null);
   const touchDrag = useRef<{ pointerId: number; offsetX: number; offsetZ: number } | null>(null);
@@ -220,9 +292,9 @@ function Furniture() {
     const ids = new Set<string>();
     for (let i = 0; i < items.length; i++)
       for (let j = i + 1; j < items.length; j++) {
-        const a = items[i];
-        const b = items[j];
-        if (Math.abs(a.x - b.x) < (a.width + b.width) / 2 && Math.abs(a.z - b.z) < (a.depth + b.depth) / 2) {
+        const a = items[i],
+          b = items[j];
+        if (Math.abs(a.x - b.x) < (a.width + b.width) / 2 && Math.abs(a.z - b.z) < (a.depth + b.depth) / 2 && Math.abs((a.y ?? 0) - (b.y ?? 0)) < (a.height + b.height) / 2) {
           ids.add(a.id);
           ids.add(b.id);
         }
@@ -271,6 +343,8 @@ function Furniture() {
     };
   };
 
+  const itemY = (item: FurnitureItem) => item.y ?? 0;
+
   return (
     <>
       {items
@@ -278,7 +352,7 @@ function Furniture() {
         .map((i) => {
           const urls = urlsFor(i);
           return (
-            <group key={i.id} position={[i.x, 0, i.z]} rotation={[0, i.rotation, 0]}>
+            <group key={i.id} position={[i.x, itemY(i), i.z]} rotation={[0, i.rotation, 0]}>
               <FurnitureVisual
                 item={i}
                 lowUrl={urls.lowUrl}
@@ -290,44 +364,50 @@ function Furniture() {
                   openSurfaceProperties();
                 }}
               />
+              {i.showClearance && <ClearanceVolume item={i} />}
             </group>
           );
         })}
       {selected && (
-        <PivotControls
-          depthTest={false}
-          scale={1.15}
-          lineWidth={2}
-          enabled={!matchMedia('(pointer: coarse)').matches}
-          onDrag={(m) => {
-            const p = new THREE.Vector3();
-            const q = new THREE.Quaternion();
-            const s = new THREE.Vector3();
-            m.decompose(p, q, s);
-            pending.current = { x: p.x, z: p.z, rotation: new THREE.Euler().setFromQuaternion(q).y };
-          }}
-          onDragEnd={() => {
-            if (pending.current) {
-              update(selected.id, pending.current);
-              pending.current = null;
-            }
-          }}
-          matrix={new THREE.Matrix4().compose(
-            new THREE.Vector3(selected.x, 0, selected.z),
-            new THREE.Quaternion().setFromEuler(new THREE.Euler(0, selected.rotation, 0)),
-            new THREE.Vector3(1, 1, 1),
-          )}
-        >
-          <FurnitureVisual
-            item={selected}
-            {...urlsFor(selected)}
-            colliding={collisions.has(selected.id)}
-            onPointerDown={beginTouchDrag}
-            onPointerMove={moveTouchDrag}
-            onPointerUp={endTouchDrag}
-            onPointerCancel={endTouchDrag}
-          />
-        </PivotControls>
+        <>
+          <Guides selected={selected} others={items} />
+          <PivotControls
+            depthTest={false}
+            scale={1.15}
+            lineWidth={2}
+            enabled={!matchMedia('(pointer: coarse)').matches}
+            onDrag={(m) => {
+              const p = new THREE.Vector3();
+              const q = new THREE.Quaternion();
+              const s = new THREE.Vector3();
+              m.decompose(p, q, s);
+              pending.current = { x: p.x, z: p.z, rotation: new THREE.Euler().setFromQuaternion(q).y };
+              updateLive(selected.id, pending.current);
+            }}
+            onDragEnd={() => {
+              if (pending.current) {
+                update(selected.id, pending.current);
+                pending.current = null;
+              }
+            }}
+            matrix={new THREE.Matrix4().compose(
+              new THREE.Vector3(selected.x, itemY(selected), selected.z),
+              new THREE.Quaternion().setFromEuler(new THREE.Euler(0, selected.rotation, 0)),
+              new THREE.Vector3(1, 1, 1),
+            )}
+          >
+            <FurnitureVisual
+              item={selected}
+              {...urlsFor(selected)}
+              colliding={collisions.has(selected.id)}
+              onPointerDown={beginTouchDrag}
+              onPointerMove={moveTouchDrag}
+              onPointerUp={endTouchDrag}
+              onPointerCancel={endTouchDrag}
+            />
+            {selected.showClearance && <ClearanceVolume item={selected} />}
+          </PivotControls>
+        </>
       )}
     </>
   );
@@ -390,7 +470,10 @@ export function Scene3D() {
     const r = e.currentTarget.getBoundingClientRect();
     const x = ((e.clientX - r.left) / r.width - 0.5) * 7;
     const z = ((e.clientY - r.top) / r.height - 0.5) * 5;
-    add(item.id, item.name, item.category, item.dims, item.color, x, z);
+    add(item.id, item.name, item.category, item.dims, item.color, x, z, {
+      mountingType: item.mountingType,
+      clearance: item.category === 'Bedroom' ? { front: 0.7, back: 0.05, left: 0.3, right: 0.3 } : { front: 0.45, back: 0.05, left: 0.1, right: 0.1 },
+    });
   };
   const supported = useMemo(() => {
     try {
@@ -427,7 +510,7 @@ export function Scene3D() {
         </Suspense>
         <CameraRig />
       </Canvas>
-      <div className="scene-help">Tap a wall to edit · Drag products to move · Pinch or scroll to zoom</div>
+      <div className="scene-help">Tap a wall to edit · Drag products to move · Wall items snap to surfaces</div>
     </div>
   );
 }

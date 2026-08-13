@@ -1,16 +1,46 @@
 import { Detailed, useGLTF } from '@react-three/drei';
-import { Suspense, useEffect, useMemo } from 'react';
+import { Suspense, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import * as THREE from 'three';
 import type { Group } from 'three';
 import type { FurnitureItem } from '../../types';
 
-export function CatalogModel({ lowUrl, fullUrl }: { lowUrl: string; fullUrl: string }) {
+function useFittedClone(scene: Group, width: number, depth: number, height: number) {
+  const clone = useMemo(() => scene.clone(true) as Group, [scene]);
+  const group = useRef<Group>(null);
+  useLayoutEffect(() => {
+    const box = new THREE.Box3().setFromObject(clone);
+    const size = box.getSize(new THREE.Vector3());
+    if (size.x < 1e-4 || size.y < 1e-4 || size.z < 1e-4) return;
+    const scale = Math.min(width / size.x, height / size.y, depth / size.z);
+    const center = box.getCenter(new THREE.Vector3());
+    clone.scale.setScalar(scale);
+    clone.position.set(-center.x * scale, -box.min.y * scale, -center.z * scale);
+    if (group.current) group.current.updateMatrixWorld(true);
+  }, [clone, width, depth, height]);
+  return { clone, group };
+}
+
+export function CatalogModel({
+  lowUrl,
+  fullUrl,
+  width,
+  depth,
+  height,
+}: {
+  lowUrl: string;
+  fullUrl: string;
+  width: number;
+  depth: number;
+  height: number;
+}) {
   const low = useGLTF(lowUrl);
   const full = useGLTF(fullUrl);
-  const scenes = useMemo(() => [full.scene.clone(true), low.scene.clone(true)] as Group[], [full.scene, low.scene]);
+  const fittedFull = useFittedClone(full.scene as Group, width, depth, height);
+  const fittedLow = useFittedClone(low.scene as Group, width, depth, height);
 
   useEffect(
     () => () => {
-      scenes.forEach((scene) =>
+      [fittedFull.clone, fittedLow.clone].forEach((scene) =>
         scene.traverse((obj) => {
           const mesh = obj as any;
           mesh.geometry?.dispose?.();
@@ -22,14 +52,17 @@ export function CatalogModel({ lowUrl, fullUrl }: { lowUrl: string; fullUrl: str
         }),
       );
     },
-    [scenes],
+    [fittedFull.clone, fittedLow.clone],
   );
 
   return (
     <Detailed distances={[0, 8]}>
-      {scenes.map((scene, i) => (
-        <primitive key={i} object={scene} />
-      ))}
+      <group ref={fittedFull.group}>
+        <primitive object={fittedFull.clone} />
+      </group>
+      <group ref={fittedLow.group}>
+        <primitive object={fittedLow.clone} />
+      </group>
     </Detailed>
   );
 }
@@ -51,21 +84,69 @@ export function ProxyFurniture({
   onPointerUp?: (e: any) => void;
   onPointerCancel?: (e: any) => void;
 }) {
+  const color = colliding ? '#d94a45' : item.color;
+  const handlers = { onClick: onSelect, onPointerDown, onPointerMove, onPointerUp, onPointerCancel };
+  const category = item.category.toLowerCase();
+
+  if (category.includes('light') && item.mountingType === 'wall') {
+    return (
+      <group {...handlers}>
+        <mesh position={[0, item.height / 2, 0]} castShadow>
+          <boxGeometry args={[item.width, item.height, item.depth]} />
+          <meshStandardMaterial color={color} roughness={0.4} metalness={0.35} />
+        </mesh>
+        <mesh position={[0, item.height / 2, item.depth / 2 + 0.02]}>
+          <sphereGeometry args={[Math.min(item.width, item.height) * 0.28, 16, 16]} />
+          <meshStandardMaterial color="#fff6d8" emissive="#ffd978" emissiveIntensity={0.65} />
+        </mesh>
+      </group>
+    );
+  }
+
+  if (category === 'bedroom' || item.name.toLowerCase().includes('bed')) {
+    return (
+      <group {...handlers}>
+        <mesh position={[0, item.height * 0.35, 0]} castShadow receiveShadow>
+          <boxGeometry args={[item.width, item.height * 0.45, item.depth]} />
+          <meshStandardMaterial color={color} roughness={0.85} />
+        </mesh>
+        <mesh position={[0, item.height * 0.7, -item.depth * 0.42]} castShadow>
+          <boxGeometry args={[item.width, item.height * 0.55, item.depth * 0.12]} />
+          <meshStandardMaterial color={color} roughness={0.8} />
+        </mesh>
+      </group>
+    );
+  }
+
+  if (category === 'lighting') {
+    return (
+      <group {...handlers}>
+        <mesh position={[0, item.height * 0.05, 0]} castShadow>
+          <cylinderGeometry args={[item.width * 0.25, item.width * 0.3, item.height * 0.08, 16]} />
+          <meshStandardMaterial color="#444" metalness={0.4} roughness={0.45} />
+        </mesh>
+        <mesh position={[0, item.height * 0.45, 0]} castShadow>
+          <cylinderGeometry args={[0.02, 0.02, item.height * 0.8, 8]} />
+          <meshStandardMaterial color="#333" metalness={0.5} roughness={0.35} />
+        </mesh>
+        <mesh position={[0, item.height * 0.9, 0]}>
+          <sphereGeometry args={[item.width * 0.22, 16, 16]} />
+          <meshStandardMaterial color="#fff4d0" emissive="#ffe08a" emissiveIntensity={0.5} />
+        </mesh>
+      </group>
+    );
+  }
+
   return (
     <mesh
       position={[0, item.height / 2, 0]}
-      scale={[item.width, item.height, item.depth]}
       castShadow
       receiveShadow
-      onClick={onSelect}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerCancel={onPointerCancel}
+      {...handlers}
     >
-      <boxGeometry />
+      <boxGeometry args={[item.width, item.height, item.depth]} />
       <meshStandardMaterial
-        color={colliding ? '#d94a45' : item.color}
+        color={color}
         roughness={0.78}
         metalness={0.04}
         emissive={colliding ? '#4a1010' : '#000000'}
@@ -116,13 +197,11 @@ export function FurnitureVisual({
   return (
     <group onClick={onSelect} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerCancel}>
       <Suspense fallback={<ProxyFurniture item={item} colliding={colliding} />}>
-        <group position={[0, 0, 0]}>
-          <CatalogModel lowUrl={low} fullUrl={full} />
-        </group>
+        <CatalogModel lowUrl={low} fullUrl={full} width={item.width} depth={item.depth} height={item.height} />
       </Suspense>
       {colliding && (
-        <mesh position={[0, item.height / 2, 0]} scale={[item.width * 1.02, item.height * 1.02, item.depth * 1.02]}>
-          <boxGeometry />
+        <mesh position={[0, item.height / 2, 0]}>
+          <boxGeometry args={[item.width * 1.02, item.height * 1.02, item.depth * 1.02]} />
           <meshStandardMaterial color="#d94a45" transparent opacity={0.22} depthWrite={false} />
         </mesh>
       )}

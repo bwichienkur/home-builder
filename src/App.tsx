@@ -19,6 +19,14 @@ import { AdminPage } from './components/admin/AdminPage';
 import { useInventoryStore } from './store/inventoryStore';
 import { usePlannerStore } from './store/plannerStore';
 import { roomArea, validatePlan } from './lib/geometry/rooms';
+import {
+  clearRecoverySnapshot,
+  designShareUrl,
+  loadSharedDesign,
+  readDesignCodeFromLocation,
+  readRecoverySnapshot,
+  saveSharedDesign,
+} from './lib/designShare';
 
 const Scene3D = lazy(() => import('./components/scene3d/Scene3D').then((m) => ({ default: m.Scene3D })));
 
@@ -60,6 +68,9 @@ function StudioApp() {
   const [bom, setBom] = useState(false);
   const [projectName, setProjectName] = useState('Bedroom study');
   const [notice, setNotice] = useState('');
+  const [recovery, setRecovery] = useState<{ savedAt: string; payload: unknown } | null>(null);
+  const openingNotice = usePlannerStore((s) => s.openingNotice);
+  const clearOpeningNotice = usePlannerStore((s) => s.clearOpeningNotice);
 
   const closeCatalog = useCallback(() => setCatalogOpen(false), []);
   const showAddedItem = useCallback(() => {
@@ -86,10 +97,13 @@ function StudioApp() {
 
   const share = async () => {
     try {
-      if (navigator.share) await navigator.share({ title: projectName, text: 'View my Roomcraft home plan', url: location.href });
+      const entry = saveSharedDesign(projectName, store.projectPayload());
+      const url = designShareUrl(entry.code);
+      history.replaceState(null, '', url);
+      if (navigator.share) await navigator.share({ title: projectName, text: `Roomcraft design ${entry.code}`, url });
       else {
-        await navigator.clipboard.writeText(location.href);
-        notify('Project link copied');
+        await navigator.clipboard.writeText(url);
+        notify(`Design code ${entry.code} copied`);
       }
     } catch (error) {
       if ((error as DOMException).name !== 'AbortError') notify('Sharing is unavailable in this browser');
@@ -139,6 +153,32 @@ function StudioApp() {
     const timer = window.setTimeout(() => store.save(), 700);
     return () => window.clearTimeout(timer);
   }, [walls, openings, furniture, store.floorColor, store.wallColor, store.roomType, store.unitSystem, store]);
+
+  useEffect(() => {
+    const code = readDesignCodeFromLocation();
+    if (code) {
+      const shared = loadSharedDesign(code);
+      if (shared && store.importProject(shared.payload)) {
+        setProjectName(shared.name);
+        notify(`Opened design ${code}`);
+        return;
+      }
+    }
+    const snapshot = readRecoverySnapshot();
+    const saved = localStorage.getItem('roomcraft-project');
+    if (snapshot && (!saved || snapshot.savedAt > (JSON.parse(saved).savedAt ?? ''))) {
+      setRecovery(snapshot);
+    } else if (saved) {
+      store.load();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!openingNotice) return;
+    notify(openingNotice);
+    clearOpeningNotice();
+  }, [openingNotice, clearOpeningNotice]);
 
   const importProject = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -273,6 +313,36 @@ function StudioApp() {
       {notice && (
         <div className="app-notice" role="status">
           {notice}
+        </div>
+      )}
+
+      {recovery && (
+        <div className="recovery-banner" role="status">
+          <div>
+            <strong>Recover unsaved edits?</strong>
+            <p>Autosave from {new Date(recovery.savedAt).toLocaleString()} is available.</p>
+          </div>
+          <div className="recovery-actions">
+            <button
+              className="primary"
+              onClick={() => {
+                store.importProject(recovery.payload);
+                clearRecoverySnapshot();
+                setRecovery(null);
+                notify('Recovered latest edits');
+              }}
+            >
+              Restore
+            </button>
+            <button
+              onClick={() => {
+                clearRecoverySnapshot();
+                setRecovery(null);
+              }}
+            >
+              Dismiss
+            </button>
+          </div>
         </div>
       )}
 

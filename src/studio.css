@@ -570,3 +570,34 @@
   .studio-category-rail { right: max(20px, env(safe-area-inset-right)); }
   .studio-bag { min-width: 190px; }
 }
+
+.recovery-banner {
+  position: fixed;
+  z-index: 110;
+  left: 50%;
+  bottom: max(88px, calc(env(safe-area-inset-bottom) + 72px));
+  transform: translateX(-50%);
+  width: min(440px, calc(100vw - 24px));
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  padding: 14px 16px;
+  animation: sheet-up 220ms ease-out;
+}
+.recovery-banner strong { display: block; font-size: 14px; }
+.recovery-banner p { margin: 4px 0 0; font-size: 12px; color: var(--muted); }
+.recovery-actions { display: flex; gap: 8px; flex: none; }
+.recovery-actions button {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--soft);
+  padding: 10px 12px;
+  font-weight: 800;
+  min-height: 44px;
+}
+.recovery-actions .primary { background: var(--accent); color: #fff; border-color: var(--accent); }

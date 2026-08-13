@@ -1,7 +1,15 @@
 export type Point = { x: number; y: number };
 export type Wall = { id: string; start: Point; end: Point; thickness: number; height: number };
 export type Opening = { id: string; wallId: string; type: 'door'|'window'|'passage'; offset: number; width: number; height: number; sill: number; swing?:'left'|'right'|'none' };
-export type FurnitureItem = { id:string; catalogId:string; name:string; category:string; x:number; y:number; z:number; rotation:number; color:string; width:number; depth:number; height:number };
+export type MountingType = 'floor'|'wall'|'ceiling';
+export type FurnitureClearance = { front?:number; back?:number; left?:number; right?:number };
+export type FurnitureItem = {
+  id:string; catalogId:string; name:string; category:string;
+  x:number; y:number; z:number; rotation:number; color:string;
+  width:number; depth:number; height:number;
+  mountingType?:MountingType; wallId?:string|null; wallOffset?:number|null;
+  clearance?:FurnitureClearance; showClearance?:boolean;
+};
 export type CameraMode = 'top'|'orbit'|'walk';
 export type UnitSystem = 'metric'|'imperial';
 export type Tool = 'select' | 'wall' | 'door' | 'window' | 'passage';

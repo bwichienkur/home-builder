@@ -1,5 +1,5 @@
 import { ExternalLink, Search, X } from 'lucide-react';
-import { memo, useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { memo, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { usePlannerStore } from '../../store/plannerStore';
 import { catalog } from './catalogData';
 import type { RoomType } from '../../types';
@@ -20,6 +20,7 @@ export const roomCategories: Record<RoomType, string[]> = {
   Outdoor: ['Seating', 'Tables', 'Lighting', 'Decor', 'Surfaces'],
 };
 const money = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+const PAGE = 36;
 
 export const CatalogPanel = memo(function CatalogPanel({
   close,
@@ -38,6 +39,8 @@ export const CatalogPanel = memo(function CatalogPanel({
   const [sort, setSort] = useState('name');
   const [recommended, setRecommended] = useState(true);
   const [entered, setEntered] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(PAGE);
+  const listRef = useRef<HTMLDivElement>(null);
   const relevant = roomCategories[roomType];
   const all = useMemo(() => [...catalog, ...custom], [custom]);
   const vendors = useMemo(() => ['All', ...Array.from(new Set(all.map((i) => i.brand).filter(Boolean) as string[])).sort()], [all]);
@@ -85,10 +88,38 @@ export const CatalogPanel = memo(function CatalogPanel({
     [all, q, category, vendor, sort, recommended, relevant, roomType],
   );
 
+  useEffect(() => {
+    setVisibleCount(PAGE);
+    if (listRef.current) listRef.current.scrollTop = 0;
+  }, [q, category, vendor, sort, recommended, roomType]);
+
+  const shown = items.slice(0, visibleCount);
+
+  const onScroll = () => {
+    const el = listRef.current;
+    if (!el) return;
+    if (el.scrollTop + el.clientHeight > el.scrollHeight - 240) {
+      setVisibleCount((count) => Math.min(items.length, count + PAGE));
+    }
+  };
+
+  const addItem = (i: (typeof items)[number]) => {
+    add(i.id, i.name, i.category, i.dims, i.color, 0, 0, {
+      mountingType: i.mountingType,
+      clearance:
+        i.category === 'Bedroom'
+          ? { front: 0.7, back: 0.05, left: 0.3, right: 0.3 }
+          : i.mountingType === 'wall'
+            ? { front: 0.05, back: 0, left: 0.05, right: 0.05 }
+            : { front: 0.45, back: 0.05, left: 0.1, right: 0.1 },
+    });
+    onAdd?.();
+  };
+
   return (
     <>
       <button className="catalog-backdrop" aria-label="Close catalog" onClick={close} />
-      <aside className={`catalog-panel${entered ? ' is-open' : ''}`} role="dialog" aria-label={`${roomType} products`}>
+      <aside className={`catalog-panel${entered ? ' is-open' : ''}`} role="dialog" aria-label={`${roomType} products`} ref={listRef} onScroll={onScroll}>
         <div className="catalog-title">
           <div>
             <p className="eyebrow">Products</p>
@@ -126,7 +157,9 @@ export const CatalogPanel = memo(function CatalogPanel({
             <option value="price-high">Price: high to low</option>
           </select>
         </div>
-        <div className="catalog-result-count">{items.length} products</div>
+        <div className="catalog-result-count">
+          Showing {shown.length} of {items.length} products
+        </div>
         <div className="chips">
           {visibleCategories.map((c) => (
             <button className={c === category ? 'active' : ''} onClick={() => setCategory(c)} key={c}>
@@ -135,13 +168,15 @@ export const CatalogPanel = memo(function CatalogPanel({
           ))}
         </div>
         <div className="catalog-grid">
-          {items.map((i) => (
+          {shown.map((i) => (
             <article key={i.id} draggable onDragStart={(e) => e.dataTransfer.setData('catalogId', i.id)}>
               <div className="thumb" style={{ '--product-color': i.color } as CSSProperties}>
                 {i.thumbnailUrl ? <img src={i.thumbnailUrl} loading="lazy" alt="" /> : <span className="thumb-fallback">{i.emoji}</span>}
               </div>
               {i.brand && <span className="catalog-brand">{i.brand}</span>}
               <strong>{i.name}</strong>
+              {i.mountingType === 'wall' && <small className="mount-badge">Wall mount</small>}
+              {i.modelUrl && <small className="mount-badge model">3D model</small>}
               {i.sku && <small>SKU {i.sku}</small>}
               <span>{i.price !== undefined ? `${money.format(i.price)} / ${i.priceUnit ?? 'each'}` : 'Price by dealer/design'}</span>
               {i.placeholderOnly && <small>Dimensionally accurate placeholder</small>}
@@ -151,17 +186,15 @@ export const CatalogPanel = memo(function CatalogPanel({
                   {i.sourceLabel} <ExternalLink size={10} />
                 </a>
               )}
-              <button
-                onClick={() => {
-                  add(i.id, i.name, i.category, i.dims, i.color);
-                  onAdd?.();
-                }}
-              >
-                Add to room
-              </button>
+              <button onClick={() => addItem(i)}>Add to room</button>
             </article>
           ))}
         </div>
+        {shown.length < items.length && (
+          <button className="catalog-load-more" onClick={() => setVisibleCount((count) => Math.min(items.length, count + PAGE))}>
+            Load more products
+          </button>
+        )}
       </aside>
     </>
   );
