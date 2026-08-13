@@ -18,7 +18,7 @@ export const usePlannerStore=create<PlannerState>((set,get)=>{
  const snap=():SceneSnapshot=>({walls:get().walls,openings:get().openings,furniture:get().furniture,floorColor:get().floorColor,wallColor:get().wallColor});
  const commit=(next:SceneSnapshot)=>set(s=>{const history=s.history.slice(0,s.historyIndex+1).concat(next).slice(-200);const floors=s.floors.map(f=>f.id===s.activeFloorId?{...f,scene:next}:f);return{...next,floors,history,historyIndex:history.length-1}});
  const mutate=(patch:Partial<SceneSnapshot>)=>commit({...snap(),...patch});
- return {...initial,tool:'select',view:'3d',cameraMode:'orbit',roomType:'Living room',unitSystem:'metric',selectedWallId:null,selectedOpeningId:null,selectedFurnitureId:null,draftStart:null,floors:[{id:'ground',name:'Ground floor',scene:initial}],activeFloorId:'ground',history:[initial],historyIndex:0,
+ return {...initial,tool:'select',view:'3d',cameraMode:'orbit',roomType:'Bedroom',unitSystem:'metric',selectedWallId:null,selectedOpeningId:null,selectedFurnitureId:null,draftStart:null,floors:[{id:'ground',name:'Ground floor',scene:initial}],activeFloorId:'ground',history:[initial],historyIndex:0,
   setTool:(tool)=>set({tool,draftStart:null}),setView:(view)=>set({view,draftStart:null}),setCameraMode:(cameraMode)=>set({cameraMode}),setRoomType:(roomType)=>set({roomType}),setUnitSystem:(unitSystem)=>set({unitSystem}),setDraftStart:(draftStart)=>set({draftStart}),
   addWall:(start,end)=>{if(Math.hypot(end.x-start.x,end.y-start.y)<20)return;mutate({walls:[...get().walls,{id:crypto.randomUUID(),start,end,thickness:.15,height:2.7}]})},
   updateWall:(id,patch)=>mutate({walls:get().walls.map(w=>w.id===id?{...w,...patch}:w)}),

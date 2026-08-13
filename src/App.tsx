@@ -1,40 +1,282 @@
-import { lazy,Suspense,useCallback,useEffect,useMemo,useState } from 'react';
-import { ArrowRight,Bath,BedDouble,Box,ChevronDown,Download,FileJson,FileSpreadsheet,Grid2X2,Home,Layers3,Lamp,Menu,Move3D,PanelLeft,PencilRuler,ReceiptText,Redo2,Ruler,Save,Share2,ShoppingBag,Undo2,Upload } from 'lucide-react';
-import { usePlannerStore } from './store/plannerStore'; import { CatalogPanel,roomCategories } from './components/catalog/CatalogPanel';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  ChevronDown,
+  Download,
+  FileJson,
+  ReceiptText,
+  Save,
+  Share2,
+  Upload,
+} from 'lucide-react';
+import { CatalogPanel } from './components/catalog/CatalogPanel';
 import { catalog as catalogItems } from './components/catalog/catalogData';
-import { roomArea,validatePlan } from './lib/geometry/rooms';
-import {wallLengthMeters} from './lib/geometry/snapping';
-import type {RoomType} from './types';
-import {InventoryImportDialog} from './components/catalog/InventoryImportDialog';
-import {useInventoryStore} from './store/inventoryStore';
-import {BomDialog} from './components/ui/BomDialog';
-const Scene3D=lazy(()=>import('./components/scene3d/Scene3D').then(m=>({default:m.Scene3D})));
-const finishes=[['Oak','#c9b18f'],['Walnut','#7d5c43'],['Stone','#a8aaa4'],['Ivory','#e9e2d2'],['Sage','#9aa697'],['Charcoal','#454b48']];
-const roomTypes:RoomType[]=['Bedroom','Living room','Bathroom','Kitchen','Dining room','Office','Children’s room','Laundry','Hallway','Storage / wardrobe','Outdoor'];
-export default function App(){const store=usePlannerStore(),customCatalog=useInventoryStore(s=>s.items);const {walls,openings,furniture,selectedWallId,selectedOpeningId,selectedFurnitureId,tool,view,cameraMode,roomType,floors,activeFloorId}=store;const [catalog,setCatalog]=useState(()=>window.matchMedia('(min-width: 821px)').matches),[properties,setProperties]=useState(false),[inventoryImport,setInventoryImport]=useState(false),[bom,setBom]=useState(false),[projectName,setProjectName]=useState('Lake House Study'),[notice,setNotice]=useState(''),closeCatalog=useCallback(()=>setCatalog(false),[]),showAddedItem=useCallback(()=>{store.setView('3d');if(window.matchMedia('(max-width: 820px)').matches)setCatalog(false)},[store.setView]);const allCatalog=useMemo(()=>[...catalogItems,...customCatalog],[customCatalog]),selectedWall=walls.find(w=>w.id===selectedWallId),selectedOpening=openings.find(o=>o.id===selectedOpeningId),selectedFurniture=furniture.find(f=>f.id===selectedFurnitureId),validation=validatePlan(walls),area=validation.rooms.reduce((sum,r)=>sum+roomArea(r),0),total=furniture.reduce((sum,item)=>sum+(allCatalog.find(c=>c.id===item.catalogId)?.price??0),0);
- const notify=(message:string)=>{setNotice(message);window.setTimeout(()=>setNotice(''),2200)};
- const rename=()=>{const name=window.prompt('Project name',projectName)?.trim();if(name)setProjectName(name)};
- const share=async()=>{try{if(navigator.share)await navigator.share({title:projectName,text:'View my Roomcraft home plan',url:location.href});else{await navigator.clipboard.writeText(location.href);notify('Project link copied')}}catch(error){if((error as DOMException).name!=='AbortError')notify('Sharing is unavailable in this browser')}};
- useEffect(()=>{const onKey=(e:KeyboardEvent)=>{const tag=(e.target as HTMLElement)?.tagName;if(tag==='INPUT'||tag==='SELECT')return;if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?store.redo():store.undo()}else if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='d'){e.preventDefault();store.duplicateSelected()}else if(e.key==='Delete'||e.key==='Backspace')store.deleteSelected();else if(e.key==='Escape')store.setDraftStart(null);else if(e.key==='ArrowLeft')store.moveSelected(-.25,0);else if(e.key==='ArrowRight')store.moveSelected(.25,0);else if(e.key==='ArrowUp')store.moveSelected(0,-.25);else if(e.key==='ArrowDown')store.moveSelected(0,.25)};window.addEventListener('keydown',onKey);return()=>window.removeEventListener('keydown',onKey)},[store]);
- useEffect(()=>{const open=()=>{setProperties(true);setCatalog(false)};window.addEventListener('roomcraft-open-properties',open);return()=>window.removeEventListener('roomcraft-open-properties',open)},[]);
- useEffect(()=>{const open=()=>setInventoryImport(true);window.addEventListener('roomcraft-open-inventory',open);return()=>window.removeEventListener('roomcraft-open-inventory',open)},[]);
- useEffect(()=>{if(view!=='3d')store.setView('3d')},[view,store.setView]);
- useEffect(()=>{const timer=window.setTimeout(()=>store.save(),700);return()=>window.clearTimeout(timer)},[walls,openings,furniture,store.floorColor,store.wallColor,store.roomType,store.unitSystem]);
- const importProject=async(e:React.ChangeEvent<HTMLInputElement>)=>{const file=e.target.files?.[0];e.target.value='';if(!file)return;try{const ok=store.importProject(JSON.parse(await file.text()));notify(ok?'Project imported':'This is not a valid Roomcraft project')}catch{notify('Could not read that project file')}};
- return <main className={`app-shell view-${view}`}><header><div className="brand"><div className="logo"><Box size={21}/></div><div><strong>Roomcraft</strong><span>Spatial studio</span></div></div><button className="project-name" onClick={rename}>{projectName} <ChevronDown size={15}/></button><div className="header-actions"><button onClick={()=>setInventoryImport(true)}><FileSpreadsheet size={16}/>Inventory</button><label className="project-import"><FileJson size={16}/>Import<input type="file" accept="application/json,.json" onChange={importProject}/></label><button onClick={()=>setBom(true)}><ReceiptText size={16}/>BOM</button><button onClick={()=>{store.load();notify('Saved project loaded')}}><Upload size={16}/>Load</button><button onClick={store.exportProject}><Download size={16}/>Export</button><button onClick={share}><Share2 size={16}/>Share</button><button className="primary" onClick={()=>{store.save();notify('Project saved on this device')}}><Save size={16}/>Save project</button><div className="avatar">BW</div></div></header>{notice&&<div className="app-notice" role="status">{notice}</div>}
- <nav><button className={cameraMode==='top'?'active':''} onClick={()=>store.setCameraMode('top')}><Grid2X2 size={17}/><span className="desktop-nav-label">Top view</span><span className="mobile-nav-label">Top</span></button><button className={cameraMode!=='top'?'active':''} onClick={()=>store.setCameraMode('orbit')}><Layers3 size={17}/><span className="desktop-nav-label">3D view</span><span className="mobile-nav-label">3D</span></button><button className="mobile-properties" onClick={()=>{setProperties(!properties);setCatalog(false)}}><Move3D size={16}/><span className="desktop-nav-label">Properties</span><span className="mobile-nav-label">Edit</span></button><button className="catalog-toggle" onClick={()=>{setCatalog(!catalog);setProperties(false)}}><PanelLeft size={16}/><span className="desktop-nav-label">{catalog?'Hide':'Show'} catalog</span><span className="mobile-nav-label">Products</span></button></nav>
- <section className="workspace full"><aside className="left-panel"><p className="eyebrow">ROOM DESIGNER</p><RoomDesigner compact/><p className="eyebrow">PROJECT</p><div className="floor-row"><select aria-label="Active floor" value={activeFloorId} onChange={e=>store.switchFloor(e.target.value)}>{floors.map(f=><option key={f.id} value={f.id}>{f.name}</option>)}</select><button onClick={store.addFloor} title="Add floor">+</button></div><div className="card"><div><span>Walls</span><strong>{walls.length}</strong></div><div><span>Floor area</span><strong>{area.toFixed(1)} m²</strong></div><div><span>Openings</span><strong>{openings.length}</strong></div><div><span>Furniture</span><strong>{furniture.length}</strong></div></div>{!validation.valid&&walls.length>0&&<div className="plan-warning">Connect the highlighted endpoints to close the room.</div>}<p className="eyebrow">CAMERA</p><div className="camera-modes">{(['top','orbit','walk'] as const).map(m=><button className={cameraMode===m?'active':''} onClick={()=>store.setCameraMode(m)} key={m}>{m}</button>)}</div><div className="hint scene-tip"><Move3D size={18}/><div><strong>{cameraMode==='top'?'Top view':'Explore the room'}</strong><p>{cameraMode==='top'?'Top is the same 3D room with an overhead camera. Tap a wall to edit it.':'Orbit, zoom, or switch to eye-level walkthrough mode.'}</p></div></div><div className="tip"><span>TIP</span>Tap a wall to highlight it and open exact measurement, split, move, opening, and finish controls.</div></aside>
- <section className="editor"><Suspense fallback={<div className="loading-3d">Preparing your room…</div>}><Scene3D/></Suspense></section>{catalog&&<CatalogPanel close={closeCatalog} onAdd={showAddedItem} roomType={roomType}/>}<aside className={`right-panel${properties?' mobile-open':''}`}><button className="mobile-drawer-close" onClick={()=>setProperties(false)}>Close</button><p className="eyebrow">PROPERTIES</p>{selectedOpening?<OpeningProperties opening={selectedOpening}/>:selectedWall?<WallProperties wall={selectedWall}/>:selectedFurniture?<FurnitureProperties item={selectedFurniture}/>:<FinishPanel/>}</aside></section>
- <MobilePlannerChrome roomType={roomType} itemCount={furniture.length} total={total} openCatalog={()=>{setCatalog(true);setProperties(false)}} openMenu={()=>{setProperties(true);setCatalog(false)}}/>{inventoryImport&&<InventoryImportDialog close={()=>setInventoryImport(false)}/>} {bom&&<BomDialog items={furniture} catalog={allCatalog} close={()=>setBom(false)}/>}<footer><span className="status-dot"/>Project autosaved <span className="footer-spacer"/>Snap 25 cm · {walls.length} walls · {furniture.length} items</footer></main>}
+import { FloorPlanEditor } from './components/editor2d/FloorPlanEditor';
+import { Toolbar } from './components/ui/Toolbar';
+import { BomDialog } from './components/ui/BomDialog';
+import { SelectionInspector, RoomDesigner } from './components/ui/SelectionInspector';
+import { StudioChrome } from './components/ui/StudioChrome';
+import { AdminPage } from './components/admin/AdminPage';
+import { useInventoryStore } from './store/inventoryStore';
+import { usePlannerStore } from './store/plannerStore';
+import { roomArea, validatePlan } from './lib/geometry/rooms';
 
-function MobilePlannerChrome({roomType,itemCount,total,openCatalog,openMenu}:{roomType:RoomType;itemCount:number;total:number;openCatalog:()=>void;openMenu:()=>void}){const [viewMenu,setViewMenu]=useState(false),camera=usePlannerStore(s=>s.cameraMode),setCamera=usePlannerStore(s=>s.setCameraMode),undo=usePlannerStore(s=>s.undo),redo=usePlannerStore(s=>s.redo),historyIndex=usePlannerStore(s=>s.historyIndex),historyLength=usePlannerStore(s=>s.history.length),selectedItem=usePlannerStore(s=>s.selectedFurnitureId),selectedWall=usePlannerStore(s=>s.selectedWallId);const icons:Record<string,typeof ShoppingBag>={Bedroom:BedDouble,Lighting:Lamp,Plumbing:Bath,Surfaces:Grid2X2,Tile:Grid2X2,Seating:Home,Tables:Home,Storage:Home,Cabinetry:Home,Appliances:Home,Decor:ShoppingBag,Paneling:Grid2X2};const categories=roomCategories[roomType];const chooseView=(next:'top'|'orbit')=>{setCamera(next);window.setTimeout(()=>window.dispatchEvent(new Event('roomcraft-refocus')),0);setViewMenu(false)};const refocus=()=>{window.dispatchEvent(new Event('roomcraft-refocus'));setViewMenu(false)};const openCategory=(category:string)=>{openCatalog();window.setTimeout(()=>window.dispatchEvent(new CustomEvent('roomcraft-catalog-category',{detail:category})),0)};return <div className="mobile-planner-chrome"><button className="planner-menu" onClick={openMenu} aria-label="Open project menu"><Menu/></button><button className="planner-summary" onClick={openCatalog} aria-label={`${itemCount} products, estimated total $${total.toFixed(2)}`}><span><ShoppingBag size={18}/>{itemCount}</span><strong>${total.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</strong><ArrowRight/></button>{selectedItem&&<div className="planner-drag-hint">Drag the selected item to move it</div>}{selectedWall&&<div className="planner-drag-hint">Wall selected · use Edit for measurements and shape</div>}<div className="planner-category-rail" aria-label={`${roomType} product categories`}>{categories.map(category=>{const Icon=icons[category]??ShoppingBag;return <button key={category} onClick={()=>openCategory(category)} aria-label={`Show ${category}`} title={category}><Icon/><span>{category}</span></button>})}</div>{viewMenu&&<div className="planner-view-menu" role="menu"><button onClick={refocus}><Move3D/>Refocus the room</button><button className={camera==='top'?'active':''} onClick={()=>chooseView('top')}><Grid2X2/>Top view</button><button className={camera!=='top'?'active':''} onClick={()=>chooseView('orbit')}><Layers3/>3D view</button></div>}<div className="planner-bottom-left"><button onClick={()=>setViewMenu(open=>!open)} aria-expanded={viewMenu} aria-label="Choose room view">{camera==='top'?<Grid2X2/>:<Layers3/>}</button><button onClick={refocus} aria-label="Refocus room"><Move3D/></button><button onClick={openMenu} aria-label="Edit selected wall or product"><PencilRuler/></button></div><div className="planner-history"><button onClick={undo} disabled={historyIndex===0} aria-label="Undo"><Undo2/></button><button onClick={redo} disabled={historyIndex===historyLength-1} aria-label="Redo"><Redo2/></button></div></div>}
-function LegacyWallProperties({wall}:any){const allOpenings=usePlannerStore(s=>s.openings),openings=useMemo(()=>allOpenings.filter(o=>o.wallId===wall.id),[allOpenings,wall.id]),update=usePlannerStore(s=>s.updateOpening),remove=usePlannerStore(s=>s.deleteOpening);return <><h2>Wall</h2><Property label="Thickness" value={wall.thickness.toFixed(2)} unit="m"/><Property label="Height" value={wall.height.toFixed(2)} unit="m"/><Property label="Openings" value={String(openings.length)}/>{openings.map(o=><div className="opening-editor" key={o.id}><strong>{o.type}</strong><label>Position<input type="range" min=".05" max=".95" step=".05" value={o.offset} onChange={e=>update(o.id,{offset:+e.target.value})}/></label><label>Width<input type="number" min=".4" max="3" step=".1" value={o.width} onChange={e=>update(o.id,{width:+e.target.value})}/></label><button onClick={()=>remove(o.id)}>Remove</button></div>)}<p className="muted">Select the Door or Window tool, then click this wall to add an opening.</p></>}
-function FurnitureProperties({item}:any){const update=usePlannerStore(s=>s.updateFurniture),move=usePlannerStore(s=>s.moveSelected),duplicate=usePlannerStore(s=>s.duplicateSelected),remove=usePlannerStore(s=>s.deleteSelected);return <><h2>{item.name}</h2><Numeric label="Position X" value={item.x} onChange={x=>update(item.id,{x})}/><Numeric label="Position Z" value={item.z} onChange={z=>update(item.id,{z})}/><label>Rotation<input className="property-input" type="range" min="0" max="6.28" step="0.1" value={item.rotation} onChange={e=>update(item.id,{rotation:+e.target.value})}/></label><div className="nudge"><button onClick={()=>move(-.25,0)}>←</button><button onClick={()=>move(0,-.25)}>↑</button><button onClick={()=>move(0,.25)}>↓</button><button onClick={()=>move(.25,0)}>→</button></div><button className="duplicate" onClick={duplicate}>Duplicate item</button><button className="delete-item" onClick={remove}>Delete item</button><label>Color<div className="swatches">{finishes.map(([name,color])=><button title={name} key={color} style={{background:color}} onClick={()=>update(item.id,{color})}/>)}</div></label></>}
-function OpeningProperties({opening}:any){const update=usePlannerStore(s=>s.updateOpening),remove=usePlannerStore(s=>s.deleteOpening);return <><h2>{opening.type[0].toUpperCase()+opening.type.slice(1)}</h2><label>Position along wall<input type="range" min=".03" max=".97" step=".01" value={opening.offset} onChange={e=>update(opening.id,{offset:+e.target.value})}/></label><Numeric label="Width" value={opening.width} onChange={width=>update(opening.id,{width:Math.max(.3,width)})}/>{opening.type!=='passage'&&<Numeric label="Height" value={opening.height} onChange={height=>update(opening.id,{height:Math.max(.3,height)})}/>} {opening.type==='window'&&<Numeric label="Sill height" value={opening.sill} onChange={sill=>update(opening.id,{sill:Math.max(0,sill)})}/>} {opening.type==='door'&&<label>Door swing<select value={opening.swing??'left'} onChange={e=>update(opening.id,{swing:e.target.value as 'left'|'right'|'none'})}><option value="left">Left</option><option value="right">Right</option><option value="none">No swing</option></select></label>}<button className="delete-item" onClick={()=>remove(opening.id)}>Remove opening</button></>}
-function FinishPanel(){const set=usePlannerStore(s=>s.setFinish);return <><RoomDesigner/><button className="inventory-open-button" onClick={()=>window.dispatchEvent(new Event('roomcraft-open-inventory'))}><FileSpreadsheet/>Import vendor inventory</button><div className="empty-state"><div className="select-icon"><Grid2X2 size={25}/></div><h3>Room finishes</h3><p>Select a wall or furniture item for precise controls.</p></div><label>Floor material<div className="swatches">{finishes.map(([n,c])=><button title={n} key={c} style={{background:c}} onClick={()=>set('floor',c)}/>)}</div></label><label>Wall color<div className="swatches">{finishes.slice(3).map(([n,c])=><button title={n} key={c} style={{background:c}} onClick={()=>set('wall',c)}/>)}</div></label></>}
-function Property({label,value,unit}:{label:string;value:string;unit?:string}){return <label>{label}<div className="input">{value}{unit&&<span>{unit}</span>}</div></label>}
-function Numeric({label,value,onChange}:{label:string;value:number;onChange:(value:number)=>void}){return <label>{label}<div className="number-input"><input type="number" step="0.25" value={value} onChange={e=>onChange(+e.target.value)}/><span>m</span></div></label>}
+const Scene3D = lazy(() => import('./components/scene3d/Scene3D').then((m) => ({ default: m.Scene3D })));
 
-function RoomDesigner({compact=false}:{compact?:boolean}){const roomType=usePlannerStore(s=>s.roomType),setRoomType=usePlannerStore(s=>s.setRoomType),unit=usePlannerStore(s=>s.unitSystem),setUnit=usePlannerStore(s=>s.setUnitSystem),apply=usePlannerStore(s=>s.applyRoomTemplate),setCeiling=usePlannerStore(s=>s.setCeilingHeight),walls=usePlannerStore(s=>s.walls),furniture=usePlannerStore(s=>s.furniture),ceiling=walls[0]?.height??2.7;const template=(shape:'rectangle'|'wide'|'l-shape')=>{if((walls.length||furniture.length)&&!window.confirm('Replace the current room layout? Products in this room will be removed.'))return;apply(shape)};return <div className={`room-designer${compact?' compact':''}`}><label>Room type<select value={roomType} onChange={e=>setRoomType(e.target.value as RoomType)}>{roomTypes.map(type=><option key={type}>{type}</option>)}</select></label><label>Measurements<select value={unit} onChange={e=>setUnit(e.target.value as any)}><option value="metric">Metric (m / cm)</option><option value="imperial">Imperial (ft / in)</option></select></label><label>Ceiling height<div className="number-input"><input type="number" min="2" max="6" step=".05" value={ceiling} onChange={e=>setCeiling(+e.target.value)}/><span>m</span></div></label><span className="template-label">Start with a shape</span><div className="room-templates"><button onClick={()=>template('rectangle')}>Rectangle</button><button onClick={()=>template('wide')}>Wide</button><button onClick={()=>template('l-shape')}>L-shape</button></div></div>}
+function useAdminRoute() {
+  const [isAdmin, setIsAdmin] = useState(() => typeof location !== 'undefined' && location.pathname.replace(/\/+$/, '') === '/admin');
+  useEffect(() => {
+    const sync = () => setIsAdmin(location.pathname.replace(/\/+$/, '') === '/admin');
+    window.addEventListener('popstate', sync);
+    return () => window.removeEventListener('popstate', sync);
+  }, []);
+  return isAdmin;
+}
 
-function WallProperties({wall}:any){const allOpenings=usePlannerStore(s=>s.openings),openings=useMemo(()=>allOpenings.filter(o=>o.wallId===wall.id),[allOpenings,wall.id]),updateOpening=usePlannerStore(s=>s.updateOpening),remove=usePlannerStore(s=>s.deleteOpening),updateWall=usePlannerStore(s=>s.updateWall),setLength=usePlannerStore(s=>s.setWallLength),split=usePlannerStore(s=>s.splitWall),offset=usePlannerStore(s=>s.offsetWall);return <><h2>Wall</h2><Numeric label="Exact length" value={+wallLengthMeters(wall.start,wall.end).toFixed(2)} onChange={value=>setLength(wall.id,value)}/><Numeric label="Thickness" value={wall.thickness} onChange={value=>updateWall(wall.id,{thickness:Math.max(.05,value)})}/><Numeric label="Height" value={wall.height} onChange={value=>updateWall(wall.id,{height:Math.max(2,value)})}/><div className="wall-actions"><button onClick={()=>offset(wall.id,-.25)}>Move −25 cm</button><button onClick={()=>split(wall.id)}>Split wall</button><button onClick={()=>offset(wall.id,.25)}>Move +25 cm</button></div><Property label="Openings" value={String(openings.length)}/>{openings.map(o=><div className="opening-editor" key={o.id}><strong>{o.type}</strong><label>Position<input type="range" min=".05" max=".95" step=".05" value={o.offset} onChange={e=>updateOpening(o.id,{offset:+e.target.value})}/></label><label>Width<input type="number" min=".4" max="3" step=".1" value={o.width} onChange={e=>updateOpening(o.id,{width:+e.target.value})}/></label><button onClick={()=>remove(o.id)}>Remove</button></div>)}<p className="muted">Dragging or moving this segment keeps connected corners attached.</p></>}
+export default function App() {
+  const isAdmin = useAdminRoute();
+  if (isAdmin) return <AdminPage />;
+  return <StudioApp />;
+}
+
+function StudioApp() {
+  const store = usePlannerStore();
+  const customCatalog = useInventoryStore((s) => s.items);
+  const {
+    walls,
+    openings,
+    furniture,
+    selectedWallId,
+    selectedOpeningId,
+    selectedFurnitureId,
+    view,
+    roomType,
+    floors,
+    activeFloorId,
+  } = store;
+
+  const [catalogOpen, setCatalogOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [inspectorOpen, setInspectorOpen] = useState(false);
+  const [bom, setBom] = useState(false);
+  const [projectName, setProjectName] = useState('Bedroom study');
+  const [notice, setNotice] = useState('');
+
+  const closeCatalog = useCallback(() => setCatalogOpen(false), []);
+  const showAddedItem = useCallback(() => {
+    store.setView('3d');
+    store.setCameraMode('orbit');
+    setCatalogOpen(false);
+    setInspectorOpen(true);
+  }, [store]);
+
+  const allCatalog = useMemo(() => [...catalogItems, ...customCatalog], [customCatalog]);
+  const validation = validatePlan(walls);
+  const area = validation.rooms.reduce((sum, r) => sum + roomArea(r), 0);
+  const total = furniture.reduce((sum, item) => sum + (allCatalog.find((c) => c.id === item.catalogId)?.price ?? 0), 0);
+
+  const notify = (message: string) => {
+    setNotice(message);
+    window.setTimeout(() => setNotice(''), 2200);
+  };
+
+  const rename = () => {
+    const name = window.prompt('Project name', projectName)?.trim();
+    if (name) setProjectName(name);
+  };
+
+  const share = async () => {
+    try {
+      if (navigator.share) await navigator.share({ title: projectName, text: 'View my Roomcraft home plan', url: location.href });
+      else {
+        await navigator.clipboard.writeText(location.href);
+        notify('Project link copied');
+      }
+    } catch (error) {
+      if ((error as DOMException).name !== 'AbortError') notify('Sharing is unavailable in this browser');
+    }
+  };
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        e.shiftKey ? store.redo() : store.undo();
+      } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'd') {
+        e.preventDefault();
+        store.duplicateSelected();
+      } else if (e.key === 'Delete' || e.key === 'Backspace') store.deleteSelected();
+      else if (e.key === 'Escape') {
+        store.setDraftStart(null);
+        setCatalogOpen(false);
+        setMenuOpen(false);
+        setInspectorOpen(false);
+      } else if (e.key === 'ArrowLeft') store.moveSelected(-0.25, 0);
+      else if (e.key === 'ArrowRight') store.moveSelected(0.25, 0);
+      else if (e.key === 'ArrowUp') store.moveSelected(0, -0.25);
+      else if (e.key === 'ArrowDown') store.moveSelected(0, 0.25);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [store]);
+
+  useEffect(() => {
+    const open = () => {
+      setInspectorOpen(true);
+      setCatalogOpen(false);
+      setMenuOpen(false);
+    };
+    window.addEventListener('roomcraft-open-properties', open);
+    return () => window.removeEventListener('roomcraft-open-properties', open);
+  }, []);
+
+  useEffect(() => {
+    if (selectedWallId || selectedOpeningId || selectedFurnitureId) setInspectorOpen(true);
+  }, [selectedWallId, selectedOpeningId, selectedFurnitureId]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => store.save(), 700);
+    return () => window.clearTimeout(timer);
+  }, [walls, openings, furniture, store.floorColor, store.wallColor, store.roomType, store.unitSystem, store]);
+
+  const importProject = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+      const ok = store.importProject(JSON.parse(await file.text()));
+      notify(ok ? 'Project imported' : 'This is not a valid Roomcraft project');
+    } catch {
+      notify('Could not read that project file');
+    }
+  };
+
+  const openCategory = (category: string) => {
+    setCatalogOpen(true);
+    setMenuOpen(false);
+    setInspectorOpen(false);
+    window.setTimeout(() => window.dispatchEvent(new CustomEvent('roomcraft-catalog-category', { detail: category })), 0);
+  };
+
+  const isTop = view === '2d';
+
+  return (
+    <main className={`studio-shell view-${view}`}>
+      <section className="studio-canvas" aria-label={isTop ? 'Top view floor plan' : '3D room view'}>
+        {isTop ? (
+          <>
+            <Toolbar />
+            <FloorPlanEditor />
+          </>
+        ) : (
+          <Suspense fallback={<div className="loading-3d">Preparing your room…</div>}>
+            <Scene3D />
+          </Suspense>
+        )}
+      </section>
+
+      <StudioChrome
+        roomType={roomType}
+        itemCount={furniture.length}
+        total={total}
+        catalogOpen={catalogOpen}
+        menuOpen={menuOpen}
+        openCatalog={() => {
+          setCatalogOpen(true);
+          setMenuOpen(false);
+        }}
+        openMenu={() => {
+          setMenuOpen(true);
+          setCatalogOpen(false);
+        }}
+        closeMenu={() => setMenuOpen(false)}
+        openBom={() => setBom(true)}
+        openCategory={openCategory}
+        onOpenInspector={() => {
+          setInspectorOpen(true);
+          setCatalogOpen(false);
+          setMenuOpen(false);
+        }}
+      />
+
+      {menuOpen && (
+        <aside className="studio-menu-sheet" role="dialog" aria-label="Project menu">
+          <header>
+            <button className="project-name" onClick={rename}>
+              {projectName} <ChevronDown size={15} />
+            </button>
+          </header>
+          <RoomDesigner compact />
+          <div className="floor-row">
+            <select aria-label="Active floor" value={activeFloorId} onChange={(e) => store.switchFloor(e.target.value)}>
+              {floors.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.name}
+                </option>
+              ))}
+            </select>
+            <button onClick={store.addFloor} title="Add floor">
+              +
+            </button>
+          </div>
+          {!validation.valid && walls.length > 0 && <div className="plan-warning">Connect the highlighted endpoints to close the room.</div>}
+          <p className="menu-meta">
+            {area.toFixed(1)} m² · {walls.length} walls · {furniture.length} items
+          </p>
+          <div className="menu-actions">
+            <button
+              onClick={() => {
+                store.save();
+                notify('Project saved on this device');
+              }}
+            >
+              <Save size={16} /> Save
+            </button>
+            <button
+              onClick={() => {
+                store.load();
+                notify('Saved project loaded');
+              }}
+            >
+              <Upload size={16} /> Load
+            </button>
+            <button onClick={store.exportProject}>
+              <Download size={16} /> Export
+            </button>
+            <label className="project-import">
+              <FileJson size={16} /> Import
+              <input type="file" accept="application/json,.json" onChange={importProject} />
+            </label>
+            <button onClick={share}>
+              <Share2 size={16} /> Share
+            </button>
+            <button onClick={() => setBom(true)}>
+              <ReceiptText size={16} /> Shopping list
+            </button>
+            <a href="/admin" className="menu-advanced">
+              Advanced · inventory
+            </a>
+          </div>
+        </aside>
+      )}
+
+      {catalogOpen && <CatalogPanel close={closeCatalog} onAdd={showAddedItem} roomType={roomType} />}
+
+      <SelectionInspector
+        open={inspectorOpen}
+        onClose={() => {
+          setInspectorOpen(false);
+        }}
+      />
+
+      {notice && (
+        <div className="app-notice" role="status">
+          {notice}
+        </div>
+      )}
+
+      {bom && <BomDialog items={furniture} catalog={allCatalog} close={() => setBom(false)} />}
+    </main>
+  );
+}

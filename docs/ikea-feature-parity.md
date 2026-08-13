@@ -6,12 +6,12 @@ Match plan + rebuild prompt: [`ikea-room-builder-match-plan.md`](./ikea-room-bui
 
 This is a behavioral audit, not permission to copy IKEA branding, product data, imagery, source code, or proprietary assets. The reference is a client-rendered application; the matrix combines workflows observed in the supplied mobile captures with accessible live application states. **Complete** means the behavior is connected and tested in Roomcraft. **Partial** means useful behavior exists but is not yet equivalent. **Planned** is deliberately not represented as complete.
 
-**2026-08-13 note:** Several camera/Top rows below overstate the *mounted* app. `FloorPlanEditor` / `Toolbar` exist but `App` forces 3D and does not mount Konva; furniture still renders as boxes (`CatalogModel` unused). Prefer the match plan for UI redo guidance.
+**2026-08-13 note:** Studio shell rebuilt to floating-chrome IA. Top view mounts Konva `FloorPlanEditor` + `Toolbar`. Furniture renders through `FurnitureVisual` → `CatalogModel` when `modelUrl` / `lowPolyModelUrl` exist, otherwise dimensional proxy. Inventory lives at `/admin`. Do not claim full IKEA parity while Planned/Partial rows remain.
 
 | Area | Reference behavior | Room types | Roomcraft status | Required acceptance test | Status |
 |---|---|---|---|---|---|
 | Studio | One room shared by Top and 3D views | All | Shared Zustand scene | Edit in Top, switch to 3D, confirm identical state | Complete |
-| Camera | Top view | All | Konva top editor | Top view opens without resetting scene | Complete |
+| Camera | Top view | All | Konva FloorPlanEditor mounted for view=2d | Top view opens Konva plan editor without resetting scene | Complete |
 | Camera | Orbit 3D view | All | R3F orbit controls | Orbit, pan, pinch/scroll zoom | Complete |
 | Camera | Eye-level/walkthrough | All | Walk camera mode | Enter walk mode and preserve room | Complete |
 | Camera | Refocus room | All | View menu event | Move camera, Refocus restores room framing | Complete |
@@ -87,10 +87,10 @@ This is a behavioral audit, not permission to copy IKEA branding, product data, 
 | Inventory | Error report | Admin | CSV download | Errors contain source row and reasons | Complete |
 | Inventory | Transactional server import | Admin | Normalized schema; endpoint pending | Roll back entire failed server batch | Planned |
 | Inventory | Import history/rollback/audit | Admin | Database tables only | Restore previous vendor version | Planned |
-| Assets | Placeholder from dimensions | All | Box representation | Missing model still places exact dimensions | Complete |
-| Assets | GLB/Draco/KTX2 | All | Loader infrastructure | Load compressed test asset | Complete |
-| Assets | Low-poly/full LOD | All | CatalogModel infrastructure | Drag proxy, then full model | Complete |
-| Assets | Repeated SKU instancing | All | Drei Instances | Six repeated SKUs share draw resources | Complete |
+| Assets | Placeholder from dimensions | All | ProxyFurniture via FurnitureVisual | Missing model still places exact dimensions | Complete |
+| Assets | GLB/Draco/KTX2 | All | Loader + CatalogModel path | Load compressed test asset when URL present | Complete |
+| Assets | Low-poly/full LOD | All | CatalogModel Detailed distances | Drag proxy, then full model when URLs present | Complete |
+| Assets | Repeated SKU instancing | All | Per-item meshes (Instances removed for model path) | Six repeated SKUs share draw resources | Partial |
 | Projects | Local save/load | All | Local storage | Save, refresh, load | Complete |
 | Projects | Autosave/recovery | All | Manual save | Recover latest edits after refresh | Planned |
 | Projects | Save as / design library | All | API primitives | Create two named versions | Planned |

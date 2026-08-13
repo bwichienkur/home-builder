@@ -9,15 +9,7 @@
 
 ## Verdict
 
-Roomcraft has a usable **geometry + placement engine** (walls, openings, floors, snap, undo, catalog filters, local save). It does **not** look or feel like IKEA Room Builder.
-
-The gap is mostly **product shell + scene fidelity**, not missing Zustand math. The cleanest path is:
-
-1. **Keep** `plannerStore`, geometry libs, Scene3D wall meshes, inventory import, BOM.
-2. **Redo** the entire chrome (desktop + mobile), catalog presentation, and product rendering path.
-3. **Re-wire** the orphaned Konva top editor instead of pretending Top view is “done.”
-
-A full greenfield rewrite of the 3D stack is *not* required unless you also want to replace R3F/Three.
+**2026-08-13 implementation:** Studio shell rebuilt to floating-chrome IA (menu, bag/total, category rail, view controls, undo/redo) on all breakpoints. Top view mounts Konva. Furniture goes through `CatalogModel` when model URLs exist. Inventory is at `/admin`. Remaining gaps: live GLB catalog coverage, wall-mount snap, smart guides, cloud remix links.
 
 ---
 
