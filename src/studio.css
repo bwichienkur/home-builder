@@ -291,7 +291,8 @@
 .studio-selection-fabs {
   position: absolute;
   z-index: 36;
-  right: max(78px, calc(env(safe-area-inset-right) + 70px));
+  left: max(16px, env(safe-area-inset-left));
+  right: auto;
   top: 50%;
   transform: translateY(-50%);
   display: flex;
@@ -393,32 +394,74 @@
 }
 
 .studio-bottom-left {
-  position: absolute;
-  left: max(16px, env(safe-area-inset-left));
-  bottom: max(16px, env(safe-area-inset-bottom));
-  display: flex;
-  gap: 10px;
-  align-items: center;
+  display: none; /* replaced by .studio-dock */
 }
-.studio-bottom-left button:first-child {
+
+.studio-history,
+.studio-history-mobile {
+  display: none !important; /* merged into .studio-dock */
+}
+
+.studio-dock {
+  position: absolute;
+  z-index: 40;
+  left: max(12px, env(safe-area-inset-left));
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(20px, calc(env(safe-area-inset-bottom) + 16px));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.studio-dock-group {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.studio-dock-group button {
+  width: 48px;
+  height: 48px;
+  min-width: var(--tap);
+  min-height: var(--tap);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  box-shadow: none;
+}
+
+.studio-dock-group button + button {
+  border-left: 1px solid var(--line);
+}
+
+.studio-dock-group button:first-child {
   background: var(--accent);
   color: #fff;
 }
-.studio-bottom-left button:last-child {
-  background: var(--rail);
-  color: #fff;
+
+.studio-dock-group button:disabled {
+  color: #c5cbd1;
 }
-.studio-bottom-left button:disabled { opacity: 0.35; }
-.studio-bottom-left button.active {
-  background: #e8f1fa;
-  color: #0058a3;
+
+.studio-dock-history button:first-child {
+  background: transparent;
+  color: inherit;
 }
 
 .studio-view-menu {
   pointer-events: auto;
   position: absolute;
+  z-index: 45;
   left: max(16px, env(safe-area-inset-left));
-  bottom: max(80px, calc(env(safe-area-inset-bottom) + 72px));
+  bottom: max(84px, calc(env(safe-area-inset-bottom) + 72px));
   width: 220px;
   border-radius: 14px;
   background: var(--surface);
@@ -426,6 +469,18 @@
   box-shadow: var(--shadow);
   animation: sheet-up 200ms ease-out;
 }
+
+.studio-view-chip {
+  bottom: max(84px, calc(env(safe-area-inset-bottom) + 72px));
+}
+
+.studio-chrome.has-action-fabs .studio-category-rail,
+.studio-shell.has-action-fabs .studio-category-rail,
+.studio-shell.is-placing .studio-category-rail {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
 .studio-view-menu button {
   width: 100%;
   min-height: 52px;
@@ -447,27 +502,6 @@
   background: var(--accent-soft);
 }
 .studio-view-menu svg { width: 22px; }
-
-.studio-history {
-  position: absolute;
-  right: max(16px, env(safe-area-inset-right));
-  bottom: max(16px, env(safe-area-inset-bottom));
-  display: flex;
-  border-radius: 999px;
-  background: var(--surface);
-  overflow: hidden;
-  box-shadow: var(--shadow);
-}
-.studio-history button {
-  width: 52px;
-  height: 52px;
-  border-radius: 0;
-  box-shadow: none;
-  border: 0;
-  background: var(--surface);
-}
-.studio-history button + button { border-left: 1px solid var(--line); }
-.studio-history button:disabled { color: #c5cbd1; }
 
 .studio-admin-link { display: none; }
 
@@ -881,8 +915,21 @@
     padding-bottom: max(18px, env(safe-area-inset-bottom));
   }
   .scene-help { display: none; }
+  /* Raise dock above Safari/Chrome mobile URL bars (safe-area alone is not enough). */
+  .studio-dock {
+    bottom: max(64px, calc(env(safe-area-inset-bottom) + 52px));
+  }
+  .studio-view-chip,
+  .studio-view-menu {
+    bottom: max(128px, calc(env(safe-area-inset-bottom) + 116px));
+  }
   .studio-selection-fabs {
-    right: max(70px, calc(env(safe-area-inset-right) + 62px));
+    left: max(12px, env(safe-area-inset-left));
+    right: auto;
+    top: auto;
+    bottom: max(140px, calc(env(safe-area-inset-bottom) + 128px));
+    transform: none;
+    animation: card-in 220ms ease-out;
     gap: 8px;
   }
   .studio-selection-fabs button {
@@ -896,10 +943,10 @@
   }
   .studio-product-card {
     left: max(12px, env(safe-area-inset-left));
-    right: max(70px, calc(env(safe-area-inset-right) + 62px));
+    right: max(84px, calc(env(safe-area-inset-right) + 76px));
     width: auto;
-    bottom: max(86px, calc(env(safe-area-inset-bottom) + 74px));
-    max-height: min(36vh, 280px);
+    bottom: max(128px, calc(env(safe-area-inset-bottom) + 116px));
+    max-height: min(32vh, 260px);
   }
   /* Compact horizontal complements — keep canvas usable */
   .studio-product-complements ul {
@@ -932,25 +979,9 @@
   }
   .studio-shell.has-product-card .studio-category-rail,
   .studio-shell.is-placing .studio-category-rail,
-  .studio-shell.view-2d .studio-category-rail {
-    opacity: 0.28;
-    pointer-events: none;
+  .studio-shell.has-action-fabs .studio-category-rail {
+    display: none;
   }
-  .studio-shell.view-2d .studio-bag {
-    opacity: 0.45;
-  }
-  .studio-selection-fabs {
-    right: max(14px, env(safe-area-inset-right));
-    top: auto;
-    bottom: max(160px, calc(env(safe-area-inset-bottom) + 148px));
-    transform: none;
-    animation: card-in 220ms ease-out;
-  }
-}
-
-.studio-shell.view-2d .studio-category-rail {
-  pointer-events: none;
-  opacity: 0.35;
 }
 
 @media (min-width: 821px) {

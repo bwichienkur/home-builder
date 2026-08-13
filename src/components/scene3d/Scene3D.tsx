@@ -1,5 +1,5 @@
 import { Canvas, useThree } from '@react-three/fiber';
-import { Bvh, Environment, Grid, Line, OrbitControls, PerspectiveCamera, PivotControls, Text } from '@react-three/drei';
+import { Bvh, Environment, Line, OrbitControls, PerspectiveCamera, PivotControls, Text } from '@react-three/drei';
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { usePlannerStore } from '../../store/plannerStore';
@@ -46,9 +46,9 @@ function CameraRig() {
   const targetTuple = useMemo<[number, number, number]>(() => [center[0], 0, center[2]], [center]);
   const poseTuple = useMemo<[number, number, number]>(() => {
     if (mode === 'top') {
-      // Bird’s-eye: high above the floor with a slight offset so walls/objects stay readable in 3D.
-      const height = Math.max(6.5, framing.span * 1.35);
-      return [center[0] + framing.span * 0.08, height, center[2] + framing.span * 0.12];
+      // Near-flat bird’s-eye — still 3D, centered on the floor (no separate 2D engine).
+      const height = Math.max(8.5, framing.span * 1.55);
+      return [center[0] + framing.span * 0.02, height, center[2] + framing.span * 0.04];
     }
     if (mode === 'walk') {
       // Pull back farther than a tight FPS so furniture stays readable (esp. on phones).
@@ -109,8 +109,8 @@ function CameraRig() {
         ref={controls}
         enabled={!moving && !placing && !animating.current}
         target={[targetTuple[0], mode === 'walk' ? 1.1 : targetTuple[1], targetTuple[2]]}
-        minPolarAngle={mode === 'top' ? 0.12 : mode === 'walk' ? 0.7 : 0}
-        maxPolarAngle={mode === 'top' ? 0.95 : mode === 'walk' ? Math.PI / 2.1 : Math.PI / 2.05}
+        minPolarAngle={mode === 'top' ? 0.05 : mode === 'walk' ? 0.7 : 0}
+        maxPolarAngle={mode === 'top' ? 0.55 : mode === 'walk' ? Math.PI / 2.1 : Math.PI / 2.05}
         minDistance={mode === 'walk' ? 1.2 : mode === 'top' ? 3 : 2}
         maxDistance={mode === 'top' ? 22 : mode === 'walk' ? 12 : 18}
         enableZoom
@@ -581,17 +581,6 @@ function Room() {
           )}
         </>
       )}
-      <Grid
-        position={[0, 0.002, 0]}
-        args={[14, 12]}
-        cellSize={0.25}
-        cellThickness={0.35}
-        cellColor="#b7bcc2"
-        sectionSize={1}
-        sectionColor="#8a929a"
-        fadeDistance={15}
-        infiniteGrid={false}
-      />
       <WallMeshes />
       <Furniture />
       <GhostPlacement />
