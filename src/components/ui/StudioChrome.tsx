@@ -81,7 +81,6 @@ export function StudioChrome({
   onOpenInspector,
 }: Props) {
   const [viewMenu, setViewMenu] = useState(false);
-  const view = usePlannerStore((s) => s.view);
   const camera = usePlannerStore((s) => s.cameraMode);
   const setView = usePlannerStore((s) => s.setView);
   const setCamera = usePlannerStore((s) => s.setCameraMode);
@@ -100,10 +99,10 @@ export function StudioChrome({
   const duplicateSelected = usePlannerStore((s) => s.duplicateSelected);
   const deleteSelected = usePlannerStore((s) => s.deleteSelected);
   const categories = roomCategories[roomType];
-  const isRoomEdit = view === '2d';
-  const isTop = !isRoomEdit && camera === 'top';
-  const isWalk = !isRoomEdit && camera === 'walk';
-  const showSelectionFabs = !!selectedItem && !pending && !isRoomEdit;
+  const isTop = camera === 'top';
+  const isWalk = camera === 'walk';
+  const showSelectionFabs = !!selectedItem && !pending;
+  const showActionFabs = showSelectionFabs || !!pending;
   const coarsePointer = useCoarsePointer();
   const [gestureHint, setGestureHint] = useState(false);
 
@@ -112,7 +111,7 @@ export function StudioChrome({
   }, [catalogOpen, menuOpen]);
 
   useEffect(() => {
-    if (!coarsePointer || isRoomEdit || pending) return;
+    if (!coarsePointer || pending) return;
     try {
       if (sessionStorage.getItem('roomcraft-gesture-hint') === '1') return;
       setGestureHint(true);
@@ -124,11 +123,11 @@ export function StudioChrome({
     } catch {
       /* private mode */
     }
-  }, [coarsePointer, isRoomEdit, pending]);
+  }, [coarsePointer, pending]);
 
   const walkLabel = useMemo(() => (coarsePointer ? 'Eye level (preview)' : 'Eye level'), [coarsePointer]);
 
-  /** IKEA-style top: stay in WebGL with a bird’s-eye camera centered on the floor. */
+  /** Flat top-down stay in WebGL — never leave the 3D scene. */
   const chooseTop = () => {
     setView('3d');
     setCamera('top');
@@ -143,11 +142,13 @@ export function StudioChrome({
     setViewMenu(false);
   };
 
-  /** Konva plan editor only when changing walls / openings layout. */
+  /** Room layout edits happen in Top 3D + inspector — no Konva 2D plan. */
   const chooseEditRoom = () => {
-    setView('2d');
+    setView('3d');
     setCamera('top');
     setViewMenu(false);
+    onOpenInspector();
+    window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 0);
   };
 
   const refocus = () => {
@@ -158,7 +159,7 @@ export function StudioChrome({
   const hasSelection = !!(selectedItem || selectedWall || selectedOpening);
 
   return (
-    <div className="studio-chrome">
+    <div className={`studio-chrome${showActionFabs ? ' has-action-fabs' : ''}`}>
       <button className="studio-fab studio-menu" onClick={menuOpen ? closeMenu : openMenu} aria-label={menuOpen ? 'Close menu' : 'Open project menu'} aria-expanded={menuOpen}>
         {menuOpen ? <X /> : <Menu />}
       </button>
@@ -178,17 +179,15 @@ export function StudioChrome({
         <ArrowRight />
       </button>
 
-      {pending && !isRoomEdit && (
-        <div className="studio-selection-hint">Placing {pending.name} · move then click to confirm</div>
-      )}
+      {pending && <div className="studio-selection-hint">Placing {pending.name} · move then tap to confirm</div>}
 
-      {hasSelection && !pending && !isRoomEdit && !selectedItem && (
+      {hasSelection && !pending && !selectedItem && (
         <div className="studio-selection-hint">
           {selectedOpening ? 'Opening selected · adjust in Edit' : 'Wall selected · use Edit for measurements'}
         </div>
       )}
 
-      {pending && !isRoomEdit && (
+      {pending && (
         <div className="studio-selection-fabs" role="toolbar" aria-label="Place product">
           <button onClick={() => rotatePending()} aria-label="Rotate preview">
             <RotateCw />
@@ -208,10 +207,7 @@ export function StudioChrome({
             <RotateCw />
           </button>
           {!coarsePointer && (
-            <button
-              onClick={() => window.dispatchEvent(new Event('roomcraft-open-product-card'))}
-              aria-label="Product details"
-            >
+            <button onClick={() => window.dispatchEvent(new Event('roomcraft-open-product-card'))} aria-label="Product details">
               <Info />
             </button>
           )}
@@ -229,7 +225,7 @@ export function StudioChrome({
         </div>
       )}
 
-      {gestureHint && !pending && !isRoomEdit && (
+      {gestureHint && !pending && (
         <div className="studio-selection-hint studio-gesture-hint">Drag to orbit · Pinch to zoom · Two-finger pan</div>
       )}
 
@@ -242,12 +238,6 @@ export function StudioChrome({
       {isWalk && !pending && (
         <button className="studio-view-chip" onClick={() => choose3d('orbit')}>
           Exit eye level
-        </button>
-      )}
-
-      {isRoomEdit && (
-        <button className="studio-view-chip studio-view-chip-warn" onClick={() => choose3d('orbit')}>
-          Done editing room layout
         </button>
       )}
 
@@ -273,7 +263,7 @@ export function StudioChrome({
             <Grid2X2 />
             Top view
           </button>
-          <button className={view === '3d' && camera === 'orbit' ? 'active' : ''} onClick={() => choose3d('orbit')}>
+          <button className={camera === 'orbit' ? 'active' : ''} onClick={() => choose3d('orbit')}>
             <Layers3 />
             3D view
           </button>
@@ -283,35 +273,37 @@ export function StudioChrome({
               {walkLabel}
             </button>
           )}
-          <button className={isRoomEdit ? 'active' : ''} onClick={chooseEditRoom}>
+          <button onClick={chooseEditRoom}>
             <Scaling />
-            Edit room layout
+            Edit room size
           </button>
         </div>
       )}
 
-      <div className="studio-bottom-left">
-        <button onClick={() => setViewMenu((open) => !open)} aria-expanded={viewMenu} aria-label="Choose room view">
-          {isTop || isRoomEdit ? <Grid2X2 /> : isWalk ? <Move3D /> : <Layers3 />}
-        </button>
-        <button onClick={refocus} aria-label="Refocus room" disabled={isRoomEdit}>
-          <Move3D />
-        </button>
-        <button onClick={onOpenInspector} aria-label="Edit selected wall or product" disabled={!hasSelection || !!pending}>
-          <PencilRuler />
-        </button>
-        <button className={isRoomEdit ? 'active' : ''} onClick={isRoomEdit ? () => choose3d('orbit') : chooseEditRoom} aria-label={isRoomEdit ? 'Exit room layout editor' : 'Edit room layout'}>
-          <Scaling />
-        </button>
-      </div>
-
-      <div className={`studio-history${coarsePointer ? ' studio-history-mobile' : ''}`}>
-        <button onClick={undo} disabled={historyIndex === 0} aria-label="Undo">
-          <Undo2 />
-        </button>
-        <button onClick={redo} disabled={historyIndex === historyLength - 1} aria-label="Redo">
-          <Redo2 />
-        </button>
+      {/* One bottom dock — view tools + history — raised above mobile browser chrome */}
+      <div className="studio-dock" role="toolbar" aria-label="Studio controls">
+        <div className="studio-dock-group">
+          <button onClick={() => setViewMenu((open) => !open)} aria-expanded={viewMenu} aria-label="Choose room view">
+            {isTop ? <Grid2X2 /> : isWalk ? <Move3D /> : <Layers3 />}
+          </button>
+          <button onClick={refocus} aria-label="Refocus room">
+            <Move3D />
+          </button>
+          <button onClick={onOpenInspector} aria-label="Edit selected wall or product" disabled={!hasSelection || !!pending}>
+            <PencilRuler />
+          </button>
+          <button onClick={chooseEditRoom} aria-label="Edit room size">
+            <Scaling />
+          </button>
+        </div>
+        <div className="studio-dock-group studio-dock-history">
+          <button onClick={undo} disabled={historyIndex === 0} aria-label="Undo">
+            <Undo2 />
+          </button>
+          <button onClick={redo} disabled={historyIndex === historyLength - 1} aria-label="Redo">
+            <Redo2 />
+          </button>
+        </div>
       </div>
 
       <a className="studio-admin-link" href="/admin" hidden>

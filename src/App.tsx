@@ -10,8 +10,6 @@ import {
 } from 'lucide-react';
 import { CatalogPanel } from './components/catalog/CatalogPanel';
 import { catalog as catalogItems } from './components/catalog/catalogData';
-import { FloorPlanEditor } from './components/editor2d/FloorPlanEditor';
-import { Toolbar } from './components/ui/Toolbar';
 import { BomDialog } from './components/ui/BomDialog';
 import { SelectionInspector, RoomDesigner } from './components/ui/SelectionInspector';
 import { SelectedProductCard } from './components/ui/SelectedProductCard';
@@ -61,7 +59,6 @@ function StudioApp() {
     selectedWallId,
     selectedOpeningId,
     selectedFurnitureId,
-    view,
     cameraMode,
     roomType,
     floors,
@@ -254,36 +251,27 @@ function StudioApp() {
     window.setTimeout(() => window.dispatchEvent(new CustomEvent('roomcraft-catalog-category', { detail: category })), 0);
   };
 
-  const isRoomEdit = view === '2d';
-  const isTop = !isRoomEdit && cameraMode === 'top';
+  const isTop = cameraMode === 'top';
   const shellClass = [
     'studio-shell',
-    `view-${isRoomEdit ? '2d' : '3d'}`,
+    'view-3d',
     isTop ? 'camera-top' : '',
-    cameraMode === 'walk' && !isRoomEdit ? 'camera-walk' : '',
+    cameraMode === 'walk' ? 'camera-walk' : '',
     pendingPlacement ? 'is-placing' : '',
     productCardOpen && selectedFurnitureId && !pendingPlacement && !inspectorOpen ? 'has-product-card' : '',
+    selectedFurnitureId || pendingPlacement ? 'has-action-fabs' : '',
   ]
     .filter(Boolean)
     .join(' ');
 
   return (
     <main className={shellClass}>
-      <section
-        className="studio-canvas"
-        aria-label={isRoomEdit ? 'Edit room layout' : isTop ? 'Bird’s-eye room view' : '3D room view'}
-      >
-        <div className={`scene-layer${isRoomEdit ? ' is-parked' : ''}`} aria-hidden={isRoomEdit}>
+      <section className="studio-canvas" aria-label={isTop ? 'Top-down room view' : '3D room view'}>
+        <div className="scene-layer">
           <Suspense fallback={<div className="loading-3d">Preparing your room…</div>}>
             <Scene3D />
           </Suspense>
         </div>
-        {isRoomEdit && (
-          <div className="plan-layer">
-            <Toolbar />
-            <FloorPlanEditor />
-          </div>
-        )}
       </section>
 
       <StudioChrome
@@ -315,7 +303,6 @@ function StudioApp() {
         selectedFurnitureId &&
         !inspectorOpen &&
         !pendingPlacement &&
-        view === '3d' &&
         !catalogOpen &&
         !menuOpen && (
         <SelectedProductCard
