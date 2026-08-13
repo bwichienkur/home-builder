@@ -22,7 +22,7 @@
   top: max(78px, calc(env(safe-area-inset-top) + 64px));
   left: 50%;
   transform: translateX(-50%);
-  width: min(560px, calc(100vw - 160px));
+  width: min(720px, calc(100vw - 160px));
   height: 52px;
   border: 0;
   border-radius: 999px;
@@ -32,7 +32,10 @@
   align-items: center;
   padding: 0 10px;
   gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
+.studio-canvas .toolbar::-webkit-scrollbar { display: none; }
 
 .toolbar button {
   height: 40px;

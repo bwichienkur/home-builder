@@ -1,6 +1,8 @@
 # Roomcraft 3D Home Planner
 
-A React, TypeScript, Konva and React Three Fiber room planner. It supports multi-floor plans, exact closed-room floor geometry, wall openings, furniture transforms, collisions, materials, local persistence, JSON exchange, and a PostgreSQL-backed API.
+A React, TypeScript, Konva and React Three Fiber room planner with an IKEA Room Builder–style floating studio chrome. It supports multi-floor plans, exact closed-room floor geometry, wall openings, furniture transforms, collisions, materials, local persistence, JSON exchange, and a PostgreSQL-backed API.
+
+Studio: `/` · Inventory admin: `/admin`
 
 ## Run locally
 
