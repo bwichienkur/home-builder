@@ -49,6 +49,16 @@ export function loadSharedDesign(code: string) {
   return readMap()[normalized] ?? null;
 }
 
+export function listSharedDesigns() {
+  return Object.values(readMap()).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+export function deleteSharedDesign(code: string) {
+  const map = readMap();
+  delete map[code.trim().toUpperCase()];
+  writeMap(map);
+}
+
 export function designShareUrl(code: string) {
   const url = new URL(location.href);
   url.searchParams.set('design', code);

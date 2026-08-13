@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { designShareUrl, loadSharedDesign, makeDesignCode, saveSharedDesign } from './designShare';
+import { deleteSharedDesign, designShareUrl, listSharedDesigns, loadSharedDesign, makeDesignCode, saveSharedDesign } from './designShare';
 
 const store = new Map<string, string>();
 vi.stubGlobal('localStorage', {
@@ -43,5 +43,20 @@ describe('design share codes', () => {
     const code = makeDesignCode(12);
     expect(code).toHaveLength(12);
     expect(code).not.toMatch(/[01IO]/);
+  });
+
+  it('lists and deletes saved designs', () => {
+    const payload = {
+      version: 4,
+      roomType: 'Bedroom' as const,
+      unitSystem: 'metric' as const,
+      activeFloorId: 'ground',
+      floors: [{ id: 'ground', name: 'Ground floor', scene: { walls: [], openings: [], furniture: [], floorColor: '#fff', wallColor: '#fff', ceilingColor: '#fff' } }],
+    };
+    saveSharedDesign('One', payload, 'ONE12345');
+    saveSharedDesign('Two', payload, 'TWO12345');
+    expect(listSharedDesigns()).toHaveLength(2);
+    deleteSharedDesign('ONE12345');
+    expect(listSharedDesigns().map((d) => d.code)).toEqual(['TWO12345']);
   });
 });
