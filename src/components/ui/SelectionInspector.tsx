@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { FileSpreadsheet, Grid2X2, X } from 'lucide-react';
 import { usePlannerStore } from '../../store/plannerStore';
 import { wallLengthMeters } from '../../lib/geometry/snapping';
+import { formatLength, parseLength } from '../../lib/measurements';
 import type { FurnitureItem, Opening, RoomType, Wall } from '../../types';
 
 const finishes: [string, string][] = [
@@ -11,6 +12,8 @@ const finishes: [string, string][] = [
   ['Ivory', '#e9e2d2'],
   ['Sage', '#9aa697'],
   ['Charcoal', '#454b48'],
+  ['Cloud', '#f4f6f8'],
+  ['Warm white', '#fff8ef'],
 ];
 
 const roomTypes: RoomType[] = [
@@ -34,18 +37,29 @@ export function SelectionInspector({ open, onClose }: { open: boolean; onClose: 
   const selectedWallId = usePlannerStore((s) => s.selectedWallId);
   const selectedOpeningId = usePlannerStore((s) => s.selectedOpeningId);
   const selectedFurnitureId = usePlannerStore((s) => s.selectedFurnitureId);
+  const selectedSurface = usePlannerStore((s) => s.selectedSurface);
   const selectedWall = walls.find((w) => w.id === selectedWallId);
   const selectedOpening = openings.find((o) => o.id === selectedOpeningId);
   const selectedFurniture = furniture.find((f) => f.id === selectedFurnitureId);
 
   if (!open) return null;
 
+  const title = selectedOpening
+    ? 'Opening'
+    : selectedWall
+      ? 'Wall'
+      : selectedFurniture
+        ? selectedFurniture.name
+        : selectedSurface === 'ceiling'
+          ? 'Ceiling'
+          : selectedSurface === 'floor'
+            ? 'Floor'
+            : 'Room';
+
   return (
     <aside className="selection-inspector" aria-label="Selection properties">
       <header>
-        <strong>
-          {selectedOpening ? 'Opening' : selectedWall ? 'Wall' : selectedFurniture ? selectedFurniture.name : 'Room'}
-        </strong>
+        <strong>{title}</strong>
         <button onClick={onClose} aria-label="Close inspector">
           <X size={18} />
         </button>
@@ -58,14 +72,14 @@ export function SelectionInspector({ open, onClose }: { open: boolean; onClose: 
         ) : selectedFurniture ? (
           <FurnitureProperties item={selectedFurniture} />
         ) : (
-          <RoomPanel />
+          <RoomPanel surface={selectedSurface} />
         )}
       </div>
     </aside>
   );
 }
 
-function RoomPanel() {
+function RoomPanel({ surface }: { surface: 'floor' | 'wall' | 'ceiling' | null }) {
   return (
     <>
       <RoomDesigner />
@@ -77,31 +91,39 @@ function RoomPanel() {
         <div className="select-icon">
           <Grid2X2 size={22} />
         </div>
-        <h3>Room finishes</h3>
-        <p>Select a wall or product for precise controls.</p>
+        <h3>{surface === 'ceiling' ? 'Ceiling finish' : surface === 'floor' ? 'Floor finish' : 'Room finishes'}</h3>
+        <p>{surface ? 'Choose a finish below.' : 'Select a wall, floor, ceiling, or product for precise controls.'}</p>
       </div>
-      <FinishSwatches />
+      <FinishSwatches highlight={surface} />
     </>
   );
 }
 
-function FinishSwatches() {
+function FinishSwatches({ highlight = null }: { highlight?: 'floor' | 'wall' | 'ceiling' | null }) {
   const set = usePlannerStore((s) => s.setFinish);
   return (
     <>
-      <label>
+      <label className={highlight === 'floor' ? 'finish-highlight' : ''}>
         Floor material
         <div className="swatches">
-          {finishes.map(([n, c]) => (
+          {finishes.slice(0, 6).map(([n, c]) => (
             <button title={n} key={c} style={{ background: c }} onClick={() => set('floor', c)} />
           ))}
         </div>
       </label>
-      <label>
+      <label className={highlight === 'wall' ? 'finish-highlight' : ''}>
         Wall color
         <div className="swatches">
-          {finishes.slice(3).map(([n, c]) => (
-            <button title={n} key={c} style={{ background: c }} onClick={() => set('wall', c)} />
+          {finishes.slice(3, 6).map(([n, c]) => (
+            <button title={n} key={`wall-${c}`} style={{ background: c }} onClick={() => set('wall', c)} />
+          ))}
+        </div>
+      </label>
+      <label className={highlight === 'ceiling' ? 'finish-highlight' : ''}>
+        Ceiling color
+        <div className="swatches">
+          {finishes.slice(5).map(([n, c]) => (
+            <button title={n} key={`ceil-${c}`} style={{ background: c }} onClick={() => set('ceiling', c)} />
           ))}
         </div>
       </label>
@@ -142,13 +164,7 @@ export function RoomDesigner({ compact = false }: { compact?: boolean }) {
           <option value="imperial">Imperial (ft / in)</option>
         </select>
       </label>
-      <label>
-        Ceiling height
-        <div className="number-input">
-          <input type="number" min="2" max="6" step=".05" value={ceiling} onChange={(e) => setCeiling(+e.target.value)} />
-          <span>m</span>
-        </div>
-      </label>
+      <LengthField label="Ceiling height" value={ceiling} min={2} max={6} onChange={setCeiling} />
       <span className="template-label">Start with a shape</span>
       <div className="room-templates">
         <button onClick={() => template('rectangle')}>Rectangle</button>
@@ -164,14 +180,12 @@ function FurnitureProperties({ item }: { item: FurnitureItem }) {
   const move = usePlannerStore((s) => s.moveSelected);
   const duplicate = usePlannerStore((s) => s.duplicateSelected);
   const remove = usePlannerStore((s) => s.deleteSelected);
+  const unit = usePlannerStore((s) => s.unitSystem);
   return (
     <>
       <label>
         Mounting
-        <select
-          value={item.mountingType ?? 'floor'}
-          onChange={(e) => update(item.id, { mountingType: e.target.value as FurnitureItem['mountingType'] })}
-        >
+        <select value={item.mountingType ?? 'floor'} onChange={(e) => update(item.id, { mountingType: e.target.value as FurnitureItem['mountingType'] })}>
           <option value="floor">Floor</option>
           <option value="wall">Wall</option>
           <option value="ceiling">Ceiling</option>
@@ -182,6 +196,9 @@ function FurnitureProperties({ item }: { item: FurnitureItem }) {
       {(item.mountingType === 'wall' || item.mountingType === 'ceiling') && (
         <Numeric label="Height Y" value={item.y ?? 0} onChange={(y) => update(item.id, { y })} />
       )}
+      <p className="muted">
+        Size {formatLength(item.width, unit)} × {formatLength(item.depth, unit)} × {formatLength(item.height, unit)}
+      </p>
       <label>
         Rotation
         <input className="property-input" type="range" min="0" max="6.28" step="0.1" value={item.rotation} onChange={(e) => update(item.id, { rotation: +e.target.value })} />
@@ -205,7 +222,7 @@ function FurnitureProperties({ item }: { item: FurnitureItem }) {
       <label>
         Color
         <div className="swatches">
-          {finishes.map(([name, color]) => (
+          {finishes.slice(0, 6).map(([name, color]) => (
             <button title={name} key={color} style={{ background: color }} onClick={() => update(item.id, { color })} />
           ))}
         </div>
@@ -224,12 +241,12 @@ function OpeningProperties({ opening }: { opening: Opening }) {
         Position along wall
         <input type="range" min=".03" max=".97" step=".01" value={opening.offset} onChange={(e) => update(opening.id, { offset: +e.target.value })} />
       </label>
-      <Numeric label="Width" value={opening.width} onChange={(width) => update(opening.id, { width: Math.max(0.3, width) })} />
+      <LengthField label="Width" value={opening.width} min={0.3} onChange={(width) => update(opening.id, { width })} />
       {opening.type !== 'passage' && (
-        <Numeric label="Height" value={opening.height} onChange={(height) => update(opening.id, { height: Math.max(0.3, height) })} />
+        <LengthField label="Height" value={opening.height} min={0.3} onChange={(height) => update(opening.id, { height })} />
       )}
       {opening.type === 'window' && (
-        <Numeric label="Sill height" value={opening.sill} onChange={(sill) => update(opening.id, { sill: Math.max(0, sill) })} />
+        <LengthField label="Sill height" value={opening.sill} min={0} onChange={(sill) => update(opening.id, { sill })} />
       )}
       {opening.type === 'door' && (
         <label>
@@ -257,15 +274,16 @@ function WallProperties({ wall }: { wall: Wall }) {
   const setLength = usePlannerStore((s) => s.setWallLength);
   const split = usePlannerStore((s) => s.splitWall);
   const offset = usePlannerStore((s) => s.offsetWall);
+  const unit = usePlannerStore((s) => s.unitSystem);
   return (
     <>
-      <Numeric label="Exact length" value={+wallLengthMeters(wall.start, wall.end).toFixed(2)} onChange={(value) => setLength(wall.id, value)} />
-      <Numeric label="Thickness" value={wall.thickness} onChange={(value) => updateWall(wall.id, { thickness: Math.max(0.05, value) })} />
-      <Numeric label="Height" value={wall.height} onChange={(value) => updateWall(wall.id, { height: Math.max(2, value) })} />
+      <LengthField label="Exact length" value={wallLengthMeters(wall.start, wall.end)} min={0.25} onChange={(value) => setLength(wall.id, value)} autoFocus />
+      <LengthField label="Thickness" value={wall.thickness} min={0.05} onChange={(value) => updateWall(wall.id, { thickness: value })} />
+      <LengthField label="Height" value={wall.height} min={2} onChange={(value) => updateWall(wall.id, { height: value })} />
       <div className="wall-actions">
-        <button onClick={() => offset(wall.id, -0.25)}>Move −25 cm</button>
+        <button onClick={() => offset(wall.id, -0.25)}>Move −{unit === 'metric' ? '25 cm' : '10 in'}</button>
         <button onClick={() => split(wall.id)}>Split wall</button>
-        <button onClick={() => offset(wall.id, 0.25)}>Move +25 cm</button>
+        <button onClick={() => offset(wall.id, 0.25)}>Move +{unit === 'metric' ? '25 cm' : '10 in'}</button>
       </div>
       <Property label="Openings" value={String(openings.length)} />
       {openings.map((o) => (
@@ -275,10 +293,7 @@ function WallProperties({ wall }: { wall: Wall }) {
             Position
             <input type="range" min=".05" max=".95" step=".05" value={o.offset} onChange={(e) => updateOpening(o.id, { offset: +e.target.value })} />
           </label>
-          <label>
-            Width
-            <input type="number" min=".4" max="3" step=".1" value={o.width} onChange={(e) => updateOpening(o.id, { width: +e.target.value })} />
-          </label>
+          <LengthField label="Width" value={o.width} min={0.3} onChange={(width) => updateOpening(o.id, { width })} />
           <button onClick={() => remove(o.id)}>Remove</button>
         </div>
       ))}
@@ -300,12 +315,59 @@ function Property({ label, value, unit }: { label: string; value: string; unit?:
 }
 
 function Numeric({ label, value, onChange }: { label: string; value: number; onChange: (value: number) => void }) {
+  const unit = usePlannerStore((s) => s.unitSystem);
   return (
     <label>
       {label}
       <div className="number-input">
         <input type="number" step="0.25" value={value} onChange={(e) => onChange(+e.target.value)} />
-        <span>m</span>
+        <span>{unit === 'metric' ? 'm' : 'm*'}</span>
+      </div>
+    </label>
+  );
+}
+
+function LengthField({
+  label,
+  value,
+  onChange,
+  min = 0,
+  max,
+  autoFocus = false,
+}: {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+  min?: number;
+  max?: number;
+  autoFocus?: boolean;
+}) {
+  const unit = usePlannerStore((s) => s.unitSystem);
+  const inputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (autoFocus) inputRef.current?.focus();
+  }, [autoFocus, value, unit]);
+  return (
+    <label>
+      {label}
+      <div className="number-input">
+        <input
+          ref={inputRef}
+          key={`${label}-${unit}-${value.toFixed(3)}`}
+          type="text"
+          inputMode="decimal"
+          defaultValue={unit === 'metric' ? value.toFixed(2) : formatLength(value, unit)}
+          onBlur={(e) => {
+            const parsed = parseLength(e.target.value, unit);
+            if (parsed == null) return;
+            const next = Math.max(min, max == null ? parsed : Math.min(max, parsed));
+            onChange(next);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+          }}
+        />
+        <span>{unit === 'metric' ? 'm' : 'ft / in'}</span>
       </div>
     </label>
   );

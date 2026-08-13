@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { CameraMode, FurnitureItem, MountingType, Opening, Point, RoomType, SceneSnapshot, Tool, UnitSystem, Wall } from '../types';
+import type { CameraMode, FurnitureItem, MountingType, Opening, Point, RoomType, SceneSnapshot, SurfaceTarget, Tool, UnitSystem, Wall } from '../types';
 import { openingConflicts, resolveMountingType, snapFloorPosition, snapToWallSurface } from '../lib/geometry/placement';
 import { writeRecoverySnapshot } from '../lib/designShare';
 
@@ -23,6 +23,7 @@ type PlannerState = SceneSnapshot & {
   selectedWallId: string | null;
   selectedOpeningId: string | null;
   selectedFurnitureId: string | null;
+  selectedSurface: SurfaceTarget | null;
   draftStart: Point | null;
   floors: FloorRecord[];
   activeFloorId: string;
@@ -45,6 +46,7 @@ type PlannerState = SceneSnapshot & {
   applyRoomTemplate: (shape: 'rectangle' | 'wide' | 'l-shape') => void;
   selectWall: (id: string | null) => void;
   selectOpening: (id: string | null) => void;
+  selectSurface: (surface: SurfaceTarget | null) => void;
   addOpening: (wallId: string, type: 'door' | 'window' | 'passage') => boolean;
   updateOpening: (id: string, patch: Partial<Opening>) => boolean;
   deleteOpening: (id: string) => void;
@@ -65,7 +67,7 @@ type PlannerState = SceneSnapshot & {
   moveSelected: (dx: number, dz: number) => void;
   duplicateSelected: () => void;
   deleteSelected: () => void;
-  setFinish: (target: 'floor' | 'wall', color: string) => void;
+  setFinish: (target: SurfaceTarget, color: string) => void;
   addFloor: () => void;
   switchFloor: (id: string) => void;
   undo: () => void;
@@ -93,6 +95,7 @@ const initial: SceneSnapshot = {
   furniture: [],
   floorColor: '#c9b18f',
   wallColor: '#f3f0e9',
+  ceilingColor: '#f4f6f8',
 };
 
 function placeFurniture(
@@ -133,6 +136,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     furniture: get().furniture,
     floorColor: get().floorColor,
     wallColor: get().wallColor,
+    ceilingColor: get().ceilingColor,
   });
   const commit = (next: SceneSnapshot) =>
     set((s) => {
@@ -162,6 +166,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     selectedWallId: null,
     selectedOpeningId: null,
     selectedFurnitureId: null,
+    selectedSurface: null,
     draftStart: null,
     floors: [{ id: 'ground', name: 'Ground floor', scene: initial }],
     activeFloorId: 'ground',
@@ -272,13 +277,15 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       mutate({ walls, openings: [], furniture: [] });
       set({ selectedWallId: null, selectedOpeningId: null, selectedFurnitureId: null, draftStart: null, tool: 'select' });
     },
-    selectWall: (selectedWallId) => set({ selectedWallId, selectedOpeningId: null, selectedFurnitureId: null }),
+    selectWall: (selectedWallId) => set({ selectedWallId, selectedOpeningId: null, selectedFurnitureId: null, selectedSurface: null }),
     selectOpening: (selectedOpeningId) =>
       set({
         selectedOpeningId,
         selectedWallId: selectedOpeningId ? get().openings.find((o) => o.id === selectedOpeningId)?.wallId ?? null : null,
         selectedFurnitureId: null,
+        selectedSurface: null,
       }),
+    selectSurface: (selectedSurface) => set({ selectedSurface, selectedWallId: null, selectedOpeningId: null, selectedFurnitureId: null }),
     addOpening: (wallId, type) => {
       const id = crypto.randomUUID();
       const candidate: Opening = {
@@ -342,7 +349,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       });
       set({ selectedFurnitureId: id, selectedWallId: null });
     },
-    selectFurniture: (selectedFurnitureId) => set({ selectedFurnitureId, selectedWallId: null, selectedOpeningId: null }),
+    selectFurniture: (selectedFurnitureId) => set({ selectedFurnitureId, selectedWallId: null, selectedOpeningId: null, selectedSurface: null }),
     updateFurnitureLive: (id, patch) => set((s) => ({ furniture: s.furniture.map((f) => (f.id === id ? { ...f, ...patch } : f)) })),
     updateFurniture: (id, patch) => {
       const item = get().furniture.find((f) => f.id === id);
@@ -386,10 +393,18 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       if (fid) mutate({ furniture: get().furniture.filter((f) => f.id !== fid) });
       set({ selectedWallId: null, selectedOpeningId: null, selectedFurnitureId: null });
     },
-    setFinish: (target, color) => mutate(target === 'floor' ? { floorColor: color } : { wallColor: color }),
+    setFinish: (target, color) =>
+      mutate(target === 'floor' ? { floorColor: color } : target === 'wall' ? { wallColor: color } : { ceilingColor: color }),
     addFloor: () => {
       const id = crypto.randomUUID();
-      const scene: SceneSnapshot = { walls: [], openings: [], furniture: [], floorColor: initial.floorColor, wallColor: initial.wallColor };
+      const scene: SceneSnapshot = {
+        walls: [],
+        openings: [],
+        furniture: [],
+        floorColor: initial.floorColor,
+        wallColor: initial.wallColor,
+        ceilingColor: initial.ceilingColor,
+      };
       set((s) => ({
         ...scene,
         floors: [...s.floors, { id, name: `Floor ${s.floors.length + 1}`, scene }],
@@ -439,17 +454,25 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         if (!data || !Array.isArray(data.floors) || !data.floors.length) return false;
         const target = data.floors.find((f: FloorRecord) => f.id === data.activeFloorId) ?? data.floors[0];
         if (!target?.scene || !Array.isArray(target.scene.walls) || !Array.isArray(target.scene.openings) || !Array.isArray(target.scene.furniture)) return false;
-        set({
+        const scene = {
           ...target.scene,
+          ceilingColor: target.scene.ceilingColor ?? initial.ceilingColor,
+        };
+        set({
+          ...scene,
           roomType: data.roomType ?? 'Bedroom',
           unitSystem: data.unitSystem ?? 'metric',
-          floors: data.floors,
+          floors: data.floors.map((f: FloorRecord) => ({
+            ...f,
+            scene: { ...f.scene, ceilingColor: f.scene.ceilingColor ?? initial.ceilingColor },
+          })),
           activeFloorId: target.id,
-          history: [target.scene],
+          history: [scene],
           historyIndex: 0,
           selectedWallId: null,
           selectedOpeningId: null,
           selectedFurnitureId: null,
+          selectedSurface: null,
         });
         return true;
       } catch {

@@ -21,12 +21,16 @@ import { usePlannerStore } from './store/plannerStore';
 import { roomArea, validatePlan } from './lib/geometry/rooms';
 import {
   clearRecoverySnapshot,
+  deleteSharedDesign,
   designShareUrl,
+  listSharedDesigns,
   loadSharedDesign,
   readDesignCodeFromLocation,
   readRecoverySnapshot,
   saveSharedDesign,
+  type SharedDesign,
 } from './lib/designShare';
+import { formatArea } from './lib/measurements';
 
 const Scene3D = lazy(() => import('./components/scene3d/Scene3D').then((m) => ({ default: m.Scene3D })));
 
@@ -69,8 +73,10 @@ function StudioApp() {
   const [projectName, setProjectName] = useState('Bedroom study');
   const [notice, setNotice] = useState('');
   const [recovery, setRecovery] = useState<{ savedAt: string; payload: unknown } | null>(null);
+  const [designs, setDesigns] = useState<SharedDesign[]>([]);
   const openingNotice = usePlannerStore((s) => s.openingNotice);
   const clearOpeningNotice = usePlannerStore((s) => s.clearOpeningNotice);
+  const unitSystem = usePlannerStore((s) => s.unitSystem);
 
   const closeCatalog = useCallback(() => setCatalogOpen(false), []);
   const showAddedItem = useCallback(() => {
@@ -84,6 +90,7 @@ function StudioApp() {
   const validation = validatePlan(walls);
   const area = validation.rooms.reduce((sum, r) => sum + roomArea(r), 0);
   const total = furniture.reduce((sum, item) => sum + (allCatalog.find((c) => c.id === item.catalogId)?.price ?? 0), 0);
+  const missingPrices = furniture.filter((item) => allCatalog.find((c) => c.id === item.catalogId)?.price == null).length;
 
   const notify = (message: string) => {
     setNotice(message);
@@ -100,6 +107,7 @@ function StudioApp() {
       const entry = saveSharedDesign(projectName, store.projectPayload());
       const url = designShareUrl(entry.code);
       history.replaceState(null, '', url);
+      setDesigns(listSharedDesigns());
       if (navigator.share) await navigator.share({ title: projectName, text: `Roomcraft design ${entry.code}`, url });
       else {
         await navigator.clipboard.writeText(url);
@@ -145,14 +153,19 @@ function StudioApp() {
     return () => window.removeEventListener('roomcraft-open-properties', open);
   }, []);
 
+  const selectedSurface = usePlannerStore((s) => s.selectedSurface);
   useEffect(() => {
-    if (selectedWallId || selectedOpeningId || selectedFurnitureId) setInspectorOpen(true);
-  }, [selectedWallId, selectedOpeningId, selectedFurnitureId]);
+    if (selectedWallId || selectedOpeningId || selectedFurnitureId || selectedSurface) setInspectorOpen(true);
+  }, [selectedWallId, selectedOpeningId, selectedFurnitureId, selectedSurface]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => store.save(), 700);
     return () => window.clearTimeout(timer);
-  }, [walls, openings, furniture, store.floorColor, store.wallColor, store.roomType, store.unitSystem, store]);
+  }, [walls, openings, furniture, store.floorColor, store.wallColor, store.ceilingColor, store.roomType, store.unitSystem, store]);
+
+  useEffect(() => {
+    if (menuOpen) setDesigns(listSharedDesigns());
+  }, [menuOpen]);
 
   useEffect(() => {
     const code = readDesignCodeFromLocation();
@@ -262,7 +275,8 @@ function StudioApp() {
           </div>
           {!validation.valid && walls.length > 0 && <div className="plan-warning">Connect the highlighted endpoints to close the room.</div>}
           <p className="menu-meta">
-            {area.toFixed(1)} m² · {walls.length} walls · {furniture.length} items
+            {formatArea(area, unitSystem)} · {walls.length} walls · {furniture.length} items
+            {missingPrices > 0 ? ` · ${missingPrices} need quote` : ''}
           </p>
           <div className="menu-actions">
             <button
@@ -298,6 +312,42 @@ function StudioApp() {
               Advanced · inventory
             </a>
           </div>
+          {designs.length > 0 && (
+            <section className="design-library">
+              <p className="eyebrow">Design library</p>
+              <ul>
+                {designs.map((design) => (
+                  <li key={design.code}>
+                    <button
+                      onClick={() => {
+                        if (store.importProject(design.payload)) {
+                          setProjectName(design.name);
+                          history.replaceState(null, '', designShareUrl(design.code));
+                          notify(`Opened ${design.code}`);
+                          setMenuOpen(false);
+                        }
+                      }}
+                    >
+                      <strong>{design.name}</strong>
+                      <span>
+                        {design.code} · {new Date(design.createdAt).toLocaleDateString()}
+                      </span>
+                    </button>
+                    <button
+                      className="design-delete"
+                      aria-label={`Delete ${design.code}`}
+                      onClick={() => {
+                        deleteSharedDesign(design.code);
+                        setDesigns(listSharedDesigns());
+                      }}
+                    >
+                      ×
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
         </aside>
       )}
 

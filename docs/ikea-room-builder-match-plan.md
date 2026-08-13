@@ -9,7 +9,7 @@
 
 ## Verdict
 
-**2026-08-13 implementation:** Studio shell rebuilt to floating-chrome IA. Follow-up shipped: wall/ceiling mounting snap, alignment guides, clearance toggle, door swing 2D/3D, opening overlap guard, design-code share (`?design=`), autosave recovery banner, progressive catalog loading, sample GLB URLs for key products. Remaining: server-backed remix when API/DB is configured, denser GLB catalog, true windowed virtualization for 5k+ SKUs.
+**2026-08-13 implementation:** Studio shell + mounting/guides/openings/share shipped. Polish pass: selectable ceiling finishes, in-scene product dimensions, design library UI, collision worker wiring, imperial/metric length fields, passage markers, BOM CSV/vendor grouping. Remaining larger gaps: sloped ceilings, PBR textures, variants, server remix, 5k-SKU windowing.
 
 ---
 

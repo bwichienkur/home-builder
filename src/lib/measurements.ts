@@ -10,6 +10,11 @@ export function formatLength(meters:number,unit:UnitSystem,metricDigits=2){
  return `${feet}' ${whole}${fraction?` ${fractions[fraction]}`:''}"`;
 }
 
+export function formatArea(squareMeters:number,unit:UnitSystem){
+ if(unit==='metric')return `${squareMeters.toFixed(1)} m²`;
+ return `${(squareMeters*10.7639).toFixed(0)} ft²`;
+}
+
 export function parseLength(value:string,unit:UnitSystem){
  const input=value.trim().toLowerCase();
  if(!input)return null;

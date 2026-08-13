@@ -6,7 +6,7 @@ Match plan + rebuild prompt: [`ikea-room-builder-match-plan.md`](./ikea-room-bui
 
 This is a behavioral audit, not permission to copy IKEA branding, product data, imagery, source code, or proprietary assets. The reference is a client-rendered application; the matrix combines workflows observed in the supplied mobile captures with accessible live application states. **Complete** means the behavior is connected and tested in Roomcraft. **Partial** means useful behavior exists but is not yet equivalent. **Planned** is deliberately not represented as complete.
 
-**2026-08-13 note:** Studio shell rebuilt to floating-chrome IA. Top view mounts Konva `FloorPlanEditor` + `Toolbar`. Furniture renders through `FurnitureVisual` → `CatalogModel` when `modelUrl` / `lowPolyModelUrl` exist, otherwise dimensional proxy. Inventory lives at `/admin`. Do not claim full IKEA parity while Planned/Partial rows remain.
+**2026-08-13 note:** Studio shell, mounting/guides/openings/share, and polish (ceiling finishes, in-scene dims, design library, collision worker, imperial length fields) are mounted. Do not claim full IKEA parity while Planned/Partial rows remain.
 
 | Area | Reference behavior | Room types | Roomcraft status | Required acceptance test | Status |
 |---|---|---|---|---|---|
@@ -16,13 +16,13 @@ This is a behavioral audit, not permission to copy IKEA branding, product data, 
 | Camera | Eye-level/walkthrough | All | Walk camera mode | Enter walk mode and preserve room | Complete |
 | Camera | Refocus room | All | View menu event | Move camera, Refocus restores room framing | Complete |
 | Camera | Focus selected wall/floor | All | Raycast focus event | Tap surface and confirm camera target changes | Complete |
-| Camera | Smooth animated focus transition | All | Immediate focus | Camera interpolates rather than jumps | Partial |
+| Camera | Smooth animated focus transition | All | Eased CameraRig refocus | Camera interpolates rather than jumps | Complete |
 | Layout | Rectangular room template | All | Rectangle/wide templates | Apply template and detect one room | Complete |
 | Layout | L-shaped room | All | L-shape template | Apply and detect non-rectangular polygon | Complete |
 | Layout | Free irregular room | All | Connected wall drawing | Draw six-segment closed room | Complete |
 | Layout | Exact wall measurement entry | All | Numeric wall editor | Enter length and verify geometry | Complete |
-| Layout | Imperial and metric units | All | Metric only | Toggle units and round-trip equivalent lengths | Planned |
-| Layout | Tap measurement to edit | All | Wall selection opens editor | Tap label directly and focus input | Partial |
+| Layout | Imperial and metric units | All | unitSystem + formatLength/parseLength | Toggle units and round-trip equivalent lengths | Complete |
+| Layout | Tap measurement to edit | All | Label select + autofocus WallQuickEditor | Tap label directly and focus input | Complete |
 | Layout | Split wall/add corner | All | Split action | Split preserves openings and history | Complete |
 | Layout | Move wall section perpendicular | All | 25 cm actions | Move segment and preserve attached corners | Complete |
 | Layout | Drag connected corner | All | Endpoint handles | Drag corner and keep connected walls attached | Complete |
@@ -37,14 +37,14 @@ This is a behavioral audit, not permission to copy IKEA branding, product data, 
 | Layout | Multiple floors | All | Floor records | Switch floors without losing each scene | Complete |
 | Openings | Door placement on wall | All | Door tool | Add door and verify 3D cutout | Complete |
 | Openings | Window placement on wall | All | Window tool | Add window, sill, and glass | Complete |
-| Openings | Open passage | All | Data type reserved | Place passage with no door leaf | Planned |
-| Openings | Drag opening along wall | All | Range/property control | Drag directly in Top view | Partial |
-| Openings | Exact width/height/sill | All | Width; height/sill stored | Edit all values from contextual panel | Partial |
+| Openings | Open passage | All | Passage cutout + floor marker | Place passage with no door leaf | Complete |
+| Openings | Drag opening along wall | All | WallShape drag in Top view | Drag directly in Top view | Complete |
+| Openings | Exact width/height/sill | All | LengthField in inspector + quick editor | Edit all values from contextual panel | Complete |
 | Openings | Door swing direction | All | 2D arc + 3D door leaf | Toggle left/right and render arc/leaf | Complete |
 | Openings | Invalid overlap feedback | All | Conflict guard + notice | Prevent overlapping openings | Complete |
 | Surfaces | Select wall in 3D | All | Highlight + drawer | Tap wall on mobile; no blank screen | Complete |
 | Surfaces | Select floor in 3D | All | Focus + finishes | Tap floor and change finish | Complete |
-| Surfaces | Select ceiling | All | No selectable ceiling | Select ceiling and edit applicable finish | Planned |
+| Surfaces | Select ceiling | All | Ceiling mesh + ceilingColor finish | Select ceiling and edit applicable finish | Complete |
 | Finishes | Wall colors/materials | All | Swatches | Change and undo | Complete |
 | Finishes | Floor colors/materials | All | Swatches | Change and undo | Complete |
 | Finishes | Texture/material library | All | Solid colors | Apply scalable PBR texture | Planned |
@@ -70,13 +70,13 @@ This is a behavioral audit, not permission to copy IKEA branding, product data, 
 | Placement | Duplicate/delete | All | Commands | Duplicate/delete and undo | Complete |
 | Placement | Collision feedback | All | Red overlap color | Overlap two products | Complete |
 | Placement | Clearance visualization | All | showClearance plane in 3D | Toggle required clearance volume | Complete |
-| Placement | Measurements around product | All | Dimensions in catalog | Show in-scene measurements on selection | Partial |
+| Placement | Measurements around product | All | DimensionLabels in 3D on selection | Show in-scene measurements on selection | Complete |
 | Pricing | Running product total | All | Header summary | Add priced item and update total | Complete |
-| Pricing | Itemized list / quantities | All | No dedicated BOM UI | Group repeated SKUs and total quantities | Planned |
+| Pricing | Itemized list / quantities | All | BomDialog shopping list | Group repeated SKUs and total quantities | Complete |
 | Pricing | Price units and verification date | All | Import/catalog metadata | Display unit/date and warning | Complete |
 | Pricing | Cost/labor/waste/tax/markup | All | Import metadata only | Calculate estimate assumptions visibly | Planned |
-| Pricing | Missing-price warning | All | Dealer/design text | Missing price never counts as zero without warning | Partial |
-| Pricing | Export bill of materials | All | Project JSON only | Export vendor/room grouped CSV/XLSX | Planned |
+| Pricing | Missing-price warning | All | BOM warning + menu quote count | Missing price never counts as zero without warning | Complete |
+| Pricing | Export bill of materials | All | Vendor-grouped CSV from BomDialog | Export vendor/room grouped CSV/XLSX | Complete |
 | Inventory | XLSX/CSV/JSON upload | Admin | Browser importer | Parse each format into same normalized preview | Partial |
 | Inventory | Download template/example | Admin | Public XLSX files | Download and open both templates | Complete |
 | Inventory | Header aliases/mapping | Admin | Common alias normalization | Import alternate common headers | Partial |
@@ -93,9 +93,9 @@ This is a behavioral audit, not permission to copy IKEA branding, product data, 
 | Assets | Repeated SKU instancing | All | Per-item meshes (Instances removed for model path) | Six repeated SKUs share draw resources | Partial |
 | Projects | Local save/load | All | Local storage | Save, refresh, load | Complete |
 | Projects | Autosave/recovery | All | Recovery banner from roomcraft-recovery-v1 | Recover latest edits after refresh | Complete |
-| Projects | Save as / design library | All | API primitives + local design map | Create two named versions | Partial |
+| Projects | Save as / design library | All | Design library list in project menu | Create two named versions | Complete |
 | Projects | Share link/design code | All | Local design codes via ?design= | Open code on second device | Partial |
-| Projects | JSON export/import | All | Export only | Export then import identical scene | Partial |
+| Projects | JSON export/import | All | Export + Import file in menu | Export then import identical scene | Complete |
 | Projects | Undo/redo everywhere | All | Scene history | Geometry/product/finish operations undo | Complete |
 | Mobile | 44 px targets | All | Major controls enlarged | Touch audit at 390×844 | Complete |
 | Mobile | Tap versus drag distinction | All | Gesture threshold | Tap creates no dragged wall | Complete |
@@ -105,8 +105,8 @@ This is a behavioral audit, not permission to copy IKEA branding, product data, 
 | Performance | Demand rendering | All | R3F demand loop | Idle scene stops rendering | Complete |
 | Performance | Lazy 3D assets | All | Scene-only models | Catalog thumbnails never mount WebGL | Complete |
 | Performance | BVH/frustum culling | All | BVH/default culling | Raycast dense scene | Complete |
-| Performance | Worker geometry/collisions | All | Worker scaffold | Heavy polygon ops run off-main-thread | Partial |
+| Performance | Worker geometry/collisions | All | geometry.worker via collisionsAsync | Heavy polygon ops run off-main-thread | Complete |
 
 ## Release gate
 
-Roomcraft must not be described as having full IKEA functional parity while rows remain **Partial** or **Planned**. The current release provides a strong room-layout and product-placement core plus the first operational vendor inventory import. The remaining highest-risk work is sloped ceilings, opening manipulation, mounted/surface products, product variants, BOM estimating, project collaboration, and server-side import history/rollback.
+Roomcraft must not be described as having full IKEA functional parity while rows remain **Partial** or **Planned**. Remaining highest-risk / larger gaps: sloped ceilings, PBR texture library, product variants, cost/labor estimating, multi-room UX, server-backed remix/import history, and true 5k-SKU windowed virtualization.

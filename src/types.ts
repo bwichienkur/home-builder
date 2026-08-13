@@ -14,4 +14,5 @@ export type CameraMode = 'top'|'orbit'|'walk';
 export type UnitSystem = 'metric'|'imperial';
 export type Tool = 'select' | 'wall' | 'door' | 'window' | 'passage';
 export type RoomType = 'Bedroom'|'Living room'|'Bathroom'|'Kitchen'|'Dining room'|'Office'|'Children’s room'|'Laundry'|'Hallway'|'Storage / wardrobe'|'Outdoor';
-export type SceneSnapshot = { walls: Wall[]; openings:Opening[]; furniture:FurnitureItem[]; floorColor:string; wallColor:string };
+export type SurfaceTarget = 'floor'|'wall'|'ceiling';
+export type SceneSnapshot = { walls: Wall[]; openings:Opening[]; furniture:FurnitureItem[]; floorColor:string; wallColor:string; ceilingColor:string };

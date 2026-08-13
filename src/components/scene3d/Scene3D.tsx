@@ -8,6 +8,8 @@ import type { FurnitureItem } from '../../types';
 import { detectRoomPolygons, roomShape } from '../../lib/geometry/rooms';
 import { alignmentGuides, WORLD_ORIGIN } from '../../lib/geometry/placement';
 import { PIXELS_PER_METER } from '../../lib/geometry/snapping';
+import { collisionsAsync } from '../../lib/collisions';
+import { formatLength } from '../../lib/measurements';
 import { useInventoryStore } from '../../store/inventoryStore';
 import { FurnitureVisual } from './CatalogModel';
 import type { ReactElement } from 'react';
@@ -234,11 +236,36 @@ function WallMeshes() {
             parts.push(
               <DoorLeaf key={o.id + 'door'} x={x} z={z} angle={angle} width={o.width} height={o.height} swing={o.swing ?? 'left'} />,
             );
+          if (o.type === 'passage')
+            parts.push(
+              <mesh key={o.id + 'passage'} position={[x, 0.015, z]} rotation={[-Math.PI / 2, 0, angle]}>
+                <planeGeometry args={[o.width, w.thickness + 0.08]} />
+                <meshBasicMaterial color="#0058a3" transparent opacity={0.28} />
+              </mesh>,
+            );
           return parts;
         });
         return [...base, ...fills];
       })}
     </>
+  );
+}
+
+function DimensionLabels({ item }: { item: FurnitureItem }) {
+  const unit = usePlannerStore((s) => s.unitSystem);
+  const y = (item.y ?? 0) + item.height + 0.12;
+  return (
+    <group position={[item.x, y, item.z]} rotation={[0, item.rotation, 0]}>
+      <Text position={[0, 0, item.depth / 2 + 0.05]} fontSize={0.11} color="#111820" anchorX="center" anchorY="middle" outlineWidth={0.008} outlineColor="#ffffff">
+        {formatLength(item.width, unit)}
+      </Text>
+      <Text position={[item.width / 2 + 0.05, 0, 0]} fontSize={0.11} color="#111820" anchorX="center" anchorY="middle" outlineWidth={0.008} outlineColor="#ffffff">
+        {formatLength(item.depth, unit)}
+      </Text>
+      <Text position={[0, item.height / 2, 0]} fontSize={0.11} color="#0058a3" anchorX="center" anchorY="middle" outlineWidth={0.008} outlineColor="#ffffff">
+        {formatLength(item.height, unit)}
+      </Text>
+    </group>
   );
 }
 
@@ -288,18 +315,21 @@ function Furniture() {
   const pending = useRef<Partial<FurnitureItem> | null>(null);
   const touchDrag = useRef<{ pointerId: number; offsetX: number; offsetZ: number } | null>(null);
   const floorPlane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), []);
-  const collisions = useMemo(() => {
-    const ids = new Set<string>();
-    for (let i = 0; i < items.length; i++)
-      for (let j = i + 1; j < items.length; j++) {
-        const a = items[i],
-          b = items[j];
-        if (Math.abs(a.x - b.x) < (a.width + b.width) / 2 && Math.abs(a.z - b.z) < (a.depth + b.depth) / 2 && Math.abs((a.y ?? 0) - (b.y ?? 0)) < (a.height + b.height) / 2) {
-          ids.add(a.id);
-          ids.add(b.id);
-        }
-      }
-    return ids;
+  const [collisions, setCollisions] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    let alive = true;
+    collisionsAsync(items).then((pairs) => {
+      if (!alive) return;
+      const ids = new Set<string>();
+      pairs.forEach(([a, b]) => {
+        ids.add(a);
+        ids.add(b);
+      });
+      setCollisions(ids);
+    });
+    return () => {
+      alive = false;
+    };
   }, [items]);
 
   const beginTouchDrag = (e: any) => {
@@ -371,6 +401,7 @@ function Furniture() {
       {selected && (
         <>
           <Guides selected={selected} others={items} />
+          <DimensionLabels item={selected} />
           <PivotControls
             depthTest={false}
             scale={1.15}
@@ -415,30 +446,62 @@ function Furniture() {
 
 function Room() {
   const floor = usePlannerStore((s) => s.floorColor);
+  const ceiling = usePlannerStore((s) => s.ceilingColor);
   const walls = usePlannerStore((s) => s.walls);
-  const selectWall = usePlannerStore((s) => s.selectWall);
-  const selectFurniture = usePlannerStore((s) => s.selectFurniture);
+  const selectedSurface = usePlannerStore((s) => s.selectedSurface);
+  const selectSurface = usePlannerStore((s) => s.selectSurface);
   const rooms = useMemo(() => detectRoomPolygons(walls), [walls]);
+  const ceilingHeight = walls[0]?.height ?? 2.7;
   const chooseFloor = (e: any) => {
     e.stopPropagation();
-    selectWall(null);
-    selectFurniture(null);
+    selectSurface('floor');
+    openSurfaceProperties();
+  };
+  const chooseCeiling = (e: any) => {
+    e.stopPropagation();
+    selectSurface('ceiling');
     openSurfaceProperties();
   };
   return (
     <Bvh firstHitOnly>
       {rooms.length ? (
         rooms.map((points, i) => (
-          <mesh key={i} rotation={[Math.PI / 2, 0, 0]} receiveShadow position={[0, -0.035, 0]} onClick={chooseFloor}>
-            <shapeGeometry args={[roomShape(points)]} />
-            <meshStandardMaterial color={floor} roughness={0.95} side={THREE.DoubleSide} />
-          </mesh>
+          <group key={i}>
+            <mesh rotation={[Math.PI / 2, 0, 0]} receiveShadow position={[0, -0.035, 0]} onClick={chooseFloor}>
+              <shapeGeometry args={[roomShape(points)]} />
+              <meshStandardMaterial
+                color={selectedSurface === 'floor' ? '#0058a3' : floor}
+                roughness={0.95}
+                side={THREE.DoubleSide}
+                emissive={selectedSurface === 'floor' ? '#003d70' : '#000000'}
+                emissiveIntensity={selectedSurface === 'floor' ? 0.12 : 0}
+              />
+            </mesh>
+            <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, ceilingHeight, 0]} onClick={chooseCeiling}>
+              <shapeGeometry args={[roomShape(points)]} />
+              <meshStandardMaterial
+                color={selectedSurface === 'ceiling' ? '#0058a3' : ceiling}
+                roughness={0.92}
+                side={THREE.DoubleSide}
+                transparent
+                opacity={0.92}
+                emissive={selectedSurface === 'ceiling' ? '#003d70' : '#000000'}
+                emissiveIntensity={selectedSurface === 'ceiling' ? 0.1 : 0}
+              />
+            </mesh>
+          </group>
         ))
       ) : (
-        <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow position={[0, -0.035, 0]} onClick={chooseFloor}>
-          <planeGeometry args={[14, 12]} />
-          <meshStandardMaterial color={floor} roughness={0.95} />
-        </mesh>
+        <>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow position={[0, -0.035, 0]} onClick={chooseFloor}>
+            <planeGeometry args={[14, 12]} />
+            <meshStandardMaterial color={floor} roughness={0.95} />
+          </mesh>
+          <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, ceilingHeight, 0]} onClick={chooseCeiling}>
+            <planeGeometry args={[14, 12]} />
+            <meshStandardMaterial color={ceiling} roughness={0.92} transparent opacity={0.9} side={THREE.DoubleSide} />
+          </mesh>
+        </>
       )}
       <Grid
         position={[0, 0.002, 0]}
@@ -461,6 +524,7 @@ export function Scene3D() {
   const add = usePlannerStore((s) => s.addFurniture);
   const select = usePlannerStore((s) => s.selectFurniture);
   const selectWall = usePlannerStore((s) => s.selectWall);
+  const selectSurface = usePlannerStore((s) => s.selectSurface);
   const custom = useInventoryStore((s) => s.items);
   const drop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -498,6 +562,7 @@ export function Scene3D() {
         onPointerMissed={() => {
           select(null);
           selectWall(null);
+          selectSurface(null);
         }}
       >
         <color attach="background" args={['#e8eaed']} />
