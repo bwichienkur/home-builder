@@ -245,9 +245,18 @@ function StudioApp() {
 
   const isRoomEdit = view === '2d';
   const isTop = !isRoomEdit && cameraMode === 'top';
+  const shellClass = [
+    'studio-shell',
+    `view-${isRoomEdit ? '2d' : '3d'}`,
+    isTop ? 'camera-top' : '',
+    pendingPlacement ? 'is-placing' : '',
+    productCardOpen && selectedFurnitureId && !pendingPlacement ? 'has-product-card' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
-    <main className={`studio-shell view-${isRoomEdit ? '2d' : '3d'}${isTop ? ' camera-top' : ''}`}>
+    <main className={shellClass}>
       <section
         className="studio-canvas"
         aria-label={isRoomEdit ? 'Edit room layout' : isTop ? 'Bird’s-eye room view' : '3D room view'}

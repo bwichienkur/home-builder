@@ -480,10 +480,14 @@ function Room() {
   const floor = usePlannerStore((s) => s.floorColor);
   const ceiling = usePlannerStore((s) => s.ceilingColor);
   const walls = usePlannerStore((s) => s.walls);
+  const cameraMode = usePlannerStore((s) => s.cameraMode);
   const selectedSurface = usePlannerStore((s) => s.selectedSurface);
   const selectSurface = usePlannerStore((s) => s.selectSurface);
   const rooms = useMemo(() => detectRoomPolygons(walls), [walls]);
   const ceilingHeight = walls[0]?.height ?? 2.7;
+  // Top / bird’s-eye must see the floor — a solid ceiling makes the room unusable to edit.
+  const showCeiling = cameraMode !== 'top' || selectedSurface === 'ceiling';
+  const ceilingOpacity = cameraMode === 'walk' ? 0.95 : selectedSurface === 'ceiling' ? 0.55 : 0.22;
   const chooseFloor = (e: any) => {
     e.stopPropagation();
     selectSurface('floor');
@@ -509,18 +513,26 @@ function Room() {
                 emissiveIntensity={selectedSurface === 'floor' ? 0.12 : 0}
               />
             </mesh>
-            <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, ceilingHeight, 0]} onClick={chooseCeiling}>
-              <shapeGeometry args={[roomShape(points)]} />
-              <meshStandardMaterial
-                color={selectedSurface === 'ceiling' ? '#0058a3' : ceiling}
-                roughness={0.92}
-                side={THREE.DoubleSide}
-                transparent
-                opacity={0.92}
-                emissive={selectedSurface === 'ceiling' ? '#003d70' : '#000000'}
-                emissiveIntensity={selectedSurface === 'ceiling' ? 0.1 : 0}
-              />
-            </mesh>
+            {showCeiling && (
+              <mesh
+                rotation={[Math.PI / 2, 0, 0]}
+                position={[0, ceilingHeight, 0]}
+                onClick={chooseCeiling}
+                raycast={cameraMode === 'top' ? () => {} : undefined}
+              >
+                <shapeGeometry args={[roomShape(points)]} />
+                <meshStandardMaterial
+                  color={selectedSurface === 'ceiling' ? '#0058a3' : ceiling}
+                  roughness={0.92}
+                  side={THREE.FrontSide}
+                  transparent
+                  opacity={ceilingOpacity}
+                  depthWrite={false}
+                  emissive={selectedSurface === 'ceiling' ? '#003d70' : '#000000'}
+                  emissiveIntensity={selectedSurface === 'ceiling' ? 0.1 : 0}
+                />
+              </mesh>
+            )}
           </group>
         ))
       ) : (
@@ -529,10 +541,19 @@ function Room() {
             <planeGeometry args={[14, 12]} />
             <meshStandardMaterial color={floor} roughness={0.95} />
           </mesh>
-          <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, ceilingHeight, 0]} onClick={chooseCeiling}>
-            <planeGeometry args={[14, 12]} />
-            <meshStandardMaterial color={ceiling} roughness={0.92} transparent opacity={0.9} side={THREE.DoubleSide} />
-          </mesh>
+          {showCeiling && (
+            <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, ceilingHeight, 0]} onClick={chooseCeiling}>
+              <planeGeometry args={[14, 12]} />
+              <meshStandardMaterial
+                color={ceiling}
+                roughness={0.92}
+                transparent
+                opacity={ceilingOpacity}
+                depthWrite={false}
+                side={THREE.FrontSide}
+              />
+            </mesh>
+          )}
         </>
       )}
       <Grid
@@ -666,11 +687,9 @@ export function Scene3D() {
         </Suspense>
         <CameraRig />
       </Canvas>
-      <div className="scene-help">
-        {pending
-          ? 'Move to place · click the floor to confirm · Esc to cancel'
-          : 'Drag products to move · Mirrors stay on walls · Storage docks to walls · Beds move freely'}
-      </div>
+      {!pending && (
+        <div className="scene-help">Drag to move · Wall items stay on walls · Storage docks near walls</div>
+      )}
     </div>
   );
 }

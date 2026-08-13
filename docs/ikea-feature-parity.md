@@ -11,7 +11,7 @@ This is a behavioral audit, not permission to copy IKEA branding, product data, 
 | Area | Reference behavior | Room types | Roomcraft status | Required acceptance test | Status |
 |---|---|---|---|---|---|
 | Studio | One room shared by Top and 3D views | All | Shared Zustand scene | Edit in Top, switch to 3D, confirm identical state | Complete |
-| Camera | Top view | All | Bird’s-eye WebGL camera (still 3D, floor-centered); Konva reserved for Edit room layout | Top view keeps 3D depth; Edit room layout opens Konva without remounting WebGL | Complete |
+| Camera | Top view | All | Bird’s-eye WebGL camera (still 3D, floor-centered); ceiling hidden in top so floor is editable | Top view shows floor/furniture without ceiling occluding; Edit room uses Konva | Complete |
 | Products | Placement constraints | All | wall / wall-prefer / free via constrainPlacement | Mirrors slide on walls; storage docks near walls; beds move freely | Complete |
 | Camera | Orbit 3D view | All | R3F orbit controls | Orbit, pan, pinch/scroll zoom | Complete |
 | Camera | Eye-level/walkthrough | All | Walk camera mode | Enter walk mode and preserve room | Complete |
