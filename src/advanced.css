@@ -1,2 +1,203 @@
-.floor-row{display:flex;gap:6px;margin:0 0 14px}.floor-row select{min-width:0;flex:1;border:1px solid #dce2dd;border-radius:8px;padding:8px;background:#fff;font-weight:600}.floor-row button{width:34px;border:0;border-radius:8px;background:#26342e;color:white;font-size:18px}.plan-warning{font-size:10px;line-height:1.4;color:#934b32;background:#fff1ea;border:1px solid #f0c9b7;border-radius:8px;padding:9px;margin:-14px 0 20px}.number-input{display:flex;border:1px solid #dce2dd;border-radius:8px;overflow:hidden;margin-top:6px}.number-input input{width:100%;border:0;padding:8px;outline:0}.number-input span{padding:8px;background:#f1f4f1;color:#7b887f}.nudge{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}.nudge button,.duplicate{border:1px solid #dce2dd;background:#f7f9f7;border-radius:7px;padding:7px}.duplicate{width:100%;margin-top:8px;font-size:11px;font-weight:600}
-.room-designer{border:1px solid #dfe4df;border-radius:10px;padding:10px;margin-bottom:18px}.room-designer label{margin:5px 0 10px}.room-designer select{width:100%;margin-top:5px;border:1px solid #dce2dd;border-radius:8px;padding:9px;background:#fff;font-weight:700}.template-label{display:block;margin:10px 0 6px;font-size:10px;font-weight:800;color:#718078}.room-templates,.wall-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}.room-templates button,.wall-actions button{border:1px solid #dce2dd;border-radius:7px;background:#f7f9f7;padding:7px 3px;font-size:9px;font-weight:700}.room-designer.compact{padding:0;border:0}.room-designer.compact label{font-size:10px}.wall-actions{margin:10px 0}.wall-actions button:nth-child(2){background:#26342e;color:#fff}.wall-quick-editor{position:absolute;z-index:7;top:48px;left:50%;transform:translateX(-50%);width:min(440px,calc(100% - 18px));border-radius:14px;background:#fff;padding:9px;box-shadow:0 8px 26px #26342e2b}.wall-quick-editor form{display:flex;gap:6px}.wall-quick-editor label{display:flex;align-items:center;gap:6px;flex:1;font-size:10px;font-weight:800}.wall-quick-editor input{min-width:0;width:86px;border:2px solid #26342e;border-radius:7px;padding:7px;font-weight:800}.wall-quick-editor form button,.wall-quick-editor>div button{border:0;border-radius:7px;background:#26342e;color:#fff;padding:7px 10px;font-size:10px;font-weight:800}.wall-quick-editor>div{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-top:7px}.wall-quick-editor>div button{background:#eef1ee;color:#26342e}.wall-quick-editor>div button:nth-child(2){background:#d56d3b;color:#fff}
+.floor-row {
+  display: flex;
+  gap: 6px;
+  margin: 0 0 14px;
+}
+.floor-row select {
+  min-width: 0;
+  flex: 1;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  background: #fff;
+  font-weight: 700;
+  min-height: 44px;
+}
+.floor-row button {
+  width: 44px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--accent);
+  color: white;
+  font-size: 18px;
+}
+
+.plan-warning {
+  font-size: 12px;
+  line-height: 1.4;
+  color: #934b32;
+  background: #fff1ea;
+  border: 1px solid #f0c9b7;
+  border-radius: 8px;
+  padding: 10px;
+  margin: 0 0 12px;
+}
+
+.number-input {
+  display: flex;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-top: 6px;
+}
+.number-input input {
+  width: 100%;
+  border: 0;
+  padding: 10px;
+  outline: 0;
+  font-size: 16px;
+}
+.number-input span {
+  padding: 10px;
+  background: var(--soft);
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.nudge {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.nudge button,
+.duplicate {
+  border: 1px solid var(--line);
+  background: var(--soft);
+  border-radius: 8px;
+  padding: 10px;
+  min-height: 44px;
+  font-weight: 700;
+}
+.duplicate {
+  width: 100%;
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.room-designer {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 14px;
+}
+.room-designer label { margin: 5px 0 10px; display: block; font-size: 12px; font-weight: 700; }
+.room-designer select {
+  width: 100%;
+  margin-top: 5px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  background: #fff;
+  font-weight: 700;
+  min-height: 44px;
+}
+.template-label {
+  display: block;
+  margin: 10px 0 6px;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--muted);
+}
+.room-templates,
+.wall-actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+.room-templates button,
+.wall-actions button {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--soft);
+  padding: 10px 4px;
+  font-size: 11px;
+  font-weight: 800;
+  min-height: 44px;
+}
+.room-designer.compact { padding: 0; border: 0; }
+.wall-actions { margin: 10px 0; }
+.wall-actions button:nth-child(2) {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.wall-quick-editor {
+  position: absolute;
+  z-index: 35;
+  top: max(140px, calc(env(safe-area-inset-top) + 120px));
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(440px, calc(100% - 18px));
+  border-radius: 14px;
+  background: #fff;
+  padding: 10px;
+  box-shadow: var(--shadow);
+}
+.wall-quick-editor form { display: flex; gap: 6px; }
+.wall-quick-editor label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  font-size: 11px;
+  font-weight: 800;
+}
+.wall-quick-editor input {
+  min-width: 0;
+  width: 86px;
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  padding: 8px;
+  font-weight: 800;
+  font-size: 16px;
+}
+.wall-quick-editor form button,
+.wall-quick-editor > div button {
+  border: 0;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  padding: 8px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  min-height: 40px;
+}
+.wall-quick-editor > div {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 5px;
+  margin-top: 7px;
+}
+.wall-quick-editor > div button {
+  background: var(--soft);
+  color: var(--ink);
+}
+.wall-quick-editor > div button:nth-child(2) {
+  background: var(--accent);
+  color: #fff;
+}
+
+.opening-editor {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px;
+  margin: 8px 0;
+}
+.opening-editor strong {
+  display: block;
+  text-transform: capitalize;
+  margin-bottom: 6px;
+}
+.opening-quick-editor {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+}
+.opening-quick-editor label { white-space: nowrap; }
+.opening-quick-editor select {
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+}
