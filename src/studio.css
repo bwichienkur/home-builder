@@ -517,6 +517,188 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Retail selected-product card (IKEA-style summary + complements) */
+.studio-product-card {
+  position: absolute;
+  z-index: 38;
+  left: max(16px, env(safe-area-inset-left));
+  bottom: max(88px, calc(env(safe-area-inset-bottom) + 76px));
+  width: min(340px, calc(100vw - 110px));
+  background: var(--surface);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  padding: 12px 12px 14px;
+  animation: sheet-up 220ms ease-out;
+  pointer-events: auto;
+}
+
+.studio-product-card > header {
+  display: grid;
+  grid-template-columns: 72px 1fr 36px;
+  gap: 10px;
+  align-items: start;
+}
+
+.studio-product-thumb {
+  width: 72px;
+  height: 72px;
+  border-radius: 12px;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--product-color) 55%, #fff), var(--product-color));
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  font-size: 28px;
+}
+
+.studio-product-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.studio-product-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.studio-product-brand {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.studio-product-meta strong {
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.studio-product-price {
+  font-size: 14px;
+  font-weight: 800;
+  color: #111820;
+}
+
+.studio-product-dims {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.studio-product-card > header button {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--soft);
+  display: grid;
+  place-items: center;
+}
+
+.studio-product-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.studio-product-actions .primary {
+  flex: 1;
+  border: 0;
+  border-radius: 999px;
+  background: #0058a3;
+  color: #fff;
+  font-weight: 800;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 14px;
+}
+
+.studio-product-actions a {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  text-decoration: none;
+}
+
+.studio-product-complements {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.studio-product-complements h3 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.studio-product-complements ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.studio-product-complements button {
+  width: 100%;
+  border: 0;
+  border-radius: 12px;
+  background: var(--soft);
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 10px;
+  align-items: center;
+  padding: 8px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.studio-product-complements button:hover {
+  background: #e8f1fa;
+}
+
+.studio-product-complements .thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--product-color) 55%, #fff), var(--product-color));
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  font-size: 18px;
+}
+
+.studio-product-complements .thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.studio-product-complements strong {
+  display: block;
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+.studio-product-complements small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
 /* Selection inspector */
 .selection-inspector {
   position: fixed;
@@ -671,6 +853,12 @@
     max-width: calc(100vw - 160px);
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+  .studio-product-card {
+    left: max(12px, env(safe-area-inset-left));
+    right: max(70px, calc(env(safe-area-inset-right) + 62px));
+    width: auto;
+    bottom: max(86px, calc(env(safe-area-inset-bottom) + 74px));
   }
 }
 

@@ -63,6 +63,8 @@ This is a behavioral audit, not permission to copy IKEA branding, product data, 
 | Placement | Desktop drag/drop | All | HTML drag into 3D | Drop at cursor floor point | Complete |
 | Placement | Ghost place → commit | All | pendingPlacement + translucent preview | Add from catalog, move ghost, click/Place to commit | Complete |
 | Placement | Selection FABs | All | Rotate / info / edit / duplicate / delete | Select product and use floating action buttons | Complete |
+| Catalog | Selected product card | All | Retail card with price, Modify, complements | Select product → see price and place related items | Complete |
+| Camera | Animated Top ↔ 3D | All | Eased CameraRig pose lerp on mode change | Switch Top/3D and see smooth transition | Complete |
 | Placement | Mobile tap-to-add | All | Begin ghost placement and switch to 3D | Add then position by touch | Complete |
 | Placement | Touch drag | All | Floor-plane drag | Drag without moving camera/page | Complete |
 | Placement | Grid snap | All | 25 cm commit snap | Release product and verify coordinates | Complete |

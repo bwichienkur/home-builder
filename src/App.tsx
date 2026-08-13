@@ -14,6 +14,7 @@ import { FloorPlanEditor } from './components/editor2d/FloorPlanEditor';
 import { Toolbar } from './components/ui/Toolbar';
 import { BomDialog } from './components/ui/BomDialog';
 import { SelectionInspector, RoomDesigner } from './components/ui/SelectionInspector';
+import { SelectedProductCard } from './components/ui/SelectedProductCard';
 import { StudioChrome } from './components/ui/StudioChrome';
 import { AdminPage } from './components/admin/AdminPage';
 import { useInventoryStore } from './store/inventoryStore';
@@ -70,6 +71,7 @@ function StudioApp() {
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [inspectorOpen, setInspectorOpen] = useState(false);
+  const [productCardOpen, setProductCardOpen] = useState(false);
   const [bom, setBom] = useState(false);
   const [projectName, setProjectName] = useState('Bedroom study');
   const [notice, setNotice] = useState('');
@@ -157,20 +159,35 @@ function StudioApp() {
       setCatalogOpen(false);
       setMenuOpen(false);
     };
+    const openCard = () => {
+      setProductCardOpen(true);
+      setCatalogOpen(false);
+      setMenuOpen(false);
+    };
     window.addEventListener('roomcraft-open-properties', open);
-    return () => window.removeEventListener('roomcraft-open-properties', open);
+    window.addEventListener('roomcraft-open-product-card', openCard);
+    return () => {
+      window.removeEventListener('roomcraft-open-properties', open);
+      window.removeEventListener('roomcraft-open-product-card', openCard);
+    };
   }, []);
 
   const selectedSurface = usePlannerStore((s) => s.selectedSurface);
   const pendingPlacement = usePlannerStore((s) => s.pendingPlacement);
   useEffect(() => {
-    // Furniture uses selection FABs; inspector opens on demand. Walls/openings/surfaces still auto-open.
+    // Furniture uses FABs + retail product card; inspector opens on Modify. Walls/openings/surfaces still auto-open.
     if (pendingPlacement) {
       setInspectorOpen(false);
+      setProductCardOpen(false);
       return;
     }
+    if (selectedFurnitureId) {
+      setProductCardOpen(true);
+      return;
+    }
+    setProductCardOpen(false);
     if (selectedWallId || selectedOpeningId || selectedSurface) setInspectorOpen(true);
-  }, [selectedWallId, selectedOpeningId, selectedSurface, pendingPlacement]);
+  }, [selectedWallId, selectedOpeningId, selectedFurnitureId, selectedSurface, pendingPlacement]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => store.save(), 700);
@@ -267,10 +284,29 @@ function StudioApp() {
         openCategory={openCategory}
         onOpenInspector={() => {
           setInspectorOpen(true);
+          setProductCardOpen(true);
           setCatalogOpen(false);
           setMenuOpen(false);
         }}
       />
+
+      {productCardOpen && selectedFurnitureId && !pendingPlacement && view === '3d' && !catalogOpen && !menuOpen && (
+        <SelectedProductCard
+          roomType={roomType}
+          onModify={() => {
+            setInspectorOpen(true);
+            setCatalogOpen(false);
+            setMenuOpen(false);
+          }}
+          onClose={() => setProductCardOpen(false)}
+          onPlaceComplement={() => {
+            setInspectorOpen(false);
+            setProductCardOpen(false);
+            setCatalogOpen(false);
+            setMenuOpen(false);
+          }}
+        />
+      )}
 
       {menuOpen && (
         <aside className="studio-menu-sheet" role="dialog" aria-label="Project menu">
