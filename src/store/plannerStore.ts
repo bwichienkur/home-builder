@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { CameraMode, FurnitureItem, MountingType, Opening, PlanRoomLabel, Point, RoomType, SceneSnapshot, SurfaceTarget, Tool, UnitSystem, Wall } from '../types';
+import type { CameraMode, FurnitureItem, MountingType, Opening, PlanRoomLabel, Point, RoomType, SceneSnapshot, StudioMode, SurfaceTarget, Tool, UnitSystem, Wall, WorkflowStage } from '../types';
 import { constrainPlacement, openingConflicts, resolveMountingType, roomFloorCenter } from '../lib/geometry/placement';
 import { writeRecoverySnapshot } from '../lib/designShare';
 import { buildHouse, rebuildFromPlanRooms, resizePlanRoomPoints } from '../lib/housePlans/buildPlan';
@@ -53,6 +53,8 @@ type PlannerState = SceneSnapshot & {
   history: SceneSnapshot[];
   historyIndex: number;
   openingNotice: string;
+  workflowStage: WorkflowStage;
+  studioMode: StudioMode;
   setTool: (tool: Tool) => void;
   setView: (view: View) => void;
   setCameraMode: (mode: CameraMode) => void;
@@ -90,6 +92,12 @@ type PlannerState = SceneSnapshot & {
   updatePlanRoom: (id: string, patch: Partial<Pick<PlanRoomLabel, 'name' | 'roomType' | 'floorColor'>>) => void;
   resizePlanRoom: (id: string, widthFt: number, depthFt: number) => void;
   deletePlanRoom: (id: string) => void;
+  setWorkflowStage: (stage: WorkflowStage) => void;
+  setStudioMode: (mode: StudioMode) => void;
+  enterHouse: () => void;
+  enterRoom: (id: string) => void;
+  exitRoom: () => void;
+  showStart: () => void;
   selectWall: (id: string | null) => void;
   selectOpening: (id: string | null) => void;
   selectSurface: (surface: SurfaceTarget | null) => void;
@@ -231,6 +239,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     housePlanId: null,
     housePlanName: null,
     planRooms: [],
+    workflowStage: 'start',
+    studioMode: 'architect',
     setTool: (tool) => set({ tool, draftStart: null }),
     setView: (view) => set({ view, draftStart: null }),
     setCameraMode: (cameraMode) => set({ cameraMode }),
@@ -333,7 +343,21 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         walls = [mk(a, b), mk(b, c), mk(c, d), mk(d, a)];
       }
       mutate({ walls, openings: [], furniture: [] });
-      set({ selectedWallId: null, selectedOpeningId: null, selectedFurnitureId: null, draftStart: null, tool: 'select', housePlanId: null, housePlanName: null, planRooms: [] });
+      set({
+        selectedWallId: null,
+        selectedOpeningId: null,
+        selectedFurnitureId: null,
+        draftStart: null,
+        tool: 'select',
+        housePlanId: null,
+        housePlanName: null,
+        planRooms: [],
+        workflowStage: 'house',
+        studioMode: 'architect',
+        selectedRoomId: null,
+        cameraMode: 'top',
+        view: '3d',
+      });
     },
     applyHousePlan: (planId) => {
       const plan = getHousePlan(planId);
@@ -368,6 +392,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         view: '3d',
         unitSystem: 'imperial',
         roomType: 'Living room',
+        workflowStage: 'house',
+        studioMode: 'architect',
       });
       return true;
     },
@@ -389,6 +415,58 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         selectedFurnitureId: null,
         selectedSurface: selectedRoomId ? 'floor' : null,
         roomType: selectedRoomId ? get().planRooms.find((r) => r.id === selectedRoomId)?.roomType ?? get().roomType : get().roomType,
+        workflowStage: selectedRoomId ? 'room' : get().workflowStage === 'start' ? 'start' : 'house',
+      }),
+    setWorkflowStage: (workflowStage) => set({ workflowStage }),
+    setStudioMode: (studioMode) => set({ studioMode }),
+    enterHouse: () =>
+      set({
+        workflowStage: 'house',
+        studioMode: 'architect',
+        selectedRoomId: null,
+        selectedFurnitureId: null,
+        selectedWallId: null,
+        selectedOpeningId: null,
+        selectedSurface: null,
+        pendingPlacement: null,
+        cameraMode: 'top',
+        view: '3d',
+      }),
+    enterRoom: (id) => {
+      const room = get().planRooms.find((r) => r.id === id);
+      if (!room) return;
+      set({
+        workflowStage: 'room',
+        selectedRoomId: id,
+        selectedWallId: null,
+        selectedOpeningId: null,
+        selectedFurnitureId: null,
+        selectedSurface: 'floor',
+        roomType: room.roomType,
+        cameraMode: 'top',
+        view: '3d',
+      });
+    },
+    exitRoom: () =>
+      set({
+        workflowStage: 'house',
+        selectedRoomId: null,
+        selectedSurface: null,
+        selectedWallId: null,
+        selectedOpeningId: null,
+        cameraMode: 'top',
+        view: '3d',
+      }),
+    showStart: () =>
+      set({
+        workflowStage: 'start',
+        studioMode: 'architect',
+        selectedRoomId: null,
+        selectedFurnitureId: null,
+        selectedWallId: null,
+        selectedOpeningId: null,
+        selectedSurface: null,
+        pendingPlacement: null,
       }),
     updatePlanRoom: (id, patch) => {
       const planRooms = get().planRooms.map((r) => (r.id === id ? { ...r, ...patch } : r));
@@ -739,6 +817,12 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
           selectedOpeningId: null,
           selectedFurnitureId: null,
           selectedSurface: null,
+          selectedRoomId: null,
+          planRooms: target.planRooms ?? [],
+          housePlanId: data.housePlanId ?? null,
+          housePlanName: data.housePlanName ?? null,
+          workflowStage: target.scene.walls?.length ? 'house' : 'start',
+          studioMode: 'architect',
         });
         return true;
       } catch {

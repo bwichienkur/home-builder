@@ -92,6 +92,17 @@ export function StudioChrome({
   const selectedWall = usePlannerStore((s) => s.selectedWallId);
   const selectedOpening = usePlannerStore((s) => s.selectedOpeningId);
   const pending = usePlannerStore((s) => s.pendingPlacement);
+  const workflowStage = usePlannerStore((s) => s.workflowStage);
+  const studioMode = usePlannerStore((s) => s.studioMode);
+  const setStudioMode = usePlannerStore((s) => s.setStudioMode);
+  const housePlanName = usePlannerStore((s) => s.housePlanName);
+  const planRooms = usePlannerStore((s) => s.planRooms);
+  const selectedRoomId = usePlannerStore((s) => s.selectedRoomId);
+  const floors = usePlannerStore((s) => s.floors);
+  const activeFloorId = usePlannerStore((s) => s.activeFloorId);
+  const exitRoom = usePlannerStore((s) => s.exitRoom);
+  const enterRoom = usePlannerStore((s) => s.enterRoom);
+  const showStart = usePlannerStore((s) => s.showStart);
   const commitPending = usePlannerStore((s) => s.commitPendingPlacement);
   const cancelPending = usePlannerStore((s) => s.cancelPendingPlacement);
   const rotatePending = usePlannerStore((s) => s.rotatePendingPlacement);
@@ -156,13 +167,69 @@ export function StudioChrome({
     setViewMenu(false);
   };
 
-  const hasSelection = !!(selectedItem || selectedWall || selectedOpening);
+  const hasSelection = !!(selectedItem || selectedWall || selectedOpening || selectedRoomId);
+  const selectedRoom = planRooms.find((r) => r.id === selectedRoomId);
+  const activeFloor = floors.find((f) => f.id === activeFloorId);
+  const houseLabel = housePlanName || (planRooms.length > 1 ? 'House plan' : 'Room');
+  const atStart = workflowStage === 'start';
+  const inRoom = workflowStage === 'room';
+  const showCatalogRail = !atStart && studioMode === 'furnish' && !pending;
+
+  if (atStart) {
+    return (
+      <div className="studio-chrome is-start">
+        <button className="studio-fab studio-menu" onClick={menuOpen ? closeMenu : openMenu} aria-label={menuOpen ? 'Close menu' : 'Open project menu'} aria-expanded={menuOpen}>
+          {menuOpen ? <X /> : <Menu />}
+        </button>
+      </div>
+    );
+  }
 
   return (
-    <div className={`studio-chrome${showActionFabs ? ' has-action-fabs' : ''}`}>
+    <div className={`studio-chrome${showActionFabs ? ' has-action-fabs' : ''}${inRoom ? ' is-room-focus' : ''}`}>
       <button className="studio-fab studio-menu" onClick={menuOpen ? closeMenu : openMenu} aria-label={menuOpen ? 'Close menu' : 'Open project menu'} aria-expanded={menuOpen}>
         {menuOpen ? <X /> : <Menu />}
       </button>
+
+      <nav className="studio-breadcrumb" aria-label="Design location">
+        <button type="button" onClick={showStart} title="Start over">
+          Start
+        </button>
+        <span aria-hidden="true">/</span>
+        <button
+          type="button"
+          className={!inRoom ? 'is-current' : ''}
+          onClick={() => {
+            if (inRoom) {
+              exitRoom();
+              window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 0);
+            }
+          }}
+        >
+          {houseLabel}
+        </button>
+        {activeFloor && floors.length > 1 && (
+          <>
+            <span aria-hidden="true">/</span>
+            <span className="studio-breadcrumb-static">{activeFloor.name}</span>
+          </>
+        )}
+        {selectedRoom && (
+          <>
+            <span aria-hidden="true">/</span>
+            <span className="studio-breadcrumb-static is-current">{selectedRoom.name}</span>
+          </>
+        )}
+      </nav>
+
+      <div className="studio-mode-toggle" role="group" aria-label="Studio mode">
+        <button type="button" className={studioMode === 'architect' ? 'active' : ''} onClick={() => setStudioMode('architect')}>
+          Plan
+        </button>
+        <button type="button" className={studioMode === 'furnish' ? 'active' : ''} onClick={() => setStudioMode('furnish')}>
+          Furnish
+        </button>
+      </div>
 
       <button
         className="studio-bag"
@@ -179,11 +246,31 @@ export function StudioChrome({
         <ArrowRight />
       </button>
 
+      {inRoom && selectedRoom && !pending && (
+        <div className="studio-selection-hint">
+          Editing {selectedRoom.name}
+          <button
+            type="button"
+            className="studio-hint-action"
+            onClick={() => {
+              exitRoom();
+              window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 0);
+            }}
+          >
+            Back to house
+          </button>
+        </div>
+      )}
+
+      {!inRoom && planRooms.length > 1 && !pending && !selectedItem && (
+        <div className="studio-selection-hint">Tap a room to edit it · Pinch to zoom the full floor</div>
+      )}
+
       {pending && <div className="studio-selection-hint">Placing {pending.name} · move then tap to confirm</div>}
 
-      {hasSelection && !pending && !selectedItem && (
+      {hasSelection && !pending && !selectedItem && !inRoom && (
         <div className="studio-selection-hint">
-          {selectedOpening ? 'Opening selected · adjust in Edit' : 'Wall selected · use Edit for measurements'}
+          {selectedOpening ? 'Opening selected · adjust in Edit' : selectedWall ? 'Wall selected · use Edit for measurements' : 'Room selected'}
         </div>
       )}
 
@@ -225,7 +312,7 @@ export function StudioChrome({
         </div>
       )}
 
-      {gestureHint && !pending && (
+      {gestureHint && !pending && !atStart && (
         <div className="studio-selection-hint studio-gesture-hint">Drag to orbit · Pinch to zoom · Two-finger pan</div>
       )}
 
@@ -241,23 +328,25 @@ export function StudioChrome({
         </button>
       )}
 
-      <div className={`studio-category-rail${catalogOpen ? ' is-active' : ''}`} aria-label={`${roomType} product categories`}>
-        {categories.map((category) => {
-          const Icon = icons[category] ?? ShoppingBag;
-          return (
-            <button key={category} onClick={() => openCategory(category)} aria-label={`Show ${category}`} title={category}>
-              <Icon />
-              <span>{category}</span>
-            </button>
-          );
-        })}
-      </div>
+      {showCatalogRail && (
+        <div className={`studio-category-rail${catalogOpen ? ' is-active' : ''}`} aria-label={`${roomType} product categories`}>
+          {categories.map((category) => {
+            const Icon = icons[category] ?? ShoppingBag;
+            return (
+              <button key={category} onClick={() => openCategory(category)} aria-label={`Show ${category}`} title={category}>
+                <Icon />
+                <span>{category}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {viewMenu && (
         <div className="studio-view-menu" role="menu">
           <button onClick={refocus}>
             <Move3D />
-            Refocus the room
+            Fit entire floor
           </button>
           <button className={isTop ? 'active' : ''} onClick={chooseTop}>
             <Grid2X2 />
@@ -273,23 +362,27 @@ export function StudioChrome({
               {walkLabel}
             </button>
           )}
-          <button onClick={chooseEditRoom}>
+          <button
+            onClick={() => {
+              chooseEditRoom();
+              if (selectedRoomId) enterRoom(selectedRoomId);
+            }}
+          >
             <Scaling />
-            Edit room size
+            Edit room
           </button>
         </div>
       )}
 
-      {/* One bottom dock — view tools + history — raised above mobile browser chrome */}
       <div className="studio-dock" role="toolbar" aria-label="Studio controls">
         <div className="studio-dock-group">
           <button onClick={() => setViewMenu((open) => !open)} aria-expanded={viewMenu} aria-label="Choose room view">
             {isTop ? <Grid2X2 /> : isWalk ? <Move3D /> : <Layers3 />}
           </button>
-          <button onClick={refocus} aria-label="Refocus room">
+          <button onClick={refocus} aria-label="Fit entire floor">
             <Move3D />
           </button>
-          <button onClick={onOpenInspector} aria-label="Edit selected wall or product" disabled={!hasSelection || !!pending}>
+          <button onClick={onOpenInspector} aria-label="Edit selected wall or room" disabled={!hasSelection || !!pending}>
             <PencilRuler />
           </button>
           <button onClick={chooseEditRoom} aria-label="Edit room size">

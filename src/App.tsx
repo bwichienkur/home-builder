@@ -3,6 +3,7 @@ import {
   ChevronDown,
   Download,
   FileJson,
+  Home,
   ReceiptText,
   Save,
   Share2,
@@ -14,6 +15,7 @@ import { BomDialog } from './components/ui/BomDialog';
 import { SelectionInspector, RoomDesigner } from './components/ui/SelectionInspector';
 import { SelectedProductCard } from './components/ui/SelectedProductCard';
 import { StudioChrome } from './components/ui/StudioChrome';
+import { DesignStart } from './components/ui/DesignStart';
 import { AdminPage } from './components/admin/AdminPage';
 import { useInventoryStore } from './store/inventoryStore';
 import { usePlannerStore } from './store/plannerStore';
@@ -77,6 +79,8 @@ function StudioApp() {
   const openingNotice = usePlannerStore((s) => s.openingNotice);
   const clearOpeningNotice = usePlannerStore((s) => s.clearOpeningNotice);
   const unitSystem = usePlannerStore((s) => s.unitSystem);
+  const workflowStage = usePlannerStore((s) => s.workflowStage);
+  const enterHouse = usePlannerStore((s) => s.enterHouse);
 
   const closeCatalog = useCallback(() => setCatalogOpen(false), []);
   const startGhostPlacement = useCallback(() => {
@@ -213,7 +217,9 @@ function StudioApp() {
       const shared = loadSharedDesign(code);
       if (shared && store.importProject(shared.payload)) {
         setProjectName(shared.name);
+        enterHouse();
         notify(`Opened design ${code}`);
+        window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 0);
         return;
       }
     }
@@ -223,6 +229,10 @@ function StudioApp() {
       setRecovery(snapshot);
     } else if (saved) {
       store.load();
+      if (usePlannerStore.getState().walls.length) {
+        enterHouse();
+        window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 0);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -246,6 +256,7 @@ function StudioApp() {
   };
 
   const openCategory = (category: string) => {
+    store.setStudioMode('furnish');
     setCatalogOpen(true);
     setMenuOpen(false);
     setInspectorOpen(false);
@@ -259,6 +270,8 @@ function StudioApp() {
     isTop ? 'camera-top' : '',
     cameraMode === 'walk' ? 'camera-walk' : '',
     pendingPlacement ? 'is-placing' : '',
+    workflowStage === 'start' ? 'is-start' : '',
+    workflowStage === 'room' ? 'is-room-focus' : '',
     productCardOpen && selectedFurnitureId && !pendingPlacement && !inspectorOpen ? 'has-product-card' : '',
     selectedFurnitureId || pendingPlacement ? 'has-action-fabs' : '',
   ]
@@ -275,6 +288,17 @@ function StudioApp() {
         </div>
       </section>
 
+      {workflowStage === 'start' && (
+        <DesignStart
+          onBegan={() => {
+            setMenuOpen(false);
+            setCatalogOpen(false);
+            setInspectorOpen(false);
+            setProjectName(usePlannerStore.getState().housePlanName || 'Untitled design');
+          }}
+        />
+      )}
+
       <StudioChrome
         roomType={roomType}
         itemCount={furniture.length}
@@ -282,6 +306,7 @@ function StudioApp() {
         catalogOpen={catalogOpen}
         menuOpen={menuOpen}
         openCatalog={() => {
+          store.setStudioMode('furnish');
           setCatalogOpen(true);
           setMenuOpen(false);
         }}
@@ -350,6 +375,16 @@ function StudioApp() {
             {missingPrices > 0 ? ` · ${missingPrices} need quote` : ''}
           </p>
           <div className="menu-actions">
+            <button
+              onClick={() => {
+                store.showStart();
+                setMenuOpen(false);
+                setCatalogOpen(false);
+                setInspectorOpen(false);
+              }}
+            >
+              <Home size={16} /> New design
+            </button>
             <button
               onClick={() => {
                 store.save();
@@ -448,9 +483,11 @@ function StudioApp() {
               className="primary"
               onClick={() => {
                 store.importProject(recovery.payload);
+                enterHouse();
                 clearRecoverySnapshot();
                 setRecovery(null);
                 notify('Recovered latest edits');
+                window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 0);
               }}
             >
               Restore

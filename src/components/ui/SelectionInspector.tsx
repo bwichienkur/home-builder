@@ -116,14 +116,14 @@ function PlanRoomProperties({ room }: { room: PlanRoomLabel }) {
   const update = usePlannerStore((s) => s.updatePlanRoom);
   const resize = usePlannerStore((s) => s.resizePlanRoom);
   const remove = usePlannerStore((s) => s.deletePlanRoom);
-  const selectRoom = usePlannerStore((s) => s.selectRoom);
+  const exitRoom = usePlannerStore((s) => s.exitRoom);
   const unit = usePlannerStore((s) => s.unitSystem);
   const size = planRoomSizeFeet(room.points);
   const areaSqFt = size.widthFt * size.depthFt;
 
   return (
     <>
-      <p className="muted">Tap another room to switch · Resize rebuilds shared walls</p>
+      <p className="muted">Room focus · Back to house returns to the full floor</p>
       <label>
         Room name
         <input className="property-input" value={room.name} onChange={(e) => update(room.id, { name: e.target.value })} />
@@ -172,8 +172,14 @@ function PlanRoomProperties({ room }: { room: PlanRoomLabel }) {
         </div>
       </label>
       <div className="wall-actions">
-        <button type="button" onClick={() => selectRoom(null)}>
-          Done
+        <button
+          type="button"
+          onClick={() => {
+            exitRoom();
+            window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 0);
+          }}
+        >
+          Back to house
         </button>
         <button
           type="button"

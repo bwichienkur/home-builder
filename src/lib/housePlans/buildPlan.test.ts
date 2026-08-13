@@ -92,5 +92,9 @@ describe('house plan builder', () => {
     expect(edited.name).toBe('Edited Room');
     expect(edited.floorColor).toBe('#7d5c43');
     expect(usePlannerStore.getState().selectedRoomId).toBe(room.id);
+    expect(usePlannerStore.getState().workflowStage).toBe('room');
+    usePlannerStore.getState().exitRoom();
+    expect(usePlannerStore.getState().workflowStage).toBe('house');
+    expect(usePlannerStore.getState().selectedRoomId).toBeNull();
   });
 });

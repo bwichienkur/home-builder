@@ -97,13 +97,39 @@ function CameraRig() {
     const refocus = () => animateToPose(480);
     const start = () => setMoving(document.body.dataset.movingFurniture === 'true');
     const stop = () => setMoving(false);
+    const focusRoom = (event: Event) => {
+      const detail = (event as CustomEvent<{ x: number; z: number; span: number }>).detail;
+      if (!detail || !controls.current) return;
+      const camera = get().camera;
+      const from = camera.position.clone();
+      const fromTarget = controls.current.target.clone();
+      const height = Math.max(6, detail.span * 1.6);
+      const to = new THREE.Vector3(detail.x + detail.span * 0.02, height, detail.z + detail.span * 0.04);
+      const target = new THREE.Vector3(detail.x, 0, detail.z);
+      const startAt = performance.now();
+      animating.current = true;
+      const tick = (now: number) => {
+        const t = Math.min(1, (now - startAt) / 480);
+        const ease = 1 - Math.pow(1 - t, 3);
+        camera.position.lerpVectors(from, to, ease);
+        controls.current?.target.lerpVectors(fromTarget, target, ease);
+        camera.lookAt(controls.current?.target ?? target);
+        controls.current?.update();
+        invalidate();
+        if (t < 1) requestAnimationFrame(tick);
+        else animating.current = false;
+      };
+      requestAnimationFrame(tick);
+    };
     window.addEventListener('roomcraft-refocus', refocus);
     window.addEventListener('roomcraft-drag-start', start);
     window.addEventListener('roomcraft-drag-end', stop);
+    window.addEventListener('roomcraft-focus-room', focusRoom);
     return () => {
       window.removeEventListener('roomcraft-refocus', refocus);
       window.removeEventListener('roomcraft-drag-start', start);
       window.removeEventListener('roomcraft-drag-end', stop);
+      window.removeEventListener('roomcraft-focus-room', focusRoom);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [get, invalidate, poseTuple, targetTuple, mode]);
@@ -564,7 +590,8 @@ function Room() {
   const walls = usePlannerStore((s) => s.walls);
   const planRooms = usePlannerStore((s) => s.planRooms);
   const selectedRoomId = usePlannerStore((s) => s.selectedRoomId);
-  const selectRoom = usePlannerStore((s) => s.selectRoom);
+  const enterRoom = usePlannerStore((s) => s.enterRoom);
+  const workflowStage = usePlannerStore((s) => s.workflowStage);
   const cameraMode = usePlannerStore((s) => s.cameraMode);
   const selectedSurface = usePlannerStore((s) => s.selectedSurface);
   const selectSurface = usePlannerStore((s) => s.selectSurface);
@@ -596,7 +623,22 @@ function Room() {
   const chooseFloor = (e: any, roomId?: string) => {
     e.stopPropagation();
     if (roomId) {
-      selectRoom(roomId);
+      enterRoom(roomId);
+      const room = planRooms.find((r) => r.id === roomId);
+      if (room) {
+        const xs = room.points.map((p) => (p.x - WORLD_ORIGIN.x) / PIXELS_PER_METER);
+        const zs = room.points.map((p) => (p.y - WORLD_ORIGIN.y) / PIXELS_PER_METER);
+        const span = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...zs) - Math.min(...zs), 2);
+        window.dispatchEvent(
+          new CustomEvent('roomcraft-focus-room', {
+            detail: {
+              x: xs.reduce((a, b) => a + b, 0) / xs.length,
+              z: zs.reduce((a, b) => a + b, 0) / zs.length,
+              span,
+            },
+          }),
+        );
+      }
     } else {
       selectSurface('floor');
     }
@@ -613,6 +655,7 @@ function Room() {
         rooms.map((points, i) => {
           const label = planRooms[i];
           const selected = !!label && label.id === selectedRoomId;
+          const dimmed = workflowStage === 'room' && !!selectedRoomId && !selected;
           const floorColor = label?.floorColor || floor;
           const span = (() => {
             const xs = points.map((p) => (p.x - WORLD_ORIGIN.x) / PIXELS_PER_METER);
@@ -633,6 +676,8 @@ function Room() {
                   color={selected ? '#0058a3' : floorColor}
                   roughness={0.95}
                   side={THREE.DoubleSide}
+                  transparent={dimmed}
+                  opacity={dimmed ? 0.28 : 1}
                   emissive={selected ? '#003d70' : '#000000'}
                   emissiveIntensity={selected ? 0.14 : 0}
                 />
@@ -657,7 +702,7 @@ function Room() {
                   />
                 </mesh>
               )}
-              {label && cameraMode === 'top' && (
+              {label && cameraMode === 'top' && !dimmed && (
                 <Text
                   position={[
                     points.reduce((s, p) => s + (p.x - WORLD_ORIGIN.x) / PIXELS_PER_METER, 0) / points.length,
