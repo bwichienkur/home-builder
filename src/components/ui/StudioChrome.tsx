@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ArrowRight,
   Bath,
@@ -25,6 +25,19 @@ import {
 import { roomCategories } from '../catalog/CatalogPanel';
 import { usePlannerStore } from '../../store/plannerStore';
 import type { RoomType } from '../../types';
+
+function useCoarsePointer() {
+  const [coarse, setCoarse] = useState(() => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches);
+  useEffect(() => {
+    if (typeof matchMedia !== 'function') return;
+    const mq = matchMedia('(pointer: coarse)');
+    const sync = () => setCoarse(mq.matches);
+    sync();
+    mq.addEventListener?.('change', sync);
+    return () => mq.removeEventListener?.('change', sync);
+  }, []);
+  return coarse;
+}
 
 const icons: Record<string, typeof ShoppingBag> = {
   Bedroom: BedDouble,
@@ -89,11 +102,31 @@ export function StudioChrome({
   const categories = roomCategories[roomType];
   const isRoomEdit = view === '2d';
   const isTop = !isRoomEdit && camera === 'top';
+  const isWalk = !isRoomEdit && camera === 'walk';
   const showSelectionFabs = !!selectedItem && !pending && !isRoomEdit;
+  const coarsePointer = useCoarsePointer();
+  const [gestureHint, setGestureHint] = useState(false);
 
   useEffect(() => {
     if (catalogOpen || menuOpen) setViewMenu(false);
   }, [catalogOpen, menuOpen]);
+
+  useEffect(() => {
+    if (!coarsePointer || isRoomEdit || pending) return;
+    try {
+      if (sessionStorage.getItem('roomcraft-gesture-hint') === '1') return;
+      setGestureHint(true);
+      const t = window.setTimeout(() => {
+        setGestureHint(false);
+        sessionStorage.setItem('roomcraft-gesture-hint', '1');
+      }, 4200);
+      return () => window.clearTimeout(t);
+    } catch {
+      /* private mode */
+    }
+  }, [coarsePointer, isRoomEdit, pending]);
+
+  const walkLabel = useMemo(() => (coarsePointer ? 'Eye level (preview)' : 'Eye level'), [coarsePointer]);
 
   /** IKEA-style top: stay in WebGL with a bird’s-eye camera centered on the floor. */
   const chooseTop = () => {
@@ -192,15 +225,25 @@ export function StudioChrome({
         </div>
       )}
 
+      {gestureHint && !pending && !isRoomEdit && (
+        <div className="studio-selection-hint studio-gesture-hint">Drag to orbit · Pinch to zoom · Two-finger pan</div>
+      )}
+
       {isTop && !pending && (
         <button className="studio-view-chip" onClick={() => choose3d('orbit')}>
           Change to 3D view
         </button>
       )}
 
-      {isRoomEdit && (
+      {isWalk && !pending && (
         <button className="studio-view-chip" onClick={() => choose3d('orbit')}>
-          Done editing room
+          Exit eye level
+        </button>
+      )}
+
+      {isRoomEdit && (
+        <button className="studio-view-chip studio-view-chip-warn" onClick={() => choose3d('orbit')}>
+          Done editing room layout
         </button>
       )}
 
@@ -230,10 +273,12 @@ export function StudioChrome({
             <Layers3 />
             3D view
           </button>
-          <button className={camera === 'walk' && !isRoomEdit ? 'active' : ''} onClick={() => choose3d('walk')}>
-            <Move3D />
-            Eye level
-          </button>
+          {!coarsePointer && (
+            <button className={isWalk ? 'active' : ''} onClick={() => choose3d('walk')}>
+              <Move3D />
+              {walkLabel}
+            </button>
+          )}
           <button className={isRoomEdit ? 'active' : ''} onClick={chooseEditRoom}>
             <Scaling />
             Edit room layout
@@ -243,12 +288,12 @@ export function StudioChrome({
 
       <div className="studio-bottom-left">
         <button onClick={() => setViewMenu((open) => !open)} aria-expanded={viewMenu} aria-label="Choose room view">
-          {isTop || isRoomEdit ? <Grid2X2 /> : <Layers3 />}
+          {isTop || isRoomEdit ? <Grid2X2 /> : isWalk ? <Move3D /> : <Layers3 />}
         </button>
         <button onClick={refocus} aria-label="Refocus room" disabled={isRoomEdit}>
           <Move3D />
         </button>
-        <button onClick={onOpenInspector} aria-label="Edit selected wall or product" disabled={!hasSelection}>
+        <button onClick={onOpenInspector} aria-label="Edit selected wall or product" disabled={!hasSelection || !!pending}>
           <PencilRuler />
         </button>
         <button className={isRoomEdit ? 'active' : ''} onClick={isRoomEdit ? () => choose3d('orbit') : chooseEditRoom} aria-label={isRoomEdit ? 'Exit room layout editor' : 'Edit room layout'}>
@@ -256,7 +301,7 @@ export function StudioChrome({
         </button>
       </div>
 
-      <div className="studio-history">
+      <div className={`studio-history${coarsePointer ? ' studio-history-mobile' : ''}`}>
         <button onClick={undo} disabled={historyIndex === 0} aria-label="Undo">
           <Undo2 />
         </button>

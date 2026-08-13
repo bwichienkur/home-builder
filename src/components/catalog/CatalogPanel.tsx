@@ -104,7 +104,8 @@ export const CatalogPanel = memo(function CatalogPanel({
   };
 
   const addItem = (i: (typeof items)[number]) => {
-    begin(i.id, i.name, i.category, i.dims, i.color, 0, 0, {
+    // Omit x/z so the ghost starts at the room center (visible immediately).
+    begin(i.id, i.name, i.category, i.dims, i.color, undefined, undefined, {
       mountingType: i.mountingType,
       clearance:
         i.category === 'Bedroom'

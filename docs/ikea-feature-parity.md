@@ -107,6 +107,9 @@ This is a behavioral audit, not permission to copy IKEA branding, product data, 
 | Mobile | Pinch does not create walls | All | Primary tap guard | Pinch leaves geometry unchanged | Complete |
 | Mobile | Safe areas/no initial zoom | All | Mobile CSS/viewport | iPhone portrait load | Complete |
 | Mobile | No blank screen after selections | All | Error boundary/selection fixes | Repeat 50 wall selections | Complete |
+| Mobile | One panel at a time | All | Product card XOR inspector; catalog bottom sheet | Select product on 390px without dual side panels | Complete |
+| Mobile | Selection affordance | All | Blue selection halo; red only for collisions | Selected item reads as selected, not error | Complete |
+| Mobile | Gesture hint | All | First-session tip on coarse pointers | First load shows orbit/pinch/pan hint once | Complete |
 | Performance | Demand rendering | All | R3F demand loop | Idle scene stops rendering | Complete |
 | Performance | Lazy 3D assets | All | Scene-only models | Catalog thumbnails never mount WebGL | Complete |
 | Performance | BVH/frustum culling | All | BVH/default culling | Raycast dense scene | Complete |
