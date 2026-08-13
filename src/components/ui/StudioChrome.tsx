@@ -3,17 +3,22 @@ import {
   ArrowRight,
   Bath,
   BedDouble,
+  Check,
+  Copy,
   FileSpreadsheet,
   Grid2X2,
   Home,
+  Info,
   Lamp,
   Layers3,
   Menu,
   Move3D,
   PencilRuler,
   Redo2,
+  RotateCw,
   Scaling,
   ShoppingBag,
+  Trash2,
   Undo2,
   X,
 } from 'lucide-react';
@@ -74,9 +79,17 @@ export function StudioChrome({
   const selectedItem = usePlannerStore((s) => s.selectedFurnitureId);
   const selectedWall = usePlannerStore((s) => s.selectedWallId);
   const selectedOpening = usePlannerStore((s) => s.selectedOpeningId);
+  const pending = usePlannerStore((s) => s.pendingPlacement);
+  const commitPending = usePlannerStore((s) => s.commitPendingPlacement);
+  const cancelPending = usePlannerStore((s) => s.cancelPendingPlacement);
+  const rotatePending = usePlannerStore((s) => s.rotatePendingPlacement);
+  const rotateSelected = usePlannerStore((s) => s.rotateSelected);
+  const duplicateSelected = usePlannerStore((s) => s.duplicateSelected);
+  const deleteSelected = usePlannerStore((s) => s.deleteSelected);
   const categories = roomCategories[roomType];
   const isRoomEdit = view === '2d';
   const isTop = !isRoomEdit && camera === 'top';
+  const showSelectionFabs = !!selectedItem && !pending && !isRoomEdit;
 
   useEffect(() => {
     if (catalogOpen || menuOpen) setViewMenu(false);
@@ -132,13 +145,56 @@ export function StudioChrome({
         <ArrowRight />
       </button>
 
-      {hasSelection && !isRoomEdit && (
+      {pending && !isRoomEdit && (
+        <div className="studio-selection-hint">Placing {pending.name} · move then click to confirm</div>
+      )}
+
+      {hasSelection && !pending && !isRoomEdit && !selectedItem && (
         <div className="studio-selection-hint">
-          {selectedItem ? 'Drag to move · use Edit for exact controls' : selectedOpening ? 'Opening selected · adjust in Edit' : 'Wall selected · use Edit for measurements'}
+          {selectedOpening ? 'Opening selected · adjust in Edit' : 'Wall selected · use Edit for measurements'}
         </div>
       )}
 
-      {isTop && (
+      {pending && !isRoomEdit && (
+        <div className="studio-selection-fabs" role="toolbar" aria-label="Place product">
+          <button onClick={() => rotatePending()} aria-label="Rotate preview">
+            <RotateCw />
+          </button>
+          <button className="is-primary" onClick={() => commitPending()} aria-label="Confirm placement">
+            <Check />
+          </button>
+          <button className="is-danger" onClick={() => cancelPending()} aria-label="Cancel placement">
+            <X />
+          </button>
+        </div>
+      )}
+
+      {showSelectionFabs && (
+        <div className="studio-selection-fabs" role="toolbar" aria-label="Selected product actions">
+          <button onClick={() => rotateSelected()} aria-label="Rotate product">
+            <RotateCw />
+          </button>
+          <button
+            onClick={() => {
+              onOpenInspector();
+            }}
+            aria-label="Product details"
+          >
+            <Info />
+          </button>
+          <button onClick={onOpenInspector} aria-label="Edit product">
+            <PencilRuler />
+          </button>
+          <button onClick={() => duplicateSelected()} aria-label="Duplicate product">
+            <Copy />
+          </button>
+          <button className="is-danger" onClick={() => deleteSelected()} aria-label="Delete product">
+            <Trash2 />
+          </button>
+        </div>
+      )}
+
+      {isTop && !pending && (
         <button className="studio-view-chip" onClick={() => choose3d('orbit')}>
           Change to 3D view
         </button>

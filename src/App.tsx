@@ -80,11 +80,13 @@ function StudioApp() {
   const unitSystem = usePlannerStore((s) => s.unitSystem);
 
   const closeCatalog = useCallback(() => setCatalogOpen(false), []);
-  const showAddedItem = useCallback(() => {
+  const startGhostPlacement = useCallback(() => {
     store.setView('3d');
-    store.setCameraMode('orbit');
+    if (store.cameraMode === 'walk') store.setCameraMode('orbit');
     setCatalogOpen(false);
-    setInspectorOpen(true);
+    setMenuOpen(false);
+    setInspectorOpen(false);
+    window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 0);
   }, [store]);
 
   const allCatalog = useMemo(() => [...catalogItems, ...customCatalog], [customCatalog]);
@@ -129,12 +131,17 @@ function StudioApp() {
       } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'd') {
         e.preventDefault();
         store.duplicateSelected();
-      } else if (e.key === 'Delete' || e.key === 'Backspace') store.deleteSelected();
-      else if (e.key === 'Escape') {
+      } else if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (!store.pendingPlacement) store.deleteSelected();
+      } else if (e.key === 'Escape') {
+        if (store.pendingPlacement) store.cancelPendingPlacement();
         store.setDraftStart(null);
         setCatalogOpen(false);
         setMenuOpen(false);
         setInspectorOpen(false);
+      } else if (e.key === 'Enter' && store.pendingPlacement) {
+        e.preventDefault();
+        store.commitPendingPlacement();
       } else if (e.key === 'ArrowLeft') store.moveSelected(-0.25, 0);
       else if (e.key === 'ArrowRight') store.moveSelected(0.25, 0);
       else if (e.key === 'ArrowUp') store.moveSelected(0, -0.25);
@@ -155,9 +162,15 @@ function StudioApp() {
   }, []);
 
   const selectedSurface = usePlannerStore((s) => s.selectedSurface);
+  const pendingPlacement = usePlannerStore((s) => s.pendingPlacement);
   useEffect(() => {
-    if (selectedWallId || selectedOpeningId || selectedFurnitureId || selectedSurface) setInspectorOpen(true);
-  }, [selectedWallId, selectedOpeningId, selectedFurnitureId, selectedSurface]);
+    // Furniture uses selection FABs; inspector opens on demand. Walls/openings/surfaces still auto-open.
+    if (pendingPlacement) {
+      setInspectorOpen(false);
+      return;
+    }
+    if (selectedWallId || selectedOpeningId || selectedSurface) setInspectorOpen(true);
+  }, [selectedWallId, selectedOpeningId, selectedSurface, pendingPlacement]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => store.save(), 700);
@@ -357,7 +370,7 @@ function StudioApp() {
         </aside>
       )}
 
-      {catalogOpen && <CatalogPanel close={closeCatalog} onAdd={showAddedItem} roomType={roomType} />}
+      {catalogOpen && <CatalogPanel close={closeCatalog} onAdd={startGhostPlacement} roomType={roomType} />}
 
       <SelectionInspector
         open={inspectorOpen}

@@ -23,6 +23,7 @@ const openSurfaceProperties = () => window.dispatchEvent(new Event('roomcraft-op
 function CameraRig() {
   const mode = usePlannerStore((s) => s.cameraMode);
   const walls = usePlannerStore((s) => s.walls);
+  const placing = usePlannerStore((s) => !!s.pendingPlacement);
   const [moving, setMoving] = useState(false);
   const controls = useRef<any>(null);
   const { invalidate, get } = useThree();
@@ -98,7 +99,7 @@ function CameraRig() {
       <PerspectiveCamera makeDefault position={poseTuple} fov={mode === 'walk' ? 72 : mode === 'top' ? 42 : 48} />
       <OrbitControls
         ref={controls}
-        enabled={!moving}
+        enabled={!moving && !placing}
         target={targetTuple}
         minPolarAngle={mode === 'top' ? 0.12 : 0}
         maxPolarAngle={mode === 'top' ? 0.95 : mode === 'walk' ? Math.PI / 2 : Math.PI / 2.05}
@@ -546,12 +547,65 @@ function Room() {
       />
       <WallMeshes />
       <Furniture />
+      <GhostPlacement />
     </Bvh>
   );
 }
 
+function GhostPlacement() {
+  const pending = usePlannerStore((s) => s.pendingPlacement);
+  const movePending = usePlannerStore((s) => s.movePendingPlacement);
+  const commit = usePlannerStore((s) => s.commitPendingPlacement);
+  const { invalidate } = useThree();
+  const floorPlane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), []);
+
+  useEffect(() => {
+    if (pending) invalidate();
+  }, [pending, invalidate]);
+
+  if (!pending) return null;
+
+  const onMove = (e: any) => {
+    const hit = new THREE.Vector3();
+    if (!e.ray.intersectPlane(floorPlane, hit)) return;
+    movePending(hit.x, hit.z);
+    invalidate();
+  };
+  const onPlace = (e: any) => {
+    e.stopPropagation();
+    const hit = new THREE.Vector3();
+    if (e.ray.intersectPlane(floorPlane, hit)) movePending(hit.x, hit.z);
+    commit();
+    invalidate();
+  };
+
+  return (
+    <group>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]} onPointerMove={onMove} onClick={onPlace}>
+        <planeGeometry args={[40, 40]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      </mesh>
+      <group position={[pending.x, pending.y, pending.z]} rotation={[0, pending.rotation, 0]}>
+        <mesh position={[0, pending.height / 2, 0]}>
+          <boxGeometry args={[pending.width, pending.height, pending.depth]} />
+          <meshStandardMaterial color={pending.color} transparent opacity={0.38} depthWrite={false} />
+        </mesh>
+        <lineSegments position={[0, pending.height / 2, 0]}>
+          <edgesGeometry args={[new THREE.BoxGeometry(pending.width, pending.height, pending.depth)]} />
+          <lineBasicMaterial color="#0058a3" />
+        </lineSegments>
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.015, 0]}>
+          <ringGeometry args={[Math.max(pending.width, pending.depth) * 0.35, Math.max(pending.width, pending.depth) * 0.42, 48]} />
+          <meshBasicMaterial color="#0058a3" transparent opacity={0.35} depthWrite={false} />
+        </mesh>
+      </group>
+    </group>
+  );
+}
+
 export function Scene3D() {
-  const add = usePlannerStore((s) => s.addFurniture);
+  const begin = usePlannerStore((s) => s.beginPlacement);
+  const pending = usePlannerStore((s) => s.pendingPlacement);
   const select = usePlannerStore((s) => s.selectFurniture);
   const selectWall = usePlannerStore((s) => s.selectWall);
   const selectSurface = usePlannerStore((s) => s.selectSurface);
@@ -564,12 +618,14 @@ export function Scene3D() {
     const r = e.currentTarget.getBoundingClientRect();
     const x = ((e.clientX - r.left) / r.width - 0.5) * 7;
     const z = ((e.clientY - r.top) / r.height - 0.5) * 5;
-    add(item.id, item.name, item.category, item.dims, item.color, x, z, {
+    begin(item.id, item.name, item.category, item.dims, item.color, x, z, {
       mountingType: item.mountingType,
       clearance:
         item.category === 'Bedroom'
           ? { front: 0.7, back: 0.05, left: 0.3, right: 0.3 }
-          : { front: 0.45, back: 0.05, left: 0.1, right: 0.1 },
+          : item.mountingType === 'wall'
+            ? { front: 0.05, back: 0, left: 0.05, right: 0.05 }
+            : { front: 0.45, back: 0.05, left: 0.1, right: 0.1 },
     });
   };
   const supported = useMemo(() => {
@@ -593,6 +649,7 @@ export function Scene3D() {
         performance={{ min: 0.65, debounce: 200 }}
         gl={{ antialias: true, powerPreference: 'high-performance' }}
         onPointerMissed={() => {
+          if (pending) return;
           select(null);
           selectWall(null);
           selectSurface(null);
@@ -608,7 +665,11 @@ export function Scene3D() {
         </Suspense>
         <CameraRig />
       </Canvas>
-      <div className="scene-help">Drag products to move · Mirrors stay on walls · Storage docks to walls · Beds move freely</div>
+      <div className="scene-help">
+        {pending
+          ? 'Move to place · click the floor to confirm · Esc to cancel'
+          : 'Drag products to move · Mirrors stay on walls · Storage docks to walls · Beds move freely'}
+      </div>
     </div>
   );
 }

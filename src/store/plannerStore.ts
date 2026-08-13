@@ -14,6 +14,25 @@ export type FurnitureAddMeta = {
   wallOffset?: number | null;
 };
 
+/** Catalog item awaiting IKEA-style ghost place → commit. */
+export type PendingPlacement = {
+  catalogId: string;
+  name: string;
+  category: string;
+  color: string;
+  width: number;
+  depth: number;
+  height: number;
+  mountingType?: MountingType | string;
+  clearance?: FurnitureItem['clearance'];
+  x: number;
+  z: number;
+  y: number;
+  rotation: number;
+  wallId?: string | null;
+  wallOffset?: number | null;
+};
+
 type PlannerState = SceneSnapshot & {
   tool: Tool;
   view: View;
@@ -24,6 +43,7 @@ type PlannerState = SceneSnapshot & {
   selectedOpeningId: string | null;
   selectedFurnitureId: string | null;
   selectedSurface: SurfaceTarget | null;
+  pendingPlacement: PendingPlacement | null;
   draftStart: Point | null;
   floors: FloorRecord[];
   activeFloorId: string;
@@ -36,6 +56,21 @@ type PlannerState = SceneSnapshot & {
   setRoomType: (type: RoomType) => void;
   setUnitSystem: (unit: UnitSystem) => void;
   setDraftStart: (p: Point | null) => void;
+  beginPlacement: (
+    catalogId: string,
+    name: string,
+    category: string,
+    dims: [number, number, number],
+    color: string,
+    x?: number,
+    z?: number,
+    meta?: FurnitureAddMeta,
+  ) => void;
+  movePendingPlacement: (x: number, z: number, rotation?: number) => void;
+  rotatePendingPlacement: (delta?: number) => void;
+  commitPendingPlacement: () => string | null;
+  cancelPendingPlacement: () => void;
+  rotateSelected: (delta?: number) => void;
   addWall: (a: Point, b: Point) => void;
   updateWall: (id: string, patch: Partial<Wall>) => void;
   updateWallEndpoint: (id: string, end: 'start' | 'end', point: Point) => void;
@@ -173,6 +208,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     selectedOpeningId: null,
     selectedFurnitureId: null,
     selectedSurface: null,
+    pendingPlacement: null,
     draftStart: null,
     floors: [{ id: 'ground', name: 'Ground floor', scene: initial }],
     activeFloorId: 'ground',
@@ -335,6 +371,92 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       if (get().selectedOpeningId === id) set({ selectedOpeningId: null });
     },
     clearOpeningNotice: () => set({ openingNotice: '' }),
+    beginPlacement: (catalogId, name, category, [width, depth, height], color, x = 0, z = 0, meta) => {
+      const placed = placeFurniture(get().walls, width, depth, height, x, z, {
+        ...meta,
+        category,
+        name,
+        live: true,
+      });
+      set({
+        pendingPlacement: {
+          catalogId,
+          name,
+          category,
+          color,
+          width,
+          depth,
+          height,
+          mountingType: meta?.mountingType ?? placed.mountingType,
+          clearance: meta?.clearance,
+          x: placed.x,
+          z: placed.z,
+          y: placed.y,
+          rotation: placed.rotation,
+          wallId: placed.wallId,
+          wallOffset: placed.wallOffset,
+        },
+        selectedFurnitureId: null,
+        selectedWallId: null,
+        selectedOpeningId: null,
+        selectedSurface: null,
+        view: '3d',
+      });
+    },
+    movePendingPlacement: (x, z, rotation) => {
+      const pending = get().pendingPlacement;
+      if (!pending) return;
+      const placed = placeFurniture(get().walls, pending.width, pending.depth, pending.height, x, z, {
+        mountingType: pending.mountingType,
+        category: pending.category,
+        name: pending.name,
+        clearance: pending.clearance,
+        rotation: rotation ?? pending.rotation,
+        y: pending.y,
+        live: true,
+      });
+      set({
+        pendingPlacement: {
+          ...pending,
+          x: placed.x,
+          z: placed.z,
+          y: placed.y,
+          rotation: placed.rotation,
+          wallId: placed.wallId,
+          wallOffset: placed.wallOffset,
+          mountingType: placed.mountingType,
+        },
+      });
+    },
+    rotatePendingPlacement: (delta = Math.PI / 2) => {
+      const pending = get().pendingPlacement;
+      if (!pending) return;
+      get().movePendingPlacement(pending.x, pending.z, pending.rotation + delta);
+    },
+    commitPendingPlacement: () => {
+      const pending = get().pendingPlacement;
+      if (!pending) return null;
+      set({ pendingPlacement: null });
+      get().addFurniture(
+        pending.catalogId,
+        pending.name,
+        pending.category,
+        [pending.width, pending.depth, pending.height],
+        pending.color,
+        pending.x,
+        pending.z,
+        {
+          mountingType: pending.mountingType,
+          clearance: pending.clearance,
+          rotation: pending.rotation,
+          y: pending.y,
+          wallId: pending.wallId,
+          wallOffset: pending.wallOffset,
+        },
+      );
+      return get().selectedFurnitureId;
+    },
+    cancelPendingPlacement: () => set({ pendingPlacement: null }),
     addFurniture: (catalogId, name, category, [width, depth, height], color, x = 0, z = 0, meta) => {
       const id = crypto.randomUUID();
       const placed = placeFurniture(get().walls, width, depth, height, x, z, { ...meta, category, name });
@@ -353,16 +475,17 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
           },
         ],
       });
-      set({ selectedFurnitureId: id, selectedWallId: null });
+      set({ selectedFurnitureId: id, selectedWallId: null, selectedOpeningId: null, selectedSurface: null, pendingPlacement: null });
     },
-    selectFurniture: (selectedFurnitureId) => set({ selectedFurnitureId, selectedWallId: null, selectedOpeningId: null, selectedSurface: null }),
+    selectFurniture: (selectedFurnitureId) =>
+      set({ selectedFurnitureId, selectedWallId: null, selectedOpeningId: null, selectedSurface: null }),
     updateFurnitureLive: (id, patch) => set((s) => ({ furniture: s.furniture.map((f) => (f.id === id ? { ...f, ...patch } : f)) })),
     updateFurniture: (id, patch) => {
       const item = get().furniture.find((f) => f.id === id);
       if (!item) return;
       const mounting = resolveMountingType(patch.mountingType ?? item.mountingType);
       let next: FurnitureItem = { ...item, ...patch, mountingType: mounting };
-      if (patch.x !== undefined || patch.z !== undefined || patch.mountingType !== undefined) {
+      if (patch.x !== undefined || patch.z !== undefined || patch.mountingType !== undefined || patch.rotation !== undefined) {
         const placed = placeFurniture(get().walls, next.width, next.depth, next.height, next.x, next.z, {
           mountingType: mounting,
           rotation: next.rotation,
@@ -381,6 +504,10 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       const id = get().selectedFurnitureId;
       const item = get().furniture.find((f) => f.id === id);
       if (item) get().updateFurniture(item.id, { x: item.x + dx, z: item.z + dz });
+    },
+    rotateSelected: (delta = Math.PI / 2) => {
+      const item = get().furniture.find((f) => f.id === get().selectedFurnitureId);
+      if (item) get().updateFurniture(item.id, { rotation: item.rotation + delta });
     },
     duplicateSelected: () => {
       const item = get().furniture.find((f) => f.id === get().selectedFurnitureId);

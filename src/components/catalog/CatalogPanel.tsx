@@ -31,7 +31,7 @@ export const CatalogPanel = memo(function CatalogPanel({
   onAdd?: () => void;
   roomType: RoomType;
 }) {
-  const add = usePlannerStore((s) => s.addFurniture);
+  const begin = usePlannerStore((s) => s.beginPlacement);
   const custom = useInventoryStore((s) => s.items);
   const [q, setQ] = useState('');
   const [category, setCategory] = useState('All');
@@ -104,7 +104,7 @@ export const CatalogPanel = memo(function CatalogPanel({
   };
 
   const addItem = (i: (typeof items)[number]) => {
-    add(i.id, i.name, i.category, i.dims, i.color, 0, 0, {
+    begin(i.id, i.name, i.category, i.dims, i.color, 0, 0, {
       mountingType: i.mountingType,
       clearance:
         i.category === 'Bedroom'
@@ -186,7 +186,7 @@ export const CatalogPanel = memo(function CatalogPanel({
                   {i.sourceLabel} <ExternalLink size={10} />
                 </a>
               )}
-              <button onClick={() => addItem(i)}>Add to room</button>
+              <button onClick={() => addItem(i)}>Place in room</button>
             </article>
           ))}
         </div>
