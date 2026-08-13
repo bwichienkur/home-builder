@@ -16,6 +16,18 @@ export function planToWorld(point: Point): { x: number; z: number } {
   return { x: (point.x - WORLD_ORIGIN.x) / PIXELS_PER_METER, z: (point.y - WORLD_ORIGIN.y) / PIXELS_PER_METER };
 }
 
+/** Floor centroid for ghost placement so new products appear on-screen immediately. */
+export function roomFloorCenter(walls: Wall[]): { x: number; z: number } {
+  if (!walls.length) return { x: 0, z: 0 };
+  const points = walls.flatMap((w) => [planToWorld(w.start), planToWorld(w.end)]);
+  const xs = points.map((p) => p.x);
+  const zs = points.map((p) => p.z);
+  return {
+    x: (Math.min(...xs) + Math.max(...xs)) / 2,
+    z: (Math.min(...zs) + Math.max(...zs)) / 2,
+  };
+}
+
 export function worldToPlan(x: number, z: number): Point {
   return { x: x * PIXELS_PER_METER + WORLD_ORIGIN.x, y: z * PIXELS_PER_METER + WORLD_ORIGIN.y };
 }

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { CameraMode, FurnitureItem, MountingType, Opening, Point, RoomType, SceneSnapshot, SurfaceTarget, Tool, UnitSystem, Wall } from '../types';
-import { constrainPlacement, openingConflicts, resolveMountingType } from '../lib/geometry/placement';
+import { constrainPlacement, openingConflicts, resolveMountingType, roomFloorCenter } from '../lib/geometry/placement';
 import { writeRecoverySnapshot } from '../lib/designShare';
 
 type View = '2d' | '3d';
@@ -62,8 +62,8 @@ type PlannerState = SceneSnapshot & {
     category: string,
     dims: [number, number, number],
     color: string,
-    x?: number,
-    z?: number,
+    x?: number | undefined,
+    z?: number | undefined,
     meta?: FurnitureAddMeta,
   ) => void;
   movePendingPlacement: (x: number, z: number, rotation?: number) => void;
@@ -371,8 +371,12 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       if (get().selectedOpeningId === id) set({ selectedOpeningId: null });
     },
     clearOpeningNotice: () => set({ openingNotice: '' }),
-    beginPlacement: (catalogId, name, category, [width, depth, height], color, x = 0, z = 0, meta) => {
-      const placed = placeFurniture(get().walls, width, depth, height, x, z, {
+    beginPlacement: (catalogId, name, category, [width, depth, height], color, x, z, meta) => {
+      const walls = get().walls;
+      const center = roomFloorCenter(walls);
+      const startX = x ?? center.x;
+      const startZ = z ?? center.z;
+      const placed = placeFurniture(walls, width, depth, height, startX, startZ, {
         ...meta,
         category,
         name,

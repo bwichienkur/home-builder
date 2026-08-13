@@ -67,9 +67,34 @@ export function CatalogModel({
   );
 }
 
+function SelectionHalo({
+  width,
+  depth,
+  height,
+  selected,
+  colliding,
+}: {
+  width: number;
+  depth: number;
+  height: number;
+  selected?: boolean;
+  colliding?: boolean;
+}) {
+  if (!selected && !colliding) return null;
+  const color = colliding ? '#c0392b' : '#0058a3';
+  const opacity = colliding ? 0.28 : 0.2;
+  return (
+    <mesh position={[0, height / 2, 0]}>
+      <boxGeometry args={[width * 1.04, height * 1.04, depth * 1.04]} />
+      <meshStandardMaterial color={color} transparent opacity={opacity} depthWrite={false} />
+    </mesh>
+  );
+}
+
 export function ProxyFurniture({
   item,
   colliding,
+  selected,
   onSelect,
   onPointerDown,
   onPointerMove,
@@ -78,15 +103,17 @@ export function ProxyFurniture({
 }: {
   item: FurnitureItem;
   colliding?: boolean;
+  selected?: boolean;
   onSelect?: (e: any) => void;
   onPointerDown?: (e: any) => void;
   onPointerMove?: (e: any) => void;
   onPointerUp?: (e: any) => void;
   onPointerCancel?: (e: any) => void;
 }) {
-  const color = colliding ? '#d94a45' : item.color;
+  const color = item.color;
   const handlers = { onClick: onSelect, onPointerDown, onPointerMove, onPointerUp, onPointerCancel };
   const category = item.category.toLowerCase();
+  const halo = <SelectionHalo width={item.width} depth={item.depth} height={item.height} selected={selected} colliding={colliding} />;
 
   if (category.includes('light') && item.mountingType === 'wall') {
     return (
@@ -99,6 +126,7 @@ export function ProxyFurniture({
           <sphereGeometry args={[Math.min(item.width, item.height) * 0.28, 16, 16]} />
           <meshStandardMaterial color="#fff6d8" emissive="#ffd978" emissiveIntensity={0.65} />
         </mesh>
+        {halo}
       </group>
     );
   }
@@ -114,6 +142,7 @@ export function ProxyFurniture({
           <boxGeometry args={[item.width, item.height * 0.55, item.depth * 0.12]} />
           <meshStandardMaterial color={color} roughness={0.8} />
         </mesh>
+        {halo}
       </group>
     );
   }
@@ -133,26 +162,19 @@ export function ProxyFurniture({
           <sphereGeometry args={[item.width * 0.22, 16, 16]} />
           <meshStandardMaterial color="#fff4d0" emissive="#ffe08a" emissiveIntensity={0.5} />
         </mesh>
+        {halo}
       </group>
     );
   }
 
   return (
-    <mesh
-      position={[0, item.height / 2, 0]}
-      castShadow
-      receiveShadow
-      {...handlers}
-    >
-      <boxGeometry args={[item.width, item.height, item.depth]} />
-      <meshStandardMaterial
-        color={color}
-        roughness={0.78}
-        metalness={0.04}
-        emissive={colliding ? '#4a1010' : '#000000'}
-        emissiveIntensity={colliding ? 0.12 : 0}
-      />
-    </mesh>
+    <group {...handlers}>
+      <mesh position={[0, item.height / 2, 0]} castShadow receiveShadow>
+        <boxGeometry args={[item.width, item.height, item.depth]} />
+        <meshStandardMaterial color={color} roughness={0.78} metalness={0.04} />
+      </mesh>
+      {halo}
+    </group>
   );
 }
 
@@ -161,6 +183,7 @@ export function FurnitureVisual({
   lowUrl,
   fullUrl,
   colliding,
+  selected,
   onSelect,
   onPointerDown,
   onPointerMove,
@@ -171,6 +194,7 @@ export function FurnitureVisual({
   lowUrl?: string;
   fullUrl?: string;
   colliding?: boolean;
+  selected?: boolean;
   onSelect?: (e: any) => void;
   onPointerDown?: (e: any) => void;
   onPointerMove?: (e: any) => void;
@@ -182,6 +206,7 @@ export function FurnitureVisual({
       <ProxyFurniture
         item={item}
         colliding={colliding}
+        selected={selected}
         onSelect={onSelect}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -196,15 +221,10 @@ export function FurnitureVisual({
 
   return (
     <group onClick={onSelect} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerCancel}>
-      <Suspense fallback={<ProxyFurniture item={item} colliding={colliding} />}>
+      <Suspense fallback={<ProxyFurniture item={item} colliding={colliding} selected={selected} />}>
         <CatalogModel lowUrl={low} fullUrl={full} width={item.width} depth={item.depth} height={item.height} />
       </Suspense>
-      {colliding && (
-        <mesh position={[0, item.height / 2, 0]}>
-          <boxGeometry args={[item.width * 1.02, item.height * 1.02, item.depth * 1.02]} />
-          <meshStandardMaterial color="#d94a45" transparent opacity={0.22} depthWrite={false} />
-        </mesh>
-      )}
+      <SelectionHalo width={item.width} depth={item.depth} height={item.height} selected={selected} colliding={colliding} />
     </group>
   );
 }

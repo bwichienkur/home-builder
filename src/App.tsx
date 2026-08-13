@@ -88,6 +88,8 @@ function StudioApp() {
     setCatalogOpen(false);
     setMenuOpen(false);
     setInspectorOpen(false);
+    setProductCardOpen(false);
+    // Keep Top if already planning from above; otherwise orbit for placement context.
     window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 0);
   }, [store]);
 
@@ -155,12 +157,15 @@ function StudioApp() {
 
   useEffect(() => {
     const open = () => {
+      // Walls/floors/ceilings → inspector. Never stack with the retail product card.
       setInspectorOpen(true);
+      setProductCardOpen(false);
       setCatalogOpen(false);
       setMenuOpen(false);
     };
     const openCard = () => {
       setProductCardOpen(true);
+      setInspectorOpen(false);
       setCatalogOpen(false);
       setMenuOpen(false);
     };
@@ -175,7 +180,7 @@ function StudioApp() {
   const selectedSurface = usePlannerStore((s) => s.selectedSurface);
   const pendingPlacement = usePlannerStore((s) => s.pendingPlacement);
   useEffect(() => {
-    // Furniture uses FABs + retail product card; inspector opens on Modify. Walls/openings/surfaces still auto-open.
+    // One panel at a time: furniture → product card; walls/openings/surfaces → inspector.
     if (pendingPlacement) {
       setInspectorOpen(false);
       setProductCardOpen(false);
@@ -183,6 +188,7 @@ function StudioApp() {
     }
     if (selectedFurnitureId) {
       setProductCardOpen(true);
+      setInspectorOpen(false);
       return;
     }
     setProductCardOpen(false);
@@ -293,17 +299,24 @@ function StudioApp() {
         openCategory={openCategory}
         onOpenInspector={() => {
           setInspectorOpen(true);
-          setProductCardOpen(true);
+          setProductCardOpen(false);
           setCatalogOpen(false);
           setMenuOpen(false);
         }}
       />
 
-      {productCardOpen && selectedFurnitureId && !pendingPlacement && view === '3d' && !catalogOpen && !menuOpen && (
+      {productCardOpen &&
+        selectedFurnitureId &&
+        !inspectorOpen &&
+        !pendingPlacement &&
+        view === '3d' &&
+        !catalogOpen &&
+        !menuOpen && (
         <SelectedProductCard
           roomType={roomType}
           onModify={() => {
             setInspectorOpen(true);
+            setProductCardOpen(false);
             setCatalogOpen(false);
             setMenuOpen(false);
           }}

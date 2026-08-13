@@ -17,8 +17,10 @@ describe('mobile planner defaults',()=>{
  it('ghost-places a product before committing it to the room',()=>{
   usePlannerStore.getState().cancelPendingPlacement();
   const before=usePlannerStore.getState().furniture.length;
-  usePlannerStore.getState().beginPlacement('ghost-bed','Cloud Bed','Bedroom',[1.7,2.1,.55],'#ddd',0,0,{mountingType:'floor'});
-  expect(usePlannerStore.getState().pendingPlacement?.name).toBe('Cloud Bed');
+  usePlannerStore.getState().beginPlacement('ghost-bed','Cloud Bed','Bedroom',[1.7,2.1,.55],'#ddd',undefined,undefined,{mountingType:'floor'});
+  const pending=usePlannerStore.getState().pendingPlacement;
+  expect(pending?.name).toBe('Cloud Bed');
+  expect(pending).not.toBeNull();
   expect(usePlannerStore.getState().furniture).toHaveLength(before);
   usePlannerStore.getState().movePendingPlacement(.5,.25);
   usePlannerStore.getState().rotatePendingPlacement(Math.PI/2);

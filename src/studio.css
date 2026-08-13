@@ -60,6 +60,21 @@
   background: #0058a3;
 }
 
+.studio-view-chip-warn {
+  background: #0058a3;
+}
+
+.studio-gesture-hint {
+  z-index: 42;
+}
+
+.studio-history-mobile {
+  /* Prefer thumb reach near the bottom-left cluster on phones */
+  left: max(16px, env(safe-area-inset-left));
+  right: auto;
+  bottom: max(78px, calc(env(safe-area-inset-bottom) + 70px));
+}
+
 .studio-shell.camera-top .scene-help {
   display: none;
 }

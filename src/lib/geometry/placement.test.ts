@@ -6,6 +6,7 @@ import {
   openingConflicts,
   placementConstraint,
   planToWorld,
+  roomFloorCenter,
   snapToWallSurface,
   worldToPlan,
 } from './placement';
@@ -86,5 +87,12 @@ describe('placement helpers', () => {
     });
     expect(docked.constraint).toBe('wall-prefer');
     expect(docked.wallId).toBe('w1');
+  });
+
+  it('returns the floor centroid for ghost placement', () => {
+    const center = roomFloorCenter(rect);
+    const expected = planToWorld({ x: 420, y: 330 });
+    expect(center.x).toBeCloseTo(expected.x, 1);
+    expect(center.z).toBeCloseTo(expected.z, 1);
   });
 });
