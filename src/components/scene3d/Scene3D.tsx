@@ -10,9 +10,12 @@ import { alignmentGuides, constrainPlacement, WORLD_ORIGIN } from '../../lib/geo
 import { PIXELS_PER_METER } from '../../lib/geometry/snapping';
 import { collisionsAsync } from '../../lib/collisions';
 import { formatLength } from '../../lib/measurements';
+import { rafThrottle } from '../../lib/rafThrottle';
 import { useInventoryStore } from '../../store/inventoryStore';
 import { FurnitureVisual } from './CatalogModel';
 import type { ReactElement } from 'react';
+
+const isCoarsePointer = () => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
 
 const world = (x: number, y: number): [number, number] => [
   (x - WORLD_ORIGIN.x) / PIXELS_PER_METER,
@@ -252,6 +255,8 @@ function WallMeshes() {
 
 function DimensionLabels({ item }: { item: FurnitureItem }) {
   const unit = usePlannerStore((s) => s.unitSystem);
+  // Dense labels hurt readability and GPU cost on phones.
+  if (isCoarsePointer()) return null;
   const y = (item.y ?? 0) + item.height + 0.12;
   return (
     <group position={[item.x, y, item.z]} rotation={[0, item.rotation, 0]}>
@@ -317,23 +322,33 @@ function Furniture() {
   const floorPlane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), []);
   const [collisions, setCollisions] = useState<Set<string>>(new Set());
   const [dragging, setDragging] = useState(false);
+  const liveThrottle = useRef(
+    rafThrottle((id: string, patch: Partial<FurnitureItem>) => {
+      updateLive(id, patch);
+    }),
+  );
 
   useEffect(() => {
     if (dragging) return;
     let alive = true;
-    collisionsAsync(items).then((pairs) => {
-      if (!alive) return;
-      const ids = new Set<string>();
-      pairs.forEach(([a, b]) => {
-        ids.add(a);
-        ids.add(b);
+    const timer = window.setTimeout(() => {
+      collisionsAsync(items).then((pairs) => {
+        if (!alive) return;
+        const ids = new Set<string>();
+        pairs.forEach(([a, b]) => {
+          ids.add(a);
+          ids.add(b);
+        });
+        setCollisions(ids);
       });
-      setCollisions(ids);
-    });
+    }, dragging ? 0 : 120);
     return () => {
       alive = false;
+      window.clearTimeout(timer);
     };
   }, [items, dragging]);
+
+  useEffect(() => () => liveThrottle.current.cancel(), []);
 
   const constrainDrag = (item: FurnitureItem, x: number, z: number, rotation?: number) => {
     const placed = constrainPlacement(x, z, walls, item.depth, {
@@ -362,6 +377,7 @@ function Furniture() {
     e.target.setPointerCapture?.(e.pointerId);
     document.body.dataset.movingFurniture = 'true';
     setDragging(true);
+    window.dispatchEvent(new Event('roomcraft-dismiss-product-card'));
     window.dispatchEvent(new Event('roomcraft-drag-start'));
   };
   const moveTouchDrag = (e: any) => {
@@ -371,13 +387,14 @@ function Furniture() {
     if (!e.ray.intersectPlane(floorPlane, hit)) return;
     const patch = constrainDrag(selected, hit.x + touchDrag.current.offsetX, hit.z + touchDrag.current.offsetZ);
     pending.current = patch;
-    updateLive(selected.id, patch);
+    liveThrottle.current(selected.id, patch);
   };
   const endTouchDrag = (e: any) => {
     if (!selected || !touchDrag.current) return;
     e.stopPropagation();
     e.target.releasePointerCapture?.(touchDrag.current.pointerId);
     touchDrag.current = null;
+    liveThrottle.current.cancel();
     delete document.body.dataset.movingFurniture;
     setDragging(false);
     window.dispatchEvent(new Event('roomcraft-drag-end'));
@@ -437,6 +454,7 @@ function Furniture() {
             onDragStart={() => {
               document.body.dataset.movingFurniture = 'true';
               setDragging(true);
+              window.dispatchEvent(new Event('roomcraft-dismiss-product-card'));
               window.dispatchEvent(new Event('roomcraft-drag-start'));
             }}
             onDrag={(m) => {
@@ -447,9 +465,10 @@ function Furniture() {
               const rotation = new THREE.Euler().setFromQuaternion(q).y;
               const patch = constrainDrag(selected, p.x, p.z, rotation);
               pending.current = patch;
-              updateLive(selected.id, patch);
+              liveThrottle.current(selected.id, patch);
             }}
             onDragEnd={() => {
+              liveThrottle.current.cancel();
               delete document.body.dataset.movingFurniture;
               setDragging(false);
               window.dispatchEvent(new Event('roomcraft-drag-end'));
@@ -586,21 +605,29 @@ function GhostPlacement() {
   const commit = usePlannerStore((s) => s.commitPendingPlacement);
   const { invalidate } = useThree();
   const floorPlane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), []);
+  const moveThrottle = useRef(
+    rafThrottle((x: number, z: number) => {
+      movePending(x, z);
+      invalidate();
+    }),
+  );
 
   useEffect(() => {
     if (pending) invalidate();
   }, [pending, invalidate]);
+
+  useEffect(() => () => moveThrottle.current.cancel(), []);
 
   if (!pending) return null;
 
   const onMove = (e: any) => {
     const hit = new THREE.Vector3();
     if (!e.ray.intersectPlane(floorPlane, hit)) return;
-    movePending(hit.x, hit.z);
-    invalidate();
+    moveThrottle.current(hit.x, hit.z);
   };
   const onPlace = (e: any) => {
     e.stopPropagation();
+    moveThrottle.current.cancel();
     const hit = new THREE.Vector3();
     if (e.ray.intersectPlane(floorPlane, hit)) movePending(hit.x, hit.z);
     commit();
@@ -666,16 +693,17 @@ export function Scene3D() {
       return false;
     }
   }, []);
+  const coarse = useMemo(() => isCoarsePointer(), []);
   if (!supported) return <SceneFallback />;
   return (
     <div className="scene-host" onDragOver={(e) => e.preventDefault()} onDrop={drop}>
       <Canvas
         fallback={<SceneFallback />}
-        shadows
-        dpr={[1, 1.35]}
+        shadows={!coarse}
+        dpr={coarse ? [1, 1.1] : [1, 1.35]}
         frameloop="demand"
-        performance={{ min: 0.65, debounce: 200 }}
-        gl={{ antialias: true, powerPreference: 'high-performance' }}
+        performance={{ min: coarse ? 0.5 : 0.65, debounce: 200 }}
+        gl={{ antialias: !coarse, powerPreference: 'high-performance' }}
         onPointerMissed={() => {
           if (pending) return;
           select(null);
@@ -685,11 +713,16 @@ export function Scene3D() {
       >
         <color attach="background" args={['#e8eaed']} />
         <fog attach="fog" args={['#e8eaed', 12, 24]} />
-        <ambientLight intensity={0.78} />
-        <directionalLight castShadow intensity={1.35} position={[5, 8, 4]} shadow-mapSize={[512, 512]} />
+        <ambientLight intensity={coarse ? 0.9 : 0.78} />
+        <directionalLight
+          castShadow={!coarse}
+          intensity={coarse ? 1.1 : 1.35}
+          position={[5, 8, 4]}
+          shadow-mapSize={coarse ? [256, 256] : [512, 512]}
+        />
         <Suspense fallback={null}>
           <Room />
-          <Environment preset="apartment" environmentIntensity={0.35} />
+          {!coarse && <Environment preset="apartment" environmentIntensity={0.35} />}
         </Suspense>
         <CameraRig />
       </Canvas>

@@ -114,6 +114,8 @@ This is a behavioral audit, not permission to copy IKEA branding, product data, 
 | Performance | Lazy 3D assets | All | Scene-only models | Catalog thumbnails never mount WebGL | Complete |
 | Performance | BVH/frustum culling | All | BVH/default culling | Raycast dense scene | Complete |
 | Performance | Worker geometry/collisions | All | geometry.worker via collisionsAsync | Heavy polygon ops run off-main-thread | Complete |
+| Performance | Throttled live drag/place | All | rafThrottle on updateLive + ghost move | Drag/place stays smooth on mobile | Complete |
+| Performance | Mobile render budget | All | Lower DPR, no env map/shadows on coarse pointers | Phone orbit stays responsive | Complete |
 
 ## Release gate
 

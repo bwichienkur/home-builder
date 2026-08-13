@@ -207,18 +207,22 @@ export function StudioChrome({
           <button onClick={() => rotateSelected()} aria-label="Rotate product">
             <RotateCw />
           </button>
-          <button
-            onClick={() => window.dispatchEvent(new Event('roomcraft-open-product-card'))}
-            aria-label="Product details"
-          >
-            <Info />
-          </button>
+          {!coarsePointer && (
+            <button
+              onClick={() => window.dispatchEvent(new Event('roomcraft-open-product-card'))}
+              aria-label="Product details"
+            >
+              <Info />
+            </button>
+          )}
           <button onClick={onOpenInspector} aria-label="Edit product">
             <PencilRuler />
           </button>
-          <button onClick={() => duplicateSelected()} aria-label="Duplicate product">
-            <Copy />
-          </button>
+          {!coarsePointer && (
+            <button onClick={() => duplicateSelected()} aria-label="Duplicate product">
+              <Copy />
+            </button>
+          )}
           <button className="is-danger" onClick={() => deleteSelected()} aria-label="Delete product">
             <Trash2 />
           </button>

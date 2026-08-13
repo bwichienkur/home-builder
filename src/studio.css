@@ -901,13 +901,43 @@
     bottom: max(86px, calc(env(safe-area-inset-bottom) + 74px));
     max-height: min(36vh, 280px);
   }
-  .studio-product-complements {
-    display: none; /* keep mobile card compact; desktop still shows complements */
+  /* Compact horizontal complements — keep canvas usable */
+  .studio-product-complements ul {
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 8px;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+  .studio-product-complements ul::-webkit-scrollbar { display: none; }
+  .studio-product-complements li {
+    flex: 0 0 auto;
+    width: 132px;
+  }
+  .studio-product-complements button {
+    grid-template-columns: 36px 1fr;
+    padding: 6px;
+    gap: 8px;
+  }
+  .studio-product-complements .thumb {
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
+  }
+  .studio-product-complements strong {
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .studio-shell.has-product-card .studio-category-rail,
-  .studio-shell.is-placing .studio-category-rail {
+  .studio-shell.is-placing .studio-category-rail,
+  .studio-shell.view-2d .studio-category-rail {
     opacity: 0.28;
     pointer-events: none;
+  }
+  .studio-shell.view-2d .studio-bag {
+    opacity: 0.45;
   }
   .studio-selection-fabs {
     right: max(14px, env(safe-area-inset-right));
@@ -916,6 +946,11 @@
     transform: none;
     animation: card-in 220ms ease-out;
   }
+}
+
+.studio-shell.view-2d .studio-category-rail {
+  pointer-events: none;
+  opacity: 0.35;
 }
 
 @media (min-width: 821px) {

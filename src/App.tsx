@@ -84,12 +84,14 @@ function StudioApp() {
   const closeCatalog = useCallback(() => setCatalogOpen(false), []);
   const startGhostPlacement = useCallback(() => {
     store.setView('3d');
-    if (store.cameraMode === 'walk') store.setCameraMode('orbit');
+    const coarse = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+    // Phones: place from Top (floor-first). Desktop: stay in orbit unless already Top.
+    if (coarse) store.setCameraMode('top');
+    else if (store.cameraMode === 'walk') store.setCameraMode('orbit');
     setCatalogOpen(false);
     setMenuOpen(false);
     setInspectorOpen(false);
     setProductCardOpen(false);
-    // Keep Top if already planning from above; otherwise orbit for placement context.
     window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 0);
   }, [store]);
 
@@ -169,11 +171,14 @@ function StudioApp() {
       setCatalogOpen(false);
       setMenuOpen(false);
     };
+    const dismissCard = () => setProductCardOpen(false);
     window.addEventListener('roomcraft-open-properties', open);
     window.addEventListener('roomcraft-open-product-card', openCard);
+    window.addEventListener('roomcraft-dismiss-product-card', dismissCard);
     return () => {
       window.removeEventListener('roomcraft-open-properties', open);
       window.removeEventListener('roomcraft-open-product-card', openCard);
+      window.removeEventListener('roomcraft-dismiss-product-card', dismissCard);
     };
   }, []);
 
@@ -255,8 +260,9 @@ function StudioApp() {
     'studio-shell',
     `view-${isRoomEdit ? '2d' : '3d'}`,
     isTop ? 'camera-top' : '',
+    cameraMode === 'walk' && !isRoomEdit ? 'camera-walk' : '',
     pendingPlacement ? 'is-placing' : '',
-    productCardOpen && selectedFurnitureId && !pendingPlacement ? 'has-product-card' : '',
+    productCardOpen && selectedFurnitureId && !pendingPlacement && !inspectorOpen ? 'has-product-card' : '',
   ]
     .filter(Boolean)
     .join(' ');
