@@ -61,6 +61,7 @@ function StudioApp() {
     selectedOpeningId,
     selectedFurnitureId,
     view,
+    cameraMode,
     roomType,
     floors,
     activeFloorId,
@@ -212,20 +213,25 @@ function StudioApp() {
     window.setTimeout(() => window.dispatchEvent(new CustomEvent('roomcraft-catalog-category', { detail: category })), 0);
   };
 
-  const isTop = view === '2d';
+  const isRoomEdit = view === '2d';
+  const isTop = !isRoomEdit && cameraMode === 'top';
 
   return (
-    <main className={`studio-shell view-${view}`}>
-      <section className="studio-canvas" aria-label={isTop ? 'Top view floor plan' : '3D room view'}>
-        {isTop ? (
-          <>
-            <Toolbar />
-            <FloorPlanEditor />
-          </>
-        ) : (
+    <main className={`studio-shell view-${isRoomEdit ? '2d' : '3d'}${isTop ? ' camera-top' : ''}`}>
+      <section
+        className="studio-canvas"
+        aria-label={isRoomEdit ? 'Edit room layout' : isTop ? 'Bird’s-eye room view' : '3D room view'}
+      >
+        <div className={`scene-layer${isRoomEdit ? ' is-parked' : ''}`} aria-hidden={isRoomEdit}>
           <Suspense fallback={<div className="loading-3d">Preparing your room…</div>}>
             <Scene3D />
           </Suspense>
+        </div>
+        {isRoomEdit && (
+          <div className="plan-layer">
+            <Toolbar />
+            <FloorPlanEditor />
+          </div>
         )}
       </section>
 

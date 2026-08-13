@@ -1,12 +1,12 @@
 import { Canvas, useThree } from '@react-three/fiber';
-import { Bvh, Environment, Grid, Line, OrbitControls, OrthographicCamera, PerspectiveCamera, PivotControls, Text } from '@react-three/drei';
+import { Bvh, Environment, Grid, Line, OrbitControls, PerspectiveCamera, PivotControls, Text } from '@react-three/drei';
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { usePlannerStore } from '../../store/plannerStore';
 import { catalog } from '../catalog/catalogData';
 import type { FurnitureItem } from '../../types';
 import { detectRoomPolygons, roomShape } from '../../lib/geometry/rooms';
-import { alignmentGuides, WORLD_ORIGIN } from '../../lib/geometry/placement';
+import { alignmentGuides, constrainPlacement, WORLD_ORIGIN } from '../../lib/geometry/placement';
 import { PIXELS_PER_METER } from '../../lib/geometry/snapping';
 import { collisionsAsync } from '../../lib/collisions';
 import { formatLength } from '../../lib/measurements';
@@ -26,39 +26,47 @@ function CameraRig() {
   const [moving, setMoving] = useState(false);
   const controls = useRef<any>(null);
   const { invalidate, get } = useThree();
-  const center = useMemo<[number, number, number]>(() => {
-    if (!walls.length) return [0, 0.65, 0];
+  const framing = useMemo(() => {
+    if (!walls.length) return { center: [0, 0, 0] as [number, number, number], span: 6 };
     const points = walls.flatMap((w) => [world(w.start.x, w.start.y), world(w.end.x, w.end.y)]);
     const xs = points.map((p) => p[0]);
     const zs = points.map((p) => p[1]);
-    return [(Math.min(...xs) + Math.max(...xs)) / 2, 0.65, (Math.min(...zs) + Math.max(...zs)) / 2];
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const minZ = Math.min(...zs);
+    const maxZ = Math.max(...zs);
+    const span = Math.max(maxX - minX, maxZ - minZ, 3);
+    return { center: [(minX + maxX) / 2, 0, (minZ + maxZ) / 2] as [number, number, number], span };
   }, [walls]);
+  const center = framing.center;
+  const targetTuple = useMemo<[number, number, number]>(() => [center[0], 0, center[2]], [center]);
+  const poseTuple = useMemo<[number, number, number]>(() => {
+    if (mode === 'top') {
+      // Bird’s-eye: high above the floor with a slight offset so walls/objects stay readable in 3D.
+      const height = Math.max(6.5, framing.span * 1.35);
+      return [center[0] + framing.span * 0.08, height, center[2] + framing.span * 0.12];
+    }
+    if (mode === 'walk') return [center[0], 1.6, center[2] + 3.5];
+    return [center[0] + 6, 5, center[2] + 7];
+  }, [mode, center, framing.span]);
 
   useEffect(() => {
     const camera = get().camera;
-    const target = new THREE.Vector3(...center);
+    const target = new THREE.Vector3(...targetTuple);
     controls.current?.target.copy(target);
-    if (mode === 'top' && camera instanceof THREE.OrthographicCamera) {
-      camera.position.set(center[0], 10, center[2]);
-      camera.zoom = 90;
-      camera.lookAt(target);
-      camera.updateProjectionMatrix();
-    }
+    camera.position.set(...poseTuple);
+    camera.lookAt(target);
+    camera.updateProjectionMatrix();
     controls.current?.update();
     invalidate();
-  }, [mode, center, get, invalidate]);
+  }, [mode, poseTuple, targetTuple, get, invalidate]);
 
   useEffect(() => {
     const refocus = () => {
       const camera = get().camera;
       const from = camera.position.clone();
-      const target = new THREE.Vector3(...center);
-      const to =
-        camera instanceof THREE.OrthographicCamera
-          ? new THREE.Vector3(center[0], 10, center[2])
-          : mode === 'walk'
-            ? new THREE.Vector3(center[0], 1.6, center[2] + 3.5)
-            : new THREE.Vector3(center[0] + 6, 5, center[2] + 7);
+      const to = new THREE.Vector3(...poseTuple);
+      const target = new THREE.Vector3(...targetTuple);
       const start = performance.now();
       const duration = 420;
       const tick = (now: number) => {
@@ -66,10 +74,6 @@ function CameraRig() {
         const ease = 1 - Math.pow(1 - t, 3);
         camera.position.lerpVectors(from, to, ease);
         controls.current?.target.lerp(target, ease);
-        if (camera instanceof THREE.OrthographicCamera) {
-          camera.zoom = 90;
-          camera.updateProjectionMatrix();
-        }
         camera.lookAt(controls.current?.target ?? target);
         controls.current?.update();
         invalidate();
@@ -87,35 +91,24 @@ function CameraRig() {
       window.removeEventListener('roomcraft-drag-start', start);
       window.removeEventListener('roomcraft-drag-end', stop);
     };
-  }, [get, invalidate, center, mode]);
+  }, [get, invalidate, poseTuple, targetTuple]);
 
   return (
     <>
-      {mode === 'top' ? (
-        <>
-          <OrthographicCamera makeDefault position={[center[0], 10, center[2]]} rotation={[-Math.PI / 2, 0, 0]} zoom={90} />
-          <OrbitControls ref={controls} enabled={!moving} enableRotate={false} onChange={() => invalidate()} />
-        </>
-      ) : (
-        <>
-          <PerspectiveCamera
-            makeDefault
-            position={mode === 'walk' ? [center[0], 1.6, center[2] + 3.5] : [center[0] + 6, 5, center[2] + 7]}
-            fov={mode === 'walk' ? 72 : 48}
-          />
-          <OrbitControls
-            ref={controls}
-            enabled={!moving}
-            target={center}
-            maxPolarAngle={mode === 'walk' ? Math.PI / 2 : Math.PI / 2.05}
-            minDistance={mode === 'walk' ? 0.5 : 2}
-            maxDistance={18}
-            enableZoom
-            enablePan
-            onChange={() => invalidate()}
-          />
-        </>
-      )}
+      <PerspectiveCamera makeDefault position={poseTuple} fov={mode === 'walk' ? 72 : mode === 'top' ? 42 : 48} />
+      <OrbitControls
+        ref={controls}
+        enabled={!moving}
+        target={targetTuple}
+        minPolarAngle={mode === 'top' ? 0.12 : 0}
+        maxPolarAngle={mode === 'top' ? 0.95 : mode === 'walk' ? Math.PI / 2 : Math.PI / 2.05}
+        minDistance={mode === 'walk' ? 0.5 : mode === 'top' ? 3 : 2}
+        maxDistance={mode === 'top' ? 22 : 18}
+        enableZoom
+        enablePan
+        enableRotate={mode !== 'walk'}
+        onChange={() => invalidate()}
+      />
     </>
   );
 }
@@ -305,6 +298,7 @@ function Guides({ selected, others }: { selected: FurnitureItem; others: Furnitu
 
 function Furniture() {
   const items = usePlannerStore((s) => s.furniture);
+  const walls = usePlannerStore((s) => s.walls);
   const selectedId = usePlannerStore((s) => s.selectedFurnitureId);
   const select = usePlannerStore((s) => s.selectFurniture);
   const update = usePlannerStore((s) => s.updateFurniture);
@@ -316,7 +310,10 @@ function Furniture() {
   const touchDrag = useRef<{ pointerId: number; offsetX: number; offsetZ: number } | null>(null);
   const floorPlane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), []);
   const [collisions, setCollisions] = useState<Set<string>>(new Set());
+  const [dragging, setDragging] = useState(false);
+
   useEffect(() => {
+    if (dragging) return;
     let alive = true;
     collisionsAsync(items).then((pairs) => {
       if (!alive) return;
@@ -330,7 +327,24 @@ function Furniture() {
     return () => {
       alive = false;
     };
-  }, [items]);
+  }, [items, dragging]);
+
+  const constrainDrag = (item: FurnitureItem, x: number, z: number, rotation?: number) => {
+    const placed = constrainPlacement(x, z, walls, item.depth, {
+      mountingType: item.mountingType,
+      category: item.category,
+      name: item.name,
+      rotation: rotation ?? item.rotation,
+      live: true,
+    });
+    return {
+      x: placed.x,
+      z: placed.z,
+      rotation: placed.rotation ?? rotation ?? item.rotation,
+      wallId: placed.wallId,
+      wallOffset: placed.wallOffset,
+    };
+  };
 
   const beginTouchDrag = (e: any) => {
     if (!selected || e.nativeEvent?.pointerType !== 'touch') return;
@@ -341,6 +355,7 @@ function Furniture() {
     pending.current = { x: selected.x, z: selected.z };
     e.target.setPointerCapture?.(e.pointerId);
     document.body.dataset.movingFurniture = 'true';
+    setDragging(true);
     window.dispatchEvent(new Event('roomcraft-drag-start'));
   };
   const moveTouchDrag = (e: any) => {
@@ -348,7 +363,7 @@ function Furniture() {
     e.stopPropagation();
     const hit = new THREE.Vector3();
     if (!e.ray.intersectPlane(floorPlane, hit)) return;
-    const patch = { x: hit.x + touchDrag.current.offsetX, z: hit.z + touchDrag.current.offsetZ };
+    const patch = constrainDrag(selected, hit.x + touchDrag.current.offsetX, hit.z + touchDrag.current.offsetZ);
     pending.current = patch;
     updateLive(selected.id, patch);
   };
@@ -358,6 +373,7 @@ function Furniture() {
     e.target.releasePointerCapture?.(touchDrag.current.pointerId);
     touchDrag.current = null;
     delete document.body.dataset.movingFurniture;
+    setDragging(false);
     window.dispatchEvent(new Event('roomcraft-drag-end'));
     if (pending.current) {
       update(selected.id, pending.current);
@@ -400,22 +416,36 @@ function Furniture() {
         })}
       {selected && (
         <>
-          <Guides selected={selected} others={items} />
-          <DimensionLabels item={selected} />
+          {!dragging && (
+            <>
+              <Guides selected={selected} others={items} />
+              <DimensionLabels item={selected} />
+            </>
+          )}
           <PivotControls
             depthTest={false}
             scale={1.15}
             lineWidth={2}
             enabled={!matchMedia('(pointer: coarse)').matches}
+            onDragStart={() => {
+              document.body.dataset.movingFurniture = 'true';
+              setDragging(true);
+              window.dispatchEvent(new Event('roomcraft-drag-start'));
+            }}
             onDrag={(m) => {
               const p = new THREE.Vector3();
               const q = new THREE.Quaternion();
               const s = new THREE.Vector3();
               m.decompose(p, q, s);
-              pending.current = { x: p.x, z: p.z, rotation: new THREE.Euler().setFromQuaternion(q).y };
-              updateLive(selected.id, pending.current);
+              const rotation = new THREE.Euler().setFromQuaternion(q).y;
+              const patch = constrainDrag(selected, p.x, p.z, rotation);
+              pending.current = patch;
+              updateLive(selected.id, patch);
             }}
             onDragEnd={() => {
+              delete document.body.dataset.movingFurniture;
+              setDragging(false);
+              window.dispatchEvent(new Event('roomcraft-drag-end'));
               if (pending.current) {
                 update(selected.id, pending.current);
                 pending.current = null;
@@ -536,7 +566,10 @@ export function Scene3D() {
     const z = ((e.clientY - r.top) / r.height - 0.5) * 5;
     add(item.id, item.name, item.category, item.dims, item.color, x, z, {
       mountingType: item.mountingType,
-      clearance: item.category === 'Bedroom' ? { front: 0.7, back: 0.05, left: 0.3, right: 0.3 } : { front: 0.45, back: 0.05, left: 0.1, right: 0.1 },
+      clearance:
+        item.category === 'Bedroom'
+          ? { front: 0.7, back: 0.05, left: 0.3, right: 0.3 }
+          : { front: 0.45, back: 0.05, left: 0.1, right: 0.1 },
     });
   };
   const supported = useMemo(() => {
@@ -575,7 +608,7 @@ export function Scene3D() {
         </Suspense>
         <CameraRig />
       </Canvas>
-      <div className="scene-help">Tap a wall to edit · Drag products to move · Wall items snap to surfaces</div>
+      <div className="scene-help">Drag products to move · Mirrors stay on walls · Storage docks to walls · Beds move freely</div>
     </div>
   );
 }

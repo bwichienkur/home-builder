@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { Opening, Wall } from '../../types';
-import { alignmentGuides, openingConflicts, planToWorld, snapToWallSurface, worldToPlan } from './placement';
+import {
+  alignmentGuides,
+  constrainPlacement,
+  openingConflicts,
+  placementConstraint,
+  planToWorld,
+  snapToWallSurface,
+  worldToPlan,
+} from './placement';
 
 const rect: Wall[] = [
   { id: 'w1', start: { x: 180, y: 150 }, end: { x: 660, y: 150 }, thickness: 0.15, height: 2.7 },
@@ -40,5 +48,43 @@ describe('placement helpers', () => {
     const other = { ...selected, id: 'b', x: 0, z: 2 };
     const guides = alignmentGuides(selected, [other]);
     expect(guides.some((g) => g.kind === 'align-x')).toBe(true);
+  });
+
+  it('classifies placement constraints like IKEA product limits', () => {
+    expect(placementConstraint('wall', 'Lighting', 'Halo Wall Sconce')).toBe('wall');
+    expect(placementConstraint('floor', 'Storage', 'Arch Bookcase')).toBe('wall-prefer');
+    expect(placementConstraint('floor', 'Bedroom', 'Cloud Platform Bed')).toBe('free');
+  });
+
+  it('keeps wall-locked products on a wall face while free products stay on the floor', () => {
+    const nearCenter = planToWorld({ x: 420, y: 330 });
+    const wallLocked = constrainPlacement(nearCenter.x, nearCenter.z, rect, 0.1, {
+      mountingType: 'wall',
+      category: 'Decor',
+      name: 'Mirror',
+    });
+    expect(wallLocked.constraint).toBe('wall');
+    expect(wallLocked.wallId).toBeTruthy();
+
+    const bed = constrainPlacement(nearCenter.x + 0.3, nearCenter.z + 0.2, rect, 2.1, {
+      mountingType: 'floor',
+      category: 'Bedroom',
+      name: 'Cloud Platform Bed',
+    });
+    expect(bed.constraint).toBe('free');
+    expect(bed.wallId).toBeNull();
+    expect(bed.x).toBeCloseTo(Math.round((nearCenter.x + 0.3) * 4) / 4);
+  });
+
+  it('docks storage to a wall when dragged nearby', () => {
+    const nearWall = planToWorld({ x: 420, y: 175 });
+    const docked = constrainPlacement(nearWall.x, nearWall.z, rect, 0.34, {
+      mountingType: 'floor',
+      category: 'Storage',
+      name: 'Arch Bookcase',
+      live: true,
+    });
+    expect(docked.constraint).toBe('wall-prefer');
+    expect(docked.wallId).toBe('w1');
   });
 });

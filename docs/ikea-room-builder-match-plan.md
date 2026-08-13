@@ -106,8 +106,8 @@ unit conversion hooks         Floating chrome (desktop=mobile)
 
 - [ ] Every catalog item with a model URL renders via `CatalogModel` (proxy → full LOD).
 - [ ] Missing model → dimensionally correct placeholder *styled* like a soft mannequin box, not random finish colors.
-- [ ] Top view = real plan editor (Konva) sharing the same store — wall draw, measure tap-to-edit, openings drag.
-- [ ] 3D view = orbit + optional walk; same furniture transforms.
+- [x] Top view = bird’s-eye WebGL camera (still 3D, floor-centered); Konva plan editor is “Edit room layout.”
+- [x] 3D view = orbit + optional walk; same furniture transforms; Scene3D stays mounted across Top ↔ 3D.
 - [ ] Selection gizmo: move on floor plane, rotate handle, delete/duplicate.
 - [ ] Measurements visible on selected wall / product.
 - [ ] Running total updates live; BOM/shopping list matches IKEA bag mental model.

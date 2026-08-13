@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { CameraMode, FurnitureItem, MountingType, Opening, Point, RoomType, SceneSnapshot, SurfaceTarget, Tool, UnitSystem, Wall } from '../types';
-import { openingConflicts, resolveMountingType, snapFloorPosition, snapToWallSurface } from '../lib/geometry/placement';
+import { constrainPlacement, openingConflicts, resolveMountingType } from '../lib/geometry/placement';
 import { writeRecoverySnapshot } from '../lib/designShare';
 
 type View = '2d' | '3d';
@@ -105,28 +105,34 @@ function placeFurniture(
   height: number,
   x: number,
   z: number,
-  meta?: FurnitureAddMeta,
+  meta?: FurnitureAddMeta & { category?: string; name?: string; live?: boolean },
 ) {
   const mounting = resolveMountingType(meta?.mountingType);
-  let next = { x, z, rotation: meta?.rotation ?? 0, wallId: meta?.wallId ?? null, wallOffset: meta?.wallOffset ?? null, y: meta?.y ?? 0 };
+  const constrained = constrainPlacement(x, z, walls, depth, {
+    mountingType: mounting,
+    category: meta?.category,
+    name: meta?.name,
+    rotation: meta?.rotation,
+    live: meta?.live,
+  });
+  let y = 0;
   if (mounting === 'wall') {
-    const snapped = snapToWallSurface(x, z, walls, depth, 'wall');
-    next = {
-      x: snapped.x,
-      z: snapped.z,
-      rotation: snapped.rotation ?? next.rotation,
-      wallId: snapped.wallId,
-      wallOffset: snapped.wallOffset,
-      y: Math.min(Math.max(meta?.y ?? 1.4, 0.3), Math.max(0.3, (walls[0]?.height ?? 2.7) - height - 0.05)),
-    };
+    y = Math.min(Math.max(meta?.y ?? 1.4, 0.3), Math.max(0.3, (walls[0]?.height ?? 2.7) - height - 0.05));
   } else if (mounting === 'ceiling') {
-    const floor = snapFloorPosition(x, z);
-    next = { ...floor, rotation: next.rotation, wallId: null, wallOffset: null, y: Math.max(0.1, (walls[0]?.height ?? 2.7) - height) };
-  } else {
-    const floor = snapFloorPosition(x, z);
-    next = { ...floor, rotation: next.rotation, wallId: null, wallOffset: null, y: 0 };
+    y = Math.max(0.1, (walls[0]?.height ?? 2.7) - height);
   }
-  return { ...next, mountingType: mounting, width, depth, height };
+  return {
+    x: constrained.x,
+    z: constrained.z,
+    rotation: constrained.rotation ?? meta?.rotation ?? 0,
+    wallId: constrained.wallId,
+    wallOffset: constrained.wallOffset,
+    y: meta?.y !== undefined && mounting !== 'floor' ? meta.y : y,
+    mountingType: mounting,
+    width,
+    depth,
+    height,
+  };
 }
 
 export const usePlannerStore = create<PlannerState>((set, get) => {
@@ -331,7 +337,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     clearOpeningNotice: () => set({ openingNotice: '' }),
     addFurniture: (catalogId, name, category, [width, depth, height], color, x = 0, z = 0, meta) => {
       const id = crypto.randomUUID();
-      const placed = placeFurniture(get().walls, width, depth, height, x, z, meta);
+      const placed = placeFurniture(get().walls, width, depth, height, x, z, { ...meta, category, name });
       mutate({
         furniture: [
           ...get().furniture,
@@ -361,6 +367,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
           mountingType: mounting,
           rotation: next.rotation,
           y: next.y,
+          category: next.category,
+          name: next.name,
         });
         next = { ...next, ...placed };
       } else {
