@@ -94,7 +94,7 @@ export function SelectedProductCard({ roomType, onModify, onClose, onPlaceComple
         <section className="studio-product-complements" aria-label="Works well with">
           <h3>Works well with</h3>
           <ul>
-            {complements.map((c) => (
+            {complements.slice(0, 4).map((c) => (
               <li key={c.id}>
                 <button onClick={() => placeComplement(c)} title={`Place ${c.name}`}>
                   <span className="thumb" style={{ '--product-color': c.color } as CSSProperties}>
