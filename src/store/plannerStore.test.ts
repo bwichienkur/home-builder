@@ -13,6 +13,37 @@ describe('mobile planner defaults',()=>{
   expect(state.furniture).toHaveLength(before+1);
   expect(state.selectedFurnitureId).toBe(state.furniture.at(-1)?.id);
  });
+
+ it('ghost-places a product before committing it to the room',()=>{
+  usePlannerStore.getState().cancelPendingPlacement();
+  const before=usePlannerStore.getState().furniture.length;
+  usePlannerStore.getState().beginPlacement('ghost-bed','Cloud Bed','Bedroom',[1.7,2.1,.55],'#ddd',0,0,{mountingType:'floor'});
+  expect(usePlannerStore.getState().pendingPlacement?.name).toBe('Cloud Bed');
+  expect(usePlannerStore.getState().furniture).toHaveLength(before);
+  usePlannerStore.getState().movePendingPlacement(.5,.25);
+  usePlannerStore.getState().rotatePendingPlacement(Math.PI/2);
+  const id=usePlannerStore.getState().commitPendingPlacement();
+  const state=usePlannerStore.getState();
+  expect(state.pendingPlacement).toBeNull();
+  expect(state.furniture).toHaveLength(before+1);
+  expect(state.selectedFurnitureId).toBe(id);
+ });
+
+ it('cancels a ghost placement without adding furniture',()=>{
+  const before=usePlannerStore.getState().furniture.length;
+  usePlannerStore.getState().beginPlacement('ghost-cancel','Temp','Decor',[.4,.1,.4],'#ccc');
+  usePlannerStore.getState().cancelPendingPlacement();
+  expect(usePlannerStore.getState().pendingPlacement).toBeNull();
+  expect(usePlannerStore.getState().furniture).toHaveLength(before);
+ });
+
+ it('rotates the selected product in place',()=>{
+  usePlannerStore.getState().addFurniture('rotate-me','Chair','Seating',[.5,.5,.8],'#bbb');
+  const item=usePlannerStore.getState().furniture.at(-1)!;
+  const start=item.rotation;
+  usePlannerStore.getState().rotateSelected(Math.PI/2);
+  expect(usePlannerStore.getState().furniture.find(f=>f.id===item.id)?.rotation).toBeCloseTo(start+Math.PI/2);
+ });
 });
 
 describe('IKEA-style wall editing',()=>{

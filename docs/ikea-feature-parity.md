@@ -61,7 +61,9 @@ This is a behavioral audit, not permission to copy IKEA branding, product data, 
 | Catalog | Sellable/design-extra distinction | All | Import fields/badge | Placeholder clearly not represented as purchasable | Complete |
 | Catalog | Virtualized large catalog | All | Progressive window (36+) + load more | 5,000 SKUs without rendering every card | Partial |
 | Placement | Desktop drag/drop | All | HTML drag into 3D | Drop at cursor floor point | Complete |
-| Placement | Mobile tap-to-add | All | Add and switch to 3D | Add then position by touch | Complete |
+| Placement | Ghost place → commit | All | pendingPlacement + translucent preview | Add from catalog, move ghost, click/Place to commit | Complete |
+| Placement | Selection FABs | All | Rotate / info / edit / duplicate / delete | Select product and use floating action buttons | Complete |
+| Placement | Mobile tap-to-add | All | Begin ghost placement and switch to 3D | Add then position by touch | Complete |
 | Placement | Touch drag | All | Floor-plane drag | Drag without moving camera/page | Complete |
 | Placement | Grid snap | All | 25 cm commit snap | Release product and verify coordinates | Complete |
 | Placement | Wall/surface snap | Applicable items | mountingType snap in placeFurniture | Wall product aligns and mounts | Complete |
