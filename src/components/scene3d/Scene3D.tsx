@@ -557,10 +557,12 @@ function Room() {
   const floor = usePlannerStore((s) => s.floorColor);
   const ceiling = usePlannerStore((s) => s.ceilingColor);
   const walls = usePlannerStore((s) => s.walls);
+  const planRooms = usePlannerStore((s) => s.planRooms);
   const cameraMode = usePlannerStore((s) => s.cameraMode);
   const selectedSurface = usePlannerStore((s) => s.selectedSurface);
   const selectSurface = usePlannerStore((s) => s.selectSurface);
-  const rooms = useMemo(() => detectRoomPolygons(walls), [walls]);
+  const detected = useMemo(() => detectRoomPolygons(walls), [walls]);
+  const rooms = planRooms.length ? planRooms.map((r) => r.points) : detected;
   const ceilingHeight = walls[0]?.height ?? 2.7;
   const { camera, invalidate } = useThree();
   const [lookUpCeiling, setLookUpCeiling] = useState(false);
@@ -598,7 +600,7 @@ function Room() {
     <Bvh firstHitOnly>
       {rooms.length ? (
         rooms.map((points, i) => (
-          <group key={i}>
+          <group key={planRooms[i]?.id ?? i}>
             <mesh rotation={[Math.PI / 2, 0, 0]} receiveShadow position={[0, -0.035, 0]} onClick={chooseFloor}>
               <shapeGeometry args={[roomShape(points)]} />
               <meshStandardMaterial
@@ -628,6 +630,24 @@ function Room() {
                   emissiveIntensity={selectedSurface === 'ceiling' ? 0.1 : 0}
                 />
               </mesh>
+            )}
+            {planRooms[i] && cameraMode === 'top' && (
+              <Text
+                position={[
+                  points.reduce((s, p) => s + (p.x - WORLD_ORIGIN.x) / PIXELS_PER_METER, 0) / points.length,
+                  0.05,
+                  points.reduce((s, p) => s + (p.y - WORLD_ORIGIN.y) / PIXELS_PER_METER, 0) / points.length,
+                ]}
+                rotation={[-Math.PI / 2, 0, 0]}
+                fontSize={0.35}
+                color="#1a2330"
+                anchorX="center"
+                anchorY="middle"
+                outlineWidth={0.02}
+                outlineColor="#ffffff"
+              >
+                {planRooms[i].name}
+              </Text>
             )}
           </group>
         ))

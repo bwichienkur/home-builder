@@ -115,6 +115,50 @@
   min-height: 44px;
 }
 .room-designer.compact { padding: 0; border: 0; }
+.house-plan-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+  max-height: min(42vh, 360px);
+  overflow: auto;
+  padding-right: 2px;
+}
+.house-plan-list button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  padding: 10px 12px;
+  min-height: 48px;
+}
+.house-plan-list button strong {
+  font-size: 13px;
+  font-weight: 800;
+  color: #111820;
+}
+.house-plan-list button span {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 600;
+}
+.house-plan-list button.active {
+  border-color: var(--accent);
+  background: #eef5fb;
+}
+.house-plan-active {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.house-plan-note {
+  margin: 8px 0 0;
+  font-size: 11px;
+  line-height: 1.35;
+}
 .wall-actions { margin: 10px 0; }
 .wall-actions button:nth-child(2) {
   background: var(--accent);

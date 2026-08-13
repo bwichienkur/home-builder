@@ -3,6 +3,7 @@ import { FileSpreadsheet, Grid2X2, X } from 'lucide-react';
 import { usePlannerStore } from '../../store/plannerStore';
 import { wallLengthMeters } from '../../lib/geometry/snapping';
 import { formatLength, parseLength } from '../../lib/measurements';
+import { olsenHousePlans } from '../../lib/housePlans/olsenPlans';
 import type { FurnitureItem, Opening, RoomType, Wall } from '../../types';
 
 const finishes: [string, string][] = [
@@ -137,7 +138,11 @@ export function RoomDesigner({ compact = false }: { compact?: boolean }) {
   const unit = usePlannerStore((s) => s.unitSystem);
   const setUnit = usePlannerStore((s) => s.setUnitSystem);
   const apply = usePlannerStore((s) => s.applyRoomTemplate);
+  const applyHousePlan = usePlannerStore((s) => s.applyHousePlan);
+  const housePlanId = usePlannerStore((s) => s.housePlanId);
+  const housePlanName = usePlannerStore((s) => s.housePlanName);
   const setCeiling = usePlannerStore((s) => s.setCeilingHeight);
+  const setCameraMode = usePlannerStore((s) => s.setCameraMode);
   const walls = usePlannerStore((s) => s.walls);
   const furniture = usePlannerStore((s) => s.furniture);
   const ceiling = walls[0]?.height ?? 2.7;
@@ -145,6 +150,11 @@ export function RoomDesigner({ compact = false }: { compact?: boolean }) {
   const template = (shape: 'rectangle' | 'wide' | 'l-shape') => {
     if ((walls.length || furniture.length) && !window.confirm('Replace the current room layout? Products in this room will be removed.')) return;
     apply(shape);
+  };
+
+  const loadHouse = (planId: string) => {
+    if ((walls.length || furniture.length) && !window.confirm('Load this house plan? Current walls and products will be replaced.')) return;
+    if (applyHousePlan(planId)) setCameraMode('top');
   };
 
   return (
@@ -167,10 +177,31 @@ export function RoomDesigner({ compact = false }: { compact?: boolean }) {
       <LengthField label="Ceiling height" value={ceiling} min={2} max={6} onChange={setCeiling} />
       <span className="template-label">Start with a shape</span>
       <div className="room-templates">
-        <button onClick={() => template('rectangle')}>Rectangle</button>
-        <button onClick={() => template('wide')}>Wide</button>
-        <button onClick={() => template('l-shape')}>L-shape</button>
+        <button type="button" onClick={() => template('rectangle')}>Rectangle</button>
+        <button type="button" onClick={() => template('wide')}>Wide</button>
+        <button type="button" onClick={() => template('l-shape')}>L-shape</button>
       </div>
+      <span className="template-label">House plans (buildable)</span>
+      {housePlanName && <p className="muted house-plan-active">Loaded: {housePlanName}</p>}
+      <div className="house-plan-list">
+        {olsenHousePlans.map((plan) => (
+          <button
+            key={plan.id}
+            type="button"
+            className={housePlanId === plan.id ? 'active' : ''}
+            onClick={() => loadHouse(plan.id)}
+            title={`${plan.beds} bed · ${plan.baths} bath · ${plan.livingSqFt.toLocaleString()} sf living · ${plan.stories} stor${plan.stories === 1 ? 'y' : 'ies'}`}
+          >
+            <strong>{plan.name}</strong>
+            <span>
+              {plan.beds}/{plan.baths} · {plan.livingSqFt.toLocaleString()} sf · {plan.stories === 1 ? '1 story' : '2 story'}
+            </span>
+          </button>
+        ))}
+      </div>
+      <p className="muted house-plan-note">
+        Original Roomcraft layouts sized from publicly listed room programs — not copied Olsen drawings. Switch floors in the project menu for two-story plans.
+      </p>
     </div>
   );
 }

@@ -1,10 +1,12 @@
 import { create } from 'zustand';
-import type { CameraMode, FurnitureItem, MountingType, Opening, Point, RoomType, SceneSnapshot, SurfaceTarget, Tool, UnitSystem, Wall } from '../types';
+import type { CameraMode, FurnitureItem, MountingType, Opening, PlanRoomLabel, Point, RoomType, SceneSnapshot, SurfaceTarget, Tool, UnitSystem, Wall } from '../types';
 import { constrainPlacement, openingConflicts, resolveMountingType, roomFloorCenter } from '../lib/geometry/placement';
 import { writeRecoverySnapshot } from '../lib/designShare';
+import { buildHouse } from '../lib/housePlans/buildPlan';
+import { getHousePlan } from '../lib/housePlans/olsenPlans';
 
 type View = '2d' | '3d';
-type FloorRecord = { id: string; name: string; scene: SceneSnapshot };
+type FloorRecord = { id: string; name: string; scene: SceneSnapshot; planRooms?: PlanRoomLabel[] };
 export type FurnitureAddMeta = {
   mountingType?: MountingType | string;
   clearance?: FurnitureItem['clearance'];
@@ -79,6 +81,10 @@ type PlannerState = SceneSnapshot & {
   offsetWall: (id: string, meters: number) => void;
   setCeilingHeight: (meters: number) => void;
   applyRoomTemplate: (shape: 'rectangle' | 'wide' | 'l-shape') => void;
+  applyHousePlan: (planId: string) => boolean;
+  housePlanId: string | null;
+  housePlanName: string | null;
+  planRooms: PlanRoomLabel[];
   selectWall: (id: string | null) => void;
   selectOpening: (id: string | null) => void;
   selectSurface: (surface: SurfaceTarget | null) => void;
@@ -216,6 +222,9 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     history: [initial],
     historyIndex: 0,
     openingNotice: '',
+    housePlanId: null,
+    housePlanName: null,
+    planRooms: [],
     setTool: (tool) => set({ tool, draftStart: null }),
     setView: (view) => set({ view, draftStart: null }),
     setCameraMode: (cameraMode) => set({ cameraMode }),
@@ -318,7 +327,42 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         walls = [mk(a, b), mk(b, c), mk(c, d), mk(d, a)];
       }
       mutate({ walls, openings: [], furniture: [] });
-      set({ selectedWallId: null, selectedOpeningId: null, selectedFurnitureId: null, draftStart: null, tool: 'select' });
+      set({ selectedWallId: null, selectedOpeningId: null, selectedFurnitureId: null, draftStart: null, tool: 'select', housePlanId: null, housePlanName: null, planRooms: [] });
+    },
+    applyHousePlan: (planId) => {
+      const plan = getHousePlan(planId);
+      if (!plan) return false;
+      const built = buildHouse(plan);
+      const floors: FloorRecord[] = built.floors.map((f) => ({
+        id: f.id,
+        name: f.name,
+        scene: f.scene,
+        planRooms: f.roomPolygons,
+      }));
+      const first = floors[0];
+      if (!first) return false;
+      set({
+        ...first.scene,
+        floors,
+        activeFloorId: first.id,
+        history: [first.scene],
+        historyIndex: 0,
+        housePlanId: plan.id,
+        housePlanName: plan.name,
+        planRooms: first.planRooms ?? [],
+        selectedWallId: null,
+        selectedOpeningId: null,
+        selectedFurnitureId: null,
+        selectedSurface: null,
+        pendingPlacement: null,
+        draftStart: null,
+        tool: 'select',
+        cameraMode: 'top',
+        view: '3d',
+        unitSystem: 'imperial',
+        roomType: 'Living room',
+      });
+      return true;
     },
     selectWall: (selectedWallId) => set({ selectedWallId, selectedOpeningId: null, selectedFurnitureId: null, selectedSurface: null }),
     selectOpening: (selectedOpeningId) =>
@@ -558,10 +602,21 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     },
     switchFloor: (id) =>
       set((s) => {
-        const current = s.floors.map((f) => (f.id === s.activeFloorId ? { ...f, scene: snap() } : f));
+        const current = s.floors.map((f) =>
+          f.id === s.activeFloorId ? { ...f, scene: snap(), planRooms: s.planRooms } : f,
+        );
         const target = current.find((f) => f.id === id);
         return target
-          ? { ...target.scene, floors: current, activeFloorId: id, history: [target.scene], historyIndex: 0, selectedWallId: null, selectedFurnitureId: null }
+          ? {
+              ...target.scene,
+              floors: current,
+              activeFloorId: id,
+              history: [target.scene],
+              historyIndex: 0,
+              selectedWallId: null,
+              selectedFurnitureId: null,
+              planRooms: target.planRooms ?? [],
+            }
           : s;
       }),
     undo: () =>
@@ -576,7 +631,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       }),
     clear: () => {
       mutate({ ...initial, walls: [], openings: [], furniture: [] });
-      set({ selectedWallId: null, selectedFurnitureId: null, draftStart: null });
+      set({ selectedWallId: null, selectedFurnitureId: null, draftStart: null, housePlanId: null, housePlanName: null, planRooms: [] });
     },
     projectPayload,
     save: () => {
