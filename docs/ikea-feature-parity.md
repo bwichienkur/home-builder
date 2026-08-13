@@ -1,9 +1,12 @@
 # Roomcraft / IKEA Studio feature-parity audit
 
-Audit date: 2026-08-09  
-Reference: `https://www.ikea.com/addon-app/space/platform/latest/us/en/#/room/bedroom`
+Audit date: 2026-08-09 · shell/UI re-audit: 2026-08-13  
+Reference: `https://www.ikea.com/addon-app/space/platform/latest/us/en/#/room/bedroom`  
+Match plan + rebuild prompt: [`ikea-room-builder-match-plan.md`](./ikea-room-builder-match-plan.md)
 
 This is a behavioral audit, not permission to copy IKEA branding, product data, imagery, source code, or proprietary assets. The reference is a client-rendered application; the matrix combines workflows observed in the supplied mobile captures with accessible live application states. **Complete** means the behavior is connected and tested in Roomcraft. **Partial** means useful behavior exists but is not yet equivalent. **Planned** is deliberately not represented as complete.
+
+**2026-08-13 note:** Several camera/Top rows below overstate the *mounted* app. `FloorPlanEditor` / `Toolbar` exist but `App` forces 3D and does not mount Konva; furniture still renders as boxes (`CatalogModel` unused). Prefer the match plan for UI redo guidance.
 
 | Area | Reference behavior | Room types | Roomcraft status | Required acceptance test | Status |
 |---|---|---|---|---|---|
