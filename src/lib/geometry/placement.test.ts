@@ -3,6 +3,8 @@ import type { Opening, Wall } from '../../types';
 import {
   alignmentGuides,
   constrainPlacement,
+  containFurnitureInRoom,
+  furnitureBounds,
   openingConflicts,
   placementConstraint,
   planToWorld,
@@ -94,5 +96,40 @@ describe('placement helpers', () => {
     const expected = planToWorld({ x: 420, y: 330 });
     expect(center.x).toBeCloseTo(expected.x, 1);
     expect(center.z).toBeCloseTo(expected.z, 1);
+  });
+
+  it('keeps free furniture from protruding through walls', () => {
+    const outside = planToWorld({ x: 420, y: 140 }); // past the north wall centerline
+    const contained = containFurnitureInRoom(outside.x, outside.z, 1.6, 2.0, 0, rect);
+    const bounds = furnitureBounds({ x: contained.x, z: contained.z, width: 1.6, depth: 2.0, rotation: 0 });
+    const north = planToWorld({ x: 420, y: 150 }).z;
+    const south = planToWorld({ x: 420, y: 510 }).z;
+    const west = planToWorld({ x: 180, y: 330 }).x;
+    const east = planToWorld({ x: 660, y: 330 }).x;
+    const inset = 0.15 / 2;
+    expect(bounds.minZ).toBeGreaterThanOrEqual(Math.min(north, south) + inset - 0.001);
+    expect(bounds.maxZ).toBeLessThanOrEqual(Math.max(north, south) - inset + 0.001);
+    expect(bounds.minX).toBeGreaterThanOrEqual(Math.min(west, east) + inset - 0.001);
+    expect(bounds.maxX).toBeLessThanOrEqual(Math.max(west, east) - inset + 0.001);
+  });
+
+  it('clamps free placement against walls during constrainPlacement', () => {
+    const pastWall = planToWorld({ x: 170, y: 330 });
+    const placed = constrainPlacement(pastWall.x, pastWall.z, rect, 2.1, {
+      mountingType: 'floor',
+      category: 'Bedroom',
+      name: 'Cloud Platform Bed',
+      width: 1.7,
+      live: true,
+    });
+    const bounds = furnitureBounds({
+      x: placed.x,
+      z: placed.z,
+      width: 1.7,
+      depth: 2.1,
+      rotation: placed.rotation ?? 0,
+    });
+    const west = planToWorld({ x: 180, y: 330 }).x;
+    expect(bounds.minX).toBeGreaterThanOrEqual(west + 0.15 / 2 - 0.001);
   });
 });

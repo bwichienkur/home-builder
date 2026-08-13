@@ -149,6 +149,7 @@ function placeFurniture(
     name: meta?.name,
     rotation: meta?.rotation,
     live: meta?.live,
+    width,
   });
   let y = 0;
   if (mounting === 'wall') {

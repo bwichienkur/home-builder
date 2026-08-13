@@ -357,6 +357,7 @@ function Furniture() {
       name: item.name,
       rotation: rotation ?? item.rotation,
       live: true,
+      width: item.width,
     });
     return {
       x: placed.x,

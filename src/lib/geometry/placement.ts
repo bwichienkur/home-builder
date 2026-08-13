@@ -1,4 +1,5 @@
 import type { FurnitureItem, Opening, Point, Wall } from '../../types';
+import { detectRoomPolygons } from './rooms';
 import { PIXELS_PER_METER } from './snapping';
 
 export const WORLD_ORIGIN = { x: 420, y: 330 };
@@ -135,27 +136,129 @@ export function snapToWallSurface(
   };
 }
 
+function polygonSignedArea(pts: { x: number; z: number }[]) {
+  let area = 0;
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[i];
+    const b = pts[(i + 1) % pts.length];
+    area += a.x * b.z - b.x * a.z;
+  }
+  return area / 2;
+}
+
+function pointInPolygon(x: number, z: number, pts: { x: number; z: number }[]) {
+  let inside = false;
+  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+    const xi = pts[i].x;
+    const zi = pts[i].z;
+    const xj = pts[j].x;
+    const zj = pts[j].z;
+    if ((zi > z) !== (zj > z) && x < ((xj - xi) * (z - zi)) / (zj - zi + Number.EPSILON) + xi) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+
+/**
+ * Keep a furniture footprint inside the room so it cannot protrude through walls.
+ * Uses the closed wall polygon (inset by wall thickness / 2) and the rotated AABB.
+ */
+export function containFurnitureInRoom(
+  x: number,
+  z: number,
+  width: number,
+  depth: number,
+  rotation: number,
+  walls: Wall[],
+) {
+  if (!walls.length) return { x, z };
+  const rooms = detectRoomPolygons(walls);
+  if (!rooms.length) return { x, z };
+
+  const worldRooms = rooms.map((poly) => poly.map((p) => planToWorld(p)));
+  let poly =
+    worldRooms.find((room) => pointInPolygon(x, z, room)) ??
+    worldRooms
+      .map((room) => {
+        const cx = room.reduce((sum, p) => sum + p.x, 0) / room.length;
+        const cz = room.reduce((sum, p) => sum + p.z, 0) / room.length;
+        return { room, d: (cx - x) ** 2 + (cz - z) ** 2 };
+      })
+      .sort((a, b) => a.d - b.d)[0]?.room;
+  if (!poly?.length) return { x, z };
+
+  const thickness = walls.reduce((sum, wall) => sum + wall.thickness, 0) / walls.length;
+  const margin = thickness / 2 + 0.02;
+  const c = Math.abs(Math.cos(rotation));
+  const s = Math.abs(Math.sin(rotation));
+  const halfW = (width * c + depth * s) / 2;
+  const halfD = (width * s + depth * c) / 2;
+  const ccw = polygonSignedArea(poly) > 0;
+
+  let cx = x;
+  let cz = z;
+  // Corner cases need a few passes so adjacent edges both clear the AABB.
+  for (let iter = 0; iter < 4; iter++) {
+    for (let i = 0; i < poly.length; i++) {
+      const a = poly[i];
+      const b = poly[(i + 1) % poly.length];
+      const dx = b.x - a.x;
+      const dz = b.z - a.z;
+      const len = Math.hypot(dx, dz) || 1;
+      const nx = ccw ? -dz / len : dz / len;
+      const nz = ccw ? dx / len : -dx / len;
+      const signed = (cx - a.x) * nx + (cz - a.z) * nz;
+      const extent = halfW * Math.abs(nx) + halfD * Math.abs(nz);
+      const need = extent + margin;
+      if (signed < need) {
+        const push = need - signed;
+        cx += nx * push;
+        cz += nz * push;
+      }
+    }
+  }
+
+  return { x: cx, z: cz };
+}
+
 export function constrainPlacement(
   x: number,
   z: number,
   walls: Wall[],
   depth: number,
-  opts: { mountingType?: string; category?: string; name?: string; rotation?: number; live?: boolean },
+  opts: { mountingType?: string; category?: string; name?: string; rotation?: number; live?: boolean; width?: number },
 ) {
   const constraint = placementConstraint(opts.mountingType, opts.category, opts.name);
+  let placed: {
+    x: number;
+    z: number;
+    wallId: string | null;
+    wallOffset: number | null;
+    rotation?: number;
+    constraint: PlacementConstraint;
+  };
   if (constraint === 'wall') {
     const snapped = snapToWallSurface(x, z, walls, depth, 'wall', 12);
-    return { ...snapped, rotation: snapped.rotation ?? opts.rotation ?? 0, constraint };
-  }
-  if (constraint === 'wall-prefer') {
+    placed = { ...snapped, rotation: snapped.rotation ?? opts.rotation ?? 0, constraint };
+  } else if (constraint === 'wall-prefer') {
     const near = nearestWall(x, z, walls, opts.live ? 0.85 : 0.55);
     if (near) {
       const snapped = snapToWallSurface(x, z, walls, depth, 'wall', 1.2);
-      return { ...snapped, rotation: snapped.rotation ?? opts.rotation ?? 0, constraint };
+      placed = { ...snapped, rotation: snapped.rotation ?? opts.rotation ?? 0, constraint };
+    } else {
+      const floor = opts.live ? { x, z } : snapFloorPosition(x, z);
+      placed = { ...floor, wallId: null, wallOffset: null, rotation: opts.rotation, constraint };
     }
+  } else {
+    const floor = opts.live ? { x, z } : snapFloorPosition(x, z);
+    placed = { ...floor, wallId: null, wallOffset: null, rotation: opts.rotation, constraint };
   }
-  const floor = opts.live ? { x, z } : snapFloorPosition(x, z);
-  return { ...floor, wallId: null as string | null, wallOffset: null as number | null, rotation: opts.rotation, constraint };
+
+  const rotation = placed.rotation ?? opts.rotation ?? 0;
+  const width = opts.width ?? depth;
+  const contained = containFurnitureInRoom(placed.x, placed.z, width, depth, rotation, walls);
+  return { ...placed, x: contained.x, z: contained.z, rotation };
 }
 
 export function furnitureBounds(item: Pick<FurnitureItem, 'x' | 'z' | 'width' | 'depth' | 'rotation'>) {
