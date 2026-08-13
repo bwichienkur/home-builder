@@ -96,6 +96,20 @@ export function placementConstraint(mounting?: string, category?: string, name?:
   if (m === 'wall') return 'wall';
   if (m === 'ceiling') return 'free';
   const hay = `${category ?? ''} ${name ?? ''}`.toLowerCase();
+  // Pictures, mirrors, and window panels must slide on walls only.
+  if (
+    hay.includes('mirror') ||
+    hay.includes('picture') ||
+    hay.includes('poster') ||
+    hay.includes('artwork') ||
+    hay.includes('wall art') ||
+    hay.includes('canvas') ||
+    hay.includes('frame') ||
+    hay.includes('window panel') ||
+    hay.includes('sconce')
+  ) {
+    return 'wall';
+  }
   if (
     hay.includes('storage') ||
     hay.includes('cabinetry') ||

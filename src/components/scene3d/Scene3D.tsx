@@ -1,4 +1,4 @@
-import { Canvas, useThree } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Bvh, Environment, Line, OrbitControls, PerspectiveCamera, PivotControls, Text } from '@react-three/drei';
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
@@ -6,7 +6,8 @@ import { usePlannerStore } from '../../store/plannerStore';
 import { catalog } from '../catalog/catalogData';
 import type { FurnitureItem } from '../../types';
 import { detectRoomPolygons, roomShape } from '../../lib/geometry/rooms';
-import { alignmentGuides, constrainPlacement, WORLD_ORIGIN } from '../../lib/geometry/placement';
+import { alignmentGuides, constrainPlacement, roomFloorCenter, WORLD_ORIGIN } from '../../lib/geometry/placement';
+import { wallCutawayOpacity } from '../../lib/geometry/wallCutaway';
 import { PIXELS_PER_METER } from '../../lib/geometry/snapping';
 import { collisionsAsync } from '../../lib/collisions';
 import { formatLength } from '../../lib/measurements';
@@ -110,7 +111,8 @@ function CameraRig() {
         enabled={!moving && !placing && !animating.current}
         target={[targetTuple[0], mode === 'walk' ? 1.1 : targetTuple[1], targetTuple[2]]}
         minPolarAngle={mode === 'top' ? 0.05 : mode === 'walk' ? 0.7 : 0}
-        maxPolarAngle={mode === 'top' ? 0.55 : mode === 'walk' ? Math.PI / 2.1 : Math.PI / 2.05}
+        // Orbit can tip slightly below the floor plane so the ceiling comes into view (IKEA dollhouse).
+        maxPolarAngle={mode === 'top' ? 0.55 : mode === 'walk' ? Math.PI / 2.05 : Math.PI / 2 + 0.52}
         minDistance={mode === 'walk' ? 1.2 : mode === 'top' ? 3 : 2}
         maxDistance={mode === 'top' ? 22 : mode === 'walk' ? 12 : 18}
         enableZoom
@@ -155,15 +157,48 @@ function DoorLeaf({
   );
 }
 
+function useDollhouseCutaway(walls: ReturnType<typeof usePlannerStore.getState>['walls']) {
+  const cameraMode = usePlannerStore((s) => s.cameraMode);
+  const { camera, invalidate } = useThree();
+  const center = useMemo(() => roomFloorCenter(walls), [walls]);
+  const [opacityByWall, setOpacityByWall] = useState<Record<string, number>>({});
+  const lastKey = useRef('');
+  const enabled = cameraMode === 'orbit';
+
+  useEffect(() => {
+    invalidate();
+  }, [walls, enabled, center, invalidate]);
+
+  useFrame(() => {
+    const next: Record<string, number> = {};
+    for (const wall of walls) {
+      next[wall.id] = wallCutawayOpacity(wall, camera.position.x, camera.position.z, center, enabled);
+    }
+    const key = walls.map((w) => `${w.id}:${(next[w.id] ?? 1).toFixed(2)}`).join('|');
+    if (key !== lastKey.current) {
+      lastKey.current = key;
+      setOpacityByWall(next);
+      invalidate();
+    }
+  });
+
+  return opacityByWall;
+}
+
 function WallMeshes() {
   const walls = usePlannerStore((s) => s.walls);
   const openings = usePlannerStore((s) => s.openings);
   const color = usePlannerStore((s) => s.wallColor);
   const selectedId = usePlannerStore((s) => s.selectedWallId);
   const select = usePlannerStore((s) => s.selectWall);
+  const opacityByWall = useDollhouseCutaway(walls);
+
   return (
     <>
       {walls.flatMap((w) => {
+        const opacity = opacityByWall[w.id] ?? 1;
+        if (opacity < 0.04) return [];
+        const cutaway = opacity < 0.98;
         const [sx, sz] = world(w.start.x, w.start.y);
         const [ex, ez] = world(w.end.x, w.end.y);
         const length = Math.hypot(ex - sx, ez - sz);
@@ -178,6 +213,8 @@ function WallMeshes() {
             b <= r1 || a >= r2 ? [[r1, r2]] : ([[r1, Math.max(r1, a)], [Math.min(r2, b), r2]].filter((r) => r[1] - r[0] > 0.02) as [number, number][]),
           );
         });
+        // Cutaway walls must not steal pointer hits — furniture drag goes through them.
+        const skipRay = cutaway ? () => {} : undefined;
         const base = ranges.map(([a, b], i) => {
           const c = (a + b) / 2;
           const t = c / length;
@@ -188,9 +225,11 @@ function WallMeshes() {
               key={w.id + 'b' + i}
               position={[x, w.height / 2, z]}
               rotation={[0, angle, 0]}
-              castShadow
-              receiveShadow
+              castShadow={!cutaway}
+              receiveShadow={!cutaway}
+              raycast={skipRay}
               onClick={(e) => {
+                if (cutaway) return;
                 e.stopPropagation();
                 select(w.id);
                 openSurfaceProperties();
@@ -202,6 +241,9 @@ function WallMeshes() {
                 emissive={selectedId === w.id ? '#003d70' : '#000000'}
                 emissiveIntensity={selectedId === w.id ? 0.16 : 0}
                 roughness={0.86}
+                transparent={cutaway}
+                opacity={opacity}
+                depthWrite={!cutaway}
               />
             </mesh>
           );
@@ -214,35 +256,42 @@ function WallMeshes() {
           const parts: ReactElement[] = [];
           if (o.sill > 0)
             parts.push(
-              <mesh key={o.id + 'sill'} position={[x, o.sill / 2, z]} rotation={[0, angle, 0]}>
+              <mesh key={o.id + 'sill'} position={[x, o.sill / 2, z]} rotation={[0, angle, 0]} raycast={skipRay}>
                 <boxGeometry args={[o.width, o.sill, w.thickness]} />
-                <meshStandardMaterial color={color} />
+                <meshStandardMaterial color={color} transparent={cutaway} opacity={opacity} depthWrite={!cutaway} />
               </mesh>,
             );
           const top = w.height - (o.sill + o.height);
           if (top > 0)
             parts.push(
-              <mesh key={o.id + 'top'} position={[x, o.sill + o.height + top / 2, z]} rotation={[0, angle, 0]}>
+              <mesh key={o.id + 'top'} position={[x, o.sill + o.height + top / 2, z]} rotation={[0, angle, 0]} raycast={skipRay}>
                 <boxGeometry args={[o.width, top, w.thickness]} />
-                <meshStandardMaterial color={color} />
+                <meshStandardMaterial color={color} transparent={cutaway} opacity={opacity} depthWrite={!cutaway} />
               </mesh>,
             );
           if (o.type === 'window')
             parts.push(
-              <mesh key={o.id + 'glass'} position={[x, o.sill + o.height / 2, z]} rotation={[0, angle, 0]}>
+              <mesh key={o.id + 'glass'} position={[x, o.sill + o.height / 2, z]} rotation={[0, angle, 0]} raycast={skipRay}>
                 <boxGeometry args={[o.width, o.height, 0.025]} />
-                <meshPhysicalMaterial color="#bce4ec" transparent opacity={0.32} transmission={0.65} roughness={0.05} />
+                <meshPhysicalMaterial
+                  color="#bce4ec"
+                  transparent
+                  opacity={0.32 * opacity}
+                  transmission={0.65}
+                  roughness={0.05}
+                  depthWrite={false}
+                />
               </mesh>,
             );
-          if (o.type === 'door')
+          if (o.type === 'door' && !cutaway)
             parts.push(
               <DoorLeaf key={o.id + 'door'} x={x} z={z} angle={angle} width={o.width} height={o.height} swing={o.swing ?? 'left'} />,
             );
           if (o.type === 'passage')
             parts.push(
-              <mesh key={o.id + 'passage'} position={[x, 0.015, z]} rotation={[-Math.PI / 2, 0, angle]}>
+              <mesh key={o.id + 'passage'} position={[x, 0.015, z]} rotation={[-Math.PI / 2, 0, angle]} raycast={skipRay}>
                 <planeGeometry args={[o.width, w.thickness + 0.08]} />
-                <meshBasicMaterial color="#0058a3" transparent opacity={0.28} />
+                <meshBasicMaterial color="#0058a3" transparent opacity={0.28 * opacity} />
               </mesh>,
             );
           return parts;
@@ -410,6 +459,7 @@ function Furniture() {
     return {
       lowUrl: product?.lowPolyModelUrl || product?.modelUrl,
       fullUrl: product?.modelUrl || product?.lowPolyModelUrl,
+      textureUrl: product?.thumbnailUrl,
     };
   };
 
@@ -427,6 +477,7 @@ function Furniture() {
                 item={i}
                 lowUrl={urls.lowUrl}
                 fullUrl={urls.fullUrl}
+                textureUrl={urls.textureUrl}
                 colliding={collisions.has(i.id)}
                 onSelect={(e) => {
                   e.stopPropagation();
@@ -511,9 +562,28 @@ function Room() {
   const selectSurface = usePlannerStore((s) => s.selectSurface);
   const rooms = useMemo(() => detectRoomPolygons(walls), [walls]);
   const ceilingHeight = walls[0]?.height ?? 2.7;
+  const { camera, invalidate } = useThree();
+  const [lookUpCeiling, setLookUpCeiling] = useState(false);
   // Top / bird’s-eye must see the floor — a solid ceiling makes the room unusable to edit.
   const showCeiling = cameraMode !== 'top' || selectedSurface === 'ceiling';
-  const ceilingOpacity = cameraMode === 'walk' ? 0.95 : selectedSurface === 'ceiling' ? 0.55 : 0.22;
+  const ceilingOpacity =
+    cameraMode === 'walk'
+      ? 0.95
+      : lookUpCeiling
+        ? 0.92
+        : selectedSurface === 'ceiling'
+          ? 0.55
+          : 0.22;
+
+  useFrame(() => {
+    // Tip the camera below the room and the ceiling should read solid (first reference image).
+    const below = camera.position.y < ceilingHeight * 0.55;
+    if (below !== lookUpCeiling) {
+      setLookUpCeiling(below);
+      invalidate();
+    }
+  });
+
   const chooseFloor = (e: any) => {
     e.stopPropagation();
     selectSurface('floor');
@@ -550,10 +620,10 @@ function Room() {
                 <meshStandardMaterial
                   color={selectedSurface === 'ceiling' ? '#0058a3' : ceiling}
                   roughness={0.92}
-                  side={THREE.FrontSide}
+                  side={THREE.DoubleSide}
                   transparent
                   opacity={ceilingOpacity}
-                  depthWrite={false}
+                  depthWrite={lookUpCeiling || cameraMode === 'walk'}
                   emissive={selectedSurface === 'ceiling' ? '#003d70' : '#000000'}
                   emissiveIntensity={selectedSurface === 'ceiling' ? 0.1 : 0}
                 />
@@ -575,8 +645,8 @@ function Room() {
                 roughness={0.92}
                 transparent
                 opacity={ceilingOpacity}
-                depthWrite={false}
-                side={THREE.FrontSide}
+                depthWrite={lookUpCeiling || cameraMode === 'walk'}
+                side={THREE.DoubleSide}
               />
             </mesh>
           )}
@@ -717,7 +787,7 @@ export function Scene3D() {
         <CameraRig />
       </Canvas>
       {!pending && (
-        <div className="scene-help">Drag to move · Wall items stay on walls · Storage docks near walls</div>
+        <div className="scene-help">Drag to move · Near walls fade for a clear view · Mirrors &amp; pictures stay on walls</div>
       )}
     </div>
   );

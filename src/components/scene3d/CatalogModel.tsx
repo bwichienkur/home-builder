@@ -1,4 +1,4 @@
-import { Detailed, useGLTF } from '@react-three/drei';
+import { Detailed, useGLTF, useTexture } from '@react-three/drei';
 import { Suspense, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import type { Group } from 'three';
@@ -91,10 +91,50 @@ function SelectionHalo({
   );
 }
 
+function TexturedArt({
+  width,
+  height,
+  depth,
+  color,
+  url,
+  mirror,
+}: {
+  width: number;
+  height: number;
+  depth: number;
+  color: string;
+  url: string;
+  mirror?: boolean;
+}) {
+  const texture = useTexture(url);
+  useLayoutEffect(() => {
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.anisotropy = 4;
+    texture.needsUpdate = true;
+  }, [texture]);
+  return (
+    <>
+      <mesh position={[0, height / 2, 0]} castShadow>
+        <boxGeometry args={[width, height, depth]} />
+        <meshStandardMaterial color={color} roughness={0.55} metalness={mirror ? 0.35 : 0.05} />
+      </mesh>
+      <mesh position={[0, height / 2, depth / 2 + 0.003]}>
+        <planeGeometry args={[width * (mirror ? 0.9 : 0.86), height * (mirror ? 0.9 : 0.86)]} />
+        {mirror ? (
+          <meshPhysicalMaterial map={texture} roughness={0.12} metalness={0.85} clearcoat={0.4} />
+        ) : (
+          <meshStandardMaterial map={texture} roughness={0.9} />
+        )}
+      </mesh>
+    </>
+  );
+}
+
 export function ProxyFurniture({
   item,
   colliding,
   selected,
+  textureUrl,
   onSelect,
   onPointerDown,
   onPointerMove,
@@ -104,6 +144,7 @@ export function ProxyFurniture({
   item: FurnitureItem;
   colliding?: boolean;
   selected?: boolean;
+  textureUrl?: string;
   onSelect?: (e: any) => void;
   onPointerDown?: (e: any) => void;
   onPointerMove?: (e: any) => void;
@@ -113,7 +154,69 @@ export function ProxyFurniture({
   const color = item.color;
   const handlers = { onClick: onSelect, onPointerDown, onPointerMove, onPointerUp, onPointerCancel };
   const category = item.category.toLowerCase();
+  const name = item.name.toLowerCase();
   const halo = <SelectionHalo width={item.width} depth={item.depth} height={item.height} selected={selected} colliding={colliding} />;
+
+  if (textureUrl && (item.mountingType === 'wall' || name.includes('picture') || name.includes('mirror') || name.includes('art'))) {
+    return (
+      <group {...handlers}>
+        <Suspense
+          fallback={
+            <mesh position={[0, item.height / 2, 0]}>
+              <boxGeometry args={[item.width, item.height, item.depth]} />
+              <meshStandardMaterial color={color} />
+            </mesh>
+          }
+        >
+          <TexturedArt
+            width={item.width}
+            height={item.height}
+            depth={item.depth}
+            color={color}
+            url={textureUrl}
+            mirror={name.includes('mirror')}
+          />
+        </Suspense>
+        {halo}
+      </group>
+    );
+  }
+
+  if (name.includes('mirror') || (name.includes('window panel') && item.mountingType === 'wall')) {
+    return (
+      <group {...handlers}>
+        <mesh position={[0, item.height / 2, 0]} castShadow>
+          <boxGeometry args={[item.width, item.height, item.depth]} />
+          <meshStandardMaterial color="#2c3034" roughness={0.45} metalness={0.4} />
+        </mesh>
+        <mesh position={[0, item.height / 2, item.depth / 2 + 0.002]}>
+          <planeGeometry args={[item.width * 0.88, item.height * 0.88]} />
+          <meshPhysicalMaterial
+            color={name.includes('window') ? '#bce4ec' : '#c5d0d8'}
+            roughness={0.08}
+            metalness={name.includes('mirror') ? 0.9 : 0.1}
+            transmission={name.includes('window') ? 0.55 : 0}
+            thickness={0.02}
+            transparent={name.includes('window')}
+            opacity={name.includes('window') ? 0.65 : 1}
+          />
+        </mesh>
+        {halo}
+      </group>
+    );
+  }
+
+  if (category.includes('textile') || name.includes('rug')) {
+    return (
+      <group {...handlers}>
+        <mesh position={[0, Math.max(0.01, item.height / 2), 0]} receiveShadow>
+          <boxGeometry args={[item.width, Math.max(0.02, item.height), item.depth]} />
+          <meshStandardMaterial color={color} roughness={0.95} />
+        </mesh>
+        {halo}
+      </group>
+    );
+  }
 
   if (category.includes('light') && item.mountingType === 'wall') {
     return (
@@ -131,7 +234,7 @@ export function ProxyFurniture({
     );
   }
 
-  if (category === 'bedroom' || item.name.toLowerCase().includes('bed')) {
+  if (category === 'bedroom' || name.includes('bed')) {
     return (
       <group {...handlers}>
         <mesh position={[0, item.height * 0.35, 0]} castShadow receiveShadow>
@@ -182,6 +285,7 @@ export function FurnitureVisual({
   item,
   lowUrl,
   fullUrl,
+  textureUrl,
   colliding,
   selected,
   onSelect,
@@ -193,6 +297,7 @@ export function FurnitureVisual({
   item: FurnitureItem;
   lowUrl?: string;
   fullUrl?: string;
+  textureUrl?: string;
   colliding?: boolean;
   selected?: boolean;
   onSelect?: (e: any) => void;
@@ -207,6 +312,7 @@ export function FurnitureVisual({
         item={item}
         colliding={colliding}
         selected={selected}
+        textureUrl={textureUrl}
         onSelect={onSelect}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -221,7 +327,7 @@ export function FurnitureVisual({
 
   return (
     <group onClick={onSelect} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerCancel}>
-      <Suspense fallback={<ProxyFurniture item={item} colliding={colliding} selected={selected} />}>
+      <Suspense fallback={<ProxyFurniture item={item} colliding={colliding} selected={selected} textureUrl={textureUrl} />}>
         <CatalogModel lowUrl={low} fullUrl={full} width={item.width} depth={item.depth} height={item.height} />
       </Suspense>
       <SelectionHalo width={item.width} depth={item.depth} height={item.height} selected={selected} colliding={colliding} />

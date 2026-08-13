@@ -57,6 +57,9 @@ describe('placement helpers', () => {
     expect(placementConstraint('wall', 'Lighting', 'Halo Wall Sconce')).toBe('wall');
     expect(placementConstraint('floor', 'Storage', 'Arch Bookcase')).toBe('wall-prefer');
     expect(placementConstraint('floor', 'Bedroom', 'Cloud Platform Bed')).toBe('free');
+    expect(placementConstraint('floor', 'Decor', 'Oval Wall Mirror')).toBe('wall');
+    expect(placementConstraint(undefined, 'Decor', 'Landscape Picture')).toBe('wall');
+    expect(placementConstraint('floor', 'Decor', 'Window Panel Accent')).toBe('wall');
   });
 
   it('keeps wall-locked products on a wall face while free products stay on the floor', () => {
