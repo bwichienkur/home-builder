@@ -175,9 +175,7 @@ export function StudioChrome({
             <RotateCw />
           </button>
           <button
-            onClick={() => {
-              onOpenInspector();
-            }}
+            onClick={() => window.dispatchEvent(new Event('roomcraft-open-product-card'))}
             aria-label="Product details"
           >
             <Info />

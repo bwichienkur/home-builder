@@ -183,6 +183,10 @@ function FurnitureProperties({ item }: { item: FurnitureItem }) {
   const unit = usePlannerStore((s) => s.unitSystem);
   return (
     <>
+      <p className="muted">
+        {item.category}
+        {item.mountingType === 'wall' ? ' · Wall mount' : item.mountingType === 'ceiling' ? ' · Ceiling' : ' · Floor'}
+      </p>
       <label>
         Mounting
         <select value={item.mountingType ?? 'floor'} onChange={(e) => update(item.id, { mountingType: e.target.value as FurnitureItem['mountingType'] })}>

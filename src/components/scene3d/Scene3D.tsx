@@ -51,37 +51,37 @@ function CameraRig() {
     return [center[0] + 6, 5, center[2] + 7];
   }, [mode, center, framing.span]);
 
-  useEffect(() => {
+  const animating = useRef(false);
+  const animateToPose = (duration = 520) => {
     const camera = get().camera;
+    const from = camera.position.clone();
+    const to = new THREE.Vector3(...poseTuple);
     const target = new THREE.Vector3(...targetTuple);
-    controls.current?.target.copy(target);
-    camera.position.set(...poseTuple);
-    camera.lookAt(target);
-    camera.updateProjectionMatrix();
-    controls.current?.update();
-    invalidate();
-  }, [mode, poseTuple, targetTuple, get, invalidate]);
+    const fromTarget = controls.current?.target?.clone?.() ?? target.clone();
+    const start = performance.now();
+    animating.current = true;
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / duration);
+      const ease = 1 - Math.pow(1 - t, 3);
+      camera.position.lerpVectors(from, to, ease);
+      controls.current?.target.lerpVectors(fromTarget, target, ease);
+      camera.lookAt(controls.current?.target ?? target);
+      controls.current?.update();
+      invalidate();
+      if (t < 1) requestAnimationFrame(tick);
+      else animating.current = false;
+    };
+    requestAnimationFrame(tick);
+  };
+
+  // Smooth Top ↔ 3D ↔ walk transitions (avoid hard snaps that feel like remounts).
+  useEffect(() => {
+    animateToPose(mode === 'top' || mode === 'orbit' ? 560 : 480);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, poseTuple, targetTuple]);
 
   useEffect(() => {
-    const refocus = () => {
-      const camera = get().camera;
-      const from = camera.position.clone();
-      const to = new THREE.Vector3(...poseTuple);
-      const target = new THREE.Vector3(...targetTuple);
-      const start = performance.now();
-      const duration = 420;
-      const tick = (now: number) => {
-        const t = Math.min(1, (now - start) / duration);
-        const ease = 1 - Math.pow(1 - t, 3);
-        camera.position.lerpVectors(from, to, ease);
-        controls.current?.target.lerp(target, ease);
-        camera.lookAt(controls.current?.target ?? target);
-        controls.current?.update();
-        invalidate();
-        if (t < 1) requestAnimationFrame(tick);
-      };
-      requestAnimationFrame(tick);
-    };
+    const refocus = () => animateToPose(480);
     const start = () => setMoving(document.body.dataset.movingFurniture === 'true');
     const stop = () => setMoving(false);
     window.addEventListener('roomcraft-refocus', refocus);
@@ -92,14 +92,15 @@ function CameraRig() {
       window.removeEventListener('roomcraft-drag-start', start);
       window.removeEventListener('roomcraft-drag-end', stop);
     };
-  }, [get, invalidate, poseTuple, targetTuple]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [get, invalidate, poseTuple, targetTuple, mode]);
 
   return (
     <>
       <PerspectiveCamera makeDefault position={poseTuple} fov={mode === 'walk' ? 72 : mode === 'top' ? 42 : 48} />
       <OrbitControls
         ref={controls}
-        enabled={!moving && !placing}
+        enabled={!moving && !placing && !animating.current}
         target={targetTuple}
         minPolarAngle={mode === 'top' ? 0.12 : 0}
         maxPolarAngle={mode === 'top' ? 0.95 : mode === 'walk' ? Math.PI / 2 : Math.PI / 2.05}
