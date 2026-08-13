@@ -75,6 +75,29 @@ export function snapFloorPosition(x: number, z: number, step = 0.25) {
   return { x: Math.round(x / step) * step, z: Math.round(z / step) * step };
 }
 
+export type PlacementConstraint = 'free' | 'wall' | 'wall-prefer';
+
+/** IKEA-style product limits: mirrors stay on walls; beds free; storage docks to walls when near. */
+export function placementConstraint(mounting?: string, category?: string, name?: string): PlacementConstraint {
+  const m = resolveMountingType(mounting);
+  if (m === 'wall') return 'wall';
+  if (m === 'ceiling') return 'free';
+  const hay = `${category ?? ''} ${name ?? ''}`.toLowerCase();
+  if (
+    hay.includes('storage') ||
+    hay.includes('cabinetry') ||
+    hay.includes('wardrobe') ||
+    hay.includes('drawer') ||
+    hay.includes('bookcase') ||
+    hay.includes('cabinet') ||
+    hay.includes('shelf') ||
+    hay.includes('vanity')
+  ) {
+    return 'wall-prefer';
+  }
+  return 'free';
+}
+
 /** Snap a product to the nearest wall face, keeping depth clear of the wall thickness. */
 export function snapToWallSurface(
   x: number,
@@ -82,9 +105,10 @@ export function snapToWallSurface(
   walls: Wall[],
   depth: number,
   mounting: MountingType = 'wall',
+  maxDistance = mounting === 'wall' ? 12 : 1.5,
 ) {
-  if (mounting === 'floor' || !walls.length) return { ...snapFloorPosition(x, z), wallId: null as string | null, wallOffset: null as number | null, rotation: undefined as number | undefined };
-  const hit = nearestWall(x, z, walls, mounting === 'wall' ? 2.5 : 1.5);
+  if (!walls.length) return { ...snapFloorPosition(x, z), wallId: null as string | null, wallOffset: null as number | null, rotation: undefined as number | undefined };
+  const hit = nearestWall(x, z, walls, maxDistance);
   if (!hit) return { ...snapFloorPosition(x, z), wallId: null, wallOffset: null, rotation: undefined };
   const inset = hit.wall.thickness / 2 + depth / 2 + 0.01;
   // Prefer the room-facing side (positive inset from the hit, else flip)
@@ -97,6 +121,29 @@ export function snapToWallSurface(
     wallId: hit.wall.id,
     wallOffset: hit.offset,
   };
+}
+
+export function constrainPlacement(
+  x: number,
+  z: number,
+  walls: Wall[],
+  depth: number,
+  opts: { mountingType?: string; category?: string; name?: string; rotation?: number; live?: boolean },
+) {
+  const constraint = placementConstraint(opts.mountingType, opts.category, opts.name);
+  if (constraint === 'wall') {
+    const snapped = snapToWallSurface(x, z, walls, depth, 'wall', 12);
+    return { ...snapped, rotation: snapped.rotation ?? opts.rotation ?? 0, constraint };
+  }
+  if (constraint === 'wall-prefer') {
+    const near = nearestWall(x, z, walls, opts.live ? 0.85 : 0.55);
+    if (near) {
+      const snapped = snapToWallSurface(x, z, walls, depth, 'wall', 1.2);
+      return { ...snapped, rotation: snapped.rotation ?? opts.rotation ?? 0, constraint };
+    }
+  }
+  const floor = opts.live ? { x, z } : snapFloorPosition(x, z);
+  return { ...floor, wallId: null as string | null, wallOffset: null as number | null, rotation: opts.rotation, constraint };
 }
 
 export function furnitureBounds(item: Pick<FurnitureItem, 'x' | 'z' | 'width' | 'depth' | 'rotation'>) {
