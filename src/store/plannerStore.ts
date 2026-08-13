@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { CameraMode, FurnitureItem, MountingType, Opening, PlanRoomLabel, Point, RoomType, SceneSnapshot, SurfaceTarget, Tool, UnitSystem, Wall } from '../types';
 import { constrainPlacement, openingConflicts, resolveMountingType, roomFloorCenter } from '../lib/geometry/placement';
 import { writeRecoverySnapshot } from '../lib/designShare';
-import { buildHouse } from '../lib/housePlans/buildPlan';
+import { buildHouse, rebuildFromPlanRooms, resizePlanRoomPoints } from '../lib/housePlans/buildPlan';
 import { getHousePlan } from '../lib/housePlans/olsenPlans';
 
 type View = '2d' | '3d';
@@ -45,6 +45,7 @@ type PlannerState = SceneSnapshot & {
   selectedOpeningId: string | null;
   selectedFurnitureId: string | null;
   selectedSurface: SurfaceTarget | null;
+  selectedRoomId: string | null;
   pendingPlacement: PendingPlacement | null;
   draftStart: Point | null;
   floors: FloorRecord[];
@@ -85,6 +86,10 @@ type PlannerState = SceneSnapshot & {
   housePlanId: string | null;
   housePlanName: string | null;
   planRooms: PlanRoomLabel[];
+  selectRoom: (id: string | null) => void;
+  updatePlanRoom: (id: string, patch: Partial<Pick<PlanRoomLabel, 'name' | 'roomType' | 'floorColor'>>) => void;
+  resizePlanRoom: (id: string, widthFt: number, depthFt: number) => void;
+  deletePlanRoom: (id: string) => void;
   selectWall: (id: string | null) => void;
   selectOpening: (id: string | null) => void;
   selectSurface: (surface: SurfaceTarget | null) => void;
@@ -215,6 +220,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     selectedOpeningId: null,
     selectedFurnitureId: null,
     selectedSurface: null,
+    selectedRoomId: null,
     pendingPlacement: null,
     draftStart: null,
     floors: [{ id: 'ground', name: 'Ground floor', scene: initial }],
@@ -354,6 +360,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         selectedOpeningId: null,
         selectedFurnitureId: null,
         selectedSurface: null,
+        selectedRoomId: null,
         pendingPlacement: null,
         draftStart: null,
         tool: 'select',
@@ -364,15 +371,79 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       });
       return true;
     },
-    selectWall: (selectedWallId) => set({ selectedWallId, selectedOpeningId: null, selectedFurnitureId: null, selectedSurface: null }),
+    selectWall: (selectedWallId) => set({ selectedWallId, selectedOpeningId: null, selectedFurnitureId: null, selectedSurface: null, selectedRoomId: null }),
     selectOpening: (selectedOpeningId) =>
       set({
         selectedOpeningId,
         selectedWallId: selectedOpeningId ? get().openings.find((o) => o.id === selectedOpeningId)?.wallId ?? null : null,
         selectedFurnitureId: null,
         selectedSurface: null,
+        selectedRoomId: null,
       }),
-    selectSurface: (selectedSurface) => set({ selectedSurface, selectedWallId: null, selectedOpeningId: null, selectedFurnitureId: null }),
+    selectSurface: (selectedSurface) => set({ selectedSurface, selectedWallId: null, selectedOpeningId: null, selectedFurnitureId: null, selectedRoomId: null }),
+    selectRoom: (selectedRoomId) =>
+      set({
+        selectedRoomId,
+        selectedWallId: null,
+        selectedOpeningId: null,
+        selectedFurnitureId: null,
+        selectedSurface: selectedRoomId ? 'floor' : null,
+        roomType: selectedRoomId ? get().planRooms.find((r) => r.id === selectedRoomId)?.roomType ?? get().roomType : get().roomType,
+      }),
+    updatePlanRoom: (id, patch) => {
+      const planRooms = get().planRooms.map((r) => (r.id === id ? { ...r, ...patch } : r));
+      set({
+        planRooms,
+        floors: get().floors.map((f) => (f.id === get().activeFloorId ? { ...f, planRooms } : f)),
+        roomType: patch.roomType && get().selectedRoomId === id ? patch.roomType : get().roomType,
+      });
+    },
+    resizePlanRoom: (id, widthFt, depthFt) => {
+      const current = get().planRooms;
+      if (!current.some((r) => r.id === id)) return;
+      const nextLabels = current.map((r) =>
+        r.id === id ? { ...r, points: resizePlanRoomPoints(r.points, widthFt, depthFt) } : r,
+      );
+      const height = get().walls[0]?.height ?? 2.74;
+      const rebuilt = rebuildFromPlanRooms(nextLabels, get().activeFloorId, height);
+      const planRooms = rebuilt.roomPolygons.map((p) => ({
+        ...p,
+        floorColor: nextLabels.find((l) => l.id === p.id)?.floorColor,
+      }));
+      mutate({
+        walls: rebuilt.scene.walls,
+        openings: rebuilt.scene.openings,
+        furniture: get().furniture,
+      });
+      set({
+        planRooms,
+        floors: get().floors.map((f) =>
+          f.id === get().activeFloorId ? { ...f, scene: { ...f.scene, walls: rebuilt.scene.walls, openings: rebuilt.scene.openings }, planRooms } : f,
+        ),
+      });
+    },
+    deletePlanRoom: (id) => {
+      const nextLabels = get().planRooms.filter((r) => r.id !== id);
+      if (!nextLabels.length) {
+        mutate({ walls: [], openings: [], furniture: get().furniture });
+        set({ planRooms: [], selectedRoomId: null, floors: get().floors.map((f) => (f.id === get().activeFloorId ? { ...f, planRooms: [] } : f)) });
+        return;
+      }
+      const height = get().walls[0]?.height ?? 2.74;
+      const rebuilt = rebuildFromPlanRooms(nextLabels, get().activeFloorId, height);
+      const planRooms = rebuilt.roomPolygons.map((p) => ({
+        ...p,
+        floorColor: nextLabels.find((l) => l.id === p.id)?.floorColor,
+      }));
+      mutate({ walls: rebuilt.scene.walls, openings: rebuilt.scene.openings, furniture: get().furniture });
+      set({
+        planRooms,
+        selectedRoomId: get().selectedRoomId === id ? null : get().selectedRoomId,
+        floors: get().floors.map((f) =>
+          f.id === get().activeFloorId ? { ...f, scene: { ...f.scene, walls: rebuilt.scene.walls, openings: rebuilt.scene.openings }, planRooms } : f,
+        ),
+      });
+    },
     addOpening: (wallId, type) => {
       const id = crypto.randomUUID();
       const candidate: Opening = {
@@ -524,10 +595,10 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
           },
         ],
       });
-      set({ selectedFurnitureId: id, selectedWallId: null, selectedOpeningId: null, selectedSurface: null, pendingPlacement: null });
+      set({ selectedFurnitureId: id, selectedWallId: null, selectedOpeningId: null, selectedSurface: null, selectedRoomId: null, pendingPlacement: null });
     },
     selectFurniture: (selectedFurnitureId) =>
-      set({ selectedFurnitureId, selectedWallId: null, selectedOpeningId: null, selectedSurface: null }),
+      set({ selectedFurnitureId, selectedWallId: null, selectedOpeningId: null, selectedSurface: null, selectedRoomId: null }),
     updateFurnitureLive: (id, patch) => set((s) => ({ furniture: s.furniture.map((f) => (f.id === id ? { ...f, ...patch } : f)) })),
     updateFurniture: (id, patch) => {
       const item = get().furniture.find((f) => f.id === id);

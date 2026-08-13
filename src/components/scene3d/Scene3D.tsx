@@ -48,7 +48,8 @@ function CameraRig() {
   const poseTuple = useMemo<[number, number, number]>(() => {
     if (mode === 'top') {
       // Near-flat bird’s-eye — still 3D, centered on the floor (no separate 2D engine).
-      const height = Math.max(8.5, framing.span * 1.55);
+      // House plans can span 20–40 m; frame with headroom so the whole floor fits.
+      const height = Math.max(10, framing.span * 1.85);
       return [center[0] + framing.span * 0.02, height, center[2] + framing.span * 0.04];
     }
     if (mode === 'walk') {
@@ -56,8 +57,12 @@ function CameraRig() {
       const back = Math.max(4.2, framing.span * 0.55);
       return [center[0], 1.55, center[2] + back];
     }
-    return [center[0] + 6, 5, center[2] + 7];
+    const back = Math.max(8, framing.span * 0.85);
+    return [center[0] + back * 0.55, Math.max(5, framing.span * 0.35), center[2] + back * 0.65];
   }, [mode, center, framing.span]);
+
+  const maxDistance = mode === 'top' ? Math.max(55, framing.span * 4.2) : mode === 'walk' ? Math.max(14, framing.span * 1.4) : Math.max(36, framing.span * 3.2);
+  const minDistance = mode === 'walk' ? 1.2 : mode === 'top' ? Math.max(2.5, framing.span * 0.06) : 2;
 
   const animating = useRef(false);
   const animateToPose = (duration = 520) => {
@@ -105,7 +110,7 @@ function CameraRig() {
 
   return (
     <>
-      <PerspectiveCamera makeDefault position={poseTuple} fov={mode === 'walk' ? 58 : mode === 'top' ? 42 : 48} />
+      <PerspectiveCamera makeDefault position={poseTuple} fov={mode === 'walk' ? 58 : mode === 'top' ? 48 : 48} />
       <OrbitControls
         ref={controls}
         enabled={!moving && !placing && !animating.current}
@@ -113,8 +118,8 @@ function CameraRig() {
         minPolarAngle={mode === 'top' ? 0.05 : mode === 'walk' ? 0.7 : 0}
         // Orbit can tip slightly below the floor plane so the ceiling comes into view (IKEA dollhouse).
         maxPolarAngle={mode === 'top' ? 0.55 : mode === 'walk' ? Math.PI / 2.05 : Math.PI / 2 + 0.52}
-        minDistance={mode === 'walk' ? 1.2 : mode === 'top' ? 3 : 2}
-        maxDistance={mode === 'top' ? 22 : mode === 'walk' ? 12 : 18}
+        minDistance={minDistance}
+        maxDistance={maxDistance}
         enableZoom
         enablePan
         enableRotate
@@ -558,6 +563,8 @@ function Room() {
   const ceiling = usePlannerStore((s) => s.ceilingColor);
   const walls = usePlannerStore((s) => s.walls);
   const planRooms = usePlannerStore((s) => s.planRooms);
+  const selectedRoomId = usePlannerStore((s) => s.selectedRoomId);
+  const selectRoom = usePlannerStore((s) => s.selectRoom);
   const cameraMode = usePlannerStore((s) => s.cameraMode);
   const selectedSurface = usePlannerStore((s) => s.selectedSurface);
   const selectSurface = usePlannerStore((s) => s.selectSurface);
@@ -586,9 +593,13 @@ function Room() {
     }
   });
 
-  const chooseFloor = (e: any) => {
+  const chooseFloor = (e: any, roomId?: string) => {
     e.stopPropagation();
-    selectSurface('floor');
+    if (roomId) {
+      selectRoom(roomId);
+    } else {
+      selectSurface('floor');
+    }
     openSurfaceProperties();
   };
   const chooseCeiling = (e: any) => {
@@ -599,58 +610,75 @@ function Room() {
   return (
     <Bvh firstHitOnly>
       {rooms.length ? (
-        rooms.map((points, i) => (
-          <group key={planRooms[i]?.id ?? i}>
-            <mesh rotation={[Math.PI / 2, 0, 0]} receiveShadow position={[0, -0.035, 0]} onClick={chooseFloor}>
-              <shapeGeometry args={[roomShape(points)]} />
-              <meshStandardMaterial
-                color={selectedSurface === 'floor' ? '#0058a3' : floor}
-                roughness={0.95}
-                side={THREE.DoubleSide}
-                emissive={selectedSurface === 'floor' ? '#003d70' : '#000000'}
-                emissiveIntensity={selectedSurface === 'floor' ? 0.12 : 0}
-              />
-            </mesh>
-            {showCeiling && (
+        rooms.map((points, i) => {
+          const label = planRooms[i];
+          const selected = !!label && label.id === selectedRoomId;
+          const floorColor = label?.floorColor || floor;
+          const span = (() => {
+            const xs = points.map((p) => (p.x - WORLD_ORIGIN.x) / PIXELS_PER_METER);
+            const zs = points.map((p) => (p.y - WORLD_ORIGIN.y) / PIXELS_PER_METER);
+            return Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...zs) - Math.min(...zs), 1);
+          })();
+          const labelSize = Math.min(0.55, Math.max(0.22, span * 0.08));
+          return (
+            <group key={label?.id ?? i}>
               <mesh
                 rotation={[Math.PI / 2, 0, 0]}
-                position={[0, ceilingHeight, 0]}
-                onClick={chooseCeiling}
-                raycast={cameraMode === 'top' ? () => {} : undefined}
+                receiveShadow
+                position={[0, selected ? -0.02 : -0.035, 0]}
+                onClick={(e) => chooseFloor(e, label?.id)}
               >
                 <shapeGeometry args={[roomShape(points)]} />
                 <meshStandardMaterial
-                  color={selectedSurface === 'ceiling' ? '#0058a3' : ceiling}
-                  roughness={0.92}
+                  color={selected ? '#0058a3' : floorColor}
+                  roughness={0.95}
                   side={THREE.DoubleSide}
-                  transparent
-                  opacity={ceilingOpacity}
-                  depthWrite={lookUpCeiling || cameraMode === 'walk'}
-                  emissive={selectedSurface === 'ceiling' ? '#003d70' : '#000000'}
-                  emissiveIntensity={selectedSurface === 'ceiling' ? 0.1 : 0}
+                  emissive={selected ? '#003d70' : '#000000'}
+                  emissiveIntensity={selected ? 0.14 : 0}
                 />
               </mesh>
-            )}
-            {planRooms[i] && cameraMode === 'top' && (
-              <Text
-                position={[
-                  points.reduce((s, p) => s + (p.x - WORLD_ORIGIN.x) / PIXELS_PER_METER, 0) / points.length,
-                  0.05,
-                  points.reduce((s, p) => s + (p.y - WORLD_ORIGIN.y) / PIXELS_PER_METER, 0) / points.length,
-                ]}
-                rotation={[-Math.PI / 2, 0, 0]}
-                fontSize={0.35}
-                color="#1a2330"
-                anchorX="center"
-                anchorY="middle"
-                outlineWidth={0.02}
-                outlineColor="#ffffff"
-              >
-                {planRooms[i].name}
-              </Text>
-            )}
-          </group>
-        ))
+              {showCeiling && (
+                <mesh
+                  rotation={[Math.PI / 2, 0, 0]}
+                  position={[0, ceilingHeight, 0]}
+                  onClick={chooseCeiling}
+                  raycast={cameraMode === 'top' ? () => {} : undefined}
+                >
+                  <shapeGeometry args={[roomShape(points)]} />
+                  <meshStandardMaterial
+                    color={selectedSurface === 'ceiling' ? '#0058a3' : ceiling}
+                    roughness={0.92}
+                    side={THREE.DoubleSide}
+                    transparent
+                    opacity={ceilingOpacity}
+                    depthWrite={lookUpCeiling || cameraMode === 'walk'}
+                    emissive={selectedSurface === 'ceiling' ? '#003d70' : '#000000'}
+                    emissiveIntensity={selectedSurface === 'ceiling' ? 0.1 : 0}
+                  />
+                </mesh>
+              )}
+              {label && cameraMode === 'top' && (
+                <Text
+                  position={[
+                    points.reduce((s, p) => s + (p.x - WORLD_ORIGIN.x) / PIXELS_PER_METER, 0) / points.length,
+                    0.05,
+                    points.reduce((s, p) => s + (p.y - WORLD_ORIGIN.y) / PIXELS_PER_METER, 0) / points.length,
+                  ]}
+                  rotation={[-Math.PI / 2, 0, 0]}
+                  fontSize={labelSize}
+                  color={selected ? '#ffffff' : '#1a2330'}
+                  anchorX="center"
+                  anchorY="middle"
+                  outlineWidth={0.02}
+                  outlineColor={selected ? '#003d70' : '#ffffff'}
+                  onClick={(e) => chooseFloor(e, label.id)}
+                >
+                  {label.name}
+                </Text>
+              )}
+            </group>
+          );
+        })
       ) : (
         <>
           <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow position={[0, -0.035, 0]} onClick={chooseFloor}>
@@ -744,6 +772,7 @@ export function Scene3D() {
   const select = usePlannerStore((s) => s.selectFurniture);
   const selectWall = usePlannerStore((s) => s.selectWall);
   const selectSurface = usePlannerStore((s) => s.selectSurface);
+  const selectRoom = usePlannerStore((s) => s.selectRoom);
   const custom = useInventoryStore((s) => s.items);
   const drop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -789,10 +818,11 @@ export function Scene3D() {
           select(null);
           selectWall(null);
           selectSurface(null);
+          selectRoom(null);
         }}
       >
         <color attach="background" args={['#e8eaed']} />
-        <fog attach="fog" args={['#e8eaed', 12, 24]} />
+        <fog attach="fog" args={['#e8eaed', 28, 70]} />
         <ambientLight intensity={coarse ? 0.9 : 0.78} />
         <directionalLight
           castShadow={!coarse}

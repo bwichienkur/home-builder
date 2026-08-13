@@ -180,6 +180,7 @@ function StudioApp() {
   }, []);
 
   const selectedSurface = usePlannerStore((s) => s.selectedSurface);
+  const selectedRoomId = usePlannerStore((s) => s.selectedRoomId);
   const pendingPlacement = usePlannerStore((s) => s.pendingPlacement);
   useEffect(() => {
     // One panel at a time: furniture → product card; walls/openings/surfaces → inspector.
@@ -194,8 +195,8 @@ function StudioApp() {
       return;
     }
     setProductCardOpen(false);
-    if (selectedWallId || selectedOpeningId || selectedSurface) setInspectorOpen(true);
-  }, [selectedWallId, selectedOpeningId, selectedFurnitureId, selectedSurface, pendingPlacement]);
+    if (selectedWallId || selectedOpeningId || selectedSurface || selectedRoomId) setInspectorOpen(true);
+  }, [selectedWallId, selectedOpeningId, selectedFurnitureId, selectedSurface, selectedRoomId, pendingPlacement]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => store.save(), 700);

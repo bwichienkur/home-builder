@@ -73,6 +73,7 @@ describe('house plan builder', () => {
       planRooms: [],
       housePlanId: null,
       housePlanName: null,
+      selectedRoomId: null,
     } as any);
     const ok = usePlannerStore.getState().applyHousePlan('largo');
     expect(ok).toBe(true);
@@ -83,5 +84,13 @@ describe('house plan builder', () => {
     expect(state.planRooms.length).toBeGreaterThan(5);
     expect(state.unitSystem).toBe('imperial');
     expect(assertPlanCatalog().find((p) => p.id === 'largo')).toBeTruthy();
+
+    const room = state.planRooms[0];
+    usePlannerStore.getState().selectRoom(room.id);
+    usePlannerStore.getState().updatePlanRoom(room.id, { name: 'Edited Room', floorColor: '#7d5c43' });
+    const edited = usePlannerStore.getState().planRooms.find((r) => r.id === room.id)!;
+    expect(edited.name).toBe('Edited Room');
+    expect(edited.floorColor).toBe('#7d5c43');
+    expect(usePlannerStore.getState().selectedRoomId).toBe(room.id);
   });
 });

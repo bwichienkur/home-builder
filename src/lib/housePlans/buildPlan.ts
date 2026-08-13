@@ -40,7 +40,7 @@ export type BuiltFloor = {
   scene: SceneSnapshot;
   rooms: PlanRoomRect[];
   /** Room polygons in plan-pixel space (same as wall coordinates). */
-  roomPolygons: { id: string; name: string; roomType: RoomType; points: Point[] }[];
+  roomPolygons: { id: string; name: string; roomType: RoomType; points: Point[]; floorColor?: string }[];
 };
 
 export type BuiltHouse = {
@@ -304,4 +304,64 @@ export function livingAreaSqFt(rooms: PlanRoomRect[]) {
   return rooms
     .filter((r) => r.roomType !== 'Outdoor' && !r.name.toLowerCase().includes('garage') && !r.name.toLowerCase().includes('lanai') && !r.name.toLowerCase().includes('entry') && !r.name.toLowerCase().includes('balcony') && !r.name.toLowerCase().includes('pool'))
     .reduce((sum, r) => sum + r.w * r.h, 0);
+}
+
+/** Axis-aligned size of a plan-room polygon in feet. */
+export function planRoomSizeFeet(points: Point[]) {
+  const xs = points.map((p) => (p.x - WORLD_ORIGIN.x) / PIXELS_PER_METER / FT_TO_M);
+  const ys = points.map((p) => (p.y - WORLD_ORIGIN.y) / PIXELS_PER_METER / FT_TO_M);
+  return {
+    widthFt: Math.max(0.5, Math.max(...xs) - Math.min(...xs)),
+    depthFt: Math.max(0.5, Math.max(...ys) - Math.min(...ys)),
+    minX: Math.min(...xs),
+    minY: Math.min(...ys),
+    maxX: Math.max(...xs),
+    maxY: Math.max(...ys),
+  };
+}
+
+/** Resize a room polygon in place, keeping its center fixed. */
+export function resizePlanRoomPoints(points: Point[], widthFt: number, depthFt: number): Point[] {
+  const size = planRoomSizeFeet(points);
+  const cx = (size.minX + size.maxX) / 2;
+  const cy = (size.minY + size.maxY) / 2;
+  const w = Math.max(3, widthFt);
+  const d = Math.max(3, depthFt);
+  const toPoint = (xFt: number, yFt: number): Point => ({
+    x: WORLD_ORIGIN.x + ftToPx(xFt),
+    y: WORLD_ORIGIN.y + ftToPx(yFt),
+  });
+  return [
+    toPoint(cx - w / 2, cy - d / 2),
+    toPoint(cx + w / 2, cy - d / 2),
+    toPoint(cx + w / 2, cy + d / 2),
+    toPoint(cx - w / 2, cy + d / 2),
+  ];
+}
+
+/**
+ * Rebuild walls/openings from edited plan-room labels (pixel polygons).
+ * Preserves per-room floor colors when ids match.
+ */
+export function rebuildFromPlanRooms(labels: { id: string; name: string; roomType: RoomType; points: Point[]; floorColor?: string }[], floorId = 'edited', ceilingHeightM = 2.74) {
+  const rooms: PlanRoomRect[] = labels.map((label) => {
+    const size = planRoomSizeFeet(label.points);
+    return {
+      id: label.id,
+      name: label.name,
+      roomType: label.roomType,
+      x: size.minX,
+      y: size.minY,
+      w: size.widthFt,
+      h: size.depthFt,
+      ceilingFt: ceilingHeightM / FT_TO_M,
+    };
+  });
+  const built = buildFloorFromRooms({ id: floorId, name: 'Edited floor', rooms });
+  built.roomPolygons = built.roomPolygons.map((poly) => ({
+    ...poly,
+    floorColor: labels.find((l) => l.id === poly.id)?.floorColor,
+  }));
+  // Keep existing furniture out of the rebuilt empty scene — caller merges.
+  return built;
 }

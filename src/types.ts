@@ -15,5 +15,5 @@ export type UnitSystem = 'metric'|'imperial';
 export type Tool = 'select' | 'wall' | 'door' | 'window' | 'passage';
 export type RoomType = 'Bedroom'|'Living room'|'Bathroom'|'Kitchen'|'Dining room'|'Office'|'Children’s room'|'Laundry'|'Hallway'|'Storage / wardrobe'|'Outdoor';
 export type SurfaceTarget = 'floor'|'wall'|'ceiling';
-export type PlanRoomLabel = { id: string; name: string; roomType: RoomType; points: Point[] };
+export type PlanRoomLabel = { id: string; name: string; roomType: RoomType; points: Point[]; floorColor?: string };
 export type SceneSnapshot = { walls: Wall[]; openings:Opening[]; furniture:FurnitureItem[]; floorColor:string; wallColor:string; ceilingColor:string };

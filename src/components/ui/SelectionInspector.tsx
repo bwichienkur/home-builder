@@ -4,7 +4,8 @@ import { usePlannerStore } from '../../store/plannerStore';
 import { wallLengthMeters } from '../../lib/geometry/snapping';
 import { formatLength, parseLength } from '../../lib/measurements';
 import { olsenHousePlans } from '../../lib/housePlans/olsenPlans';
-import type { FurnitureItem, Opening, RoomType, Wall } from '../../types';
+import { planRoomSizeFeet } from '../../lib/housePlans/buildPlan';
+import type { FurnitureItem, Opening, PlanRoomLabel, RoomType, Wall } from '../../types';
 
 const finishes: [string, string][] = [
   ['Oak', '#c9b18f'],
@@ -35,13 +36,16 @@ export function SelectionInspector({ open, onClose }: { open: boolean; onClose: 
   const walls = usePlannerStore((s) => s.walls);
   const openings = usePlannerStore((s) => s.openings);
   const furniture = usePlannerStore((s) => s.furniture);
+  const planRooms = usePlannerStore((s) => s.planRooms);
   const selectedWallId = usePlannerStore((s) => s.selectedWallId);
   const selectedOpeningId = usePlannerStore((s) => s.selectedOpeningId);
   const selectedFurnitureId = usePlannerStore((s) => s.selectedFurnitureId);
+  const selectedRoomId = usePlannerStore((s) => s.selectedRoomId);
   const selectedSurface = usePlannerStore((s) => s.selectedSurface);
   const selectedWall = walls.find((w) => w.id === selectedWallId);
   const selectedOpening = openings.find((o) => o.id === selectedOpeningId);
   const selectedFurniture = furniture.find((f) => f.id === selectedFurnitureId);
+  const selectedRoom = planRooms.find((r) => r.id === selectedRoomId);
 
   if (!open) return null;
 
@@ -51,11 +55,13 @@ export function SelectionInspector({ open, onClose }: { open: boolean; onClose: 
       ? 'Wall'
       : selectedFurniture
         ? selectedFurniture.name
-        : selectedSurface === 'ceiling'
-          ? 'Ceiling'
-          : selectedSurface === 'floor'
-            ? 'Floor'
-            : 'Room';
+        : selectedRoom
+          ? selectedRoom.name
+          : selectedSurface === 'ceiling'
+            ? 'Ceiling'
+            : selectedSurface === 'floor'
+              ? 'Floor'
+              : 'Room';
 
   return (
     <aside className="selection-inspector" aria-label="Selection properties">
@@ -72,6 +78,8 @@ export function SelectionInspector({ open, onClose }: { open: boolean; onClose: 
           <WallProperties wall={selectedWall} />
         ) : selectedFurniture ? (
           <FurnitureProperties item={selectedFurniture} />
+        ) : selectedRoom ? (
+          <PlanRoomProperties room={selectedRoom} />
         ) : (
           <RoomPanel surface={selectedSurface} />
         )}
@@ -93,9 +101,89 @@ function RoomPanel({ surface }: { surface: 'floor' | 'wall' | 'ceiling' | null }
           <Grid2X2 size={22} />
         </div>
         <h3>{surface === 'ceiling' ? 'Ceiling finish' : surface === 'floor' ? 'Floor finish' : 'Room finishes'}</h3>
-        <p>{surface ? 'Choose a finish below.' : 'Select a wall, floor, ceiling, or product for precise controls.'}</p>
+        <p>
+          {surface
+            ? 'Choose a finish below.'
+            : 'Tap a room label or floor to edit that room. Select a wall or product for precise controls.'}
+        </p>
       </div>
       <FinishSwatches highlight={surface} />
+    </>
+  );
+}
+
+function PlanRoomProperties({ room }: { room: PlanRoomLabel }) {
+  const update = usePlannerStore((s) => s.updatePlanRoom);
+  const resize = usePlannerStore((s) => s.resizePlanRoom);
+  const remove = usePlannerStore((s) => s.deletePlanRoom);
+  const selectRoom = usePlannerStore((s) => s.selectRoom);
+  const unit = usePlannerStore((s) => s.unitSystem);
+  const size = planRoomSizeFeet(room.points);
+  const areaSqFt = size.widthFt * size.depthFt;
+
+  return (
+    <>
+      <p className="muted">Tap another room to switch · Resize rebuilds shared walls</p>
+      <label>
+        Room name
+        <input className="property-input" value={room.name} onChange={(e) => update(room.id, { name: e.target.value })} />
+      </label>
+      <label>
+        Room type
+        <select value={room.roomType} onChange={(e) => update(room.id, { roomType: e.target.value as RoomType })}>
+          {roomTypes.map((type) => (
+            <option key={type} value={type}>
+              {type}
+            </option>
+          ))}
+        </select>
+      </label>
+      <p className="muted">
+        About {Math.round(areaSqFt).toLocaleString()} sf
+        {unit === 'metric'
+          ? ` · ${formatLength(size.widthFt * 0.3048, unit)} × ${formatLength(size.depthFt * 0.3048, unit)}`
+          : ` · ${size.widthFt.toFixed(1)}′ × ${size.depthFt.toFixed(1)}′`}
+      </p>
+      <LengthField
+        label="Width"
+        value={size.widthFt * 0.3048}
+        min={1}
+        max={30}
+        onChange={(meters) => resize(room.id, meters / 0.3048, size.depthFt)}
+      />
+      <LengthField
+        label="Depth"
+        value={size.depthFt * 0.3048}
+        min={1}
+        max={30}
+        onChange={(meters) => resize(room.id, size.widthFt, meters / 0.3048)}
+      />
+      <label>
+        Room floor finish
+        <div className="swatches">
+          {finishes.slice(0, 6).map(([n, c]) => (
+            <button
+              title={n}
+              key={c}
+              style={{ background: c, outline: room.floorColor === c ? '2px solid #0058a3' : undefined }}
+              onClick={() => update(room.id, { floorColor: c })}
+            />
+          ))}
+        </div>
+      </label>
+      <div className="wall-actions">
+        <button type="button" onClick={() => selectRoom(null)}>
+          Done
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            if (window.confirm(`Remove “${room.name}” from this floor?`)) remove(room.id);
+          }}
+        >
+          Delete room
+        </button>
+      </div>
     </>
   );
 }
