@@ -166,11 +166,29 @@ function FurnitureProperties({ item }: { item: FurnitureItem }) {
   const remove = usePlannerStore((s) => s.deleteSelected);
   return (
     <>
+      <label>
+        Mounting
+        <select
+          value={item.mountingType ?? 'floor'}
+          onChange={(e) => update(item.id, { mountingType: e.target.value as FurnitureItem['mountingType'] })}
+        >
+          <option value="floor">Floor</option>
+          <option value="wall">Wall</option>
+          <option value="ceiling">Ceiling</option>
+        </select>
+      </label>
       <Numeric label="Position X" value={item.x} onChange={(x) => update(item.id, { x })} />
       <Numeric label="Position Z" value={item.z} onChange={(z) => update(item.id, { z })} />
+      {(item.mountingType === 'wall' || item.mountingType === 'ceiling') && (
+        <Numeric label="Height Y" value={item.y ?? 0} onChange={(y) => update(item.id, { y })} />
+      )}
       <label>
         Rotation
         <input className="property-input" type="range" min="0" max="6.28" step="0.1" value={item.rotation} onChange={(e) => update(item.id, { rotation: +e.target.value })} />
+      </label>
+      <label className="room-filter">
+        <input type="checkbox" checked={!!item.showClearance} onChange={(e) => update(item.id, { showClearance: e.target.checked })} />
+        Show clearance
       </label>
       <div className="nudge">
         <button onClick={() => move(-0.25, 0)}>←</button>

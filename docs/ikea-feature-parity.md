@@ -40,8 +40,8 @@ This is a behavioral audit, not permission to copy IKEA branding, product data, 
 | Openings | Open passage | All | Data type reserved | Place passage with no door leaf | Planned |
 | Openings | Drag opening along wall | All | Range/property control | Drag directly in Top view | Partial |
 | Openings | Exact width/height/sill | All | Width; height/sill stored | Edit all values from contextual panel | Partial |
-| Openings | Door swing direction | All | Data type reserved | Toggle left/right and render arc/leaf | Planned |
-| Openings | Invalid overlap feedback | All | Not implemented | Prevent overlapping openings | Planned |
+| Openings | Door swing direction | All | 2D arc + 3D door leaf | Toggle left/right and render arc/leaf | Complete |
+| Openings | Invalid overlap feedback | All | Conflict guard + notice | Prevent overlapping openings | Complete |
 | Surfaces | Select wall in 3D | All | Highlight + drawer | Tap wall on mobile; no blank screen | Complete |
 | Surfaces | Select floor in 3D | All | Focus + finishes | Tap floor and change finish | Complete |
 | Surfaces | Select ceiling | All | No selectable ceiling | Select ceiling and edit applicable finish | Planned |
@@ -58,18 +58,18 @@ This is a behavioral audit, not permission to copy IKEA branding, product data, 
 | Catalog | Product variants/options | All | Schema only | Change variant and update price/model | Planned |
 | Catalog | Product information/source | All | Vendor link/note | Open official source in new tab | Complete |
 | Catalog | Sellable/design-extra distinction | All | Import fields/badge | Placeholder clearly not represented as purchasable | Complete |
-| Catalog | Virtualized large catalog | All | DOM list | 5,000 SKUs without rendering every card | Planned |
+| Catalog | Virtualized large catalog | All | Progressive window (36+) + load more | 5,000 SKUs without rendering every card | Partial |
 | Placement | Desktop drag/drop | All | HTML drag into 3D | Drop at cursor floor point | Complete |
 | Placement | Mobile tap-to-add | All | Add and switch to 3D | Add then position by touch | Complete |
 | Placement | Touch drag | All | Floor-plane drag | Drag without moving camera/page | Complete |
 | Placement | Grid snap | All | 25 cm commit snap | Release product and verify coordinates | Complete |
-| Placement | Wall/surface snap | Applicable items | Not implemented | Wall product aligns and mounts | Planned |
-| Placement | Object smart guides | All | Not implemented | Show alignment and distance guides | Planned |
+| Placement | Wall/surface snap | Applicable items | mountingType snap in placeFurniture | Wall product aligns and mounts | Complete |
+| Placement | Object smart guides | All | alignmentGuides while selected/dragging | Show alignment and distance guides | Complete |
 | Placement | Rotate | All | Pivot/range control | Rotate and undo | Complete |
 | Placement | Exact position | All | Numeric properties | Enter X/Z and verify | Complete |
 | Placement | Duplicate/delete | All | Commands | Duplicate/delete and undo | Complete |
 | Placement | Collision feedback | All | Red overlap color | Overlap two products | Complete |
-| Placement | Clearance visualization | All | Schema only | Toggle required clearance volume | Planned |
+| Placement | Clearance visualization | All | showClearance plane in 3D | Toggle required clearance volume | Complete |
 | Placement | Measurements around product | All | Dimensions in catalog | Show in-scene measurements on selection | Partial |
 | Pricing | Running product total | All | Header summary | Add priced item and update total | Complete |
 | Pricing | Itemized list / quantities | All | No dedicated BOM UI | Group repeated SKUs and total quantities | Planned |
@@ -92,9 +92,9 @@ This is a behavioral audit, not permission to copy IKEA branding, product data, 
 | Assets | Low-poly/full LOD | All | CatalogModel Detailed distances | Drag proxy, then full model when URLs present | Complete |
 | Assets | Repeated SKU instancing | All | Per-item meshes (Instances removed for model path) | Six repeated SKUs share draw resources | Partial |
 | Projects | Local save/load | All | Local storage | Save, refresh, load | Complete |
-| Projects | Autosave/recovery | All | Manual save | Recover latest edits after refresh | Planned |
-| Projects | Save as / design library | All | API primitives | Create two named versions | Planned |
-| Projects | Share link/design code | All | Web Share URL only | Open code on second device | Planned |
+| Projects | Autosave/recovery | All | Recovery banner from roomcraft-recovery-v1 | Recover latest edits after refresh | Complete |
+| Projects | Save as / design library | All | API primitives + local design map | Create two named versions | Partial |
+| Projects | Share link/design code | All | Local design codes via ?design= | Open code on second device | Partial |
 | Projects | JSON export/import | All | Export only | Export then import identical scene | Partial |
 | Projects | Undo/redo everywhere | All | Scene history | Geometry/product/finish operations undo | Complete |
 | Mobile | 44 px targets | All | Major controls enlarged | Touch audit at 390×844 | Complete |

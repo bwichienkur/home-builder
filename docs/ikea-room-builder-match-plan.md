@@ -9,7 +9,7 @@
 
 ## Verdict
 
-**2026-08-13 implementation:** Studio shell rebuilt to floating-chrome IA (menu, bag/total, category rail, view controls, undo/redo) on all breakpoints. Top view mounts Konva. Furniture goes through `CatalogModel` when model URLs exist. Inventory is at `/admin`. Remaining gaps: live GLB catalog coverage, wall-mount snap, smart guides, cloud remix links.
+**2026-08-13 implementation:** Studio shell rebuilt to floating-chrome IA. Follow-up shipped: wall/ceiling mounting snap, alignment guides, clearance toggle, door swing 2D/3D, opening overlap guard, design-code share (`?design=`), autosave recovery banner, progressive catalog loading, sample GLB URLs for key products. Remaining: server-backed remix when API/DB is configured, denser GLB catalog, true windowed virtualization for 5k+ SKUs.
 
 ---
 

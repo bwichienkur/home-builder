@@ -1,15 +1,23 @@
 export type PriceUnit='each'|'set'|'box'|'sq ft'|'linear ft'|'allowance';
 export type CatalogItem={id:string;sku?:string;vendorId?:string;name:string;brand?:string;model?:string;category:string;subcategory?:string;roomTypes?:string[];tags?:string[];dims:[number,number,number];color:string;price?:number;msrp?:number;cost?:number;laborCost?:number;currency?:string;priceUnit?:PriceUnit;priceVerifiedAt?:string;sellable?:boolean;placeholderOnly?:boolean;mountingType?:string;placementSurfaces?:string[];finish?:string;material?:string;variantGroup?:string;variantName?:string;availability?:string;leadTimeDays?:number;thumbnailUrl?:string;modelUrl?:string;lowPolyModelUrl?:string;emoji:string;sourceUrl?:string;sourceLabel?:string;note?:string};
 
+const SAMPLE={
+ chair:'https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/SheenChair/glTF-Binary/SheenChair.glb',
+ lamp:'https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/Lantern/glTF-Binary/Lantern.glb',
+ box:'https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/Box/glTF-Binary/Box.glb'
+};
+
 export const catalog:CatalogItem[]=[
- {id:'nord-chair',name:'Nord Dining Chair',category:'Seating',dims:[.52,.56,.82],color:'#b26c45',price:129,emoji:'🪑'},
- {id:'linen-sofa',name:'Linen Modular Sofa',category:'Seating',dims:[2.2,.88,.78],color:'#b8b1a3',price:1299,emoji:'🛋️'},
- {id:'oak-table',name:'Solid Oak Table',category:'Tables',dims:[1.8,.9,.76],color:'#9a7048',price:699,emoji:'▰'},
- {id:'side-table',name:'Pebble Side Table',category:'Tables',dims:[.48,.48,.5],color:'#6e746e',price:189,emoji:'●'},
- {id:'bookcase',name:'Arch Bookcase',category:'Storage',dims:[1.1,.34,2],color:'#7e5f45',price:549,emoji:'▥'},
- {id:'queen-bed',name:'Cloud Platform Bed',category:'Bedroom',dims:[1.7,2.1,.55],color:'#d2c5b4',price:899,emoji:'▭'},
- {id:'floor-lamp',name:'Arc Floor Lamp',category:'Lighting',dims:[.45,.45,1.75],color:'#333a36',price:219,emoji:'◉'},
- {id:'plant',name:'Olive Tree',category:'Decor',dims:[.65,.65,1.65],color:'#65765d',price:89,emoji:'♧'},
+ {id:'nord-chair',name:'Nord Dining Chair',category:'Seating',dims:[.52,.56,.82],color:'#b26c45',price:129,emoji:'🪑',mountingType:'floor',placementSurfaces:['floor'],modelUrl:SAMPLE.chair,lowPolyModelUrl:SAMPLE.chair,roomTypes:['Dining room','Living room','Office']},
+ {id:'linen-sofa',name:'Linen Modular Sofa',category:'Seating',dims:[2.2,.88,.78],color:'#b8b1a3',price:1299,emoji:'🛋️',mountingType:'floor',placementSurfaces:['floor'],roomTypes:['Living room']},
+ {id:'oak-table',name:'Solid Oak Table',category:'Tables',dims:[1.8,.9,.76],color:'#9a7048',price:699,emoji:'▰',mountingType:'floor',placementSurfaces:['floor']},
+ {id:'side-table',name:'Pebble Side Table',category:'Tables',dims:[.48,.48,.5],color:'#6e746e',price:189,emoji:'●',mountingType:'floor',placementSurfaces:['floor']},
+ {id:'bookcase',name:'Arch Bookcase',category:'Storage',dims:[1.1,.34,2],color:'#7e5f45',price:549,emoji:'▥',mountingType:'floor',placementSurfaces:['floor'],roomTypes:['Bedroom','Living room','Office','Storage / wardrobe']},
+ {id:'queen-bed',name:'Cloud Platform Bed',category:'Bedroom',dims:[1.7,2.1,.55],color:'#d2c5b4',price:899,emoji:'▭',mountingType:'floor',placementSurfaces:['floor'],roomTypes:['Bedroom','Children’s room']},
+ {id:'floor-lamp',name:'Arc Floor Lamp',category:'Lighting',dims:[.45,.45,1.75],color:'#333a36',price:219,emoji:'◉',mountingType:'floor',placementSurfaces:['floor'],modelUrl:SAMPLE.lamp,lowPolyModelUrl:SAMPLE.lamp,roomTypes:['Bedroom','Living room','Office']},
+ {id:'wall-sconce',name:'Halo Wall Sconce',category:'Lighting',dims:[.18,.12,.28],color:'#d9dde2',price:79,emoji:'☼',mountingType:'wall',placementSurfaces:['wall'],modelUrl:SAMPLE.box,lowPolyModelUrl:SAMPLE.box,roomTypes:['Bedroom','Hallway','Bathroom','Living room']},
+ {id:'wall-art',name:'Canvas Print Set',category:'Decor',dims:[1.2,.04,.8],color:'#e7e2d8',price:149,emoji:'▦',mountingType:'wall',placementSurfaces:['wall'],roomTypes:['Bedroom','Living room','Hallway']},
+ {id:'plant',name:'Olive Tree',category:'Decor',dims:[.65,.65,1.65],color:'#65765d',price:89,emoji:'♧',mountingType:'floor',placementSurfaces:['floor']},
  // Brands publicly shown in Olsen projects. MSRP is a manufacturer reference,
  // never an Olsen installed-price quote.
  {id:'subzero-cl3650u-panel-ready',name:'36” Classic Over-and-Under Refrigerator',brand:'Sub-Zero',model:'CL3650U/O',category:'Appliances',dims:[.9144,.6096,2.1336],color:'#d8d9d7',price:12575,emoji:'▣',sourceUrl:'https://www.subzero-wolf.com/products/36-classic-over-and-under-refrigerator-freezer-panel-ready-5310972-2748e1850fe070a9bdc4d6ef599ec165/5310972-2748e1850fe070a9bdc4d6ef599ec165',sourceLabel:'Official Sub-Zero page',note:'Panel ready · 36” W × 24” D × 84” H'},
