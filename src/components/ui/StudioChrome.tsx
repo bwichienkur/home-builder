@@ -140,7 +140,7 @@ export function StudioChrome({
     switchFloor(id);
     setView('3d');
     setCamera('top');
-    window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 40);
+    window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 120);
   };
 
   useEffect(() => {
@@ -216,186 +216,196 @@ export function StudioChrome({
   if (atStart) {
     return (
       <div className="studio-chrome is-start">
-        <button className="studio-fab studio-menu" onClick={menuOpen ? closeMenu : openMenu} aria-label={menuOpen ? 'Close menu' : 'Open project menu'} aria-expanded={menuOpen}>
-          {menuOpen ? <X /> : <Menu />}
-        </button>
+        <div className="studio-topbar">
+          <div className="studio-topbar-row">
+            <button className="studio-fab studio-menu" onClick={menuOpen ? closeMenu : openMenu} aria-label={menuOpen ? 'Close menu' : 'Open project menu'} aria-expanded={menuOpen}>
+              {menuOpen ? <X /> : <Menu />}
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
     <div className={`studio-chrome${showActionFabs ? ' has-action-fabs' : ''}${inRoom ? ' is-room-focus' : ''}`}>
-      <button className="studio-fab studio-menu" onClick={menuOpen ? closeMenu : openMenu} aria-label={menuOpen ? 'Close menu' : 'Open project menu'} aria-expanded={menuOpen}>
-        {menuOpen ? <X /> : <Menu />}
-      </button>
+      <div className="studio-topbar">
+        <div className="studio-topbar-row">
+          <button className="studio-fab studio-menu" onClick={menuOpen ? closeMenu : openMenu} aria-label={menuOpen ? 'Close menu' : 'Open project menu'} aria-expanded={menuOpen}>
+            {menuOpen ? <X /> : <Menu />}
+          </button>
 
-      <nav className="studio-breadcrumb" aria-label="Design location">
-        <button type="button" onClick={showStart} title="Start over">
-          Start
-        </button>
-        <span aria-hidden="true">/</span>
-        <button
-          type="button"
-          className={!inRoom ? 'is-current' : ''}
-          onClick={() => {
-            if (inRoom) {
-              exitRoom();
-              window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 0);
-            }
-          }}
-        >
-          {houseLabel}
-        </button>
-        {activeFloor && floors.length > 1 && (
-          <>
-            <span aria-hidden="true">/</span>
-            <button type="button" className="is-current" onClick={() => setStoriesOpen(true)} title="All stories">
-              {activeFloor.name}
+          <nav className="studio-breadcrumb" aria-label="Design location">
+            <button type="button" onClick={showStart} title="Start over">
+              Start
             </button>
-          </>
-        )}
-        {selectedRoom && (
-          <>
             <span aria-hidden="true">/</span>
-            <span className="studio-breadcrumb-static is-current">{selectedRoom.name}</span>
-          </>
-        )}
-      </nav>
-
-      {(floors.length > 1 || studioMode === 'architect') && !pending && (
-        <div className="studio-floor-tabs" role="tablist" aria-label="Stories">
-          {floors.map((f) => (
-            <button
-              key={f.id}
-              type="button"
-              role="tab"
-              aria-selected={f.id === activeFloorId}
-              className={f.id === activeFloorId ? 'active' : ''}
-              onClick={() => goToFloor(f.id)}
-            >
-              {f.name}
-            </button>
-          ))}
-          {studioMode === 'architect' && (
             <button
               type="button"
-              className="studio-floor-add"
-              aria-label="Add story"
-              title="Add story"
+              className={!inRoom ? 'is-current' : ''}
               onClick={() => {
-                addFloor();
-                window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 40);
+                if (inRoom) {
+                  exitRoom();
+                  window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 0);
+                }
               }}
             >
-              <Plus size={14} />
+              {houseLabel}
             </button>
-          )}
-          {floors.length > 1 && (
-            <button type="button" className="studio-floor-all" onClick={() => setStoriesOpen(true)} title="View all stories">
-              All
+            {activeFloor && floors.length > 1 && (
+              <>
+                <span aria-hidden="true">/</span>
+                <button type="button" className="is-current" onClick={() => setStoriesOpen(true)} title="All stories">
+                  {activeFloor.name}
+                </button>
+              </>
+            )}
+            {selectedRoom && (
+              <>
+                <span aria-hidden="true">/</span>
+                <span className="studio-breadcrumb-static is-current">{selectedRoom.name}</span>
+              </>
+            )}
+          </nav>
+
+          <button
+            className="studio-bag"
+            onClick={openBom}
+            aria-label={`${itemCount} products, estimated total $${total.toFixed(2)}`}
+          >
+            <span>
+              <ShoppingBag size={18} />
+              {itemCount}
+            </span>
+            <strong>
+              ${total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </strong>
+            <ArrowRight />
+          </button>
+        </div>
+
+        {(floors.length > 1 || studioMode === 'architect') && !pending && (
+          <div className="studio-floor-tabs" role="tablist" aria-label="Stories">
+            {floors.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                role="tab"
+                aria-selected={f.id === activeFloorId}
+                className={f.id === activeFloorId ? 'active' : ''}
+                onClick={() => goToFloor(f.id)}
+              >
+                {f.name}
+              </button>
+            ))}
+            {studioMode === 'architect' && (
+              <button
+                type="button"
+                className="studio-floor-add"
+                aria-label="Add story"
+                title="Add story"
+                onClick={() => {
+                  addFloor();
+                  window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 120);
+                }}
+              >
+                <Plus size={14} />
+              </button>
+            )}
+            {floors.length > 1 && (
+              <button type="button" className="studio-floor-all" onClick={() => setStoriesOpen(true)} title="View all stories">
+                All
+              </button>
+            )}
+          </div>
+        )}
+
+        <div className="studio-topbar-tools">
+          <div className="studio-mode-toggle" role="group" aria-label="Studio mode">
+            <button type="button" className={studioMode === 'architect' ? 'active' : ''} onClick={() => setStudioMode('architect')}>
+              Plan
             </button>
+            <button type="button" className={studioMode === 'furnish' ? 'active' : ''} onClick={() => setStudioMode('furnish')}>
+              Furnish
+            </button>
+          </div>
+
+          {showPlanTools && (
+            <div className="studio-plan-tools" role="toolbar" aria-label="Plan tools">
+              {planTools.map((t) => {
+                const Icon = t.icon;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    className={tool === t.id ? 'active' : ''}
+                    onClick={() => choosePlanTool(t.id)}
+                    aria-label={t.label}
+                    title={t.label}
+                  >
+                    <Icon size={16} />
+                    <span>{t.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           )}
         </div>
-      )}
 
-      <div className="studio-mode-toggle" role="group" aria-label="Studio mode">
-        <button type="button" className={studioMode === 'architect' ? 'active' : ''} onClick={() => setStudioMode('architect')}>
-          Plan
-        </button>
-        <button type="button" className={studioMode === 'furnish' ? 'active' : ''} onClick={() => setStudioMode('furnish')}>
-          Furnish
-        </button>
-      </div>
+        {inRoom && selectedRoom && !pending && tool === 'select' && (
+          <div className="studio-selection-hint">
+            Editing {selectedRoom.name} only
+            <button
+              type="button"
+              className="studio-hint-action"
+              onClick={() => {
+                exitRoom();
+                window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 0);
+              }}
+            >
+              Back to house
+            </button>
+          </div>
+        )}
 
-      <button
-        className="studio-bag"
-        onClick={openBom}
-        aria-label={`${itemCount} products, estimated total $${total.toFixed(2)}`}
-      >
-        <span>
-          <ShoppingBag size={18} />
-          {itemCount}
-        </span>
-        <strong>
-          ${total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-        </strong>
-        <ArrowRight />
-      </button>
-
-      {inRoom && selectedRoom && !pending && tool === 'select' && (
-        <div className="studio-selection-hint">
-          Editing {selectedRoom.name} only
+        {inRoom && selectedRoom && !pending && tool !== 'select' && (
           <button
             type="button"
-            className="studio-hint-action"
+            className="studio-back-house"
             onClick={() => {
               exitRoom();
+              setTool('select');
               window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 0);
             }}
           >
             Back to house
           </button>
-        </div>
-      )}
+        )}
 
-      {inRoom && selectedRoom && !pending && tool !== 'select' && (
-        <button
-          type="button"
-          className="studio-back-house"
-          onClick={() => {
-            exitRoom();
-            setTool('select');
-            window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 0);
-          }}
-        >
-          Back to house
-        </button>
-      )}
-
-      {showPlanTools && (
-        <div className="studio-plan-tools" role="toolbar" aria-label="Plan tools">
-          {planTools.map((t) => {
-            const Icon = t.icon;
-            return (
-              <button
-                key={t.id}
-                type="button"
-                className={tool === t.id ? 'active' : ''}
-                onClick={() => choosePlanTool(t.id)}
-                aria-label={t.label}
-                title={t.label}
-              >
-                <Icon size={16} />
-                <span>{t.label}</span>
+        {showPlanTools && tool === 'wall' && !pending && (
+          <div className="studio-selection-hint">
+            {draftStart ? 'Tap where the wall ends · snaps to corners' : 'Tap to start a wall · drag blue handles to move ends'}
+            {draftStart && (
+              <button type="button" className="studio-hint-action" onClick={() => setDraftStart(null)}>
+                Cancel
               </button>
-            );
-          })}
-        </div>
-      )}
+            )}
+          </div>
+        )}
 
-      {showPlanTools && tool === 'wall' && !pending && (
-        <div className="studio-selection-hint">
-          {draftStart ? 'Tap where the wall ends · snaps to corners' : 'Tap to start a wall · drag blue handles to move ends'}
-          {draftStart && (
-            <button type="button" className="studio-hint-action" onClick={() => setDraftStart(null)}>
-              Cancel
-            </button>
-          )}
-        </div>
-      )}
-
-      {showPlanTools && tool === 'room' && !pending && (
-        <div className="studio-selection-hint">Tap to place a 12×12 ft room · resize or split in Edit</div>
-      )}
+        {showPlanTools && tool === 'room' && !pending && (
+          <div className="studio-selection-hint">Tap to place a 12×12 ft room · resize or split in Edit</div>
+        )}
+      </div>
 
       {!inRoom && planRooms.length > 1 && !pending && !selectedItem && tool === 'select' && (
-        <div className="studio-selection-hint">Tap a room to zoom in and edit it alone · Pinch to zoom the full floor</div>
+        <div className="studio-selection-hint studio-hint-float">Tap a room to zoom in and edit it alone · Pinch to zoom the full floor</div>
       )}
 
-      {pending && <div className="studio-selection-hint">Placing {pending.name} · move then tap to confirm</div>}
+      {pending && <div className="studio-selection-hint studio-hint-float">Placing {pending.name} · move then tap to confirm</div>}
 
       {hasSelection && !pending && !selectedItem && !inRoom && (
-        <div className="studio-selection-hint">
+        <div className="studio-selection-hint studio-hint-float">
           {selectedOpening ? 'Opening selected · adjust in Edit' : selectedWall ? 'Wall selected · use Edit for measurements' : 'Room selected'}
         </div>
       )}

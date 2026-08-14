@@ -64,13 +64,15 @@ export function nearestWall(x: number, z: number, walls: Wall[], maxDistance = 1
     const frame = wallFrame(wall);
     const vx = x - frame.start.x;
     const vz = z - frame.start.z;
-    const along = Math.max(0, Math.min(frame.length, vx * frame.dirX + vz * frame.dirZ));
+    const alongRaw = vx * frame.dirX + vz * frame.dirZ;
+    const along = Math.max(0, Math.min(frame.length, alongRaw));
     const offset = along / frame.length;
     const closestX = frame.start.x + frame.dirX * along;
     const closestZ = frame.start.z + frame.dirZ * along;
-    const side = (x - closestX) * frame.normalX + (z - closestZ) * frame.normalZ;
-    const distance = Math.abs(side);
+    // True distance to the finite segment (not infinite-line perpendicular).
+    const distance = Math.hypot(x - closestX, z - closestZ);
     if (distance > maxDistance) continue;
+    const side = (x - closestX) * frame.normalX + (z - closestZ) * frame.normalZ;
     if (!best || distance < best.distance) {
       best = {
         wall,
@@ -138,9 +140,17 @@ export function snapToWallSurface(
   const hit = nearestWall(x, z, walls, maxDistance);
   if (!hit) return { ...snapFloorPosition(x, z), wallId: null, wallOffset: null, rotation: undefined };
   const inset = hit.wall.thickness / 2 + depth / 2 + 0.01;
-  // Prefer the room-facing side (positive inset from the hit, else flip)
-  const side = hit.inset >= 0 ? 1 : -1;
-  const placed = pointOnWall(hit.wall, hit.offset, side * inset);
+  const rooms = detectRoomPolygons(walls).map((poly) => poly.map((p) => planToWorld(p)));
+  const plus = pointOnWall(hit.wall, hit.offset, inset);
+  const minus = pointOnWall(hit.wall, hit.offset, -inset);
+  const plusInside = rooms.some((room) => pointInPolygon(plus.x, plus.z, room));
+  const minusInside = rooms.some((room) => pointInPolygon(minus.x, minus.z, room));
+  // Prefer the side that lands inside the room (critical for concave / L plans).
+  let side = 1;
+  if (plusInside && !minusInside) side = 1;
+  else if (minusInside && !plusInside) side = -1;
+  else side = hit.inset >= 0 ? 1 : -1;
+  const placed = side > 0 ? plus : minus;
   return {
     x: placed.x,
     z: placed.z,
@@ -174,9 +184,25 @@ function pointInPolygon(x: number, z: number, pts: { x: number; z: number }[]) {
   return inside;
 }
 
+function polygonIsConvex(pts: { x: number; z: number }[]) {
+  if (pts.length < 3) return true;
+  let sign = 0;
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[i];
+    const b = pts[(i + 1) % pts.length];
+    const c = pts[(i + 2) % pts.length];
+    const cross = (b.x - a.x) * (c.z - b.z) - (b.z - a.z) * (c.x - b.x);
+    if (Math.abs(cross) < 1e-8) continue;
+    const s = cross > 0 ? 1 : -1;
+    if (!sign) sign = s;
+    else if (s !== sign) return false;
+  }
+  return true;
+}
+
 /**
  * Keep a furniture footprint inside the room so it cannot protrude through walls.
- * Uses the closed wall polygon (inset by wall thickness / 2) and the rotated AABB.
+ * Convex rooms use edge half-planes; concave (L) rooms only pull centers that are outside.
  */
 export function containFurnitureInRoom(
   x: number,
@@ -208,8 +234,23 @@ export function containFurnitureInRoom(
   const s = Math.abs(Math.sin(rotation));
   const halfW = (width * c + depth * s) / 2;
   const halfD = (width * s + depth * c) / 2;
-  const ccw = polygonSignedArea(poly) > 0;
 
+  // Half-plane pushes assume a convex set — they destroy valid L-arm placements.
+  if (!polygonIsConvex(poly)) {
+    if (pointInPolygon(x, z, poly)) return { x, z };
+    const cx = poly.reduce((sum, p) => sum + p.x, 0) / poly.length;
+    const cz = poly.reduce((sum, p) => sum + p.z, 0) / poly.length;
+    let px = x;
+    let pz = z;
+    for (let i = 0; i < 12; i++) {
+      px = px + (cx - px) * 0.35;
+      pz = pz + (cz - pz) * 0.35;
+      if (pointInPolygon(px, pz, poly)) return { x: px, z: pz };
+    }
+    return { x: cx, z: cz };
+  }
+
+  const ccw = polygonSignedArea(poly) > 0;
   let cx = x;
   let cz = z;
   // Corner cases need a few passes so adjacent edges both clear the AABB.
@@ -270,6 +311,10 @@ export function constrainPlacement(
   }
 
   const rotation = placed.rotation ?? opts.rotation ?? 0;
+  // Wall-attached products already sit on a face — convex contain undoes L-room snaps.
+  if (placed.wallId) {
+    return { ...placed, rotation };
+  }
   const width = opts.width ?? depth;
   const contained = containFurnitureInRoom(placed.x, placed.z, width, depth, rotation, walls);
   return { ...placed, x: contained.x, z: contained.z, rotation };

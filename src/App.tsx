@@ -363,7 +363,7 @@ function StudioApp() {
               value={activeFloorId}
               onChange={(e) => {
                 store.switchFloor(e.target.value);
-                window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 40);
+                window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 120);
               }}
             >
               {floors.map((f) => (
@@ -375,7 +375,7 @@ function StudioApp() {
             <button
               onClick={() => {
                 store.addFloor();
-                window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 40);
+                window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 120);
               }}
               title="Add story"
             >
