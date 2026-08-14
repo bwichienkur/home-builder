@@ -53,6 +53,20 @@ describe('placement helpers', () => {
     expect(guides.some((g) => g.kind === 'align-x')).toBe(true);
   });
 
+  it('keeps wall-mounted art fully on the wall segment', () => {
+    const pastCorner = planToWorld({ x: 170, y: 150 });
+    const snapped = snapToWallSurface(pastCorner.x, pastCorner.z, rect, 0.05, 'wall', 12, 1.2);
+    expect(snapped.wallId).toBe('w1');
+    const wallLen = Math.hypot(
+      planToWorld({ x: 660, y: 150 }).x - planToWorld({ x: 180, y: 150 }).x,
+      planToWorld({ x: 660, y: 150 }).z - planToWorld({ x: 180, y: 150 }).z,
+    );
+    const minX = planToWorld({ x: 180, y: 150 }).x + 1.2 / 2;
+    expect(snapped.x).toBeGreaterThanOrEqual(Math.min(minX, planToWorld({ x: 660, y: 150 }).x) - 0.001);
+    expect(snapped.wallOffset!).toBeGreaterThanOrEqual(1.2 / 2 / wallLen - 0.001);
+    expect(snapped.wallOffset!).toBeLessThanOrEqual(1 - 1.2 / 2 / wallLen + 0.001);
+  });
+
   it('classifies placement constraints like IKEA product limits', () => {
     expect(placementConstraint('wall', 'Lighting', 'Halo Wall Sconce')).toBe('wall');
     expect(placementConstraint('floor', 'Storage', 'Arch Bookcase')).toBe('wall-prefer');

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { CameraMode, FurnitureItem, MountingType, Opening, PlanRoomLabel, Point, RoomType, SceneSnapshot, StudioMode, SurfaceTarget, Tool, UnitSystem, Wall, WorkflowStage } from '../types';
-import { constrainPlacement, openingConflicts, resolveMountingType, roomFloorCenter } from '../lib/geometry/placement';
+import { clampWallMountY, constrainPlacement, openingConflicts, resolveMountingType, roomFloorCenter } from '../lib/geometry/placement';
 import { detectRoomPolygons } from '../lib/geometry/rooms';
 import { writeRecoverySnapshot } from '../lib/designShare';
 import { buildHouse, rebuildFromPlanRooms, resizePlanRoomPoints, splitPlanRoomPoints, squareRoomPoints } from '../lib/housePlans/buildPlan';
@@ -72,7 +72,7 @@ type PlannerState = SceneSnapshot & {
     z?: number | undefined,
     meta?: FurnitureAddMeta,
   ) => void;
-  movePendingPlacement: (x: number, z: number, rotation?: number) => void;
+  movePendingPlacement: (x: number, z: number, rotation?: number, y?: number) => void;
   rotatePendingPlacement: (delta?: number) => void;
   commitPendingPlacement: () => string | null;
   cancelPendingPlacement: () => void;
@@ -176,11 +176,13 @@ function placeFurniture(
     live: meta?.live,
     width,
   });
+  const host = walls.find((w) => w.id === constrained.wallId) ?? walls[0];
+  const wallHeight = host?.height ?? 2.7;
   let y = 0;
   if (mounting === 'wall') {
-    y = Math.min(Math.max(meta?.y ?? 1.4, 0.3), Math.max(0.3, (walls[0]?.height ?? 2.7) - height - 0.05));
+    y = clampWallMountY(meta?.y ?? 1.4, height, wallHeight);
   } else if (mounting === 'ceiling') {
-    y = Math.max(0.1, (walls[0]?.height ?? 2.7) - height);
+    y = Math.max(0.1, wallHeight - height);
   }
   return {
     x: constrained.x,
@@ -188,7 +190,7 @@ function placeFurniture(
     rotation: constrained.rotation ?? meta?.rotation ?? 0,
     wallId: constrained.wallId,
     wallOffset: constrained.wallOffset,
-    y: meta?.y !== undefined && mounting !== 'floor' ? meta.y : y,
+    y,
     mountingType: mounting,
     width,
     depth,
@@ -721,7 +723,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         view: '3d',
       });
     },
-    movePendingPlacement: (x, z, rotation) => {
+    movePendingPlacement: (x, z, rotation, y) => {
       const pending = get().pendingPlacement;
       if (!pending) return;
       const placed = placeFurniture(get().walls, pending.width, pending.depth, pending.height, x, z, {
@@ -730,7 +732,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         name: pending.name,
         clearance: pending.clearance,
         rotation: rotation ?? pending.rotation,
-        y: pending.y,
+        y: y ?? pending.y,
         live: true,
       });
       set({
@@ -828,6 +830,10 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       } else {
         if (patch.x !== undefined) next.x = Math.round(patch.x * 4) / 4;
         if (patch.z !== undefined) next.z = Math.round(patch.z * 4) / 4;
+        if (patch.y !== undefined && mounting === 'wall') {
+          const host = get().walls.find((w) => w.id === next.wallId) ?? get().walls[0];
+          next.y = clampWallMountY(patch.y, next.height, host?.height ?? 2.7);
+        }
       }
       mutate({ furniture: get().furniture.map((f) => (f.id === id ? next : f)) });
     },

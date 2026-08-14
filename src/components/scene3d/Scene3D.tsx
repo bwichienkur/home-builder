@@ -6,7 +6,7 @@ import { usePlannerStore } from '../../store/plannerStore';
 import { catalog } from '../catalog/catalogData';
 import type { FurnitureItem } from '../../types';
 import { detectRoomPolygons, roomShape } from '../../lib/geometry/rooms';
-import { alignmentGuides, constrainPlacement, roomFloorCenter, WORLD_ORIGIN } from '../../lib/geometry/placement';
+import { alignmentGuides, clampWallMountY, constrainPlacement, pointOnWall, roomFloorCenter, wallFrame, WORLD_ORIGIN } from '../../lib/geometry/placement';
 import { framingFromPoints, framingFromWalls } from '../../lib/geometry/planFraming';
 import { pointInPlanRoom, wallsBelongingToRoom } from '../../lib/geometry/roomWalls';
 import { wallCutawayOpacity } from '../../lib/geometry/wallCutaway';
@@ -27,6 +27,42 @@ const world = (x: number, y: number): [number, number] => [
   (y - WORLD_ORIGIN.y) / PIXELS_PER_METER,
 ];
 const openSurfaceProperties = () => window.dispatchEvent(new Event('roomcraft-open-properties'));
+
+function hasUserDataFlag(object: THREE.Object3D, key: string) {
+  let o: THREE.Object3D | null = object;
+  while (o) {
+    if (o.userData?.[key]) return true;
+    o = o.parent;
+  }
+  return false;
+}
+
+/** Prefer furniture inside the room over cutaway wall pick proxies that sit in front of the camera. */
+function preferInteriorPicks(hits: THREE.Intersection[]) {
+  if (!hits.length) return hits;
+  if (!hasUserDataFlag(hits[0].object, 'wallCutawayPick')) return hits;
+  const furniture = hits.filter((h) => hasUserDataFlag(h.object, 'furniturePick'));
+  return furniture.length ? furniture : hits;
+}
+
+function wallDragPlane(wall: Wall, item: FurnitureItem) {
+  const mid = pointOnWall(wall, item.wallOffset ?? 0.5, 0);
+  let nx = item.x - mid.x;
+  let nz = item.z - mid.z;
+  const len = Math.hypot(nx, nz);
+  if (len < 0.01) {
+    const frame = wallFrame(wall);
+    nx = frame.normalX;
+    nz = frame.normalZ;
+  } else {
+    nx /= len;
+    nz /= len;
+  }
+  return new THREE.Plane().setFromNormalAndCoplanarPoint(
+    new THREE.Vector3(nx, 0, nz),
+    new THREE.Vector3(item.x, (item.y ?? 0) + item.height / 2, item.z),
+  );
+}
 
 function CameraRig() {
   const mode = usePlannerStore((s) => s.cameraMode);
@@ -316,7 +352,6 @@ function WallMeshes() {
   const color = usePlannerStore((s) => s.wallColor);
   const selectedId = usePlannerStore((s) => s.selectedWallId);
   const select = usePlannerStore((s) => s.selectWall);
-  const placing = usePlannerStore((s) => !!s.pendingPlacement);
   const opacityByWall = useDollhouseCutaway(walls);
   const wallIds = useMemo(() => new Set(walls.map((w) => w.id)), [walls]);
   const visibleOpenings = useMemo(() => openings.filter((o) => wallIds.has(o.wallId)), [openings, wallIds]);
@@ -348,6 +383,7 @@ function WallMeshes() {
         const pickProxy = (
           <mesh
             key={w.id + 'pick'}
+            userData={{ wallCutawayPick: true }}
             position={[midX, w.height / 2, midZ]}
             rotation={[0, angle, 0]}
             onClick={(e) => {
@@ -392,8 +428,8 @@ function WallMeshes() {
             b <= r1 || a >= r2 ? [[r1, r2]] : ([[r1, Math.max(r1, a)], [Math.min(r2, b), r2]].filter((r) => r[1] - r[0] > 0.02) as [number, number][]),
           );
         });
-        // Only let furniture placement pass through cutaway walls — keep them pickable otherwise.
-        const skipRay = cutaway && placing ? () => {} : undefined;
+        // Cutaway visuals must not steal picks from furniture inside the room; pickProxy handles wall clicks.
+        const skipRay = cutaway ? () => {} : undefined;
         const base = ranges.flatMap(([a, b], i) => {
           const c = (a + b) / 2;
           const t = c / length;
@@ -408,6 +444,7 @@ function WallMeshes() {
               castShadow={!cutaway}
               receiveShadow={!cutaway}
               raycast={skipRay}
+              userData={cutaway ? { wallCutawayPick: true } : undefined}
               onClick={(e) => {
                 e.stopPropagation();
                 select(w.id);
@@ -533,11 +570,19 @@ function WallMeshes() {
             const h = Math.max(...touching.map((ww) => ww.height));
             const opacity = Math.min(...touching.map((ww) => opacityByWall[ww.id] ?? 1));
             const selectedTouch = touching.some((ww) => ww.id === selectedId);
-            if (opacity < 0.08 && !selectedTouch) return;
+            if (opacity < 0.08 && !selectedTouch) continue;
             const drawOpacity = opacity;
             const cutaway = drawOpacity < 0.999;
             posts.push(
-              <mesh key={`corner-${key}`} position={[x, h / 2, z]} castShadow={!cutaway} receiveShadow={!cutaway} renderOrder={selectedTouch ? 2 : 0}>
+              <mesh
+                key={`corner-${key}`}
+                position={[x, h / 2, z]}
+                castShadow={!cutaway}
+                receiveShadow={!cutaway}
+                renderOrder={selectedTouch ? 2 : 0}
+                raycast={cutaway ? () => {} : undefined}
+                userData={cutaway ? { wallCutawayPick: true } : undefined}
+              >
                 <boxGeometry args={[t * 0.98, h, t * 0.98]} />
                 <meshStandardMaterial
                   color={color}
@@ -655,7 +700,13 @@ function Furniture() {
   const catalogById = useMemo(() => new Map([...catalog, ...custom].map((c) => [c.id, c])), [custom]);
   const selected = items.find((i) => i.id === selectedId);
   const pending = useRef<Partial<FurnitureItem> | null>(null);
-  const touchDrag = useRef<{ pointerId: number; offsetX: number; offsetZ: number } | null>(null);
+  const touchDrag = useRef<{
+    pointerId: number;
+    offsetX: number;
+    offsetZ: number;
+    offsetY: number;
+    wallMount: boolean;
+  } | null>(null);
   const floorPlane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), []);
   const [collisions, setCollisions] = useState<Set<string>>(new Set());
   const [dragging, setDragging] = useState(false);
@@ -687,7 +738,7 @@ function Furniture() {
 
   useEffect(() => () => liveThrottle.current.cancel(), []);
 
-  const constrainDrag = (item: FurnitureItem, x: number, z: number, rotation?: number) => {
+  const constrainDrag = (item: FurnitureItem, x: number, z: number, rotation?: number, y?: number) => {
     const placed = constrainPlacement(x, z, walls, item.depth, {
       mountingType: item.mountingType,
       category: item.category,
@@ -696,12 +747,20 @@ function Furniture() {
       live: true,
       width: item.width,
     });
+    const host = walls.find((w) => w.id === placed.wallId) ?? walls[0];
+    const nextY =
+      item.mountingType === 'wall'
+        ? clampWallMountY(y ?? item.y ?? 1.4, item.height, host?.height ?? 2.7)
+        : item.mountingType === 'ceiling'
+          ? Math.max(0.1, (host?.height ?? 2.7) - item.height)
+          : 0;
     return {
       x: placed.x,
       z: placed.z,
       rotation: placed.rotation ?? rotation ?? item.rotation,
       wallId: placed.wallId,
       wallOffset: placed.wallOffset,
+      ...(item.mountingType === 'wall' || item.mountingType === 'ceiling' ? { y: nextY } : {}),
     };
   };
 
@@ -709,9 +768,18 @@ function Furniture() {
     if (!selected || e.nativeEvent?.pointerType !== 'touch') return;
     e.stopPropagation();
     const hit = new THREE.Vector3();
-    if (!e.ray.intersectPlane(floorPlane, hit)) return;
-    touchDrag.current = { pointerId: e.pointerId, offsetX: selected.x - hit.x, offsetZ: selected.z - hit.z };
-    pending.current = { x: selected.x, z: selected.z };
+    const wall = selected.wallId ? walls.find((w) => w.id === selected.wallId) : null;
+    const plane =
+      selected.mountingType === 'wall' && wall ? wallDragPlane(wall, selected) : floorPlane;
+    if (!e.ray.intersectPlane(plane, hit)) return;
+    touchDrag.current = {
+      pointerId: e.pointerId,
+      offsetX: selected.x - hit.x,
+      offsetZ: selected.z - hit.z,
+      offsetY: (selected.y ?? 0) - hit.y,
+      wallMount: selected.mountingType === 'wall',
+    };
+    pending.current = { x: selected.x, z: selected.z, y: selected.y };
     e.target.setPointerCapture?.(e.pointerId);
     document.body.dataset.movingFurniture = 'true';
     setDragging(true);
@@ -722,8 +790,17 @@ function Furniture() {
     if (!selected || !touchDrag.current || touchDrag.current.pointerId !== e.pointerId) return;
     e.stopPropagation();
     const hit = new THREE.Vector3();
-    if (!e.ray.intersectPlane(floorPlane, hit)) return;
-    const patch = constrainDrag(selected, hit.x + touchDrag.current.offsetX, hit.z + touchDrag.current.offsetZ);
+    const wall = selected.wallId ? walls.find((w) => w.id === selected.wallId) : null;
+    const plane =
+      touchDrag.current.wallMount && wall ? wallDragPlane(wall, selected) : floorPlane;
+    if (!e.ray.intersectPlane(plane, hit)) return;
+    const patch = constrainDrag(
+      selected,
+      hit.x + touchDrag.current.offsetX,
+      hit.z + touchDrag.current.offsetZ,
+      undefined,
+      touchDrag.current.wallMount ? hit.y + touchDrag.current.offsetY : undefined,
+    );
     pending.current = patch;
     liveThrottle.current(selected.id, patch);
   };
@@ -760,7 +837,7 @@ function Furniture() {
         .map((i) => {
           const urls = urlsFor(i);
           return (
-            <group key={i.id} position={[i.x, itemY(i), i.z]} rotation={[0, i.rotation, 0]}>
+            <group key={i.id} position={[i.x, itemY(i), i.z]} rotation={[0, i.rotation, 0]} userData={{ furniturePick: true }}>
               <FurnitureVisual
                 item={i}
                 lowUrl={urls.lowUrl}
@@ -803,7 +880,7 @@ function Furniture() {
               const s = new THREE.Vector3();
               m.decompose(p, q, s);
               const rotation = new THREE.Euler().setFromQuaternion(q).y;
-              const patch = constrainDrag(selected, p.x, p.z, rotation);
+              const patch = constrainDrag(selected, p.x, p.z, rotation, p.y);
               pending.current = patch;
               liveThrottle.current(selected.id, patch);
             }}
@@ -823,17 +900,19 @@ function Furniture() {
               new THREE.Vector3(1, 1, 1),
             )}
           >
-            <FurnitureVisual
-              item={selected}
-              {...urlsFor(selected)}
-              selected
-              colliding={collisions.has(selected.id)}
-              onPointerDown={beginTouchDrag}
-              onPointerMove={moveTouchDrag}
-              onPointerUp={endTouchDrag}
-              onPointerCancel={endTouchDrag}
-            />
-            {selected.showClearance && <ClearanceVolume item={selected} />}
+            <group userData={{ furniturePick: true }}>
+              <FurnitureVisual
+                item={selected}
+                {...urlsFor(selected)}
+                selected
+                colliding={collisions.has(selected.id)}
+                onPointerDown={beginTouchDrag}
+                onPointerMove={moveTouchDrag}
+                onPointerUp={endTouchDrag}
+                onPointerCancel={endTouchDrag}
+              />
+              {selected.showClearance && <ClearanceVolume item={selected} />}
+            </group>
           </PivotControls>
         </>
       )}
@@ -1046,13 +1125,14 @@ function Room() {
 
 function GhostPlacement() {
   const pending = usePlannerStore((s) => s.pendingPlacement);
+  const walls = usePlannerStore((s) => s.walls);
   const movePending = usePlannerStore((s) => s.movePendingPlacement);
   const commit = usePlannerStore((s) => s.commitPendingPlacement);
   const { invalidate } = useThree();
   const floorPlane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), []);
   const moveThrottle = useRef(
-    rafThrottle((x: number, z: number) => {
-      movePending(x, z);
+    rafThrottle((x: number, z: number, y?: number) => {
+      movePending(x, z, undefined, y);
       invalidate();
     }),
   );
@@ -1065,16 +1145,35 @@ function GhostPlacement() {
 
   if (!pending) return null;
 
-  const onMove = (e: any) => {
+  const resolveHit = (e: any) => {
     const hit = new THREE.Vector3();
-    if (!e.ray.intersectPlane(floorPlane, hit)) return;
-    moveThrottle.current(hit.x, hit.z);
+    const wall = pending.wallId ? walls.find((w) => w.id === pending.wallId) : null;
+    if (pending.mountingType === 'wall' && wall) {
+      const ghostItem = {
+        ...pending,
+        id: 'pending',
+        catalogId: pending.catalogId,
+        color: pending.color,
+      } as FurnitureItem;
+      const plane = wallDragPlane(wall, ghostItem);
+      if (e.ray.intersectPlane(plane, hit)) {
+        return { x: hit.x, z: hit.z, y: hit.y - pending.height / 2 };
+      }
+    }
+    if (!e.ray.intersectPlane(floorPlane, hit)) return null;
+    return { x: hit.x, z: hit.z, y: undefined as number | undefined };
+  };
+
+  const onMove = (e: any) => {
+    const at = resolveHit(e);
+    if (!at) return;
+    moveThrottle.current(at.x, at.z, at.y);
   };
   const onPlace = (e: any) => {
     e.stopPropagation();
     moveThrottle.current.cancel();
-    const hit = new THREE.Vector3();
-    if (e.ray.intersectPlane(floorPlane, hit)) movePending(hit.x, hit.z);
+    const at = resolveHit(e);
+    if (at) movePending(at.x, at.z, undefined, at.y);
     commit();
     invalidate();
   };
@@ -1085,6 +1184,17 @@ function GhostPlacement() {
         <planeGeometry args={[40, 40]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
+      {pending.mountingType === 'wall' && pending.wallId && (
+        <mesh
+          position={[pending.x, (walls.find((w) => w.id === pending.wallId)?.height ?? 2.7) / 2, pending.z]}
+          rotation={[0, pending.rotation, 0]}
+          onPointerMove={onMove}
+          onClick={onPlace}
+        >
+          <planeGeometry args={[12, 4]} />
+          <meshBasicMaterial transparent opacity={0} depthWrite={false} side={THREE.DoubleSide} />
+        </mesh>
+      )}
       <group position={[pending.x, pending.y, pending.z]} rotation={[0, pending.rotation, 0]}>
         <mesh position={[0, pending.height / 2, 0]}>
           <boxGeometry args={[pending.width, pending.height, pending.depth]} />
@@ -1157,6 +1267,9 @@ export function Scene3D() {
           stencil: false,
           depth: true,
         }}
+        onCreated={(state) => {
+          state.events.filter = preferInteriorPicks;
+        }}
         onPointerMissed={() => {
           if (pending) return;
           select(null);
@@ -1181,7 +1294,7 @@ export function Scene3D() {
         <CameraRig />
       </Canvas>
       {!pending && (
-        <div className="scene-help">Drag to move · Near walls fade for a clear view · Mirrors &amp; pictures stay on walls</div>
+        <div className="scene-help">Drag to move · Slide wall art up/down · Near walls fade for a clear view</div>
       )}
     </div>
   );
