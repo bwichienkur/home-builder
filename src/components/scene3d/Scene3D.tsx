@@ -178,7 +178,8 @@ function CameraRig() {
         target={[targetTuple[0], mode === 'walk' ? 1.1 : targetTuple[1], targetTuple[2]]}
         // Near-vertical top view (~3–5°) — head-on plan without lookAt singularity at polar 0.
         minPolarAngle={mode === 'top' ? 0.04 : mode === 'walk' ? 0.7 : 0}
-        maxPolarAngle={mode === 'top' ? 0.09 : mode === 'walk' ? Math.PI / 2.05 : Math.PI / 2 + 0.52}
+        // Orbit may go under the plate so you can inspect underside / open dollhouse from below.
+        maxPolarAngle={mode === 'top' ? 0.09 : mode === 'walk' ? Math.PI / 2.05 : Math.PI - 0.06}
         minAzimuthAngle={mode === 'top' ? 0 : -Infinity}
         maxAzimuthAngle={mode === 'top' ? 0 : Infinity}
         minDistance={minDistance}
@@ -324,8 +325,35 @@ function WallMeshes() {
       {walls.flatMap((w) => {
         const opacity = opacityByWall[w.id] ?? 1;
         const selected = selectedId === w.id;
-        // Keep selected walls more solid so the highlight halo stays stable while orbiting.
-        const drawOpacity = selected ? Math.max(opacity, 0.55) : opacity;
+        // Don't keep facing walls solid just because they're selected — hide and keep the halo.
+        const drawOpacity = opacity;
+        // Fully remove near-invisible walls so they can't block the interior.
+        if (drawOpacity < 0.08 && !selected) return [];
+        if (drawOpacity < 0.08 && selected) {
+          // Selected but cut away: only show the halo shell so the pick still reads.
+          const [sx0, sz0] = world(w.start.x, w.start.y);
+          const [ex0, ez0] = world(w.end.x, w.end.y);
+          const origLen = Math.hypot(ex0 - sx0, ez0 - sz0) || 0.01;
+          const angle = -Math.atan2(ez0 - sz0, ex0 - sx0);
+          const x = (sx0 + ex0) / 2;
+          const z = (sz0 + ez0) / 2;
+          return [
+            <mesh
+              key={w.id + 'sel-only'}
+              position={[x, w.height / 2, z]}
+              rotation={[0, angle, 0]}
+              onClick={(e) => {
+                e.stopPropagation();
+                select(w.id);
+                openSurfaceProperties();
+              }}
+              renderOrder={3}
+            >
+              <boxGeometry args={[origLen + 0.02, w.height + 0.04, w.thickness + 0.05]} />
+              <meshBasicMaterial color="#0058a3" transparent opacity={0.22} depthWrite={false} toneMapped={false} />
+            </mesh>,
+          ];
+        }
         const cutaway = drawOpacity < 0.999;
         const [sx0, sz0] = world(w.start.x, w.start.y);
         const [ex0, ez0] = world(w.end.x, w.end.y);
@@ -491,7 +519,8 @@ function WallMeshes() {
             const h = Math.max(...touching.map((ww) => ww.height));
             const opacity = Math.min(...touching.map((ww) => opacityByWall[ww.id] ?? 1));
             const selectedTouch = touching.some((ww) => ww.id === selectedId);
-            const drawOpacity = selectedTouch ? Math.max(opacity, 0.55) : opacity;
+            if (opacity < 0.08 && !selectedTouch) return;
+            const drawOpacity = opacity;
             const cutaway = drawOpacity < 0.999;
             posts.push(
               <mesh key={`corner-${key}`} position={[x, h / 2, z]} castShadow={!cutaway} receiveShadow={!cutaway} renderOrder={selectedTouch ? 2 : 0}>
@@ -814,22 +843,28 @@ function Room() {
   const ceilingHeight = walls[0]?.height ?? 2.7;
   const { camera, invalidate } = useThree();
   const [lookUpCeiling, setLookUpCeiling] = useState(false);
+  const [underFloor, setUnderFloor] = useState(false);
   // Top / bird’s-eye must see the floor — a solid ceiling makes the room unusable to edit.
   const showCeiling = cameraMode !== 'top' || selectedSurface === 'ceiling';
   const ceilingOpacity =
     cameraMode === 'walk'
       ? 0.95
-      : lookUpCeiling
-        ? 0.92
-        : selectedSurface === 'ceiling'
-          ? 0.55
-          : 0.22;
+      : underFloor
+        ? 0.15
+        : lookUpCeiling
+          ? 0.92
+          : selectedSurface === 'ceiling'
+            ? 0.55
+            : 0.22;
+  const floorOpacity = underFloor ? 0.28 : 1;
 
   useFrame(() => {
     // Tip the camera below the room and the ceiling should read solid (first reference image).
     const below = camera.position.y < ceilingHeight * 0.55;
-    if (below !== lookUpCeiling) {
+    const under = camera.position.y < -0.05;
+    if (below !== lookUpCeiling || under !== underFloor) {
       setLookUpCeiling(below);
+      setUnderFloor(under);
       invalidate();
     }
   });
@@ -897,6 +932,9 @@ function Room() {
                   color={floorColor}
                   roughness={0.95}
                   side={THREE.DoubleSide}
+                  transparent={floorOpacity < 0.999}
+                  opacity={floorOpacity}
+                  depthWrite={floorOpacity > 0.85}
                   polygonOffset
                   polygonOffsetFactor={4}
                   polygonOffsetUnits={4}
