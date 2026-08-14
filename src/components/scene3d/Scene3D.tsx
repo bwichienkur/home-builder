@@ -259,21 +259,27 @@ function useDollhouseCutaway(walls: ReturnType<typeof usePlannerStore.getState>[
   const smoothed = useRef<Record<string, number>>({});
   const lastKey = useRef('');
   const enabled = cameraMode === 'orbit';
+  const wasEnabled = useRef(enabled);
 
   useEffect(() => {
+    // Demand frameloop: kick a redraw whenever cutaway mode or walls change.
     invalidate();
   }, [walls, enabled, center, invalidate]);
 
   useFrame((_, delta) => {
     const next: Record<string, number> = {};
-    // Gentle temporal fade so orbiting opens/closes walls smoothly.
-    const rate = 1 - Math.exp(-Math.min(delta, 0.05) * 6.5);
+    const justEnabled = enabled && !wasEnabled.current;
+    wasEnabled.current = enabled;
+    // Faster settle when entering 3D so facing walls open promptly.
+    const rate = justEnabled ? 1 : 1 - Math.exp(-Math.min(delta, 0.05) * (enabled ? 9 : 14));
+    let settling = false;
     for (const wall of walls) {
       const target = wallCutawayOpacity(wall, camera.position.x, camera.position.z, center, enabled);
       const prev = smoothed.current[wall.id] ?? (enabled ? 1 : target);
-      const value = prev + (target - prev) * rate;
+      const value = justEnabled ? target : prev + (target - prev) * rate;
       smoothed.current[wall.id] = value;
       next[wall.id] = value;
+      if (Math.abs(value - target) > 0.004) settling = true;
     }
     for (const id of Object.keys(smoothed.current)) {
       if (!(id in next)) delete smoothed.current[id];
@@ -282,8 +288,9 @@ function useDollhouseCutaway(walls: ReturnType<typeof usePlannerStore.getState>[
     if (key !== lastKey.current) {
       lastKey.current = key;
       setOpacityByWall(next);
-      invalidate();
     }
+    // Keep the demand loop alive while orbiting / settling so fades stay smooth.
+    if (enabled || settling) invalidate();
   });
 
   return opacityByWall;
@@ -318,8 +325,8 @@ function WallMeshes() {
         const opacity = opacityByWall[w.id] ?? 1;
         const selected = selectedId === w.id;
         // Keep selected walls more solid so the highlight halo stays stable while orbiting.
-        const drawOpacity = selected ? Math.max(opacity, 0.72) : opacity;
-        const cutaway = drawOpacity < 0.995;
+        const drawOpacity = selected ? Math.max(opacity, 0.55) : opacity;
+        const cutaway = drawOpacity < 0.999;
         const [sx0, sz0] = world(w.start.x, w.start.y);
         const [ex0, ez0] = world(w.end.x, w.end.y);
         const origLen = Math.hypot(ex0 - sx0, ez0 - sz0) || 0.01;
@@ -484,8 +491,8 @@ function WallMeshes() {
             const h = Math.max(...touching.map((ww) => ww.height));
             const opacity = Math.min(...touching.map((ww) => opacityByWall[ww.id] ?? 1));
             const selectedTouch = touching.some((ww) => ww.id === selectedId);
-            const drawOpacity = selectedTouch ? Math.max(opacity, 0.72) : opacity;
-            const cutaway = drawOpacity < 0.995;
+            const drawOpacity = selectedTouch ? Math.max(opacity, 0.55) : opacity;
+            const cutaway = drawOpacity < 0.999;
             posts.push(
               <mesh key={`corner-${key}`} position={[x, h / 2, z]} castShadow={!cutaway} receiveShadow={!cutaway} renderOrder={selectedTouch ? 2 : 0}>
                 <boxGeometry args={[t * 0.98, h, t * 0.98]} />
