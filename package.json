@@ -1,1 +1,39 @@
-{"name":"roomcraft-planner","private":true,"version":"2.0.0","type":"module","scripts":{"dev":"vite","server":"node server/index.js","build":"tsc -b && vite build","preview":"vite preview","test":"vitest run"},"dependencies":{"@react-three/drei":"latest","@react-three/fiber":"latest","cors":"latest","dotenv":"latest","express":"latest","konva":"latest","lucide-react":"latest","pg":"latest","react":"latest","react-dom":"latest","react-konva":"latest","three":"latest","xlsx":"^0.18.5","zod":"latest","zustand":"latest"},"devDependencies":{"@types/react":"latest","@types/react-dom":"latest","@types/three":"latest","@vitejs/plugin-react":"latest","typescript":"5.9.3","vite":"latest","vitest":"latest"}}
+{
+  "name": "mahnikka-planner",
+  "private": true,
+  "version": "2.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "server": "node server/index.js",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@react-three/drei": "latest",
+    "@react-three/fiber": "latest",
+    "cors": "latest",
+    "dotenv": "latest",
+    "express": "latest",
+    "konva": "latest",
+    "lucide-react": "latest",
+    "pg": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "react-konva": "latest",
+    "three": "latest",
+    "xlsx": "^0.18.5",
+    "zod": "latest",
+    "zustand": "latest"
+  },
+  "devDependencies": {
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "@types/three": "latest",
+    "@vitejs/plugin-react": "latest",
+    "typescript": "5.9.3",
+    "vite": "latest",
+    "vitest": "latest"
+  }
+}

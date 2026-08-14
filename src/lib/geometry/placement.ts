@@ -229,7 +229,8 @@ export function containFurnitureInRoom(
   if (!poly?.length) return { x, z };
 
   const thickness = walls.reduce((sum, wall) => sum + wall.thickness, 0) / walls.length;
-  const margin = thickness / 2 + 0.02;
+  // Flush to the inner finished face (wall centerline + half thickness). No extra gap.
+  const margin = thickness / 2;
   const c = Math.abs(Math.cos(rotation));
   const s = Math.abs(Math.sin(rotation));
   const halfW = (width * c + depth * s) / 2;

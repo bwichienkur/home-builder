@@ -118,7 +118,7 @@ function StudioApp() {
       const url = designShareUrl(entry.code);
       history.replaceState(null, '', url);
       setDesigns(listSharedDesigns());
-      if (navigator.share) await navigator.share({ title: projectName, text: `Roomcraft design ${entry.code}`, url });
+      if (navigator.share) await navigator.share({ title: projectName, text: `Mahnikka design ${entry.code}`, url });
       else {
         await navigator.clipboard.writeText(url);
         notify(`Design code ${entry.code} copied`);
@@ -251,7 +251,7 @@ function StudioApp() {
     if (!file) return;
     try {
       const ok = store.importProject(JSON.parse(await file.text()));
-      notify(ok ? 'Project imported' : 'This is not a valid Roomcraft project');
+      notify(ok ? 'Project imported' : 'This is not a valid Mahnikka project');
     } catch {
       notify('Could not read that project file');
     }
