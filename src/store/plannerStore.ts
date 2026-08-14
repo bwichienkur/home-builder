@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { CameraMode, FurnitureItem, MountingType, Opening, PlanRoomLabel, Point, RoomType, SceneSnapshot, StudioMode, SurfaceTarget, Tool, UnitSystem, Wall, WorkflowStage } from '../types';
 import { constrainPlacement, openingConflicts, resolveMountingType, roomFloorCenter } from '../lib/geometry/placement';
 import { writeRecoverySnapshot } from '../lib/designShare';
-import { buildHouse, rebuildFromPlanRooms, resizePlanRoomPoints } from '../lib/housePlans/buildPlan';
+import { buildHouse, rebuildFromPlanRooms, resizePlanRoomPoints, splitPlanRoomPoints, squareRoomPoints } from '../lib/housePlans/buildPlan';
 import { getHousePlan } from '../lib/housePlans/olsenPlans';
 
 type View = '2d' | '3d';
@@ -79,6 +79,7 @@ type PlannerState = SceneSnapshot & {
   addWall: (a: Point, b: Point) => void;
   updateWall: (id: string, patch: Partial<Wall>) => void;
   updateWallEndpoint: (id: string, end: 'start' | 'end', point: Point) => void;
+  updateWallEndpointLive: (id: string, end: 'start' | 'end', point: Point) => void;
   setWallLength: (id: string, meters: number) => void;
   splitWall: (id: string) => void;
   offsetWall: (id: string, meters: number) => void;
@@ -92,6 +93,8 @@ type PlannerState = SceneSnapshot & {
   updatePlanRoom: (id: string, patch: Partial<Pick<PlanRoomLabel, 'name' | 'roomType' | 'floorColor'>>) => void;
   resizePlanRoom: (id: string, widthFt: number, depthFt: number) => void;
   deletePlanRoom: (id: string) => void;
+  addSquareRoom: (center: Point, widthFt?: number, depthFt?: number, name?: string) => string | null;
+  splitPlanRoom: (id: string, axis?: 'x' | 'y') => void;
   setWorkflowStage: (stage: WorkflowStage) => void;
   setStudioMode: (mode: StudioMode) => void;
   enterHouse: () => void;
@@ -258,6 +261,19 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       const old = wall[end];
       const same = (p: Point) => Math.hypot(p.x - old.x, p.y - old.y) < 1;
       mutate({
+        walls: get().walls.map((w) => ({
+          ...w,
+          start: same(w.start) ? point : w.start,
+          end: same(w.end) ? point : w.end,
+        })),
+      });
+    },
+    updateWallEndpointLive: (id, end, point) => {
+      const wall = get().walls.find((w) => w.id === id);
+      if (!wall) return;
+      const old = wall[end];
+      const same = (p: Point) => Math.hypot(p.x - old.x, p.y - old.y) < 1;
+      set({
         walls: get().walls.map((w) => ({
           ...w,
           start: same(w.start) ? point : w.start,
@@ -517,6 +533,71 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       set({
         planRooms,
         selectedRoomId: get().selectedRoomId === id ? null : get().selectedRoomId,
+        floors: get().floors.map((f) =>
+          f.id === get().activeFloorId ? { ...f, scene: { ...f.scene, walls: rebuilt.scene.walls, openings: rebuilt.scene.openings }, planRooms } : f,
+        ),
+      });
+    },
+    addSquareRoom: (center, widthFt = 12, depthFt = 12, name) => {
+      const id = crypto.randomUUID();
+      const roomType = get().roomType;
+      const label: PlanRoomLabel = {
+        id,
+        name: name ?? `Room ${get().planRooms.length + 1}`,
+        roomType,
+        points: squareRoomPoints(center, widthFt, depthFt),
+      };
+      const nextLabels = [...get().planRooms, label];
+      const height = get().walls[0]?.height ?? 2.74;
+      const rebuilt = rebuildFromPlanRooms(nextLabels, get().activeFloorId, height);
+      const planRooms = rebuilt.roomPolygons.map((p) => ({
+        ...p,
+        floorColor: nextLabels.find((l) => l.id === p.id)?.floorColor,
+      }));
+      mutate({ walls: rebuilt.scene.walls, openings: rebuilt.scene.openings, furniture: get().furniture });
+      set({
+        planRooms,
+        selectedRoomId: id,
+        workflowStage: 'room',
+        selectedSurface: 'floor',
+        selectedWallId: null,
+        selectedOpeningId: null,
+        selectedFurnitureId: null,
+        cameraMode: 'top',
+        view: '3d',
+        tool: 'select',
+        draftStart: null,
+        floors: get().floors.map((f) =>
+          f.id === get().activeFloorId ? { ...f, scene: { ...f.scene, walls: rebuilt.scene.walls, openings: rebuilt.scene.openings }, planRooms } : f,
+        ),
+      });
+      return id;
+    },
+    splitPlanRoom: (id, axis) => {
+      const current = get().planRooms;
+      const room = current.find((r) => r.id === id);
+      if (!room) return;
+      const [aPts, bPts] = splitPlanRoomPoints(room.points, axis);
+      const bId = crypto.randomUUID();
+      const nextLabels: PlanRoomLabel[] = current.flatMap((r) =>
+        r.id !== id
+          ? [r]
+          : [
+              { ...r, points: aPts },
+              { ...r, id: bId, name: `${r.name} B`, points: bPts },
+            ],
+      );
+      const height = get().walls[0]?.height ?? 2.74;
+      const rebuilt = rebuildFromPlanRooms(nextLabels, get().activeFloorId, height);
+      const planRooms = rebuilt.roomPolygons.map((p) => ({
+        ...p,
+        floorColor: nextLabels.find((l) => l.id === p.id)?.floorColor,
+      }));
+      mutate({ walls: rebuilt.scene.walls, openings: rebuilt.scene.openings, furniture: get().furniture });
+      set({
+        planRooms,
+        selectedRoomId: id,
+        workflowStage: 'room',
         floors: get().floors.map((f) =>
           f.id === get().activeFloorId ? { ...f, scene: { ...f.scene, walls: rebuilt.scene.walls, openings: rebuilt.scene.openings }, planRooms } : f,
         ),

@@ -12,7 +12,7 @@ export type FurnitureItem = {
 };
 export type CameraMode = 'top'|'orbit'|'walk';
 export type UnitSystem = 'metric'|'imperial';
-export type Tool = 'select' | 'wall' | 'door' | 'window' | 'passage';
+export type Tool = 'select' | 'wall' | 'door' | 'window' | 'passage' | 'room';
 export type RoomType = 'Bedroom'|'Living room'|'Bathroom'|'Kitchen'|'Dining room'|'Office'|'Children’s room'|'Laundry'|'Hallway'|'Storage / wardrobe'|'Outdoor';
 export type SurfaceTarget = 'floor'|'wall'|'ceiling';
 export type WorkflowStage = 'start' | 'house' | 'room';

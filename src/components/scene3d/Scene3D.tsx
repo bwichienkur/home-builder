@@ -7,6 +7,7 @@ import { catalog } from '../catalog/catalogData';
 import type { FurnitureItem } from '../../types';
 import { detectRoomPolygons, roomShape } from '../../lib/geometry/rooms';
 import { alignmentGuides, constrainPlacement, roomFloorCenter, WORLD_ORIGIN } from '../../lib/geometry/placement';
+import { pointInPlanRoom, wallsBelongingToRoom } from '../../lib/geometry/roomWalls';
 import { wallCutawayOpacity } from '../../lib/geometry/wallCutaway';
 import { PIXELS_PER_METER } from '../../lib/geometry/snapping';
 import { collisionsAsync } from '../../lib/collisions';
@@ -14,7 +15,9 @@ import { formatLength } from '../../lib/measurements';
 import { rafThrottle } from '../../lib/rafThrottle';
 import { useInventoryStore } from '../../store/inventoryStore';
 import { FurnitureVisual } from './CatalogModel';
+import { PlanEditLayer } from './PlanEditLayer';
 import type { ReactElement } from 'react';
+import type { PlanRoomLabel, Wall } from '../../types';
 
 const isCoarsePointer = () => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
 
@@ -27,11 +30,26 @@ const openSurfaceProperties = () => window.dispatchEvent(new Event('roomcraft-op
 function CameraRig() {
   const mode = usePlannerStore((s) => s.cameraMode);
   const walls = usePlannerStore((s) => s.walls);
+  const planRooms = usePlannerStore((s) => s.planRooms);
+  const selectedRoomId = usePlannerStore((s) => s.selectedRoomId);
+  const workflowStage = usePlannerStore((s) => s.workflowStage);
   const placing = usePlannerStore((s) => !!s.pendingPlacement);
   const [moving, setMoving] = useState(false);
   const controls = useRef<any>(null);
   const { invalidate, get } = useThree();
+  const focusRoom = workflowStage === 'room' ? planRooms.find((r) => r.id === selectedRoomId) : null;
   const framing = useMemo(() => {
+    if (focusRoom?.points.length) {
+      const points = focusRoom.points.map((p) => world(p.x, p.y));
+      const xs = points.map((p) => p[0]);
+      const zs = points.map((p) => p[1]);
+      const minX = Math.min(...xs);
+      const maxX = Math.max(...xs);
+      const minZ = Math.min(...zs);
+      const maxZ = Math.max(...zs);
+      const span = Math.max(maxX - minX, maxZ - minZ, 2.5);
+      return { center: [(minX + maxX) / 2, 0, (minZ + maxZ) / 2] as [number, number, number], span };
+    }
     if (!walls.length) return { center: [0, 0, 0] as [number, number, number], span: 6 };
     const points = walls.flatMap((w) => [world(w.start.x, w.start.y), world(w.end.x, w.end.y)]);
     const xs = points.map((p) => p[0]);
@@ -42,14 +60,14 @@ function CameraRig() {
     const maxZ = Math.max(...zs);
     const span = Math.max(maxX - minX, maxZ - minZ, 3);
     return { center: [(minX + maxX) / 2, 0, (minZ + maxZ) / 2] as [number, number, number], span };
-  }, [walls]);
+  }, [walls, focusRoom]);
   const center = framing.center;
   const targetTuple = useMemo<[number, number, number]>(() => [center[0], 0, center[2]], [center]);
   const poseTuple = useMemo<[number, number, number]>(() => {
     if (mode === 'top') {
       // Near-flat bird’s-eye — still 3D, centered on the floor (no separate 2D engine).
-      // House plans can span 20–40 m; frame with headroom so the whole floor fits.
-      const height = Math.max(10, framing.span * 1.85);
+      // House plans can span 20–40 m; room focus frames tighter on the selected room.
+      const height = focusRoom ? Math.max(5, framing.span * 1.35) : Math.max(10, framing.span * 1.85);
       return [center[0] + framing.span * 0.02, height, center[2] + framing.span * 0.04];
     }
     if (mode === 'walk') {
@@ -59,7 +77,7 @@ function CameraRig() {
     }
     const back = Math.max(8, framing.span * 0.85);
     return [center[0] + back * 0.55, Math.max(5, framing.span * 0.35), center[2] + back * 0.65];
-  }, [mode, center, framing.span]);
+  }, [mode, center, framing.span, focusRoom]);
 
   const maxDistance = mode === 'top' ? Math.max(55, framing.span * 4.2) : mode === 'walk' ? Math.max(14, framing.span * 1.4) : Math.max(36, framing.span * 3.2);
   const minDistance = mode === 'walk' ? 1.2 : mode === 'top' ? Math.max(2.5, framing.span * 0.06) : 2;
@@ -103,7 +121,7 @@ function CameraRig() {
       const camera = get().camera;
       const from = camera.position.clone();
       const fromTarget = controls.current.target.clone();
-      const height = Math.max(6, detail.span * 1.6);
+      const height = Math.max(4.5, detail.span * 1.25);
       const to = new THREE.Vector3(detail.x + detail.span * 0.02, height, detail.z + detail.span * 0.04);
       const target = new THREE.Vector3(detail.x, 0, detail.z);
       const startAt = performance.now();
@@ -216,13 +234,28 @@ function useDollhouseCutaway(walls: ReturnType<typeof usePlannerStore.getState>[
   return opacityByWall;
 }
 
-function WallMeshes() {
+function useVisibleWalls(): Wall[] {
   const walls = usePlannerStore((s) => s.walls);
+  const planRooms = usePlannerStore((s) => s.planRooms);
+  const selectedRoomId = usePlannerStore((s) => s.selectedRoomId);
+  const workflowStage = usePlannerStore((s) => s.workflowStage);
+  return useMemo(() => {
+    if (workflowStage !== 'room' || !selectedRoomId) return walls;
+    const room = planRooms.find((r) => r.id === selectedRoomId);
+    if (!room) return walls;
+    return wallsBelongingToRoom(room, walls);
+  }, [walls, planRooms, selectedRoomId, workflowStage]);
+}
+
+function WallMeshes() {
+  const walls = useVisibleWalls();
   const openings = usePlannerStore((s) => s.openings);
   const color = usePlannerStore((s) => s.wallColor);
   const selectedId = usePlannerStore((s) => s.selectedWallId);
   const select = usePlannerStore((s) => s.selectWall);
   const opacityByWall = useDollhouseCutaway(walls);
+  const wallIds = useMemo(() => new Set(walls.map((w) => w.id)), [walls]);
+  const visibleOpenings = useMemo(() => openings.filter((o) => wallIds.has(o.wallId)), [openings, wallIds]);
 
   return (
     <>
@@ -234,7 +267,7 @@ function WallMeshes() {
         const [ex, ez] = world(w.end.x, w.end.y);
         const length = Math.hypot(ex - sx, ez - sz);
         const angle = -Math.atan2(ez - sz, ex - sx);
-        const related = openings.filter((o) => o.wallId === w.id);
+        const related = visibleOpenings.filter((o) => o.wallId === w.id);
         let ranges: [number, number][] = [[0, length]];
         related.forEach((o) => {
           const center = o.offset * length;
@@ -388,8 +421,21 @@ function Guides({ selected, others }: { selected: FurnitureItem; others: Furnitu
 }
 
 function Furniture() {
-  const items = usePlannerStore((s) => s.furniture);
+  const allItems = usePlannerStore((s) => s.furniture);
   const walls = usePlannerStore((s) => s.walls);
+  const planRooms = usePlannerStore((s) => s.planRooms);
+  const selectedRoomId = usePlannerStore((s) => s.selectedRoomId);
+  const workflowStage = usePlannerStore((s) => s.workflowStage);
+  const items = useMemo(() => {
+    if (workflowStage !== 'room' || !selectedRoomId) return allItems;
+    const room = planRooms.find((r) => r.id === selectedRoomId);
+    if (!room) return allItems;
+    return allItems.filter((item) => {
+      const planX = item.x * PIXELS_PER_METER + WORLD_ORIGIN.x;
+      const planY = item.z * PIXELS_PER_METER + WORLD_ORIGIN.y;
+      return pointInPlanRoom(planX, planY, room);
+    });
+  }, [allItems, planRooms, selectedRoomId, workflowStage]);
   const selectedId = usePlannerStore((s) => s.selectedFurnitureId);
   const select = usePlannerStore((s) => s.selectFurniture);
   const update = usePlannerStore((s) => s.updateFurniture);
@@ -649,13 +695,19 @@ function Room() {
     selectSurface('ceiling');
     openSurfaceProperties();
   };
+  const isolating = workflowStage === 'room' && !!selectedRoomId;
+  const roomEntries = useMemo(() => {
+    if (planRooms.length) {
+      const labels = isolating ? planRooms.filter((r) => r.id === selectedRoomId) : planRooms;
+      return labels.map((label) => ({ points: label.points, label }));
+    }
+    return rooms.map((points, i) => ({ points, label: undefined as PlanRoomLabel | undefined, i }));
+  }, [planRooms, rooms, isolating, selectedRoomId]);
   return (
     <Bvh firstHitOnly>
-      {rooms.length ? (
-        rooms.map((points, i) => {
-          const label = planRooms[i];
+      {roomEntries.length ? (
+        roomEntries.map(({ points, label }, i) => {
           const selected = !!label && label.id === selectedRoomId;
-          const dimmed = workflowStage === 'room' && !!selectedRoomId && !selected;
           const floorColor = label?.floorColor || floor;
           const span = (() => {
             const xs = points.map((p) => (p.x - WORLD_ORIGIN.x) / PIXELS_PER_METER);
@@ -676,8 +728,6 @@ function Room() {
                   color={selected ? '#0058a3' : floorColor}
                   roughness={0.95}
                   side={THREE.DoubleSide}
-                  transparent={dimmed}
-                  opacity={dimmed ? 0.28 : 1}
                   emissive={selected ? '#003d70' : '#000000'}
                   emissiveIntensity={selected ? 0.14 : 0}
                 />
@@ -702,7 +752,7 @@ function Room() {
                   />
                 </mesh>
               )}
-              {label && cameraMode === 'top' && !dimmed && (
+              {label && cameraMode === 'top' && (
                 <Text
                   position={[
                     points.reduce((s, p) => s + (p.x - WORLD_ORIGIN.x) / PIXELS_PER_METER, 0) / points.length,
@@ -748,6 +798,7 @@ function Room() {
       <WallMeshes />
       <Furniture />
       <GhostPlacement />
+      <PlanEditLayer />
     </Bvh>
   );
 }

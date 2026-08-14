@@ -1227,6 +1227,53 @@
   box-shadow: var(--shadow);
   pointer-events: auto;
 }
+.studio-plan-tools {
+  position: absolute;
+  left: max(16px, env(safe-area-inset-left));
+  top: max(126px, calc(env(safe-area-inset-top) + 118px));
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--shadow);
+  pointer-events: auto;
+  z-index: 2;
+}
+.studio-plan-tools button {
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  min-height: 36px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #6b7280;
+  white-space: nowrap;
+}
+.studio-plan-tools button.active {
+  background: #111820;
+  color: #fff;
+}
+.studio-back-house {
+  position: absolute;
+  left: 50%;
+  top: max(16px, calc(env(safe-area-inset-top) + 56px));
+  transform: translateX(-50%);
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: var(--shadow);
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #111820;
+  pointer-events: auto;
+  z-index: 2;
+}
 .studio-mode-toggle button {
   border: 0;
   border-radius: 10px;
@@ -1271,5 +1318,18 @@
   }
   .studio-mode-toggle {
     top: max(128px, calc(env(safe-area-inset-top) + 118px));
+  }
+  .studio-plan-tools {
+    top: max(176px, calc(env(safe-area-inset-top) + 166px));
+    max-width: calc(100vw - 32px);
+    overflow-x: auto;
+  }
+  .studio-plan-tools button span {
+    display: none;
+  }
+  .studio-plan-tools button {
+    min-width: 40px;
+    justify-content: center;
+    padding: 0 10px;
   }
 }

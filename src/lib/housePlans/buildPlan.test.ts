@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { buildFloorFromRooms, buildHouse, livingAreaSqFt, row } from './buildPlan';
+import { buildFloorFromRooms, buildHouse, livingAreaSqFt, planRoomSizeFeet, row, splitPlanRoomPoints, squareRoomPoints } from './buildPlan';
+import { WORLD_ORIGIN } from '../geometry/placement';
 import { assertPlanCatalog, listHousePlanNames, olsenHousePlans } from './olsenPlans';
 import { usePlannerStore } from '../../store/plannerStore';
 
@@ -96,5 +97,39 @@ describe('house plan builder', () => {
     usePlannerStore.getState().exitRoom();
     expect(usePlannerStore.getState().workflowStage).toBe('house');
     expect(usePlannerStore.getState().selectedRoomId).toBeNull();
+  });
+
+  it('creates square room polygons and splits them', () => {
+    const pts = squareRoomPoints(WORLD_ORIGIN, 12, 10);
+    const size = planRoomSizeFeet(pts);
+    expect(size.widthFt).toBeCloseTo(12, 1);
+    expect(size.depthFt).toBeCloseTo(10, 1);
+    const [a, b] = splitPlanRoomPoints(pts, 'x');
+    expect(planRoomSizeFeet(a).widthFt).toBeCloseTo(6, 1);
+    expect(planRoomSizeFeet(b).widthFt).toBeCloseTo(6, 1);
+  });
+
+  it('adds a square room and isolates on enter', () => {
+    usePlannerStore.setState({
+      walls: [],
+      openings: [],
+      furniture: [],
+      floors: [{ id: 'ground', name: 'Ground floor', scene: { walls: [], openings: [], furniture: [], floorColor: '#c9b18f', wallColor: '#f3f0e9', ceilingColor: '#f4f6f8' } }],
+      activeFloorId: 'ground',
+      planRooms: [],
+      housePlanId: null,
+      housePlanName: null,
+      selectedRoomId: null,
+      workflowStage: 'house',
+    } as any);
+    const id = usePlannerStore.getState().addSquareRoom(WORLD_ORIGIN, 12, 12, 'Studio');
+    expect(id).toBeTruthy();
+    const state = usePlannerStore.getState();
+    expect(state.planRooms).toHaveLength(1);
+    expect(state.walls.length).toBe(4);
+    expect(state.workflowStage).toBe('room');
+    expect(state.selectedRoomId).toBe(id);
+    usePlannerStore.getState().splitPlanRoom(id!);
+    expect(usePlannerStore.getState().planRooms).toHaveLength(2);
   });
 });
