@@ -10,6 +10,7 @@ import { alignmentGuides, clampWallMountY, constrainPlacement, pointOnWall, room
 import { framingFromPoints, framingFromWalls } from '../../lib/geometry/planFraming';
 import { pointInPlanRoom, wallsBelongingToRoom } from '../../lib/geometry/roomWalls';
 import { wallCutawayOpacity } from '../../lib/geometry/wallCutaway';
+import { orbitCeilingOpacity, orbitFloorOpacity } from '../../lib/geometry/plateFade';
 import { PIXELS_PER_METER } from '../../lib/geometry/snapping';
 import { collisionsAsync } from '../../lib/collisions';
 import { formatLength } from '../../lib/measurements';
@@ -932,31 +933,37 @@ function Room() {
   const rooms = planRooms.length ? planRooms.map((r) => r.points) : detected;
   const ceilingHeight = walls[0]?.height ?? 2.7;
   const { camera, invalidate } = useThree();
-  const [lookUpCeiling, setLookUpCeiling] = useState(false);
-  const [underFloor, setUnderFloor] = useState(false);
+  const ceilingSmooth = useRef(0.22);
+  const floorSmooth = useRef(1);
+  const plateKey = useRef('');
+  const [ceilingOpacity, setCeilingOpacity] = useState(0.22);
+  const [floorOpacity, setFloorOpacity] = useState(1);
   // Top / bird’s-eye must see the floor — a solid ceiling makes the room unusable to edit.
   const showCeiling = cameraMode !== 'top' || selectedSurface === 'ceiling';
-  const ceilingOpacity =
-    cameraMode === 'walk'
-      ? 0.95
-      : underFloor
-        ? 0.15
-        : lookUpCeiling
-          ? 0.92
-          : selectedSurface === 'ceiling'
-            ? 0.55
-            : 0.22;
-  const floorOpacity = underFloor ? 0.28 : 1;
 
-  useFrame(() => {
-    // Tip the camera below the room and the ceiling should read solid (first reference image).
-    const below = camera.position.y < ceilingHeight * 0.55;
-    const under = camera.position.y < -0.05;
-    if (below !== lookUpCeiling || under !== underFloor) {
-      setLookUpCeiling(below);
-      setUnderFloor(under);
-      invalidate();
+  useFrame((_, delta) => {
+    const targetCeiling = orbitCeilingOpacity(camera.position.y, ceilingHeight, {
+      mode: cameraMode,
+      selected: selectedSurface === 'ceiling',
+    });
+    const targetFloor = orbitFloorOpacity(camera.position.y, cameraMode);
+    // Match wall cutaway cream — no boolean pop when crossing mid-height / under-floor.
+    const speed = cameraMode === 'orbit' ? 2.8 : 7;
+    const rate = 1 - Math.exp(-Math.min(delta, 0.08) * speed);
+    ceilingSmooth.current += (targetCeiling - ceilingSmooth.current) * rate;
+    floorSmooth.current += (targetFloor - floorSmooth.current) * rate;
+    if (Math.abs(ceilingSmooth.current - targetCeiling) < 0.002) ceilingSmooth.current = targetCeiling;
+    if (Math.abs(floorSmooth.current - targetFloor) < 0.002) floorSmooth.current = targetFloor;
+
+    const key = `${ceilingSmooth.current.toFixed(4)}|${floorSmooth.current.toFixed(4)}`;
+    if (key !== plateKey.current) {
+      plateKey.current = key;
+      setCeilingOpacity(ceilingSmooth.current);
+      setFloorOpacity(floorSmooth.current);
     }
+    const settling =
+      Math.abs(ceilingSmooth.current - targetCeiling) > 0.002 || Math.abs(floorSmooth.current - targetFloor) > 0.002;
+    if (cameraMode === 'orbit' || settling) invalidate();
   });
 
   const chooseFloor = (e: any, roomId?: string) => {
@@ -1028,7 +1035,7 @@ function Room() {
                   color={floorColor}
                   roughness={0.95}
                   side={THREE.DoubleSide}
-                  transparent={floorOpacity < 0.999}
+                  transparent={cameraMode === 'orbit' || floorOpacity < 0.999}
                   opacity={floorOpacity}
                   depthWrite={floorOpacity > 0.85}
                   polygonOffset
@@ -1063,7 +1070,7 @@ function Room() {
                     side={THREE.DoubleSide}
                     transparent
                     opacity={ceilingOpacity}
-                    depthWrite={lookUpCeiling || cameraMode === 'walk'}
+                    depthWrite={ceilingOpacity > 0.75 || cameraMode === 'walk'}
                     emissive={selectedSurface === 'ceiling' ? '#003d70' : '#000000'}
                     emissiveIntensity={selectedSurface === 'ceiling' ? 0.1 : 0}
                   />
@@ -1105,7 +1112,7 @@ function Room() {
                 roughness={0.92}
                 transparent
                 opacity={ceilingOpacity}
-                depthWrite={lookUpCeiling || cameraMode === 'walk'}
+                depthWrite={ceilingOpacity > 0.75 || cameraMode === 'walk'}
                 side={THREE.DoubleSide}
               />
             </mesh>
