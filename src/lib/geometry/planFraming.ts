@@ -40,8 +40,8 @@ export function framingFromPoints(points: Point[], opts?: { pad?: number; minSpa
   const cx = (minX + maxX) / 2;
   const cz = (minZ + maxZ) / 2;
   const topHeight = topViewHeight(span, { pad: opts?.pad, min: opts?.minHeight ?? 10 });
-  // Keep a small Z offset so the camera never sits exactly on the look-at axis.
-  const zBias = Math.max(0.08, span * 0.004);
+  // Match CameraRig top polar (~0.065 rad) so OrbitControls does not clamp and skew the plate.
+  const zBias = topHeight * Math.tan(0.065);
   return {
     center: [cx, 0, cz],
     span,

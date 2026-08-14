@@ -65,16 +65,28 @@ function CameraRig() {
   const animating = useRef(false);
   const applyPose = (to: THREE.Vector3, target: THREE.Vector3, duration = 0) => {
     const camera = get().camera;
-    if (duration <= 0 || !controls.current) {
-      animating.current = false;
+    const finish = () => {
       camera.position.copy(to);
       if (controls.current) {
         controls.current.target.copy(target);
+        if (mode === 'top') {
+          // Lock north-up plan orientation so floor switches never land crooked.
+          controls.current.minAzimuthAngle = 0;
+          controls.current.maxAzimuthAngle = 0;
+          if (typeof controls.current.setAzimuthalAngle === 'function') controls.current.setAzimuthalAngle(0);
+        } else {
+          controls.current.minAzimuthAngle = -Infinity;
+          controls.current.maxAzimuthAngle = Infinity;
+        }
         controls.current.update();
       } else {
         camera.lookAt(target);
       }
       invalidate();
+      animating.current = false;
+    };
+    if (duration <= 0 || !controls.current) {
+      finish();
       return;
     }
     const from = camera.position.clone();
@@ -91,7 +103,7 @@ function CameraRig() {
       controls.current?.update();
       invalidate();
       if (t < 1) requestAnimationFrame(tick);
-      else animating.current = false;
+      else finish();
     };
     requestAnimationFrame(tick);
   };
@@ -133,8 +145,8 @@ function CameraRig() {
       );
       // Prefer the provided center for room focus.
       const height = framed.topHeight;
-      const zBias = Math.max(0.08, detail.span * 0.004);
-      applyPose(new THREE.Vector3(detail.x, height, detail.z + zBias), new THREE.Vector3(detail.x, 0, detail.z), 420);
+      const zBias = height * Math.tan(0.065);
+      applyPose(new THREE.Vector3(detail.x, height, detail.z + zBias), new THREE.Vector3(detail.x, 0, detail.z), 0);
     };
     window.addEventListener('roomcraft-fit-plan', fit);
     window.addEventListener('roomcraft-refocus', refocus);
@@ -161,11 +173,23 @@ function CameraRig() {
         // Near-vertical top view (~3–5°) — head-on plan without lookAt singularity at polar 0.
         minPolarAngle={mode === 'top' ? 0.04 : mode === 'walk' ? 0.7 : 0}
         maxPolarAngle={mode === 'top' ? 0.09 : mode === 'walk' ? Math.PI / 2.05 : Math.PI / 2 + 0.52}
+        minAzimuthAngle={mode === 'top' ? 0 : -Infinity}
+        maxAzimuthAngle={mode === 'top' ? 0 : Infinity}
         minDistance={minDistance}
         maxDistance={maxDistance}
         enableZoom
         enablePan
         enableRotate={mode !== 'top'}
+        // Top: one-finger / left-drag pans the plate. Orbit keeps rotate on one finger.
+        mouseButtons={{
+          LEFT: mode === 'top' ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE,
+          MIDDLE: THREE.MOUSE.DOLLY,
+          RIGHT: THREE.MOUSE.PAN,
+        }}
+        touches={{
+          ONE: mode === 'top' ? THREE.TOUCH.PAN : THREE.TOUCH.ROTATE,
+          TWO: THREE.TOUCH.DOLLY_PAN,
+        }}
         onChange={() => invalidate()}
       />
     </>
@@ -684,6 +708,7 @@ function Room() {
   const chooseFloor = (e: any, roomId?: string) => {
     e.stopPropagation();
     if (roomId) {
+      // Enter room top-view only — do not open the inspector/settings sheet.
       enterRoom(roomId);
       const room = planRooms.find((r) => r.id === roomId);
       if (room) {
@@ -700,9 +725,9 @@ function Room() {
           }),
         );
       }
-    } else {
-      selectSurface('floor');
+      return;
     }
+    selectSurface('floor');
     openSurfaceProperties();
   };
   const chooseCeiling = (e: any) => {
@@ -929,7 +954,8 @@ export function Scene3D() {
           select(null);
           selectWall(null);
           selectSurface(null);
-          selectRoom(null);
+          // Stay in room focus unless the user explicitly goes Back to house.
+          if (usePlannerStore.getState().workflowStage !== 'room') selectRoom(null);
         }}
       >
         <SceneAtmosphere />

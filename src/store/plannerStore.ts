@@ -414,25 +414,39 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       });
       return true;
     },
-    selectWall: (selectedWallId) => set({ selectedWallId, selectedOpeningId: null, selectedFurnitureId: null, selectedSurface: null, selectedRoomId: null }),
+    selectWall: (selectedWallId) =>
+      set({
+        selectedWallId,
+        selectedOpeningId: null,
+        selectedFurnitureId: null,
+        selectedSurface: null,
+        selectedRoomId: get().workflowStage === 'room' ? get().selectedRoomId : null,
+      }),
     selectOpening: (selectedOpeningId) =>
       set({
         selectedOpeningId,
         selectedWallId: selectedOpeningId ? get().openings.find((o) => o.id === selectedOpeningId)?.wallId ?? null : null,
         selectedFurnitureId: null,
         selectedSurface: null,
-        selectedRoomId: null,
+        selectedRoomId: get().workflowStage === 'room' ? get().selectedRoomId : null,
       }),
-    selectSurface: (selectedSurface) => set({ selectedSurface, selectedWallId: null, selectedOpeningId: null, selectedFurnitureId: null, selectedRoomId: null }),
+    selectSurface: (selectedSurface) =>
+      set({
+        selectedSurface,
+        selectedWallId: null,
+        selectedOpeningId: null,
+        selectedFurnitureId: null,
+        selectedRoomId: get().workflowStage === 'room' ? get().selectedRoomId : null,
+      }),
     selectRoom: (selectedRoomId) =>
       set({
         selectedRoomId,
         selectedWallId: null,
         selectedOpeningId: null,
         selectedFurnitureId: null,
-        selectedSurface: selectedRoomId ? 'floor' : null,
+        selectedSurface: null,
         roomType: selectedRoomId ? get().planRooms.find((r) => r.id === selectedRoomId)?.roomType ?? get().roomType : get().roomType,
-        workflowStage: selectedRoomId ? 'room' : get().workflowStage === 'start' ? 'start' : 'house',
+        workflowStage: selectedRoomId ? 'room' : get().workflowStage === 'start' ? 'start' : get().workflowStage === 'room' ? 'house' : get().workflowStage,
       }),
     setWorkflowStage: (workflowStage) => set({ workflowStage }),
     setStudioMode: (studioMode) => set({ studioMode }),
@@ -458,21 +472,28 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         selectedWallId: null,
         selectedOpeningId: null,
         selectedFurnitureId: null,
-        selectedSurface: 'floor',
+        selectedSurface: null,
         roomType: room.roomType,
         cameraMode: 'top',
         view: '3d',
+        tool: 'select',
+        draftStart: null,
       });
     },
     exitRoom: () =>
       set({
         workflowStage: 'house',
+        studioMode: 'architect',
         selectedRoomId: null,
         selectedSurface: null,
         selectedWallId: null,
         selectedOpeningId: null,
+        selectedFurnitureId: null,
+        pendingPlacement: null,
         cameraMode: 'top',
         view: '3d',
+        tool: 'select',
+        draftStart: null,
       }),
     showStart: () =>
       set({
@@ -648,6 +669,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     },
     clearOpeningNotice: () => set({ openingNotice: '' }),
     beginPlacement: (catalogId, name, category, [width, depth, height], color, x, z, meta) => {
+      if (get().workflowStage !== 'room') return;
       const walls = get().walls;
       const center = roomFloorCenter(walls);
       const startX = x ?? center.x;
@@ -755,10 +777,23 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
           },
         ],
       });
-      set({ selectedFurnitureId: id, selectedWallId: null, selectedOpeningId: null, selectedSurface: null, selectedRoomId: null, pendingPlacement: null });
+      set({
+        selectedFurnitureId: id,
+        selectedWallId: null,
+        selectedOpeningId: null,
+        selectedSurface: null,
+        selectedRoomId: get().workflowStage === 'room' ? get().selectedRoomId : null,
+        pendingPlacement: null,
+      });
     },
     selectFurniture: (selectedFurnitureId) =>
-      set({ selectedFurnitureId, selectedWallId: null, selectedOpeningId: null, selectedSurface: null, selectedRoomId: null }),
+      set({
+        selectedFurnitureId,
+        selectedWallId: null,
+        selectedOpeningId: null,
+        selectedSurface: null,
+        selectedRoomId: get().workflowStage === 'room' ? get().selectedRoomId : null,
+      }),
     updateFurnitureLive: (id, patch) => set((s) => ({ furniture: s.furniture.map((f) => (f.id === id ? { ...f, ...patch } : f)) })),
     updateFurniture: (id, patch) => {
       const item = get().furniture.find((f) => f.id === id);

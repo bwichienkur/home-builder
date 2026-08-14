@@ -188,6 +188,7 @@ function StudioApp() {
   const pendingPlacement = usePlannerStore((s) => s.pendingPlacement);
   useEffect(() => {
     // One panel at a time: furniture → product card; walls/openings/surfaces → inspector.
+    // Entering a room alone does not open settings — use Edit in the dock.
     if (pendingPlacement) {
       setInspectorOpen(false);
       setProductCardOpen(false);
@@ -199,8 +200,9 @@ function StudioApp() {
       return;
     }
     setProductCardOpen(false);
-    if (selectedWallId || selectedOpeningId || selectedSurface || selectedRoomId) setInspectorOpen(true);
-  }, [selectedWallId, selectedOpeningId, selectedFurnitureId, selectedSurface, selectedRoomId, pendingPlacement]);
+    if (selectedWallId || selectedOpeningId || selectedSurface) setInspectorOpen(true);
+    else setInspectorOpen(false);
+  }, [selectedWallId, selectedOpeningId, selectedFurnitureId, selectedSurface, pendingPlacement]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => store.save(), 700);
@@ -256,6 +258,10 @@ function StudioApp() {
   };
 
   const openCategory = (category: string) => {
+    if (usePlannerStore.getState().workflowStage !== 'room') {
+      notify('Open a room before adding furniture');
+      return;
+    }
     store.setStudioMode('furnish');
     setCatalogOpen(true);
     setMenuOpen(false);
