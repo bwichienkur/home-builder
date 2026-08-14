@@ -57,7 +57,7 @@ export function DesignStart({ onBegan }: { onBegan?: () => void }) {
           <p className="design-start-eyebrow">House plans</p>
           <h1>Load an existing plan</h1>
           <p className="design-start-lede">
-            Pick a floor plate, then tap any room to edit it. Layouts are original Roomcraft builds from published room programs.
+            Pick a floor plate — it opens looking straight down, centered. Multi-story plans include First and Second story tabs.
           </p>
           <div className="design-start-gallery">
             {plans.map((plan) => (

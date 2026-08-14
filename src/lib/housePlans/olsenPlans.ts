@@ -98,7 +98,7 @@ function ranch3Bed(opts: {
     baths: opts.baths,
     livingSqFt: opts.livingSqFt,
     totalUnderRoofSqFt: opts.totalUnderRoofSqFt,
-    floors: [{ id: `${opts.id}-1`, name: 'First floor', rooms }],
+    floors: [{ id: `${opts.id}-1`, name: 'First story', rooms }],
   });
 }
 
@@ -150,8 +150,8 @@ function twoStoryFamily(opts: {
     livingSqFt: opts.livingSqFt,
     totalUnderRoofSqFt: opts.totalUnderRoofSqFt,
     floors: [
-      { id: `${opts.id}-1`, name: 'First floor', rooms: first },
-      { id: `${opts.id}-2`, name: 'Second floor', rooms: second },
+      { id: `${opts.id}-1`, name: 'First story', rooms: first },
+      { id: `${opts.id}-2`, name: 'Second story', rooms: second },
     ],
   });
 }
@@ -189,7 +189,7 @@ function islamorada(): HousePlan {
     baths: 3,
     livingSqFt: 2638,
     totalUnderRoofSqFt: 3864,
-    floors: [{ id: 'islamorada-1', name: 'First floor', rooms }],
+    floors: [{ id: 'islamorada-1', name: 'First story', rooms }],
   });
 }
 
@@ -228,7 +228,7 @@ function largo(): HousePlan {
     baths: 3,
     livingSqFt: 2907,
     totalUnderRoofSqFt: 4163,
-    floors: [{ id: 'largo-1', name: 'First floor', rooms }],
+    floors: [{ id: 'largo-1', name: 'First story', rooms }],
   });
 }
 
@@ -271,8 +271,8 @@ function captiva(): HousePlan {
     livingSqFt: 2997,
     totalUnderRoofSqFt: 4065,
     floors: [
-      { id: 'captiva-1', name: 'First floor', rooms: first },
-      { id: 'captiva-2', name: 'Second floor', rooms: second },
+      { id: 'captiva-1', name: 'First story', rooms: first },
+      { id: 'captiva-2', name: 'Second story', rooms: second },
     ],
   });
 }
@@ -322,8 +322,8 @@ function coralSands(): HousePlan {
     livingSqFt: 3721,
     totalUnderRoofSqFt: 5481,
     floors: [
-      { id: 'coral-sands-1', name: 'First floor', rooms: first },
-      { id: 'coral-sands-2', name: 'Second floor', rooms: second },
+      { id: 'coral-sands-1', name: 'First story', rooms: first },
+      { id: 'coral-sands-2', name: 'Second story', rooms: second },
     ],
   });
 }

@@ -65,10 +65,9 @@ function CameraRig() {
   const targetTuple = useMemo<[number, number, number]>(() => [center[0], 0, center[2]], [center]);
   const poseTuple = useMemo<[number, number, number]>(() => {
     if (mode === 'top') {
-      // Near-flat bird’s-eye — still 3D, centered on the floor (no separate 2D engine).
-      // House plans can span 20–40 m; room focus frames tighter on the selected room.
-      const height = focusRoom ? Math.max(5, framing.span * 1.35) : Math.max(10, framing.span * 1.85);
-      return [center[0] + framing.span * 0.02, height, center[2] + framing.span * 0.04];
+      // True head-on plan view: camera directly above the floor center (no XZ bias).
+      const height = focusRoom ? Math.max(5.5, framing.span * 1.45) : Math.max(11, framing.span * 1.95);
+      return [center[0], height, center[2]];
     }
     if (mode === 'walk') {
       // Pull back farther than a tight FPS so furniture stays readable (esp. on phones).
@@ -121,8 +120,9 @@ function CameraRig() {
       const camera = get().camera;
       const from = camera.position.clone();
       const fromTarget = controls.current.target.clone();
-      const height = Math.max(4.5, detail.span * 1.25);
-      const to = new THREE.Vector3(detail.x + detail.span * 0.02, height, detail.z + detail.span * 0.04);
+      const height = Math.max(5, detail.span * 1.4);
+      // Head-on: directly above the room center.
+      const to = new THREE.Vector3(detail.x, height, detail.z);
       const target = new THREE.Vector3(detail.x, 0, detail.z);
       const startAt = performance.now();
       animating.current = true;
@@ -154,19 +154,19 @@ function CameraRig() {
 
   return (
     <>
-      <PerspectiveCamera makeDefault position={poseTuple} fov={mode === 'walk' ? 58 : mode === 'top' ? 48 : 48} />
+      <PerspectiveCamera makeDefault position={poseTuple} fov={mode === 'walk' ? 58 : mode === 'top' ? 42 : 48} />
       <OrbitControls
         ref={controls}
         enabled={!moving && !placing && !animating.current}
         target={[targetTuple[0], mode === 'walk' ? 1.1 : targetTuple[1], targetTuple[2]]}
-        minPolarAngle={mode === 'top' ? 0.05 : mode === 'walk' ? 0.7 : 0}
-        // Orbit can tip slightly below the floor plane so the ceiling comes into view (IKEA dollhouse).
-        maxPolarAngle={mode === 'top' ? 0.55 : mode === 'walk' ? Math.PI / 2.05 : Math.PI / 2 + 0.52}
+        // Top = locked looking straight down (plan plate). Orbit/walk keep dollhouse freedom.
+        minPolarAngle={mode === 'top' ? 0 : mode === 'walk' ? 0.7 : 0}
+        maxPolarAngle={mode === 'top' ? 0.001 : mode === 'walk' ? Math.PI / 2.05 : Math.PI / 2 + 0.52}
         minDistance={minDistance}
         maxDistance={maxDistance}
         enableZoom
         enablePan
-        enableRotate
+        enableRotate={mode !== 'top'}
         onChange={() => invalidate()}
       />
     </>

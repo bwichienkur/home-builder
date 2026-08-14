@@ -15,6 +15,7 @@ import {
   Move3D,
   MousePointer2,
   PencilRuler,
+  Plus,
   Redo2,
   RotateCw,
   Scaling,
@@ -28,6 +29,7 @@ import {
 import { roomCategories } from '../catalog/CatalogPanel';
 import { usePlannerStore } from '../../store/plannerStore';
 import type { RoomType, Tool } from '../../types';
+import { StoryOverview } from './StoryOverview';
 
 function useCoarsePointer() {
   const [coarse, setCoarse] = useState(() => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches);
@@ -84,6 +86,7 @@ export function StudioChrome({
   onOpenInspector,
 }: Props) {
   const [viewMenu, setViewMenu] = useState(false);
+  const [storiesOpen, setStoriesOpen] = useState(false);
   const camera = usePlannerStore((s) => s.cameraMode);
   const setView = usePlannerStore((s) => s.setView);
   const setCamera = usePlannerStore((s) => s.setCameraMode);
@@ -103,6 +106,8 @@ export function StudioChrome({
   const selectedRoomId = usePlannerStore((s) => s.selectedRoomId);
   const floors = usePlannerStore((s) => s.floors);
   const activeFloorId = usePlannerStore((s) => s.activeFloorId);
+  const switchFloor = usePlannerStore((s) => s.switchFloor);
+  const addFloor = usePlannerStore((s) => s.addFloor);
   const exitRoom = usePlannerStore((s) => s.exitRoom);
   const enterRoom = usePlannerStore((s) => s.enterRoom);
   const showStart = usePlannerStore((s) => s.showStart);
@@ -125,8 +130,18 @@ export function StudioChrome({
   const [gestureHint, setGestureHint] = useState(false);
 
   useEffect(() => {
-    if (catalogOpen || menuOpen) setViewMenu(false);
+    if (catalogOpen || menuOpen) {
+      setViewMenu(false);
+      setStoriesOpen(false);
+    }
   }, [catalogOpen, menuOpen]);
+
+  const goToFloor = (id: string) => {
+    switchFloor(id);
+    setView('3d');
+    setCamera('top');
+    window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 40);
+  };
 
   useEffect(() => {
     if (!coarsePointer || pending) return;
@@ -234,7 +249,9 @@ export function StudioChrome({
         {activeFloor && floors.length > 1 && (
           <>
             <span aria-hidden="true">/</span>
-            <span className="studio-breadcrumb-static">{activeFloor.name}</span>
+            <button type="button" className="is-current" onClick={() => setStoriesOpen(true)} title="All stories">
+              {activeFloor.name}
+            </button>
           </>
         )}
         {selectedRoom && (
@@ -244,6 +261,42 @@ export function StudioChrome({
           </>
         )}
       </nav>
+
+      {(floors.length > 1 || studioMode === 'architect') && !pending && (
+        <div className="studio-floor-tabs" role="tablist" aria-label="Stories">
+          {floors.map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              role="tab"
+              aria-selected={f.id === activeFloorId}
+              className={f.id === activeFloorId ? 'active' : ''}
+              onClick={() => goToFloor(f.id)}
+            >
+              {f.name}
+            </button>
+          ))}
+          {studioMode === 'architect' && (
+            <button
+              type="button"
+              className="studio-floor-add"
+              aria-label="Add story"
+              title="Add story"
+              onClick={() => {
+                addFloor();
+                window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 40);
+              }}
+            >
+              <Plus size={14} />
+            </button>
+          )}
+          {floors.length > 1 && (
+            <button type="button" className="studio-floor-all" onClick={() => setStoriesOpen(true)} title="View all stories">
+              All
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="studio-mode-toggle" role="group" aria-label="Studio mode">
         <button type="button" className={studioMode === 'architect' ? 'active' : ''} onClick={() => setStudioMode('architect')}>
@@ -423,7 +476,7 @@ export function StudioChrome({
           </button>
           <button className={isTop ? 'active' : ''} onClick={chooseTop}>
             <Grid2X2 />
-            Top view
+            Plan view
           </button>
           <button className={camera === 'orbit' ? 'active' : ''} onClick={() => choose3d('orbit')}>
             <Layers3 />
@@ -476,6 +529,8 @@ export function StudioChrome({
         <FileSpreadsheet />
         Advanced inventory
       </a>
+
+      <StoryOverview open={storiesOpen} onClose={() => setStoriesOpen(false)} />
     </div>
   );
 }

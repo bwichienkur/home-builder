@@ -97,6 +97,16 @@ describe('house plan builder', () => {
     usePlannerStore.getState().exitRoom();
     expect(usePlannerStore.getState().workflowStage).toBe('house');
     expect(usePlannerStore.getState().selectedRoomId).toBeNull();
+
+    if (state.floors.length > 1) {
+      const second = state.floors[1];
+      usePlannerStore.getState().switchFloor(second.id);
+      const switched = usePlannerStore.getState();
+      expect(switched.activeFloorId).toBe(second.id);
+      expect(switched.cameraMode).toBe('top');
+      expect(switched.workflowStage).toBe('house');
+      expect(switched.selectedRoomId).toBeNull();
+    }
   });
 
   it('creates square room polygons and splits them', () => {
@@ -131,5 +141,19 @@ describe('house plan builder', () => {
     expect(state.selectedRoomId).toBe(id);
     usePlannerStore.getState().splitPlanRoom(id!);
     expect(usePlannerStore.getState().planRooms).toHaveLength(2);
+  });
+
+  it('switches stories into centered top view and can add a blank story', () => {
+    expect(usePlannerStore.getState().applyHousePlan('captiva')).toBe(true);
+    const floors = usePlannerStore.getState().floors;
+    expect(floors.length).toBe(2);
+    usePlannerStore.getState().switchFloor(floors[1].id);
+    expect(usePlannerStore.getState().activeFloorId).toBe(floors[1].id);
+    expect(usePlannerStore.getState().cameraMode).toBe('top');
+    expect(usePlannerStore.getState().workflowStage).toBe('house');
+    usePlannerStore.getState().addFloor();
+    expect(usePlannerStore.getState().floors).toHaveLength(3);
+    expect(usePlannerStore.getState().floors[2].name).toBe('Story 3');
+    expect(usePlannerStore.getState().walls).toHaveLength(0);
   });
 });
