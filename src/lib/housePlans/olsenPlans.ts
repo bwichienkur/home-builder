@@ -4,7 +4,7 @@ import type { RoomType } from '../../types';
 
 const SOURCE = 'https://olsencustomhomes.com/floor-plans-with-a-custom-home-builder-new-smyrna/';
 const NOTE =
-  'Original Roomcraft multi-room layout sized from publicly listed room programs (beds/baths/sq ft). Not an Olsen drawing or CAD copy.';
+  'Original Mahnikka multi-room layout sized from publicly listed room programs (beds/baths/sq ft). Not an Olsen drawing or CAD copy.';
 
 function plan(
   partial: Omit<HousePlan, 'note' | 'sourceUrl'> & { sourceUrl?: string; note?: string },

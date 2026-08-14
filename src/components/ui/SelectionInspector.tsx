@@ -302,7 +302,7 @@ export function RoomDesigner({ compact = false }: { compact?: boolean }) {
         ))}
       </div>
       <p className="muted house-plan-note">
-        Original Roomcraft layouts sized from publicly listed room programs — not copied Olsen drawings. Switch floors in the project menu for two-story plans.
+        Original Mahnikka layouts sized from publicly listed room programs — not copied Olsen drawings. Switch floors in the project menu for two-story plans.
       </p>
     </div>
   );

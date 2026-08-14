@@ -127,6 +127,21 @@ export function placementConstraint(mounting?: string, category?: string, name?:
   return 'free';
 }
 
+/** Keep a wall-mounted piece fully on the segment (no half hanging past the corner). */
+export function clampWallOffset(offset: number, itemWidth: number, wallLength: number) {
+  if (wallLength <= 1e-6) return 0.5;
+  if (itemWidth >= wallLength - 0.02) return 0.5;
+  const min = itemWidth / 2 / wallLength;
+  const max = 1 - min;
+  return Math.max(min, Math.min(max, offset));
+}
+
+/** Keep wall art between the floor and ceiling on its host wall. */
+export function clampWallMountY(y: number, itemHeight: number, wallHeight: number) {
+  const maxY = Math.max(0.05, wallHeight - itemHeight - 0.05);
+  return Math.min(Math.max(y, 0.05), maxY);
+}
+
 /** Snap a product to the nearest wall face, keeping depth clear of the wall thickness. */
 export function snapToWallSurface(
   x: number,
@@ -135,14 +150,18 @@ export function snapToWallSurface(
   depth: number,
   mounting: MountingType = 'wall',
   maxDistance = mounting === 'wall' ? 12 : 1.5,
+  width?: number,
 ) {
   if (!walls.length) return { ...snapFloorPosition(x, z), wallId: null as string | null, wallOffset: null as number | null, rotation: undefined as number | undefined };
   const hit = nearestWall(x, z, walls, maxDistance);
   if (!hit) return { ...snapFloorPosition(x, z), wallId: null, wallOffset: null, rotation: undefined };
+  const frame = wallFrame(hit.wall);
+  const along = width ?? depth;
+  const offset = clampWallOffset(hit.offset, along, frame.length);
   const inset = hit.wall.thickness / 2 + depth / 2 + 0.01;
   const rooms = detectRoomPolygons(walls).map((poly) => poly.map((p) => planToWorld(p)));
-  const plus = pointOnWall(hit.wall, hit.offset, inset);
-  const minus = pointOnWall(hit.wall, hit.offset, -inset);
+  const plus = pointOnWall(hit.wall, offset, inset);
+  const minus = pointOnWall(hit.wall, offset, -inset);
   const plusInside = rooms.some((room) => pointInPolygon(plus.x, plus.z, room));
   const minusInside = rooms.some((room) => pointInPolygon(minus.x, minus.z, room));
   // Prefer the side that lands inside the room (critical for concave / L plans).
@@ -156,7 +175,7 @@ export function snapToWallSurface(
     z: placed.z,
     rotation: placed.rotation + (side < 0 ? Math.PI : 0),
     wallId: hit.wall.id,
-    wallOffset: hit.offset,
+    wallOffset: offset,
   };
 }
 
@@ -229,7 +248,8 @@ export function containFurnitureInRoom(
   if (!poly?.length) return { x, z };
 
   const thickness = walls.reduce((sum, wall) => sum + wall.thickness, 0) / walls.length;
-  const margin = thickness / 2 + 0.02;
+  // Flush to the inner finished face (wall centerline + half thickness). No extra gap.
+  const margin = thickness / 2;
   const c = Math.abs(Math.cos(rotation));
   const s = Math.abs(Math.sin(rotation));
   const halfW = (width * c + depth * s) / 2;
@@ -294,12 +314,12 @@ export function constrainPlacement(
     constraint: PlacementConstraint;
   };
   if (constraint === 'wall') {
-    const snapped = snapToWallSurface(x, z, walls, depth, 'wall', 12);
+    const snapped = snapToWallSurface(x, z, walls, depth, 'wall', 12, opts.width);
     placed = { ...snapped, rotation: snapped.rotation ?? opts.rotation ?? 0, constraint };
   } else if (constraint === 'wall-prefer') {
     const near = nearestWall(x, z, walls, opts.live ? 0.85 : 0.55);
     if (near) {
-      const snapped = snapToWallSurface(x, z, walls, depth, 'wall', 1.2);
+      const snapped = snapToWallSurface(x, z, walls, depth, 'wall', 1.2, opts.width);
       placed = { ...snapped, rotation: snapped.rotation ?? opts.rotation ?? 0, constraint };
     } else {
       const floor = opts.live ? { x, z } : snapFloorPosition(x, z);

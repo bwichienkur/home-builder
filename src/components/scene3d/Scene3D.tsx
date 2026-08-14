@@ -6,7 +6,7 @@ import { usePlannerStore } from '../../store/plannerStore';
 import { catalog } from '../catalog/catalogData';
 import type { FurnitureItem } from '../../types';
 import { detectRoomPolygons, roomShape } from '../../lib/geometry/rooms';
-import { alignmentGuides, constrainPlacement, roomFloorCenter, WORLD_ORIGIN } from '../../lib/geometry/placement';
+import { alignmentGuides, clampWallMountY, constrainPlacement, pointOnWall, roomFloorCenter, wallFrame, WORLD_ORIGIN } from '../../lib/geometry/placement';
 import { framingFromPoints, framingFromWalls } from '../../lib/geometry/planFraming';
 import { pointInPlanRoom, wallsBelongingToRoom } from '../../lib/geometry/roomWalls';
 import { wallCutawayOpacity } from '../../lib/geometry/wallCutaway';
@@ -27,6 +27,42 @@ const world = (x: number, y: number): [number, number] => [
   (y - WORLD_ORIGIN.y) / PIXELS_PER_METER,
 ];
 const openSurfaceProperties = () => window.dispatchEvent(new Event('roomcraft-open-properties'));
+
+function hasUserDataFlag(object: THREE.Object3D, key: string) {
+  let o: THREE.Object3D | null = object;
+  while (o) {
+    if (o.userData?.[key]) return true;
+    o = o.parent;
+  }
+  return false;
+}
+
+/** Prefer furniture inside the room over cutaway wall pick proxies that sit in front of the camera. */
+function preferInteriorPicks(hits: THREE.Intersection[]) {
+  if (!hits.length) return hits;
+  if (!hasUserDataFlag(hits[0].object, 'wallCutawayPick')) return hits;
+  const furniture = hits.filter((h) => hasUserDataFlag(h.object, 'furniturePick'));
+  return furniture.length ? furniture : hits;
+}
+
+function wallDragPlane(wall: Wall, item: FurnitureItem) {
+  const mid = pointOnWall(wall, item.wallOffset ?? 0.5, 0);
+  let nx = item.x - mid.x;
+  let nz = item.z - mid.z;
+  const len = Math.hypot(nx, nz);
+  if (len < 0.01) {
+    const frame = wallFrame(wall);
+    nx = frame.normalX;
+    nz = frame.normalZ;
+  } else {
+    nx /= len;
+    nz /= len;
+  }
+  return new THREE.Plane().setFromNormalAndCoplanarPoint(
+    new THREE.Vector3(nx, 0, nz),
+    new THREE.Vector3(item.x, (item.y ?? 0) + item.height / 2, item.z),
+  );
+}
 
 function CameraRig() {
   const mode = usePlannerStore((s) => s.cameraMode);
@@ -178,7 +214,8 @@ function CameraRig() {
         target={[targetTuple[0], mode === 'walk' ? 1.1 : targetTuple[1], targetTuple[2]]}
         // Near-vertical top view (~3–5°) — head-on plan without lookAt singularity at polar 0.
         minPolarAngle={mode === 'top' ? 0.04 : mode === 'walk' ? 0.7 : 0}
-        maxPolarAngle={mode === 'top' ? 0.09 : mode === 'walk' ? Math.PI / 2.05 : Math.PI / 2 + 0.52}
+        // Orbit may go under the plate so you can inspect underside / open dollhouse from below.
+        maxPolarAngle={mode === 'top' ? 0.09 : mode === 'walk' ? Math.PI / 2.05 : Math.PI - 0.06}
         minAzimuthAngle={mode === 'top' ? 0 : -Infinity}
         maxAzimuthAngle={mode === 'top' ? 0 : Infinity}
         minDistance={minDistance}
@@ -259,21 +296,27 @@ function useDollhouseCutaway(walls: ReturnType<typeof usePlannerStore.getState>[
   const smoothed = useRef<Record<string, number>>({});
   const lastKey = useRef('');
   const enabled = cameraMode === 'orbit';
+  const wasEnabled = useRef(enabled);
 
   useEffect(() => {
+    // Demand frameloop: kick a redraw whenever cutaway mode or walls change.
     invalidate();
   }, [walls, enabled, center, invalidate]);
 
   useFrame((_, delta) => {
     const next: Record<string, number> = {};
-    // Gentle temporal fade so orbiting opens/closes walls smoothly.
-    const rate = 1 - Math.exp(-Math.min(delta, 0.05) * 6.5);
+    const justEnabled = enabled && !wasEnabled.current;
+    wasEnabled.current = enabled;
+    // Faster settle when entering 3D so facing walls open promptly.
+    const rate = justEnabled ? 1 : 1 - Math.exp(-Math.min(delta, 0.05) * (enabled ? 9 : 14));
+    let settling = false;
     for (const wall of walls) {
       const target = wallCutawayOpacity(wall, camera.position.x, camera.position.z, center, enabled);
       const prev = smoothed.current[wall.id] ?? (enabled ? 1 : target);
-      const value = prev + (target - prev) * rate;
+      const value = justEnabled ? target : prev + (target - prev) * rate;
       smoothed.current[wall.id] = value;
       next[wall.id] = value;
+      if (Math.abs(value - target) > 0.004) settling = true;
     }
     for (const id of Object.keys(smoothed.current)) {
       if (!(id in next)) delete smoothed.current[id];
@@ -282,8 +325,9 @@ function useDollhouseCutaway(walls: ReturnType<typeof usePlannerStore.getState>[
     if (key !== lastKey.current) {
       lastKey.current = key;
       setOpacityByWall(next);
-      invalidate();
     }
+    // Keep the demand loop alive while orbiting / settling so fades stay smooth.
+    if (enabled || settling) invalidate();
   });
 
   return opacityByWall;
@@ -317,9 +361,8 @@ function WallMeshes() {
       {walls.flatMap((w) => {
         const opacity = opacityByWall[w.id] ?? 1;
         const selected = selectedId === w.id;
-        // Keep selected walls more solid so the highlight halo stays stable while orbiting.
-        const drawOpacity = selected ? Math.max(opacity, 0.72) : opacity;
-        const cutaway = drawOpacity < 0.995;
+        const drawOpacity = opacity;
+        const hidden = drawOpacity < 0.08;
         const [sx0, sz0] = world(w.start.x, w.start.y);
         const [ex0, ez0] = world(w.end.x, w.end.y);
         const origLen = Math.hypot(ex0 - sx0, ez0 - sz0) || 0.01;
@@ -333,6 +376,48 @@ function WallMeshes() {
         const ez = ez0 + uz * extend;
         const length = origLen + extend * 2;
         const angle = -Math.atan2(ez - sz, ex - sx);
+        const midX = (sx0 + ex0) / 2;
+        const midZ = (sz0 + ez0) / 2;
+
+        // Invisible pick target so cut-away walls remain selectable in 3D (clicks won't fall through to the floor).
+        const pickProxy = (
+          <mesh
+            key={w.id + 'pick'}
+            userData={{ wallCutawayPick: true }}
+            position={[midX, w.height / 2, midZ]}
+            rotation={[0, angle, 0]}
+            onClick={(e) => {
+              e.stopPropagation();
+              select(w.id);
+              openSurfaceProperties();
+            }}
+          >
+            <boxGeometry args={[origLen || 0.2, w.height, Math.max(w.thickness, 0.12)]} />
+            <meshBasicMaterial transparent opacity={0} depthWrite={false} side={THREE.DoubleSide} />
+          </mesh>
+        );
+
+        if (hidden) {
+          return [
+            pickProxy,
+            ...(selected
+              ? [
+                  <mesh
+                    key={w.id + 'sel-only'}
+                    position={[midX, w.height / 2, midZ]}
+                    rotation={[0, angle, 0]}
+                    raycast={() => {}}
+                    renderOrder={3}
+                  >
+                    <boxGeometry args={[origLen + 0.02, w.height + 0.04, w.thickness + 0.05]} />
+                    <meshBasicMaterial color="#0058a3" transparent opacity={0.22} depthWrite={false} toneMapped={false} />
+                  </mesh>,
+                ]
+              : []),
+          ];
+        }
+
+        const cutaway = drawOpacity < 0.999;
         const related = visibleOpenings.filter((o) => o.wallId === w.id);
         let ranges: [number, number][] = [[0, length]];
         related.forEach((o) => {
@@ -343,8 +428,8 @@ function WallMeshes() {
             b <= r1 || a >= r2 ? [[r1, r2]] : ([[r1, Math.max(r1, a)], [Math.min(r2, b), r2]].filter((r) => r[1] - r[0] > 0.02) as [number, number][]),
           );
         });
-        // Cutaway walls must not steal pointer hits — furniture drag goes through them.
-        const skipRay = cutaway && !selected ? () => {} : undefined;
+        // Cutaway visuals must not steal picks from furniture inside the room; pickProxy handles wall clicks.
+        const skipRay = cutaway ? () => {} : undefined;
         const base = ranges.flatMap(([a, b], i) => {
           const c = (a + b) / 2;
           const t = c / length;
@@ -359,8 +444,8 @@ function WallMeshes() {
               castShadow={!cutaway}
               receiveShadow={!cutaway}
               raycast={skipRay}
+              userData={cutaway ? { wallCutawayPick: true } : undefined}
               onClick={(e) => {
-                if (cutaway && !selected) return;
                 e.stopPropagation();
                 select(w.id);
                 openSurfaceProperties();
@@ -464,7 +549,8 @@ function WallMeshes() {
             );
           return parts;
         });
-        return [...base, ...fills];
+        // Extra pick proxy only while the wall is faded — opaque walls use the solid mesh.
+        return cutaway ? [pickProxy, ...base, ...fills] : [...base, ...fills];
       })}
       {(() => {
         // Corner posts seal joints where wall boxes meet at shared plan endpoints.
@@ -484,10 +570,19 @@ function WallMeshes() {
             const h = Math.max(...touching.map((ww) => ww.height));
             const opacity = Math.min(...touching.map((ww) => opacityByWall[ww.id] ?? 1));
             const selectedTouch = touching.some((ww) => ww.id === selectedId);
-            const drawOpacity = selectedTouch ? Math.max(opacity, 0.72) : opacity;
-            const cutaway = drawOpacity < 0.995;
+            if (opacity < 0.08 && !selectedTouch) continue;
+            const drawOpacity = opacity;
+            const cutaway = drawOpacity < 0.999;
             posts.push(
-              <mesh key={`corner-${key}`} position={[x, h / 2, z]} castShadow={!cutaway} receiveShadow={!cutaway} renderOrder={selectedTouch ? 2 : 0}>
+              <mesh
+                key={`corner-${key}`}
+                position={[x, h / 2, z]}
+                castShadow={!cutaway}
+                receiveShadow={!cutaway}
+                renderOrder={selectedTouch ? 2 : 0}
+                raycast={cutaway ? () => {} : undefined}
+                userData={cutaway ? { wallCutawayPick: true } : undefined}
+              >
                 <boxGeometry args={[t * 0.98, h, t * 0.98]} />
                 <meshStandardMaterial
                   color={color}
@@ -605,7 +700,13 @@ function Furniture() {
   const catalogById = useMemo(() => new Map([...catalog, ...custom].map((c) => [c.id, c])), [custom]);
   const selected = items.find((i) => i.id === selectedId);
   const pending = useRef<Partial<FurnitureItem> | null>(null);
-  const touchDrag = useRef<{ pointerId: number; offsetX: number; offsetZ: number } | null>(null);
+  const touchDrag = useRef<{
+    pointerId: number;
+    offsetX: number;
+    offsetZ: number;
+    offsetY: number;
+    wallMount: boolean;
+  } | null>(null);
   const floorPlane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), []);
   const [collisions, setCollisions] = useState<Set<string>>(new Set());
   const [dragging, setDragging] = useState(false);
@@ -637,7 +738,7 @@ function Furniture() {
 
   useEffect(() => () => liveThrottle.current.cancel(), []);
 
-  const constrainDrag = (item: FurnitureItem, x: number, z: number, rotation?: number) => {
+  const constrainDrag = (item: FurnitureItem, x: number, z: number, rotation?: number, y?: number) => {
     const placed = constrainPlacement(x, z, walls, item.depth, {
       mountingType: item.mountingType,
       category: item.category,
@@ -646,12 +747,20 @@ function Furniture() {
       live: true,
       width: item.width,
     });
+    const host = walls.find((w) => w.id === placed.wallId) ?? walls[0];
+    const nextY =
+      item.mountingType === 'wall'
+        ? clampWallMountY(y ?? item.y ?? 1.4, item.height, host?.height ?? 2.7)
+        : item.mountingType === 'ceiling'
+          ? Math.max(0.1, (host?.height ?? 2.7) - item.height)
+          : 0;
     return {
       x: placed.x,
       z: placed.z,
       rotation: placed.rotation ?? rotation ?? item.rotation,
       wallId: placed.wallId,
       wallOffset: placed.wallOffset,
+      ...(item.mountingType === 'wall' || item.mountingType === 'ceiling' ? { y: nextY } : {}),
     };
   };
 
@@ -659,9 +768,18 @@ function Furniture() {
     if (!selected || e.nativeEvent?.pointerType !== 'touch') return;
     e.stopPropagation();
     const hit = new THREE.Vector3();
-    if (!e.ray.intersectPlane(floorPlane, hit)) return;
-    touchDrag.current = { pointerId: e.pointerId, offsetX: selected.x - hit.x, offsetZ: selected.z - hit.z };
-    pending.current = { x: selected.x, z: selected.z };
+    const wall = selected.wallId ? walls.find((w) => w.id === selected.wallId) : null;
+    const plane =
+      selected.mountingType === 'wall' && wall ? wallDragPlane(wall, selected) : floorPlane;
+    if (!e.ray.intersectPlane(plane, hit)) return;
+    touchDrag.current = {
+      pointerId: e.pointerId,
+      offsetX: selected.x - hit.x,
+      offsetZ: selected.z - hit.z,
+      offsetY: (selected.y ?? 0) - hit.y,
+      wallMount: selected.mountingType === 'wall',
+    };
+    pending.current = { x: selected.x, z: selected.z, y: selected.y };
     e.target.setPointerCapture?.(e.pointerId);
     document.body.dataset.movingFurniture = 'true';
     setDragging(true);
@@ -672,8 +790,17 @@ function Furniture() {
     if (!selected || !touchDrag.current || touchDrag.current.pointerId !== e.pointerId) return;
     e.stopPropagation();
     const hit = new THREE.Vector3();
-    if (!e.ray.intersectPlane(floorPlane, hit)) return;
-    const patch = constrainDrag(selected, hit.x + touchDrag.current.offsetX, hit.z + touchDrag.current.offsetZ);
+    const wall = selected.wallId ? walls.find((w) => w.id === selected.wallId) : null;
+    const plane =
+      touchDrag.current.wallMount && wall ? wallDragPlane(wall, selected) : floorPlane;
+    if (!e.ray.intersectPlane(plane, hit)) return;
+    const patch = constrainDrag(
+      selected,
+      hit.x + touchDrag.current.offsetX,
+      hit.z + touchDrag.current.offsetZ,
+      undefined,
+      touchDrag.current.wallMount ? hit.y + touchDrag.current.offsetY : undefined,
+    );
     pending.current = patch;
     liveThrottle.current(selected.id, patch);
   };
@@ -710,7 +837,7 @@ function Furniture() {
         .map((i) => {
           const urls = urlsFor(i);
           return (
-            <group key={i.id} position={[i.x, itemY(i), i.z]} rotation={[0, i.rotation, 0]}>
+            <group key={i.id} position={[i.x, itemY(i), i.z]} rotation={[0, i.rotation, 0]} userData={{ furniturePick: true }}>
               <FurnitureVisual
                 item={i}
                 lowUrl={urls.lowUrl}
@@ -753,7 +880,7 @@ function Furniture() {
               const s = new THREE.Vector3();
               m.decompose(p, q, s);
               const rotation = new THREE.Euler().setFromQuaternion(q).y;
-              const patch = constrainDrag(selected, p.x, p.z, rotation);
+              const patch = constrainDrag(selected, p.x, p.z, rotation, p.y);
               pending.current = patch;
               liveThrottle.current(selected.id, patch);
             }}
@@ -773,17 +900,19 @@ function Furniture() {
               new THREE.Vector3(1, 1, 1),
             )}
           >
-            <FurnitureVisual
-              item={selected}
-              {...urlsFor(selected)}
-              selected
-              colliding={collisions.has(selected.id)}
-              onPointerDown={beginTouchDrag}
-              onPointerMove={moveTouchDrag}
-              onPointerUp={endTouchDrag}
-              onPointerCancel={endTouchDrag}
-            />
-            {selected.showClearance && <ClearanceVolume item={selected} />}
+            <group userData={{ furniturePick: true }}>
+              <FurnitureVisual
+                item={selected}
+                {...urlsFor(selected)}
+                selected
+                colliding={collisions.has(selected.id)}
+                onPointerDown={beginTouchDrag}
+                onPointerMove={moveTouchDrag}
+                onPointerUp={endTouchDrag}
+                onPointerCancel={endTouchDrag}
+              />
+              {selected.showClearance && <ClearanceVolume item={selected} />}
+            </group>
           </PivotControls>
         </>
       )}
@@ -807,22 +936,28 @@ function Room() {
   const ceilingHeight = walls[0]?.height ?? 2.7;
   const { camera, invalidate } = useThree();
   const [lookUpCeiling, setLookUpCeiling] = useState(false);
+  const [underFloor, setUnderFloor] = useState(false);
   // Top / bird’s-eye must see the floor — a solid ceiling makes the room unusable to edit.
   const showCeiling = cameraMode !== 'top' || selectedSurface === 'ceiling';
   const ceilingOpacity =
     cameraMode === 'walk'
       ? 0.95
-      : lookUpCeiling
-        ? 0.92
-        : selectedSurface === 'ceiling'
-          ? 0.55
-          : 0.22;
+      : underFloor
+        ? 0.15
+        : lookUpCeiling
+          ? 0.92
+          : selectedSurface === 'ceiling'
+            ? 0.55
+            : 0.22;
+  const floorOpacity = underFloor ? 0.28 : 1;
 
   useFrame(() => {
     // Tip the camera below the room and the ceiling should read solid (first reference image).
     const below = camera.position.y < ceilingHeight * 0.55;
-    if (below !== lookUpCeiling) {
+    const under = camera.position.y < -0.05;
+    if (below !== lookUpCeiling || under !== underFloor) {
       setLookUpCeiling(below);
+      setUnderFloor(under);
       invalidate();
     }
   });
@@ -830,6 +965,12 @@ function Room() {
   const chooseFloor = (e: any, roomId?: string) => {
     e.stopPropagation();
     if (roomId) {
+      // Already editing this room in 3D — selecting the floor must NOT reset camera to top.
+      if (workflowStage === 'room' && selectedRoomId === roomId) {
+        selectSurface('floor');
+        openSurfaceProperties();
+        return;
+      }
       // Enter room top-view only — do not open the inspector/settings sheet.
       enterRoom(roomId);
       const room = planRooms.find((r) => r.id === roomId);
@@ -890,6 +1031,9 @@ function Room() {
                   color={floorColor}
                   roughness={0.95}
                   side={THREE.DoubleSide}
+                  transparent={floorOpacity < 0.999}
+                  opacity={floorOpacity}
+                  depthWrite={floorOpacity > 0.85}
                   polygonOffset
                   polygonOffsetFactor={4}
                   polygonOffsetUnits={4}
@@ -981,13 +1125,14 @@ function Room() {
 
 function GhostPlacement() {
   const pending = usePlannerStore((s) => s.pendingPlacement);
+  const walls = usePlannerStore((s) => s.walls);
   const movePending = usePlannerStore((s) => s.movePendingPlacement);
   const commit = usePlannerStore((s) => s.commitPendingPlacement);
   const { invalidate } = useThree();
   const floorPlane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), []);
   const moveThrottle = useRef(
-    rafThrottle((x: number, z: number) => {
-      movePending(x, z);
+    rafThrottle((x: number, z: number, y?: number) => {
+      movePending(x, z, undefined, y);
       invalidate();
     }),
   );
@@ -1000,16 +1145,35 @@ function GhostPlacement() {
 
   if (!pending) return null;
 
-  const onMove = (e: any) => {
+  const resolveHit = (e: any) => {
     const hit = new THREE.Vector3();
-    if (!e.ray.intersectPlane(floorPlane, hit)) return;
-    moveThrottle.current(hit.x, hit.z);
+    const wall = pending.wallId ? walls.find((w) => w.id === pending.wallId) : null;
+    if (pending.mountingType === 'wall' && wall) {
+      const ghostItem = {
+        ...pending,
+        id: 'pending',
+        catalogId: pending.catalogId,
+        color: pending.color,
+      } as FurnitureItem;
+      const plane = wallDragPlane(wall, ghostItem);
+      if (e.ray.intersectPlane(plane, hit)) {
+        return { x: hit.x, z: hit.z, y: hit.y - pending.height / 2 };
+      }
+    }
+    if (!e.ray.intersectPlane(floorPlane, hit)) return null;
+    return { x: hit.x, z: hit.z, y: undefined as number | undefined };
+  };
+
+  const onMove = (e: any) => {
+    const at = resolveHit(e);
+    if (!at) return;
+    moveThrottle.current(at.x, at.z, at.y);
   };
   const onPlace = (e: any) => {
     e.stopPropagation();
     moveThrottle.current.cancel();
-    const hit = new THREE.Vector3();
-    if (e.ray.intersectPlane(floorPlane, hit)) movePending(hit.x, hit.z);
+    const at = resolveHit(e);
+    if (at) movePending(at.x, at.z, undefined, at.y);
     commit();
     invalidate();
   };
@@ -1020,6 +1184,17 @@ function GhostPlacement() {
         <planeGeometry args={[40, 40]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
+      {pending.mountingType === 'wall' && pending.wallId && (
+        <mesh
+          position={[pending.x, (walls.find((w) => w.id === pending.wallId)?.height ?? 2.7) / 2, pending.z]}
+          rotation={[0, pending.rotation, 0]}
+          onPointerMove={onMove}
+          onClick={onPlace}
+        >
+          <planeGeometry args={[12, 4]} />
+          <meshBasicMaterial transparent opacity={0} depthWrite={false} side={THREE.DoubleSide} />
+        </mesh>
+      )}
       <group position={[pending.x, pending.y, pending.z]} rotation={[0, pending.rotation, 0]}>
         <mesh position={[0, pending.height / 2, 0]}>
           <boxGeometry args={[pending.width, pending.height, pending.depth]} />
@@ -1092,6 +1267,9 @@ export function Scene3D() {
           stencil: false,
           depth: true,
         }}
+        onCreated={(state) => {
+          state.events.filter = preferInteriorPicks;
+        }}
         onPointerMissed={() => {
           if (pending) return;
           select(null);
@@ -1116,7 +1294,7 @@ export function Scene3D() {
         <CameraRig />
       </Canvas>
       {!pending && (
-        <div className="scene-help">Drag to move · Near walls fade for a clear view · Mirrors &amp; pictures stay on walls</div>
+        <div className="scene-help">Drag to move · Slide wall art up/down · Near walls fade for a clear view</div>
       )}
     </div>
   );

@@ -1,11 +1,8 @@
 import type { Wall } from '../../types';
 import { roomFloorCenter, wallFrame } from './placement';
 
-/**
- * Near-zero floor so camera-facing walls become see-through.
- * Kept tiny (not hard 0) so materials stay stable while lerping.
- */
-export const CUTAWAY_MIN_OPACITY = 0.02;
+/** Fully open cutaway — facing walls disappear so the interior is visible. */
+export const CUTAWAY_MIN_OPACITY = 0;
 
 /** Room floor centroid in world XZ — used to decide which wall face is outward. */
 export function roomCenterWorld(walls: Wall[]) {
@@ -14,8 +11,10 @@ export function roomCenterWorld(walls: Wall[]) {
 
 /**
  * IKEA-style dollhouse cutaway: walls whose outward face points toward the camera
- * fade to nearly transparent so the interior stays visible.
- * Returns CUTAWAY_MIN_OPACITY–1; pair with temporal lerp while orbiting.
+ * fade away so the interior stays visible.
+ *
+ * Uses the vector from the wall midpoint to the camera (not only room-center azimuth),
+ * so close orbit angles still open the correct faces.
  */
 export function wallCutawayOpacity(
   wall: Wall,
@@ -25,17 +24,19 @@ export function wallCutawayOpacity(
   enabled: boolean,
 ) {
   if (!enabled) return 1;
-  const dx = cameraX - center.x;
-  const dz = cameraZ - center.z;
-  const len = Math.hypot(dx, dz);
-  // Nearly overhead — keep every wall (Top / bird’s-eye).
-  if (len < 0.4) return 1;
-
-  const camX = dx / len;
-  const camZ = dz / len;
   const frame = wallFrame(wall);
   const midX = (frame.start.x + frame.end.x) / 2;
   const midZ = (frame.start.z + frame.end.z) / 2;
+
+  // Direction from wall toward camera on the ground plane.
+  let toCamX = cameraX - midX;
+  let toCamZ = cameraZ - midZ;
+  let len = Math.hypot(toCamX, toCamZ);
+  // Nearly overhead relative to this wall — keep it solid.
+  if (len < 0.35) return 1;
+  toCamX /= len;
+  toCamZ /= len;
+
   let nx = frame.normalX;
   let nz = frame.normalZ;
   // Flip so the normal points out of the room.
@@ -43,11 +44,12 @@ export function wallCutawayOpacity(
     nx = -nx;
     nz = -nz;
   }
-  const facing = nx * camX + nz * camZ;
-  // Wide smoothstep across most of the hemisphere so orbit fades feel continuous.
-  if (facing <= 0.02) return 1;
-  if (facing >= 0.72) return CUTAWAY_MIN_OPACITY;
-  const t = (facing - 0.02) / 0.7;
+
+  const facing = nx * toCamX + nz * toCamZ;
+  // Open early so the two walls facing the lens clear the view.
+  if (facing <= 0.05) return 1;
+  if (facing >= 0.32) return CUTAWAY_MIN_OPACITY;
+  const t = (facing - 0.05) / 0.27;
   const ease = t * t * (3 - 2 * t);
-  return 1 - ease * (1 - CUTAWAY_MIN_OPACITY);
+  return 1 - ease;
 }

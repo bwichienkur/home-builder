@@ -19,10 +19,8 @@ describe('wall cutaway', () => {
     const south = wallCutawayOpacity(rect[2], cam.x, cam.z, center, true);
     const north = wallCutawayOpacity(rect[0], cam.x, cam.z, center, true);
     const west = wallCutawayOpacity(rect[3], cam.x, cam.z, center, true);
-    expect(east).toBeLessThan(0.08);
-    expect(south).toBeLessThan(0.08);
-    expect(east).toBeGreaterThanOrEqual(CUTAWAY_MIN_OPACITY - 0.001);
-    expect(south).toBeGreaterThanOrEqual(CUTAWAY_MIN_OPACITY - 0.001);
+    expect(east).toBe(CUTAWAY_MIN_OPACITY);
+    expect(south).toBe(CUTAWAY_MIN_OPACITY);
     expect(north).toBeGreaterThan(0.85);
     expect(west).toBeGreaterThan(0.85);
   });
@@ -37,8 +35,8 @@ describe('wall cutaway', () => {
     });
     expect(samples[0]).toBeGreaterThan(0.9);
     expect(samples[1]).toBeGreaterThan(samples[2]);
-    expect(samples[2]).toBeGreaterThan(samples[3]);
-    expect(samples[4]).toBeLessThan(0.08);
+    expect(samples[2]).toBeGreaterThanOrEqual(samples[3]);
+    expect(samples[4]).toBe(CUTAWAY_MIN_OPACITY);
   });
 
   it('keeps all walls when cutaway is disabled or camera is overhead', () => {

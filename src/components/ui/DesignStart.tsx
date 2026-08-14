@@ -80,7 +80,7 @@ export function DesignStart({ onBegan }: { onBegan?: () => void }) {
   return (
     <section className="design-start" aria-label="Start your design">
       <div className="design-start-panel">
-        <p className="design-start-eyebrow">Roomcraft</p>
+        <p className="design-start-eyebrow">Mahnikka</p>
         <h1>How do you want to begin?</h1>
         <p className="design-start-lede">Choose a path. You can always return here from the project menu.</p>
         <div className="design-start-choices">
