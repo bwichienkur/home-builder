@@ -26,13 +26,15 @@ describe('plan framing', () => {
     expect(large).toBeGreaterThan(70); // beyond the old fog far-plane that blanked plans
   });
 
-  it('orbits from the south so the full plate stays centered', () => {
+  it('orbits from the south so the full plate fills the frame', () => {
     const framing = framingFromWalls(rect);
     const [ox, oy, oz] = framing.orbitPose;
     expect(ox).toBeCloseTo(framing.center[0], 3);
-    expect(oy).toBeGreaterThan(framing.span * 0.4);
+    expect(oy).toBeGreaterThan(framing.span * 0.35);
+    // Not so far that the plate becomes a speck in empty void.
+    expect(oy).toBeLessThan(framing.span * 2.4);
     expect(oz).toBeGreaterThan(framing.center[2]);
-    const cornerish = orbitViewPose(framing.center, framing.span);
-    expect(cornerish[0]).toBeCloseTo(framing.center[0], 3);
+    const centered = orbitViewPose(framing.center, framing.span);
+    expect(centered[0]).toBeCloseTo(framing.center[0], 3);
   });
 });

@@ -26,18 +26,18 @@ export function topViewHeight(span: number, opts?: { fovDeg?: number; pad?: numb
   return Math.max(min, half / Math.tan(fov / 2));
 }
 
-/** Orbit distance so the full AABB fits; camera sits on the +Z side looking at center. */
+/** Orbit distance so the full AABB fills the frame; camera sits on the +Z side looking at center. */
 export function orbitViewPose(
   center: [number, number, number],
   span: number,
   opts?: { fovDeg?: number; pad?: number; elevDeg?: number },
 ): [number, number, number] {
   const fov = ((opts?.fovDeg ?? 48) * Math.PI) / 180;
-  const elev = ((opts?.elevDeg ?? 32) * Math.PI) / 180;
-  // Extra pad so 3D never feels corner-zoomed once chrome eats the edges.
-  const pad = opts?.pad ?? 3.35;
+  const elev = ((opts?.elevDeg ?? 34) * Math.PI) / 180;
+  // Tight pad so the plate fills the viewport without corner-zoom or empty void.
+  const pad = opts?.pad ?? 1.55;
   const half = (Math.max(span, 2) * 0.5) * pad;
-  const dist = Math.max(10, half / Math.tan(fov / 2) / Math.max(0.35, Math.sin(elev)));
+  const dist = Math.max(6, half / Math.tan(fov / 2) / Math.max(0.42, Math.sin(elev)));
   return [center[0], dist * Math.sin(elev), center[2] + dist * Math.cos(elev)];
 }
 
