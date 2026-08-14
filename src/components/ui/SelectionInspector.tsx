@@ -103,9 +103,9 @@ function RoomPanel({ surface }: { surface: 'floor' | 'wall' | 'ceiling' | null }
         <h3>{surface === 'ceiling' ? 'Ceiling finish' : surface === 'floor' ? 'Floor finish' : 'Room'}</h3>
         <p>
           {surface === 'ceiling'
-            ? 'Ceiling color is below. Floor and wall finishes stay in the top bar.'
-            : surface
-              ? 'Floor and wall finishes are in the top bar — tap a swatch anytime.'
+            ? 'Ceiling color is below. Floor finishes are in the bottom bar.'
+            : surface === 'floor'
+              ? 'Pick a floor finish from the bottom bar anytime.'
               : 'Tap a room to edit it. Use Walls in the left tools to select and resize walls.'}
         </p>
       </div>
@@ -214,24 +214,22 @@ function FinishSwatches({
   compact?: boolean;
 }) {
   const set = usePlannerStore((s) => s.setFinish);
+  const floorColor = usePlannerStore((s) => s.floorColor);
   if (compact) {
     return (
-      <div className="finishes-bar" role="group" aria-label="Floor and wall finishes">
-        <div className={`finishes-bar-group${highlight === 'floor' ? ' is-active' : ''}`}>
-          <span>Floor</span>
-          <div className="swatches">
-            {finishes.slice(0, 6).map(([n, c]) => (
-              <button type="button" title={n} key={c} style={{ background: c }} onClick={() => set('floor', c)} />
-            ))}
-          </div>
-        </div>
-        <div className={`finishes-bar-group${highlight === 'wall' ? ' is-active' : ''}`}>
-          <span>Wall</span>
-          <div className="swatches">
-            {finishes.slice(3, 6).map(([n, c]) => (
-              <button type="button" title={n} key={`wall-${c}`} style={{ background: c }} onClick={() => set('wall', c)} />
-            ))}
-          </div>
+      <div className={`finishes-bar finishes-bar--dock${highlight === 'floor' ? ' is-active' : ''}`} role="group" aria-label="Floor finish">
+        <span>Floor</span>
+        <div className="swatches">
+          {finishes.slice(0, 6).map(([n, c]) => (
+            <button
+              type="button"
+              title={n}
+              key={c}
+              aria-pressed={floorColor === c}
+              style={{ background: c, outline: floorColor === c ? '2px solid #0058a3' : undefined }}
+              onClick={() => set('floor', c)}
+            />
+          ))}
         </div>
       </div>
     );
@@ -243,14 +241,6 @@ function FinishSwatches({
         <div className="swatches">
           {finishes.slice(0, 6).map(([n, c]) => (
             <button title={n} key={c} style={{ background: c }} onClick={() => set('floor', c)} />
-          ))}
-        </div>
-      </label>
-      <label className={highlight === 'wall' ? 'finish-highlight' : ''}>
-        Wall color
-        <div className="swatches">
-          {finishes.slice(3, 6).map(([n, c]) => (
-            <button title={n} key={`wall-${c}`} style={{ background: c }} onClick={() => set('wall', c)} />
           ))}
         </div>
       </label>
@@ -266,10 +256,10 @@ function FinishSwatches({
   );
 }
 
-/** Always-visible floor/wall finishes under the top chrome. */
+/** Floor finish swatches for the bottom dock (wall color is not editable). */
 export function FinishesBar() {
   const selectedSurface = usePlannerStore((s) => s.selectedSurface);
-  const highlight = selectedSurface === 'floor' || selectedSurface === 'wall' ? selectedSurface : null;
+  const highlight = selectedSurface === 'floor' ? 'floor' : null;
   return <FinishSwatches compact highlight={highlight} />;
 }
 

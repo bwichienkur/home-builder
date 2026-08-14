@@ -344,8 +344,6 @@ export function StudioChrome({
             <ArrowRight />
           </button>
         </div>
-
-        <FinishesBar />
       </div>
 
       {showSideRail && (
@@ -580,6 +578,8 @@ export function StudioChrome({
             <Redo2 size={15} />
             <span>Redo</span>
           </button>
+          <div className="studio-dock-divider" aria-hidden="true" />
+          <FinishesBar />
         </div>
       </div>
 

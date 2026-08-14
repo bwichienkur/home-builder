@@ -1007,21 +1007,16 @@
 .finishes-bar {
   display: flex;
   align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  padding: 8px 10px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.94);
-  box-shadow: var(--shadow);
-  max-width: min(520px, calc(100vw - 24px));
-}
-.finishes-bar-group {
-  display: flex;
-  align-items: center;
   gap: 8px;
-  min-width: 0;
+  flex-wrap: nowrap;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  max-width: none;
+  flex-shrink: 0;
 }
-.finishes-bar-group > span {
+.finishes-bar > span {
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.02em;
@@ -1029,11 +1024,18 @@
   color: #6b7280;
   flex-shrink: 0;
 }
-.finishes-bar-group.is-active > span { color: #0058a3; }
+.finishes-bar.is-active > span { color: #0058a3; }
 .finishes-bar .swatches { margin-top: 0; gap: 6px; flex-wrap: nowrap; }
 .finishes-bar .swatches button {
   width: 22px;
   height: 22px;
+}
+.studio-dock-divider {
+  width: 1px;
+  align-self: stretch;
+  margin: 4px 2px;
+  background: rgba(17, 24, 32, 0.12);
+  flex-shrink: 0;
 }
 
 .wall-delete-btn {
@@ -1406,7 +1408,7 @@
   position: absolute;
   z-index: 6;
   left: max(12px, env(safe-area-inset-left));
-  top: max(118px, calc(env(safe-area-inset-top) + 104px));
+  top: max(72px, calc(env(safe-area-inset-top) + 58px));
   bottom: max(96px, calc(env(safe-area-inset-bottom) + 88px));
   width: 118px;
   pointer-events: none;
