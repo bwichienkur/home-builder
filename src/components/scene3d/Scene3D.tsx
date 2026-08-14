@@ -996,10 +996,17 @@ export function Scene3D() {
       <Canvas
         fallback={<SceneFallback />}
         shadows={!coarse}
-        dpr={coarse ? [1, 1.1] : [1, 1.35]}
+        // Higher DPR + MSAA on phones — low caps were causing jagged wall/floor edges.
+        dpr={coarse ? [1, 1.75] : [1, 2]}
         frameloop="demand"
-        performance={{ min: coarse ? 0.5 : 0.65, debounce: 200 }}
-        gl={{ antialias: !coarse, powerPreference: 'high-performance' }}
+        performance={{ min: coarse ? 0.55 : 0.65, debounce: 200 }}
+        gl={{
+          antialias: true,
+          powerPreference: 'high-performance',
+          alpha: false,
+          stencil: false,
+          depth: true,
+        }}
         onPointerMissed={() => {
           if (pending) return;
           select(null);
