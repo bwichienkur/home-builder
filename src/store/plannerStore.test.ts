@@ -15,6 +15,7 @@ describe('mobile planner defaults',()=>{
  });
 
  it('ghost-places a product before committing it to the room',()=>{
+  usePlannerStore.setState({ workflowStage: 'room' });
   usePlannerStore.getState().cancelPendingPlacement();
   const before=usePlannerStore.getState().furniture.length;
   usePlannerStore.getState().beginPlacement('ghost-bed','Cloud Bed','Bedroom',[1.7,2.1,.55],'#ddd',undefined,undefined,{mountingType:'floor'});
@@ -32,6 +33,7 @@ describe('mobile planner defaults',()=>{
  });
 
  it('cancels a ghost placement without adding furniture',()=>{
+  usePlannerStore.setState({ workflowStage: 'room' });
   const before=usePlannerStore.getState().furniture.length;
   usePlannerStore.getState().beginPlacement('ghost-cancel','Temp','Decor',[.4,.1,.4],'#ccc');
   usePlannerStore.getState().cancelPendingPlacement();
