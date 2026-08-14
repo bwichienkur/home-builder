@@ -29,7 +29,7 @@ export function StoryOverview({ open, onClose }: { open: boolean; onClose: () =>
   const openStory = (id: string) => {
     switchFloor(id);
     onClose();
-    window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 40);
+    window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 120);
   };
 
   return (
@@ -54,7 +54,7 @@ export function StoryOverview({ open, onClose }: { open: boolean; onClose: () =>
           onClick={() => {
             addFloor();
             onClose();
-            window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 40);
+            window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 120);
           }}
         >
           <Plus size={16} /> Blank story
@@ -64,7 +64,7 @@ export function StoryOverview({ open, onClose }: { open: boolean; onClose: () =>
           onClick={() => {
             addFloor({ copyActive: true });
             onClose();
-            window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 40);
+            window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 120);
           }}
         >
           <Plus size={16} /> Copy footprint up
