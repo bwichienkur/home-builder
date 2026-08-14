@@ -125,8 +125,9 @@ type PlannerState = SceneSnapshot & {
   duplicateSelected: () => void;
   deleteSelected: () => void;
   setFinish: (target: SurfaceTarget, color: string) => void;
-  addFloor: () => void;
+  addFloor: (opts?: { copyActive?: boolean }) => void;
   switchFloor: (id: string) => void;
+  renameFloor: (id: string, name: string) => void;
   undo: () => void;
   redo: () => void;
   clear: () => void;
@@ -809,29 +810,80 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     },
     setFinish: (target, color) =>
       mutate(target === 'floor' ? { floorColor: color } : target === 'wall' ? { wallColor: color } : { ceilingColor: color }),
-    addFloor: () => {
+    addFloor: (opts) => {
       const id = crypto.randomUUID();
-      const scene: SceneSnapshot = {
-        walls: [],
-        openings: [],
-        furniture: [],
-        floorColor: initial.floorColor,
-        wallColor: initial.wallColor,
-        ceilingColor: initial.ceilingColor,
-      };
-      set((s) => ({
+      const n = get().floors.length + 1;
+      const name = n === 1 ? 'First story' : n === 2 ? 'Second story' : `Story ${n}`;
+      const copy = !!opts?.copyActive;
+      const source = get();
+      // Persist current floor before switching.
+      const floors = source.floors.map((f) =>
+        f.id === source.activeFloorId ? { ...f, scene: snap(), planRooms: source.planRooms } : f,
+      );
+      let scene: SceneSnapshot;
+      let planRooms: PlanRoomLabel[];
+      if (copy && source.planRooms.length) {
+        const height = source.walls[0]?.height ?? 2.74;
+        const nextLabels = source.planRooms.map((r) => ({
+          ...r,
+          id: crypto.randomUUID(),
+          points: r.points.map((p) => ({ ...p })),
+        }));
+        const rebuilt = rebuildFromPlanRooms(nextLabels, id, height);
+        planRooms = rebuilt.roomPolygons.map((p) => ({
+          ...p,
+          floorColor: nextLabels.find((l) => l.id === p.id)?.floorColor,
+        }));
+        scene = {
+          ...rebuilt.scene,
+          floorColor: source.floorColor,
+          wallColor: source.wallColor,
+          ceilingColor: source.ceilingColor,
+        };
+      } else if (copy) {
+        scene = {
+          walls: source.walls.map((w) => ({ ...w, id: crypto.randomUUID() })),
+          openings: [],
+          furniture: [],
+          floorColor: source.floorColor,
+          wallColor: source.wallColor,
+          ceilingColor: source.ceilingColor,
+        };
+        planRooms = [];
+      } else {
+        scene = {
+          walls: [],
+          openings: [],
+          furniture: [],
+          floorColor: initial.floorColor,
+          wallColor: initial.wallColor,
+          ceilingColor: initial.ceilingColor,
+        };
+        planRooms = [];
+      }
+      set({
         ...scene,
-        floors: [...s.floors, { id, name: `Floor ${s.floors.length + 1}`, scene }],
+        floors: [...floors, { id, name, scene, planRooms }],
         activeFloorId: id,
+        planRooms,
         history: [scene],
         historyIndex: 0,
         selectedWallId: null,
         selectedOpeningId: null,
         selectedFurnitureId: null,
-      }));
+        selectedRoomId: null,
+        selectedSurface: null,
+        pendingPlacement: null,
+        workflowStage: 'house',
+        cameraMode: 'top',
+        view: '3d',
+        tool: 'select',
+        draftStart: null,
+      });
     },
     switchFloor: (id) =>
       set((s) => {
+        if (id === s.activeFloorId) return s;
         const current = s.floors.map((f) =>
           f.id === s.activeFloorId ? { ...f, scene: snap(), planRooms: s.planRooms } : f,
         );
@@ -844,11 +896,24 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
               history: [target.scene],
               historyIndex: 0,
               selectedWallId: null,
+              selectedOpeningId: null,
               selectedFurnitureId: null,
+              selectedSurface: null,
+              selectedRoomId: null,
+              pendingPlacement: null,
               planRooms: target.planRooms ?? [],
+              workflowStage: 'house',
+              cameraMode: 'top',
+              view: '3d',
+              tool: 'select',
+              draftStart: null,
             }
           : s;
       }),
+    renameFloor: (id, name) =>
+      set((s) => ({
+        floors: s.floors.map((f) => (f.id === id ? { ...f, name: name.trim() || f.name } : f)),
+      })),
     undo: () =>
       set((s) => {
         const i = Math.max(0, s.historyIndex - 1);

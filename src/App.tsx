@@ -358,14 +358,27 @@ function StudioApp() {
           </header>
           <RoomDesigner compact />
           <div className="floor-row">
-            <select aria-label="Active floor" value={activeFloorId} onChange={(e) => store.switchFloor(e.target.value)}>
+            <select
+              aria-label="Active floor"
+              value={activeFloorId}
+              onChange={(e) => {
+                store.switchFloor(e.target.value);
+                window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 40);
+              }}
+            >
               {floors.map((f) => (
                 <option key={f.id} value={f.id}>
                   {f.name}
                 </option>
               ))}
             </select>
-            <button onClick={store.addFloor} title="Add floor">
+            <button
+              onClick={() => {
+                store.addFloor();
+                window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 40);
+              }}
+              title="Add story"
+            >
               +
             </button>
           </div>
