@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Wall } from '../../types';
 import { planToWorld, roomFloorCenter } from './placement';
-import { wallCutawayOpacity } from './wallCutaway';
+import { CUTAWAY_MIN_OPACITY, wallCutawayOpacity } from './wallCutaway';
 
 const rect: Wall[] = [
   { id: 'w1', start: { x: 180, y: 150 }, end: { x: 660, y: 150 }, thickness: 0.15, height: 2.7 },
@@ -11,7 +11,7 @@ const rect: Wall[] = [
 ];
 
 describe('wall cutaway', () => {
-  it('hides the near walls when the camera sits outside a corner', () => {
+  it('soft-fades the near walls when the camera sits outside a corner', () => {
     const center = roomFloorCenter(rect);
     // Camera south-east of the room (positive X / positive Z in world).
     const cam = { x: center.x + 6, z: center.z + 7 };
@@ -19,8 +19,10 @@ describe('wall cutaway', () => {
     const south = wallCutawayOpacity(rect[2], cam.x, cam.z, center, true);
     const north = wallCutawayOpacity(rect[0], cam.x, cam.z, center, true);
     const west = wallCutawayOpacity(rect[3], cam.x, cam.z, center, true);
-    expect(east).toBeLessThan(0.35);
-    expect(south).toBeLessThan(0.35);
+    expect(east).toBeLessThan(0.45);
+    expect(south).toBeLessThan(0.45);
+    expect(east).toBeGreaterThanOrEqual(CUTAWAY_MIN_OPACITY - 0.001);
+    expect(south).toBeGreaterThanOrEqual(CUTAWAY_MIN_OPACITY - 0.001);
     expect(north).toBeGreaterThan(0.85);
     expect(west).toBeGreaterThan(0.85);
   });
