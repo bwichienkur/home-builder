@@ -116,6 +116,7 @@ function PlanRoomProperties({ room }: { room: PlanRoomLabel }) {
   const update = usePlannerStore((s) => s.updatePlanRoom);
   const resize = usePlannerStore((s) => s.resizePlanRoom);
   const remove = usePlannerStore((s) => s.deletePlanRoom);
+  const split = usePlannerStore((s) => s.splitPlanRoom);
   const exitRoom = usePlannerStore((s) => s.exitRoom);
   const unit = usePlannerStore((s) => s.unitSystem);
   const size = planRoomSizeFeet(room.points);
@@ -180,6 +181,9 @@ function PlanRoomProperties({ room }: { room: PlanRoomLabel }) {
           }}
         >
           Back to house
+        </button>
+        <button type="button" onClick={() => split(room.id)}>
+          Split room
         </button>
         <button
           type="button"

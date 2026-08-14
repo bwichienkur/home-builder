@@ -339,6 +339,49 @@ export function resizePlanRoomPoints(points: Point[], widthFt: number, depthFt: 
   ];
 }
 
+/** Axis-aligned square/rect room centered on a plan-pixel point. */
+export function squareRoomPoints(center: Point, widthFt: number, depthFt: number): Point[] {
+  const w = Math.max(3, widthFt);
+  const d = Math.max(3, depthFt);
+  const cxFt = (center.x - WORLD_ORIGIN.x) / PIXELS_PER_METER / FT_TO_M;
+  const cyFt = (center.y - WORLD_ORIGIN.y) / PIXELS_PER_METER / FT_TO_M;
+  const toPoint = (xFt: number, yFt: number): Point => ({
+    x: WORLD_ORIGIN.x + ftToPx(xFt),
+    y: WORLD_ORIGIN.y + ftToPx(yFt),
+  });
+  return [
+    toPoint(cxFt - w / 2, cyFt - d / 2),
+    toPoint(cxFt + w / 2, cyFt - d / 2),
+    toPoint(cxFt + w / 2, cyFt + d / 2),
+    toPoint(cxFt - w / 2, cyFt + d / 2),
+  ];
+}
+
+/**
+ * Split an axis-aligned room into two rooms along its longer side
+ * (or forced axis). Returns [left/top, right/bottom] polygons.
+ */
+export function splitPlanRoomPoints(points: Point[], axis?: 'x' | 'y'): [Point[], Point[]] {
+  const size = planRoomSizeFeet(points);
+  const splitAxis = axis ?? (size.widthFt >= size.depthFt ? 'x' : 'y');
+  const toPoint = (xFt: number, yFt: number): Point => ({
+    x: WORLD_ORIGIN.x + ftToPx(xFt),
+    y: WORLD_ORIGIN.y + ftToPx(yFt),
+  });
+  if (splitAxis === 'x') {
+    const mid = (size.minX + size.maxX) / 2;
+    return [
+      [toPoint(size.minX, size.minY), toPoint(mid, size.minY), toPoint(mid, size.maxY), toPoint(size.minX, size.maxY)],
+      [toPoint(mid, size.minY), toPoint(size.maxX, size.minY), toPoint(size.maxX, size.maxY), toPoint(mid, size.maxY)],
+    ];
+  }
+  const mid = (size.minY + size.maxY) / 2;
+  return [
+    [toPoint(size.minX, size.minY), toPoint(size.maxX, size.minY), toPoint(size.maxX, mid), toPoint(size.minX, mid)],
+    [toPoint(size.minX, mid), toPoint(size.maxX, mid), toPoint(size.maxX, size.maxY), toPoint(size.minX, size.maxY)],
+  ];
+}
+
 /**
  * Rebuild walls/openings from edited plan-room labels (pixel polygons).
  * Preserves per-room floor colors when ids match.

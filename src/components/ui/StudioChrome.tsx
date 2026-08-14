@@ -13,18 +13,21 @@ import {
   Layers3,
   Menu,
   Move3D,
+  MousePointer2,
   PencilRuler,
   Redo2,
   RotateCw,
   Scaling,
   ShoppingBag,
+  Square,
   Trash2,
   Undo2,
+  Wallpaper,
   X,
 } from 'lucide-react';
 import { roomCategories } from '../catalog/CatalogPanel';
 import { usePlannerStore } from '../../store/plannerStore';
-import type { RoomType } from '../../types';
+import type { RoomType, Tool } from '../../types';
 
 function useCoarsePointer() {
   const [coarse, setCoarse] = useState(() => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches);
@@ -103,6 +106,10 @@ export function StudioChrome({
   const exitRoom = usePlannerStore((s) => s.exitRoom);
   const enterRoom = usePlannerStore((s) => s.enterRoom);
   const showStart = usePlannerStore((s) => s.showStart);
+  const tool = usePlannerStore((s) => s.tool);
+  const setTool = usePlannerStore((s) => s.setTool);
+  const draftStart = usePlannerStore((s) => s.draftStart);
+  const setDraftStart = usePlannerStore((s) => s.setDraftStart);
   const commitPending = usePlannerStore((s) => s.commitPendingPlacement);
   const cancelPending = usePlannerStore((s) => s.cancelPendingPlacement);
   const rotatePending = usePlannerStore((s) => s.rotatePendingPlacement);
@@ -174,6 +181,22 @@ export function StudioChrome({
   const atStart = workflowStage === 'start';
   const inRoom = workflowStage === 'room';
   const showCatalogRail = !atStart && studioMode === 'furnish' && !pending;
+  const showPlanTools = !atStart && studioMode === 'architect' && isTop && !pending;
+
+  const planTools: { id: Tool; label: string; icon: typeof MousePointer2 }[] = [
+    { id: 'select', label: 'Select', icon: MousePointer2 },
+    { id: 'wall', label: 'Wall', icon: Wallpaper },
+    { id: 'room', label: 'Square room', icon: Square },
+  ];
+
+  const choosePlanTool = (id: Tool) => {
+    setTool(id);
+    setDraftStart(null);
+    if (id !== 'select') {
+      setView('3d');
+      setCamera('top');
+    }
+  };
 
   if (atStart) {
     return (
@@ -246,9 +269,9 @@ export function StudioChrome({
         <ArrowRight />
       </button>
 
-      {inRoom && selectedRoom && !pending && (
+      {inRoom && selectedRoom && !pending && tool === 'select' && (
         <div className="studio-selection-hint">
-          Editing {selectedRoom.name}
+          Editing {selectedRoom.name} only
           <button
             type="button"
             className="studio-hint-action"
@@ -262,8 +285,58 @@ export function StudioChrome({
         </div>
       )}
 
-      {!inRoom && planRooms.length > 1 && !pending && !selectedItem && (
-        <div className="studio-selection-hint">Tap a room to edit it · Pinch to zoom the full floor</div>
+      {inRoom && selectedRoom && !pending && tool !== 'select' && (
+        <button
+          type="button"
+          className="studio-back-house"
+          onClick={() => {
+            exitRoom();
+            setTool('select');
+            window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 0);
+          }}
+        >
+          Back to house
+        </button>
+      )}
+
+      {showPlanTools && (
+        <div className="studio-plan-tools" role="toolbar" aria-label="Plan tools">
+          {planTools.map((t) => {
+            const Icon = t.icon;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                className={tool === t.id ? 'active' : ''}
+                onClick={() => choosePlanTool(t.id)}
+                aria-label={t.label}
+                title={t.label}
+              >
+                <Icon size={16} />
+                <span>{t.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {showPlanTools && tool === 'wall' && !pending && (
+        <div className="studio-selection-hint">
+          {draftStart ? 'Tap where the wall ends · snaps to corners' : 'Tap to start a wall · drag blue handles to move ends'}
+          {draftStart && (
+            <button type="button" className="studio-hint-action" onClick={() => setDraftStart(null)}>
+              Cancel
+            </button>
+          )}
+        </div>
+      )}
+
+      {showPlanTools && tool === 'room' && !pending && (
+        <div className="studio-selection-hint">Tap to place a 12×12 ft room · resize or split in Edit</div>
+      )}
+
+      {!inRoom && planRooms.length > 1 && !pending && !selectedItem && tool === 'select' && (
+        <div className="studio-selection-hint">Tap a room to zoom in and edit it alone · Pinch to zoom the full floor</div>
       )}
 
       {pending && <div className="studio-selection-hint">Placing {pending.name} · move then tap to confirm</div>}
