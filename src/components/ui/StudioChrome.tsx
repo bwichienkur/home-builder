@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import {
-  ArrowLeft,
   ArrowRight,
   Bath,
   BedDouble,
@@ -31,7 +30,6 @@ import {
 import { roomCategories } from '../catalog/CatalogPanel';
 import { usePlannerStore } from '../../store/plannerStore';
 import type { RoomType, Tool } from '../../types';
-import { FinishesBar } from './SelectionInspector';
 import { StoryOverview } from './StoryOverview';
 
 function useCoarsePointer() {
@@ -89,7 +87,6 @@ export function StudioChrome({
   onOpenInspector,
 }: Props) {
   const [storiesOpen, setStoriesOpen] = useState(false);
-  const [sideOpen, setSideOpen] = useState(true);
   const [fabsOpen, setFabsOpen] = useState(true);
   const camera = usePlannerStore((s) => s.cameraMode);
   const setView = usePlannerStore((s) => s.setView);
@@ -194,16 +191,19 @@ export function StudioChrome({
   const atStart = workflowStage === 'start';
   const inRoom = workflowStage === 'room';
   const showCatalogRail = inRoom && !pending;
-  const showPlanTools = !atStart && isTop && !pending && studioMode === 'architect';
-  const showSideRail = !atStart && !pending && (floors.length > 1 || studioMode === 'architect' || inRoom || showPlanTools);
-
-  useEffect(() => {
-    if (coarsePointer) setSideOpen(false);
-  }, [coarsePointer]);
+  /** Plan-level wall tools (house/floor plate) — not while inside a room. */
+  const atPlanLevel = !atStart && !inRoom;
+  const showPlanTools = atPlanLevel && isTop && !pending && studioMode === 'architect';
+  const showFloorChrome = atPlanLevel && !pending;
+  const showPlanToolChrome = atPlanLevel && isTop && !pending;
 
   useEffect(() => {
     if (inRoom) setStudioMode('furnish');
   }, [inRoom, setStudioMode]);
+
+  useEffect(() => {
+    if (inRoom && tool === 'room') setTool('select');
+  }, [inRoom, tool, setTool]);
 
   const goBackToHouse = () => {
     exitRoom();
@@ -271,25 +271,12 @@ export function StudioChrome({
   }
 
   return (
-    <div className={`studio-chrome${showActionFabs ? ' has-action-fabs' : ''}${inRoom ? ' is-room-focus' : ''}${sideOpen ? ' is-side-open' : ''}`}>
+    <div className={`studio-chrome${showActionFabs ? ' has-action-fabs' : ''}${inRoom ? ' is-room-focus' : ''}`}>
       <div className="studio-topbar">
         <div className="studio-topbar-row">
           <button className="studio-fab studio-menu" onClick={menuOpen ? closeMenu : openMenu} aria-label={menuOpen ? 'Close menu' : 'Open project menu'} aria-expanded={menuOpen}>
             {menuOpen ? <X /> : <Menu />}
           </button>
-
-          {showSideRail && (
-            <button
-              type="button"
-              className={`studio-side-toggle${sideOpen ? ' is-open' : ''}`}
-              aria-expanded={sideOpen}
-              aria-controls="studio-side-rail"
-              aria-label={sideOpen ? 'Hide tools' : 'Show tools'}
-              onClick={() => setSideOpen((open) => !open)}
-            >
-              {sideOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-            </button>
-          )}
 
           <nav className="studio-breadcrumb" aria-label="Design location">
             <button type="button" onClick={showStart} title="Start over">
@@ -344,110 +331,61 @@ export function StudioChrome({
             <ArrowRight />
           </button>
         </div>
-      </div>
 
-      {showSideRail && (
-        <aside id="studio-side-rail" className={`studio-side-rail${sideOpen ? ' is-open' : ' is-collapsed'}`} aria-label="Studio tools">
-          <div className="studio-side-rail-inner">
-            {inRoom && selectedRoom && (
-              <button type="button" className="studio-side-back" onClick={goBackToHouse} aria-label={`Back to ${houseLabel}`} title={`Back to ${houseLabel}`}>
-                <ArrowLeft size={16} />
-                <Home size={15} />
-                <span>House</span>
-              </button>
-            )}
-
-            {(floors.length > 1 || studioMode === 'architect') && (
-              <div className="studio-floor-stack" role="tablist" aria-label="Stories">
-                {floors.map((f) => (
+        {showFloorChrome && (
+          <div className="studio-top-tools" aria-label="Stories and plan tools">
+            <div className="studio-floor-stack studio-floor-stack--bar" role="tablist" aria-label="Stories">
+              {floors.map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={f.id === activeFloorId}
+                  className={f.id === activeFloorId ? 'active' : ''}
+                  onClick={() => goToFloor(f.id)}
+                  title={f.name}
+                >
+                  {f.name}
+                </button>
+              ))}
+              <div className="studio-floor-stack-actions">
+                <button
+                  type="button"
+                  className="studio-floor-add"
+                  aria-label="Add story"
+                  title="Add story"
+                  onClick={() => {
+                    setStudioMode('architect');
+                    addFloor();
+                    window.setTimeout(() => {
+                      window.dispatchEvent(new Event('roomcraft-fit-plan'));
+                      window.dispatchEvent(new Event('roomcraft-refocus'));
+                    }, 80);
+                  }}
+                >
+                  <Plus size={14} />
+                </button>
+                {floors.length > 1 && (
                   <button
-                    key={f.id}
                     type="button"
-                    role="tab"
-                    aria-selected={f.id === activeFloorId}
-                    className={f.id === activeFloorId ? 'active' : ''}
-                    onClick={() => goToFloor(f.id)}
-                    title={f.name}
+                    className="studio-floor-delete"
+                    aria-label="Delete current story"
+                    title="Delete current story"
+                    onClick={() => removeFloor(activeFloorId)}
                   >
-                    {f.name}
-                  </button>
-                ))}
-                <div className="studio-floor-stack-actions">
-                  <button
-                    type="button"
-                    className="studio-floor-add"
-                    aria-label="Add story"
-                    title="Add story"
-                    onClick={() => {
-                      setStudioMode('architect');
-                      addFloor();
-                      window.setTimeout(() => {
-                        window.dispatchEvent(new Event('roomcraft-fit-plan'));
-                        window.dispatchEvent(new Event('roomcraft-refocus'));
-                      }, 80);
-                    }}
-                  >
-                    <Plus size={14} />
-                  </button>
-                  {floors.length > 1 && (
-                    <button
-                      type="button"
-                      className="studio-floor-delete"
-                      aria-label="Delete current story"
-                      title="Delete current story"
-                      onClick={() => removeFloor(activeFloorId)}
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  )}
-                  {floors.length > 1 && (
-                    <button type="button" className="studio-floor-all" onClick={() => setStoriesOpen(true)} title="View all stories">
-                      All
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {isTop && (
-              <div className="studio-plan-stack" role="toolbar" aria-label="Plan tools">
-                {planTools.map((t) => {
-                  const Icon = t.icon;
-                  const active = studioMode === 'architect' && tool === t.id;
-                  return (
-                    <button
-                      key={t.id}
-                      type="button"
-                      className={active ? 'active' : ''}
-                      onClick={() => choosePlanTool(t.id)}
-                      aria-label={t.label}
-                      title={t.label}
-                    >
-                      <Icon size={16} />
-                      <span>{t.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            {showPlanTools && tool === 'select' && (
-              <p className="studio-side-hint">Tap a wall · drag ends to resize</p>
-            )}
-            {showPlanTools && tool === 'wall' && (
-              <p className="studio-side-hint">
-                {draftStart ? 'Tap wall end' : 'Tap to draw walls'}
-                {draftStart && (
-                  <button type="button" className="studio-hint-action" onClick={() => setDraftStart(null)}>
-                    Cancel
+                    <Trash2 size={14} />
                   </button>
                 )}
-              </p>
-            )}
-            {showPlanTools && tool === 'room' && <p className="studio-side-hint">Tap to place 12×12 ft</p>}
+                {floors.length > 1 && (
+                  <button type="button" className="studio-floor-all" onClick={() => setStoriesOpen(true)} title="View all stories">
+                    All
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
-        </aside>
-      )}
+        )}
+      </div>
 
       {!inRoom && planRooms.length > 1 && !pending && !selectedItem && tool === 'select' && (
         <div className="studio-selection-hint studio-hint-float">Tap a room to open its top view</div>
@@ -458,6 +396,21 @@ export function StudioChrome({
       {hasSelection && !pending && !selectedItem && !inRoom && wallEditMode && selectedWall && (
         <div className="studio-selection-hint studio-hint-float">Wall selected · drag blue handles to resize</div>
       )}
+
+      {showPlanTools && tool === 'select' && !selectedWall && (
+        <div className="studio-selection-hint studio-hint-float">Tap a wall · drag ends to resize</div>
+      )}
+      {showPlanTools && tool === 'wall' && (
+        <div className="studio-selection-hint studio-hint-float">
+          {draftStart ? 'Tap wall end' : 'Tap to draw walls'}
+          {draftStart && (
+            <button type="button" className="studio-hint-action" onClick={() => setDraftStart(null)}>
+              Cancel
+            </button>
+          )}
+        </div>
+      )}
+      {showPlanTools && tool === 'room' && <div className="studio-selection-hint studio-hint-float">Tap to place 12×12 ft</div>}
 
       {wallEditMode && selectedWall && !pending && (
         <div className="studio-selection-fabs" role="toolbar" aria-label="Wall actions">
@@ -562,6 +515,30 @@ export function StudioChrome({
               <span>3D</span>
             </button>
           </div>
+          {showPlanToolChrome && (
+            <>
+              <div className="studio-dock-divider" aria-hidden="true" />
+              <div className="studio-dock-seg studio-dock-plan-tools" role="group" aria-label="Plan tools">
+                {planTools.map((t) => {
+                  const Icon = t.icon;
+                  const active = studioMode === 'architect' && tool === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      className={active ? 'is-active' : ''}
+                      onClick={() => choosePlanTool(t.id)}
+                      title={t.label}
+                      aria-label={t.label}
+                    >
+                      <Icon size={16} />
+                      <span>{t.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
           <button type="button" className="studio-dock-action" onClick={refocus} title="Fit in view">
             <Focus size={15} />
             <span>Fit</span>
@@ -578,8 +555,6 @@ export function StudioChrome({
             <Redo2 size={15} />
             <span>Redo</span>
           </button>
-          <div className="studio-dock-divider" aria-hidden="true" />
-          <FinishesBar />
         </div>
       </div>
 

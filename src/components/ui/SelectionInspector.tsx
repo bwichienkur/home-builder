@@ -103,14 +103,14 @@ function RoomPanel({ surface }: { surface: 'floor' | 'wall' | 'ceiling' | null }
         <h3>{surface === 'ceiling' ? 'Ceiling finish' : surface === 'floor' ? 'Floor finish' : 'Room'}</h3>
         <p>
           {surface === 'ceiling'
-            ? 'Ceiling color is below. Floor finishes are in the bottom bar.'
+            ? 'Choose a ceiling color below.'
             : surface === 'floor'
-              ? 'Pick a floor finish from the bottom bar anytime.'
-              : 'Tap a room to edit it. Use Walls in the left tools to select and resize walls.'}
+              ? 'Choose a floor finish below.'
+              : 'Tap a room to edit it. Use Walls / Draw / Square in the bottom bar while viewing the floor plan.'}
         </p>
       </div>
-      {surface === 'ceiling' && (
-        <FinishSwatches highlight="ceiling" />
+      {(surface === 'ceiling' || surface === 'floor') && (
+        <FinishSwatches highlight={surface === 'ceiling' ? 'ceiling' : 'floor'} />
       )}
     </>
   );
@@ -206,61 +206,32 @@ function PlanRoomProperties({ room }: { room: PlanRoomLabel }) {
   );
 }
 
-function FinishSwatches({
-  highlight = null,
-  compact = false,
-}: {
-  highlight?: 'floor' | 'wall' | 'ceiling' | null;
-  compact?: boolean;
-}) {
+function FinishSwatches({ highlight = null }: { highlight?: 'floor' | 'ceiling' | null }) {
   const set = usePlannerStore((s) => s.setFinish);
-  const floorColor = usePlannerStore((s) => s.floorColor);
-  if (compact) {
-    return (
-      <div className={`finishes-bar finishes-bar--dock${highlight === 'floor' ? ' is-active' : ''}`} role="group" aria-label="Floor finish">
-        <span>Floor</span>
-        <div className="swatches">
-          {finishes.slice(0, 6).map(([n, c]) => (
-            <button
-              type="button"
-              title={n}
-              key={c}
-              aria-pressed={floorColor === c}
-              style={{ background: c, outline: floorColor === c ? '2px solid #0058a3' : undefined }}
-              onClick={() => set('floor', c)}
-            />
-          ))}
-        </div>
-      </div>
-    );
-  }
   return (
     <>
-      <label className={highlight === 'floor' ? 'finish-highlight' : ''}>
-        Floor material
-        <div className="swatches">
-          {finishes.slice(0, 6).map(([n, c]) => (
-            <button title={n} key={c} style={{ background: c }} onClick={() => set('floor', c)} />
-          ))}
-        </div>
-      </label>
-      <label className={highlight === 'ceiling' ? 'finish-highlight' : ''}>
-        Ceiling color
-        <div className="swatches">
-          {finishes.slice(5).map(([n, c]) => (
-            <button title={n} key={`ceil-${c}`} style={{ background: c }} onClick={() => set('ceiling', c)} />
-          ))}
-        </div>
-      </label>
+      {(highlight === null || highlight === 'floor') && (
+        <label className={highlight === 'floor' ? 'finish-highlight' : ''}>
+          Floor material
+          <div className="swatches">
+            {finishes.slice(0, 6).map(([n, c]) => (
+              <button title={n} key={c} style={{ background: c }} onClick={() => set('floor', c)} />
+            ))}
+          </div>
+        </label>
+      )}
+      {(highlight === null || highlight === 'ceiling') && (
+        <label className={highlight === 'ceiling' ? 'finish-highlight' : ''}>
+          Ceiling color
+          <div className="swatches">
+            {finishes.slice(5).map(([n, c]) => (
+              <button title={n} key={`ceil-${c}`} style={{ background: c }} onClick={() => set('ceiling', c)} />
+            ))}
+          </div>
+        </label>
+      )}
     </>
   );
-}
-
-/** Floor finish swatches for the bottom dock (wall color is not editable). */
-export function FinishesBar() {
-  const selectedSurface = usePlannerStore((s) => s.selectedSurface);
-  const highlight = selectedSurface === 'floor' ? 'floor' : null;
-  return <FinishSwatches compact highlight={highlight} />;
 }
 
 export function RoomDesigner({ compact = false, hidePlans = false }: { compact?: boolean; hidePlans?: boolean }) {
