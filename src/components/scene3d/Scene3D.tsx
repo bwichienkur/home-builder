@@ -84,24 +84,36 @@ function CameraRig() {
   const { invalidate, get } = useThree();
   const focusRoom = workflowStage === 'room' ? planRooms.find((r) => r.id === selectedRoomId) : null;
   const coarse = useMemo(() => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches, []);
+  const [menuOpen, setMenuOpen] = useState(() => document.body.dataset.menuOpen === '1');
+  useEffect(() => {
+    const sync = () => setMenuOpen(document.body.dataset.menuOpen === '1');
+    window.addEventListener('roomcraft-menu-changed', sync);
+    return () => window.removeEventListener('roomcraft-menu-changed', sync);
+  }, []);
   const framing = useMemo(() => {
-    const pad = coarse ? 3.1 : 2.8;
-    const orbitPad = coarse ? 1.28 : 1.18;
+    // Zoom out when the left project menu is open so the whole room stays visible beside it.
+    const pad = (coarse ? 3.1 : 2.8) * (menuOpen ? 1.7 : 1);
+    const orbitPad = (coarse ? 1.28 : 1.18) * (menuOpen ? 1.35 : 1);
     if (focusRoom?.points.length) {
       return framingFromPoints(focusRoom.points, { pad, orbitPad, minSpan: 2.5, minHeight: 8 });
     }
     return framingFromWalls(walls, { pad, orbitPad, minHeight: 12 });
-  }, [walls, focusRoom, coarse]);
+  }, [walls, focusRoom, coarse, menuOpen]);
   const center = framing.center;
-  const targetTuple = useMemo<[number, number, number]>(() => [center[0], 0, center[2]], [center]);
+  // Shift right so content clears the narrow left drawer.
+  const menuShiftX = menuOpen ? framing.span * 0.3 : 0;
+  const targetTuple = useMemo<[number, number, number]>(
+    () => [center[0] + menuShiftX, 0, center[2]],
+    [center, menuShiftX],
+  );
   const poseTuple = useMemo<[number, number, number]>(() => {
-    if (mode === 'top') return framing.topPose;
+    if (mode === 'top') return [framing.topPose[0] + menuShiftX, framing.topPose[1], framing.topPose[2]];
     if (mode === 'walk') {
       const back = Math.max(4.2, framing.span * 0.55);
-      return [center[0], 1.55, center[2] + back];
+      return [center[0] + menuShiftX, 1.55, center[2] + back];
     }
-    return framing.orbitPose;
-  }, [mode, center, framing]);
+    return [framing.orbitPose[0] + menuShiftX, framing.orbitPose[1], framing.orbitPose[2]];
+  }, [mode, center, framing, menuShiftX]);
 
   const maxDistance =
     mode === 'top'
@@ -170,7 +182,7 @@ function CameraRig() {
     if (mode === 'top') snapToPose();
     else animateToPose(560);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode]);
+  }, [mode, menuOpen, poseTuple[0], poseTuple[1], poseTuple[2]]);
 
   useEffect(() => {
     const fit = () => snapToPose();
@@ -381,10 +393,19 @@ function WallMeshes() {
   const selectedId = usePlannerStore((s) => s.selectedWallId);
   const select = usePlannerStore((s) => s.selectWall);
   const cameraMode = usePlannerStore((s) => s.cameraMode);
+  const studioMode = usePlannerStore((s) => s.studioMode);
+  const tool = usePlannerStore((s) => s.tool);
   const opacityByWall = useDollhouseCutaway(walls);
   const wallIds = useMemo(() => new Set(walls.map((w) => w.id)), [walls]);
   const visibleOpenings = useMemo(() => openings.filter((o) => wallIds.has(o.wallId)), [openings, wallIds]);
   const orbiting = cameraMode === 'orbit';
+  // Walls are only selectable in top-view Walls edit mode — not while furnishing or orbiting.
+  const wallEditMode = studioMode === 'architect' && cameraMode === 'top' && tool === 'select';
+  const onWallClick = (id: string) => {
+    if (!wallEditMode) return;
+    select(id);
+    openSurfaceProperties();
+  };
 
   return (
     <>
@@ -419,8 +440,7 @@ function WallMeshes() {
             rotation={[0, angle, 0]}
             onClick={(e) => {
               e.stopPropagation();
-              select(w.id);
-              openSurfaceProperties();
+              onWallClick(w.id);
             }}
           >
             <boxGeometry args={[origLen || 0.2, w.height, Math.max(w.thickness, 0.12)]} />
@@ -461,8 +481,8 @@ function WallMeshes() {
             b <= r1 || a >= r2 ? [[r1, r2]] : ([[r1, Math.max(r1, a)], [Math.min(r2, b), r2]].filter((r) => r[1] - r[0] > 0.02) as [number, number][]),
           );
         });
-        // Cutaway visuals must not steal picks from furniture inside the room; pickProxy handles wall clicks.
-        const skipRay = fading ? () => {} : undefined;
+        // Cutaway + top (non-edit) must not steal furniture picks; solid orbit walls still block.
+        const skipRay = fading || (cameraMode === 'top' && !wallEditMode) ? () => {} : undefined;
         const wallMat = {
           color,
           roughness: 0.86,
@@ -491,8 +511,7 @@ function WallMeshes() {
               userData={fading ? { wallCutawayPick: true } : undefined}
               onClick={(e) => {
                 e.stopPropagation();
-                select(w.id);
-                openSurfaceProperties();
+                onWallClick(w.id);
               }}
             >
               <boxGeometry args={[segLen, w.height, w.thickness]} />
@@ -568,8 +587,8 @@ function WallMeshes() {
             );
           return parts;
         });
-        // Pick proxy only while the wall is open/fading — solid walls must still block picks.
-        return fading ? [pickProxy, ...base, ...fills] : [...base, ...fills];
+        // Pick proxy only while open/fading AND in wall-edit mode.
+        return fading && wallEditMode ? [pickProxy, ...base, ...fills] : [...base, ...fills];
       })}
       {(() => {
         // Corner posts seal joints where wall boxes meet at shared plan endpoints.
