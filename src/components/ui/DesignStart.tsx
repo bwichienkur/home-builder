@@ -23,7 +23,8 @@ export function DesignStart({ onBegan }: { onBegan?: () => void }) {
   );
 
   const finish = () => {
-    window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 40);
+    // Wait for walls/framing to commit before centering the camera.
+    window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 120);
     onBegan?.();
   };
 

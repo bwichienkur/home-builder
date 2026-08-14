@@ -136,3 +136,41 @@ describe('placement helpers', () => {
     expect(bounds.minX).toBeGreaterThanOrEqual(west + 0.15 / 2 - 0.001);
   });
 });
+
+const lShape: Wall[] = [
+  { id: 'w1', start: { x: 160, y: 150 }, end: { x: 680, y: 150 }, thickness: 0.15, height: 2.7 },
+  { id: 'w2', start: { x: 680, y: 150 }, end: { x: 680, y: 510 }, thickness: 0.15, height: 2.7 },
+  { id: 'w3', start: { x: 680, y: 510 }, end: { x: 420, y: 510 }, thickness: 0.15, height: 2.7 },
+  { id: 'w4', start: { x: 420, y: 510 }, end: { x: 420, y: 350 }, thickness: 0.15, height: 2.7 },
+  { id: 'w5', start: { x: 420, y: 350 }, end: { x: 160, y: 350 }, thickness: 0.15, height: 2.7 },
+  { id: 'w6', start: { x: 160, y: 350 }, end: { x: 160, y: 150 }, thickness: 0.15, height: 2.7 },
+];
+
+describe('L-shaped room placement', () => {
+  it('picks the true nearest segment past a reentrant corner', () => {
+    const nearTop = planToWorld({ x: 420, y: 170 });
+    const snapped = snapToWallSurface(nearTop.x, nearTop.z, lShape, 0.34, 'wall');
+    expect(snapped.wallId).toBe('w1');
+  });
+
+  it('keeps a bookcase on the inner L wall without drifting', () => {
+    const nearInner = planToWorld({ x: 400, y: 430 });
+    const docked = constrainPlacement(nearInner.x, nearInner.z, lShape, 0.34, {
+      mountingType: 'floor',
+      category: 'Storage',
+      name: 'Arch Bookcase',
+      width: 0.8,
+      live: true,
+    });
+    expect(docked.constraint).toBe('wall-prefer');
+    expect(docked.wallId).toBe('w4');
+    expect(Math.abs(docked.x - nearInner.x)).toBeLessThan(1.2);
+  });
+
+  it('does not shove free furniture out of an L arm', () => {
+    const inArm = planToWorld({ x: 250, y: 250 });
+    const kept = containFurnitureInRoom(inArm.x, inArm.z, 1, 1, 0, lShape);
+    expect(kept.x).toBeCloseTo(inArm.x, 1);
+    expect(kept.z).toBeCloseTo(inArm.z, 1);
+  });
+});
