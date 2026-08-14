@@ -316,14 +316,17 @@ function WallMeshes() {
     <>
       {walls.flatMap((w) => {
         const opacity = opacityByWall[w.id] ?? 1;
-        const cutaway = opacity < 0.995;
+        const selected = selectedId === w.id;
+        // Keep selected walls more solid so the highlight halo stays stable while orbiting.
+        const drawOpacity = selected ? Math.max(opacity, 0.72) : opacity;
+        const cutaway = drawOpacity < 0.995;
         const [sx0, sz0] = world(w.start.x, w.start.y);
         const [ex0, ez0] = world(w.end.x, w.end.y);
         const origLen = Math.hypot(ex0 - sx0, ez0 - sz0) || 0.01;
         const ux = (ex0 - sx0) / origLen;
         const uz = (ez0 - sz0) / origLen;
-        // Overlap half-thickness past each endpoint so orthogonal walls form continuous corners.
-        const extend = w.thickness * 0.5;
+        // Modest overlap + corner posts seal joints without huge coplanar fighting.
+        const extend = w.thickness * 0.28;
         const sx = sx0 - ux * extend;
         const sz = sz0 - uz * extend;
         const ex = ex0 + ux * extend;
@@ -341,13 +344,14 @@ function WallMeshes() {
           );
         });
         // Cutaway walls must not steal pointer hits — furniture drag goes through them.
-        const skipRay = cutaway ? () => {} : undefined;
-        const base = ranges.map(([a, b], i) => {
+        const skipRay = cutaway && !selected ? () => {} : undefined;
+        const base = ranges.flatMap(([a, b], i) => {
           const c = (a + b) / 2;
           const t = c / length;
           const x = sx + (ex - sx) * t;
           const z = sz + (ez - sz) * t;
-          return (
+          const segLen = b - a;
+          const meshes: ReactElement[] = [
             <mesh
               key={w.id + 'b' + i}
               position={[x, w.height / 2, z]}
@@ -356,24 +360,45 @@ function WallMeshes() {
               receiveShadow={!cutaway}
               raycast={skipRay}
               onClick={(e) => {
-                if (cutaway) return;
+                if (cutaway && !selected) return;
                 e.stopPropagation();
                 select(w.id);
                 openSurfaceProperties();
               }}
             >
-              <boxGeometry args={[b - a, w.height, w.thickness]} />
+              <boxGeometry args={[segLen, w.height, w.thickness]} />
               <meshStandardMaterial
-                color={selectedId === w.id ? '#0058a3' : color}
-                emissive={selectedId === w.id ? '#003d70' : '#000000'}
-                emissiveIntensity={selectedId === w.id ? 0.16 : 0}
+                color={color}
                 roughness={0.86}
                 transparent={cutaway}
-                opacity={opacity}
+                opacity={drawOpacity}
                 depthWrite={!cutaway}
+                polygonOffset
+                polygonOffsetFactor={1}
+                polygonOffsetUnits={1}
               />
-            </mesh>
-          );
+            </mesh>,
+          ];
+          if (selected) {
+            // Inflated halo above coplanar wall/post overlaps — stable while orbiting.
+            meshes.push(
+              <mesh key={w.id + 'sel' + i} position={[x, w.height / 2, z]} rotation={[0, angle, 0]} raycast={() => {}} renderOrder={3}>
+                <boxGeometry args={[segLen + 0.02, w.height + 0.04, w.thickness + 0.05]} />
+                <meshBasicMaterial
+                  color="#0058a3"
+                  transparent
+                  opacity={0.28}
+                  depthWrite={false}
+                  depthTest
+                  toneMapped={false}
+                  polygonOffset
+                  polygonOffsetFactor={-2}
+                  polygonOffsetUnits={-2}
+                />
+              </mesh>,
+            );
+          }
+          return meshes;
         });
         const fills = related.flatMap((o) => {
           const c = extend + o.offset * origLen;
@@ -385,7 +410,15 @@ function WallMeshes() {
             parts.push(
               <mesh key={o.id + 'sill'} position={[x, o.sill / 2, z]} rotation={[0, angle, 0]} raycast={skipRay}>
                 <boxGeometry args={[o.width, o.sill, w.thickness]} />
-                <meshStandardMaterial color={color} transparent={cutaway} opacity={opacity} depthWrite={!cutaway} />
+                <meshStandardMaterial
+                  color={color}
+                  transparent={cutaway}
+                  opacity={drawOpacity}
+                  depthWrite={!cutaway}
+                  polygonOffset
+                  polygonOffsetFactor={1}
+                  polygonOffsetUnits={1}
+                />
               </mesh>,
             );
           const top = w.height - (o.sill + o.height);
@@ -393,7 +426,15 @@ function WallMeshes() {
             parts.push(
               <mesh key={o.id + 'top'} position={[x, o.sill + o.height + top / 2, z]} rotation={[0, angle, 0]} raycast={skipRay}>
                 <boxGeometry args={[o.width, top, w.thickness]} />
-                <meshStandardMaterial color={color} transparent={cutaway} opacity={opacity} depthWrite={!cutaway} />
+                <meshStandardMaterial
+                  color={color}
+                  transparent={cutaway}
+                  opacity={drawOpacity}
+                  depthWrite={!cutaway}
+                  polygonOffset
+                  polygonOffsetFactor={1}
+                  polygonOffsetUnits={1}
+                />
               </mesh>,
             );
           if (o.type === 'window')
@@ -403,7 +444,7 @@ function WallMeshes() {
                 <meshPhysicalMaterial
                   color="#bce4ec"
                   transparent
-                  opacity={0.32 * opacity}
+                  opacity={0.32 * drawOpacity}
                   transmission={0.65}
                   roughness={0.05}
                   depthWrite={false}
@@ -418,7 +459,7 @@ function WallMeshes() {
             parts.push(
               <mesh key={o.id + 'passage'} position={[x, 0.015, z]} rotation={[-Math.PI / 2, 0, angle]} raycast={skipRay}>
                 <planeGeometry args={[o.width, w.thickness + 0.08]} />
-                <meshBasicMaterial color="#0058a3" transparent opacity={0.28 * opacity} />
+                <meshBasicMaterial color="#0058a3" transparent opacity={0.28 * drawOpacity} />
               </mesh>,
             );
           return parts;
@@ -435,19 +476,49 @@ function WallMeshes() {
             if (seen.has(key)) continue;
             seen.add(key);
             const [x, z] = world(p.x, p.y);
-            const t = w.thickness;
-            const h = w.height;
-            const opacity = Math.min(...walls.filter((ww) => {
+            const touching = walls.filter((ww) => {
               const same = (q: { x: number; y: number }) => Math.hypot(q.x - p.x, q.y - p.y) < 1;
               return same(ww.start) || same(ww.end);
-            }).map((ww) => opacityByWall[ww.id] ?? 1));
-            const cutaway = opacity < 0.995;
+            });
+            const t = Math.max(...touching.map((ww) => ww.thickness));
+            const h = Math.max(...touching.map((ww) => ww.height));
+            const opacity = Math.min(...touching.map((ww) => opacityByWall[ww.id] ?? 1));
+            const selectedTouch = touching.some((ww) => ww.id === selectedId);
+            const drawOpacity = selectedTouch ? Math.max(opacity, 0.72) : opacity;
+            const cutaway = drawOpacity < 0.995;
             posts.push(
-              <mesh key={`corner-${key}`} position={[x, h / 2, z]} castShadow={!cutaway} receiveShadow={!cutaway}>
-                <boxGeometry args={[t, h, t]} />
-                <meshStandardMaterial color={color} roughness={0.86} transparent={cutaway} opacity={opacity} depthWrite={!cutaway} />
+              <mesh key={`corner-${key}`} position={[x, h / 2, z]} castShadow={!cutaway} receiveShadow={!cutaway} renderOrder={selectedTouch ? 2 : 0}>
+                <boxGeometry args={[t * 0.98, h, t * 0.98]} />
+                <meshStandardMaterial
+                  color={color}
+                  roughness={0.86}
+                  transparent={cutaway}
+                  opacity={drawOpacity}
+                  depthWrite={!cutaway}
+                  polygonOffset
+                  polygonOffsetFactor={2}
+                  polygonOffsetUnits={2}
+                />
               </mesh>,
             );
+            if (selectedTouch) {
+              posts.push(
+                <mesh key={`corner-sel-${key}`} position={[x, h / 2, z]} raycast={() => {}} renderOrder={4}>
+                  <boxGeometry args={[t * 1.08, h + 0.04, t * 1.08]} />
+                  <meshBasicMaterial
+                    color="#0058a3"
+                    transparent
+                    opacity={0.28}
+                    depthWrite={false}
+                    depthTest
+                    toneMapped={false}
+                    polygonOffset
+                    polygonOffsetFactor={-2}
+                    polygonOffsetUnits={-2}
+                  />
+                </mesh>,
+              );
+            }
           }
         }
         return posts;
@@ -811,18 +882,32 @@ function Room() {
               <mesh
                 rotation={[Math.PI / 2, 0, 0]}
                 receiveShadow
-                position={[0, selected ? -0.02 : -0.035, 0]}
+                position={[0, -0.035, 0]}
                 onClick={(e) => chooseFloor(e, label?.id)}
               >
                 <shapeGeometry args={[roomShape(points)]} />
                 <meshStandardMaterial
-                  color={selected ? '#0058a3' : floorColor}
+                  color={floorColor}
                   roughness={0.95}
                   side={THREE.DoubleSide}
-                  emissive={selected ? '#003d70' : '#000000'}
-                  emissiveIntensity={selected ? 0.14 : 0}
+                  polygonOffset
+                  polygonOffsetFactor={4}
+                  polygonOffsetUnits={4}
                 />
               </mesh>
+              {selected && (
+                <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, -0.018, 0]} raycast={() => {}} renderOrder={2}>
+                  <shapeGeometry args={[roomShape(points)]} />
+                  <meshBasicMaterial
+                    color="#0058a3"
+                    transparent
+                    opacity={0.22}
+                    depthWrite={false}
+                    toneMapped={false}
+                    side={THREE.DoubleSide}
+                  />
+                </mesh>
+              )}
               {showCeiling && (
                 <mesh
                   rotation={[Math.PI / 2, 0, 0]}
