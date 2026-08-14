@@ -502,7 +502,9 @@ export function StudioChrome({
 
       {gestureHint && !pending && !atStart && (
         <div className="studio-selection-hint studio-gesture-hint studio-hint-float">
-          {isTop ? 'Drag furniture to move · Empty space pans · Pinch to zoom' : 'Drag to orbit · Pinch to zoom · Two-finger pan'}
+          {isTop
+            ? 'Drag furniture to move · Empty space pans · Pinch to zoom'
+            : 'Drag furniture through open walls · Drag empty space to orbit · Pinch to zoom'}
         </div>
       )}
 

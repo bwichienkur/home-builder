@@ -41,9 +41,16 @@ function hasUserDataFlag(object: THREE.Object3D, key: string) {
 /** Prefer furniture inside the room over cutaway wall pick proxies that sit in front of the camera. */
 function preferInteriorPicks(hits: THREE.Intersection[]) {
   if (!hits.length) return hits;
-  if (!hasUserDataFlag(hits[0].object, 'wallCutawayPick')) return hits;
   const furniture = hits.filter((h) => hasUserDataFlag(h.object, 'furniturePick'));
-  return furniture.length ? furniture : hits;
+  if (!furniture.length) return hits;
+  // If any cutaway proxy/soft wall is closer than furniture, keep the furniture hits so
+  // you can click and drag pieces through the open section facing the camera.
+  const firstFurniture = hits.findIndex((h) => hasUserDataFlag(h.object, 'furniturePick'));
+  const firstCutaway = hits.findIndex((h) => hasUserDataFlag(h.object, 'wallCutawayPick'));
+  if (firstCutaway >= 0 && (firstFurniture < 0 || firstCutaway < firstFurniture)) {
+    return furniture;
+  }
+  return hits;
 }
 
 function wallDragPlane(wall: Wall, item: FurnitureItem) {
@@ -561,8 +568,8 @@ function WallMeshes() {
             );
           return parts;
         });
-        // Pick proxy while soft/fading so interior picks still work through open walls.
-        return soft ? [pickProxy, ...base, ...fills] : [...base, ...fills];
+        // Pick proxy only while the wall is open/fading — solid walls must still block picks.
+        return fading ? [pickProxy, ...base, ...fills] : [...base, ...fills];
       })}
       {(() => {
         // Corner posts seal joints where wall boxes meet at shared plan endpoints.
@@ -715,8 +722,8 @@ function Furniture() {
   const pending = useRef<Partial<FurnitureItem> | null>(null);
   const cameraMode = usePlannerStore((s) => s.cameraMode);
   const { gl } = useThree();
-  // Top view + phones: drag on the floor/wall plane. Desktop orbit keeps PivotControls gizmo.
-  const usePlaneDrag = cameraMode === 'top' || isCoarsePointer();
+  // Top + orbit: drag on the piece itself (incl. through facing cutaway). Walk keeps free-look.
+  const usePlaneDrag = cameraMode === 'top' || cameraMode === 'orbit';
   const touchDrag = useRef<{
     pointerId: number;
     itemId: string;
@@ -1059,7 +1066,7 @@ function Room() {
     return rooms.map((points, i) => ({ points, label: undefined as PlanRoomLabel | undefined, i }));
   }, [planRooms, rooms, isolating, selectedRoomId]);
   return (
-    <Bvh firstHitOnly>
+    <Bvh>
       {roomEntries.length ? (
         roomEntries.map(({ points, label }, i) => {
           const selected = !!label && label.id === selectedRoomId;
@@ -1346,7 +1353,7 @@ export function Scene3D() {
         <CameraRig />
       </Canvas>
       {!pending && (
-        <div className="scene-help">Drag furniture to move · Top view pans on empty space · Slide wall art in 3D</div>
+        <div className="scene-help">Drag furniture to move · Click through open walls · Empty space pans/orbits</div>
       )}
     </div>
   );
