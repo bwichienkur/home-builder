@@ -69,6 +69,25 @@ function StudioApp() {
 
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const closeProjectMenu = useCallback(() => {
+    setMenuOpen(false);
+    delete document.body.dataset.menuOpen;
+    window.dispatchEvent(new Event('roomcraft-menu-changed'));
+    window.setTimeout(() => {
+      window.dispatchEvent(new Event('roomcraft-fit-plan'));
+      window.dispatchEvent(new Event('roomcraft-refocus'));
+    }, 40);
+  }, []);
+  const openProjectMenu = useCallback(() => {
+    setMenuOpen(true);
+    setCatalogOpen(false);
+    document.body.dataset.menuOpen = '1';
+    window.dispatchEvent(new Event('roomcraft-menu-changed'));
+    window.setTimeout(() => {
+      window.dispatchEvent(new Event('roomcraft-fit-plan'));
+      window.dispatchEvent(new Event('roomcraft-refocus'));
+    }, 40);
+  }, []);
   const [inspectorOpen, setInspectorOpen] = useState(false);
   const [productCardOpen, setProductCardOpen] = useState(false);
   const [bom, setBom] = useState(false);
@@ -144,7 +163,7 @@ function StudioApp() {
         if (store.pendingPlacement) store.cancelPendingPlacement();
         store.setDraftStart(null);
         setCatalogOpen(false);
-        setMenuOpen(false);
+        closeProjectMenu();
         setInspectorOpen(false);
       } else if (e.key === 'Enter' && store.pendingPlacement) {
         e.preventDefault();
@@ -156,7 +175,7 @@ function StudioApp() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [store]);
+  }, [store, closeProjectMenu]);
 
   useEffect(() => {
     const open = () => {
@@ -164,7 +183,7 @@ function StudioApp() {
       setInspectorOpen(true);
       setProductCardOpen(false);
       setCatalogOpen(false);
-      setMenuOpen(false);
+      closeProjectMenu();
     };
     const openCard = () => {
       setProductCardOpen(true);
@@ -316,11 +335,8 @@ function StudioApp() {
           setCatalogOpen(true);
           setMenuOpen(false);
         }}
-        openMenu={() => {
-          setMenuOpen(true);
-          setCatalogOpen(false);
-        }}
-        closeMenu={() => setMenuOpen(false)}
+        openMenu={openProjectMenu}
+        closeMenu={closeProjectMenu}
         openBom={() => setBom(true)}
         openCategory={openCategory}
         onOpenInspector={() => {
@@ -356,13 +372,13 @@ function StudioApp() {
       )}
 
       {menuOpen && (
-        <aside className="studio-menu-sheet" role="dialog" aria-label="Project menu">
+        <aside className="studio-menu-sheet studio-menu-drawer" role="dialog" aria-label="Project menu">
           <header>
             <button className="project-name" onClick={rename}>
               {projectName} <ChevronDown size={15} />
             </button>
           </header>
-          <RoomDesigner compact />
+          <RoomDesigner compact hidePlans />
           <div className="floor-row">
             <select
               aria-label="Active floor"

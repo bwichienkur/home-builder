@@ -606,7 +606,7 @@
 
 .studio-admin-link { display: none; }
 
-/* Menu sheet */
+/* Menu sheet — narrow left drawer so the room stays visible */
 .studio-menu-sheet {
   position: fixed;
   z-index: 60;
@@ -621,6 +621,21 @@
   padding: 16px;
   animation: sheet-up 220ms ease-out;
   -webkit-overflow-scrolling: touch;
+}
+.studio-menu-sheet.studio-menu-drawer {
+  top: max(12px, env(safe-area-inset-top));
+  bottom: max(12px, env(safe-area-inset-bottom));
+  left: max(8px, env(safe-area-inset-left));
+  width: min(260px, calc(100vw - 72px));
+  max-height: none;
+  border-radius: 0 16px 16px 0;
+  padding: 14px 12px 18px;
+  box-shadow: 8px 0 28px rgba(17, 24, 32, 0.14);
+  animation: drawer-in 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes drawer-in {
+  from { opacity: 0; transform: translateX(-12px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 .studio-menu-sheet > header {
   display: flex;
@@ -988,6 +1003,52 @@
   border-radius: 50%;
   box-shadow: 0 0 0 1px var(--line);
 }
+
+.finishes-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 8px 10px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: var(--shadow);
+  max-width: min(520px, calc(100vw - 24px));
+}
+.finishes-bar-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.finishes-bar-group > span {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #6b7280;
+  flex-shrink: 0;
+}
+.finishes-bar-group.is-active > span { color: #0058a3; }
+.finishes-bar .swatches { margin-top: 0; gap: 6px; flex-wrap: nowrap; }
+.finishes-bar .swatches button {
+  width: 22px;
+  height: 22px;
+}
+
+.wall-delete-btn {
+  width: 100%;
+  margin-top: 14px;
+  min-height: 44px;
+  border: 1px solid #f0c9c9;
+  border-radius: 12px;
+  background: #fff5f5;
+  color: #b42318;
+  font-weight: 800;
+  cursor: pointer;
+}
+.wall-delete-btn:hover { background: #ffe8e8; }
+
 .property-input { width: 100%; margin-top: 8px; accent-color: var(--accent); }
 
 /* Admin */
@@ -1345,7 +1406,7 @@
   position: absolute;
   z-index: 6;
   left: max(12px, env(safe-area-inset-left));
-  top: max(68px, calc(env(safe-area-inset-top) + 56px));
+  top: max(118px, calc(env(safe-area-inset-top) + 104px));
   bottom: max(96px, calc(env(safe-area-inset-bottom) + 88px));
   width: 118px;
   pointer-events: none;

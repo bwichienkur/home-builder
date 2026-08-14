@@ -100,14 +100,18 @@ function RoomPanel({ surface }: { surface: 'floor' | 'wall' | 'ceiling' | null }
         <div className="select-icon">
           <Grid2X2 size={22} />
         </div>
-        <h3>{surface === 'ceiling' ? 'Ceiling finish' : surface === 'floor' ? 'Floor finish' : 'Room finishes'}</h3>
+        <h3>{surface === 'ceiling' ? 'Ceiling finish' : surface === 'floor' ? 'Floor finish' : 'Room'}</h3>
         <p>
-          {surface
-            ? 'Choose a finish below.'
-            : 'Tap a room label or floor to edit that room. Select a wall or product for precise controls.'}
+          {surface === 'ceiling'
+            ? 'Ceiling color is below. Floor and wall finishes stay in the top bar.'
+            : surface
+              ? 'Floor and wall finishes are in the top bar — tap a swatch anytime.'
+              : 'Tap a room to edit it. Use Walls in the left tools to select and resize walls.'}
         </p>
       </div>
-      <FinishSwatches highlight={surface} />
+      {surface === 'ceiling' && (
+        <FinishSwatches highlight="ceiling" />
+      )}
     </>
   );
 }
@@ -202,8 +206,36 @@ function PlanRoomProperties({ room }: { room: PlanRoomLabel }) {
   );
 }
 
-function FinishSwatches({ highlight = null }: { highlight?: 'floor' | 'wall' | 'ceiling' | null }) {
+function FinishSwatches({
+  highlight = null,
+  compact = false,
+}: {
+  highlight?: 'floor' | 'wall' | 'ceiling' | null;
+  compact?: boolean;
+}) {
   const set = usePlannerStore((s) => s.setFinish);
+  if (compact) {
+    return (
+      <div className="finishes-bar" role="group" aria-label="Floor and wall finishes">
+        <div className={`finishes-bar-group${highlight === 'floor' ? ' is-active' : ''}`}>
+          <span>Floor</span>
+          <div className="swatches">
+            {finishes.slice(0, 6).map(([n, c]) => (
+              <button type="button" title={n} key={c} style={{ background: c }} onClick={() => set('floor', c)} />
+            ))}
+          </div>
+        </div>
+        <div className={`finishes-bar-group${highlight === 'wall' ? ' is-active' : ''}`}>
+          <span>Wall</span>
+          <div className="swatches">
+            {finishes.slice(3, 6).map(([n, c]) => (
+              <button type="button" title={n} key={`wall-${c}`} style={{ background: c }} onClick={() => set('wall', c)} />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
   return (
     <>
       <label className={highlight === 'floor' ? 'finish-highlight' : ''}>
@@ -234,7 +266,14 @@ function FinishSwatches({ highlight = null }: { highlight?: 'floor' | 'wall' | '
   );
 }
 
-export function RoomDesigner({ compact = false }: { compact?: boolean }) {
+/** Always-visible floor/wall finishes under the top chrome. */
+export function FinishesBar() {
+  const selectedSurface = usePlannerStore((s) => s.selectedSurface);
+  const highlight = selectedSurface === 'floor' || selectedSurface === 'wall' ? selectedSurface : null;
+  return <FinishSwatches compact highlight={highlight} />;
+}
+
+export function RoomDesigner({ compact = false, hidePlans = false }: { compact?: boolean; hidePlans?: boolean }) {
   const roomType = usePlannerStore((s) => s.roomType);
   const setRoomType = usePlannerStore((s) => s.setRoomType);
   const unit = usePlannerStore((s) => s.unitSystem);
@@ -283,27 +322,31 @@ export function RoomDesigner({ compact = false }: { compact?: boolean }) {
         <button type="button" onClick={() => template('wide')}>Wide</button>
         <button type="button" onClick={() => template('l-shape')}>L-shape</button>
       </div>
-      <span className="template-label">House plans (buildable)</span>
-      {housePlanName && <p className="muted house-plan-active">Loaded: {housePlanName}</p>}
-      <div className="house-plan-list">
-        {olsenHousePlans.map((plan) => (
-          <button
-            key={plan.id}
-            type="button"
-            className={housePlanId === plan.id ? 'active' : ''}
-            onClick={() => loadHouse(plan.id)}
-            title={`${plan.beds} bed · ${plan.baths} bath · ${plan.livingSqFt.toLocaleString()} sf living · ${plan.stories} stor${plan.stories === 1 ? 'y' : 'ies'}`}
-          >
-            <strong>{plan.name}</strong>
-            <span>
-              {plan.beds}/{plan.baths} · {plan.livingSqFt.toLocaleString()} sf · {plan.stories === 1 ? '1 story' : '2 story'}
-            </span>
-          </button>
-        ))}
-      </div>
-      <p className="muted house-plan-note">
-        Original Mahnikka layouts sized from publicly listed room programs — not copied Olsen drawings. Switch floors in the project menu for two-story plans.
-      </p>
+      {!hidePlans && (
+        <>
+          <span className="template-label">House plans (buildable)</span>
+          {housePlanName && <p className="muted house-plan-active">Loaded: {housePlanName}</p>}
+          <div className="house-plan-list">
+            {olsenHousePlans.map((plan) => (
+              <button
+                key={plan.id}
+                type="button"
+                className={housePlanId === plan.id ? 'active' : ''}
+                onClick={() => loadHouse(plan.id)}
+                title={`${plan.beds} bed · ${plan.baths} bath · ${plan.livingSqFt.toLocaleString()} sf living · ${plan.stories} stor${plan.stories === 1 ? 'y' : 'ies'}`}
+              >
+                <strong>{plan.name}</strong>
+                <span>
+                  {plan.beds}/{plan.baths} · {plan.livingSqFt.toLocaleString()} sf · {plan.stories === 1 ? '1 story' : '2 story'}
+                </span>
+              </button>
+            ))}
+          </div>
+          <p className="muted house-plan-note">
+            Original Mahnikka layouts sized from publicly listed room programs — not copied Olsen drawings. Switch floors in the project menu for two-story plans.
+          </p>
+        </>
+      )}
     </div>
   );
 }
@@ -411,6 +454,7 @@ function WallProperties({ wall }: { wall: Wall }) {
   const setLength = usePlannerStore((s) => s.setWallLength);
   const split = usePlannerStore((s) => s.splitWall);
   const offset = usePlannerStore((s) => s.offsetWall);
+  const deleteSelected = usePlannerStore((s) => s.deleteSelected);
   const unit = usePlannerStore((s) => s.unitSystem);
   return (
     <>
@@ -418,10 +462,11 @@ function WallProperties({ wall }: { wall: Wall }) {
       <LengthField label="Thickness" value={wall.thickness} min={0.05} onChange={(value) => updateWall(wall.id, { thickness: value })} />
       <LengthField label="Height" value={wall.height} min={2} onChange={(value) => updateWall(wall.id, { height: value })} />
       <div className="wall-actions">
-        <button onClick={() => offset(wall.id, -0.25)}>Move −{unit === 'metric' ? '25 cm' : '10 in'}</button>
-        <button onClick={() => split(wall.id)}>Split wall</button>
-        <button onClick={() => offset(wall.id, 0.25)}>Move +{unit === 'metric' ? '25 cm' : '10 in'}</button>
+        <button type="button" onClick={() => offset(wall.id, -0.25)}>Move −{unit === 'metric' ? '25 cm' : '10 in'}</button>
+        <button type="button" onClick={() => split(wall.id)}>Split wall</button>
+        <button type="button" onClick={() => offset(wall.id, 0.25)}>Move +{unit === 'metric' ? '25 cm' : '10 in'}</button>
       </div>
+      <p className="muted">Drag the blue end handles on the plan to lengthen or shorten this wall.</p>
       <Property label="Openings" value={String(openings.length)} />
       {openings.map((o) => (
         <div className="opening-editor" key={o.id}>
@@ -431,10 +476,19 @@ function WallProperties({ wall }: { wall: Wall }) {
             <input type="range" min=".05" max=".95" step=".05" value={o.offset} onChange={(e) => updateOpening(o.id, { offset: +e.target.value })} />
           </label>
           <LengthField label="Width" value={o.width} min={0.3} onChange={(width) => updateOpening(o.id, { width })} />
-          <button onClick={() => remove(o.id)}>Remove</button>
+          <button type="button" onClick={() => remove(o.id)}>Remove</button>
         </div>
       ))}
-      <p className="muted">Dragging or moving this segment keeps connected corners attached.</p>
+      <button
+        type="button"
+        className="wall-delete-btn"
+        onClick={() => {
+          if (!window.confirm('Delete this wall? Openings on it will be removed.')) return;
+          deleteSelected();
+        }}
+      >
+        Delete wall
+      </button>
     </>
   );
 }

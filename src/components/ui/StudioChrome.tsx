@@ -31,6 +31,7 @@ import {
 import { roomCategories } from '../catalog/CatalogPanel';
 import { usePlannerStore } from '../../store/plannerStore';
 import type { RoomType, Tool } from '../../types';
+import { FinishesBar } from './SelectionInspector';
 import { StoryOverview } from './StoryOverview';
 
 function useCoarsePointer() {
@@ -126,8 +127,10 @@ export function StudioChrome({
   const deleteSelected = usePlannerStore((s) => s.deleteSelected);
   const categories = roomCategories[roomType];
   const isTop = camera === 'top';
+  const wallEditMode = studioMode === 'architect' && isTop && tool === 'select';
   const showSelectionFabs = !!selectedItem && !pending;
-  const showActionFabs = showSelectionFabs || !!pending;
+  const showWallFabs = wallEditMode && !!selectedWall && !pending;
+  const showActionFabs = showSelectionFabs || !!pending || showWallFabs;
   const coarsePointer = useCoarsePointer();
   const [gestureHint, setGestureHint] = useState(false);
 
@@ -229,8 +232,8 @@ export function StudioChrome({
   }, [pending]);
 
   const planTools: { id: Tool; label: string; icon: typeof MousePointer2 }[] = [
-    { id: 'select', label: 'Select', icon: MousePointer2 },
-    { id: 'wall', label: 'Wall', icon: Wallpaper },
+    { id: 'select', label: 'Walls', icon: PencilRuler },
+    { id: 'wall', label: 'Draw', icon: Wallpaper },
     { id: 'room', label: 'Square', icon: Square },
   ];
 
@@ -238,11 +241,15 @@ export function StudioChrome({
     setStudioMode('architect');
     setTool(id);
     setDraftStart(null);
-    if (id !== 'select') {
-      setView('3d');
-      setCamera('top');
-    }
+    setView('3d');
+    setCamera('top');
+    if (id !== 'select') usePlannerStore.getState().selectWall(null);
   };
+
+  useEffect(() => {
+    if (wallEditMode) return;
+    if (usePlannerStore.getState().selectedWallId) usePlannerStore.getState().selectWall(null);
+  }, [wallEditMode]);
 
   const openFurnishCategory = (category: string) => {
     setStudioMode('furnish');
@@ -337,6 +344,8 @@ export function StudioChrome({
             <ArrowRight />
           </button>
         </div>
+
+        <FinishesBar />
       </div>
 
       {showSideRail && (
@@ -424,6 +433,9 @@ export function StudioChrome({
               </div>
             )}
 
+            {showPlanTools && tool === 'select' && (
+              <p className="studio-side-hint">Tap a wall · drag ends to resize</p>
+            )}
             {showPlanTools && tool === 'wall' && (
               <p className="studio-side-hint">
                 {draftStart ? 'Tap wall end' : 'Tap to draw walls'}
@@ -445,9 +457,27 @@ export function StudioChrome({
 
       {pending && <div className="studio-selection-hint studio-hint-float">Placing {pending.name} · move then tap to confirm</div>}
 
-      {hasSelection && !pending && !selectedItem && !inRoom && (
-        <div className="studio-selection-hint studio-hint-float">
-          {selectedOpening ? 'Opening selected · adjust in Edit' : selectedWall ? 'Wall selected · use Edit for measurements' : 'Room selected'}
+      {hasSelection && !pending && !selectedItem && !inRoom && wallEditMode && selectedWall && (
+        <div className="studio-selection-hint studio-hint-float">Wall selected · drag blue handles to resize</div>
+      )}
+
+      {wallEditMode && selectedWall && !pending && (
+        <div className="studio-selection-fabs" role="toolbar" aria-label="Wall actions">
+          <button
+            type="button"
+            className="is-danger"
+            onClick={() => {
+              if (!window.confirm('Delete this wall?')) return;
+              deleteSelected();
+            }}
+            aria-label="Delete wall"
+            title="Delete wall"
+          >
+            <Trash2 />
+          </button>
+          <button type="button" onClick={onOpenInspector} aria-label="Wall properties" title="Wall properties">
+            <Info />
+          </button>
         </div>
       )}
 
