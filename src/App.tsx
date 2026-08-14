@@ -393,6 +393,24 @@ function StudioApp() {
             >
               +
             </button>
+            {floors.length > 1 && (
+              <button
+                onClick={() => {
+                  const floor = floors.find((f) => f.id === activeFloorId);
+                  if (!floor) return;
+                  if (!window.confirm(`Delete “${floor.name}”? This cannot be undone.`)) return;
+                  if (!store.deleteFloor(activeFloorId)) return;
+                  window.setTimeout(() => {
+                    window.dispatchEvent(new Event('roomcraft-fit-plan'));
+                    window.dispatchEvent(new Event('roomcraft-refocus'));
+                  }, 80);
+                }}
+                title="Delete current story"
+                aria-label="Delete current story"
+              >
+                −
+              </button>
+            )}
           </div>
           {!validation.valid && walls.length > 0 && <div className="plan-warning">Connect the highlighted endpoints to close the room.</div>}
           <p className="menu-meta">

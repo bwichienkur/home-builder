@@ -55,12 +55,16 @@ function CameraRig() {
       const back = Math.max(4.2, framing.span * 0.55);
       return [center[0], 1.55, center[2] + back];
     }
-    const back = Math.max(8, framing.span * 0.85);
-    return [center[0] + back * 0.55, Math.max(5, framing.span * 0.35), center[2] + back * 0.65];
+    return framing.orbitPose;
   }, [mode, center, framing]);
 
-  const maxDistance = mode === 'top' ? Math.max(framing.topHeight * 2.2, framing.span * 6, 90) : mode === 'walk' ? Math.max(14, framing.span * 1.4) : Math.max(36, framing.span * 3.2);
-  const minDistance = mode === 'walk' ? 1.2 : mode === 'top' ? Math.max(3, framing.span * 0.08) : 2;
+  const maxDistance =
+    mode === 'top'
+      ? Math.max(framing.topHeight * 2.2, framing.span * 6, 90)
+      : mode === 'walk'
+        ? Math.max(14, framing.span * 1.4)
+        : Math.max(framing.orbitPose[1] * 2.4, framing.span * 5, 48);
+  const minDistance = mode === 'walk' ? 1.2 : mode === 'top' ? Math.max(3, framing.span * 0.08) : Math.max(4, framing.span * 0.2);
 
   const animating = useRef(false);
   const applyPose = (to: THREE.Vector3, target: THREE.Vector3, duration = 0) => {
@@ -116,9 +120,10 @@ function CameraRig() {
     applyPose(new THREE.Vector3(...poseTuple), new THREE.Vector3(...targetTuple), 0);
   };
 
-  // Snap when view mode changes so Top always opens as a full centered plate.
+  // Animate into orbit/walk so the whole plate eases into view (avoid corner snap).
   useEffect(() => {
-    snapToPose();
+    if (mode === 'top') snapToPose();
+    else animateToPose(560);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
 

@@ -1,4 +1,4 @@
-import { Plus, X } from 'lucide-react';
+import { Plus, Trash2, X } from 'lucide-react';
 import { usePlannerStore } from '../../store/plannerStore';
 import { FloorPlateThumb } from './FloorPlateThumb';
 
@@ -11,6 +11,7 @@ export function StoryOverview({ open, onClose }: { open: boolean; onClose: () =>
   const activeFloorId = usePlannerStore((s) => s.activeFloorId);
   const switchFloor = usePlannerStore((s) => s.switchFloor);
   const addFloor = usePlannerStore((s) => s.addFloor);
+  const deleteFloor = usePlannerStore((s) => s.deleteFloor);
   const walls = usePlannerStore((s) => s.walls);
   const planRooms = usePlannerStore((s) => s.planRooms);
 
@@ -35,6 +36,16 @@ export function StoryOverview({ open, onClose }: { open: boolean; onClose: () =>
     }, 80);
   };
 
+  const removeFloor = (id: string, name: string) => {
+    if (floors.length <= 1) return;
+    if (!window.confirm(`Delete “${name}”? This cannot be undone.`)) return;
+    if (!deleteFloor(id)) return;
+    window.setTimeout(() => {
+      window.dispatchEvent(new Event('roomcraft-fit-plan'));
+      window.dispatchEvent(new Event('roomcraft-refocus'));
+    }, 80);
+  };
+
   return (
     <div className="story-overview" role="dialog" aria-label="All stories">
       <header>
@@ -48,7 +59,21 @@ export function StoryOverview({ open, onClose }: { open: boolean; onClose: () =>
       </header>
       <div className="story-overview-grid">
         {plates.map((plate) => (
-          <FloorPlateThumb key={plate.id} floor={plate} active={plate.id === activeFloorId} onSelect={() => openStory(plate.id)} />
+          <div key={plate.id} className="story-plate-wrap">
+            <FloorPlateThumb floor={plate} active={plate.id === activeFloorId} onSelect={() => openStory(plate.id)} />
+            {floors.length > 1 && (
+              <button
+                type="button"
+                className="story-plate-delete"
+                aria-label={`Delete ${plate.name}`}
+                title={`Delete ${plate.name}`}
+                onClick={() => removeFloor(plate.id, plate.name)}
+              >
+                <Trash2 size={14} />
+                Delete floor
+              </button>
+            )}
+          </div>
         ))}
       </div>
       <div className="story-overview-actions">

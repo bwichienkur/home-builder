@@ -128,6 +128,7 @@ type PlannerState = SceneSnapshot & {
   addFloor: (opts?: { copyActive?: boolean }) => void;
   switchFloor: (id: string) => void;
   renameFloor: (id: string, name: string) => void;
+  deleteFloor: (id: string) => boolean;
   undo: () => void;
   redo: () => void;
   clear: () => void;
@@ -949,6 +950,40 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       set((s) => ({
         floors: s.floors.map((f) => (f.id === id ? { ...f, name: name.trim() || f.name } : f)),
       })),
+    deleteFloor: (id) => {
+      const state = get();
+      if (state.floors.length <= 1) return false;
+      // Persist current floor scene before removing another (or self).
+      const persisted = state.floors.map((f) =>
+        f.id === state.activeFloorId ? { ...f, scene: snap(), planRooms: state.planRooms } : f,
+      );
+      const remaining = persisted.filter((f) => f.id !== id);
+      if (!remaining.length) return false;
+      const deletingActive = state.activeFloorId === id;
+      const next = deletingActive ? remaining[0] : remaining.find((f) => f.id === state.activeFloorId) ?? remaining[0];
+      if (!next) return false;
+      set({
+        ...next.scene,
+        floors: remaining,
+        activeFloorId: next.id,
+        planRooms: next.planRooms ?? [],
+        history: [next.scene],
+        historyIndex: 0,
+        selectedWallId: null,
+        selectedOpeningId: null,
+        selectedFurnitureId: null,
+        selectedRoomId: null,
+        selectedSurface: null,
+        pendingPlacement: null,
+        workflowStage: 'house',
+        studioMode: 'architect',
+        cameraMode: 'top',
+        view: '3d',
+        tool: 'select',
+        draftStart: null,
+      });
+      return true;
+    },
     undo: () =>
       set((s) => {
         const i = Math.max(0, s.historyIndex - 1);

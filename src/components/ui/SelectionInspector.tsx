@@ -124,7 +124,7 @@ function PlanRoomProperties({ room }: { room: PlanRoomLabel }) {
 
   return (
     <>
-      <p className="muted">Room focus · Back to house returns to the full floor</p>
+      <p className="muted">Editing this room only</p>
       <label>
         Room name
         <input className="property-input" value={room.name} onChange={(e) => update(room.id, { name: e.target.value })} />
@@ -175,12 +175,16 @@ function PlanRoomProperties({ room }: { room: PlanRoomLabel }) {
       <div className="wall-actions">
         <button
           type="button"
+          className="inspector-back-btn"
           onClick={() => {
             exitRoom();
-            window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 0);
+            window.setTimeout(() => {
+              window.dispatchEvent(new Event('roomcraft-fit-plan'));
+              window.dispatchEvent(new Event('roomcraft-refocus'));
+            }, 0);
           }}
         >
-          Back to house
+          ← House
         </button>
         <button type="button" onClick={() => split(room.id)}>
           Split room

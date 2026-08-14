@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Wall } from '../../types';
-import { framingFromWalls, topViewHeight } from './planFraming';
+import { framingFromWalls, orbitViewPose, topViewHeight } from './planFraming';
 
 const rect: Wall[] = [
   { id: 'w1', start: { x: 180, y: 150 }, end: { x: 660, y: 150 }, thickness: 0.15, height: 2.7 },
@@ -24,5 +24,15 @@ describe('plan framing', () => {
     const large = topViewHeight(40);
     expect(large).toBeGreaterThan(small * 3);
     expect(large).toBeGreaterThan(70); // beyond the old fog far-plane that blanked plans
+  });
+
+  it('orbits from the south so the full plate stays centered', () => {
+    const framing = framingFromWalls(rect);
+    const [ox, oy, oz] = framing.orbitPose;
+    expect(ox).toBeCloseTo(framing.center[0], 3);
+    expect(oy).toBeGreaterThan(framing.span * 0.4);
+    expect(oz).toBeGreaterThan(framing.center[2]);
+    const cornerish = orbitViewPose(framing.center, framing.span);
+    expect(cornerish[0]).toBeCloseTo(framing.center[0], 3);
   });
 });
