@@ -266,10 +266,11 @@ function useDollhouseCutaway(walls: ReturnType<typeof usePlannerStore.getState>[
 
   useFrame((_, delta) => {
     const next: Record<string, number> = {};
-    const rate = 1 - Math.exp(-Math.min(delta, 0.05) * 10);
+    // Gentle temporal fade so orbiting opens/closes walls smoothly.
+    const rate = 1 - Math.exp(-Math.min(delta, 0.05) * 6.5);
     for (const wall of walls) {
       const target = wallCutawayOpacity(wall, camera.position.x, camera.position.z, center, enabled);
-      const prev = smoothed.current[wall.id] ?? target;
+      const prev = smoothed.current[wall.id] ?? (enabled ? 1 : target);
       const value = prev + (target - prev) * rate;
       smoothed.current[wall.id] = value;
       next[wall.id] = value;
@@ -277,7 +278,7 @@ function useDollhouseCutaway(walls: ReturnType<typeof usePlannerStore.getState>[
     for (const id of Object.keys(smoothed.current)) {
       if (!(id in next)) delete smoothed.current[id];
     }
-    const key = walls.map((w) => `${w.id}:${(next[w.id] ?? 1).toFixed(2)}`).join('|');
+    const key = walls.map((w) => `${w.id}:${(next[w.id] ?? 1).toFixed(3)}`).join('|');
     if (key !== lastKey.current) {
       lastKey.current = key;
       setOpacityByWall(next);

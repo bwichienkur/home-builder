@@ -11,7 +11,7 @@ const rect: Wall[] = [
 ];
 
 describe('wall cutaway', () => {
-  it('soft-fades the near walls when the camera sits outside a corner', () => {
+  it('opens camera-facing walls so the interior is visible', () => {
     const center = roomFloorCenter(rect);
     // Camera south-east of the room (positive X / positive Z in world).
     const cam = { x: center.x + 6, z: center.z + 7 };
@@ -19,12 +19,26 @@ describe('wall cutaway', () => {
     const south = wallCutawayOpacity(rect[2], cam.x, cam.z, center, true);
     const north = wallCutawayOpacity(rect[0], cam.x, cam.z, center, true);
     const west = wallCutawayOpacity(rect[3], cam.x, cam.z, center, true);
-    expect(east).toBeLessThan(0.45);
-    expect(south).toBeLessThan(0.45);
+    expect(east).toBeLessThan(0.08);
+    expect(south).toBeLessThan(0.08);
     expect(east).toBeGreaterThanOrEqual(CUTAWAY_MIN_OPACITY - 0.001);
     expect(south).toBeGreaterThanOrEqual(CUTAWAY_MIN_OPACITY - 0.001);
     expect(north).toBeGreaterThan(0.85);
     expect(west).toBeGreaterThan(0.85);
+  });
+
+  it('ramps opacity smoothly between edge-on and face-on', () => {
+    const center = roomFloorCenter(rect);
+    const south = rect[2];
+    // Sweep camera from west (edge-on to south wall) toward south (face-on).
+    const samples = [0, 0.35, 0.7, 1].map((t) => {
+      const ang = Math.PI / 2 + t * (Math.PI / 2); // west → south
+      return wallCutawayOpacity(south, center.x + Math.cos(ang) * 8, center.z + Math.sin(ang) * 8, center, true);
+    });
+    expect(samples[0]).toBeGreaterThan(0.9);
+    expect(samples[1]).toBeGreaterThan(samples[2]);
+    expect(samples[2]).toBeGreaterThan(samples[3]);
+    expect(samples[3]).toBeLessThan(0.08);
   });
 
   it('keeps all walls when cutaway is disabled or camera is overhead', () => {
