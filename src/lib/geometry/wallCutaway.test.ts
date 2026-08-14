@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Wall } from '../../types';
 import { planToWorld, roomFloorCenter } from './placement';
-import { CUTAWAY_MIN_OPACITY, wallCutawayOpacity } from './wallCutaway';
+import { CUTAWAY_FADE_END, CUTAWAY_FADE_START, CUTAWAY_MIN_OPACITY, cutawayEase, wallCutawayOpacity } from './wallCutaway';
 
 const rect: Wall[] = [
   { id: 'w1', start: { x: 180, y: 150 }, end: { x: 660, y: 150 }, thickness: 0.15, height: 2.7 },
@@ -19,24 +19,39 @@ describe('wall cutaway', () => {
     const south = wallCutawayOpacity(rect[2], cam.x, cam.z, center, true);
     const north = wallCutawayOpacity(rect[0], cam.x, cam.z, center, true);
     const west = wallCutawayOpacity(rect[3], cam.x, cam.z, center, true);
-    expect(east).toBe(CUTAWAY_MIN_OPACITY);
-    expect(south).toBe(CUTAWAY_MIN_OPACITY);
+    expect(east).toBeLessThan(0.02);
+    expect(south).toBeLessThan(0.02);
     expect(north).toBeGreaterThan(0.85);
     expect(west).toBeGreaterThan(0.85);
   });
 
-  it('ramps opacity smoothly between edge-on and face-on', () => {
+  it('ramps opacity smoothly across the facing band', () => {
     const center = roomFloorCenter(rect);
     const south = rect[2];
-    // Sweep camera from west (edge-on to south wall) toward south (face-on).
-    const samples = [0, 0.25, 0.5, 0.75, 1].map((t) => {
+    // Dense sweep so the ease is visible (not only endpoints).
+    const samples = Array.from({ length: 33 }, (_, i) => {
+      const t = i / 32;
       const ang = Math.PI - t * (Math.PI / 2); // west → south
       return wallCutawayOpacity(south, center.x + Math.cos(ang) * 8, center.z + Math.sin(ang) * 8, center, true);
     });
     expect(samples[0]).toBeGreaterThan(0.9);
-    expect(samples[1]).toBeGreaterThan(samples[2]);
-    expect(samples[2]).toBeGreaterThanOrEqual(samples[3]);
-    expect(samples[4]).toBe(CUTAWAY_MIN_OPACITY);
+    expect(samples[32]).toBe(CUTAWAY_MIN_OPACITY);
+    // Monotonic non-increasing dissolve.
+    for (let i = 1; i < samples.length; i++) {
+      expect(samples[i]).toBeLessThanOrEqual(samples[i - 1] + 1e-9);
+    }
+    // At least one mid sample sits in the partial-fade range (not a binary pop).
+    expect(samples.some((v) => v > 0.08 && v < 0.92)).toBe(true);
+  });
+
+  it('uses a soft ease curve and a meaningful fade window', () => {
+    expect(CUTAWAY_FADE_END - CUTAWAY_FADE_START).toBeGreaterThan(0.35);
+    expect(cutawayEase(0)).toBe(0);
+    expect(cutawayEase(1)).toBe(1);
+    expect(cutawayEase(0.5)).toBeCloseTo(0.5, 5);
+    // Flatter near the ends than linear.
+    expect(cutawayEase(0.1)).toBeLessThan(0.1);
+    expect(cutawayEase(0.9)).toBeGreaterThan(0.9);
   });
 
   it('keeps all walls when cutaway is disabled or camera is overhead', () => {

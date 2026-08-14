@@ -4,6 +4,25 @@ import { roomFloorCenter, wallFrame } from './placement';
 /** Fully open cutaway — facing walls disappear so the interior is visible. */
 export const CUTAWAY_MIN_OPACITY = 0;
 
+/**
+ * Facing·toCamera where the dissolve begins (≈ edge-on).
+ * Keep near 0 so walls stay solid until they actually turn toward the lens.
+ */
+export const CUTAWAY_FADE_START = 0;
+
+/**
+ * Facing·toCamera where the wall is fully open.
+ * Wider than a hard pop (~0.27 old band) but still clears on a typical corner
+ * orbit so both facing walls go away. Temporal easing supplies the IKEA cream.
+ */
+export const CUTAWAY_FADE_END = 0.42;
+
+/** Quintic smootherstep — flatter at the ends, creamier mid fade than smoothstep. */
+export function cutawayEase(t: number) {
+  const x = Math.min(1, Math.max(0, t));
+  return x * x * x * (x * (x * 6 - 15) + 10);
+}
+
 /** Room floor centroid in world XZ — used to decide which wall face is outward. */
 export function roomCenterWorld(walls: Wall[]) {
   return roomFloorCenter(walls);
@@ -14,7 +33,8 @@ export function roomCenterWorld(walls: Wall[]) {
  * fade away so the interior stays visible.
  *
  * Uses the vector from the wall midpoint to the camera (not only room-center azimuth),
- * so close orbit angles still open the correct faces.
+ * so close orbit angles still open the correct faces. Opacity is a wide, eased ramp —
+ * temporal smoothing in the scene hook finishes the creamy feel.
  */
 export function wallCutawayOpacity(
   wall: Wall,
@@ -46,10 +66,8 @@ export function wallCutawayOpacity(
   }
 
   const facing = nx * toCamX + nz * toCamZ;
-  // Open early so the two walls facing the lens clear the view.
-  if (facing <= 0.05) return 1;
-  if (facing >= 0.32) return CUTAWAY_MIN_OPACITY;
-  const t = (facing - 0.05) / 0.27;
-  const ease = t * t * (3 - 2 * t);
-  return 1 - ease;
+  if (facing <= CUTAWAY_FADE_START) return 1;
+  if (facing >= CUTAWAY_FADE_END) return CUTAWAY_MIN_OPACITY;
+  const t = (facing - CUTAWAY_FADE_START) / (CUTAWAY_FADE_END - CUTAWAY_FADE_START);
+  return 1 - cutawayEase(t);
 }

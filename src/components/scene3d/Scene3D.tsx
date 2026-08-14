@@ -307,21 +307,26 @@ function useDollhouseCutaway(walls: ReturnType<typeof usePlannerStore.getState>[
     const next: Record<string, number> = {};
     const justEnabled = enabled && !wasEnabled.current;
     wasEnabled.current = enabled;
-    // Faster settle when entering 3D so facing walls open promptly.
-    const rate = justEnabled ? 1 : 1 - Math.exp(-Math.min(delta, 0.05) * (enabled ? 9 : 14));
+    // IKEA-like cream: slow ease while orbiting; a bit quicker when entering/leaving 3D.
+    // Never snap — instant target jumps are what made the dissolve feel harsh.
+    const speed = justEnabled ? 4.0 : enabled ? 2.6 : 7.0;
+    const rate = 1 - Math.exp(-Math.min(delta, 0.08) * speed);
     let settling = false;
     for (const wall of walls) {
       const target = wallCutawayOpacity(wall, camera.position.x, camera.position.z, center, enabled);
-      const prev = smoothed.current[wall.id] ?? (enabled ? 1 : target);
-      const value = justEnabled ? target : prev + (target - prev) * rate;
-      smoothed.current[wall.id] = value;
-      next[wall.id] = value;
-      if (Math.abs(value - target) > 0.004) settling = true;
+      const prev = smoothed.current[wall.id] ?? 1;
+      const value = prev + (target - prev) * rate;
+      // Snap residual once we're visually done — avoids endless micro-invalidates.
+      const settled = Math.abs(value - target) < 0.002 ? target : value;
+      smoothed.current[wall.id] = settled;
+      next[wall.id] = settled;
+      if (Math.abs(settled - target) > 0.002) settling = true;
     }
     for (const id of Object.keys(smoothed.current)) {
       if (!(id in next)) delete smoothed.current[id];
     }
-    const key = walls.map((w) => `${w.id}:${(next[w.id] ?? 1).toFixed(3)}`).join('|');
+    // Finer quantization so React materials track the ease without stair-steps.
+    const key = walls.map((w) => `${w.id}:${(next[w.id] ?? 1).toFixed(4)}`).join('|');
     if (key !== lastKey.current) {
       lastKey.current = key;
       setOpacityByWall(next);
@@ -352,9 +357,11 @@ function WallMeshes() {
   const color = usePlannerStore((s) => s.wallColor);
   const selectedId = usePlannerStore((s) => s.selectedWallId);
   const select = usePlannerStore((s) => s.selectWall);
+  const cameraMode = usePlannerStore((s) => s.cameraMode);
   const opacityByWall = useDollhouseCutaway(walls);
   const wallIds = useMemo(() => new Set(walls.map((w) => w.id)), [walls]);
   const visibleOpenings = useMemo(() => openings.filter((o) => wallIds.has(o.wallId)), [openings, wallIds]);
+  const orbiting = cameraMode === 'orbit';
 
   return (
     <>
@@ -362,7 +369,8 @@ function WallMeshes() {
         const opacity = opacityByWall[w.id] ?? 1;
         const selected = selectedId === w.id;
         const drawOpacity = opacity;
-        const hidden = drawOpacity < 0.08;
+        // Hide only after the fade is visually done — avoids a mid-dissolve pop.
+        const hidden = drawOpacity < 0.02;
         const [sx0, sz0] = world(w.start.x, w.start.y);
         const [ex0, ez0] = world(w.end.x, w.end.y);
         const origLen = Math.hypot(ex0 - sx0, ez0 - sz0) || 0.01;
@@ -417,7 +425,9 @@ function WallMeshes() {
           ];
         }
 
-        const cutaway = drawOpacity < 0.999;
+        // In orbit, keep soft materials even at opacity 1 so we never flip opaque↔transparent mid-orbit.
+        const soft = orbiting || drawOpacity < 0.999;
+        const fading = drawOpacity < 0.97;
         const related = visibleOpenings.filter((o) => o.wallId === w.id);
         let ranges: [number, number][] = [[0, length]];
         related.forEach((o) => {
@@ -429,7 +439,18 @@ function WallMeshes() {
           );
         });
         // Cutaway visuals must not steal picks from furniture inside the room; pickProxy handles wall clicks.
-        const skipRay = cutaway ? () => {} : undefined;
+        const skipRay = fading ? () => {} : undefined;
+        const wallMat = {
+          color,
+          roughness: 0.86,
+          transparent: soft,
+          opacity: drawOpacity,
+          // Keep depth while nearly solid; drop it only once the dissolve is underway.
+          depthWrite: !soft || drawOpacity > 0.9,
+          polygonOffset: true,
+          polygonOffsetFactor: 1,
+          polygonOffsetUnits: 1,
+        } as const;
         const base = ranges.flatMap(([a, b], i) => {
           const c = (a + b) / 2;
           const t = c / length;
@@ -441,10 +462,10 @@ function WallMeshes() {
               key={w.id + 'b' + i}
               position={[x, w.height / 2, z]}
               rotation={[0, angle, 0]}
-              castShadow={!cutaway}
-              receiveShadow={!cutaway}
+              castShadow={!fading}
+              receiveShadow={!fading}
               raycast={skipRay}
-              userData={cutaway ? { wallCutawayPick: true } : undefined}
+              userData={fading ? { wallCutawayPick: true } : undefined}
               onClick={(e) => {
                 e.stopPropagation();
                 select(w.id);
@@ -452,16 +473,7 @@ function WallMeshes() {
               }}
             >
               <boxGeometry args={[segLen, w.height, w.thickness]} />
-              <meshStandardMaterial
-                color={color}
-                roughness={0.86}
-                transparent={cutaway}
-                opacity={drawOpacity}
-                depthWrite={!cutaway}
-                polygonOffset
-                polygonOffsetFactor={1}
-                polygonOffsetUnits={1}
-              />
+              <meshStandardMaterial {...wallMat} />
             </mesh>,
           ];
           if (selected) {
@@ -472,7 +484,7 @@ function WallMeshes() {
                 <meshBasicMaterial
                   color="#0058a3"
                   transparent
-                  opacity={0.28}
+                  opacity={0.28 * Math.max(drawOpacity, 0.35)}
                   depthWrite={false}
                   depthTest
                   toneMapped={false}
@@ -495,15 +507,7 @@ function WallMeshes() {
             parts.push(
               <mesh key={o.id + 'sill'} position={[x, o.sill / 2, z]} rotation={[0, angle, 0]} raycast={skipRay}>
                 <boxGeometry args={[o.width, o.sill, w.thickness]} />
-                <meshStandardMaterial
-                  color={color}
-                  transparent={cutaway}
-                  opacity={drawOpacity}
-                  depthWrite={!cutaway}
-                  polygonOffset
-                  polygonOffsetFactor={1}
-                  polygonOffsetUnits={1}
-                />
+                <meshStandardMaterial {...wallMat} />
               </mesh>,
             );
           const top = w.height - (o.sill + o.height);
@@ -511,15 +515,7 @@ function WallMeshes() {
             parts.push(
               <mesh key={o.id + 'top'} position={[x, o.sill + o.height + top / 2, z]} rotation={[0, angle, 0]} raycast={skipRay}>
                 <boxGeometry args={[o.width, top, w.thickness]} />
-                <meshStandardMaterial
-                  color={color}
-                  transparent={cutaway}
-                  opacity={drawOpacity}
-                  depthWrite={!cutaway}
-                  polygonOffset
-                  polygonOffsetFactor={1}
-                  polygonOffsetUnits={1}
-                />
+                <meshStandardMaterial {...wallMat} />
               </mesh>,
             );
           if (o.type === 'window')
@@ -536,7 +532,7 @@ function WallMeshes() {
                 />
               </mesh>,
             );
-          if (o.type === 'door' && !cutaway)
+          if (o.type === 'door' && !fading)
             parts.push(
               <DoorLeaf key={o.id + 'door'} x={x} z={z} angle={angle} width={o.width} height={o.height} swing={o.swing ?? 'left'} />,
             );
@@ -549,8 +545,8 @@ function WallMeshes() {
             );
           return parts;
         });
-        // Extra pick proxy only while the wall is faded — opaque walls use the solid mesh.
-        return cutaway ? [pickProxy, ...base, ...fills] : [...base, ...fills];
+        // Pick proxy while soft/fading so interior picks still work through open walls.
+        return soft ? [pickProxy, ...base, ...fills] : [...base, ...fills];
       })}
       {(() => {
         // Corner posts seal joints where wall boxes meet at shared plan endpoints.
@@ -570,26 +566,27 @@ function WallMeshes() {
             const h = Math.max(...touching.map((ww) => ww.height));
             const opacity = Math.min(...touching.map((ww) => opacityByWall[ww.id] ?? 1));
             const selectedTouch = touching.some((ww) => ww.id === selectedId);
-            if (opacity < 0.08 && !selectedTouch) continue;
+            if (opacity < 0.02 && !selectedTouch) continue;
             const drawOpacity = opacity;
-            const cutaway = drawOpacity < 0.999;
+            const fading = drawOpacity < 0.97;
+            const soft = orbiting || drawOpacity < 0.999;
             posts.push(
               <mesh
                 key={`corner-${key}`}
                 position={[x, h / 2, z]}
-                castShadow={!cutaway}
-                receiveShadow={!cutaway}
+                castShadow={!fading}
+                receiveShadow={!fading}
                 renderOrder={selectedTouch ? 2 : 0}
-                raycast={cutaway ? () => {} : undefined}
-                userData={cutaway ? { wallCutawayPick: true } : undefined}
+                raycast={fading ? () => {} : undefined}
+                userData={fading ? { wallCutawayPick: true } : undefined}
               >
                 <boxGeometry args={[t * 0.98, h, t * 0.98]} />
                 <meshStandardMaterial
                   color={color}
                   roughness={0.86}
-                  transparent={cutaway}
+                  transparent={soft}
                   opacity={drawOpacity}
-                  depthWrite={!cutaway}
+                  depthWrite={!soft || drawOpacity > 0.9}
                   polygonOffset
                   polygonOffsetFactor={2}
                   polygonOffsetUnits={2}
@@ -603,7 +600,7 @@ function WallMeshes() {
                   <meshBasicMaterial
                     color="#0058a3"
                     transparent
-                    opacity={0.28}
+                    opacity={0.28 * Math.max(drawOpacity, 0.35)}
                     depthWrite={false}
                     depthTest
                     toneMapped={false}
