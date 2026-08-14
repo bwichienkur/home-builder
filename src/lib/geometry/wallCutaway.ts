@@ -44,10 +44,10 @@ export function wallCutawayOpacity(
     nz = -nz;
   }
   const facing = nx * camX + nz * camZ;
-  // Wide smoothstep: edge-on stays solid; screen-facing walls open up.
-  if (facing <= 0.04) return 1;
-  if (facing >= 0.48) return CUTAWAY_MIN_OPACITY;
-  const t = (facing - 0.04) / 0.44;
+  // Wide smoothstep across most of the hemisphere so orbit fades feel continuous.
+  if (facing <= 0.02) return 1;
+  if (facing >= 0.72) return CUTAWAY_MIN_OPACITY;
+  const t = (facing - 0.02) / 0.7;
   const ease = t * t * (3 - 2 * t);
   return 1 - ease * (1 - CUTAWAY_MIN_OPACITY);
 }

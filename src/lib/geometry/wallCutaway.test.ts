@@ -31,14 +31,14 @@ describe('wall cutaway', () => {
     const center = roomFloorCenter(rect);
     const south = rect[2];
     // Sweep camera from west (edge-on to south wall) toward south (face-on).
-    const samples = [0, 0.35, 0.7, 1].map((t) => {
+    const samples = [0, 0.25, 0.5, 0.75, 1].map((t) => {
       const ang = Math.PI - t * (Math.PI / 2); // west → south
       return wallCutawayOpacity(south, center.x + Math.cos(ang) * 8, center.z + Math.sin(ang) * 8, center, true);
     });
     expect(samples[0]).toBeGreaterThan(0.9);
     expect(samples[1]).toBeGreaterThan(samples[2]);
     expect(samples[2]).toBeGreaterThan(samples[3]);
-    expect(samples[3]).toBeLessThan(0.08);
+    expect(samples[4]).toBeLessThan(0.08);
   });
 
   it('keeps all walls when cutaway is disabled or camera is overhead', () => {
