@@ -23,8 +23,11 @@ export function DesignStart({ onBegan }: { onBegan?: () => void }) {
   );
 
   const finish = () => {
-    // Wait for walls/framing to commit before centering the camera.
-    window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 120);
+    // Instant fit after walls commit — avoids blank/fogged or diagonal first frames.
+    window.setTimeout(() => {
+      window.dispatchEvent(new Event('roomcraft-fit-plan'));
+      window.dispatchEvent(new Event('roomcraft-refocus'));
+    }, 80);
     onBegan?.();
   };
 

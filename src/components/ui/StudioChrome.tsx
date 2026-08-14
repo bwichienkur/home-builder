@@ -140,7 +140,10 @@ export function StudioChrome({
     switchFloor(id);
     setView('3d');
     setCamera('top');
-    window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 120);
+    window.setTimeout(() => {
+      window.dispatchEvent(new Event('roomcraft-fit-plan'));
+      window.dispatchEvent(new Event('roomcraft-refocus'));
+    }, 80);
   };
 
   useEffect(() => {
@@ -164,7 +167,10 @@ export function StudioChrome({
   const chooseTop = () => {
     setView('3d');
     setCamera('top');
-    window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 0);
+    window.setTimeout(() => {
+      window.dispatchEvent(new Event('roomcraft-fit-plan'));
+      window.dispatchEvent(new Event('roomcraft-refocus'));
+    }, 0);
     setViewMenu(false);
   };
 
@@ -304,10 +310,13 @@ export function StudioChrome({
                 className="studio-floor-add"
                 aria-label="Add story"
                 title="Add story"
-                onClick={() => {
-                  addFloor();
-                  window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 120);
-                }}
+              onClick={() => {
+                addFloor();
+                window.setTimeout(() => {
+                  window.dispatchEvent(new Event('roomcraft-fit-plan'));
+                  window.dispatchEvent(new Event('roomcraft-refocus'));
+                }, 80);
+              }}
               >
                 <Plus size={14} />
               </button>
