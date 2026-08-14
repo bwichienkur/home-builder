@@ -30,11 +30,18 @@ describe('plan framing', () => {
     const framing = framingFromWalls(rect);
     const [ox, oy, oz] = framing.orbitPose;
     expect(ox).toBeCloseTo(framing.center[0], 3);
-    expect(oy).toBeGreaterThan(framing.span * 0.35);
+    expect(oy).toBeGreaterThan(framing.span * 0.25);
     // Not so far that the plate becomes a speck in empty void.
-    expect(oy).toBeLessThan(framing.span * 2.4);
+    expect(oy).toBeLessThan(framing.span * 1.8);
     expect(oz).toBeGreaterThan(framing.center[2]);
     const centered = orbitViewPose(framing.center, framing.span);
     expect(centered[0]).toBeCloseTo(framing.center[0], 3);
+  });
+
+  it('keeps orbit pad independent from top chrome pad', () => {
+    const looseTop = framingFromWalls(rect, { pad: 3.1, orbitPad: 1.18 });
+    const tightBoth = framingFromWalls(rect, { pad: 1.18, orbitPad: 1.18 });
+    expect(looseTop.orbitPose[1]).toBeCloseTo(tightBoth.orbitPose[1], 3);
+    expect(looseTop.topHeight).toBeGreaterThan(tightBoth.topHeight);
   });
 });

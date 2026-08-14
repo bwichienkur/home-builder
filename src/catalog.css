@@ -3,49 +3,45 @@
   inset: 0;
   z-index: 75;
   border: 0;
-  background: rgba(17, 24, 32, 0.28);
+  background: rgba(17, 24, 32, 0.16);
   animation: fade-in 180ms ease-out;
 }
 
 .catalog-panel {
   position: fixed;
   z-index: 80;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: min(400px, 92vw);
-  background: var(--surface);
-  padding: 18px 16px max(18px, env(safe-area-inset-bottom));
+  top: max(12px, env(safe-area-inset-top));
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(96px, calc(env(safe-area-inset-bottom) + 88px));
+  width: min(320px, calc(100vw - 28px));
+  background: rgba(255, 255, 255, 0.98);
+  padding: 14px 14px max(14px, env(safe-area-inset-bottom));
   overflow: auto;
-  box-shadow: -12px 0 40px rgba(17, 24, 32, 0.18);
-  transform: translateX(104%);
-  transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+  border-radius: 18px;
+  box-shadow: 0 12px 36px rgba(17, 24, 32, 0.18), 0 0 0 1px rgba(17, 24, 32, 0.06);
+  transform: translateX(110%);
+  transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
   -webkit-overflow-scrolling: touch;
+  backdrop-filter: blur(12px);
 }
 .catalog-panel.is-open { transform: translateX(0); }
 
 @media (max-width: 820px) {
   .catalog-panel {
-    top: auto;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: 100%;
-    max-height: min(72vh, 640px);
-    border-radius: 18px 18px 0 0;
-    transform: translateY(104%);
-    box-shadow: 0 -12px 40px rgba(17, 24, 32, 0.18);
+    top: max(72px, calc(env(safe-area-inset-top) + 60px));
+    right: max(10px, env(safe-area-inset-right));
+    bottom: max(110px, calc(env(safe-area-inset-bottom) + 98px));
+    left: auto;
+    width: min(280px, calc(100vw - 84px));
+    max-height: none;
+    border-radius: 16px;
+    transform: translateX(110%);
+    box-shadow: 0 12px 36px rgba(17, 24, 32, 0.18), 0 0 0 1px rgba(17, 24, 32, 0.06);
     padding-top: 12px;
   }
-  .catalog-panel.is-open { transform: translateY(0); }
-  .catalog-panel::before {
-    content: '';
-    display: block;
-    width: 44px;
-    height: 4px;
-    border-radius: 999px;
-    background: #c5c9ce;
-    margin: 0 auto 10px;
+  .catalog-panel.is-open { transform: translateX(0); }
+  .catalog-backdrop {
+    background: rgba(17, 24, 32, 0.1);
   }
   .catalog-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));

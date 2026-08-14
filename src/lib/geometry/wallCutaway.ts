@@ -1,6 +1,9 @@
 import type { Wall } from '../../types';
 import { roomFloorCenter, wallFrame } from './placement';
 
+/** Soft floor so facing walls never fully vanish while orbiting. */
+export const CUTAWAY_MIN_OPACITY = 0.22;
+
 /** Room floor centroid in world XZ — used to decide which wall face is outward. */
 export function roomCenterWorld(walls: Wall[]) {
   return roomFloorCenter(walls);
@@ -8,7 +11,8 @@ export function roomCenterWorld(walls: Wall[]) {
 
 /**
  * IKEA-style dollhouse cutaway: walls whose outward face points toward the camera
- * fade out so the interior stays visible. Returns 0–1 opacity.
+ * fade toward a soft floor so the interior stays visible without hard pops.
+ * Returns CUTAWAY_MIN_OPACITY–1.
  */
 export function wallCutawayOpacity(
   wall: Wall,
@@ -37,7 +41,11 @@ export function wallCutawayOpacity(
     nz = -nz;
   }
   const facing = nx * camX + nz * camZ;
-  if (facing <= 0.08) return 1;
-  if (facing >= 0.28) return 0;
-  return 1 - (facing - 0.08) / 0.2;
+  // Wide, soft ramp — facing walls stay partly visible instead of vanishing.
+  if (facing <= 0.02) return 1;
+  if (facing >= 0.62) return CUTAWAY_MIN_OPACITY;
+  const t = (facing - 0.02) / 0.6;
+  // Smoothstep for gentler orbit transitions.
+  const ease = t * t * (3 - 2 * t);
+  return 1 - ease * (1 - CUTAWAY_MIN_OPACITY);
 }

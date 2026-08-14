@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { CameraMode, FurnitureItem, MountingType, Opening, PlanRoomLabel, Point, RoomType, SceneSnapshot, StudioMode, SurfaceTarget, Tool, UnitSystem, Wall, WorkflowStage } from '../types';
 import { constrainPlacement, openingConflicts, resolveMountingType, roomFloorCenter } from '../lib/geometry/placement';
+import { detectRoomPolygons } from '../lib/geometry/rooms';
 import { writeRecoverySnapshot } from '../lib/designShare';
 import { buildHouse, rebuildFromPlanRooms, resizePlanRoomPoints, splitPlanRoomPoints, squareRoomPoints } from '../lib/housePlans/buildPlan';
 import { getHousePlan } from '../lib/housePlans/olsenPlans';
@@ -361,6 +362,14 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         walls = [mk(a, b), mk(b, c), mk(c, d), mk(d, a)];
       }
       mutate({ walls, openings: [], furniture: [] });
+      const polys = detectRoomPolygons(walls);
+      const planRooms: PlanRoomLabel[] = polys.map((points, i) => ({
+        id: crypto.randomUUID(),
+        name: i === 0 ? 'Room' : `Room ${i + 1}`,
+        roomType: get().roomType,
+        points,
+      }));
+      const first = planRooms[0] ?? null;
       set({
         selectedWallId: null,
         selectedOpeningId: null,
@@ -369,12 +378,18 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         tool: 'select',
         housePlanId: null,
         housePlanName: null,
-        planRooms: [],
-        workflowStage: 'house',
-        studioMode: 'architect',
-        selectedRoomId: null,
+        planRooms,
+        workflowStage: first ? 'room' : 'house',
+        studioMode: first ? 'furnish' : 'architect',
+        selectedRoomId: first?.id ?? null,
+        selectedSurface: first ? 'floor' : null,
         cameraMode: 'top',
         view: '3d',
+        floors: get().floors.map((f) =>
+          f.id === get().activeFloorId
+            ? { ...f, scene: { walls, openings: [], furniture: [], wallColor: get().wallColor, floorColor: get().floorColor, ceilingColor: get().ceilingColor }, planRooms }
+            : f,
+        ),
       });
     },
     applyHousePlan: (planId) => {

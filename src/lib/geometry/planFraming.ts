@@ -13,6 +13,15 @@ export type PlanFraming = {
   orbitPose: [number, number, number];
 };
 
+export type FramingOpts = {
+  /** Padding for top-down framing (defaults ~2.8). */
+  pad?: number;
+  /** Padding for orbit framing — kept separate so top chrome pad does not zoom 3D out. */
+  orbitPad?: number;
+  minSpan?: number;
+  minHeight?: number;
+};
+
 function world(x: number, y: number): [number, number] {
   return [(x - WORLD_ORIGIN.x) / PIXELS_PER_METER, (y - WORLD_ORIGIN.y) / PIXELS_PER_METER];
 }
@@ -32,16 +41,17 @@ export function orbitViewPose(
   span: number,
   opts?: { fovDeg?: number; pad?: number; elevDeg?: number },
 ): [number, number, number] {
-  const fov = ((opts?.fovDeg ?? 48) * Math.PI) / 180;
-  const elev = ((opts?.elevDeg ?? 34) * Math.PI) / 180;
-  // Tight pad so the plate fills the viewport without corner-zoom or empty void.
-  const pad = opts?.pad ?? 1.55;
+  const fov = ((opts?.fovDeg ?? 50) * Math.PI) / 180;
+  const elev = ((opts?.elevDeg ?? 38) * Math.PI) / 180;
+  // Keep the plate large in frame — do not inherit top-view chrome padding.
+  const pad = opts?.pad ?? 1.18;
   const half = (Math.max(span, 2) * 0.5) * pad;
-  const dist = Math.max(6, half / Math.tan(fov / 2) / Math.max(0.42, Math.sin(elev)));
+  const dist = Math.max(5.5, half / Math.tan(fov / 2) / Math.max(0.48, Math.sin(elev)));
   return [center[0], dist * Math.sin(elev), center[2] + dist * Math.cos(elev)];
 }
 
-export function framingFromPoints(points: Point[], opts?: { pad?: number; minSpan?: number; minHeight?: number }): PlanFraming {
+export function framingFromPoints(points: Point[], opts?: FramingOpts): PlanFraming {
+  const orbitPad = opts?.orbitPad ?? 1.18;
   if (!points.length) {
     const height = topViewHeight(8, { pad: opts?.pad, min: opts?.minHeight ?? 12 });
     const center: [number, number, number] = [0, 0, 0];
@@ -50,7 +60,7 @@ export function framingFromPoints(points: Point[], opts?: { pad?: number; minSpa
       span: 8,
       topHeight: height,
       topPose: [0, height, height * Math.tan(0.065)],
-      orbitPose: orbitViewPose(center, 8, { pad: opts?.pad }),
+      orbitPose: orbitViewPose(center, 8, { pad: orbitPad }),
     };
   }
   const worldPts = points.map((p) => world(p.x, p.y));
@@ -72,11 +82,11 @@ export function framingFromPoints(points: Point[], opts?: { pad?: number; minSpa
     span,
     topHeight,
     topPose: [cx, topHeight, cz + zBias],
-    orbitPose: orbitViewPose(center, span, { pad: opts?.pad }),
+    orbitPose: orbitViewPose(center, span, { pad: orbitPad }),
   };
 }
 
-export function framingFromWalls(walls: Wall[], opts?: { pad?: number; minHeight?: number }): PlanFraming {
+export function framingFromWalls(walls: Wall[], opts?: FramingOpts): PlanFraming {
   const points = walls.flatMap((w) => [w.start, w.end]);
-  return framingFromPoints(points, { minSpan: 3, minHeight: opts?.minHeight ?? 12, pad: opts?.pad });
+  return framingFromPoints(points, { minSpan: 3, minHeight: opts?.minHeight ?? 12, pad: opts?.pad, orbitPad: opts?.orbitPad });
 }

@@ -42,10 +42,11 @@ function CameraRig() {
   const coarse = useMemo(() => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches, []);
   const framing = useMemo(() => {
     const pad = coarse ? 3.1 : 2.8;
+    const orbitPad = coarse ? 1.28 : 1.18;
     if (focusRoom?.points.length) {
-      return framingFromPoints(focusRoom.points, { pad, minSpan: 2.5, minHeight: 8 });
+      return framingFromPoints(focusRoom.points, { pad, orbitPad, minSpan: 2.5, minHeight: 8 });
     }
-    return framingFromWalls(walls, { pad, minHeight: 12 });
+    return framingFromWalls(walls, { pad, orbitPad, minHeight: 12 });
   }, [walls, focusRoom, coarse]);
   const center = framing.center;
   const targetTuple = useMemo<[number, number, number]>(() => [center[0], 0, center[2]], [center]);
@@ -64,7 +65,7 @@ function CameraRig() {
       : mode === 'walk'
         ? Math.max(14, framing.span * 1.4)
         : Math.max(framing.orbitPose[1] * 2.4, framing.span * 5, 48);
-  const minDistance = mode === 'walk' ? 1.2 : mode === 'top' ? Math.max(3, framing.span * 0.08) : Math.max(4, framing.span * 0.2);
+  const minDistance = mode === 'walk' ? 1.2 : mode === 'top' ? Math.max(3, framing.span * 0.08) : Math.max(2.5, framing.span * 0.12);
 
   const animating = useRef(false);
   const applyPose = (to: THREE.Vector3, target: THREE.Vector3, duration = 0) => {
@@ -255,6 +256,7 @@ function useDollhouseCutaway(walls: ReturnType<typeof usePlannerStore.getState>[
   const { camera, invalidate } = useThree();
   const center = useMemo(() => roomFloorCenter(walls), [walls]);
   const [opacityByWall, setOpacityByWall] = useState<Record<string, number>>({});
+  const smoothed = useRef<Record<string, number>>({});
   const lastKey = useRef('');
   const enabled = cameraMode === 'orbit';
 
@@ -262,10 +264,18 @@ function useDollhouseCutaway(walls: ReturnType<typeof usePlannerStore.getState>[
     invalidate();
   }, [walls, enabled, center, invalidate]);
 
-  useFrame(() => {
+  useFrame((_, delta) => {
     const next: Record<string, number> = {};
+    const rate = 1 - Math.exp(-Math.min(delta, 0.05) * 10);
     for (const wall of walls) {
-      next[wall.id] = wallCutawayOpacity(wall, camera.position.x, camera.position.z, center, enabled);
+      const target = wallCutawayOpacity(wall, camera.position.x, camera.position.z, center, enabled);
+      const prev = smoothed.current[wall.id] ?? target;
+      const value = prev + (target - prev) * rate;
+      smoothed.current[wall.id] = value;
+      next[wall.id] = value;
+    }
+    for (const id of Object.keys(smoothed.current)) {
+      if (!(id in next)) delete smoothed.current[id];
     }
     const key = walls.map((w) => `${w.id}:${(next[w.id] ?? 1).toFixed(2)}`).join('|');
     if (key !== lastKey.current) {
@@ -305,16 +315,24 @@ function WallMeshes() {
     <>
       {walls.flatMap((w) => {
         const opacity = opacityByWall[w.id] ?? 1;
-        if (opacity < 0.04) return [];
-        const cutaway = opacity < 0.98;
-        const [sx, sz] = world(w.start.x, w.start.y);
-        const [ex, ez] = world(w.end.x, w.end.y);
-        const length = Math.hypot(ex - sx, ez - sz);
+        const cutaway = opacity < 0.995;
+        const [sx0, sz0] = world(w.start.x, w.start.y);
+        const [ex0, ez0] = world(w.end.x, w.end.y);
+        const origLen = Math.hypot(ex0 - sx0, ez0 - sz0) || 0.01;
+        const ux = (ex0 - sx0) / origLen;
+        const uz = (ez0 - sz0) / origLen;
+        // Overlap half-thickness past each endpoint so orthogonal walls form continuous corners.
+        const extend = w.thickness * 0.5;
+        const sx = sx0 - ux * extend;
+        const sz = sz0 - uz * extend;
+        const ex = ex0 + ux * extend;
+        const ez = ez0 + uz * extend;
+        const length = origLen + extend * 2;
         const angle = -Math.atan2(ez - sz, ex - sx);
         const related = visibleOpenings.filter((o) => o.wallId === w.id);
         let ranges: [number, number][] = [[0, length]];
         related.forEach((o) => {
-          const center = o.offset * length;
+          const center = extend + o.offset * origLen;
           const a = Math.max(0, center - o.width / 2);
           const b = Math.min(length, center + o.width / 2);
           ranges = ranges.flatMap(([r1, r2]) =>
@@ -357,7 +375,7 @@ function WallMeshes() {
           );
         });
         const fills = related.flatMap((o) => {
-          const c = o.offset * length;
+          const c = extend + o.offset * origLen;
           const t = c / length;
           const x = sx + (ex - sx) * t;
           const z = sz + (ez - sz) * t;
@@ -406,6 +424,33 @@ function WallMeshes() {
         });
         return [...base, ...fills];
       })}
+      {(() => {
+        // Corner posts seal joints where wall boxes meet at shared plan endpoints.
+        const seen = new Set<string>();
+        const posts: ReactElement[] = [];
+        for (const w of walls) {
+          for (const p of [w.start, w.end]) {
+            const key = `${Math.round(p.x)}:${Math.round(p.y)}`;
+            if (seen.has(key)) continue;
+            seen.add(key);
+            const [x, z] = world(p.x, p.y);
+            const t = w.thickness;
+            const h = w.height;
+            const opacity = Math.min(...walls.filter((ww) => {
+              const same = (q: { x: number; y: number }) => Math.hypot(q.x - p.x, q.y - p.y) < 1;
+              return same(ww.start) || same(ww.end);
+            }).map((ww) => opacityByWall[ww.id] ?? 1));
+            const cutaway = opacity < 0.995;
+            posts.push(
+              <mesh key={`corner-${key}`} position={[x, h / 2, z]} castShadow={!cutaway} receiveShadow={!cutaway}>
+                <boxGeometry args={[t, h, t]} />
+                <meshStandardMaterial color={color} roughness={0.86} transparent={cutaway} opacity={opacity} depthWrite={!cutaway} />
+              </mesh>,
+            );
+          }
+        }
+        return posts;
+      })()}
     </>
   );
 }
