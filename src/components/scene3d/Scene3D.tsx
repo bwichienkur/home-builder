@@ -7,6 +7,7 @@ import { catalog } from '../catalog/catalogData';
 import type { FurnitureItem } from '../../types';
 import { detectRoomPolygons, roomShape } from '../../lib/geometry/rooms';
 import { alignmentGuides, constrainPlacement, roomFloorCenter, WORLD_ORIGIN } from '../../lib/geometry/placement';
+import { framingFromPoints, framingFromWalls } from '../../lib/geometry/planFraming';
 import { pointInPlanRoom, wallsBelongingToRoom } from '../../lib/geometry/roomWalls';
 import { wallCutawayOpacity } from '../../lib/geometry/wallCutaway';
 import { PIXELS_PER_METER } from '../../lib/geometry/snapping';
@@ -38,59 +39,46 @@ function CameraRig() {
   const controls = useRef<any>(null);
   const { invalidate, get } = useThree();
   const focusRoom = workflowStage === 'room' ? planRooms.find((r) => r.id === selectedRoomId) : null;
+  const coarse = useMemo(() => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches, []);
   const framing = useMemo(() => {
+    const pad = coarse ? 3.1 : 2.8;
     if (focusRoom?.points.length) {
-      const points = focusRoom.points.map((p) => world(p.x, p.y));
-      const xs = points.map((p) => p[0]);
-      const zs = points.map((p) => p[1]);
-      const minX = Math.min(...xs);
-      const maxX = Math.max(...xs);
-      const minZ = Math.min(...zs);
-      const maxZ = Math.max(...zs);
-      const span = Math.max(maxX - minX, maxZ - minZ, 2.5);
-      return { center: [(minX + maxX) / 2, 0, (minZ + maxZ) / 2] as [number, number, number], span };
+      return framingFromPoints(focusRoom.points, { pad, minSpan: 2.5, minHeight: 8 });
     }
-    if (!walls.length) return { center: [0, 0, 0] as [number, number, number], span: 6 };
-    const points = walls.flatMap((w) => [world(w.start.x, w.start.y), world(w.end.x, w.end.y)]);
-    const xs = points.map((p) => p[0]);
-    const zs = points.map((p) => p[1]);
-    const minX = Math.min(...xs);
-    const maxX = Math.max(...xs);
-    const minZ = Math.min(...zs);
-    const maxZ = Math.max(...zs);
-    const span = Math.max(maxX - minX, maxZ - minZ, 3);
-    return { center: [(minX + maxX) / 2, 0, (minZ + maxZ) / 2] as [number, number, number], span };
-  }, [walls, focusRoom]);
+    return framingFromWalls(walls, { pad, minHeight: 12 });
+  }, [walls, focusRoom, coarse]);
   const center = framing.center;
   const targetTuple = useMemo<[number, number, number]>(() => [center[0], 0, center[2]], [center]);
   const poseTuple = useMemo<[number, number, number]>(() => {
-    if (mode === 'top') {
-      // Head-on plan view with enough height that the full plate fits under chrome/dock.
-      const pad = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches ? 2.55 : 2.15;
-      const fov = 42 * (Math.PI / 180);
-      const half = (framing.span * 0.5) * pad;
-      const height = Math.max(focusRoom ? 7 : 12, half / Math.tan(fov / 2));
-      return [center[0], height, center[2]];
-    }
+    if (mode === 'top') return framing.topPose;
     if (mode === 'walk') {
-      // Pull back farther than a tight FPS so furniture stays readable (esp. on phones).
       const back = Math.max(4.2, framing.span * 0.55);
       return [center[0], 1.55, center[2] + back];
     }
     const back = Math.max(8, framing.span * 0.85);
     return [center[0] + back * 0.55, Math.max(5, framing.span * 0.35), center[2] + back * 0.65];
-  }, [mode, center, framing.span, focusRoom]);
+  }, [mode, center, framing]);
 
-  const maxDistance = mode === 'top' ? Math.max(55, framing.span * 4.2) : mode === 'walk' ? Math.max(14, framing.span * 1.4) : Math.max(36, framing.span * 3.2);
-  const minDistance = mode === 'walk' ? 1.2 : mode === 'top' ? Math.max(2.5, framing.span * 0.06) : 2;
+  const maxDistance = mode === 'top' ? Math.max(framing.topHeight * 2.2, framing.span * 6, 90) : mode === 'walk' ? Math.max(14, framing.span * 1.4) : Math.max(36, framing.span * 3.2);
+  const minDistance = mode === 'walk' ? 1.2 : mode === 'top' ? Math.max(3, framing.span * 0.08) : 2;
 
   const animating = useRef(false);
-  const animateToPose = (duration = 520) => {
+  const applyPose = (to: THREE.Vector3, target: THREE.Vector3, duration = 0) => {
     const camera = get().camera;
+    if (duration <= 0 || !controls.current) {
+      animating.current = false;
+      camera.position.copy(to);
+      if (controls.current) {
+        controls.current.target.copy(target);
+        controls.current.update();
+      } else {
+        camera.lookAt(target);
+      }
+      invalidate();
+      return;
+    }
     const from = camera.position.clone();
-    const to = new THREE.Vector3(...poseTuple);
-    const target = new THREE.Vector3(...targetTuple);
-    const fromTarget = controls.current?.target?.clone?.() ?? target.clone();
+    const fromTarget = controls.current.target.clone();
     const start = performance.now();
     animating.current = true;
     const tick = (now: number) => {
@@ -108,68 +96,71 @@ function CameraRig() {
     requestAnimationFrame(tick);
   };
 
-  // Smooth Top ↔ 3D ↔ walk transitions (avoid hard snaps that feel like remounts).
+  const animateToPose = (duration = 520) => {
+    applyPose(new THREE.Vector3(...poseTuple), new THREE.Vector3(...targetTuple), duration);
+  };
+
+  const snapToPose = () => {
+    applyPose(new THREE.Vector3(...poseTuple), new THREE.Vector3(...targetTuple), 0);
+  };
+
+  // Snap when view mode changes so Top always opens as a full centered plate.
   useEffect(() => {
-    animateToPose(mode === 'top' || mode === 'orbit' ? 560 : 480);
+    snapToPose();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, poseTuple, targetTuple]);
+  }, [mode]);
 
   useEffect(() => {
-    const refocus = () => animateToPose(480);
+    const fit = () => snapToPose();
+    const refocus = () => {
+      // Fit-plan prefers an instant snap; refocus animates only for small nudges.
+      snapToPose();
+    };
     const start = () => setMoving(document.body.dataset.movingFurniture === 'true');
     const stop = () => setMoving(false);
-    const focusRoom = (event: Event) => {
+    const focusRoomEvt = (event: Event) => {
       const detail = (event as CustomEvent<{ x: number; z: number; span: number }>).detail;
-      if (!detail || !controls.current) return;
-      const camera = get().camera;
-      const from = camera.position.clone();
-      const fromTarget = controls.current.target.clone();
-      const pad = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches ? 2.55 : 2.15;
-      const fov = 42 * (Math.PI / 180);
-      const height = Math.max(7, ((detail.span * 0.5) * pad) / Math.tan(fov / 2));
-      // Head-on: directly above the room center.
-      const to = new THREE.Vector3(detail.x, height, detail.z);
-      const target = new THREE.Vector3(detail.x, 0, detail.z);
-      const startAt = performance.now();
-      animating.current = true;
-      const tick = (now: number) => {
-        if (!animating.current) return;
-        const t = Math.min(1, (now - startAt) / 480);
-        const ease = 1 - Math.pow(1 - t, 3);
-        camera.position.lerpVectors(from, to, ease);
-        controls.current?.target.lerpVectors(fromTarget, target, ease);
-        camera.lookAt(controls.current?.target ?? target);
-        controls.current?.update();
-        invalidate();
-        if (t < 1) requestAnimationFrame(tick);
-        else animating.current = false;
-      };
-      requestAnimationFrame(tick);
+      if (!detail) return;
+      const pad = coarse ? 3.1 : 2.8;
+      const framed = framingFromPoints(
+        [
+          { x: detail.x * PIXELS_PER_METER + WORLD_ORIGIN.x, y: (detail.z - detail.span / 2) * PIXELS_PER_METER + WORLD_ORIGIN.y },
+          { x: detail.x * PIXELS_PER_METER + WORLD_ORIGIN.x, y: (detail.z + detail.span / 2) * PIXELS_PER_METER + WORLD_ORIGIN.y },
+          { x: (detail.x - detail.span / 2) * PIXELS_PER_METER + WORLD_ORIGIN.x, y: detail.z * PIXELS_PER_METER + WORLD_ORIGIN.y },
+          { x: (detail.x + detail.span / 2) * PIXELS_PER_METER + WORLD_ORIGIN.x, y: detail.z * PIXELS_PER_METER + WORLD_ORIGIN.y },
+        ],
+        { pad, minSpan: detail.span, minHeight: 8 },
+      );
+      // Prefer the provided center for room focus.
+      const height = framed.topHeight;
+      const zBias = Math.max(0.08, detail.span * 0.004);
+      applyPose(new THREE.Vector3(detail.x, height, detail.z + zBias), new THREE.Vector3(detail.x, 0, detail.z), 420);
     };
+    window.addEventListener('roomcraft-fit-plan', fit);
     window.addEventListener('roomcraft-refocus', refocus);
     window.addEventListener('roomcraft-drag-start', start);
     window.addEventListener('roomcraft-drag-end', stop);
-    window.addEventListener('roomcraft-focus-room', focusRoom);
+    window.addEventListener('roomcraft-focus-room', focusRoomEvt);
     return () => {
+      window.removeEventListener('roomcraft-fit-plan', fit);
       window.removeEventListener('roomcraft-refocus', refocus);
       window.removeEventListener('roomcraft-drag-start', start);
       window.removeEventListener('roomcraft-drag-end', stop);
-      window.removeEventListener('roomcraft-focus-room', focusRoom);
+      window.removeEventListener('roomcraft-focus-room', focusRoomEvt);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [get, invalidate, poseTuple, targetTuple, mode]);
+  }, [get, invalidate, poseTuple, targetTuple, mode, coarse]);
 
   return (
     <>
       <PerspectiveCamera makeDefault position={poseTuple} fov={mode === 'walk' ? 58 : mode === 'top' ? 42 : 48} />
       <OrbitControls
         ref={controls}
-        // Never gate on animating.current — that ref does not re-render, so zoom stays dead until a click.
         enabled={!moving && !placing}
         target={[targetTuple[0], mode === 'walk' ? 1.1 : targetTuple[1], targetTuple[2]]}
-        // Top = locked looking straight down (plan plate). Orbit/walk keep dollhouse freedom.
-        minPolarAngle={mode === 'top' ? 0 : mode === 'walk' ? 0.7 : 0}
-        maxPolarAngle={mode === 'top' ? 0.001 : mode === 'walk' ? Math.PI / 2.05 : Math.PI / 2 + 0.52}
+        // Near-vertical top view (~3–5°) — head-on plan without lookAt singularity at polar 0.
+        minPolarAngle={mode === 'top' ? 0.04 : mode === 'walk' ? 0.7 : 0}
+        maxPolarAngle={mode === 'top' ? 0.09 : mode === 'walk' ? Math.PI / 2.05 : Math.PI / 2 + 0.52}
         minDistance={minDistance}
         maxDistance={maxDistance}
         enableZoom
@@ -177,6 +168,22 @@ function CameraRig() {
         enableRotate={mode !== 'top'}
         onChange={() => invalidate()}
       />
+    </>
+  );
+}
+
+function SceneAtmosphere() {
+  const mode = usePlannerStore((s) => s.cameraMode);
+  const walls = usePlannerStore((s) => s.walls);
+  const framing = useMemo(() => framingFromWalls(walls), [walls]);
+  // Top plan view: no fog (old far=70 blanked house plates when the camera sat above it).
+  if (mode === 'top') return <color attach="background" args={['#e8eaed']} />;
+  const near = Math.max(18, framing.span * 1.1);
+  const far = Math.max(near + 20, framing.span * 3.2, framing.topHeight * 1.4);
+  return (
+    <>
+      <color attach="background" args={['#e8eaed']} />
+      <fog attach="fog" args={['#e8eaed', near, far]} />
     </>
   );
 }
@@ -925,8 +932,7 @@ export function Scene3D() {
           selectRoom(null);
         }}
       >
-        <color attach="background" args={['#e8eaed']} />
-        <fog attach="fog" args={['#e8eaed', 28, 70]} />
+        <SceneAtmosphere />
         <ambientLight intensity={coarse ? 0.9 : 0.78} />
         <directionalLight
           castShadow={!coarse}
