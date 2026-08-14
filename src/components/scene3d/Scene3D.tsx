@@ -171,8 +171,23 @@ function CameraRig() {
       // Fit-plan prefers an instant snap; refocus animates only for small nudges.
       snapToPose();
     };
-    const start = () => setMoving(document.body.dataset.movingFurniture === 'true');
-    const stop = () => setMoving(false);
+    const start = () => {
+      // Disable immediately so top-view pan / orbit can't steal this pointer gesture.
+      if (controls.current) {
+        controls.current.enabled = false;
+        controls.current.enablePan = false;
+        controls.current.enableRotate = false;
+      }
+      setMoving(true);
+    };
+    const stop = () => {
+      setMoving(false);
+      if (controls.current) {
+        controls.current.enabled = !placing;
+        controls.current.enablePan = true;
+        controls.current.enableRotate = mode !== 'top';
+      }
+    };
     const focusRoomEvt = (event: Event) => {
       const detail = (event as CustomEvent<{ x: number; z: number; span: number }>).detail;
       if (!detail) return;
@@ -204,7 +219,7 @@ function CameraRig() {
       window.removeEventListener('roomcraft-focus-room', focusRoomEvt);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [get, invalidate, poseTuple, targetTuple, mode, coarse]);
+  }, [get, invalidate, poseTuple, targetTuple, mode, coarse, placing]);
 
   return (
     <>
@@ -222,8 +237,8 @@ function CameraRig() {
         minDistance={minDistance}
         maxDistance={maxDistance}
         enableZoom
-        enablePan
-        enableRotate={mode !== 'top'}
+        enablePan={!moving}
+        enableRotate={mode !== 'top' && !moving}
         // Top: one-finger / left-drag pans the plate. Orbit keeps rotate on one finger.
         mouseButtons={{
           LEFT: mode === 'top' ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE,
@@ -698,12 +713,18 @@ function Furniture() {
   const catalogById = useMemo(() => new Map([...catalog, ...custom].map((c) => [c.id, c])), [custom]);
   const selected = items.find((i) => i.id === selectedId);
   const pending = useRef<Partial<FurnitureItem> | null>(null);
+  const cameraMode = usePlannerStore((s) => s.cameraMode);
+  const { gl } = useThree();
+  // Top view + phones: drag on the floor/wall plane. Desktop orbit keeps PivotControls gizmo.
+  const usePlaneDrag = cameraMode === 'top' || isCoarsePointer();
   const touchDrag = useRef<{
     pointerId: number;
+    itemId: string;
     offsetX: number;
     offsetZ: number;
     offsetY: number;
     wallMount: boolean;
+    moved: boolean;
   } | null>(null);
   const floorPlane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), []);
   const [collisions, setCollisions] = useState<Set<string>>(new Set());
@@ -762,59 +783,81 @@ function Furniture() {
     };
   };
 
-  const beginTouchDrag = (e: any) => {
-    if (!selected || e.nativeEvent?.pointerType !== 'touch') return;
+  const beginItemDrag = (e: any, item: FurnitureItem) => {
+    if (!usePlaneDrag) return;
+    // Ignore multi-touch (pinch/pan) — only primary pointer moves furniture.
+    if (typeof e.nativeEvent?.isPrimary === 'boolean' && !e.nativeEvent.isPrimary) return;
     e.stopPropagation();
+    select(item.id);
     const hit = new THREE.Vector3();
-    const wall = selected.wallId ? walls.find((w) => w.id === selected.wallId) : null;
-    const plane =
-      selected.mountingType === 'wall' && wall ? wallDragPlane(wall, selected) : floorPlane;
+    // Top view: always drag on the floor plane so xz placement stays intuitive.
+    // Orbit/touch on wall mounts can still use the wall plane.
+    const wall = item.wallId ? walls.find((w) => w.id === item.wallId) : null;
+    const wallMount = item.mountingType === 'wall' && !!wall && cameraMode !== 'top';
+    const plane = wallMount && wall ? wallDragPlane(wall, item) : floorPlane;
     if (!e.ray.intersectPlane(plane, hit)) return;
     touchDrag.current = {
       pointerId: e.pointerId,
-      offsetX: selected.x - hit.x,
-      offsetZ: selected.z - hit.z,
-      offsetY: (selected.y ?? 0) - hit.y,
-      wallMount: selected.mountingType === 'wall',
+      itemId: item.id,
+      offsetX: item.x - hit.x,
+      offsetZ: item.z - hit.z,
+      offsetY: (item.y ?? 0) - hit.y,
+      wallMount,
+      moved: false,
     };
-    pending.current = { x: selected.x, z: selected.z, y: selected.y };
-    e.target.setPointerCapture?.(e.pointerId);
+    pending.current = { x: item.x, z: item.z, y: item.y };
+    try {
+      gl.domElement.setPointerCapture?.(e.pointerId);
+    } catch {
+      /* ignore capture errors on unsupported targets */
+    }
     document.body.dataset.movingFurniture = 'true';
     setDragging(true);
     window.dispatchEvent(new Event('roomcraft-dismiss-product-card'));
     window.dispatchEvent(new Event('roomcraft-drag-start'));
   };
-  const moveTouchDrag = (e: any) => {
-    if (!selected || !touchDrag.current || touchDrag.current.pointerId !== e.pointerId) return;
+  const moveItemDrag = (e: any) => {
+    if (!touchDrag.current || touchDrag.current.pointerId !== e.pointerId) return;
     e.stopPropagation();
+    const item = usePlannerStore.getState().furniture.find((f) => f.id === touchDrag.current!.itemId);
+    if (!item) return;
     const hit = new THREE.Vector3();
-    const wall = selected.wallId ? walls.find((w) => w.id === selected.wallId) : null;
-    const plane =
-      touchDrag.current.wallMount && wall ? wallDragPlane(wall, selected) : floorPlane;
+    const wall = item.wallId ? walls.find((w) => w.id === item.wallId) : null;
+    const plane = touchDrag.current.wallMount && wall ? wallDragPlane(wall, item) : floorPlane;
     if (!e.ray.intersectPlane(plane, hit)) return;
     const patch = constrainDrag(
-      selected,
+      item,
       hit.x + touchDrag.current.offsetX,
       hit.z + touchDrag.current.offsetZ,
       undefined,
       touchDrag.current.wallMount ? hit.y + touchDrag.current.offsetY : undefined,
     );
+    if (Math.hypot(patch.x - item.x, patch.z - item.z) > 0.002) touchDrag.current.moved = true;
     pending.current = patch;
-    liveThrottle.current(selected.id, patch);
+    liveThrottle.current(item.id, patch);
   };
-  const endTouchDrag = (e: any) => {
-    if (!selected || !touchDrag.current) return;
-    e.stopPropagation();
-    e.target.releasePointerCapture?.(touchDrag.current.pointerId);
+  const endItemDrag = (e: any) => {
+    if (!touchDrag.current) return;
+    if (e?.pointerId != null && touchDrag.current.pointerId !== e.pointerId) return;
+    e?.stopPropagation?.();
+    const itemId = touchDrag.current.itemId;
+    const moved = touchDrag.current.moved;
+    try {
+      gl.domElement.releasePointerCapture?.(touchDrag.current.pointerId);
+    } catch {
+      /* ignore */
+    }
     touchDrag.current = null;
     liveThrottle.current.cancel();
     delete document.body.dataset.movingFurniture;
     setDragging(false);
     window.dispatchEvent(new Event('roomcraft-drag-end'));
     if (pending.current) {
-      update(selected.id, pending.current);
+      update(itemId, pending.current);
       pending.current = null;
     }
+    // Tap without move → product card; drag should not open it.
+    if (!moved) window.dispatchEvent(new Event('roomcraft-open-product-card'));
   };
 
   const urlsFor = (item: FurnitureItem) => {
@@ -844,10 +887,15 @@ function Furniture() {
                 colliding={collisions.has(i.id)}
                 onSelect={(e) => {
                   e.stopPropagation();
+                  // Plane-drag path opens the card on pointer-up if it was a tap.
+                  if (usePlaneDrag) return;
                   select(i.id);
-                  // Product card + FABs handle furniture; inspector opens via Modify.
                   window.dispatchEvent(new Event('roomcraft-open-product-card'));
                 }}
+                onPointerDown={usePlaneDrag ? (e) => beginItemDrag(e, i) : undefined}
+                onPointerMove={usePlaneDrag ? moveItemDrag : undefined}
+                onPointerUp={usePlaneDrag ? endItemDrag : undefined}
+                onPointerCancel={usePlaneDrag ? endItemDrag : undefined}
               />
               {i.showClearance && <ClearanceVolume item={i} />}
             </group>
@@ -865,7 +913,7 @@ function Furniture() {
             depthTest={false}
             scale={1.15}
             lineWidth={2}
-            enabled={!matchMedia('(pointer: coarse)').matches}
+            enabled={!usePlaneDrag}
             onDragStart={() => {
               document.body.dataset.movingFurniture = 'true';
               setDragging(true);
@@ -904,10 +952,10 @@ function Furniture() {
                 {...urlsFor(selected)}
                 selected
                 colliding={collisions.has(selected.id)}
-                onPointerDown={beginTouchDrag}
-                onPointerMove={moveTouchDrag}
-                onPointerUp={endTouchDrag}
-                onPointerCancel={endTouchDrag}
+                onPointerDown={usePlaneDrag ? (e) => beginItemDrag(e, selected) : undefined}
+                onPointerMove={usePlaneDrag ? moveItemDrag : undefined}
+                onPointerUp={usePlaneDrag ? endItemDrag : undefined}
+                onPointerCancel={usePlaneDrag ? endItemDrag : undefined}
               />
               {selected.showClearance && <ClearanceVolume item={selected} />}
             </group>
@@ -1298,7 +1346,7 @@ export function Scene3D() {
         <CameraRig />
       </Canvas>
       {!pending && (
-        <div className="scene-help">Drag to move · Slide wall art up/down · Near walls fade for a clear view</div>
+        <div className="scene-help">Drag furniture to move · Top view pans on empty space · Slide wall art in 3D</div>
       )}
     </div>
   );
