@@ -316,6 +316,7 @@ function WallMeshes() {
   const color = usePlannerStore((s) => s.wallColor);
   const selectedId = usePlannerStore((s) => s.selectedWallId);
   const select = usePlannerStore((s) => s.selectWall);
+  const placing = usePlannerStore((s) => !!s.pendingPlacement);
   const opacityByWall = useDollhouseCutaway(walls);
   const wallIds = useMemo(() => new Set(walls.map((w) => w.id)), [walls]);
   const visibleOpenings = useMemo(() => openings.filter((o) => wallIds.has(o.wallId)), [openings, wallIds]);
@@ -325,36 +326,8 @@ function WallMeshes() {
       {walls.flatMap((w) => {
         const opacity = opacityByWall[w.id] ?? 1;
         const selected = selectedId === w.id;
-        // Don't keep facing walls solid just because they're selected — hide and keep the halo.
         const drawOpacity = opacity;
-        // Fully remove near-invisible walls so they can't block the interior.
-        if (drawOpacity < 0.08 && !selected) return [];
-        if (drawOpacity < 0.08 && selected) {
-          // Selected but cut away: only show the halo shell so the pick still reads.
-          const [sx0, sz0] = world(w.start.x, w.start.y);
-          const [ex0, ez0] = world(w.end.x, w.end.y);
-          const origLen = Math.hypot(ex0 - sx0, ez0 - sz0) || 0.01;
-          const angle = -Math.atan2(ez0 - sz0, ex0 - sx0);
-          const x = (sx0 + ex0) / 2;
-          const z = (sz0 + ez0) / 2;
-          return [
-            <mesh
-              key={w.id + 'sel-only'}
-              position={[x, w.height / 2, z]}
-              rotation={[0, angle, 0]}
-              onClick={(e) => {
-                e.stopPropagation();
-                select(w.id);
-                openSurfaceProperties();
-              }}
-              renderOrder={3}
-            >
-              <boxGeometry args={[origLen + 0.02, w.height + 0.04, w.thickness + 0.05]} />
-              <meshBasicMaterial color="#0058a3" transparent opacity={0.22} depthWrite={false} toneMapped={false} />
-            </mesh>,
-          ];
-        }
-        const cutaway = drawOpacity < 0.999;
+        const hidden = drawOpacity < 0.08;
         const [sx0, sz0] = world(w.start.x, w.start.y);
         const [ex0, ez0] = world(w.end.x, w.end.y);
         const origLen = Math.hypot(ex0 - sx0, ez0 - sz0) || 0.01;
@@ -368,6 +341,47 @@ function WallMeshes() {
         const ez = ez0 + uz * extend;
         const length = origLen + extend * 2;
         const angle = -Math.atan2(ez - sz, ex - sx);
+        const midX = (sx0 + ex0) / 2;
+        const midZ = (sz0 + ez0) / 2;
+
+        // Invisible pick target so cut-away walls remain selectable in 3D (clicks won't fall through to the floor).
+        const pickProxy = (
+          <mesh
+            key={w.id + 'pick'}
+            position={[midX, w.height / 2, midZ]}
+            rotation={[0, angle, 0]}
+            onClick={(e) => {
+              e.stopPropagation();
+              select(w.id);
+              openSurfaceProperties();
+            }}
+          >
+            <boxGeometry args={[origLen || 0.2, w.height, Math.max(w.thickness, 0.12)]} />
+            <meshBasicMaterial transparent opacity={0} depthWrite={false} side={THREE.DoubleSide} />
+          </mesh>
+        );
+
+        if (hidden) {
+          return [
+            pickProxy,
+            ...(selected
+              ? [
+                  <mesh
+                    key={w.id + 'sel-only'}
+                    position={[midX, w.height / 2, midZ]}
+                    rotation={[0, angle, 0]}
+                    raycast={() => {}}
+                    renderOrder={3}
+                  >
+                    <boxGeometry args={[origLen + 0.02, w.height + 0.04, w.thickness + 0.05]} />
+                    <meshBasicMaterial color="#0058a3" transparent opacity={0.22} depthWrite={false} toneMapped={false} />
+                  </mesh>,
+                ]
+              : []),
+          ];
+        }
+
+        const cutaway = drawOpacity < 0.999;
         const related = visibleOpenings.filter((o) => o.wallId === w.id);
         let ranges: [number, number][] = [[0, length]];
         related.forEach((o) => {
@@ -378,8 +392,8 @@ function WallMeshes() {
             b <= r1 || a >= r2 ? [[r1, r2]] : ([[r1, Math.max(r1, a)], [Math.min(r2, b), r2]].filter((r) => r[1] - r[0] > 0.02) as [number, number][]),
           );
         });
-        // Cutaway walls must not steal pointer hits — furniture drag goes through them.
-        const skipRay = cutaway && !selected ? () => {} : undefined;
+        // Only let furniture placement pass through cutaway walls — keep them pickable otherwise.
+        const skipRay = cutaway && placing ? () => {} : undefined;
         const base = ranges.flatMap(([a, b], i) => {
           const c = (a + b) / 2;
           const t = c / length;
@@ -395,7 +409,6 @@ function WallMeshes() {
               receiveShadow={!cutaway}
               raycast={skipRay}
               onClick={(e) => {
-                if (cutaway && !selected) return;
                 e.stopPropagation();
                 select(w.id);
                 openSurfaceProperties();
@@ -499,7 +512,8 @@ function WallMeshes() {
             );
           return parts;
         });
-        return [...base, ...fills];
+        // Extra pick proxy only while the wall is faded — opaque walls use the solid mesh.
+        return cutaway ? [pickProxy, ...base, ...fills] : [...base, ...fills];
       })}
       {(() => {
         // Corner posts seal joints where wall boxes meet at shared plan endpoints.
@@ -872,6 +886,12 @@ function Room() {
   const chooseFloor = (e: any, roomId?: string) => {
     e.stopPropagation();
     if (roomId) {
+      // Already editing this room in 3D — selecting the floor must NOT reset camera to top.
+      if (workflowStage === 'room' && selectedRoomId === roomId) {
+        selectSurface('floor');
+        openSurfaceProperties();
+        return;
+      }
       // Enter room top-view only — do not open the inspector/settings sheet.
       enterRoom(roomId);
       const room = planRooms.find((r) => r.id === roomId);
