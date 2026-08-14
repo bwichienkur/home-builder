@@ -49,7 +49,9 @@ export function PlanEditLayer() {
     anchor: { x: number; y: number };
     dirX: number;
     dirY: number;
+    pointerId: number;
   } | null>(null);
+  const dragEndListener = useRef<((e: PointerEvent) => void) | null>(null);
   const floorPlane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), []);
 
   const active = studioMode === 'architect' && cameraMode === 'top';
@@ -59,6 +61,21 @@ export function PlanEditLayer() {
   useEffect(() => {
     if (!active || tool !== 'wall') setDraftStart(null);
   }, [active, tool, setDraftStart]);
+
+  useEffect(
+    () => () => {
+      if (dragEndListener.current) {
+        window.removeEventListener('pointerup', dragEndListener.current);
+        window.removeEventListener('pointercancel', dragEndListener.current);
+        dragEndListener.current = null;
+      }
+      if (document.body.dataset.movingFurniture) {
+        delete document.body.dataset.movingFurniture;
+        window.dispatchEvent(new Event('roomcraft-drag-end'));
+      }
+    },
+    [],
+  );
 
   if (!active) return null;
 
@@ -153,9 +170,18 @@ export function PlanEditLayer() {
     dirY: number,
   ) => {
     e.stopPropagation();
-    drag.current = { wallId, end, kind, last: { ...point }, anchor, dirX, dirY };
+    drag.current = { wallId, end, kind, last: { ...point }, anchor, dirX, dirY, pointerId: e.pointerId };
     document.body.dataset.movingFurniture = 'true';
     window.dispatchEvent(new Event('roomcraft-drag-start'));
+    // Window end survives handle remount while the wall live-updates.
+    if (dragEndListener.current) {
+      window.removeEventListener('pointerup', dragEndListener.current);
+      window.removeEventListener('pointercancel', dragEndListener.current);
+    }
+    const onEnd = (ev: PointerEvent) => endHandleDrag(ev);
+    dragEndListener.current = onEnd;
+    window.addEventListener('pointerup', onEnd);
+    window.addEventListener('pointercancel', onEnd);
     try {
       gl.domElement.setPointerCapture?.(e.pointerId);
     } catch {
@@ -163,19 +189,31 @@ export function PlanEditLayer() {
     }
   };
 
-  const endHandleDrag = (e: any) => {
-    e.stopPropagation();
+  const endHandleDrag = (e?: PointerEvent | { pointerId?: number; stopPropagation?: () => void }) => {
+    e?.stopPropagation?.();
+    if (!drag.current && !dragEndListener.current) return;
+    if (e && 'pointerId' in e && drag.current && e.pointerId != null && drag.current.pointerId !== e.pointerId) {
+      return;
+    }
+    if (dragEndListener.current) {
+      window.removeEventListener('pointerup', dragEndListener.current);
+      window.removeEventListener('pointercancel', dragEndListener.current);
+      dragEndListener.current = null;
+    }
     if (drag.current) {
       updateWallEndpoint(drag.current.wallId, drag.current.end, drag.current.last);
       selectWall(drag.current.wallId);
     }
+    const pointerId = drag.current?.pointerId ?? e?.pointerId;
     drag.current = null;
     delete document.body.dataset.movingFurniture;
     window.dispatchEvent(new Event('roomcraft-drag-end'));
-    try {
-      gl.domElement.releasePointerCapture?.(e.pointerId);
-    } catch {
-      /* ignore */
+    if (pointerId != null) {
+      try {
+        gl.domElement.releasePointerCapture?.(pointerId);
+      } catch {
+        /* ignore */
+      }
     }
     openProperties();
   };
