@@ -32,7 +32,7 @@ describe('wall cutaway', () => {
     const south = rect[2];
     // Sweep camera from west (edge-on to south wall) toward south (face-on).
     const samples = [0, 0.35, 0.7, 1].map((t) => {
-      const ang = Math.PI / 2 + t * (Math.PI / 2); // west → south
+      const ang = Math.PI - t * (Math.PI / 2); // west → south
       return wallCutawayOpacity(south, center.x + Math.cos(ang) * 8, center.z + Math.sin(ang) * 8, center, true);
     });
     expect(samples[0]).toBeGreaterThan(0.9);
