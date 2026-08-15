@@ -186,6 +186,7 @@ function CameraRig() {
   const minDistance = mode === 'walk' ? 1.2 : mode === 'top' ? Math.max(3, framing.span * 0.08) : Math.max(2.5, framing.span * 0.12);
 
   const animating = useRef(false);
+  const modeAnimUntil = useRef(0);
   const applyPose = (to: THREE.Vector3, target: THREE.Vector3, duration = 0) => {
     const camera = get().camera;
     const finish = () => {
@@ -239,20 +240,25 @@ function CameraRig() {
     applyPose(new THREE.Vector3(...poseTuple), new THREE.Vector3(...targetTuple), 0);
   };
 
-  // Animate into orbit/walk so the whole plate eases into view (avoid corner snap).
+  // Plan ↔ 3D: ease into orbit/walk; top snaps. Ignore pose churn so we don't restart mid-ease.
   useEffect(() => {
-    if (mode === 'top') snapToPose();
-    else animateToPose(560);
+    if (mode === 'top') {
+      snapToPose();
+      return;
+    }
+    modeAnimUntil.current = performance.now() + 620;
+    animateToPose(560);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, menuOpen, poseTuple[0], poseTuple[1], poseTuple[2], targetTuple[0]]);
+  }, [mode, menuOpen]);
 
-  // Entering a room / returning to plan must reframe for the free canvas immediately.
+  // Room enter / chrome pad changes — ease, don't hard-cut over a live mode transition.
   useEffect(() => {
-    snapToPose();
+    if (performance.now() < modeAnimUntil.current) return;
+    animateToPose(mode === 'top' ? 360 : 480);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusRoom?.id, workflowStage, chromeFit.padScale, chromeFit.shiftFraction]);
 
-  // When the edit card opens/closes, reframe into the free left canvas (or restore).
+  // Edit card open/close — ease into free area / restore. Only on inspector toggle (not pose churn).
   useEffect(() => {
     const open = document.body.dataset.inspectorOpen === '1';
     const camera = get().camera;
@@ -270,17 +276,23 @@ function CameraRig() {
       const { pose, target } = savedView.current;
       savedView.current = null;
       applyPose(pose, target, 420);
-    } else {
-      snapToPose();
+    } else if (performance.now() >= modeAnimUntil.current) {
+      animateToPose(360);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inspectorTick, poseTuple[0], poseTuple[1], poseTuple[2], targetTuple[0]]);
+  }, [inspectorTick]);
 
   useEffect(() => {
-    const fit = () => snapToPose();
+    const fit = () => {
+      // choose3d/chooseTop fire fit immediately — don't cancel the Plan↔3D ease with a snap.
+      if (performance.now() < modeAnimUntil.current) return;
+      if (mode === 'top') snapToPose();
+      else animateToPose(420);
+    };
     const refocus = () => {
-      // Fit-plan prefers an instant snap; refocus animates only for small nudges.
-      snapToPose();
+      if (performance.now() < modeAnimUntil.current) return;
+      if (mode === 'top') snapToPose();
+      else animateToPose(420);
     };
     const start = () => {
       // Disable immediately so top-view pan / orbit can't steal this pointer gesture.
@@ -302,8 +314,8 @@ function CameraRig() {
       }
     };
     const focusRoomEvt = () => {
-      // Prefer the shared free-area pose (shift + zoom) over a bare geometric focus.
-      snapToPose();
+      if (performance.now() < modeAnimUntil.current) return;
+      animateToPose(mode === 'top' ? 360 : 480);
     };
     window.addEventListener('roomcraft-fit-plan', fit);
     window.addEventListener('roomcraft-refocus', refocus);
@@ -358,13 +370,12 @@ function SceneAtmosphere() {
   const mode = usePlannerStore((s) => s.cameraMode);
   const walls = usePlannerStore((s) => s.walls);
   const framing = useMemo(() => framingFromWalls(walls), [walls]);
-  // Top + orbit: no distance fog — zooming out used to dissolve the whole plate into the
-  // background (fog near ≈ 18m). Walk keeps a soft depth cue farther out.
-  if (mode === 'top' || mode === 'orbit') {
-    return <color attach="background" args={['#e8eaed']} />;
-  }
-  const near = Math.max(40, framing.span * 3.5);
-  const far = Math.max(near + 40, framing.span * 8);
+  // Top: no fog (overhead plates sat past the old far plane).
+  if (mode === 'top') return <color attach="background" args={['#e8eaed']} />;
+  // Orbit/walk: keep a soft depth cue, but start fog well beyond normal dollhouse distances
+  // so zooming out never dissolves the room (old near ≈ 18m blanked the plate).
+  const near = Math.max(85, framing.span * 6.5);
+  const far = Math.max(near + 100, framing.span * 16);
   return (
     <>
       <color attach="background" args={['#e8eaed']} />
@@ -424,21 +435,30 @@ function useDollhouseCutaway(walls: ReturnType<typeof usePlannerStore.getState>[
   useFrame((_, delta) => {
     const next: Record<string, number> = {};
     const justEnabled = enabled && !wasEnabled.current;
+    const justDisabled = !enabled && wasEnabled.current;
     wasEnabled.current = enabled;
-    // IKEA-like cream: slow ease while orbiting; a bit quicker when entering/leaving 3D.
-    // Never snap — instant target jumps are what made the dissolve feel harsh.
-    const speed = justEnabled ? 4.0 : enabled ? 2.6 : 7.0;
-    const rate = 1 - Math.exp(-Math.min(delta, 0.08) * speed);
+    // Creamy temporal ease — slower while dissolving open, never a hard snap on mode switch.
     let settling = false;
     for (const wall of walls) {
       const target = wallCutawayOpacity(wall, camera.position.x, camera.position.z, center, enabled);
       const prev = smoothed.current[wall.id] ?? 1;
+      const opening = target < prev - 0.001; // becoming more transparent
+      const speed = justDisabled
+        ? 3.4
+        : justEnabled
+          ? 1.85
+          : !enabled
+            ? 3.8
+            : opening
+              ? 1.55
+              : 2.15;
+      const rate = 1 - Math.exp(-Math.min(delta, 0.05) * speed);
       const value = prev + (target - prev) * rate;
       // Snap residual once we're visually done — avoids endless micro-invalidates.
-      const settled = Math.abs(value - target) < 0.002 ? target : value;
+      const settled = Math.abs(value - target) < 0.0015 ? target : value;
       smoothed.current[wall.id] = settled;
       next[wall.id] = settled;
-      if (Math.abs(settled - target) > 0.002) settling = true;
+      if (Math.abs(settled - target) > 0.0015) settling = true;
     }
     for (const id of Object.keys(smoothed.current)) {
       if (!(id in next)) delete smoothed.current[id];
@@ -496,8 +516,8 @@ function WallMeshes() {
         const opacity = opacityByWall[w.id] ?? 1;
         const selected = selectedId === w.id;
         const drawOpacity = opacity;
-        // Hide only after the fade is visually done — avoids a mid-dissolve pop.
-        const hidden = drawOpacity < 0.02;
+        // Never unmount while orbiting — remounting at ~0 opacity popped the dissolve.
+        const hidden = !orbiting && drawOpacity < 0.02;
         const [sx0, sz0] = world(w.start.x, w.start.y);
         const [ex0, ez0] = world(w.end.x, w.end.y);
         const origLen = Math.hypot(ex0 - sx0, ez0 - sz0) || 0.01;
@@ -592,8 +612,8 @@ function WallMeshes() {
           roughness: 0.86,
           transparent: soft,
           opacity: drawOpacity,
-          // Keep depth while nearly solid; drop it only once the dissolve is underway.
-          depthWrite: !soft || drawOpacity > 0.9,
+          // Stable depth policy while soft — flipping depthWrite mid-fade caused dissolve pops.
+          depthWrite: orbiting ? drawOpacity > 0.96 : !soft || drawOpacity > 0.9,
           polygonOffset: true,
           polygonOffsetFactor: 1,
           polygonOffsetUnits: 1,
@@ -717,7 +737,8 @@ function WallMeshes() {
             const h = Math.max(...touching.map((ww) => ww.height));
             const opacity = Math.min(...touching.map((ww) => opacityByWall[ww.id] ?? 1));
             const selectedTouch = touching.some((ww) => ww.id === selectedId);
-            if (opacity < 0.02 && !selectedTouch) continue;
+            // Keep corner posts while orbiting so they dissolve with the walls (no remount pop).
+            if (!orbiting && opacity < 0.02 && !selectedTouch) continue;
             const drawOpacity = opacity;
             const fading = drawOpacity < 0.97;
             const soft = orbiting || drawOpacity < 0.999;
@@ -737,7 +758,7 @@ function WallMeshes() {
                   roughness={0.86}
                   transparent={soft}
                   opacity={drawOpacity}
-                  depthWrite={!soft || drawOpacity > 0.9}
+                  depthWrite={orbiting ? drawOpacity > 0.96 : !soft || drawOpacity > 0.9}
                   polygonOffset
                   polygonOffsetFactor={2}
                   polygonOffsetUnits={2}
