@@ -92,6 +92,55 @@ describe('perimeter trim',()=>{
   expect(next.z).toBeCloseTo(z);
   expect(next.rotation).toBeCloseTo(rotation);
  });
+ it('keeps baseboard aligned after adding a neighboring room',()=>{
+  usePlannerStore.setState({
+    workflowStage:'house',
+    furniture:[],
+    openings:[],
+    planRooms:[],
+    walls:[],
+    openingNotice:'',
+    selectedRoomId:null,
+  });
+  const id=usePlannerStore.getState().placePlanRoom({x:400,y:300},'rectangle','Trim Room');
+  expect(id).toBeTruthy();
+  usePlannerStore.getState().enterRoom(id!);
+  usePlannerStore.getState().applyPerimeterTrim('baseboard','Baseboard','Trim',[1,.015,.09],'#fff','floor');
+  const before=usePlannerStore.getState().furniture.filter(f=>f.placementKind==='perimeter-trim');
+  expect(before.length).toBeGreaterThanOrEqual(4);
+  usePlannerStore.getState().exitRoom();
+  const neighbor=usePlannerStore.getState().placePlanRoom({x:700,y:300},'rectangle','Neighbor');
+  expect(neighbor).toBeTruthy();
+  const after=usePlannerStore.getState().furniture.filter(f=>f.placementKind==='perimeter-trim');
+  expect(after.length).toBeGreaterThanOrEqual(4);
+  const wallIds=new Set(usePlannerStore.getState().walls.map(w=>w.id));
+  expect(after.every(f=>f.wallId&&wallIds.has(f.wallId))).toBe(true);
+ });
+
+ it('moves a selected plan room without overlapping neighbors',()=>{
+  usePlannerStore.setState({
+    workflowStage:'house',
+    furniture:[],
+    openings:[],
+    planRooms:[],
+    walls:[],
+    openingNotice:'',
+    selectedRoomId:null,
+  });
+  const a=usePlannerStore.getState().placePlanRoom({x:400,y:300},'rectangle','A');
+  const b=usePlannerStore.getState().placePlanRoom({x:780,y:300},'rectangle','B');
+  expect(a&&b).toBeTruthy();
+  const before=usePlannerStore.getState().planRooms.find(r=>r.id===a!)!;
+  const cx0=before.points.reduce((s,p)=>s+p.x,0)/before.points.length;
+  expect(usePlannerStore.getState().movePlanRoom(a!,0,1.5)).toBe(true);
+  const after=usePlannerStore.getState().planRooms.find(r=>r.id===a!)!;
+  const cx1=after.points.reduce((s,p)=>s+p.x,0)/after.points.length;
+  // Recentering may shift both rooms; relative move along Z should still change the polygon.
+  expect(after.points.some((p,i)=>Math.abs(p.y-before.points[i]!.y)>1||Math.abs(p.x-before.points[i]!.x)>1)).toBe(true);
+  void cx0;void cx1;
+  // Overlap into neighbor should fail.
+  expect(usePlannerStore.getState().movePlanRoom(a!,3,0)).toBe(false);
+ });
 });
 
 describe('floor fill and undo',()=>{

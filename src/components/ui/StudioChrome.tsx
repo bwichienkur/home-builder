@@ -492,7 +492,10 @@ export function StudioChrome({
       </div>
 
       {!inRoom && planRooms.length >= 1 && !pending && !selectedItem && tool === 'select' && !selectedRoom && (
-        <div className="studio-selection-hint studio-hint-float">Tap a room to select · use the right rail to edit or remove</div>
+        <div className="studio-selection-hint studio-hint-float">Tap a room to select · drag to move · Edit on the right rail</div>
+      )}
+      {!inRoom && planRooms.length >= 1 && !pending && !selectedItem && tool === 'select' && selectedRoom && (
+        <div className="studio-selection-hint studio-hint-float">Drag to move this room · Edit to furnish · tap empty space for walls</div>
       )}
 
       {showPlanTools && tool === 'select' && !selectedWall && !selectedRoom && (
