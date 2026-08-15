@@ -150,4 +150,32 @@ describe('IKEA-style wall editing',()=>{
   expect(len).toBeCloseTo(4,1);
   expect(next.planRooms[0]!.points.some(p=>Math.hypot(p.x-updated.end.x,p.y-updated.end.y)<1)).toBe(true);
  });
+
+ it('keeps the opposite end fixed when resizing with a grow side',()=>{
+  usePlannerStore.setState({
+   walls:[
+    {id:'w1',start:{x:180,y:150},end:{x:660,y:150},thickness:0.15,height:2.7},
+    {id:'w2',start:{x:660,y:150},end:{x:660,y:510},thickness:0.15,height:2.7},
+    {id:'w3',start:{x:660,y:510},end:{x:180,y:510},thickness:0.15,height:2.7},
+    {id:'w4',start:{x:180,y:510},end:{x:180,y:150},thickness:0.15,height:2.7},
+   ],
+   planRooms:[{
+    id:'r1',name:'Room',roomType:'Bedroom',
+    points:[{x:180,y:150},{x:660,y:150},{x:660,y:510},{x:180,y:510}],
+   }],
+  });
+  const startBefore={...usePlannerStore.getState().walls.find(w=>w.id==='w1')!.start};
+  usePlannerStore.getState().setWallLength('w1',4,'right');
+  const afterRight=usePlannerStore.getState().walls.find(w=>w.id==='w1')!;
+  expect(afterRight.start).toEqual(startBefore);
+  const lenRight=Math.hypot(afterRight.end.x-afterRight.start.x,afterRight.end.y-afterRight.start.y)/80;
+  expect(lenRight).toBeCloseTo(4,1);
+
+  const endBefore={...usePlannerStore.getState().walls.find(w=>w.id==='w1')!.end};
+  usePlannerStore.getState().setWallLength('w1',3,'left');
+  const afterLeft=usePlannerStore.getState().walls.find(w=>w.id==='w1')!;
+  expect(afterLeft.end).toEqual(endBefore);
+  const lenLeft=Math.hypot(afterLeft.end.x-afterLeft.start.x,afterLeft.end.y-afterLeft.start.y)/80;
+  expect(lenLeft).toBeCloseTo(3,1);
+ });
 });

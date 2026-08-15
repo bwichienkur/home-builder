@@ -66,15 +66,23 @@ export function wallExteriorSide(wall: Wall, rooms: PlanRoomLabel[], probePx = 2
   return -ny >= 0 ? 1 : -1;
 }
 
+export type WallDimPlacement = 'top' | 'bottom' | 'left' | 'right';
+export type WallGrowSide = 'left' | 'right' | 'up' | 'down';
+
 export type WallDimFieldLayout = {
   side: 1 | -1;
-  /** Wall runs mostly along plan Y (up/down on screen) — chips need wider side clearance. */
+  /** Wall runs mostly along plan Y (up/down on screen). */
   verticalOnPlan: boolean;
-  /** Meters from wall centerline to L chip center (exterior). */
+  /** Where the dim card sits relative to the wall (always exterior). */
+  placement: WallDimPlacement;
+  /** Meters from wall centerline to card center (exterior). */
+  cardOffsetM: number;
+  /** Half-extents of the dim card in meters (for framing / no-overlap). */
+  cardHalfAlongWallM: number;
+  cardHalfAlongNormalM: number;
+  /** @deprecated Use cardOffsetM — kept for older call sites. */
   sideOffsetM: number;
-  /** Meters past each endpoint for W / H. */
   endOffsetM: number;
-  /** Exterior nudge for W / H (meters). */
   endExteriorM: number;
   dirX: number;
   dirY: number;
@@ -83,8 +91,8 @@ export type WallDimFieldLayout = {
 };
 
 /**
- * Shared L/W/H chip offsets. Html pills are wide (~1.1 m) and short (~0.45 m) at focus zoom.
- * Offset to chip *center* must clear wall half-thickness + half chip size + a visible gap.
+ * Shared L/W/H card placement. One card sits fully outside the room, centered
+ * on the wall’s exterior face (top / bottom / left / right).
  */
 export function wallDimFieldLayout(wall: Wall, exteriorSide: 1 | -1): WallDimFieldLayout {
   const dx = wall.end.x - wall.start.x;
@@ -96,26 +104,47 @@ export function wallDimFieldLayout(wall: Wall, exteriorSide: 1 | -1): WallDimFie
   const ny = dx / len;
   const verticalOnPlan = Math.abs(dirY) >= Math.abs(dirX);
   const halfThick = Math.max(wall.thickness, 0.12) * 0.5;
-  // Gap from wall face to chip edge, then half the pill into the exterior.
-  const faceGap = 0.28;
-  const halfChipAlongOffset = verticalOnPlan ? 0.58 : 0.28; // width vs height of pill
-  const sideOffsetM = halfThick + faceGap + halfChipAlongOffset;
-  // Past each end: half pill along the wall axis + gap so corners don’t kiss W/H.
-  const halfChipAlongWall = verticalOnPlan ? 0.28 : 0.58;
-  const endOffsetM = halfThick + faceGap + halfChipAlongWall + 0.2;
-  // Keep W/H on the same exterior line as L — never on the wall body.
-  const endExteriorM = sideOffsetM;
+  // Card ~220×150 CSS px ≈ 1.35×0.95 m at wall-focus zoom.
+  const cardHalfAlongWallM = verticalOnPlan ? 0.52 : 0.7;
+  const cardHalfAlongNormalM = verticalOnPlan ? 0.7 : 0.52;
+  const faceGap = 0.32;
+  const cardOffsetM = halfThick + faceGap + cardHalfAlongNormalM;
+  const ox = nx * exteriorSide;
+  const oy = ny * exteriorSide;
+  // North-up plan: −Y = top of screen, +Y = bottom, −X = left, +X = right.
+  let placement: WallDimPlacement;
+  if (Math.abs(ox) >= Math.abs(oy)) placement = ox >= 0 ? 'right' : 'left';
+  else placement = oy >= 0 ? 'bottom' : 'top';
   return {
     side: exteriorSide,
     verticalOnPlan,
-    sideOffsetM,
-    endOffsetM,
-    endExteriorM,
+    placement,
+    cardOffsetM,
+    cardHalfAlongWallM,
+    cardHalfAlongNormalM,
+    sideOffsetM: cardOffsetM,
+    endOffsetM: cardHalfAlongWallM + 0.15,
+    endExteriorM: cardOffsetM,
     dirX,
     dirY,
     nx,
     ny,
   };
+}
+
+/** Which wall endpoint moves when growing toward a screen side (other end stays fixed). */
+export function wallEndpointForGrowSide(wall: Wall, grow: WallGrowSide): 'start' | 'end' {
+  if (grow === 'left') return wall.start.x <= wall.end.x ? 'start' : 'end';
+  if (grow === 'right') return wall.start.x >= wall.end.x ? 'start' : 'end';
+  if (grow === 'up') return wall.start.y <= wall.end.y ? 'start' : 'end';
+  return wall.start.y >= wall.end.y ? 'start' : 'end';
+}
+
+/** Default grow side: extend the “farther east / south” end (common edit habit). */
+export function defaultWallGrowSide(wall: Wall): WallGrowSide {
+  const dx = Math.abs(wall.end.x - wall.start.x);
+  const dy = Math.abs(wall.end.y - wall.start.y);
+  return dy >= dx ? 'down' : 'right';
 }
 
 /** Point-in-polygon for plan-pixel coordinates (room focus furniture filter). */

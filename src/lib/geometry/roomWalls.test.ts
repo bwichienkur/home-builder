@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { PlanRoomLabel, Wall } from '../../types';
-import { pointInPlanRoom, wallBelongsToRoom, wallDimFieldLayout, wallExteriorSide, wallsBelongingToRoom } from './roomWalls';
+import { pointInPlanRoom, wallBelongsToRoom, wallDimFieldLayout, wallEndpointForGrowSide, wallExteriorSide, wallsBelongingToRoom, defaultWallGrowSide } from './roomWalls';
 
 const room: PlanRoomLabel = {
   id: 'r1',
@@ -55,17 +55,30 @@ describe('room wall membership', () => {
     expect(wallExteriorSide(flipped, [room])).toBe(1);
   });
 
-  it('clears the wall face for both orientations and parks W/H fully exterior', () => {
+  it('places a single exterior dim card clear of the wall face', () => {
     const horizontal = wallDimFieldLayout(walls[0], -1);
     const vertical = wallDimFieldLayout(walls[1], -1);
     expect(horizontal.verticalOnPlan).toBe(false);
     expect(vertical.verticalOnPlan).toBe(true);
-    // Vertical walls offset into the pill’s long axis → larger side clearance.
-    expect(vertical.sideOffsetM).toBeGreaterThan(horizontal.sideOffsetM + 0.2);
-    // Both keep W/H on the same exterior line as L (no wall-body overlap).
-    expect(vertical.endExteriorM).toBeCloseTo(vertical.sideOffsetM, 5);
-    expect(horizontal.endExteriorM).toBeCloseTo(horizontal.sideOffsetM, 5);
-    expect(horizontal.sideOffsetM).toBeGreaterThan(0.55);
-    expect(vertical.sideOffsetM).toBeGreaterThan(0.85);
+    // Top wall (y=100, exterior −normal → north) parks the card above the room.
+    expect(horizontal.placement).toBe('top');
+    // Right wall parks the card to the right of the room.
+    expect(vertical.placement).toBe('right');
+    // Card center clears wall half-thickness + gap + half card.
+    expect(horizontal.cardOffsetM).toBeGreaterThan(0.7);
+    expect(vertical.cardOffsetM).toBeGreaterThan(0.85);
+    expect(horizontal.cardHalfAlongNormalM).toBeGreaterThan(0.4);
+    expect(vertical.cardHalfAlongNormalM).toBeGreaterThan(0.55);
+  });
+
+  it('maps grow sides to the endpoint that should move', () => {
+    // Horizontal left→right: left grows start, right grows end.
+    expect(wallEndpointForGrowSide(walls[0], 'left')).toBe('start');
+    expect(wallEndpointForGrowSide(walls[0], 'right')).toBe('end');
+    // Vertical top→bottom: up grows start, down grows end.
+    expect(wallEndpointForGrowSide(walls[1], 'up')).toBe('start');
+    expect(wallEndpointForGrowSide(walls[1], 'down')).toBe('end');
+    expect(defaultWallGrowSide(walls[0])).toBe('right');
+    expect(defaultWallGrowSide(walls[1])).toBe('down');
   });
 });
