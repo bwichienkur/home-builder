@@ -129,14 +129,16 @@ function CameraRig() {
 
   const framing = useMemo(() => {
     const basePad = (coarse ? 3.1 : 2.85) * (menuOpen ? 1.45 : 1);
-    const baseOrbit = (coarse ? 1.65 : 1.45) * (menuOpen ? 1.25 : 1);
+    // 3D stays close so the room fills the frame — chrome zoom-out is for top/plan only.
+    const baseOrbit = (coarse ? 1.35 : 1.22) * (menuOpen ? 1.15 : 1);
     const pad = basePad * chromeFit.padScale;
-    const orbitPad = baseOrbit * Math.max(1, chromeFit.padScale * 0.9);
+    // Inspector may nudge orbit slightly; never inherit the full page-clear padScale.
+    const orbitPad = inspectorOpen ? baseOrbit * Math.min(1.12, 1 + (chromeFit.padScale - 1) * 0.12) : baseOrbit;
     if (focusRoom?.points.length) {
       return framingFromPoints(focusRoom.points, { pad, orbitPad, minSpan: 2.5, minHeight: 11 });
     }
     return framingFromWalls(walls, { pad, orbitPad, minHeight: 15 });
-  }, [walls, focusRoom, coarse, menuOpen, chromeFit.padScale]);
+  }, [walls, focusRoom, coarse, menuOpen, chromeFit.padScale, inspectorOpen]);
   const center = framing.center;
   const fovDeg = mode === 'walk' ? 58 : mode === 'top' ? 42 : 48;
   const aspect = Math.max(0.35, canvasW / Math.max(1, canvasH));
