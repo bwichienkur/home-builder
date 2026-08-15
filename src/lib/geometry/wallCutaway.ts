@@ -12,10 +12,10 @@ export const CUTAWAY_FADE_START = 0;
 
 /**
  * Facing·toCamera where the wall is fully open.
- * Wider than a hard pop (~0.27 old band) but still clears on a typical corner
- * orbit so both facing walls go away. Temporal easing supplies the IKEA cream.
+ * Wider than the old ~0.42 band so dissolves cream across a longer orbit arc,
+ * while still clearing on a typical corner dollhouse view.
  */
-export const CUTAWAY_FADE_END = 0.42;
+export const CUTAWAY_FADE_END = 0.52;
 
 /** Quintic smootherstep — flatter at the ends, creamier mid fade than smoothstep. */
 export function cutawayEase(t: number) {

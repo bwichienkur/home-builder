@@ -14,13 +14,13 @@ describe('wall cutaway', () => {
   it('opens camera-facing walls so the interior is visible', () => {
     const center = roomFloorCenter(rect);
     // Camera south-east of the room (positive X / positive Z in world).
-    const cam = { x: center.x + 6, z: center.z + 7 };
+    const cam = { x: center.x + 8, z: center.z + 9 };
     const east = wallCutawayOpacity(rect[1], cam.x, cam.z, center, true);
     const south = wallCutawayOpacity(rect[2], cam.x, cam.z, center, true);
     const north = wallCutawayOpacity(rect[0], cam.x, cam.z, center, true);
     const west = wallCutawayOpacity(rect[3], cam.x, cam.z, center, true);
-    expect(east).toBeLessThan(0.02);
-    expect(south).toBeLessThan(0.02);
+    expect(east).toBeLessThan(0.05);
+    expect(south).toBeLessThan(0.05);
     expect(north).toBeGreaterThan(0.85);
     expect(west).toBeGreaterThan(0.85);
   });
@@ -45,7 +45,7 @@ describe('wall cutaway', () => {
   });
 
   it('uses a soft ease curve and a meaningful fade window', () => {
-    expect(CUTAWAY_FADE_END - CUTAWAY_FADE_START).toBeGreaterThan(0.35);
+    expect(CUTAWAY_FADE_END - CUTAWAY_FADE_START).toBeGreaterThan(0.45);
     expect(cutawayEase(0)).toBe(0);
     expect(cutawayEase(1)).toBe(1);
     expect(cutawayEase(0.5)).toBeCloseTo(0.5, 5);

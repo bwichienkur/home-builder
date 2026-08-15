@@ -435,21 +435,30 @@ function useDollhouseCutaway(walls: ReturnType<typeof usePlannerStore.getState>[
   useFrame((_, delta) => {
     const next: Record<string, number> = {};
     const justEnabled = enabled && !wasEnabled.current;
+    const justDisabled = !enabled && wasEnabled.current;
     wasEnabled.current = enabled;
-    // IKEA-like cream: slow ease while orbiting; a bit quicker when entering/leaving 3D.
-    // Never snap — instant target jumps are what made the dissolve feel harsh.
-    const speed = justEnabled ? 4.0 : enabled ? 2.6 : 7.0;
-    const rate = 1 - Math.exp(-Math.min(delta, 0.08) * speed);
+    // Creamy temporal ease — slower while dissolving open, never a hard snap on mode switch.
     let settling = false;
     for (const wall of walls) {
       const target = wallCutawayOpacity(wall, camera.position.x, camera.position.z, center, enabled);
       const prev = smoothed.current[wall.id] ?? 1;
+      const opening = target < prev - 0.001; // becoming more transparent
+      const speed = justDisabled
+        ? 3.4
+        : justEnabled
+          ? 1.85
+          : !enabled
+            ? 3.8
+            : opening
+              ? 1.55
+              : 2.15;
+      const rate = 1 - Math.exp(-Math.min(delta, 0.05) * speed);
       const value = prev + (target - prev) * rate;
       // Snap residual once we're visually done — avoids endless micro-invalidates.
-      const settled = Math.abs(value - target) < 0.002 ? target : value;
+      const settled = Math.abs(value - target) < 0.0015 ? target : value;
       smoothed.current[wall.id] = settled;
       next[wall.id] = settled;
-      if (Math.abs(settled - target) > 0.002) settling = true;
+      if (Math.abs(settled - target) > 0.0015) settling = true;
     }
     for (const id of Object.keys(smoothed.current)) {
       if (!(id in next)) delete smoothed.current[id];
@@ -507,8 +516,8 @@ function WallMeshes() {
         const opacity = opacityByWall[w.id] ?? 1;
         const selected = selectedId === w.id;
         const drawOpacity = opacity;
-        // Hide only after the fade is visually done — avoids a mid-dissolve pop.
-        const hidden = drawOpacity < 0.02;
+        // Never unmount while orbiting — remounting at ~0 opacity popped the dissolve.
+        const hidden = !orbiting && drawOpacity < 0.02;
         const [sx0, sz0] = world(w.start.x, w.start.y);
         const [ex0, ez0] = world(w.end.x, w.end.y);
         const origLen = Math.hypot(ex0 - sx0, ez0 - sz0) || 0.01;
@@ -603,8 +612,8 @@ function WallMeshes() {
           roughness: 0.86,
           transparent: soft,
           opacity: drawOpacity,
-          // Keep depth while nearly solid; drop it only once the dissolve is underway.
-          depthWrite: !soft || drawOpacity > 0.9,
+          // Stable depth policy while soft — flipping depthWrite mid-fade caused dissolve pops.
+          depthWrite: orbiting ? drawOpacity > 0.96 : !soft || drawOpacity > 0.9,
           polygonOffset: true,
           polygonOffsetFactor: 1,
           polygonOffsetUnits: 1,
@@ -728,7 +737,8 @@ function WallMeshes() {
             const h = Math.max(...touching.map((ww) => ww.height));
             const opacity = Math.min(...touching.map((ww) => opacityByWall[ww.id] ?? 1));
             const selectedTouch = touching.some((ww) => ww.id === selectedId);
-            if (opacity < 0.02 && !selectedTouch) continue;
+            // Keep corner posts while orbiting so they dissolve with the walls (no remount pop).
+            if (!orbiting && opacity < 0.02 && !selectedTouch) continue;
             const drawOpacity = opacity;
             const fading = drawOpacity < 0.97;
             const soft = orbiting || drawOpacity < 0.999;
@@ -748,7 +758,7 @@ function WallMeshes() {
                   roughness={0.86}
                   transparent={soft}
                   opacity={drawOpacity}
-                  depthWrite={!soft || drawOpacity > 0.9}
+                  depthWrite={orbiting ? drawOpacity > 0.96 : !soft || drawOpacity > 0.9}
                   polygonOffset
                   polygonOffsetFactor={2}
                   polygonOffsetUnits={2}
