@@ -186,6 +186,7 @@ function CameraRig() {
   const minDistance = mode === 'walk' ? 1.2 : mode === 'top' ? Math.max(3, framing.span * 0.08) : Math.max(2.5, framing.span * 0.12);
 
   const animating = useRef(false);
+  const modeAnimUntil = useRef(0);
   const applyPose = (to: THREE.Vector3, target: THREE.Vector3, duration = 0) => {
     const camera = get().camera;
     const finish = () => {
@@ -239,20 +240,25 @@ function CameraRig() {
     applyPose(new THREE.Vector3(...poseTuple), new THREE.Vector3(...targetTuple), 0);
   };
 
-  // Animate into orbit/walk so the whole plate eases into view (avoid corner snap).
+  // Plan ↔ 3D: ease into orbit/walk; top snaps. Ignore pose churn so we don't restart mid-ease.
   useEffect(() => {
-    if (mode === 'top') snapToPose();
-    else animateToPose(560);
+    if (mode === 'top') {
+      snapToPose();
+      return;
+    }
+    modeAnimUntil.current = performance.now() + 620;
+    animateToPose(560);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, menuOpen, poseTuple[0], poseTuple[1], poseTuple[2], targetTuple[0]]);
+  }, [mode, menuOpen]);
 
-  // Entering a room / returning to plan must reframe for the free canvas immediately.
+  // Room enter / chrome pad changes — ease, don't hard-cut over a live mode transition.
   useEffect(() => {
-    snapToPose();
+    if (performance.now() < modeAnimUntil.current) return;
+    animateToPose(mode === 'top' ? 360 : 480);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusRoom?.id, workflowStage, chromeFit.padScale, chromeFit.shiftFraction]);
 
-  // When the edit card opens/closes, reframe into the free left canvas (or restore).
+  // Edit card open/close — ease into free area / restore. Only on inspector toggle (not pose churn).
   useEffect(() => {
     const open = document.body.dataset.inspectorOpen === '1';
     const camera = get().camera;
@@ -270,17 +276,23 @@ function CameraRig() {
       const { pose, target } = savedView.current;
       savedView.current = null;
       applyPose(pose, target, 420);
-    } else {
-      snapToPose();
+    } else if (performance.now() >= modeAnimUntil.current) {
+      animateToPose(360);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inspectorTick, poseTuple[0], poseTuple[1], poseTuple[2], targetTuple[0]]);
+  }, [inspectorTick]);
 
   useEffect(() => {
-    const fit = () => snapToPose();
+    const fit = () => {
+      // choose3d/chooseTop fire fit immediately — don't cancel the Plan↔3D ease with a snap.
+      if (performance.now() < modeAnimUntil.current) return;
+      if (mode === 'top') snapToPose();
+      else animateToPose(420);
+    };
     const refocus = () => {
-      // Fit-plan prefers an instant snap; refocus animates only for small nudges.
-      snapToPose();
+      if (performance.now() < modeAnimUntil.current) return;
+      if (mode === 'top') snapToPose();
+      else animateToPose(420);
     };
     const start = () => {
       // Disable immediately so top-view pan / orbit can't steal this pointer gesture.
@@ -302,8 +314,8 @@ function CameraRig() {
       }
     };
     const focusRoomEvt = () => {
-      // Prefer the shared free-area pose (shift + zoom) over a bare geometric focus.
-      snapToPose();
+      if (performance.now() < modeAnimUntil.current) return;
+      animateToPose(mode === 'top' ? 360 : 480);
     };
     window.addEventListener('roomcraft-fit-plan', fit);
     window.addEventListener('roomcraft-refocus', refocus);
@@ -358,13 +370,12 @@ function SceneAtmosphere() {
   const mode = usePlannerStore((s) => s.cameraMode);
   const walls = usePlannerStore((s) => s.walls);
   const framing = useMemo(() => framingFromWalls(walls), [walls]);
-  // Top + orbit: no distance fog — zooming out used to dissolve the whole plate into the
-  // background (fog near ≈ 18m). Walk keeps a soft depth cue farther out.
-  if (mode === 'top' || mode === 'orbit') {
-    return <color attach="background" args={['#e8eaed']} />;
-  }
-  const near = Math.max(40, framing.span * 3.5);
-  const far = Math.max(near + 40, framing.span * 8);
+  // Top: no fog (overhead plates sat past the old far plane).
+  if (mode === 'top') return <color attach="background" args={['#e8eaed']} />;
+  // Orbit/walk: keep a soft depth cue, but start fog well beyond normal dollhouse distances
+  // so zooming out never dissolves the room (old near ≈ 18m blanked the plate).
+  const near = Math.max(85, framing.span * 6.5);
+  const far = Math.max(near + 100, framing.span * 16);
   return (
     <>
       <color attach="background" args={['#e8eaed']} />
