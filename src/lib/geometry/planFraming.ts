@@ -133,12 +133,15 @@ export function freeAreaFit(chrome: FreeAreaChrome) {
 }
 
 /**
- * World X offset so the look target sits on the free-area center line
- * (left of the right chrome + gutter).
+ * World X offset applied to camera + look target so the plate appears centered
+ * in the free area LEFT of the right chrome.
+ *
+ * Panning camera/target toward +X makes fixed world content slide LEFT on screen
+ * (Three.js / OrbitControls top view). Right chrome therefore needs a positive shift.
  */
 export function worldShiftForFreeArea(shiftFraction: number, cameraDist: number, fovDeg: number, aspect: number) {
   const fov = (fovDeg * Math.PI) / 180;
   const visibleW = 2 * Math.tan(fov / 2) * Math.max(cameraDist, 0.01) * Math.max(aspect, 0.35);
-  // freeCenter - fullCenter = -rightReserve/2 px → NDC shift → -shiftFraction * visibleW
-  return -shiftFraction * visibleW;
+  // Move view toward +X so the plate sits on the free-area center (left of the rail).
+  return shiftFraction * visibleW;
 }

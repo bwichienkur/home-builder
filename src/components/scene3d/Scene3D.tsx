@@ -109,7 +109,7 @@ function CameraRig() {
         ? 72
         : 0;
     // Mobile needs a wide gap between the plate and the rail; desktop a bit less.
-    const gutterPx = !rightChromePx ? 0 : inspectorOpen ? (coarse ? 28 : 20) : coarse ? 64 : 40;
+    const gutterPx = !rightChromePx ? 0 : inspectorOpen ? (coarse ? 36 : 24) : coarse ? 88 : 52;
     const topChromePx = coarse ? 72 : 64;
     const bottomChromePx = coarse ? 150 : 110;
     return freeAreaFit({
