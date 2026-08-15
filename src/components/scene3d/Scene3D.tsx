@@ -7,7 +7,7 @@ import { catalog } from '../catalog/catalogData';
 import type { FurnitureItem } from '../../types';
 import { detectRoomPolygons, roomShape } from '../../lib/geometry/rooms';
 import { alignmentGuides, clampWallMountY, constrainPlacement, pointOnWall, roomFloorCenter, wallFrame, WORLD_ORIGIN } from '../../lib/geometry/placement';
-import { framingFromPoints, framingFromWalls } from '../../lib/geometry/planFraming';
+import { framingFromPoints, framingFromWalls, freeAreaFit, worldShiftForFreeArea } from '../../lib/geometry/planFraming';
 import { pointInPlanRoom, wallsBelongingToRoom } from '../../lib/geometry/roomWalls';
 import { wallCutawayOpacity } from '../../lib/geometry/wallCutaway';
 import { orbitCeilingOpacity, orbitFloorOpacity } from '../../lib/geometry/plateFade';
@@ -80,7 +80,7 @@ function CameraRig() {
   const placing = usePlannerStore((s) => !!s.pendingPlacement);
   const [moving, setMoving] = useState(false);
   const controls = useRef<any>(null);
-  const { invalidate, get } = useThree();
+  const { invalidate, get, size } = useThree();
   const focusRoom = workflowStage === 'room' ? planRooms.find((r) => r.id === selectedRoomId) : null;
   const coarse = useMemo(() => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches, []);
   const [menuOpen, setMenuOpen] = useState(() => document.body.dataset.menuOpen === '1');
@@ -97,39 +97,59 @@ function CameraRig() {
     };
   }, []);
   const inspectorOpen = typeof document !== 'undefined' && document.body.dataset.inspectorOpen === '1';
-  const rightChromePx = useMemo(() => {
-    // Keep the plate centered in the free canvas left of the rail / edit card.
-    if (typeof window === 'undefined') return 0;
-    const W = window.innerWidth || 390;
-    if (inspectorOpen) return Math.min(260, Math.round(W * 0.44));
-    if (focusRoom || workflowStage === 'house') return 72;
-    return 0;
-  }, [inspectorOpen, focusRoom, workflowStage, inspectorTick]);
+  const showRightRail = inspectorOpen || !!focusRoom || workflowStage === 'house';
+  const canvasW = size?.width || (typeof window !== 'undefined' ? window.innerWidth : 390);
+  const canvasH = size?.height || (typeof window !== 'undefined' ? window.innerHeight : 844);
+
+  // Reserve rail/inspector + a clear gutter so the plate never sits under the black bar.
+  const freeFit = useMemo(() => {
+    const rightChromePx = inspectorOpen
+      ? Math.min(260, Math.round(canvasW * 0.44))
+      : showRightRail
+        ? 72
+        : 0;
+    // Mobile needs a wide gap between the plate and the rail; desktop a bit less.
+    const gutterPx = !rightChromePx ? 0 : inspectorOpen ? (coarse ? 28 : 20) : coarse ? 64 : 40;
+    const topChromePx = coarse ? 72 : 64;
+    const bottomChromePx = coarse ? 150 : 110;
+    return freeAreaFit({
+      width: canvasW,
+      height: canvasH,
+      rightChromePx,
+      gutterPx,
+      topChromePx,
+      bottomChromePx,
+    });
+  }, [canvasW, canvasH, inspectorOpen, showRightRail, coarse, inspectorTick]);
+
   const framing = useMemo(() => {
-    const chromeZoom = inspectorOpen ? (coarse ? 1.55 : 1.42) : focusRoom ? (coarse ? 1.28 : 1.2) : workflowStage === 'house' ? 1.12 : 1;
-    const pad = (coarse ? 3.4 : 3.1) * (menuOpen ? 1.5 : 1) * chromeZoom;
-    const orbitPad = (coarse ? 1.7 : 1.55) * (menuOpen ? 1.3 : 1) * chromeZoom;
+    // Base pad, then scale so the plate fits the free rectangle (not the full screen).
+    const basePad = (coarse ? 3.6 : 3.2) * (menuOpen ? 1.45 : 1);
+    const baseOrbit = (coarse ? 1.85 : 1.6) * (menuOpen ? 1.25 : 1);
+    const pad = basePad * freeFit.padScale;
+    const orbitPad = baseOrbit * Math.max(1, freeFit.padScale * 0.92);
     if (focusRoom?.points.length) {
-      return framingFromPoints(focusRoom.points, { pad, orbitPad, minSpan: 2.5, minHeight: 10 });
+      return framingFromPoints(focusRoom.points, { pad, orbitPad, minSpan: 2.5, minHeight: 11 });
     }
-    return framingFromWalls(walls, { pad, orbitPad, minHeight: 14 });
-  }, [walls, focusRoom, coarse, menuOpen, inspectorOpen, workflowStage]);
+    return framingFromWalls(walls, { pad, orbitPad, minHeight: 15 });
+  }, [walls, focusRoom, coarse, menuOpen, freeFit.padScale]);
   const center = framing.center;
+  const fovDeg = mode === 'walk' ? 58 : mode === 'top' ? 42 : 48;
+  const aspect = Math.max(0.35, canvasW / Math.max(1, canvasH));
+
   // Shift look-target into the free left region so the rail/inspector never covers the plate.
   const shiftX = useMemo(() => {
     const menuShiftX = menuOpen ? framing.span * 0.28 : 0;
-    if (rightChromePx <= 0) return menuShiftX;
-    const W = typeof window !== 'undefined' ? window.innerWidth || 390 : 390;
-    const H = typeof window !== 'undefined' ? window.innerHeight || 844 : 844;
-    const aspect = Math.max(0.4, W / H);
-    const fov = (42 * Math.PI) / 180;
-    const dist = mode === 'top' ? framing.topHeight : Math.hypot(framing.orbitPose[0] - center[0], framing.orbitPose[1], framing.orbitPose[2] - center[2]) || framing.topHeight;
-    const visibleW = 2 * Math.tan(fov / 2) * dist * aspect;
-    const freeCenter = (W - rightChromePx) / 2;
-    const fullCenter = W / 2;
-    const worldShift = ((freeCenter - fullCenter) / W) * visibleW;
-    return menuShiftX + worldShift;
-  }, [menuOpen, framing, rightChromePx, mode, center]);
+    if (freeFit.rightReserve <= 0) return menuShiftX;
+    const dist =
+      mode === 'top'
+        ? framing.topHeight
+        : mode === 'walk'
+          ? Math.max(4.2, framing.span * 0.55)
+          : Math.hypot(framing.orbitPose[0] - center[0], framing.orbitPose[1], framing.orbitPose[2] - center[2]) ||
+            framing.topHeight;
+    return menuShiftX + worldShiftForFreeArea(freeFit.shiftFraction, dist, fovDeg, aspect);
+  }, [menuOpen, framing, freeFit.rightReserve, freeFit.shiftFraction, mode, center, fovDeg, aspect]);
   const targetTuple = useMemo<[number, number, number]>(
     () => [center[0] + shiftX, 0, center[2]],
     [center, shiftX],
@@ -155,10 +175,10 @@ function CameraRig() {
 
   const maxDistance =
     mode === 'top'
-      ? Math.max(framing.topHeight * 2.2, framing.span * 6, 90)
+      ? Math.max(framing.topHeight * 2.4, framing.span * 7, 100)
       : mode === 'walk'
         ? Math.max(14, framing.span * 1.4)
-        : Math.max(framing.orbitPose[1] * 2.4, framing.span * 5, 48);
+        : Math.max(framing.orbitPose[1] * 2.6, framing.span * 5.5, 52);
   const minDistance = mode === 'walk' ? 1.2 : mode === 'top' ? Math.max(3, framing.span * 0.08) : Math.max(2.5, framing.span * 0.12);
 
   const animating = useRef(false);
@@ -220,7 +240,13 @@ function CameraRig() {
     if (mode === 'top') snapToPose();
     else animateToPose(560);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, menuOpen, poseTuple[0], poseTuple[1], poseTuple[2]]);
+  }, [mode, menuOpen, poseTuple[0], poseTuple[1], poseTuple[2], targetTuple[0]]);
+
+  // Entering a room / returning to plan must reframe for the free canvas immediately.
+  useEffect(() => {
+    snapToPose();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusRoom?.id, workflowStage, freeFit.padScale, freeFit.shiftFraction]);
 
   // When the edit card opens/closes, reframe into the free left canvas (or restore).
   useEffect(() => {
@@ -271,23 +297,9 @@ function CameraRig() {
         controls.current.enableZoom = true;
       }
     };
-    const focusRoomEvt = (event: Event) => {
-      const detail = (event as CustomEvent<{ x: number; z: number; span: number }>).detail;
-      if (!detail) return;
-      const pad = coarse ? 3.1 : 2.8;
-      const framed = framingFromPoints(
-        [
-          { x: detail.x * PIXELS_PER_METER + WORLD_ORIGIN.x, y: (detail.z - detail.span / 2) * PIXELS_PER_METER + WORLD_ORIGIN.y },
-          { x: detail.x * PIXELS_PER_METER + WORLD_ORIGIN.x, y: (detail.z + detail.span / 2) * PIXELS_PER_METER + WORLD_ORIGIN.y },
-          { x: (detail.x - detail.span / 2) * PIXELS_PER_METER + WORLD_ORIGIN.x, y: detail.z * PIXELS_PER_METER + WORLD_ORIGIN.y },
-          { x: (detail.x + detail.span / 2) * PIXELS_PER_METER + WORLD_ORIGIN.x, y: detail.z * PIXELS_PER_METER + WORLD_ORIGIN.y },
-        ],
-        { pad, minSpan: detail.span, minHeight: 8 },
-      );
-      // Prefer the provided center for room focus.
-      const height = framed.topHeight;
-      const zBias = height * Math.tan(0.065);
-      applyPose(new THREE.Vector3(detail.x, height, detail.z + zBias), new THREE.Vector3(detail.x, 0, detail.z), 0);
+    const focusRoomEvt = () => {
+      // Prefer the shared free-area pose (shift + zoom) over a bare geometric focus.
+      snapToPose();
     };
     window.addEventListener('roomcraft-fit-plan', fit);
     window.addEventListener('roomcraft-refocus', refocus);
