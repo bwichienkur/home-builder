@@ -27,7 +27,6 @@ const world = (x: number, y: number): [number, number] => [
   (x - WORLD_ORIGIN.x) / PIXELS_PER_METER,
   (y - WORLD_ORIGIN.y) / PIXELS_PER_METER,
 ];
-const openSurfaceProperties = () => window.dispatchEvent(new Event('roomcraft-open-properties'));
 
 function hasUserDataFlag(object: THREE.Object3D, key: string) {
   let o: THREE.Object3D | null = object;
@@ -97,28 +96,40 @@ function CameraRig() {
       window.removeEventListener('roomcraft-inspector-changed', syncInspector);
     };
   }, []);
-  const framing = useMemo(() => {
-    // Extra pad so the right tool rail (and open inspector) never clip the plate.
-    const inspectorOpen = typeof document !== 'undefined' && document.body.dataset.inspectorOpen === '1';
-    const inRoom = !!focusRoom;
-    // Room-level 3D needs more zoom-out — the black category rail sits on the right.
-    const railPad = inRoom ? (coarse ? 1.35 : 1.28) : 1.18;
-    const rightPad = inspectorOpen ? (coarse ? 1.85 : 1.7) : railPad;
-    const pad = (coarse ? 4.2 : 3.8) * (menuOpen ? 1.7 : 1) * rightPad;
-    const orbitPad =
-      (coarse ? 1.85 : 1.7) * (menuOpen ? 1.35 : 1) * (inspectorOpen ? 1.55 : inRoom ? 1.38 : 1.18);
-    if (focusRoom?.points.length) {
-      return framingFromPoints(focusRoom.points, { pad, orbitPad, minSpan: 2.5, minHeight: 12 });
-    }
-    return framingFromWalls(walls, { pad, orbitPad, minHeight: 16 });
-  }, [walls, focusRoom, coarse, menuOpen, inspectorTick]);
-  const center = framing.center;
-  // Shift content away from left menu / right rail+inspector so the plate stays fully visible.
-  const menuShiftX = menuOpen ? framing.span * 0.32 : 0;
   const inspectorOpen = typeof document !== 'undefined' && document.body.dataset.inspectorOpen === '1';
-  // Push the room into the free left canvas when the edit card is open (not under it).
-  const rightShiftX = inspectorOpen ? -(framing.span * (coarse ? 0.42 : 0.36)) : -(framing.span * (focusRoom ? 0.2 : 0.12));
-  const shiftX = menuShiftX + rightShiftX;
+  const rightChromePx = useMemo(() => {
+    // Keep the plate centered in the free canvas left of the rail / edit card.
+    if (typeof window === 'undefined') return 0;
+    const W = window.innerWidth || 390;
+    if (inspectorOpen) return Math.min(260, Math.round(W * 0.44));
+    if (focusRoom || workflowStage === 'house') return 72;
+    return 0;
+  }, [inspectorOpen, focusRoom, workflowStage, inspectorTick]);
+  const framing = useMemo(() => {
+    const chromeZoom = inspectorOpen ? (coarse ? 1.55 : 1.42) : focusRoom ? (coarse ? 1.28 : 1.2) : workflowStage === 'house' ? 1.12 : 1;
+    const pad = (coarse ? 3.4 : 3.1) * (menuOpen ? 1.5 : 1) * chromeZoom;
+    const orbitPad = (coarse ? 1.7 : 1.55) * (menuOpen ? 1.3 : 1) * chromeZoom;
+    if (focusRoom?.points.length) {
+      return framingFromPoints(focusRoom.points, { pad, orbitPad, minSpan: 2.5, minHeight: 10 });
+    }
+    return framingFromWalls(walls, { pad, orbitPad, minHeight: 14 });
+  }, [walls, focusRoom, coarse, menuOpen, inspectorOpen, workflowStage]);
+  const center = framing.center;
+  // Shift look-target into the free left region so the rail/inspector never covers the plate.
+  const shiftX = useMemo(() => {
+    const menuShiftX = menuOpen ? framing.span * 0.28 : 0;
+    if (rightChromePx <= 0) return menuShiftX;
+    const W = typeof window !== 'undefined' ? window.innerWidth || 390 : 390;
+    const H = typeof window !== 'undefined' ? window.innerHeight || 844 : 844;
+    const aspect = Math.max(0.4, W / H);
+    const fov = (42 * Math.PI) / 180;
+    const dist = mode === 'top' ? framing.topHeight : Math.hypot(framing.orbitPose[0] - center[0], framing.orbitPose[1], framing.orbitPose[2] - center[2]) || framing.topHeight;
+    const visibleW = 2 * Math.tan(fov / 2) * dist * aspect;
+    const freeCenter = (W - rightChromePx) / 2;
+    const fullCenter = W / 2;
+    const worldShift = ((freeCenter - fullCenter) / W) * visibleW;
+    return menuShiftX + worldShift;
+  }, [menuOpen, framing, rightChromePx, mode, center]);
   const targetTuple = useMemo<[number, number, number]>(
     () => [center[0] + shiftX, 0, center[2]],
     [center, shiftX],
@@ -131,6 +142,16 @@ function CameraRig() {
     }
     return [framing.orbitPose[0] + shiftX, framing.orbitPose[1], framing.orbitPose[2]];
   }, [mode, center, framing, shiftX]);
+
+  // Clear any leftover viewOffset from earlier experiments — we frame via shiftX instead.
+  useEffect(() => {
+    const camera = get().camera as THREE.PerspectiveCamera;
+    if (camera?.isPerspectiveCamera && typeof camera.clearViewOffset === 'function' && camera.view?.enabled) {
+      camera.clearViewOffset();
+      camera.updateProjectionMatrix();
+      invalidate();
+    }
+  }, [get, invalidate]);
 
   const maxDistance =
     mode === 'top'
@@ -201,7 +222,7 @@ function CameraRig() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, menuOpen, poseTuple[0], poseTuple[1], poseTuple[2]]);
 
-  // When the edit card opens, zoom/pan to fit the remaining left canvas; restore prior view on close.
+  // When the edit card opens/closes, reframe into the free left canvas (or restore).
   useEffect(() => {
     const open = document.body.dataset.inspectorOpen === '1';
     const camera = get().camera;
@@ -212,7 +233,6 @@ function CameraRig() {
           target: controls.current.target.clone(),
         };
       }
-      // Always reframe into the free left region (do not keep the old centered pose).
       applyPose(new THREE.Vector3(...poseTuple), new THREE.Vector3(...targetTuple), 420);
       return;
     }
@@ -224,7 +244,7 @@ function CameraRig() {
       snapToPose();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inspectorTick]);
+  }, [inspectorTick, poseTuple[0], poseTuple[1], poseTuple[2], targetTuple[0]]);
 
   useEffect(() => {
     const fit = () => snapToPose();
@@ -448,7 +468,7 @@ function WallMeshes() {
   const onWallClick = (id: string) => {
     if (!wallEditMode) return;
     select(id);
-    openSurfaceProperties();
+    // Properties open from the Edit fab — don't cover the plan on every wall tap.
   };
 
   return (
@@ -492,9 +512,30 @@ function WallMeshes() {
           </mesh>
         );
 
+        // Wide, shallow top-view strip — walls are hard to hit from plan otherwise (thin edges).
+        const topPick =
+          wallEditMode ? (
+            <mesh
+              key={w.id + 'top-pick'}
+              userData={{ planWallPick: true, wallId: w.id }}
+              position={[midX, 0.14, midZ]}
+              rotation={[0, angle, 0]}
+              renderOrder={6}
+              onClick={(e) => {
+                e.stopPropagation();
+                onWallClick(w.id);
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              <boxGeometry args={[Math.max(origLen, 0.35), 0.1, Math.max(w.thickness * 5, 0.48)]} />
+              <meshBasicMaterial transparent opacity={0} depthWrite={false} depthTest={false} side={THREE.DoubleSide} />
+            </mesh>
+          ) : null;
+
         if (hidden) {
           return [
             pickProxy,
+            ...(topPick ? [topPick] : []),
             ...(selected
               ? [
                   <mesh
@@ -631,8 +672,13 @@ function WallMeshes() {
             );
           return parts;
         });
-        // Pick proxy only while open/fading AND in wall-edit mode.
-        return fading && wallEditMode ? [pickProxy, ...base, ...fills] : [...base, ...fills];
+        // Top-plan pick strip always available in Walls mode; 3D pick proxy while fading.
+        return [
+          ...(topPick ? [topPick] : []),
+          ...(fading && wallEditMode ? [pickProxy] : []),
+          ...base,
+          ...fills,
+        ];
       })}
       {(() => {
         // Corner posts seal joints where wall boxes meet at shared plan endpoints.
@@ -1105,8 +1151,11 @@ function Room() {
   const selectedRoomId = usePlannerStore((s) => s.selectedRoomId);
   const enterRoom = usePlannerStore((s) => s.enterRoom);
   const selectRoom = usePlannerStore((s) => s.selectRoom);
+  const selectWall = usePlannerStore((s) => s.selectWall);
   const workflowStage = usePlannerStore((s) => s.workflowStage);
   const cameraMode = usePlannerStore((s) => s.cameraMode);
+  const studioMode = usePlannerStore((s) => s.studioMode);
+  const tool = usePlannerStore((s) => s.tool);
   const selectedSurface = usePlannerStore((s) => s.selectedSurface);
   const selectSurface = usePlannerStore((s) => s.selectSurface);
   const detected = useMemo(() => detectRoomPolygons(walls), [walls]);
@@ -1120,6 +1169,7 @@ function Room() {
   const [floorOpacity, setFloorOpacity] = useState(1);
   // Top / bird’s-eye must see the floor — a solid ceiling makes the room unusable to edit.
   const showCeiling = cameraMode !== 'top' || selectedSurface === 'ceiling';
+  const wallEditMode = studioMode === 'architect' && cameraMode === 'top' && tool === 'select';
 
   useFrame((_, delta) => {
     const targetCeiling = orbitCeilingOpacity(camera.position.y, ceilingHeight, {
@@ -1148,6 +1198,14 @@ function Room() {
 
   const chooseFloor = (e: any, roomId?: string) => {
     e.stopPropagation();
+    // Plan Walls mode: prefer wall pick strips even when the room floor is closer.
+    if (wallEditMode && workflowStage !== 'room') {
+      const wallHit = (e.intersections as THREE.Intersection[] | undefined)?.find((h) => h.object.userData?.planWallPick);
+      if (wallHit?.object.userData?.wallId) {
+        selectWall(String(wallHit.object.userData.wallId));
+        return;
+      }
+    }
     if (roomId) {
       // Already editing this room in 3D — selecting the floor must NOT reset camera to top.
       if (workflowStage === 'room' && selectedRoomId === roomId) {

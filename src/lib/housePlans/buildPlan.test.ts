@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildFloorFromRooms, buildHouse, livingAreaSqFt, planRoomSizeFeet, row, splitPlanRoomPoints, squareRoomPoints } from './buildPlan';
+import { buildFloorFromRooms, buildHouse, livingAreaSqFt, planRoomSizeFeet, proposedRoomOverlaps, row, shapedRoomPoints, splitPlanRoomPoints, squareRoomPoints } from './buildPlan';
 import { WORLD_ORIGIN } from '../geometry/placement';
 import { assertPlanCatalog, listHousePlanNames, olsenHousePlans } from './olsenPlans';
 import { usePlannerStore } from '../../store/plannerStore';
@@ -119,6 +119,15 @@ describe('house plan builder', () => {
     const [a, b] = splitPlanRoomPoints(pts, 'x');
     expect(planRoomSizeFeet(a).widthFt).toBeCloseTo(6, 1);
     expect(planRoomSizeFeet(b).widthFt).toBeCloseTo(6, 1);
+  });
+
+  it('blocks nesting a room inside another but allows edge-flush neighbors', () => {
+    const existing = [{ points: squareRoomPoints(WORLD_ORIGIN, 12, 12) }];
+    expect(proposedRoomOverlaps(WORLD_ORIGIN, 'rectangle', existing)).toBe(true);
+    const widthPx = existing[0].points[1].x - existing[0].points[0].x;
+    const neighborCenter = { x: WORLD_ORIGIN.x + widthPx, y: WORLD_ORIGIN.y };
+    expect(proposedRoomOverlaps(neighborCenter, 'rectangle', existing)).toBe(false);
+    expect(shapedRoomPoints('rectangle', neighborCenter)).toHaveLength(4);
   });
 
   it('adds a square room and isolates on enter', () => {

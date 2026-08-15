@@ -265,6 +265,7 @@ export function StudioChrome({
     setPendingRoomShape(pendingRoomShape === shape ? null : shape);
   };
 
+  /** Enter the room for furnishing — do not auto-open the properties panel. */
   const editSelectedPlanRoom = () => {
     if (!selectedRoomId) return;
     enterRoom(selectedRoomId);
@@ -272,7 +273,6 @@ export function StudioChrome({
     window.setTimeout(() => {
       window.dispatchEvent(new Event('roomcraft-fit-plan'));
       window.dispatchEvent(new Event('roomcraft-refocus'));
-      onOpenInspector();
     }, 60);
   };
 
@@ -565,7 +565,7 @@ export function StudioChrome({
             })}
           {selectedRoom && (
             <>
-              <button type="button" className="is-active" onClick={editSelectedPlanRoom} aria-label="Edit room" title="Edit room">
+              <button type="button" onClick={editSelectedPlanRoom} aria-label="Enter room" title="Enter room">
                 <PencilRuler />
                 <span>Edit</span>
               </button>
