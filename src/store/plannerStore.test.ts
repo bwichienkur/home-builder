@@ -50,6 +50,49 @@ describe('mobile planner defaults',()=>{
  });
 });
 
+describe('perimeter trim',()=>{
+ it('applies crown molding along every boundary wall of the focused room',()=>{
+  usePlannerStore.setState({ workflowStage:'room', furniture:[], selectedRoomId:null, planRooms:[], openingNotice:'' });
+  usePlannerStore.getState().applyPerimeterTrim('crown-molding','Crown Molding','Trim',[1,.05,.09],'#f4f1ea','ceiling');
+  const state=usePlannerStore.getState();
+  expect(state.openingNotice).toBe('');
+  expect(state.furniture.filter(f=>f.placementKind==='perimeter-trim')).toHaveLength(4);
+  expect(new Set(state.furniture.map(f=>f.runId)).size).toBe(1);
+  expect(state.furniture.every(f=>f.trimEdge==='ceiling'&&f.y>2)).toBe(true);
+ });
+
+ it('replaces an existing crown run when re-applied',()=>{
+  usePlannerStore.setState({ workflowStage:'room', furniture:[], openingNotice:'' });
+  usePlannerStore.getState().applyPerimeterTrim('crown-molding','Crown Molding','Trim',[1,.05,.09],'#f4f1ea','ceiling');
+  usePlannerStore.getState().applyPerimeterTrim('crown-molding','Crown Molding','Trim',[1,.05,.09],'#eee','ceiling');
+  expect(usePlannerStore.getState().furniture.filter(f=>f.catalogId==='crown-molding')).toHaveLength(4);
+ });
+
+ it('deletes the whole trim run when one segment is selected',()=>{
+  usePlannerStore.setState({ workflowStage:'room', furniture:[], openingNotice:'' });
+  usePlannerStore.getState().applyPerimeterTrim('baseboard','Baseboard','Trim',[1,.015,.09],'#fff','floor');
+  const first=usePlannerStore.getState().furniture.find(f=>f.placementKind==='perimeter-trim')!;
+  usePlannerStore.setState({ selectedFurnitureId:first.id });
+  usePlannerStore.getState().deleteSelected();
+  expect(usePlannerStore.getState().furniture.filter(f=>f.placementKind==='perimeter-trim')).toHaveLength(0);
+ });
+
+ it('does not move fixed trim strips',()=>{
+  usePlannerStore.setState({ workflowStage:'room', furniture:[], openingNotice:'' });
+  usePlannerStore.getState().applyPerimeterTrim('crown-molding','Crown Molding','Trim',[1,.05,.09],'#f4f1ea','ceiling');
+  const item=usePlannerStore.getState().furniture[0]!;
+  const {x,z,rotation}=item;
+  usePlannerStore.setState({ selectedFurnitureId:item.id });
+  usePlannerStore.getState().moveSelected(1,1);
+  usePlannerStore.getState().rotateSelected(Math.PI/2);
+  usePlannerStore.getState().updateFurniture(item.id,{ x:x+2, z:z+2, rotation:rotation+1 });
+  const next=usePlannerStore.getState().furniture.find(f=>f.id===item.id)!;
+  expect(next.x).toBeCloseTo(x);
+  expect(next.z).toBeCloseTo(z);
+  expect(next.rotation).toBeCloseTo(rotation);
+ });
+});
+
 describe('IKEA-style wall editing',()=>{
  it('splits a wall into two equal connected segments',()=>{
   const before=usePlannerStore.getState().walls.length,wall=usePlannerStore.getState().walls[0];

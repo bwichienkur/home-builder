@@ -9,6 +9,15 @@ export type FurnitureItem = {
   width:number; depth:number; height:number;
   mountingType?:MountingType; wallId?:string|null; wallOffset?:number|null;
   clearance?:FurnitureClearance; showClearance?:boolean;
+  /**
+   * Fixed architectural trim (crown / baseboard). Not freely dragged —
+   * one strip per boundary wall, linked by `runId`.
+   */
+  placementKind?: 'perimeter-trim';
+  /** Shared id for all segments of one Apply Trim action. */
+  runId?: string;
+  /** Ceiling junction vs floor junction. */
+  trimEdge?: 'ceiling' | 'floor';
 };
 export type CameraMode = 'top'|'orbit'|'walk';
 export type UnitSystem = 'metric'|'imperial';
