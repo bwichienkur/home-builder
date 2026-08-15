@@ -127,14 +127,46 @@ export function pageCenterFit(chrome: ChromeFit) {
   const padScale = Math.max(widthScale, heightScale, 1);
   return {
     maxPlateW,
+    freeW: maxPlateW,
     freeH,
     rightReserve: right,
     padScale,
+    shiftFraction: 0,
   };
 }
 
-/** @deprecated Use pageCenterFit. */
+/**
+ * Zoom + shift so the plate is centered in the free rectangle LEFT of a wide
+ * overlay (edit inspector). Use this when the panel covers too much of the
+ * page for page-centering to keep the room visible.
+ */
 export function freeAreaFit(chrome: ChromeFit) {
-  const fit = pageCenterFit(chrome);
-  return { ...fit, shiftFraction: 0, freeW: fit.maxPlateW };
+  const W = Math.max(1, chrome.width);
+  const H = Math.max(1, chrome.height);
+  const gutter = chrome.gutterPx ?? 0;
+  const right = Math.max(0, chrome.rightChromePx) + gutter;
+  const top = Math.max(0, chrome.topChromePx ?? 0);
+  const bottom = Math.max(0, chrome.bottomChromePx ?? 0);
+  const freeW = Math.max(120, W - right);
+  const freeH = Math.max(160, H - top - bottom);
+  const padScale = Math.max(W / freeW, H / freeH, 1);
+  return {
+    maxPlateW: freeW,
+    freeW,
+    freeH,
+    rightReserve: right,
+    padScale,
+    /** rightReserve / (2W) — pair with worldShiftForFreeArea (positive X). */
+    shiftFraction: right / (2 * W),
+  };
+}
+
+/**
+ * World X offset for camera + look target so content sits on the free-area
+ * center line. Positive X pans the view so fixed content slides LEFT on screen.
+ */
+export function worldShiftForFreeArea(shiftFraction: number, cameraDist: number, fovDeg: number, aspect: number) {
+  const fov = (fovDeg * Math.PI) / 180;
+  const visibleW = 2 * Math.tan(fov / 2) * Math.max(cameraDist, 0.01) * Math.max(aspect, 0.35);
+  return shiftFraction * visibleW;
 }

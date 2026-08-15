@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Wall } from '../../types';
-import { framingFromWalls, orbitViewPose, pageCenterFit, topViewHeight } from './planFraming';
+import { framingFromWalls, freeAreaFit, orbitViewPose, pageCenterFit, topViewHeight, worldShiftForFreeArea } from './planFraming';
 
 const rect: Wall[] = [
   { id: 'w1', start: { x: 180, y: 150 }, end: { x: 660, y: 150 }, thickness: 0.15, height: 2.7 },
@@ -58,5 +58,21 @@ describe('plan framing', () => {
     expect(fit.rightReserve).toBe(96);
     expect(fit.maxPlateW).toBe(390 - 2 * 96);
     expect(fit.padScale).toBeGreaterThan(1.8);
+    expect(fit.shiftFraction).toBe(0);
+  });
+
+  it('shifts into the free area left of a wide edit inspector', () => {
+    const fit = freeAreaFit({
+      width: 390,
+      height: 844,
+      rightChromePx: Math.min(260, Math.round(390 * 0.44)),
+      gutterPx: 16,
+      topChromePx: 72,
+      bottomChromePx: 150,
+    });
+    expect(fit.shiftFraction).toBeGreaterThan(0.2);
+    expect(fit.padScale).toBeGreaterThan(1.5);
+    const shift = worldShiftForFreeArea(fit.shiftFraction, 28, 42, 390 / 844);
+    expect(shift).toBeGreaterThan(2);
   });
 });
