@@ -444,7 +444,7 @@ export const residentialFurniture = [
     mountingType: 'floor',
     placementSurfaces: ['floor'],
     tags: ['wardrobe', 'closet'],
-    roomTypes: ['Bedroom', 'Storage /wardrobe'],
+    roomTypes: ['Bedroom', 'Storage / wardrobe'],
     note: '≈ 60×24×84 in',
   },
   {
@@ -656,7 +656,7 @@ export const residentialFurniture = [
     mountingType: 'floor',
     placementSurfaces: ['floor'],
     tags: ['cabinet', 'pantry', 'tall'],
-    roomTypes: ['Kitchen', 'Laundry', 'Storage /wardrobe'],
+    roomTypes: ['Kitchen', 'Laundry', 'Storage / wardrobe'],
     note: '24×24×84 in',
   },
   {

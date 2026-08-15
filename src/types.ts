@@ -58,7 +58,7 @@ export type RoomType =
   | 'Children’s room'
   | 'Laundry'
   | 'Hallway'
-  | 'Storage /wardrobe'
+  | 'Storage / wardrobe'
   | 'Outdoor';
 export type SurfaceTarget = 'floor' | 'wall' | 'ceiling';
 export type WorkflowStage = 'start' | 'house' | 'room';
