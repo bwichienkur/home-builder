@@ -7,7 +7,7 @@ import { catalog } from '../catalog/catalogData';
 import type { FurnitureItem } from '../../types';
 import { detectRoomPolygons, roomShape } from '../../lib/geometry/rooms';
 import { alignmentGuides, clampWallMountY, constrainPlacement, pointOnWall, roomFloorCenter, wallFrame, WORLD_ORIGIN } from '../../lib/geometry/placement';
-import { framingFromPoints, framingFromWalls, freeAreaFit, worldShiftForFreeArea } from '../../lib/geometry/planFraming';
+import { framingFromPoints, framingFromWalls, pageCenterFit } from '../../lib/geometry/planFraming';
 import { pointInPlanRoom, wallsBelongingToRoom } from '../../lib/geometry/roomWalls';
 import { wallCutawayOpacity } from '../../lib/geometry/wallCutaway';
 import { orbitCeilingOpacity, orbitFloorOpacity } from '../../lib/geometry/plateFade';
@@ -101,18 +101,18 @@ function CameraRig() {
   const canvasW = size?.width || (typeof window !== 'undefined' ? window.innerWidth : 390);
   const canvasH = size?.height || (typeof window !== 'undefined' ? window.innerHeight : 844);
 
-  // Reserve rail/inspector + a clear gutter so the plate never sits under the black bar.
-  const freeFit = useMemo(() => {
+  // Zoom so a page-centered plate still clears the right rail / inspector (no lateral shift).
+  const chromeFit = useMemo(() => {
     const rightChromePx = inspectorOpen
       ? Math.min(260, Math.round(canvasW * 0.44))
       : showRightRail
         ? 72
         : 0;
-    // Mobile needs a wide gap between the plate and the rail; desktop a bit less.
-    const gutterPx = !rightChromePx ? 0 : inspectorOpen ? (coarse ? 36 : 24) : coarse ? 88 : 52;
+    // Modest gutter — just enough that the edge isn’t tucked under the bar.
+    const gutterPx = !rightChromePx ? 0 : inspectorOpen ? (coarse ? 20 : 16) : coarse ? 24 : 16;
     const topChromePx = coarse ? 72 : 64;
     const bottomChromePx = coarse ? 150 : 110;
-    return freeAreaFit({
+    return pageCenterFit({
       width: canvasW,
       height: canvasH,
       rightChromePx,
@@ -123,33 +123,20 @@ function CameraRig() {
   }, [canvasW, canvasH, inspectorOpen, showRightRail, coarse, inspectorTick]);
 
   const framing = useMemo(() => {
-    // Base pad, then scale so the plate fits the free rectangle (not the full screen).
-    const basePad = (coarse ? 3.6 : 3.2) * (menuOpen ? 1.45 : 1);
-    const baseOrbit = (coarse ? 1.85 : 1.6) * (menuOpen ? 1.25 : 1);
-    const pad = basePad * freeFit.padScale;
-    const orbitPad = baseOrbit * Math.max(1, freeFit.padScale * 0.92);
+    // Base pad, then scale so a page-centered plate clears right chrome.
+    const basePad = (coarse ? 3.1 : 2.85) * (menuOpen ? 1.45 : 1);
+    const baseOrbit = (coarse ? 1.65 : 1.45) * (menuOpen ? 1.25 : 1);
+    const pad = basePad * chromeFit.padScale;
+    const orbitPad = baseOrbit * Math.max(1, chromeFit.padScale * 0.9);
     if (focusRoom?.points.length) {
       return framingFromPoints(focusRoom.points, { pad, orbitPad, minSpan: 2.5, minHeight: 11 });
     }
     return framingFromWalls(walls, { pad, orbitPad, minHeight: 15 });
-  }, [walls, focusRoom, coarse, menuOpen, freeFit.padScale]);
+  }, [walls, focusRoom, coarse, menuOpen, chromeFit.padScale]);
   const center = framing.center;
-  const fovDeg = mode === 'walk' ? 58 : mode === 'top' ? 42 : 48;
-  const aspect = Math.max(0.35, canvasW / Math.max(1, canvasH));
 
-  // Shift look-target into the free left region so the rail/inspector never covers the plate.
-  const shiftX = useMemo(() => {
-    const menuShiftX = menuOpen ? framing.span * 0.28 : 0;
-    if (freeFit.rightReserve <= 0) return menuShiftX;
-    const dist =
-      mode === 'top'
-        ? framing.topHeight
-        : mode === 'walk'
-          ? Math.max(4.2, framing.span * 0.55)
-          : Math.hypot(framing.orbitPose[0] - center[0], framing.orbitPose[1], framing.orbitPose[2] - center[2]) ||
-            framing.topHeight;
-    return menuShiftX + worldShiftForFreeArea(freeFit.shiftFraction, dist, fovDeg, aspect);
-  }, [menuOpen, framing, freeFit.rightReserve, freeFit.shiftFraction, mode, center, fovDeg, aspect]);
+  // Keep the plate on the geometric page center. Only the left project menu nudges aside.
+  const shiftX = useMemo(() => (menuOpen ? framing.span * 0.28 : 0), [menuOpen, framing.span]);
   const targetTuple = useMemo<[number, number, number]>(
     () => [center[0] + shiftX, 0, center[2]],
     [center, shiftX],
@@ -163,7 +150,7 @@ function CameraRig() {
     return [framing.orbitPose[0] + shiftX, framing.orbitPose[1], framing.orbitPose[2]];
   }, [mode, center, framing, shiftX]);
 
-  // Clear any leftover viewOffset from earlier experiments — we frame via shiftX instead.
+  // Clear any leftover viewOffset from earlier experiments.
   useEffect(() => {
     const camera = get().camera as THREE.PerspectiveCamera;
     if (camera?.isPerspectiveCamera && typeof camera.clearViewOffset === 'function' && camera.view?.enabled) {
@@ -246,7 +233,7 @@ function CameraRig() {
   useEffect(() => {
     snapToPose();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focusRoom?.id, workflowStage, freeFit.padScale, freeFit.shiftFraction]);
+  }, [focusRoom?.id, workflowStage, chromeFit.padScale]);
 
   // When the edit card opens/closes, reframe into the free left canvas (or restore).
   useEffect(() => {
