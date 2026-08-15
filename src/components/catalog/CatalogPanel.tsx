@@ -5,17 +5,17 @@ import { catalog } from './catalogData';
 import type { RoomType } from '../../types';
 import { useInventoryStore } from '../../store/inventoryStore';
 
-const categories = ['All', 'Appliances', 'Cabinetry', 'Surfaces', 'Tile', 'Plumbing', 'Paneling', 'Seating', 'Tables', 'Storage', 'Bedroom', 'Lighting', 'Decor'];
+const categories = ['All', 'Appliances', 'Cabinetry', 'Surfaces', 'Tile', 'Plumbing', 'Paneling', 'Trim', 'Seating', 'Tables', 'Storage', 'Bedroom', 'Lighting', 'Decor'];
 export const roomCategories: Record<RoomType, string[]> = {
-  Bedroom: ['Bedroom', 'Storage', 'Lighting', 'Decor'],
-  'Living room': ['Seating', 'Tables', 'Storage', 'Lighting', 'Decor', 'Paneling'],
-  Bathroom: ['Plumbing', 'Cabinetry', 'Tile', 'Surfaces', 'Lighting'],
-  Kitchen: ['Appliances', 'Cabinetry', 'Surfaces', 'Plumbing', 'Tile', 'Lighting'],
-  'Dining room': ['Seating', 'Tables', 'Storage', 'Lighting', 'Decor'],
-  Office: ['Tables', 'Seating', 'Storage', 'Lighting', 'Decor'],
-  'Children’s room': ['Bedroom', 'Storage', 'Lighting', 'Decor'],
-  Laundry: ['Appliances', 'Cabinetry', 'Storage', 'Surfaces', 'Plumbing', 'Lighting'],
-  Hallway: ['Storage', 'Lighting', 'Decor'],
+  Bedroom: ['Bedroom', 'Storage', 'Lighting', 'Decor', 'Trim'],
+  'Living room': ['Seating', 'Tables', 'Storage', 'Lighting', 'Decor', 'Paneling', 'Trim'],
+  Bathroom: ['Plumbing', 'Cabinetry', 'Tile', 'Surfaces', 'Lighting', 'Trim'],
+  Kitchen: ['Appliances', 'Cabinetry', 'Surfaces', 'Plumbing', 'Tile', 'Lighting', 'Trim'],
+  'Dining room': ['Seating', 'Tables', 'Storage', 'Lighting', 'Decor', 'Trim'],
+  Office: ['Tables', 'Seating', 'Storage', 'Lighting', 'Decor', 'Trim'],
+  'Children’s room': ['Bedroom', 'Storage', 'Lighting', 'Decor', 'Trim'],
+  Laundry: ['Appliances', 'Cabinetry', 'Storage', 'Surfaces', 'Plumbing', 'Lighting', 'Trim'],
+  Hallway: ['Storage', 'Lighting', 'Decor', 'Trim'],
   'Storage / wardrobe': ['Storage', 'Cabinetry', 'Lighting', 'Decor'],
   Outdoor: ['Seating', 'Tables', 'Lighting', 'Decor', 'Surfaces'],
 };
@@ -104,6 +104,18 @@ export const CatalogPanel = memo(function CatalogPanel({
   };
 
   const addItem = (i: (typeof items)[number]) => {
+    if (i.placementMode === 'ceiling-perimeter' || i.placementMode === 'floor-perimeter') {
+      usePlannerStore.getState().applyPerimeterTrim(
+        i.id,
+        i.name,
+        i.category,
+        i.dims,
+        i.color,
+        i.placementMode === 'ceiling-perimeter' ? 'ceiling' : 'floor',
+      );
+      onAdd?.();
+      return;
+    }
     // Omit x/z so the ghost starts at the room center (visible immediately).
     begin(i.id, i.name, i.category, i.dims, i.color, undefined, undefined, {
       mountingType: i.mountingType,
@@ -177,6 +189,9 @@ export const CatalogPanel = memo(function CatalogPanel({
               {i.brand && <span className="catalog-brand">{i.brand}</span>}
               <strong>{i.name}</strong>
               {i.mountingType === 'wall' && <small className="mount-badge">Wall mount</small>}
+              {(i.placementMode === 'ceiling-perimeter' || i.placementMode === 'floor-perimeter') && (
+                <small className="mount-badge">{i.placementMode === 'ceiling-perimeter' ? 'Ceiling corners' : 'Floor corners'}</small>
+              )}
               {i.modelUrl && <small className="mount-badge model">3D model</small>}
               {i.sku && <small>SKU {i.sku}</small>}
               <span>{i.price !== undefined ? `${money.format(i.price)} / ${i.priceUnit ?? 'each'}` : 'Price by dealer/design'}</span>
@@ -187,7 +202,9 @@ export const CatalogPanel = memo(function CatalogPanel({
                   {i.sourceLabel} <ExternalLink size={10} />
                 </a>
               )}
-              <button onClick={() => addItem(i)}>Place in room</button>
+              <button onClick={() => addItem(i)}>
+                {i.placementMode === 'ceiling-perimeter' || i.placementMode === 'floor-perimeter' ? 'Apply to room' : 'Place in room'}
+              </button>
             </article>
           ))}
         </div>

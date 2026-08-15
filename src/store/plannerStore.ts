@@ -1,10 +1,13 @@
 import { create } from 'zustand';
 import type { CameraMode, FurnitureItem, MountingType, Opening, PlanRoomLabel, Point, RoomType, SceneSnapshot, StudioMode, SurfaceTarget, Tool, UnitSystem, Wall, WorkflowStage } from '../types';
-import { clampWallMountY, constrainPlacement, openingConflicts, resolveMountingType, roomFloorCenter } from '../lib/geometry/placement';
+import { clampWallMountY, constrainPlacement, openingConflicts, resolveMountingType, roomFloorCenter, WORLD_ORIGIN } from '../lib/geometry/placement';
 import { detectRoomPolygons } from '../lib/geometry/rooms';
+import { perimeterTrimSegments, type PerimeterTrimEdge } from '../lib/geometry/ceilingTrim';
 import { writeRecoverySnapshot } from '../lib/designShare';
 import { buildHouse, rebuildFromPlanRooms, resizePlanRoomPoints, shapedRoomPoints, snapRoomCenterToNeighbors, splitPlanRoomPoints, proposedRoomOverlaps, type PlanRoomShape } from '../lib/housePlans/buildPlan';
 import { getHousePlan } from '../lib/housePlans/olsenPlans';
+import { pointInPlanRoom } from '../lib/geometry/roomWalls';
+import { PIXELS_PER_METER } from '../lib/geometry/snapping';
 
 export type { PlanRoomShape };
 
@@ -124,6 +127,15 @@ type PlannerState = SceneSnapshot & {
     z?: number,
     meta?: FurnitureAddMeta,
   ) => void;
+  /** Apply crown/baseboard strips along the focused room’s wall junctions. */
+  applyPerimeterTrim: (
+    catalogId: string,
+    name: string,
+    category: string,
+    dims: [number, number, number],
+    color: string,
+    edge: PerimeterTrimEdge,
+  ) => void;
   selectFurniture: (id: string | null) => void;
   updateFurniture: (id: string, patch: Partial<FurnitureItem>) => void;
   updateFurnitureLive: (id: string, patch: Partial<FurnitureItem>) => void;
@@ -201,6 +213,31 @@ function placeFurniture(
     depth,
     height,
   };
+}
+
+/** Prefer the focused plan room; otherwise synthesize from detected wall polygons. */
+function focusedTrimRoom(state: {
+  selectedRoomId: string | null;
+  planRooms: PlanRoomLabel[];
+  walls: Wall[];
+  roomType: RoomType;
+}): PlanRoomLabel | null {
+  if (state.selectedRoomId) {
+    const room = state.planRooms.find((r) => r.id === state.selectedRoomId);
+    if (room) return room;
+  }
+  if (state.planRooms.length === 1) return state.planRooms[0]!;
+  const polys = detectRoomPolygons(state.walls);
+  if (polys[0]?.length) {
+    return { id: 'focus-room', name: 'Room', roomType: state.roomType, points: polys[0]! };
+  }
+  return null;
+}
+
+function furnitureInRoom(item: FurnitureItem, room: PlanRoomLabel) {
+  const planX = item.x * PIXELS_PER_METER + WORLD_ORIGIN.x;
+  const planY = item.z * PIXELS_PER_METER + WORLD_ORIGIN.y;
+  return pointInPlanRoom(planX, planY, room);
 }
 
 export const usePlannerStore = create<PlannerState>((set, get) => {
@@ -833,6 +870,70 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         pendingPlacement: null,
       });
     },
+    applyPerimeterTrim: (catalogId, name, category, [, depth, height], color, edge) => {
+      if (get().workflowStage !== 'room') {
+        set({ openingNotice: 'Enter a room to apply trim.' });
+        return;
+      }
+      const room = focusedTrimRoom(get());
+      if (!room) {
+        set({ openingNotice: 'Select a room first to apply trim.' });
+        return;
+      }
+      const segments = perimeterTrimSegments(room, get().walls, {
+        profileDepth: depth,
+        profileHeight: height,
+        edge,
+      });
+      if (!segments.length) {
+        set({ openingNotice: 'No wall corners found for trim in this room.' });
+        return;
+      }
+      const runId = crypto.randomUUID();
+      const existingRuns = new Set(
+        get()
+          .furniture.filter(
+            (f) =>
+              f.catalogId === catalogId &&
+              f.placementKind === 'perimeter-trim' &&
+              furnitureInRoom(f, room),
+          )
+          .map((f) => f.runId)
+          .filter(Boolean) as string[],
+      );
+      const kept = get().furniture.filter((f) => !(f.runId && existingRuns.has(f.runId)));
+      const mounting: MountingType = edge === 'ceiling' ? 'ceiling' : 'floor';
+      const strips: FurnitureItem[] = segments.map((seg) => ({
+        id: crypto.randomUUID(),
+        catalogId,
+        name,
+        category,
+        color,
+        x: seg.x,
+        y: seg.y,
+        z: seg.z,
+        rotation: seg.rotation,
+        width: seg.width,
+        depth: seg.depth,
+        height: seg.height,
+        mountingType: mounting,
+        wallId: seg.wallId,
+        wallOffset: seg.wallOffset,
+        placementKind: 'perimeter-trim',
+        runId,
+        trimEdge: edge,
+        showClearance: false,
+      }));
+      mutate({ furniture: [...kept, ...strips] });
+      set({
+        selectedFurnitureId: strips[0]?.id ?? null,
+        selectedWallId: null,
+        selectedOpeningId: null,
+        selectedSurface: null,
+        pendingPlacement: null,
+        openingNotice: '',
+      });
+    },
     selectFurniture: (selectedFurnitureId) =>
       set({
         selectedFurnitureId,
@@ -841,10 +942,24 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         selectedSurface: null,
         selectedRoomId: get().workflowStage === 'room' ? get().selectedRoomId : null,
       }),
-    updateFurnitureLive: (id, patch) => set((s) => ({ furniture: s.furniture.map((f) => (f.id === id ? { ...f, ...patch } : f)) })),
+    updateFurnitureLive: (id, patch) => {
+      const item = get().furniture.find((f) => f.id === id);
+      if (item?.placementKind === 'perimeter-trim') return;
+      set((s) => ({ furniture: s.furniture.map((f) => (f.id === id ? { ...f, ...patch } : f)) }));
+    },
     updateFurniture: (id, patch) => {
       const item = get().furniture.find((f) => f.id === id);
       if (!item) return;
+      if (item.placementKind === 'perimeter-trim') {
+        // Trim runs are fixed to wall junctions — only color / finish-style patches.
+        const allowed: Partial<FurnitureItem> = {};
+        if (patch.color !== undefined) allowed.color = patch.color;
+        if (patch.name !== undefined) allowed.name = patch.name;
+        if (Object.keys(allowed).length) {
+          mutate({ furniture: get().furniture.map((f) => (f.id === id ? { ...f, ...allowed } : f)) });
+        }
+        return;
+      }
       const mounting = resolveMountingType(patch.mountingType ?? item.mountingType);
       let next: FurnitureItem = { ...item, ...patch, mountingType: mounting };
       if (patch.x !== undefined || patch.z !== undefined || patch.mountingType !== undefined || patch.rotation !== undefined) {
@@ -869,15 +984,17 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     moveSelected: (dx, dz) => {
       const id = get().selectedFurnitureId;
       const item = get().furniture.find((f) => f.id === id);
-      if (item) get().updateFurniture(item.id, { x: item.x + dx, z: item.z + dz });
+      if (!item || item.placementKind === 'perimeter-trim') return;
+      get().updateFurniture(item.id, { x: item.x + dx, z: item.z + dz });
     },
     rotateSelected: (delta = Math.PI / 2) => {
       const item = get().furniture.find((f) => f.id === get().selectedFurnitureId);
-      if (item) get().updateFurniture(item.id, { rotation: item.rotation + delta });
+      if (!item || item.placementKind === 'perimeter-trim') return;
+      get().updateFurniture(item.id, { rotation: item.rotation + delta });
     },
     duplicateSelected: () => {
       const item = get().furniture.find((f) => f.id === get().selectedFurnitureId);
-      if (!item) return;
+      if (!item || item.placementKind === 'perimeter-trim') return;
       get().addFurniture(item.catalogId, item.name, item.category, [item.width, item.depth, item.height], item.color, item.x + 0.5, item.z + 0.5, {
         mountingType: item.mountingType,
         clearance: item.clearance,
@@ -891,7 +1008,11 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       const fid = get().selectedFurnitureId;
       if (oid) mutate({ openings: get().openings.filter((o) => o.id !== oid) });
       else if (wid) mutate({ walls: get().walls.filter((w) => w.id !== wid), openings: get().openings.filter((o) => o.wallId !== wid) });
-      if (fid) mutate({ furniture: get().furniture.filter((f) => f.id !== fid) });
+      if (fid) {
+        const item = get().furniture.find((f) => f.id === fid);
+        if (item?.runId) mutate({ furniture: get().furniture.filter((f) => f.runId !== item.runId) });
+        else mutate({ furniture: get().furniture.filter((f) => f.id !== fid) });
+      }
       set({ selectedWallId: null, selectedOpeningId: null, selectedFurnitureId: null });
     },
     setFinish: (target, color) =>

@@ -925,7 +925,7 @@ function Furniture() {
     if (dragging) return;
     let alive = true;
     const timer = window.setTimeout(() => {
-      collisionsAsync(items).then((pairs) => {
+      collisionsAsync(items.filter((i) => i.placementKind !== 'perimeter-trim')).then((pairs) => {
         if (!alive) return;
         const ids = new Set<string>();
         pairs.forEach(([a, b]) => {
@@ -1060,6 +1060,11 @@ function Furniture() {
 
   const beginItemDrag = (e: any, item: FurnitureItem) => {
     if (!usePlaneDrag) return;
+    if (item.placementKind === 'perimeter-trim') {
+      e.stopPropagation();
+      select(item.id);
+      return;
+    }
     if (typeof e.nativeEvent?.isPrimary === 'boolean' && !e.nativeEvent.isPrimary) return;
     e.stopPropagation();
     // Finish any stuck drag so orbit cannot stay locked.
@@ -1157,14 +1162,16 @@ function Furniture() {
             depthTest={false}
             scale={1.15}
             lineWidth={2}
-            enabled={!usePlaneDrag}
+            enabled={!usePlaneDrag && selected.placementKind !== 'perimeter-trim'}
             onDragStart={() => {
+              if (selected.placementKind === 'perimeter-trim') return;
               document.body.dataset.movingFurniture = 'true';
               setDragging(true);
               window.dispatchEvent(new Event('roomcraft-dismiss-product-card'));
               window.dispatchEvent(new Event('roomcraft-drag-start'));
             }}
             onDrag={(m) => {
+              if (selected.placementKind === 'perimeter-trim') return;
               const p = new THREE.Vector3();
               const q = new THREE.Quaternion();
               const s = new THREE.Vector3();
@@ -1175,6 +1182,7 @@ function Furniture() {
               liveThrottle.current(selected.id, patch);
             }}
             onDragEnd={() => {
+              if (selected.placementKind === 'perimeter-trim') return;
               liveThrottle.current.cancel();
               delete document.body.dataset.movingFurniture;
               setDragging(false);
@@ -1534,6 +1542,17 @@ export function Scene3D() {
     const id = e.dataTransfer.getData('catalogId');
     const item = [...catalog, ...custom].find((i) => i.id === id);
     if (!item) return;
+    if (item.placementMode === 'ceiling-perimeter' || item.placementMode === 'floor-perimeter') {
+      usePlannerStore.getState().applyPerimeterTrim(
+        item.id,
+        item.name,
+        item.category,
+        item.dims,
+        item.color,
+        item.placementMode === 'ceiling-perimeter' ? 'ceiling' : 'floor',
+      );
+      return;
+    }
     const r = e.currentTarget.getBoundingClientRect();
     const x = ((e.clientX - r.left) / r.width - 0.5) * 7;
     const z = ((e.clientY - r.top) / r.height - 0.5) * 5;

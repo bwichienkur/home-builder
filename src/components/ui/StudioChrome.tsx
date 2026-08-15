@@ -60,6 +60,7 @@ const icons: Record<string, typeof ShoppingBag> = {
   Appliances: Home,
   Decor: ShoppingBag,
   Paneling: Grid2X2,
+  Trim: Wallpaper,
 };
 
 type Props = {

@@ -2,12 +2,28 @@ import { Download, X } from 'lucide-react';
 import type { CatalogItem } from '../catalog/catalogData';
 import type { FurnitureItem } from '../../types';
 
+const M_TO_FT = 1 / 0.3048;
+
+function lineQty(item: FurnitureItem, product?: CatalogItem) {
+  if (product?.priceUnit === 'linear ft' || item.placementKind === 'perimeter-trim') {
+    return item.width * M_TO_FT;
+  }
+  return 1;
+}
+
+function formatQty(qty: number, unit?: string) {
+  if (unit === 'linear ft') return qty.toFixed(1);
+  return String(Math.round(qty));
+}
+
 export function BomDialog({ items, catalog, close }: { items: FurnitureItem[]; catalog: CatalogItem[]; close: () => void }) {
   const rows = Object.values(
     items.reduce<Record<string, { item: FurnitureItem; qty: number; product?: CatalogItem }>>((all, item) => {
+      const product = catalog.find((p) => p.id === item.catalogId);
+      const add = lineQty(item, product);
       const row = all[item.catalogId];
-      if (row) row.qty++;
-      else all[item.catalogId] = { item, qty: 1, product: catalog.find((p) => p.id === item.catalogId) };
+      if (row) row.qty += add;
+      else all[item.catalogId] = { item, qty: add, product };
       return all;
     }, {}),
   ).sort((a, b) => (a.product?.brand ?? '').localeCompare(b.product?.brand ?? '') || a.item.name.localeCompare(b.item.name));
@@ -15,14 +31,15 @@ export function BomDialog({ items, catalog, close }: { items: FurnitureItem[]; c
   const missing = rows.filter((row) => row.product?.price == null).length;
   const download = () => {
     const csv = [
-      'Vendor,SKU,Product,Category,Quantity,Unit price,Subtotal,Price status',
+      'Vendor,SKU,Product,Category,Quantity,Unit,Unit price,Subtotal,Price status',
       ...rows.map(({ item, qty, product }) =>
         [
           product?.brand ?? '',
           product?.sku ?? item.catalogId,
           item.name,
           item.category,
-          qty,
+          formatQty(qty, product?.priceUnit),
+          product?.priceUnit ?? 'each',
           product?.price ?? '',
           product?.price != null ? (product.price * qty).toFixed(2) : '',
           product?.price == null ? 'Quote required' : 'Reference price',
@@ -76,7 +93,7 @@ export function BomDialog({ items, catalog, close }: { items: FurnitureItem[]; c
                     {product?.brand ?? '—'}
                     <small>{product?.sku ?? item.catalogId}</small>
                   </td>
-                  <td>{qty}</td>
+                  <td>{formatQty(qty, product?.priceUnit)}</td>
                   <td>{product?.price == null ? 'Quote required' : `$${product.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}</td>
                   <td>{product?.price == null ? '—' : `$${(product.price * qty).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}</td>
                 </tr>
