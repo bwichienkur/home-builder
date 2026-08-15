@@ -93,6 +93,9 @@ export type WallDimFieldLayout = {
 /**
  * Shared L/W/H card placement. One card sits fully outside the room, centered
  * on the wall’s exterior face (top / bottom / left / right).
+ *
+ * `cardOffsetM` is only a thin nudge past the wall face — the card itself is
+ * pushed fully clear in screen-space CSS so zoom can’t drop it onto the wall.
  */
 export function wallDimFieldLayout(wall: Wall, exteriorSide: 1 | -1): WallDimFieldLayout {
   const dx = wall.end.x - wall.start.x;
@@ -104,12 +107,11 @@ export function wallDimFieldLayout(wall: Wall, exteriorSide: 1 | -1): WallDimFie
   const ny = dx / len;
   const verticalOnPlan = Math.abs(dirY) >= Math.abs(dirX);
   const halfThick = Math.max(wall.thickness, 0.12) * 0.5;
-  // Card ~200×170 CSS px reads ~1.5×1.15 m at wall-focus zoom — pad generously
-  // so the near edge never touches the wall face.
-  const cardHalfAlongWallM = verticalOnPlan ? 0.58 : 0.78;
-  const cardHalfAlongNormalM = verticalOnPlan ? 0.95 : 0.72;
-  const faceGap = 0.7;
-  const cardOffsetM = halfThick + faceGap + cardHalfAlongNormalM;
+  // Anchor sits just outside the wall face; CSS carries the full card clear.
+  const cardHalfAlongWallM = verticalOnPlan ? 0.85 : 1.05;
+  const cardHalfAlongNormalM = verticalOnPlan ? 1.15 : 0.95;
+  const faceGap = 0.2;
+  const cardOffsetM = halfThick + faceGap;
   const ox = nx * exteriorSide;
   const oy = ny * exteriorSide;
   // North-up plan: −Y = top of screen, +Y = bottom, −X = left, +X = right.
@@ -123,9 +125,9 @@ export function wallDimFieldLayout(wall: Wall, exteriorSide: 1 | -1): WallDimFie
     cardOffsetM,
     cardHalfAlongWallM,
     cardHalfAlongNormalM,
-    sideOffsetM: cardOffsetM,
+    sideOffsetM: cardOffsetM + cardHalfAlongNormalM,
     endOffsetM: cardHalfAlongWallM + 0.15,
-    endExteriorM: cardOffsetM,
+    endExteriorM: cardOffsetM + cardHalfAlongNormalM,
     dirX,
     dirY,
     nx,

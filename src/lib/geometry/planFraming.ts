@@ -111,8 +111,8 @@ export function framingFromWall(wall: Wall, opts?: FramingOpts): PlanFraming {
   const side = opts?.exteriorSide;
   const layout = wallDimFieldLayout(wall, side === 1 || side === -1 ? side : 1);
   // Card center + half extents + spare margin so the whole dim card stays in frame.
-  const chipPad = 0.85;
-  const sideOffset = layout.cardOffsetM + layout.cardHalfAlongNormalM + chipPad;
+  const chipPad = 0.95;
+  const sideOffset = layout.sideOffsetM + chipPad;
   const alongPad = layout.cardHalfAlongWallM + chipPad;
   const halfThick = Math.max(wall.thickness, 0.12) * 0.5 + 0.25;
   const px = PIXELS_PER_METER;

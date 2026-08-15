@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import type { Opening } from '../../types';
+import type { Opening, Wall } from '../../types';
+import { pointOnWall, WORLD_ORIGIN } from './placement';
 import { clampOpeningOffset, wallSolidBoxes } from './wallOpenings';
+import { PIXELS_PER_METER } from './snapping';
+
+const wall: Wall = {
+  id: 'w1',
+  start: { x: WORLD_ORIGIN.x, y: WORLD_ORIGIN.y },
+  end: { x: WORLD_ORIGIN.x + 5 * PIXELS_PER_METER, y: WORLD_ORIGIN.y },
+  thickness: 0.15,
+  height: 2.7,
+};
 
 const door: Opening = {
   id: 'd1',
@@ -43,6 +53,17 @@ describe('wallSolidBoxes', () => {
     const mid = boxes.filter((b) => b.y0 < 1 && b.y1 > 1);
     // Two side pieces, no solid through the door center at x=2.5
     expect(mid.every((b) => b.along1 <= 2.0 + 0.01 || b.along0 >= 3.0 - 0.01)).toBe(true);
+  });
+
+  it('centers the door hole on the same world point as the door leaf', () => {
+    const boxes = wallSolidBoxes(2.7, 5, 5, 0, [door]);
+    const mid = boxes.filter((b) => b.y0 < 1 && b.y1 > 1);
+    const gapLeft = Math.max(...mid.filter((b) => b.along1 <= 2.6).map((b) => b.along1));
+    const gapRight = Math.min(...mid.filter((b) => b.along0 >= 2.4).map((b) => b.along0));
+    const holeCenter = (gapLeft + gapRight) / 2;
+    const placed = pointOnWall(wall, door.offset);
+    expect(holeCenter).toBeCloseTo(door.offset * 5, 5);
+    expect(placed.x).toBeCloseTo(door.offset * 5, 5);
   });
 });
 

@@ -491,6 +491,9 @@ function DoorLeaf({
 }) {
   // Doors stay closed in the opening; swing arc shows the no-place zone when open.
   const leafH = shape === 'arch' ? height * 0.92 : height;
+  // Hinge on the swing side of the leaf (local +X = along wall toward end).
+  const hingeX = swing === 'left' ? -width / 2 : width / 2;
+  // Face flips which side of the wall the arc sweeps into (local +Z ↔ −Z).
   const faceFlip = face === 'out' ? Math.PI : 0;
   const swingStart = swing === 'left' ? 0 : -Math.PI / 2;
   return (
@@ -506,9 +509,9 @@ function DoorLeaf({
         </mesh>
       )}
       {swing !== 'none' && (
-        <mesh rotation={[-Math.PI / 2, faceFlip, 0]} position={[0, 0.012, 0]}>
+        <mesh position={[hingeX, 0.012, 0]} rotation={[-Math.PI / 2, faceFlip, 0]}>
           <ringGeometry args={[0.02, width, 28, 1, swingStart, Math.PI / 2]} />
-          <meshBasicMaterial color="#0058a3" transparent opacity={0.2} side={THREE.DoubleSide} />
+          <meshBasicMaterial color="#0058a3" transparent opacity={0.22} side={THREE.DoubleSide} />
         </mesh>
       )}
     </group>
@@ -737,14 +740,15 @@ function WallMeshes() {
         const origLen = Math.hypot(ex0 - sx0, ez0 - sz0) || 0.01;
         const ux = (ex0 - sx0) / origLen;
         const uz = (ez0 - sz0) / origLen;
-        // Modest overlap + corner posts seal joints without huge coplanar fighting.
-        const extend = w.thickness * 0.28;
-        const sx = sx0 - ux * extend;
-        const sz = sz0 - uz * extend;
-        const ex = ex0 + ux * extend;
-        const ez = ez0 + uz * extend;
-        const length = origLen + extend * 2;
-        const angle = -Math.atan2(ez - sz, ex - sx);
+        // Keep opening holes / door leaves on the true wall run (no corner-extend skew).
+        // Slight end overlap still seals into corner posts without shifting openings.
+        const endSeal = w.thickness * 0.15;
+        const sx = sx0 - ux * endSeal;
+        const sz = sz0 - uz * endSeal;
+        const ex = ex0 + ux * endSeal;
+        const ez = ez0 + uz * endSeal;
+        const length = origLen + endSeal * 2;
+        const angle = -Math.atan2(ez0 - sz0, ex0 - sx0);
         const midX = (sx0 + ex0) / 2;
         const midZ = (sz0 + ez0) / 2;
 
@@ -810,8 +814,8 @@ function WallMeshes() {
         const soft = orbiting || drawOpacity < 0.999;
         const fading = drawOpacity < 0.97;
         const related = visibleOpenings.filter((o) => o.wallId === w.id);
-        // Horizontal bands: lintels / sills stay one continuous piece with the wall.
-        const solids = wallSolidBoxes(w.height, length, origLen, extend, related);
+        // Horizontal bands on the true wall length so holes line up with door/window leaves.
+        const solids = wallSolidBoxes(w.height, origLen, origLen, 0, related);
         // Cutaway + top (non-edit) must not steal furniture picks; solid orbit walls still block.
         const skipRay = fading || (cameraMode === 'top' && !wallEditMode) ? () => {} : undefined;
         const wallMat = {
@@ -826,11 +830,14 @@ function WallMeshes() {
           polygonOffsetUnits: 1,
         } as const;
         const base = solids.map((box, i) => {
-          const c = (box.along0 + box.along1) / 2;
+          // Map original-run along → sealed segment (endSeal pads both ends evenly).
+          const along0 = endSeal + box.along0;
+          const along1 = endSeal + box.along1;
+          const c = (along0 + along1) / 2;
           const t = c / length;
           const x = sx + (ex - sx) * t;
           const z = sz + (ez - sz) * t;
-          const segLen = box.along1 - box.along0;
+          const segLen = along1 - along0;
           const segH = box.y1 - box.y0;
           const y = (box.y0 + box.y1) / 2;
           return (
@@ -870,10 +877,10 @@ function WallMeshes() {
             </mesh>
           ) : null;
         const fixtures = related.flatMap((o) => {
-          const c = extend + o.offset * origLen;
-          const t = c / length;
-          const x = sx + (ex - sx) * t;
-          const z = sz + (ez - sz) * t;
+          // Same parametrization as wall holes / pointOnWall — opening center on the true run.
+          const placed = pointOnWall(w, o.offset);
+          const x = placed.x;
+          const z = placed.z;
           const parts: ReactElement[] = [];
           if (o.type === 'window')
             parts.push(
