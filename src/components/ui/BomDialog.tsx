@@ -1,7 +1,8 @@
-import { Download, X } from 'lucide-react';
+import { Download, Trash2, X } from 'lucide-react';
 import type { CatalogItem } from '../catalog/catalogData';
 import type { FurnitureItem, Opening, Wall } from '../../types';
 import { wallsNetAreaM2 } from '../../lib/geometry/doorClearance';
+import { usePlannerStore } from '../../store/plannerStore';
 
 const M_TO_FT = 1 / 0.3048;
 const M2_TO_SQFT = M_TO_FT * M_TO_FT;
@@ -27,6 +28,7 @@ type BomRow = {
   qty: number;
   unit?: string;
   price?: number;
+  removable: boolean;
 };
 
 export function BomDialog({
@@ -42,6 +44,8 @@ export function BomDialog({
   openings?: Opening[];
   close: () => void;
 }) {
+  const removeCatalogFromRoom = usePlannerStore((s) => s.removeCatalogFromRoom);
+
   const productRows: BomRow[] = Object.values(
     items.reduce<Record<string, BomRow>>((all, item) => {
       const product = catalog.find((p) => p.id === item.catalogId);
@@ -58,6 +62,7 @@ export function BomDialog({
           qty: add,
           unit: product?.priceUnit ?? 'each',
           price: product?.price,
+          removable: true,
         };
       return all;
     }, {}),
@@ -77,6 +82,7 @@ export function BomDialog({
             qty: netWallM2 * M2_TO_SQFT,
             unit: paint.priceUnit ?? 'sq ft',
             price: paint.price,
+            removable: false,
           },
         ]
       : [];
@@ -142,6 +148,7 @@ export function BomDialog({
                 <th>Qty</th>
                 <th>Unit price</th>
                 <th>Subtotal</th>
+                <th aria-label="Remove" />
               </tr>
             </thead>
             <tbody>
@@ -158,6 +165,21 @@ export function BomDialog({
                   <td>{formatQty(row.qty, row.unit)}</td>
                   <td>{row.price == null ? 'Quote required' : `$${row.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}</td>
                   <td>{row.price == null ? '—' : `$${(row.price * row.qty).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}</td>
+                  <td>
+                    {row.removable ? (
+                      <button
+                        type="button"
+                        className="bom-remove"
+                        aria-label={`Remove ${row.name}`}
+                        title="Remove from room"
+                        onClick={() => removeCatalogFromRoom(row.key)}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    ) : (
+                      <span className="muted">—</span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -8,6 +8,7 @@ import type { FurnitureItem, Opening } from '../../types';
 import { detectRoomPolygons, roomShape } from '../../lib/geometry/rooms';
 import { alignmentGuides, clampWallMountY, constrainPlacement, pointOnWall, roomFloorCenter, wallFrame, WORLD_ORIGIN } from '../../lib/geometry/placement';
 import { doorSwingZones, furnitureHitsDoorSwing } from '../../lib/geometry/doorClearance';
+import { wouldOverlapFurniture } from '../../lib/collisions';
 import { framingFromPoints, framingFromWall, framingFromWalls, freeAreaFit, pageCenterFit, worldShiftForFreeArea } from '../../lib/geometry/planFraming';
 import { wallExteriorSide } from '../../lib/geometry/roomWalls';
 import { pointInPlanRoom, wallsBelongingToRoom } from '../../lib/geometry/roomWalls';
@@ -489,15 +490,16 @@ function DoorLeaf({
   face?: 'in' | 'out';
   shape?: 'rect' | 'arch' | 'wide';
 }) {
-  // Doors stay closed in the opening; swing arc shows the no-place zone when open.
+  // Doors stay closed in the opening; clearance rectangle blocks furniture in front.
   const leafH = shape === 'arch' ? height * 0.92 : height;
   const leafW = width * (shape === 'wide' ? 0.98 : 0.96);
   // Hinge on the swing side of the leaf (local +X = along wall toward end).
   const hingeX = swing === 'left' ? -leafW / 2 : leafW / 2;
-  // Face flips which side of the wall the arc sweeps into (local +Z ↔ −Z).
+  // Face flips which side of the wall the arc / clear box sits on (local +Z ↔ −Z).
   const faceFlip = face === 'out' ? Math.PI : 0;
-  // Left: sweep from along-wall (+X) into +Z; right: from −X into +Z (then faceFlip).
   const swingStart = swing === 'left' ? 0 : Math.PI / 2;
+  const clearDepth = leafW;
+  const clearZ = face === 'out' ? -clearDepth / 2 : clearDepth / 2;
   return (
     <group position={[x, 0, z]} rotation={[0, angle, 0]}>
       {/* Plan silhouette — thin 3D leaf is nearly invisible from above; this fills the hole. */}
@@ -516,10 +518,17 @@ function DoorLeaf({
         </mesh>
       )}
       {swing !== 'none' && (
-        <mesh position={[hingeX, 0.012, 0]} rotation={[-Math.PI / 2, faceFlip, 0]}>
-          <ringGeometry args={[0.02, leafW, 28, 1, swingStart, Math.PI / 2]} />
-          <meshBasicMaterial color="#0058a3" transparent opacity={0.18} side={THREE.DoubleSide} />
-        </mesh>
+        <>
+          {/* Blocked clear space: door-width × door-width into the room (hinge-independent). */}
+          <mesh position={[0, 0.014, clearZ]} rotation={[-Math.PI / 2, 0, 0]} raycast={() => {}}>
+            <planeGeometry args={[leafW, clearDepth]} />
+            <meshBasicMaterial color="#0058a3" transparent opacity={0.14} depthWrite={false} />
+          </mesh>
+          <mesh position={[hingeX, 0.012, 0]} rotation={[-Math.PI / 2, faceFlip, 0]} raycast={() => {}}>
+            <ringGeometry args={[0.02, leafW, 28, 1, swingStart, Math.PI / 2]} />
+            <meshBasicMaterial color="#0058a3" transparent opacity={0.12} side={THREE.DoubleSide} />
+          </mesh>
+        </>
       )}
     </group>
   );
@@ -1081,7 +1090,13 @@ function ClearanceVolume({ item }: { item: FurnitureItem }) {
 }
 
 function Guides({ selected, others }: { selected: FurnitureItem; others: FurnitureItem[] }) {
-  const guides = useMemo(() => alignmentGuides(selected, others), [selected, others]);
+  const guides = useMemo(() => {
+    if (selected.placementKind === 'perimeter-trim') return [];
+    return alignmentGuides(
+      selected,
+      others.filter((o) => o.placementKind !== 'perimeter-trim'),
+    );
+  }, [selected, others]);
   return (
     <>
       {guides.map((g, i) => (
@@ -1227,11 +1242,26 @@ function Furniture() {
       wallOffset: placed.wallOffset,
       ...(item.mountingType === 'wall' || item.mountingType === 'ceiling' ? { y: nextY } : {}),
     };
-    // Block door swing footprints — keep previous position if the move would collide.
+    // Block door clearance + stacking on other products.
     if (
       furnitureHitsDoorSwing(
         { x: next.x, z: next.z, width: item.width, depth: item.depth, rotation: next.rotation },
         doorSwingZones(openings, walls),
+      ) ||
+      wouldOverlapFurniture(
+        {
+          id: item.id,
+          x: next.x,
+          y: nextY,
+          z: next.z,
+          width: item.width,
+          depth: item.depth,
+          height: item.height,
+          rotation: next.rotation,
+          mountingType: item.mountingType,
+          placementKind: item.placementKind,
+        },
+        usePlannerStore.getState().furniture.filter((f) => f.id !== item.id),
       )
     ) {
       return {
@@ -1376,6 +1406,7 @@ function Furniture() {
           const urls = urlsFor(i);
           return (
             <group key={i.id} position={[i.x, itemY(i), i.z]} rotation={[0, i.rotation, 0]} userData={{ furniturePick: true }}>
+              <group rotation={[0, 0, i.mountingType === 'wall' ? i.roll ?? 0 : 0]}>
               <FurnitureVisual
                 item={i}
                 lowUrl={urls.lowUrl}
@@ -1391,6 +1422,7 @@ function Furniture() {
                 onPointerDown={usePlaneDrag ? (e) => beginItemDrag(e, i) : undefined}
               />
               {i.showClearance && <ClearanceVolume item={i} />}
+              </group>
             </group>
           );
         })}
@@ -1442,6 +1474,7 @@ function Furniture() {
             )}
           >
             <group userData={{ furniturePick: true }}>
+              <group rotation={[0, 0, selected.mountingType === 'wall' ? selected.roll ?? 0 : 0]}>
               <FurnitureVisual
                 item={selected}
                 {...urlsFor(selected)}
@@ -1450,6 +1483,7 @@ function Furniture() {
                 onPointerDown={usePlaneDrag ? (e) => beginItemDrag(e, selected) : undefined}
               />
               {selected.showClearance && <ClearanceVolume item={selected} />}
+              </group>
             </group>
           </PivotControls>
         </>

@@ -36,27 +36,34 @@ export function SelectionInspector({ open, onClose }: { open: boolean; onClose: 
   const walls = usePlannerStore((s) => s.walls);
   const openings = usePlannerStore((s) => s.openings);
   const planRooms = usePlannerStore((s) => s.planRooms);
+  const furniture = usePlannerStore((s) => s.furniture);
   const selectedWallId = usePlannerStore((s) => s.selectedWallId);
   const selectedOpeningId = usePlannerStore((s) => s.selectedOpeningId);
   const selectedRoomId = usePlannerStore((s) => s.selectedRoomId);
+  const selectedFurnitureId = usePlannerStore((s) => s.selectedFurnitureId);
   const selectedSurface = usePlannerStore((s) => s.selectedSurface);
   const selectedWall = walls.find((w) => w.id === selectedWallId);
   const selectedOpening = openings.find((o) => o.id === selectedOpeningId);
   const selectedRoom = planRooms.find((r) => r.id === selectedRoomId);
+  const selectedTrim = furniture.find((f) => f.id === selectedFurnitureId && f.placementKind === 'perimeter-trim');
 
   if (!open) return null;
 
-  const title = selectedOpening
-    ? 'Opening'
-    : selectedWall
-      ? 'Wall'
-      : selectedRoom
-        ? selectedRoom.name
-        : selectedSurface === 'ceiling'
-          ? 'Ceiling'
-          : selectedSurface === 'floor'
-            ? 'Floor'
-            : 'Room';
+  const title = selectedTrim
+    ? selectedTrim.trimEdge === 'ceiling'
+      ? 'Crown molding'
+      : 'Baseboard'
+    : selectedOpening
+      ? 'Opening'
+      : selectedWall
+        ? 'Wall'
+        : selectedRoom
+          ? selectedRoom.name
+          : selectedSurface === 'ceiling'
+            ? 'Ceiling'
+            : selectedSurface === 'floor'
+              ? 'Floor'
+              : 'Room';
 
   return (
     <aside className="selection-inspector" aria-label="Selection properties">
@@ -70,7 +77,9 @@ export function SelectionInspector({ open, onClose }: { open: boolean; onClose: 
         </button>
       </header>
       <div className="selection-inspector-body">
-        {selectedOpening ? (
+        {selectedTrim ? (
+          <TrimProperties item={selectedTrim} />
+        ) : selectedOpening ? (
           <OpeningProperties opening={selectedOpening} />
         ) : selectedWall ? (
           <WallProperties wall={selectedWall} />
@@ -81,6 +90,41 @@ export function SelectionInspector({ open, onClose }: { open: boolean; onClose: 
         )}
       </div>
     </aside>
+  );
+}
+
+function TrimProperties({ item }: { item: import('../../types').FurnitureItem }) {
+  const update = usePlannerStore((s) => s.updateFurniture);
+  const remove = usePlannerStore((s) => s.deleteSelected);
+  const run = usePlannerStore((s) => s.furniture.filter((f) => f.runId === item.runId));
+  const lengthM = run.reduce((sum, f) => sum + f.width, 0);
+  const lengthFt = lengthM / 0.3048;
+  return (
+    <>
+      <h2>{item.trimEdge === 'ceiling' ? 'Crown molding' : 'Baseboard'}</h2>
+      <p className="muted">
+        Priced by linear foot. Profile height changes the take-off height used in the shopping list; length follows the room perimeter
+        {item.trimEdge === 'floor' ? ' (baseboard skips walls blocked by counters/cabinets)' : ''}.
+      </p>
+      <label>
+        Length (auto)
+        <input type="text" readOnly value={`${lengthM.toFixed(2)} m · ${lengthFt.toFixed(1)} ft`} />
+      </label>
+      <LengthField
+        label="Profile height"
+        value={item.height}
+        min={0.03}
+        onChange={(height) => update(item.id, { height })}
+      />
+      <label>
+        Finish color
+        <input type="color" value={item.color} onChange={(e) => update(item.id, { color: e.target.value })} />
+      </label>
+      <p className="muted">Shape is fixed — trim is on or off for this room.</p>
+      <button className="delete-item" onClick={() => remove()}>
+        Remove {item.trimEdge === 'ceiling' ? 'crown molding' : 'baseboard'}
+      </button>
+    </>
   );
 }
 
@@ -332,12 +376,13 @@ function OpeningProperties({ opening }: { opening: Opening }) {
             </select>
           </label>
           <label>
-            Swing into
+            Opens
             <select value={opening.face ?? 'in'} onChange={(e) => update(opening.id, { face: e.target.value as 'in' | 'out' })}>
-              <option value="in">This side of wall</option>
-              <option value="out">Opposite side</option>
+              <option value="in">Into the room</option>
+              <option value="out">Out of the room</option>
             </select>
           </label>
+          <p className="muted">Clear space in front of the door is always a square the door’s width — hinge side only changes the leaf graphic.</p>
         </>
       )}
       {opening.type === 'passage' && (

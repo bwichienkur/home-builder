@@ -31,11 +31,15 @@ const door: Opening = {
 };
 
 describe('doorClearance', () => {
-  it('builds a swing zone for hinged doors', () => {
-    const zones = doorSwingZones([door], [wall]);
-    expect(zones).toHaveLength(1);
-    expect(zones[0]!.maxX - zones[0]!.minX).toBeGreaterThan(0.5);
-    expect(zones[0]!.maxZ - zones[0]!.minZ).toBeGreaterThan(0.5);
+  it('builds a rectangular clearance zone independent of hinge side', () => {
+    const left = doorSwingZones([door], [wall])[0]!;
+    const right = doorSwingZones([{ ...door, swing: 'right' }], [wall])[0]!;
+    expect(left.minX).toBeCloseTo(right.minX, 5);
+    expect(left.maxX).toBeCloseTo(right.maxX, 5);
+    expect(left.minZ).toBeCloseTo(right.minZ, 5);
+    expect(left.maxZ).toBeCloseTo(right.maxZ, 5);
+    expect(left.maxX - left.minX).toBeCloseTo(0.9, 5);
+    expect(left.maxZ - left.minZ).toBeCloseTo(0.9, 5);
   });
 
   it('flips swing zone when face is out', () => {

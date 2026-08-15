@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { CameraMode, FurnitureItem, MountingType, Opening, OpeningShape, PendingFloorFill, PlanRoomLabel, Point, RoomType, SceneSnapshot, StudioMode, SurfaceTarget, Tool, UnitSystem, Wall, WorkflowStage } from '../types';
 import { doorSwingZones, furnitureHitsDoorSwing } from '../lib/geometry/doorClearance';
+import { wouldOverlapFurniture } from '../lib/collisions';
 import { clampWallMountY, constrainPlacement, openingConflicts, resolveMountingType, roomFloorCenter, WORLD_ORIGIN } from '../lib/geometry/placement';
 import { detectRoomPolygons } from '../lib/geometry/rooms';
 import { perimeterTrimSegments, type PerimeterTrimEdge } from '../lib/geometry/ceilingTrim';
@@ -148,6 +149,12 @@ type PlannerState = SceneSnapshot & {
   moveSelected: (dx: number, dz: number) => void;
   duplicateSelected: () => void;
   deleteSelected: () => void;
+  /** Remove every furniture line for a catalog id (shopping bag remove). */
+  removeCatalogFromRoom: (catalogId: string) => void;
+  /** Remove crown or baseboard runs in the focused room. */
+  removePerimeterTrim: (edge: PerimeterTrimEdge) => void;
+  /** Clear per-room (or global) floor finish color. */
+  clearFloorFinish: () => void;
   setFinish: (target: SurfaceTarget, color: string) => void;
   addFloor: (opts?: { copyActive?: boolean }) => void;
   switchFloor: (id: string) => void;
@@ -521,7 +528,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     selectOpening: (selectedOpeningId) =>
       set({
         selectedOpeningId,
-        selectedWallId: selectedOpeningId ? get().openings.find((o) => o.id === selectedOpeningId)?.wallId ?? null : null,
+        // Keep the current room framing — do not select the host wall (that zooms the plan).
+        selectedWallId: null,
         selectedFurnitureId: null,
         selectedSurface: null,
         selectedRoomId: get().workflowStage === 'room' ? get().selectedRoomId : null,
@@ -909,14 +917,22 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       const pending = get().pendingPlacement;
       if (!pending) return null;
       const probe = {
+        id: '__pending__',
         x: pending.x,
+        y: pending.y ?? 0,
         z: pending.z,
         width: pending.width,
         depth: pending.depth,
+        height: pending.height,
         rotation: pending.rotation,
+        mountingType: pending.mountingType as import('../types').MountingType | undefined,
       };
       if (furnitureHitsDoorSwing(probe, doorSwingZones(get().openings, get().walls))) {
-        set({ openingNotice: 'Cannot place in a door swing zone. Move clear of the opening arc.' });
+        set({ openingNotice: 'Cannot place in a door clearance zone. Move clear of the opening.' });
+        return null;
+      }
+      if (wouldOverlapFurniture(probe, get().furniture)) {
+        set({ openingNotice: 'Cannot stack items. Move clear of other products.' });
         return null;
       }
       set({ pendingPlacement: null, openingNotice: '' });
@@ -981,6 +997,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         profileDepth: depth,
         profileHeight: height,
         edge,
+        furniture: get().furniture,
       });
       if (!segments.length) {
         set({ openingNotice: 'No wall corners found for trim in this room.' });
@@ -1048,13 +1065,33 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       const item = get().furniture.find((f) => f.id === id);
       if (!item) return;
       if (item.placementKind === 'perimeter-trim') {
-        // Trim runs are fixed to wall junctions — only color / finish-style patches.
-        const allowed: Partial<FurnitureItem> = {};
-        if (patch.color !== undefined) allowed.color = patch.color;
-        if (patch.name !== undefined) allowed.name = patch.name;
-        if (Object.keys(allowed).length) {
-          mutate({ furniture: get().furniture.map((f) => (f.id === id ? { ...f, ...allowed } : f)) });
-        }
+        // Trim is on/off for shape — only finish + profile height (affects $/LF take-off).
+        const runId = item.runId;
+        if (!runId) return;
+        const nextHeight = patch.height;
+        const nextColor = patch.color;
+        const nextName = patch.name;
+        if (nextHeight === undefined && nextColor === undefined && nextName === undefined) return;
+        mutate({
+          furniture: get().furniture.map((f) => {
+            if (f.runId !== runId) return f;
+            const y =
+              nextHeight !== undefined && f.trimEdge === 'ceiling'
+                ? Math.max(0.05, (get().walls.find((w) => w.id === f.wallId)?.height ?? 2.7) - nextHeight)
+                : f.y;
+            return {
+              ...f,
+              ...(nextColor !== undefined ? { color: nextColor } : {}),
+              ...(nextName !== undefined ? { name: nextName } : {}),
+              ...(nextHeight !== undefined
+                ? {
+                    height: Math.max(0.03, nextHeight),
+                    y: f.trimEdge === 'floor' ? 0 : y,
+                  }
+                : {}),
+            };
+          }),
+        });
         return;
       }
       const mounting = resolveMountingType(patch.mountingType ?? item.mountingType);
@@ -1087,6 +1124,11 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     rotateSelected: (delta = Math.PI / 2) => {
       const item = get().furniture.find((f) => f.id === get().selectedFurnitureId);
       if (!item || item.placementKind === 'perimeter-trim') return;
+      // Wall mounts: rotate in the wall plane (roll), not yaw off the wall.
+      if (item.mountingType === 'wall') {
+        get().updateFurniture(item.id, { roll: (item.roll ?? 0) + delta });
+        return;
+      }
       get().updateFurniture(item.id, { rotation: item.rotation + delta });
     },
     duplicateSelected: () => {
@@ -1111,6 +1153,34 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         else mutate({ furniture: get().furniture.filter((f) => f.id !== fid) });
       }
       set({ selectedWallId: null, selectedOpeningId: null, selectedFurnitureId: null });
+    },
+    removeCatalogFromRoom: (catalogId) => {
+      mutate({
+        furniture: get().furniture.filter((f) => f.catalogId !== catalogId),
+      });
+      const sel = get().selectedFurnitureId;
+      if (sel && !get().furniture.some((f) => f.id === sel)) set({ selectedFurnitureId: null });
+    },
+    removePerimeterTrim: (edge) => {
+      const room = focusedTrimRoom(get());
+      mutate({
+        furniture: get().furniture.filter((f) => {
+          if (f.placementKind !== 'perimeter-trim' || f.trimEdge !== edge) return true;
+          if (!room) return false;
+          return !furnitureInRoom(f, room);
+        }),
+      });
+      set({ selectedFurnitureId: null, openingNotice: edge === 'ceiling' ? 'Crown molding removed.' : 'Baseboard removed.' });
+    },
+    clearFloorFinish: () => {
+      const roomId = get().selectedRoomId;
+      if (roomId) {
+        get().updatePlanRoom(roomId, { floorColor: undefined });
+        set({ openingNotice: 'Floor finish cleared for this room.' });
+        return;
+      }
+      mutate({ floorColor: '#c9b18f' });
+      set({ openingNotice: 'Floor finish reset.' });
     },
     setFinish: (target, color) => {
       if (target === 'floor') {

@@ -8,7 +8,7 @@ function world(x: number, y: number): [number, number] {
 
 export type DoorSwingZone = {
   openingId: string;
-  /** Axis-aligned box covering the swing quarter-circle (door open footprint). */
+  /** Axis-aligned box for the clear space in front of the door. */
   minX: number;
   maxX: number;
   minZ: number;
@@ -16,8 +16,9 @@ export type DoorSwingZone = {
 };
 
 /**
- * Floor footprint a door occupies when swung open (quarter-circle ≈ AABB).
- * Hinge sits at the swing side of the opening; arc sweeps into the room.
+ * Floor footprint kept clear for a door: a rectangle the door’s width along the
+ * wall and the door’s width into the room (face in/out). Hinge side does not
+ * change the blocked area — only which way the leaf visually swings.
  */
 export function doorSwingZones(openings: Opening[], walls: Wall[]): DoorSwingZone[] {
   const zones: DoorSwingZone[] = [];
@@ -30,25 +31,18 @@ export function doorSwingZones(openings: Opening[], walls: Wall[]): DoorSwingZon
     const len = Math.hypot(ex - sx, ez - sz) || 1;
     const ux = (ex - sx) / len;
     const uz = (ez - sz) / len;
-    // Face normal: left of start→end (`in`) or the opposite room (`out`).
     const faceSign = o.face === 'out' ? -1 : 1;
     const nx = -uz * faceSign;
     const nz = ux * faceSign;
-    const midT = o.offset;
-    const midX = sx + (ex - sx) * midT;
-    const midZ = sz + (ez - sz) * midT;
+    const midX = sx + (ex - sx) * o.offset;
+    const midZ = sz + (ez - sz) * o.offset;
     const half = o.width / 2;
-    // Hinge at swing side of the opening.
-    const hingeSign = o.swing === 'left' ? -1 : 1;
-    const hx = midX + ux * hingeSign * half;
-    const hz = midZ + uz * hingeSign * half;
-    // Quarter-circle of radius = door width into the chosen room side.
-    const r = o.width;
+    const depth = o.width;
     const corners = [
-      { x: hx, z: hz },
-      { x: hx + ux * hingeSign * r, z: hz + uz * hingeSign * r },
-      { x: hx + nx * r, z: hz + nz * r },
-      { x: hx + ux * hingeSign * r + nx * r, z: hz + uz * hingeSign * r + nz * r },
+      { x: midX - ux * half, z: midZ - uz * half },
+      { x: midX + ux * half, z: midZ + uz * half },
+      { x: midX - ux * half + nx * depth, z: midZ - uz * half + nz * depth },
+      { x: midX + ux * half + nx * depth, z: midZ + uz * half + nz * depth },
     ];
     zones.push({
       openingId: o.id,

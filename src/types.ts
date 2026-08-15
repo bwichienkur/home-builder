@@ -44,6 +44,8 @@ export type FurnitureItem = {
   runId?: string;
   /** Ceiling junction vs floor junction. */
   trimEdge?: 'ceiling' | 'floor';
+  /** Roll in the wall plane (wall-mounted art / shelves). */
+  roll?: number;
 };
 export type CameraMode = 'top' | 'orbit' | 'walk';
 export type UnitSystem = 'metric' | 'imperial';

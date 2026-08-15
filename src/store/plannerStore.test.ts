@@ -15,7 +15,7 @@ describe('mobile planner defaults',()=>{
  });
 
  it('ghost-places a product before committing it to the room',()=>{
-  usePlannerStore.setState({ workflowStage: 'room' });
+  usePlannerStore.setState({ workflowStage: 'room', furniture: [], openings: [], openingNotice: '' });
   usePlannerStore.getState().cancelPendingPlacement();
   const before=usePlannerStore.getState().furniture.length;
   usePlannerStore.getState().beginPlacement('ghost-bed','Cloud Bed','Bedroom',[1.7,2.1,.55],'#ddd',undefined,undefined,{mountingType:'floor'});
@@ -23,10 +23,11 @@ describe('mobile planner defaults',()=>{
   expect(pending?.name).toBe('Cloud Bed');
   expect(pending).not.toBeNull();
   expect(usePlannerStore.getState().furniture).toHaveLength(before);
-  usePlannerStore.getState().movePendingPlacement(.5,.25);
+  usePlannerStore.getState().movePendingPlacement(0,0);
   usePlannerStore.getState().rotatePendingPlacement(Math.PI/2);
   const id=usePlannerStore.getState().commitPendingPlacement();
   const state=usePlannerStore.getState();
+  expect(state.openingNotice).toBe('');
   expect(state.pendingPlacement).toBeNull();
   expect(state.furniture).toHaveLength(before+1);
   expect(state.selectedFurnitureId).toBe(id);

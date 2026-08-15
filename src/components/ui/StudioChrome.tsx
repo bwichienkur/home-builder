@@ -127,12 +127,23 @@ export function StudioChrome({
   const rotatePending = usePlannerStore((s) => s.rotatePendingPlacement);
   const rotateSelected = usePlannerStore((s) => s.rotateSelected);
   const deleteSelected = usePlannerStore((s) => s.deleteSelected);
+  const removePerimeterTrim = usePlannerStore((s) => s.removePerimeterTrim);
+  const clearFloorFinish = usePlannerStore((s) => s.clearFloorFinish);
+  const furniture = usePlannerStore((s) => s.furniture);
+  const floorColor = usePlannerStore((s) => s.floorColor);
+  const selectedFurniture = furniture.find((f) => f.id === selectedItem);
+  const isTrimSelected = selectedFurniture?.placementKind === 'perimeter-trim';
+  const hasCrown = furniture.some((f) => f.placementKind === 'perimeter-trim' && f.trimEdge === 'ceiling');
+  const hasBaseboard = furniture.some((f) => f.placementKind === 'perimeter-trim' && f.trimEdge === 'floor');
+  const crownName = furniture.find((f) => f.placementKind === 'perimeter-trim' && f.trimEdge === 'ceiling')?.name;
+  const baseName = furniture.find((f) => f.placementKind === 'perimeter-trim' && f.trimEdge === 'floor')?.name;
   const categories = roomCategories[roomType];
   const isTop = camera === 'top';
   const wallEditMode = studioMode === 'architect' && isTop && tool === 'select';
   const showSelectionFabs = !!selectedItem && !pending;
+  const showOpeningFabs = !!selectedOpening && !pending && !selectedWall;
   const showWallFabs = wallEditMode && !!selectedWall && !pending;
-  const showActionFabs = showSelectionFabs || !!pending || showWallFabs;
+  const showActionFabs = showSelectionFabs || !!pending || showWallFabs || showOpeningFabs;
   const coarsePointer = useCoarsePointer();
   const [gestureHint, setGestureHint] = useState(false);
 
@@ -191,6 +202,7 @@ export function StudioChrome({
 
   const hasSelection = !!(selectedItem || selectedWall || selectedOpening || selectedRoomId);
   const selectedRoom = planRooms.find((r) => r.id === selectedRoomId);
+  const roomFloorColor = selectedRoom?.floorColor ?? floorColor;
   const activeFloor = floors.find((f) => f.id === activeFloorId);
   const houseLabel = housePlanName || (planRooms.length > 1 ? 'House plan' : 'Room');
   const atStart = workflowStage === 'start';
@@ -505,7 +517,41 @@ export function StudioChrome({
       )}
 
       {selectedOpening && !pending && (
-        <div className="studio-selection-hint studio-hint-float">Drag the opening to slide it along the wall</div>
+        <div className="studio-selection-hint studio-hint-float">Drag the opening to slide it · Edit for swing &amp; face</div>
+      )}
+
+      {isTrimSelected && !pending && (
+        <div className="studio-selection-hint studio-hint-float">
+          {selectedFurniture?.trimEdge === 'ceiling' ? 'Crown molding' : 'Baseboard'} selected · Edit profile height &amp; finish
+        </div>
+      )}
+
+      {(hasCrown || hasBaseboard || roomFloorColor) && inRoom && !pending && (
+        <div className="studio-finish-bar" role="status" aria-label="Room finishes">
+          {hasCrown && (
+            <span className="studio-finish-chip">
+              Crown: {crownName ?? 'on'}
+              <button type="button" onClick={() => removePerimeterTrim('ceiling')} aria-label="Remove crown molding">
+                Remove
+              </button>
+            </span>
+          )}
+          {hasBaseboard && (
+            <span className="studio-finish-chip">
+              Base: {baseName ?? 'on'}
+              <button type="button" onClick={() => removePerimeterTrim('floor')} aria-label="Remove baseboard">
+                Remove
+              </button>
+            </span>
+          )}
+          <span className="studio-finish-chip studio-finish-floor">
+            Floor
+            <span className="studio-finish-swatch" style={{ background: roomFloorColor }} aria-hidden />
+            <button type="button" onClick={() => clearFloorFinish()} aria-label="Clear floor finish">
+              Clear
+            </button>
+          </span>
+        </div>
       )}
 
       {wallEditMode && selectedWall && !pending && (
@@ -558,6 +604,23 @@ export function StudioChrome({
         </div>
       )}
 
+      {showOpeningFabs && (
+        <div className="studio-selection-fabs" role="toolbar" aria-label="Opening actions">
+          <button type="button" onClick={onOpenInspector} aria-label="Edit opening" title="Edit opening">
+            <Info />
+          </button>
+          <button
+            type="button"
+            className="is-danger"
+            onClick={() => deleteSelected()}
+            aria-label="Delete opening"
+            title="Delete opening"
+          >
+            <Trash2 />
+          </button>
+        </div>
+      )}
+
       {showSelectionFabs && (
         <div className={`studio-selection-fabs${fabsOpen ? '' : ' is-collapsed'}`} role="toolbar" aria-label="Selected product actions">
           <button
@@ -570,9 +633,15 @@ export function StudioChrome({
             {fabsOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </button>
           <div className="studio-fabs-tray" aria-hidden={!fabsOpen}>
-            <button onClick={() => rotateSelected()} aria-label="Rotate product">
-              <RotateCw />
-            </button>
+            {isTrimSelected ? (
+              <button type="button" onClick={onOpenInspector} aria-label="Edit trim">
+                <Info />
+              </button>
+            ) : (
+              <button onClick={() => rotateSelected()} aria-label="Rotate product">
+                <RotateCw />
+              </button>
+            )}
             <button className="is-danger" onClick={() => deleteSelected()} aria-label="Delete product">
               <Trash2 />
             </button>
