@@ -1792,16 +1792,16 @@
 }
 /* Extra screen-space nudge away from the wall (world offset already clears the face). */
 .wall-dim-card--top {
-  margin-top: -36px;
+  margin-top: -56px;
 }
 .wall-dim-card--bottom {
-  margin-top: 36px;
+  margin-top: 56px;
 }
 .wall-dim-card--left {
-  margin-left: -36px;
+  margin-left: -56px;
 }
 .wall-dim-card--right {
-  margin-left: 36px;
+  margin-left: 56px;
 }
 .wall-dim-card-grow {
   display: grid;

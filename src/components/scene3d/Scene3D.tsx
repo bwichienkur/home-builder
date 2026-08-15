@@ -11,7 +11,7 @@ import { doorSwingZones, furnitureHitsDoorSwing } from '../../lib/geometry/doorC
 import { framingFromPoints, framingFromWall, framingFromWalls, freeAreaFit, pageCenterFit, worldShiftForFreeArea } from '../../lib/geometry/planFraming';
 import { wallExteriorSide } from '../../lib/geometry/roomWalls';
 import { pointInPlanRoom, wallsBelongingToRoom } from '../../lib/geometry/roomWalls';
-import { clampOpeningOffset, wallOffsetFromWorldPoint, wallSolidBoxes } from '../../lib/geometry/wallOpenings';
+import { clampOpeningOffset, openingCenterOnWall, wallOffsetFromWorldPoint, wallSolidBoxes } from '../../lib/geometry/wallOpenings';
 import { wallCutawayOpacity } from '../../lib/geometry/wallCutaway';
 import { orbitCeilingOpacity, orbitFloorOpacity } from '../../lib/geometry/plateFade';
 import { PIXELS_PER_METER } from '../../lib/geometry/snapping';
@@ -491,15 +491,17 @@ function DoorLeaf({
 }) {
   // Doors stay closed in the opening; swing arc shows the no-place zone when open.
   const leafH = shape === 'arch' ? height * 0.92 : height;
+  const leafW = width * (shape === 'wide' ? 0.98 : 0.96);
   // Hinge on the swing side of the leaf (local +X = along wall toward end).
-  const hingeX = swing === 'left' ? -width / 2 : width / 2;
+  const hingeX = swing === 'left' ? -leafW / 2 : leafW / 2;
   // Face flips which side of the wall the arc sweeps into (local +Z ↔ −Z).
   const faceFlip = face === 'out' ? Math.PI : 0;
-  const swingStart = swing === 'left' ? 0 : -Math.PI / 2;
+  // Left: sweep from along-wall (+X) into +Z; right: from −X into +Z (then faceFlip).
+  const swingStart = swing === 'left' ? 0 : Math.PI / 2;
   return (
     <group position={[x, 0, z]} rotation={[0, angle, 0]}>
       <mesh position={[0, leafH / 2, 0]} castShadow>
-        <boxGeometry args={[width * (shape === 'wide' ? 0.98 : 0.96), leafH, 0.045]} />
+        <boxGeometry args={[leafW, leafH, 0.045]} />
         <meshStandardMaterial color="#c4a574" roughness={0.7} />
       </mesh>
       {shape === 'arch' && (
@@ -510,7 +512,7 @@ function DoorLeaf({
       )}
       {swing !== 'none' && (
         <mesh position={[hingeX, 0.012, 0]} rotation={[-Math.PI / 2, faceFlip, 0]}>
-          <ringGeometry args={[0.02, width, 28, 1, swingStart, Math.PI / 2]} />
+          <ringGeometry args={[0.02, leafW, 28, 1, swingStart, Math.PI / 2]} />
           <meshBasicMaterial color="#0058a3" transparent opacity={0.22} side={THREE.DoubleSide} />
         </mesh>
       )}
@@ -875,15 +877,15 @@ function WallMeshes() {
             </mesh>
           ) : null;
         const fixtures = related.flatMap((o) => {
-          // Same along-wall center as wallSolidBoxes holes (offset * origLen on true run).
-          const along = o.offset * origLen;
-          const t = along / length;
-          const x = sx + (ex - sx) * t;
-          const z = sz + (ez - sz) * t;
+          // Shared helper — identical center for hole, leaf, swing, and drag handle.
+          const placed = openingCenterOnWall(w, o.offset, WORLD_ORIGIN, PIXELS_PER_METER);
+          const x = placed.x;
+          const z = placed.z;
+          const openAngle = placed.angle;
           const parts: ReactElement[] = [];
           if (o.type === 'window')
             parts.push(
-              <mesh key={o.id + 'glass'} position={[x, o.sill + o.height / 2, z]} rotation={[0, angle, 0]} raycast={skipRay}>
+              <mesh key={o.id + 'glass'} position={[x, o.sill + o.height / 2, z]} rotation={[0, openAngle, 0]} raycast={skipRay}>
                 <boxGeometry args={[o.width, o.height, 0.025]} />
                 <meshPhysicalMaterial
                   color="#bce4ec"
@@ -901,7 +903,7 @@ function WallMeshes() {
                 key={o.id + 'door'}
                 x={x}
                 z={z}
-                angle={angle}
+                angle={openAngle}
                 width={o.width}
                 height={o.height}
                 swing={o.swing ?? 'left'}
@@ -911,7 +913,7 @@ function WallMeshes() {
             );
           if (o.type === 'passage')
             parts.push(
-              <mesh key={o.id + 'passage'} position={[x, 0.015, z]} rotation={[-Math.PI / 2, 0, angle]} raycast={skipRay}>
+              <mesh key={o.id + 'passage'} position={[x, 0.015, z]} rotation={[-Math.PI / 2, 0, openAngle]} raycast={skipRay}>
                 <planeGeometry args={[o.width, w.thickness + 0.08]} />
                 <meshBasicMaterial color="#0058a3" transparent opacity={0.28 * drawOpacity} />
               </mesh>,
@@ -924,7 +926,7 @@ function WallMeshes() {
                 wall={w}
                 x={x}
                 z={z}
-                angle={angle}
+                angle={openAngle}
                 selected={o.id === selectedOpeningId}
               />,
             );

@@ -62,8 +62,9 @@ describe('plan framing', () => {
       { id: 'a', start: { x: 200, y: 200 }, end: { x: 280, y: 200 }, thickness: 0.15, height: 2.7 },
       { pad: 2.05, minHeight: 6.2, exteriorSide: 1 },
     );
+    // Long enough that wall length (not the dim-card pad) drives the frame.
     const long = framingFromWall(
-      { id: 'a', start: { x: 200, y: 200 }, end: { x: 520, y: 200 }, thickness: 0.15, height: 2.7 },
+      { id: 'a', start: { x: 200, y: 200 }, end: { x: 1400, y: 200 }, thickness: 0.15, height: 2.7 },
       { pad: 2.05, minHeight: 6.2, exteriorSide: 1 },
     );
     expect(long.topHeight).toBeGreaterThan(short.topHeight);

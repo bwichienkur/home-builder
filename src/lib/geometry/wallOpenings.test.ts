@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Opening, Wall } from '../../types';
 import { pointOnWall, WORLD_ORIGIN } from './placement';
-import { clampOpeningOffset, wallSolidBoxes } from './wallOpenings';
+import { clampOpeningOffset, openingCenterOnWall, wallSolidBoxes } from './wallOpenings';
 import { PIXELS_PER_METER } from './snapping';
 
 const wall: Wall = {
@@ -77,6 +77,16 @@ describe('wallSolidBoxes', () => {
     const top = boxes.filter((b) => b.y0 > 2.0);
     // Full-height cut: no continuous lintel through the door in plan mode.
     expect(top.every((b) => b.along1 <= 2.0 + 0.01 || b.along0 >= 3.0 - 0.01)).toBe(true);
+  });
+  it('openingCenterOnWall matches wallSolidBoxes hole centers', () => {
+    const boxes = wallSolidBoxes(2.7, 5, 5, 0, [door]);
+    const mid = boxes.filter((b) => b.y0 < 1 && b.y1 > 1);
+    const gapLeft = Math.max(...mid.filter((b) => b.along1 <= 2.6).map((b) => b.along1));
+    const gapRight = Math.min(...mid.filter((b) => b.along0 >= 2.4).map((b) => b.along0));
+    const holeCenter = (gapLeft + gapRight) / 2;
+    const placed = openingCenterOnWall(wall, door.offset, WORLD_ORIGIN, PIXELS_PER_METER);
+    expect(placed.x).toBeCloseTo(holeCenter, 5);
+    expect(placed.z).toBeCloseTo(0, 5);
   });
 });
 

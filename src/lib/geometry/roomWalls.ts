@@ -109,10 +109,11 @@ export function wallDimFieldLayout(wall: Wall, exteriorSide: 1 | -1): WallDimFie
   const ny = dx / len;
   const verticalOnPlan = Math.abs(dirY) >= Math.abs(dirX);
   const halfThick = Math.max(wall.thickness, 0.12) * 0.5;
-  // Card ~180×160 CSS px ≈ 1.6×1.4 m at tight wall-focus zoom — pad past that.
-  const cardHalfAlongWallM = verticalOnPlan ? 0.95 : 1.15;
-  const cardHalfAlongNormalM = verticalOnPlan ? 1.25 : 1.05;
-  const faceGap = 0.55;
+  // At wall-focus zoom the Html card is ~160–180 CSS px; that can read as
+  // ~1.6–2.0 m toward the wall. Budget the full half so the near edge clears.
+  const cardHalfAlongWallM = verticalOnPlan ? 1.15 : 1.35;
+  const cardHalfAlongNormalM = verticalOnPlan ? 2.05 : 1.85;
+  const faceGap = 0.75;
   const cardOffsetM = halfThick + faceGap + cardHalfAlongNormalM;
   const ox = nx * exteriorSide;
   const oy = ny * exteriorSide;
