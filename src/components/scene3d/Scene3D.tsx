@@ -7,6 +7,7 @@ import { catalog } from '../catalog/catalogData';
 import type { FurnitureItem } from '../../types';
 import { detectRoomPolygons, roomShape } from '../../lib/geometry/rooms';
 import { alignmentGuides, clampWallMountY, constrainPlacement, pointOnWall, roomFloorCenter, wallFrame, WORLD_ORIGIN } from '../../lib/geometry/placement';
+import { doorSwingZones, furnitureHitsDoorSwing } from '../../lib/geometry/doorClearance';
 import { framingFromPoints, framingFromWall, framingFromWalls, freeAreaFit, pageCenterFit, worldShiftForFreeArea } from '../../lib/geometry/planFraming';
 import { wallExteriorSide } from '../../lib/geometry/roomWalls';
 import { pointInPlanRoom, wallsBelongingToRoom } from '../../lib/geometry/roomWalls';
@@ -475,6 +476,8 @@ function DoorLeaf({
   width,
   height,
   swing,
+  face = 'in',
+  shape = 'rect',
 }: {
   x: number;
   z: number;
@@ -482,21 +485,31 @@ function DoorLeaf({
   width: number;
   height: number;
   swing: 'left' | 'right' | 'none';
+  face?: 'in' | 'out';
+  shape?: 'rect' | 'arch' | 'wide';
 }) {
-  if (swing === 'none') return null;
-  const open = swing === 'left' ? Math.PI / 2.4 : -Math.PI / 2.4;
+  // Doors stay closed in the opening; swing arc shows the no-place zone when open.
+  const leafH = shape === 'arch' ? height * 0.92 : height;
+  const faceFlip = face === 'out' ? Math.PI : 0;
+  const swingStart = swing === 'left' ? 0 : -Math.PI / 2;
   return (
     <group position={[x, 0, z]} rotation={[0, angle, 0]}>
-      <group position={[swing === 'left' ? -width / 2 : width / 2, 0, 0]} rotation={[0, open, 0]}>
-        <mesh position={[swing === 'left' ? width / 2 : -width / 2, height / 2, 0]} castShadow>
-          <boxGeometry args={[width, height, 0.04]} />
+      <mesh position={[0, leafH / 2, 0]} castShadow>
+        <boxGeometry args={[width * (shape === 'wide' ? 0.98 : 0.96), leafH, 0.045]} />
+        <meshStandardMaterial color="#c4a574" roughness={0.7} />
+      </mesh>
+      {shape === 'arch' && (
+        <mesh position={[0, leafH * 0.92, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[width * 0.48, width * 0.48, 0.045, 16, 1, false, 0, Math.PI]} />
           <meshStandardMaterial color="#c4a574" roughness={0.7} />
         </mesh>
-      </group>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
-        <ringGeometry args={[0.02, width, 24, 1, swing === 'left' ? 0 : -Math.PI / 2, Math.PI / 2]} />
-        <meshBasicMaterial color="#0058a3" transparent opacity={0.22} side={THREE.DoubleSide} />
-      </mesh>
+      )}
+      {swing !== 'none' && (
+        <mesh rotation={[-Math.PI / 2, faceFlip, 0]} position={[0, 0.012, 0]}>
+          <ringGeometry args={[0.02, width, 28, 1, swingStart, Math.PI / 2]} />
+          <meshBasicMaterial color="#0058a3" transparent opacity={0.2} side={THREE.DoubleSide} />
+        </mesh>
+      )}
     </group>
   );
 }
@@ -784,7 +797,17 @@ function WallMeshes() {
             );
           if (o.type === 'door' && !fading)
             parts.push(
-              <DoorLeaf key={o.id + 'door'} x={x} z={z} angle={angle} width={o.width} height={o.height} swing={o.swing ?? 'left'} />,
+              <DoorLeaf
+                key={o.id + 'door'}
+                x={x}
+                z={z}
+                angle={angle}
+                width={o.width}
+                height={o.height}
+                swing={o.swing ?? 'left'}
+                face={o.face ?? 'in'}
+                shape={o.shape ?? 'rect'}
+              />,
             );
           if (o.type === 'passage')
             parts.push(
@@ -932,6 +955,7 @@ function Guides({ selected, others }: { selected: FurnitureItem; others: Furnitu
 function Furniture() {
   const allItems = usePlannerStore((s) => s.furniture);
   const walls = usePlannerStore((s) => s.walls);
+  const openings = usePlannerStore((s) => s.openings);
   const planRooms = usePlannerStore((s) => s.planRooms);
   const selectedRoomId = usePlannerStore((s) => s.selectedRoomId);
   const workflowStage = usePlannerStore((s) => s.workflowStage);
@@ -1049,7 +1073,7 @@ function Furniture() {
         : item.mountingType === 'ceiling'
           ? Math.max(0.1, (host?.height ?? 2.7) - item.height)
           : 0;
-    return {
+    const next = {
       x: placed.x,
       z: placed.z,
       rotation: placed.rotation ?? rotation ?? item.rotation,
@@ -1057,6 +1081,23 @@ function Furniture() {
       wallOffset: placed.wallOffset,
       ...(item.mountingType === 'wall' || item.mountingType === 'ceiling' ? { y: nextY } : {}),
     };
+    // Block door swing footprints — keep previous position if the move would collide.
+    if (
+      furnitureHitsDoorSwing(
+        { x: next.x, z: next.z, width: item.width, depth: item.depth, rotation: next.rotation },
+        doorSwingZones(openings, walls),
+      )
+    ) {
+      return {
+        x: item.x,
+        z: item.z,
+        rotation: item.rotation,
+        wallId: item.wallId,
+        wallOffset: item.wallOffset,
+        ...(item.mountingType === 'wall' || item.mountingType === 'ceiling' ? { y: item.y } : {}),
+      };
+    }
+    return next;
   };
 
   const endItemDrag = (e?: PointerEvent) => {
@@ -1326,6 +1367,11 @@ function Room() {
 
   const chooseFloor = (e: any, roomId?: string) => {
     e.stopPropagation();
+    const fill = usePlannerStore.getState().pendingFloorFill;
+    if (fill) {
+      usePlannerStore.getState().applyFloorFillToRoom(roomId ?? null);
+      return;
+    }
     // Plan Walls mode: prefer wall pick strips even when the room floor is closer.
     if (wallEditMode && workflowStage !== 'room') {
       const wallHit = (e.intersections as THREE.Intersection[] | undefined)?.find((h) => h.object.userData?.planWallPick);

@@ -500,7 +500,7 @@ function StudioApp() {
         </div>
       )}
 
-      {bom && <BomDialog items={furniture} catalog={allCatalog} close={() => setBom(false)} />}
+      {bom && <BomDialog items={furniture} catalog={allCatalog} walls={walls} openings={openings} close={() => setBom(false)} />}
     </main>
   );
 }

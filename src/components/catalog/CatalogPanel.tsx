@@ -121,6 +121,11 @@ export const CatalogPanel = memo(function CatalogPanel({
       onAdd?.();
       return;
     }
+    if (i.placementMode === 'floor-fill') {
+      usePlannerStore.getState().beginFloorFill({ catalogId: i.id, name: i.name, color: i.color });
+      onAdd?.();
+      return;
+    }
     // Omit x/z so the ghost starts at the room center (visible immediately).
     begin(i.id, i.name, i.category, i.dims, i.color, undefined, undefined, {
       mountingType: i.mountingType,
@@ -197,6 +202,9 @@ export const CatalogPanel = memo(function CatalogPanel({
               {(i.placementMode === 'ceiling-perimeter' || i.placementMode === 'floor-perimeter') && (
                 <small className="mount-badge">{i.placementMode === 'ceiling-perimeter' ? 'Ceiling corners' : 'Floor corners'}</small>
               )}
+              {i.placementMode === 'floor-fill' && (
+                <small className="mount-badge">Fill room floor</small>
+              )}
               {i.modelUrl && <small className="mount-badge model">3D model</small>}
               {i.sku && <small>SKU {i.sku}</small>}
               <span>{i.price !== undefined ? `${money.format(i.price)} / ${i.priceUnit ?? 'each'}` : 'Price by dealer/design'}</span>
@@ -208,7 +216,9 @@ export const CatalogPanel = memo(function CatalogPanel({
                 </a>
               )}
               <button onClick={() => addItem(i)}>
-                {i.placementMode === 'ceiling-perimeter' || i.placementMode === 'floor-perimeter' ? 'Apply to room' : 'Place in room'}
+                {i.placementMode === 'ceiling-perimeter' || i.placementMode === 'floor-perimeter' || i.placementMode === 'floor-fill'
+                  ? 'Apply to room'
+                  : 'Place in room'}
               </button>
             </article>
           ))}

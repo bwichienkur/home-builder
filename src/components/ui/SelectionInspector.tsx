@@ -297,6 +297,17 @@ function OpeningProperties({ opening }: { opening: Opening }) {
     <>
       <h2>{opening.type[0].toUpperCase() + opening.type.slice(1)}</h2>
       <label>
+        Shape
+        <select
+          value={opening.shape ?? 'rect'}
+          onChange={(e) => update(opening.id, { shape: e.target.value as Opening['shape'] })}
+        >
+          <option value="rect">Rectangle</option>
+          <option value="arch">Arch</option>
+          <option value="wide">Wide</option>
+        </select>
+      </label>
+      <label>
         Position along wall
         <input type="range" min=".03" max=".97" step=".01" value={opening.offset} onChange={(e) => update(opening.id, { offset: +e.target.value })} />
       </label>
@@ -307,13 +318,34 @@ function OpeningProperties({ opening }: { opening: Opening }) {
       {opening.type === 'window' && (
         <LengthField label="Sill height" value={opening.sill} min={0} onChange={(sill) => update(opening.id, { sill })} />
       )}
+      {(opening.type === 'door' || opening.type === 'passage') && (
+        <p className="muted">Attached to the floor (grounded).</p>
+      )}
       {opening.type === 'door' && (
+        <>
+          <label>
+            Door swing
+            <select value={opening.swing ?? 'left'} onChange={(e) => update(opening.id, { swing: e.target.value as 'left' | 'right' | 'none' })}>
+              <option value="left">Hinge left</option>
+              <option value="right">Hinge right</option>
+              <option value="none">No swing</option>
+            </select>
+          </label>
+          <label>
+            Swing into
+            <select value={opening.face ?? 'in'} onChange={(e) => update(opening.id, { face: e.target.value as 'in' | 'out' })}>
+              <option value="in">This side of wall</option>
+              <option value="out">Opposite side</option>
+            </select>
+          </label>
+        </>
+      )}
+      {opening.type === 'passage' && (
         <label>
-          Door swing
-          <select value={opening.swing ?? 'left'} onChange={(e) => update(opening.id, { swing: e.target.value as 'left' | 'right' | 'none' })}>
-            <option value="left">Left</option>
-            <option value="right">Right</option>
-            <option value="none">No swing</option>
+          Opening face
+          <select value={opening.face ?? 'in'} onChange={(e) => update(opening.id, { face: e.target.value as 'in' | 'out' })}>
+            <option value="in">Primary side</option>
+            <option value="out">Opposite side</option>
           </select>
         </label>
       )}
@@ -328,7 +360,9 @@ function WallProperties({ wall }: { wall: Wall }) {
   const allOpenings = usePlannerStore((s) => s.openings);
   const openings = useMemo(() => allOpenings.filter((o) => o.wallId === wall.id), [allOpenings, wall.id]);
   const updateOpening = usePlannerStore((s) => s.updateOpening);
+  const addOpening = usePlannerStore((s) => s.addOpening);
   const remove = usePlannerStore((s) => s.deleteOpening);
+  const selectOpening = usePlannerStore((s) => s.selectOpening);
   const updateWall = usePlannerStore((s) => s.updateWall);
   const setLength = usePlannerStore((s) => s.setWallLength);
   const split = usePlannerStore((s) => s.splitWall);
@@ -346,10 +380,26 @@ function WallProperties({ wall }: { wall: Wall }) {
         <button type="button" onClick={() => offset(wall.id, 0.25)}>Move +{unit === 'metric' ? '25 cm' : '10 in'}</button>
       </div>
       <p className="muted">Edit L / W / H in the fields around the wall on the plan.</p>
+      <span className="template-label">Connect rooms</span>
+      <div className="wall-actions">
+        <button type="button" onClick={() => addOpening(wall.id, 'door')}>
+          Add door
+        </button>
+        <button type="button" onClick={() => addOpening(wall.id, 'passage')}>
+          Add opening
+        </button>
+        <button type="button" onClick={() => addOpening(wall.id, 'window')}>
+          Add window
+        </button>
+      </div>
       <Property label="Openings" value={String(openings.length)} />
       {openings.map((o) => (
         <div className="opening-editor" key={o.id}>
-          <strong>{o.type}</strong>
+          <strong>
+            <button type="button" className="linkish" onClick={() => selectOpening(o.id)}>
+              {o.type}
+            </button>
+          </strong>
           <label>
             Position
             <input type="range" min=".05" max=".95" step=".05" value={o.offset} onChange={(e) => updateOpening(o.id, { offset: +e.target.value })} />

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import type { CameraMode, FurnitureItem, MountingType, Opening, PlanRoomLabel, Point, RoomType, SceneSnapshot, StudioMode, SurfaceTarget, Tool, UnitSystem, Wall, WorkflowStage } from '../types';
+import type { CameraMode, FurnitureItem, MountingType, Opening, OpeningShape, PendingFloorFill, PlanRoomLabel, Point, RoomType, SceneSnapshot, StudioMode, SurfaceTarget, Tool, UnitSystem, Wall, WorkflowStage } from '../types';
+import { doorSwingZones, furnitureHitsDoorSwing } from '../lib/geometry/doorClearance';
 import { clampWallMountY, constrainPlacement, openingConflicts, resolveMountingType, roomFloorCenter, WORLD_ORIGIN } from '../lib/geometry/placement';
 import { detectRoomPolygons } from '../lib/geometry/rooms';
 import { perimeterTrimSegments, type PerimeterTrimEdge } from '../lib/geometry/ceilingTrim';
@@ -53,6 +54,7 @@ type PlannerState = SceneSnapshot & {
   selectedSurface: SurfaceTarget | null;
   selectedRoomId: string | null;
   pendingPlacement: PendingPlacement | null;
+  pendingFloorFill: PendingFloorFill | null;
   draftStart: Point | null;
   floors: FloorRecord[];
   activeFloorId: string;
@@ -81,6 +83,9 @@ type PlannerState = SceneSnapshot & {
   rotatePendingPlacement: (delta?: number) => void;
   commitPendingPlacement: () => string | null;
   cancelPendingPlacement: () => void;
+  beginFloorFill: (fill: PendingFloorFill) => void;
+  cancelFloorFill: () => void;
+  applyFloorFillToRoom: (roomId: string | null) => boolean;
   rotateSelected: (delta?: number) => void;
   addWall: (a: Point, b: Point) => void;
   updateWall: (id: string, patch: Partial<Wall>) => void;
@@ -113,7 +118,7 @@ type PlannerState = SceneSnapshot & {
   selectWall: (id: string | null) => void;
   selectOpening: (id: string | null) => void;
   selectSurface: (surface: SurfaceTarget | null) => void;
-  addOpening: (wallId: string, type: 'door' | 'window' | 'passage') => boolean;
+  addOpening: (wallId: string, type: 'door' | 'window' | 'passage', shape?: OpeningShape) => boolean;
   updateOpening: (id: string, patch: Partial<Opening>) => boolean;
   deleteOpening: (id: string) => void;
   clearOpeningNotice: () => void;
@@ -248,12 +253,15 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     floorColor: get().floorColor,
     wallColor: get().wallColor,
     ceilingColor: get().ceilingColor,
+    planRooms: get().planRooms,
   });
   const commit = (next: SceneSnapshot) =>
     set((s) => {
       const history = s.history.slice(0, s.historyIndex + 1).concat(next).slice(-200);
-      const floors = s.floors.map((f) => (f.id === s.activeFloorId ? { ...f, scene: next } : f));
-      return { ...next, floors, history, historyIndex: history.length - 1 };
+      const floors = s.floors.map((f) =>
+        f.id === s.activeFloorId ? { ...f, scene: next, planRooms: next.planRooms ?? s.planRooms } : f,
+      );
+      return { ...next, planRooms: next.planRooms ?? s.planRooms, floors, history, historyIndex: history.length - 1 };
     });
   const mutate = (patch: Partial<SceneSnapshot>) => commit({ ...snap(), ...patch });
   const projectPayload = () => {
@@ -280,6 +288,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     selectedSurface: null,
     selectedRoomId: null,
     pendingPlacement: null,
+    pendingFloorFill: null,
     draftStart: null,
     floors: [{ id: 'ground', name: 'Ground floor', scene: initial }],
     activeFloorId: 'ground',
@@ -292,7 +301,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     pendingRoomShape: null,
     workflowStage: 'start',
     studioMode: 'architect',
-    setTool: (tool) => set({ tool, draftStart: null }),
+    setTool: (tool) => set({ tool: tool === 'wall' ? 'select' : tool, draftStart: null }),
     setView: (view) => set({ view, draftStart: null }),
     setCameraMode: (cameraMode) => set({ cameraMode }),
     setRoomType: (roomType) => set({ roomType }),
@@ -589,11 +598,42 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       }),
     updatePlanRoom: (id, patch) => {
       const planRooms = get().planRooms.map((r) => (r.id === id ? { ...r, ...patch } : r));
+      // Floor finish changes must be undoable with the scene.
+      if (patch.floorColor !== undefined) {
+        mutate({
+          planRooms,
+          floorColor: get().selectedRoomId === id || get().planRooms.length <= 1 ? patch.floorColor : get().floorColor,
+        });
+        set({
+          roomType: patch.roomType && get().selectedRoomId === id ? patch.roomType : get().roomType,
+        });
+        return;
+      }
       set({
         planRooms,
         floors: get().floors.map((f) => (f.id === get().activeFloorId ? { ...f, planRooms } : f)),
         roomType: patch.roomType && get().selectedRoomId === id ? patch.roomType : get().roomType,
       });
+    },
+    beginFloorFill: (fill) =>
+      set({
+        pendingFloorFill: fill,
+        pendingPlacement: null,
+        studioMode: 'furnish',
+        openingNotice: 'Tap a room floor to apply this tile everywhere in that room.',
+      }),
+    cancelFloorFill: () => set({ pendingFloorFill: null, openingNotice: '' }),
+    applyFloorFillToRoom: (roomId) => {
+      const fill = get().pendingFloorFill;
+      if (!fill) return false;
+      const id = roomId ?? get().selectedRoomId;
+      if (id) {
+        get().updatePlanRoom(id, { floorColor: fill.color });
+      } else {
+        mutate({ floorColor: fill.color });
+      }
+      set({ pendingFloorFill: null, openingNotice: `Applied ${fill.name} to the floor.` });
+      return true;
     },
     resizePlanRoom: (id, widthFt, depthFt) => {
       const current = get().planRooms;
@@ -728,17 +768,21 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         ),
       });
     },
-    addOpening: (wallId, type) => {
+    addOpening: (wallId, type, shape = 'rect') => {
       const id = crypto.randomUUID();
+      const wide = shape === 'wide';
       const candidate: Opening = {
         id,
         wallId,
         type,
         offset: 0.5,
-        width: type === 'window' ? 1.2 : 0.9,
-        height: type === 'window' ? 1.1 : 2.1,
+        width: type === 'window' ? (wide ? 1.8 : 1.2) : wide ? 1.2 : 0.9,
+        height: type === 'window' ? (shape === 'arch' ? 1.4 : 1.1) : 2.1,
+        // Doors and passages stay on the ground; windows may have a sill.
         sill: type === 'window' ? 0.9 : 0,
         swing: type === 'door' ? 'left' : 'none',
+        face: 'in',
+        shape,
       };
       if (openingConflicts(candidate, get().openings, get().walls).length) {
         set({ openingNotice: 'That opening overlaps another on this wall. Move or resize it first.' });
@@ -751,12 +795,14 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     updateOpening: (id, patch) => {
       const current = get().openings.find((o) => o.id === id);
       if (!current) return false;
+      const nextType = patch.type ?? current.type;
       const next: Opening = {
         ...current,
         ...patch,
         width: patch.width === undefined ? current.width : Math.max(0.3, Math.min(6, patch.width)),
         height: patch.height === undefined ? current.height : Math.max(0.3, Math.min(6, patch.height)),
         offset: patch.offset === undefined ? current.offset : Math.max(0.03, Math.min(0.97, patch.offset)),
+        sill: nextType === 'window' ? (patch.sill === undefined ? current.sill : Math.max(0, patch.sill)) : 0,
       };
       if (openingConflicts(next, get().openings, get().walls).length) {
         set({ openingNotice: 'Openings cannot overlap on the same wall.' });
@@ -784,6 +830,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         live: true,
       });
       set({
+        pendingFloorFill: null,
         pendingPlacement: {
           catalogId,
           name,
@@ -841,7 +888,18 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     commitPendingPlacement: () => {
       const pending = get().pendingPlacement;
       if (!pending) return null;
-      set({ pendingPlacement: null });
+      const probe = {
+        x: pending.x,
+        z: pending.z,
+        width: pending.width,
+        depth: pending.depth,
+        rotation: pending.rotation,
+      };
+      if (furnitureHitsDoorSwing(probe, doorSwingZones(get().openings, get().walls))) {
+        set({ openingNotice: 'Cannot place in a door swing zone. Move clear of the opening arc.' });
+        return null;
+      }
+      set({ pendingPlacement: null, openingNotice: '' });
       get().addFurniture(
         pending.catalogId,
         pending.name,
@@ -1034,8 +1092,18 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       }
       set({ selectedWallId: null, selectedOpeningId: null, selectedFurnitureId: null });
     },
-    setFinish: (target, color) =>
-      mutate(target === 'floor' ? { floorColor: color } : target === 'wall' ? { wallColor: color } : { ceilingColor: color }),
+    setFinish: (target, color) => {
+      if (target === 'floor') {
+        const roomId = get().selectedRoomId;
+        if (roomId) {
+          get().updatePlanRoom(roomId, { floorColor: color });
+          return;
+        }
+        mutate({ floorColor: color });
+        return;
+      }
+      mutate(target === 'wall' ? { wallColor: color } : { ceilingColor: color });
+    },
     addFloor: (opts) => {
       const id = crypto.randomUUID();
       const n = get().floors.length + 1;
@@ -1177,12 +1245,28 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     undo: () =>
       set((s) => {
         const i = Math.max(0, s.historyIndex - 1);
-        return { ...s.history[i], historyIndex: i, selectedWallId: null, selectedFurnitureId: null };
+        const entry = s.history[i]!;
+        return {
+          ...entry,
+          planRooms: entry.planRooms ?? s.planRooms,
+          historyIndex: i,
+          selectedWallId: null,
+          selectedFurnitureId: null,
+          selectedOpeningId: null,
+        };
       }),
     redo: () =>
       set((s) => {
         const i = Math.min(s.history.length - 1, s.historyIndex + 1);
-        return { ...s.history[i], historyIndex: i, selectedWallId: null, selectedFurnitureId: null };
+        const entry = s.history[i]!;
+        return {
+          ...entry,
+          planRooms: entry.planRooms ?? s.planRooms,
+          historyIndex: i,
+          selectedWallId: null,
+          selectedFurnitureId: null,
+          selectedOpeningId: null,
+        };
       }),
     clear: () => {
       mutate({ ...initial, walls: [], openings: [], furniture: [] });
