@@ -38,7 +38,7 @@ export function DesignStart({ onBegan }: { onBegan?: () => void }) {
 
   const startRoom = (shape: 'rectangle' | 'wide' | 'l-shape') => {
     applyRoomTemplate(shape);
-    // Template now opens in room focus with furnish rail — do not bump back to house.
+    // Stay at plan level — room edit opens from the right rail.
     finish();
   };
 

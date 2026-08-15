@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { FileSpreadsheet, Grid2X2, X } from 'lucide-react';
+import { ChevronRight, FileSpreadsheet, Grid2X2, X } from 'lucide-react';
 import { usePlannerStore } from '../../store/plannerStore';
 import { wallLengthMeters } from '../../lib/geometry/snapping';
 import { formatLength, parseLength } from '../../lib/measurements';
@@ -65,6 +65,9 @@ export function SelectionInspector({ open, onClose }: { open: boolean; onClose: 
 
   return (
     <aside className="selection-inspector" aria-label="Selection properties">
+      <button type="button" className="selection-inspector-collapse" onClick={onClose} aria-label="Collapse editor">
+        <ChevronRight size={18} />
+      </button>
       <header>
         <strong>{title}</strong>
         <button onClick={onClose} aria-label="Close inspector">
@@ -106,7 +109,7 @@ function RoomPanel({ surface }: { surface: 'floor' | 'wall' | 'ceiling' | null }
             ? 'Choose a ceiling color below.'
             : surface === 'floor'
               ? 'Choose a floor finish below.'
-              : 'Tap a room to edit it. Use Walls / Draw / Square in the bottom bar while viewing the floor plan.'}
+              : 'Tap a room to select it. Use the right rail for Edit / Remove, Walls, Draw, and room shapes.'}
         </p>
       </div>
       {(surface === 'ceiling' || surface === 'floor') && (

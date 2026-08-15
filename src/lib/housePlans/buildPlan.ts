@@ -357,6 +357,129 @@ export function squareRoomPoints(center: Point, widthFt: number, depthFt: number
   ];
 }
 
+export type PlanRoomShape = 'rectangle' | 'wide' | 'l-shape';
+
+/** Default footprint (feet) for common plan room shapes. */
+export function roomShapeSizeFt(shape: PlanRoomShape) {
+  if (shape === 'wide') return { widthFt: 18, depthFt: 12 };
+  if (shape === 'l-shape') return { widthFt: 16, depthFt: 14 };
+  return { widthFt: 12, depthFt: 12 };
+}
+
+/** Polygon for a common room shape centered on a plan-pixel point. */
+export function shapedRoomPoints(shape: PlanRoomShape, center: Point): Point[] {
+  const cxFt = (center.x - WORLD_ORIGIN.x) / PIXELS_PER_METER / FT_TO_M;
+  const cyFt = (center.y - WORLD_ORIGIN.y) / PIXELS_PER_METER / FT_TO_M;
+  const toPoint = (xFt: number, yFt: number): Point => ({
+    x: WORLD_ORIGIN.x + ftToPx(xFt),
+    y: WORLD_ORIGIN.y + ftToPx(yFt),
+  });
+  if (shape === 'wide') {
+    const w = 18;
+    const d = 12;
+    return [
+      toPoint(cxFt - w / 2, cyFt - d / 2),
+      toPoint(cxFt + w / 2, cyFt - d / 2),
+      toPoint(cxFt + w / 2, cyFt + d / 2),
+      toPoint(cxFt - w / 2, cyFt + d / 2),
+    ];
+  }
+  if (shape === 'l-shape') {
+    // 16×14 outer with a 8×8 notch from the SE corner.
+    const w = 16;
+    const d = 14;
+    const cut = 8;
+    return [
+      toPoint(cxFt - w / 2, cyFt - d / 2),
+      toPoint(cxFt + w / 2, cyFt - d / 2),
+      toPoint(cxFt + w / 2, cyFt + d / 2 - cut),
+      toPoint(cxFt + w / 2 - cut, cyFt + d / 2 - cut),
+      toPoint(cxFt + w / 2 - cut, cyFt + d / 2),
+      toPoint(cxFt - w / 2, cyFt + d / 2),
+    ];
+  }
+  return squareRoomPoints(center, 12, 12);
+}
+
+type Aabb = { minX: number; minY: number; maxX: number; maxY: number };
+
+function pointsAabb(points: Point[]): Aabb {
+  const xs = points.map((p) => p.x);
+  const ys = points.map((p) => p.y);
+  return { minX: Math.min(...xs), minY: Math.min(...ys), maxX: Math.max(...xs), maxY: Math.max(...ys) };
+}
+
+function overlap1d(a0: number, a1: number, b0: number, b1: number) {
+  return Math.min(a1, b1) - Math.max(a0, b0);
+}
+
+/**
+ * Nudge a proposed room center so its AABB flushes against a nearby existing room.
+ * Used while dragging new rooms at plan level.
+ */
+export function snapRoomCenterToNeighbors(
+  center: Point,
+  shape: PlanRoomShape,
+  existing: { points: Point[] }[],
+  thresholdPx = 0.55 * PIXELS_PER_METER,
+): Point {
+  if (!existing.length) return center;
+  let cx = center.x;
+  let cy = center.y;
+  const size = roomShapeSizeFt(shape);
+  const halfW = ftToPx(size.widthFt) / 2;
+  const halfD = ftToPx(size.depthFt) / 2;
+
+  for (let pass = 0; pass < 3; pass++) {
+    const proposed: Aabb = { minX: cx - halfW, maxX: cx + halfW, minY: cy - halfD, maxY: cy + halfD };
+    let bestDx = 0;
+    let bestDy = 0;
+    let bestScore = thresholdPx + 1;
+
+    for (const room of existing) {
+      if (room.points.length < 3) continue;
+      const other = pointsAabb(room.points);
+      const xOverlap = overlap1d(proposed.minX, proposed.maxX, other.minX, other.maxX);
+      const yOverlap = overlap1d(proposed.minY, proposed.maxY, other.minY, other.maxY);
+
+      if (yOverlap > 0.15 * PIXELS_PER_METER) {
+        const gapRight = other.minX - proposed.maxX;
+        const gapLeft = proposed.minX - other.maxX;
+        if (Math.abs(gapRight) < bestScore) {
+          bestScore = Math.abs(gapRight);
+          bestDx = gapRight;
+          bestDy = 0;
+        }
+        if (Math.abs(gapLeft) < bestScore) {
+          bestScore = Math.abs(gapLeft);
+          bestDx = -gapLeft;
+          bestDy = 0;
+        }
+      }
+      if (xOverlap > 0.15 * PIXELS_PER_METER) {
+        const gapDown = other.minY - proposed.maxY;
+        const gapUp = proposed.minY - other.maxY;
+        if (Math.abs(gapDown) < bestScore) {
+          bestScore = Math.abs(gapDown);
+          bestDx = 0;
+          bestDy = gapDown;
+        }
+        if (Math.abs(gapUp) < bestScore) {
+          bestScore = Math.abs(gapUp);
+          bestDx = 0;
+          bestDy = -gapUp;
+        }
+      }
+    }
+
+    if (bestScore > thresholdPx) break;
+    cx += bestDx;
+    cy += bestDy;
+  }
+
+  return { x: cx, y: cy };
+}
+
 /**
  * Split an axis-aligned room into two rooms along its longer side
  * (or forced axis). Returns [left/top, right/bottom] polygons.

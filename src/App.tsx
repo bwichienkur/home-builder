@@ -202,12 +202,10 @@ function StudioApp() {
     };
   }, []);
 
-  const selectedSurface = usePlannerStore((s) => s.selectedSurface);
-  const selectedRoomId = usePlannerStore((s) => s.selectedRoomId);
   const pendingPlacement = usePlannerStore((s) => s.pendingPlacement);
   useEffect(() => {
-    // One panel at a time: furniture → product card; walls/openings/surfaces → inspector.
-    // Entering a room alone does not open settings — use Edit in the dock.
+    // One panel at a time: furniture → product card; walls/openings auto-open inspector.
+    // Room/floor edit opens only from the right-rail Edit control (or open-properties).
     if (pendingPlacement) {
       setInspectorOpen(false);
       setProductCardOpen(false);
@@ -219,9 +217,17 @@ function StudioApp() {
       return;
     }
     setProductCardOpen(false);
-    if (selectedWallId || selectedOpeningId || selectedSurface) setInspectorOpen(true);
-    else setInspectorOpen(false);
-  }, [selectedWallId, selectedOpeningId, selectedFurnitureId, selectedSurface, pendingPlacement]);
+    if (selectedWallId || selectedOpeningId) setInspectorOpen(true);
+  }, [selectedWallId, selectedOpeningId, selectedFurnitureId, pendingPlacement]);
+
+  useEffect(() => {
+    if (inspectorOpen) document.body.dataset.inspectorOpen = '1';
+    else delete document.body.dataset.inspectorOpen;
+    window.dispatchEvent(new Event('roomcraft-inspector-changed'));
+    return () => {
+      delete document.body.dataset.inspectorOpen;
+    };
+  }, [inspectorOpen]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => store.save(), 700);
