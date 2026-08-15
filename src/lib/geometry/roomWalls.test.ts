@@ -55,14 +55,17 @@ describe('room wall membership', () => {
     expect(wallExteriorSide(flipped, [room])).toBe(1);
   });
 
-  it('gives vertical walls wider exterior clearance than horizontal ones', () => {
+  it('clears the wall face for both orientations and parks W/H fully exterior', () => {
     const horizontal = wallDimFieldLayout(walls[0], -1);
     const vertical = wallDimFieldLayout(walls[1], -1);
     expect(horizontal.verticalOnPlan).toBe(false);
     expect(vertical.verticalOnPlan).toBe(true);
-    // Html pills are wide: vertical walls offset into the long axis of the chip.
-    expect(vertical.sideOffsetM).toBeGreaterThan(horizontal.sideOffsetM + 0.35);
+    // Vertical walls offset into the pill’s long axis → larger side clearance.
+    expect(vertical.sideOffsetM).toBeGreaterThan(horizontal.sideOffsetM + 0.2);
+    // Both keep W/H on the same exterior line as L (no wall-body overlap).
     expect(vertical.endExteriorM).toBeCloseTo(vertical.sideOffsetM, 5);
-    expect(horizontal.endExteriorM).toBeLessThan(horizontal.sideOffsetM);
+    expect(horizontal.endExteriorM).toBeCloseTo(horizontal.sideOffsetM, 5);
+    expect(horizontal.sideOffsetM).toBeGreaterThan(0.55);
+    expect(vertical.sideOffsetM).toBeGreaterThan(0.85);
   });
 });

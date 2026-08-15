@@ -110,11 +110,11 @@ export function framingFromWall(wall: Wall, opts?: FramingOpts): PlanFraming {
   const nz = dx / length;
   const side = opts?.exteriorSide;
   const layout = wallDimFieldLayout(wall, side === 1 || side === -1 ? side : 1);
-  // Match PlanEditLayer field centers, plus a little Html chip margin.
-  const chipPad = 0.4;
+  // Field centers + half chip + spare margin so zoom never clips L/W/H.
+  const chipPad = 0.85;
   const sideOffset = layout.sideOffsetM + chipPad;
   const endOffset = layout.endOffsetM + chipPad;
-  const endExterior = layout.endExteriorM + chipPad * 0.5;
+  const endExterior = layout.endExteriorM + chipPad;
   const halfThick = Math.max(wall.thickness, 0.12) * 0.5 + 0.25;
   const px = PIXELS_PER_METER;
   const midX = (wall.start.x + wall.end.x) / 2;
@@ -166,11 +166,11 @@ export function framingFromWall(wall: Wall, opts?: FramingOpts): PlanFraming {
             y: wall.end.y + dirZ * endOffset * px,
           },
         ];
-  const minSpan = Math.max(length * 1.28, layout.verticalOnPlan ? 3.2 : 2.6);
+  const minSpan = Math.max(length * 1.35, layout.verticalOnPlan ? 3.8 : 3.2);
   return framingFromPoints(corners, {
     minSpan,
-    minHeight: opts?.minHeight ?? 5.5,
-    pad: opts?.pad ?? 1.9,
+    minHeight: opts?.minHeight ?? 6.5,
+    pad: opts?.pad ?? 2.35,
     orbitPad: opts?.orbitPad ?? 1.15,
   });
 }

@@ -83,8 +83,8 @@ export type WallDimFieldLayout = {
 };
 
 /**
- * Shared L/W/H chip offsets. Html pills are wide (~1 m at focus zoom) and short (~0.4 m),
- * so vertical walls need much more exterior clearance than horizontal ones.
+ * Shared L/W/H chip offsets. Html pills are wide (~1.1 m) and short (~0.45 m) at focus zoom.
+ * Offset to chip *center* must clear wall half-thickness + half chip size + a visible gap.
  */
 export function wallDimFieldLayout(wall: Wall, exteriorSide: 1 | -1): WallDimFieldLayout {
   const dx = wall.end.x - wall.start.x;
@@ -95,12 +95,16 @@ export function wallDimFieldLayout(wall: Wall, exteriorSide: 1 | -1): WallDimFie
   const nx = -dy / len;
   const ny = dx / len;
   const verticalOnPlan = Math.abs(dirY) >= Math.abs(dirX);
-  // Screen-space pills ≈ 110×42 px ≈ 1.05×0.4 m at wall-focus zoom.
-  const sideClear = verticalOnPlan ? 1.28 : 0.72;
-  const sideOffsetM = Math.max(sideClear, wall.thickness * 0.5 + (verticalOnPlan ? 1.12 : 0.55));
-  const endOffsetM = Math.max(verticalOnPlan ? 1.05 : 0.85, wall.thickness * 0.5 + 0.7);
-  // Vertical: keep W/H fully outside (same clear as L). Horizontal: lighter end nudge.
-  const endExteriorM = verticalOnPlan ? sideOffsetM : sideOffsetM * 0.55;
+  const halfThick = Math.max(wall.thickness, 0.12) * 0.5;
+  // Gap from wall face to chip edge, then half the pill into the exterior.
+  const faceGap = 0.28;
+  const halfChipAlongOffset = verticalOnPlan ? 0.58 : 0.28; // width vs height of pill
+  const sideOffsetM = halfThick + faceGap + halfChipAlongOffset;
+  // Past each end: half pill along the wall axis + gap so corners don’t kiss W/H.
+  const halfChipAlongWall = verticalOnPlan ? 0.28 : 0.58;
+  const endOffsetM = halfThick + faceGap + halfChipAlongWall + 0.2;
+  // Keep W/H on the same exterior line as L — never on the wall body.
+  const endExteriorM = sideOffsetM;
   return {
     side: exteriorSide,
     verticalOnPlan,

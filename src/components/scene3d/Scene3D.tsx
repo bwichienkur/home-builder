@@ -139,8 +139,8 @@ function CameraRig() {
 
   // Rail: page-centered + zoom. Edit inspector / wall focus: shift into the free area left of chrome.
   const chromeFit = useMemo(() => {
-    const topChromePx = coarse ? (focusWall ? 88 : 72) : focusWall ? 80 : 64;
-    const bottomChromePx = coarse ? 150 : 110;
+    const topChromePx = coarse ? (focusWall ? 100 : 72) : focusWall ? 92 : 64;
+    const bottomChromePx = coarse ? (focusWall ? 175 : 150) : focusWall ? 135 : 110;
     if (inspectorOpen || focusWall) {
       const rightChromePx = inspectorOpen
         ? Math.min(260, Math.round(canvasW * 0.44))
@@ -182,11 +182,11 @@ function CameraRig() {
               roomType: 'Living room' as const,
               points,
             }));
-      // Full wall + exterior L/W/H fields stay in view.
+      // Full wall + exterior L/W/H chips with spare screen margin.
       return framingFromWall(focusWall, {
-        pad: coarse ? 2.2 : 2.05,
+        pad: coarse ? 2.65 : 2.45,
         orbitPad: 1.15,
-        minHeight: 6.2,
+        minHeight: 7.2,
         exteriorSide: wallExteriorSide(focusWall, roomsForExterior),
       });
     }
