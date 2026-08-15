@@ -3,7 +3,7 @@ import type { CameraMode, FurnitureItem, MountingType, Opening, PlanRoomLabel, P
 import { clampWallMountY, constrainPlacement, openingConflicts, resolveMountingType, roomFloorCenter } from '../lib/geometry/placement';
 import { detectRoomPolygons } from '../lib/geometry/rooms';
 import { writeRecoverySnapshot } from '../lib/designShare';
-import { buildHouse, rebuildFromPlanRooms, resizePlanRoomPoints, shapedRoomPoints, snapRoomCenterToNeighbors, splitPlanRoomPoints, type PlanRoomShape } from '../lib/housePlans/buildPlan';
+import { buildHouse, rebuildFromPlanRooms, resizePlanRoomPoints, shapedRoomPoints, snapRoomCenterToNeighbors, splitPlanRoomPoints, proposedRoomOverlaps, type PlanRoomShape } from '../lib/housePlans/buildPlan';
 import { getHousePlan } from '../lib/housePlans/olsenPlans';
 
 export type { PlanRoomShape };
@@ -602,6 +602,10 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     placePlanRoom: (center, shape, name) => {
       const kind = shape ?? get().pendingRoomShape ?? 'rectangle';
       const snapped = snapRoomCenterToNeighbors(center, kind, get().planRooms);
+      if (proposedRoomOverlaps(snapped, kind, get().planRooms)) {
+        set({ openingNotice: 'Place rooms beside existing ones — they can’t overlap.' });
+        return null;
+      }
       const id = crypto.randomUUID();
       const roomType = get().roomType;
       const label: PlanRoomLabel = {

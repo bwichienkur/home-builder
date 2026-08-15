@@ -3,7 +3,7 @@ import { useThree } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { WORLD_ORIGIN } from '../../lib/geometry/placement';
-import { shapedRoomPoints, snapRoomCenterToNeighbors } from '../../lib/housePlans/buildPlan';
+import { proposedRoomOverlaps, shapedRoomPoints, snapRoomCenterToNeighbors } from '../../lib/housePlans/buildPlan';
 import { PIXELS_PER_METER, snapWallPoint, wallLengthMeters } from '../../lib/geometry/snapping';
 import { formatLength } from '../../lib/measurements';
 import { usePlannerStore } from '../../store/plannerStore';
@@ -82,6 +82,11 @@ export function PlanEditLayer() {
   );
 
   const shapeKind = pendingRoomShape ?? 'rectangle';
+  const ghostOverlaps = useMemo(() => {
+    if (!placingRoom || !cursor) return false;
+    const snapped = snapRoomCenterToNeighbors(cursor, shapeKind, planRooms);
+    return proposedRoomOverlaps(snapped, shapeKind, planRooms);
+  }, [placingRoom, cursor, shapeKind, planRooms]);
   const ghostPoints = useMemo(() => {
     if (!placingRoom || !cursor) return null;
     const snapped = snapRoomCenterToNeighbors(cursor, shapeKind, planRooms);
@@ -173,6 +178,11 @@ export function PlanEditLayer() {
       return;
     }
     const snapped = snapRoomCenterToNeighbors(raw, shapeKind, planRooms);
+    if (proposedRoomOverlaps(snapped, shapeKind, planRooms)) {
+      // Keep shape tool armed so the user can drag beside existing rooms.
+      setCursor(snapped);
+      return;
+    }
     placePlanRoom(snapped, shapeKind);
     setCursor(null);
     window.setTimeout(() => {
@@ -283,8 +293,8 @@ export function PlanEditLayer() {
 
   return (
     <group>
-      {/* Large pick plane: draw tools + receive stretch/corner drag moves */}
-      {(drawing || wallEdit || placingRoom) && (
+      {/* Pick plane only while drawing / placing / actively dragging handles — not while selecting walls. */}
+      {(drawing || placingRoom || !!drag.current) && (
         <mesh
           rotation={[-Math.PI / 2, 0, 0]}
           position={[0, 0.01, 0]}
@@ -301,9 +311,30 @@ export function PlanEditLayer() {
           <meshBasicMaterial transparent opacity={0} depthWrite={false} />
         </mesh>
       )}
+      {/* Wall-edit: invisible move plane only while a handle drag is live (see window listeners). */}
+      {wallEdit && !drag.current && (
+        <mesh
+          rotation={[-Math.PI / 2, 0, 0]}
+          position={[0, 0.01, 0]}
+          onPointerMove={onFloorPointerMove}
+          raycast={() => {}}
+        >
+          <planeGeometry args={[120, 120]} />
+          <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+        </mesh>
+      )}
 
       {draftLine && <Line points={draftLine} color="#0058a3" lineWidth={3} dashed dashSize={0.18} gapSize={0.1} />}
-      {ghostPoints && <Line points={ghostPoints} color="#0058a3" lineWidth={3} dashed dashSize={0.2} gapSize={0.12} />}
+      {ghostPoints && (
+        <Line
+          points={ghostPoints}
+          color={ghostOverlaps ? '#b42318' : '#0058a3'}
+          lineWidth={3}
+          dashed
+          dashSize={0.2}
+          gapSize={0.12}
+        />
+      )}
 
       {wallEdit && selected && selectedFrame && (
         <group>

@@ -414,6 +414,27 @@ function overlap1d(a0: number, a1: number, b0: number, b1: number) {
 }
 
 /**
+ * True when a proposed room footprint overlaps an existing room's interior
+ * (edge-flush neighbors are allowed; nesting / covering is not).
+ */
+export function proposedRoomOverlaps(
+  center: Point,
+  shape: PlanRoomShape,
+  existing: { points: Point[] }[],
+  minOverlapPx = 0.25 * PIXELS_PER_METER,
+): boolean {
+  const proposed = pointsAabb(shapedRoomPoints(shape, center));
+  for (const room of existing) {
+    if (room.points.length < 3) continue;
+    const other = pointsAabb(room.points);
+    const xOverlap = overlap1d(proposed.minX, proposed.maxX, other.minX, other.maxX);
+    const yOverlap = overlap1d(proposed.minY, proposed.maxY, other.minY, other.maxY);
+    if (xOverlap > minOverlapPx && yOverlap > minOverlapPx) return true;
+  }
+  return false;
+}
+
+/**
  * Nudge a proposed room center so its AABB flushes against a nearby existing room.
  * Used while dragging new rooms at plan level.
  */

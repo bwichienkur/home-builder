@@ -1031,44 +1031,60 @@
 }
 .selection-inspector .number-input {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  align-items: stretch;
+  gap: 0;
   margin-top: 6px;
   min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
 }
 .selection-inspector .number-input input {
   flex: 1 1 auto;
   min-width: 0;
   width: 100%;
-  border: 1px solid var(--line);
-  border-radius: 8px;
+  border: 0;
+  border-radius: 0;
   padding: 10px;
   font-weight: 700;
   background: #fff;
+  outline: 0;
 }
 .selection-inspector .number-input span {
   flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 8px;
   white-space: nowrap;
   font-size: 12px;
   font-weight: 800;
   color: var(--muted);
+  background: var(--soft);
   min-width: 2.75rem;
-  text-align: right;
+  text-align: center;
+  align-self: stretch;
 }
 .selection-inspector .wall-actions {
   display: grid;
+  grid-template-columns: 1fr;
   gap: 8px;
   margin-top: 14px;
 }
 .selection-inspector .wall-actions button {
   width: 100%;
-  min-height: 40px;
+  min-height: 44px;
   border: 0;
   border-radius: 12px;
   background: rgba(17, 24, 32, 0.06);
   color: #111820;
   font-weight: 800;
   font-size: 13px;
+}
+.selection-inspector .wall-actions button:last-child {
+  background: var(--accent);
+  color: #fff;
 }
 .inspector-back-btn {
   display: none;
@@ -1465,8 +1481,44 @@
 .studio-topbar-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 2px;
   min-width: 0;
+  padding: 4px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: var(--shadow);
+}
+.studio-topbar-row .studio-fab,
+.studio-topbar-row .studio-breadcrumb,
+.studio-topbar-row .studio-bag {
+  box-shadow: none;
+}
+.studio-topbar-row .studio-fab {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  background: transparent;
+}
+.studio-topbar-row .studio-back-plan {
+  background: #111820 !important;
+  color: #fff !important;
+}
+.studio-topbar-row .studio-breadcrumb {
+  background: transparent;
+  border-radius: 12px;
+  padding: 6px 10px;
+}
+.studio-topbar-row .studio-bag {
+  height: 40px;
+  background: rgba(17, 24, 32, 0.04);
+  border-radius: 14px;
+  margin-left: auto;
+}
+.studio-topbar-row .studio-bag > svg {
+  width: 32px;
+  height: 32px;
+  padding: 7px;
 }
 .studio-top-tools {
   display: flex;
