@@ -86,16 +86,33 @@ function CameraRig() {
   const [menuOpen, setMenuOpen] = useState(() => document.body.dataset.menuOpen === '1');
   const [inspectorTick, setInspectorTick] = useState(0);
   const savedView = useRef<{ pose: THREE.Vector3; target: THREE.Vector3 } | null>(null);
+  const inspectorOpenRef = useRef(document.body.dataset.inspectorOpen === '1');
+  const inspectorAnimUntil = useRef(0);
+  const animGen = useRef(0);
   useEffect(() => {
     const sync = () => setMenuOpen(document.body.dataset.menuOpen === '1');
-    const syncInspector = () => setInspectorTick((n) => n + 1);
+    const syncInspector = () => {
+      const opening = document.body.dataset.inspectorOpen === '1';
+      // Rising edge: capture the pre-panel view before chrome reframes into the free area.
+      if (opening && !inspectorOpenRef.current) {
+        const camera = get().camera;
+        if (controls.current) {
+          savedView.current = {
+            pose: camera.position.clone(),
+            target: controls.current.target.clone(),
+          };
+        }
+      }
+      inspectorOpenRef.current = opening;
+      setInspectorTick((n) => n + 1);
+    };
     window.addEventListener('roomcraft-menu-changed', sync);
     window.addEventListener('roomcraft-inspector-changed', syncInspector);
     return () => {
       window.removeEventListener('roomcraft-menu-changed', sync);
       window.removeEventListener('roomcraft-inspector-changed', syncInspector);
     };
-  }, []);
+  }, [get]);
   const inspectorOpen = typeof document !== 'undefined' && document.body.dataset.inspectorOpen === '1';
   const showRightRail = inspectorOpen || !!focusRoom || workflowStage === 'house';
   const canvasW = size?.width || (typeof window !== 'undefined' ? window.innerWidth : 390);
@@ -189,7 +206,9 @@ function CameraRig() {
   const modeAnimUntil = useRef(0);
   const applyPose = (to: THREE.Vector3, target: THREE.Vector3, duration = 0) => {
     const camera = get().camera;
+    const gen = ++animGen.current;
     const finish = () => {
+      if (gen !== animGen.current) return;
       camera.position.copy(to);
       if (controls.current) {
         controls.current.target.copy(target);
@@ -218,7 +237,7 @@ function CameraRig() {
     const start = performance.now();
     animating.current = true;
     const tick = (now: number) => {
-      if (!animating.current) return;
+      if (gen !== animGen.current) return;
       const t = Math.min(1, (now - start) / duration);
       const ease = 1 - Math.pow(1 - t, 3);
       camera.position.lerpVectors(from, to, ease);
@@ -251,33 +270,33 @@ function CameraRig() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, menuOpen]);
 
-  // Room enter / chrome pad changes — ease, don't hard-cut over a live mode transition.
+  // Room enter / chrome pad changes — skip while the edit card owns framing.
   useEffect(() => {
+    if (inspectorOpen) return;
     if (performance.now() < modeAnimUntil.current) return;
+    if (performance.now() < inspectorAnimUntil.current) return;
     animateToPose(mode === 'top' ? 360 : 480);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focusRoom?.id, workflowStage, chromeFit.padScale, chromeFit.shiftFraction]);
+  }, [focusRoom?.id, workflowStage, chromeFit.padScale, chromeFit.shiftFraction, inspectorOpen]);
 
-  // Edit card open/close — ease into free area / restore. Only on inspector toggle (not pose churn).
+  // Edit card open/close — ease into free area / restore the pre-panel view.
   useEffect(() => {
     const open = document.body.dataset.inspectorOpen === '1';
-    const camera = get().camera;
+    inspectorAnimUntil.current = performance.now() + 520;
     if (open) {
-      if (!savedView.current && controls.current) {
-        savedView.current = {
-          pose: camera.position.clone(),
-          target: controls.current.target.clone(),
-        };
-      }
       applyPose(new THREE.Vector3(...poseTuple), new THREE.Vector3(...targetTuple), 420);
       return;
     }
+    // Closing: put the plate back where it was before the panel opened.
     if (savedView.current) {
       const { pose, target } = savedView.current;
       savedView.current = null;
       applyPose(pose, target, 420);
-    } else if (performance.now() >= modeAnimUntil.current) {
-      animateToPose(360);
+      return;
+    }
+    // Fallback if we never captured a pre-panel view.
+    if (performance.now() >= modeAnimUntil.current) {
+      animateToPose(420);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inspectorTick]);
@@ -286,11 +305,15 @@ function CameraRig() {
     const fit = () => {
       // choose3d/chooseTop fire fit immediately — don't cancel the Plan↔3D ease with a snap.
       if (performance.now() < modeAnimUntil.current) return;
+      if (performance.now() < inspectorAnimUntil.current) return;
+      if (document.body.dataset.inspectorOpen === '1') return;
       if (mode === 'top') snapToPose();
       else animateToPose(420);
     };
     const refocus = () => {
       if (performance.now() < modeAnimUntil.current) return;
+      if (performance.now() < inspectorAnimUntil.current) return;
+      if (document.body.dataset.inspectorOpen === '1') return;
       if (mode === 'top') snapToPose();
       else animateToPose(420);
     };
@@ -315,6 +338,7 @@ function CameraRig() {
     };
     const focusRoomEvt = () => {
       if (performance.now() < modeAnimUntil.current) return;
+      if (performance.now() < inspectorAnimUntil.current) return;
       animateToPose(mode === 'top' ? 360 : 480);
     };
     window.addEventListener('roomcraft-fit-plan', fit);
