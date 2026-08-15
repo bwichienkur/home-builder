@@ -1778,9 +1778,21 @@
 }
 
 /* Wall dimension card — L/W/H grouped outside the room (interaction panel). */
-.wall-dim-card-screen {
+.wall-dim-card-anchor {
   pointer-events: auto;
-  user-select: none;
+  /* Html tip sits on the exterior face; shift the full card clear in screen px. */
+}
+.wall-dim-card-anchor--top {
+  transform: translate(-50%, calc(-100% - 72px));
+}
+.wall-dim-card-anchor--bottom {
+  transform: translate(-50%, 72px);
+}
+.wall-dim-card-anchor--left {
+  transform: translate(calc(-100% - 72px), -50%);
+}
+.wall-dim-card-anchor--right {
+  transform: translate(72px, -50%);
 }
 .wall-dim-card {
   display: flex;

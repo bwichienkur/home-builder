@@ -1,4 +1,4 @@
-import { Line } from '@react-three/drei';
+import { Html, Line } from '@react-three/drei';
 import { useThree } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import * as THREE from 'three';
@@ -16,7 +16,6 @@ import { PIXELS_PER_METER, wallLengthMeters } from '../../lib/geometry/snapping'
 import { formatLength, parseLength } from '../../lib/measurements';
 import { usePlannerStore } from '../../store/plannerStore';
 import type { PlanRoomLabel } from '../../types';
-import { WallDimCardHtml } from './WallDimCardHtml';
 
 const world = (x: number, y: number): [number, number] => [
   (x - WORLD_ORIGIN.x) / PIXELS_PER_METER,
@@ -169,8 +168,8 @@ export function PlanEditLayer() {
         const { nx, ny: nz, placement, verticalOnPlan } = layout;
         const s = layout.side;
         const halfThick = Math.max(selected.thickness || 0.15, 0.12) * 0.5;
-        // Anchor on the exterior face; WallDimCardHtml pushes the card clear in screen px.
-        const faceOffsetM = halfThick + 0.12;
+        // Exterior face + small world gap; CSS translate clears the rest of the card.
+        const faceOffsetM = halfThick + 0.35;
         return {
           len,
           midX,
@@ -217,7 +216,11 @@ export function PlanEditLayer() {
             <meshBasicMaterial color="#0058a3" transparent opacity={0.2} depthWrite={false} />
           </mesh>
 
-          <WallDimCardHtml facePos={selectedFrame.facePos} placement={selectedFrame.placement}>
+          <Html position={selectedFrame.facePos} zIndexRange={[120, 60]} style={{ pointerEvents: 'none' }}>
+            <div
+              className={`wall-dim-card-anchor wall-dim-card-anchor--${selectedFrame.placement}`}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
             <div className="wall-dim-card">
               <div className="wall-dim-card-grow" role="group" aria-label="Which side to resize">
                 {selectedFrame.verticalOnPlan ? (
@@ -298,7 +301,8 @@ export function PlanEditLayer() {
                 />
               </div>
             </div>
-          </WallDimCardHtml>
+            </div>
+          </Html>
         </group>
       )}
     </group>
