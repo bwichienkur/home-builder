@@ -114,7 +114,18 @@ function CameraRig() {
     };
   }, [get]);
   const inspectorOpen = typeof document !== 'undefined' && document.body.dataset.inspectorOpen === '1';
-  const showRightRail = inspectorOpen || !!focusRoom || workflowStage === 'house';
+  const [railTick, setRailTick] = useState(0);
+  useEffect(() => {
+    const sync = () => setRailTick((n) => n + 1);
+    window.addEventListener('roomcraft-rail-changed', sync);
+    return () => window.removeEventListener('roomcraft-rail-changed', sync);
+  }, []);
+  const showRightRail =
+    inspectorOpen ||
+    (typeof document !== 'undefined' && document.body.dataset.rightRail === '1') ||
+    // Fallback before chrome mounts its dataset.
+    !!focusRoom;
+  void railTick;
   const canvasW = size?.width || (typeof window !== 'undefined' ? window.innerWidth : 390);
   const canvasH = size?.height || (typeof window !== 'undefined' ? window.innerHeight : 844);
 
