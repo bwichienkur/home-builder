@@ -165,11 +165,10 @@ export function PlanEditLayer() {
         const angle = -Math.atan2(ez - sz, ex - sx);
         const side = wallExteriorSide(selected, roomsForExterior);
         const layout = wallDimFieldLayout(selected, side);
-        const { nx, ny: nz, placement, verticalOnPlan } = layout;
+        const { nx, ny: nz, cardOffsetM, placement, verticalOnPlan } = layout;
         const s = layout.side;
-        const halfThick = Math.max(selected.thickness || 0.15, 0.12) * 0.5;
-        // Exterior face + small world gap; CSS translate clears the rest of the card.
-        const faceOffsetM = halfThick + 0.35;
+        // Card *center* in world meters fully past the exterior face (Html `center`).
+        // CSS translate is a backup nudge in the same exterior direction.
         return {
           len,
           midX,
@@ -177,7 +176,7 @@ export function PlanEditLayer() {
           angle,
           placement,
           verticalOnPlan,
-          facePos: [midX + nx * s * faceOffsetM, 0.12, midZ + nz * s * faceOffsetM] as [number, number, number],
+          cardPos: [midX + nx * s * cardOffsetM, 0.12, midZ + nz * s * cardOffsetM] as [number, number, number],
         };
       })()
     : null;
@@ -216,12 +215,11 @@ export function PlanEditLayer() {
             <meshBasicMaterial color="#0058a3" transparent opacity={0.2} depthWrite={false} />
           </mesh>
 
-          <Html position={selectedFrame.facePos} zIndexRange={[120, 60]} style={{ pointerEvents: 'none' }}>
+          <Html position={selectedFrame.cardPos} center zIndexRange={[120, 60]} style={{ pointerEvents: 'auto' }}>
             <div
-              className={`wall-dim-card-anchor wall-dim-card-anchor--${selectedFrame.placement}`}
+              className={`wall-dim-card wall-dim-card--${selectedFrame.placement}`}
               onPointerDown={(e) => e.stopPropagation()}
             >
-            <div className="wall-dim-card">
               <div className="wall-dim-card-grow" role="group" aria-label="Which side to resize">
                 {selectedFrame.verticalOnPlan ? (
                   <>
@@ -300,7 +298,6 @@ export function PlanEditLayer() {
                   onChange={(meters) => updateWall(selected.id, { height: meters })}
                 />
               </div>
-            </div>
             </div>
           </Html>
         </group>

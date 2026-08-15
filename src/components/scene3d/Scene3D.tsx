@@ -555,7 +555,7 @@ function OpeningDragHandle({
   const wallLen = wallFrame(wall).length;
   const handleH = Math.max(0.35, opening.height * 0.55);
   const handleY = opening.sill + opening.height * 0.45;
-  const idleOpacity = cameraMode === 'top' ? 0.16 : 0.04;
+  const idleOpacity = cameraMode === 'top' ? 0.08 : 0.03;
 
   const project = (clientX: number, clientY: number) => {
     const rect = gl.domElement.getBoundingClientRect();

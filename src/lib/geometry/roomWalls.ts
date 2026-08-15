@@ -61,8 +61,19 @@ export function wallExteriorSide(wall: Wall, rooms: PlanRoomLabel[], probePx = 2
   const minusIn = rooms.some((r) => pointInPlanRoom(minus.x, minus.y, r));
   if (plusIn && !minusIn) return -1;
   if (minusIn && !plusIn) return 1;
-  if (!rooms.length) return 1;
-  // Fallback — prefer north-ish outside on our plan plates.
+  // Ambiguous / no rooms: pick the side farther from room centroids (true outside).
+  if (rooms.length) {
+    const centroids = rooms.map((r) => {
+      const pts = r.points;
+      const cx = pts.reduce((s, p) => s + p.x, 0) / (pts.length || 1);
+      const cy = pts.reduce((s, p) => s + p.y, 0) / (pts.length || 1);
+      return { x: cx, y: cy };
+    });
+    const distSum = (p: Point) =>
+      centroids.reduce((s, c) => s + Math.hypot(p.x - c.x, p.y - c.y), 0);
+    return distSum(plus) >= distSum(minus) ? 1 : -1;
+  }
+  // Last resort — prefer north-ish outside on our plan plates.
   return -ny >= 0 ? 1 : -1;
 }
 
