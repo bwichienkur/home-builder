@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
+  ArrowLeft,
   ArrowRight,
   Bath,
   BedDouble,
@@ -315,47 +316,53 @@ export function StudioChrome({
     <div className={`studio-chrome${showActionFabs ? ' has-action-fabs' : ''}${inRoom ? ' is-room-focus' : ''}`}>
       <div className="studio-topbar">
         <div className="studio-topbar-row">
+          {inRoom && (
+            <button type="button" className="studio-fab studio-back-plan" onClick={goBackToHouse} aria-label="Back to plan" title="Back to plan">
+              <ArrowLeft />
+            </button>
+          )}
           <button className="studio-fab studio-menu" onClick={menuOpen ? closeMenu : openMenu} aria-label={menuOpen ? 'Close menu' : 'Open project menu'} aria-expanded={menuOpen}>
             {menuOpen ? <X /> : <Menu />}
           </button>
 
-          <nav className="studio-breadcrumb" aria-label="Design location">
-            <button type="button" onClick={showStart} title="Start over">
-              Start
-            </button>
-            <span aria-hidden="true">/</span>
-            <button
-              type="button"
-              className={!inRoom && !selectedRoom ? 'is-current' : ''}
-              title={houseLabel}
-              onClick={() => {
-                if (inRoom) goBackToHouse();
-              }}
-            >
-              {houseLabel}
-            </button>
-            {activeFloor && (
-              <>
-                <span aria-hidden="true">/</span>
-                <button
-                  type="button"
-                  className={!selectedRoom ? 'is-current' : ''}
-                  onClick={() => (floors.length > 1 ? setStoriesOpen(true) : undefined)}
-                  title={activeFloor.name}
-                >
-                  {activeFloor.name}
-                </button>
-              </>
-            )}
-            {selectedRoom && (
-              <>
-                <span aria-hidden="true">/</span>
-                <span className="studio-breadcrumb-static is-current" title={selectedRoom.name}>
-                  {selectedRoom.name}
-                </span>
-              </>
-            )}
-          </nav>
+          {inRoom && selectedRoom ? (
+            <div className="studio-breadcrumb studio-room-title" aria-label="Current room">
+              <span className="studio-breadcrumb-static is-current" title={selectedRoom.name}>
+                {selectedRoom.name}
+              </span>
+            </div>
+          ) : (
+            <nav className="studio-breadcrumb" aria-label="Design location">
+              <button type="button" onClick={showStart} title="Start over">
+                Start
+              </button>
+              <span aria-hidden="true">/</span>
+              <button type="button" className={!selectedRoom ? 'is-current' : ''} title={houseLabel}>
+                {houseLabel}
+              </button>
+              {activeFloor && (
+                <>
+                  <span aria-hidden="true">/</span>
+                  <button
+                    type="button"
+                    className={!selectedRoom ? 'is-current' : ''}
+                    onClick={() => (floors.length > 1 ? setStoriesOpen(true) : undefined)}
+                    title={activeFloor.name}
+                  >
+                    {activeFloor.name}
+                  </button>
+                </>
+              )}
+              {selectedRoom && (
+                <>
+                  <span aria-hidden="true">/</span>
+                  <span className="studio-breadcrumb-static is-current" title={selectedRoom.name}>
+                    {selectedRoom.name}
+                  </span>
+                </>
+              )}
+            </nav>
+          )}
 
           <button
             className="studio-bag"

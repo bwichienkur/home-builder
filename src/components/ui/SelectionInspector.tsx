@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { ChevronRight, FileSpreadsheet, Grid2X2, X } from 'lucide-react';
+import { ChevronRight, Grid2X2, X } from 'lucide-react';
 import { usePlannerStore } from '../../store/plannerStore';
 import { wallLengthMeters } from '../../lib/geometry/snapping';
 import { formatLength, parseLength } from '../../lib/measurements';
@@ -94,11 +94,6 @@ export function SelectionInspector({ open, onClose }: { open: boolean; onClose: 
 function RoomPanel({ surface }: { surface: 'floor' | 'wall' | 'ceiling' | null }) {
   return (
     <>
-      <RoomDesigner />
-      <a className="inventory-open-button" href="/admin">
-        <FileSpreadsheet />
-        Advanced · import inventory
-      </a>
       <div className="empty-state compact">
         <div className="select-icon">
           <Grid2X2 size={22} />
@@ -109,7 +104,7 @@ function RoomPanel({ surface }: { surface: 'floor' | 'wall' | 'ceiling' | null }
             ? 'Choose a ceiling color below.'
             : surface === 'floor'
               ? 'Choose a floor finish below.'
-              : 'Tap a room to select it. Use the right rail for Edit / Remove, Walls, Draw, and room shapes.'}
+              : 'Use Edit on the right rail to change room size and type.'}
         </p>
       </div>
       {(surface === 'ceiling' || surface === 'floor') && (
@@ -124,8 +119,11 @@ function PlanRoomProperties({ room }: { room: PlanRoomLabel }) {
   const resize = usePlannerStore((s) => s.resizePlanRoom);
   const remove = usePlannerStore((s) => s.deletePlanRoom);
   const split = usePlannerStore((s) => s.splitPlanRoom);
-  const exitRoom = usePlannerStore((s) => s.exitRoom);
+  const setCeiling = usePlannerStore((s) => s.setCeilingHeight);
   const unit = usePlannerStore((s) => s.unitSystem);
+  const setUnit = usePlannerStore((s) => s.setUnitSystem);
+  const walls = usePlannerStore((s) => s.walls);
+  const ceiling = walls[0]?.height ?? 2.7;
   const size = planRoomSizeFeet(room.points);
   const areaSqFt = size.widthFt * size.depthFt;
 
@@ -146,11 +144,20 @@ function PlanRoomProperties({ room }: { room: PlanRoomLabel }) {
           ))}
         </select>
       </label>
-      <p className="muted">
+      <label>
+        Measurements
+        <select value={unit} onChange={(e) => setUnit(e.target.value as 'metric' | 'imperial')}>
+          <option value="metric">Metric (m / cm)</option>
+          <option value="imperial">Imperial (ft / in)</option>
+        </select>
+      </label>
+      <p className="muted room-size-line">
         About {Math.round(areaSqFt).toLocaleString()} sf
+      </p>
+      <p className="muted room-size-line">
         {unit === 'metric'
-          ? ` · ${formatLength(size.widthFt * 0.3048, unit)} × ${formatLength(size.depthFt * 0.3048, unit)}`
-          : ` · ${size.widthFt.toFixed(1)}′ × ${size.depthFt.toFixed(1)}′`}
+          ? `${formatLength(size.widthFt * 0.3048, unit)} × ${formatLength(size.depthFt * 0.3048, unit)}`
+          : `${size.widthFt.toFixed(1)}′ × ${size.depthFt.toFixed(1)}′`}
       </p>
       <LengthField
         label="Width"
@@ -166,33 +173,8 @@ function PlanRoomProperties({ room }: { room: PlanRoomLabel }) {
         max={30}
         onChange={(meters) => resize(room.id, size.widthFt, meters / 0.3048)}
       />
-      <label>
-        Room floor finish
-        <div className="swatches">
-          {finishes.slice(0, 6).map(([n, c]) => (
-            <button
-              title={n}
-              key={c}
-              style={{ background: c, outline: room.floorColor === c ? '2px solid #0058a3' : undefined }}
-              onClick={() => update(room.id, { floorColor: c })}
-            />
-          ))}
-        </div>
-      </label>
+      <LengthField label="Ceiling height" value={ceiling} min={2} max={6} onChange={setCeiling} />
       <div className="wall-actions">
-        <button
-          type="button"
-          className="inspector-back-btn"
-          onClick={() => {
-            exitRoom();
-            window.setTimeout(() => {
-              window.dispatchEvent(new Event('roomcraft-fit-plan'));
-              window.dispatchEvent(new Event('roomcraft-refocus'));
-            }, 0);
-          }}
-        >
-          ← House
-        </button>
         <button type="button" onClick={() => split(room.id)}>
           Split room
         </button>
@@ -522,7 +504,7 @@ function LengthField({
             if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
           }}
         />
-        <span>{unit === 'metric' ? 'm' : 'ft / in'}</span>
+        <span>{unit === 'metric' ? 'm' : 'ft/in'}</span>
       </div>
     </label>
   );
