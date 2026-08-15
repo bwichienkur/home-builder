@@ -24,7 +24,11 @@ export function SelectedProductCard({ roomType, onModify, onClose, onPlaceComple
   const pending = usePlannerStore((s) => s.pendingPlacement);
   const custom = useInventoryStore((s) => s.items);
   const item = furniture.find((f) => f.id === selectedId);
-  const all = useMemo(() => [...catalog, ...custom], [custom]);
+  const all = useMemo(() => {
+    const byId = new Map(catalog.map((i) => [i.id, i]));
+    for (const item of custom) byId.set(item.id, item);
+    return Array.from(byId.values());
+  }, [custom]);
   const product = item ? all.find((c) => c.id === item.catalogId) : undefined;
   const complements = useMemo(() => {
     if (!item) return [];

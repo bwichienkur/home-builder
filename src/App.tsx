@@ -115,7 +115,11 @@ function StudioApp() {
     window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 0);
   }, [store]);
 
-  const allCatalog = useMemo(() => [...catalogItems, ...customCatalog], [customCatalog]);
+  const allCatalog = useMemo(() => {
+    const byId = new Map(catalogItems.map((i) => [i.id, i]));
+    for (const item of customCatalog) byId.set(item.id, item);
+    return Array.from(byId.values());
+  }, [customCatalog]);
   const validation = validatePlan(walls);
   const area = validation.rooms.reduce((sum, r) => sum + roomArea(r), 0);
   const total = furniture.reduce((sum, item) => sum + (allCatalog.find((c) => c.id === item.catalogId)?.price ?? 0), 0);

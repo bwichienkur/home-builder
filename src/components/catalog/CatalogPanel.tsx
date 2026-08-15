@@ -5,18 +5,18 @@ import { catalog } from './catalogData';
 import type { RoomType } from '../../types';
 import { useInventoryStore } from '../../store/inventoryStore';
 
-const categories = ['All', 'Appliances', 'Cabinetry', 'Surfaces', 'Tile', 'Plumbing', 'Paneling', 'Trim', 'Seating', 'Tables', 'Storage', 'Bedroom', 'Lighting', 'Decor'];
+const categories = ['All', 'Appliances', 'Cabinetry', 'Surfaces', 'Tile', 'Plumbing', 'Paneling', 'Trim', 'Seating', 'Tables', 'Storage', 'Bedroom', 'Lighting', 'Decor', 'Textiles'];
 export const roomCategories: Record<RoomType, string[]> = {
-  Bedroom: ['Bedroom', 'Storage', 'Lighting', 'Decor', 'Trim'],
-  'Living room': ['Seating', 'Tables', 'Storage', 'Lighting', 'Decor', 'Paneling', 'Trim'],
+  Bedroom: ['Bedroom', 'Storage', 'Lighting', 'Decor', 'Textiles', 'Trim'],
+  'Living room': ['Seating', 'Tables', 'Storage', 'Lighting', 'Decor', 'Textiles', 'Paneling', 'Trim'],
   Bathroom: ['Plumbing', 'Cabinetry', 'Tile', 'Surfaces', 'Lighting', 'Trim'],
-  Kitchen: ['Appliances', 'Cabinetry', 'Surfaces', 'Plumbing', 'Tile', 'Lighting', 'Trim'],
-  'Dining room': ['Seating', 'Tables', 'Storage', 'Lighting', 'Decor', 'Trim'],
-  Office: ['Tables', 'Seating', 'Storage', 'Lighting', 'Decor', 'Trim'],
-  'Children’s room': ['Bedroom', 'Storage', 'Lighting', 'Decor', 'Trim'],
+  Kitchen: ['Appliances', 'Cabinetry', 'Surfaces', 'Plumbing', 'Tile', 'Seating', 'Lighting', 'Trim'],
+  'Dining room': ['Seating', 'Tables', 'Storage', 'Lighting', 'Decor', 'Textiles', 'Trim'],
+  Office: ['Tables', 'Seating', 'Storage', 'Lighting', 'Decor', 'Textiles', 'Trim'],
+  'Children’s room': ['Bedroom', 'Storage', 'Lighting', 'Decor', 'Textiles', 'Trim'],
   Laundry: ['Appliances', 'Cabinetry', 'Storage', 'Surfaces', 'Plumbing', 'Lighting', 'Trim'],
-  Hallway: ['Storage', 'Lighting', 'Decor', 'Trim'],
-  'Storage / wardrobe': ['Storage', 'Cabinetry', 'Lighting', 'Decor'],
+  Hallway: ['Storage', 'Tables', 'Lighting', 'Decor', 'Textiles', 'Trim'],
+  'Storage /wardrobe': ['Storage', 'Cabinetry', 'Lighting', 'Decor'],
   Outdoor: ['Seating', 'Tables', 'Lighting', 'Decor', 'Surfaces'],
 };
 const money = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
@@ -42,7 +42,12 @@ export const CatalogPanel = memo(function CatalogPanel({
   const [visibleCount, setVisibleCount] = useState(PAGE);
   const listRef = useRef<HTMLDivElement>(null);
   const relevant = roomCategories[roomType];
-  const all = useMemo(() => [...catalog, ...custom], [custom]);
+  const all = useMemo(() => {
+    // Inventory can mirror catalog starter SKUs — keep one row per id (inventory wins).
+    const byId = new Map(catalog.map((i) => [i.id, i]));
+    for (const item of custom) byId.set(item.id, item);
+    return Array.from(byId.values());
+  }, [custom]);
   const vendors = useMemo(() => ['All', ...Array.from(new Set(all.map((i) => i.brand).filter(Boolean) as string[])).sort()], [all]);
   const visibleCategories = recommended
     ? ['All', ...Array.from(new Set([...relevant, ...custom.filter((i) => i.roomTypes?.includes(roomType)).map((i) => i.category)]))]

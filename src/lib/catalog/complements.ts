@@ -3,10 +3,10 @@ import type { RoomType } from '../../types';
 
 /** Category affinities for “works with” suggestions (IKEA-style complements). */
 const AFFINITY: Record<string, string[]> = {
-  Bedroom: ['Lighting', 'Storage', 'Decor', 'Tables'],
+  Bedroom: ['Lighting', 'Storage', 'Decor', 'Tables', 'Textiles'],
   Storage: ['Lighting', 'Decor', 'Bedroom'],
   Cabinetry: ['Lighting', 'Surfaces', 'Plumbing'],
-  Seating: ['Tables', 'Lighting', 'Decor'],
+  Seating: ['Tables', 'Lighting', 'Decor', 'Textiles'],
   Tables: ['Seating', 'Lighting', 'Decor'],
   Lighting: ['Decor', 'Bedroom', 'Seating'],
   Decor: ['Lighting', 'Bedroom', 'Seating'],
@@ -15,6 +15,8 @@ const AFFINITY: Record<string, string[]> = {
   Surfaces: ['Cabinetry', 'Tile'],
   Tile: ['Plumbing', 'Surfaces'],
   Paneling: ['Lighting', 'Decor'],
+  Trim: ['Lighting', 'Decor', 'Paneling'],
+  Textiles: ['Seating', 'Tables', 'Bedroom', 'Decor'],
 };
 
 export function complementCategories(category: string): string[] {

@@ -1,3 +1,5 @@
+import { residentialFurniture } from './residentialFurniture';
+
 export type PriceUnit='each'|'set'|'box'|'sq ft'|'linear ft'|'allowance';
 export type CatalogPlacementMode = 'wall-art' | 'ceiling-perimeter' | 'floor-perimeter';
 export type CatalogItem={id:string;sku?:string;vendorId?:string;name:string;brand?:string;model?:string;category:string;subcategory?:string;roomTypes?:string[];tags?:string[];dims:[number,number,number];color:string;price?:number;msrp?:number;cost?:number;laborCost?:number;currency?:string;priceUnit?:PriceUnit;priceVerifiedAt?:string;sellable?:boolean;placeholderOnly?:boolean;mountingType?:string;placementSurfaces?:string[];placementMode?:CatalogPlacementMode;finish?:string;material?:string;variantGroup?:string;variantName?:string;availability?:string;leadTimeDays?:number;thumbnailUrl?:string;modelUrl?:string;lowPolyModelUrl?:string;emoji:string;sourceUrl?:string;sourceLabel?:string;note?:string};
@@ -8,7 +10,7 @@ const SAMPLE={
  box:'https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/Box/glTF-Binary/Box.glb'
 };
 
-export const catalog:CatalogItem[]=[
+const legacyCatalog: CatalogItem[] = [
  {id:'nord-chair',name:'Nord Dining Chair',category:'Seating',dims:[.52,.56,.82],color:'#b26c45',price:129,emoji:'🪑',mountingType:'floor',placementSurfaces:['floor'],modelUrl:SAMPLE.chair,lowPolyModelUrl:SAMPLE.chair,roomTypes:['Dining room','Living room','Office']},
  {id:'linen-sofa',name:'Linen Modular Sofa',category:'Seating',dims:[2.2,.88,.78],color:'#b8b1a3',price:1299,emoji:'🛋️',mountingType:'floor',placementSurfaces:['floor'],roomTypes:['Living room']},
  {id:'oak-table',name:'Solid Oak Table',category:'Tables',dims:[1.8,.9,.76],color:'#9a7048',price:699,emoji:'▰',mountingType:'floor',placementSurfaces:['floor']},
@@ -88,3 +90,21 @@ export const catalog:CatalogItem[]=[
  {id:'moen-eva-t62133ep',name:'Eva Eco-Performance Tub/Shower Trim',brand:'Moen',model:'T62133EP · Chrome',category:'Plumbing',dims:[.22,.18,.25],color:'#c6c7c5',price:167.82,emoji:'◉',sourceUrl:'https://shop.moen.com/collections/eva-collection',sourceLabel:'Official Moen shop',note:'Starting public price · required valve/installation may be separate'},
  {id:'moen-cia-ut4362ep',name:'Cia M-CORE 4-Series Shower Trim',brand:'Moen',model:'UT4362EP · Brushed Nickel',category:'Plumbing',dims:[.22,.12,.26],color:'#aaa9a3',price:653.12,emoji:'◉',sourceUrl:'https://shop.moen.com/collections/cia-collection',sourceLabel:'Official Moen shop',note:'Starting public price · required valve/installation may be separate'}
 ];
+
+/** Built-in catalog: legacy brand samples + realistic residential furnishings. */
+export const catalog: CatalogItem[] = [
+  ...legacyCatalog,
+  ...(residentialFurniture as CatalogItem[]),
+];
+
+/** Starter pack mirrored into local vendor inventory (Advanced inventory). */
+export function starterInventoryItems(): CatalogItem[] {
+  return (residentialFurniture as CatalogItem[]).map((item, index) => ({
+    ...item,
+    vendorId: 'roomcraft-home',
+    brand: item.brand ?? 'Roomcraft Home',
+    sku: item.sku ?? `RH-${String(index + 1).padStart(3, '0')}`,
+    placeholderOnly: !item.modelUrl,
+    sellable: true,
+  }));
+}
