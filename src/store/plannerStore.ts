@@ -7,7 +7,7 @@ import { perimeterTrimSegments, type PerimeterTrimEdge } from '../lib/geometry/c
 import { writeRecoverySnapshot } from '../lib/designShare';
 import { buildHouse, rebuildFromPlanRooms, resizePlanRoomPoints, shapedRoomPoints, snapRoomCenterToNeighbors, splitPlanRoomPoints, proposedRoomOverlaps, type PlanRoomShape } from '../lib/housePlans/buildPlan';
 import { getHousePlan } from '../lib/housePlans/olsenPlans';
-import { pointInPlanRoom } from '../lib/geometry/roomWalls';
+import { pointInPlanRoom, wallEndpointForGrowSide, type WallGrowSide } from '../lib/geometry/roomWalls';
 import { PIXELS_PER_METER } from '../lib/geometry/snapping';
 
 export type { PlanRoomShape };
@@ -91,7 +91,7 @@ type PlannerState = SceneSnapshot & {
   updateWall: (id: string, patch: Partial<Wall>) => void;
   updateWallEndpoint: (id: string, end: 'start' | 'end', point: Point) => void;
   updateWallEndpointLive: (id: string, end: 'start' | 'end', point: Point) => void;
-  setWallLength: (id: string, meters: number) => void;
+  setWallLength: (id: string, meters: number, growSide?: WallGrowSide) => void;
   splitWall: (id: string) => void;
   offsetWall: (id: string, meters: number) => void;
   setCeilingHeight: (meters: number) => void;
@@ -356,17 +356,22 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       }));
       set({ walls, planRooms });
     },
-    setWallLength: (id, meters) => {
+    setWallLength: (id, meters, growSide) => {
       const wall = get().walls.find((w) => w.id === id);
       if (!wall || !Number.isFinite(meters)) return;
-      const dx = wall.end.x - wall.start.x;
-      const dy = wall.end.y - wall.start.y;
+      const targetPx = Math.max(0.25, meters) * PIXELS_PER_METER;
+      const movingEnd = growSide ? wallEndpointForGrowSide(wall, growSide) : 'end';
+      const fixedEnd = movingEnd === 'start' ? 'end' : 'start';
+      const fixed = wall[fixedEnd];
+      const moving = wall[movingEnd];
+      const dx = moving.x - fixed.x;
+      const dy = moving.y - fixed.y;
       const length = Math.hypot(dx, dy) || 1;
       const next = {
-        x: wall.start.x + (dx / length) * Math.max(0.25, meters) * 80,
-        y: wall.start.y + (dy / length) * Math.max(0.25, meters) * 80,
+        x: fixed.x + (dx / length) * targetPx,
+        y: fixed.y + (dy / length) * targetPx,
       };
-      get().updateWallEndpoint(id, 'end', next);
+      get().updateWallEndpoint(id, movingEnd, next);
     },
     splitWall: (id) => {
       const wall = get().walls.find((w) => w.id === id);

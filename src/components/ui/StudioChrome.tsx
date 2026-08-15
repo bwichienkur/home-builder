@@ -501,7 +501,7 @@ export function StudioChrome({
       {pending && <div className="studio-selection-hint studio-hint-float">Placing {pending.name} · move then tap to confirm</div>}
 
       {hasSelection && !pending && !selectedItem && !inRoom && wallEditMode && selectedWall && (
-        <div className="studio-selection-hint studio-hint-float">Wall selected · add a door or opening · L / W / H around the wall</div>
+        <div className="studio-selection-hint studio-hint-float">Wall selected · add a door or opening · dim card outside the room</div>
       )}
 
       {wallEditMode && selectedWall && !pending && (

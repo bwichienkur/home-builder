@@ -110,63 +110,36 @@ export function framingFromWall(wall: Wall, opts?: FramingOpts): PlanFraming {
   const nz = dx / length;
   const side = opts?.exteriorSide;
   const layout = wallDimFieldLayout(wall, side === 1 || side === -1 ? side : 1);
-  // Field centers + half chip + spare margin so zoom never clips L/W/H.
-  const chipPad = 0.85;
-  const sideOffset = layout.sideOffsetM + chipPad;
-  const endOffset = layout.endOffsetM + chipPad;
-  const endExterior = layout.endExteriorM + chipPad;
+  // Card center + half extents + spare margin so the whole dim card stays in frame.
+  const chipPad = 0.55;
+  const sideOffset = layout.cardOffsetM + layout.cardHalfAlongNormalM + chipPad;
+  const alongPad = layout.cardHalfAlongWallM + chipPad;
   const halfThick = Math.max(wall.thickness, 0.12) * 0.5 + 0.25;
   const px = PIXELS_PER_METER;
   const midX = (wall.start.x + wall.end.x) / 2;
   const midY = (wall.start.y + wall.end.y) / 2;
-  const corners: Point[] =
-    side === 1 || side === -1
-      ? [
-          // Wall body (thin interior pad so the wall itself stays visible).
-          { x: wall.start.x + nx * halfThick * px, y: wall.start.y + nz * halfThick * px },
-          { x: wall.start.x - nx * halfThick * px, y: wall.start.y - nz * halfThick * px },
-          { x: wall.end.x + nx * halfThick * px, y: wall.end.y + nz * halfThick * px },
-          { x: wall.end.x - nx * halfThick * px, y: wall.end.y - nz * halfThick * px },
-          // L mid-span outside the room.
-          { x: midX + nx * side * sideOffset * px, y: midY + nz * side * sideOffset * px },
-          // W past start, H past end — both nudged exterior.
-          {
-            x: wall.start.x - dirX * endOffset * px + nx * side * endExterior * px,
-            y: wall.start.y - dirZ * endOffset * px + nz * side * endExterior * px,
-          },
-          {
-            x: wall.end.x + dirX * endOffset * px + nx * side * endExterior * px,
-            y: wall.end.y + dirZ * endOffset * px + nz * side * endExterior * px,
-          },
-        ]
-      : [
-          // Legacy: pad both long sides + both ends.
-          {
-            x: wall.start.x + nx * sideOffset * px,
-            y: wall.start.y + nz * sideOffset * px,
-          },
-          {
-            x: wall.start.x - nx * sideOffset * px,
-            y: wall.start.y - nz * sideOffset * px,
-          },
-          {
-            x: wall.end.x + nx * sideOffset * px,
-            y: wall.end.y + nz * sideOffset * px,
-          },
-          {
-            x: wall.end.x - nx * sideOffset * px,
-            y: wall.end.y - nz * sideOffset * px,
-          },
-          {
-            x: wall.start.x - dirX * endOffset * px,
-            y: wall.start.y - dirZ * endOffset * px,
-          },
-          {
-            x: wall.end.x + dirX * endOffset * px,
-            y: wall.end.y + dirZ * endOffset * px,
-          },
-        ];
-  const minSpan = Math.max(length * 1.35, layout.verticalOnPlan ? 3.8 : 3.2);
+  const s = side === 1 || side === -1 ? side : 1;
+  const corners: Point[] = [
+    // Wall body (thin pad so the wall itself stays visible).
+    { x: wall.start.x + nx * halfThick * px, y: wall.start.y + nz * halfThick * px },
+    { x: wall.start.x - nx * halfThick * px, y: wall.start.y - nz * halfThick * px },
+    { x: wall.end.x + nx * halfThick * px, y: wall.end.y + nz * halfThick * px },
+    { x: wall.end.x - nx * halfThick * px, y: wall.end.y - nz * halfThick * px },
+    // Dim card AABB fully outside the room.
+    {
+      x: midX + nx * s * layout.cardOffsetM * px + dirX * alongPad * px,
+      y: midY + nz * s * layout.cardOffsetM * px + dirZ * alongPad * px,
+    },
+    {
+      x: midX + nx * s * layout.cardOffsetM * px - dirX * alongPad * px,
+      y: midY + nz * s * layout.cardOffsetM * px - dirZ * alongPad * px,
+    },
+    {
+      x: midX + nx * s * sideOffset * px,
+      y: midY + nz * s * sideOffset * px,
+    },
+  ];
+  const minSpan = Math.max(length * 1.35, layout.verticalOnPlan ? 4.2 : 3.6);
   return framingFromPoints(corners, {
     minSpan,
     minHeight: opts?.minHeight ?? 6.5,

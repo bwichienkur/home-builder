@@ -2,9 +2,15 @@ import { Html, Line } from '@react-three/drei';
 import { useThree } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import * as THREE from 'three';
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp } from 'lucide-react';
 import { WORLD_ORIGIN } from '../../lib/geometry/placement';
 import { detectRoomPolygons } from '../../lib/geometry/rooms';
-import { wallDimFieldLayout, wallExteriorSide } from '../../lib/geometry/roomWalls';
+import {
+  defaultWallGrowSide,
+  wallDimFieldLayout,
+  wallExteriorSide,
+  type WallGrowSide,
+} from '../../lib/geometry/roomWalls';
 import { proposedRoomOverlaps, shapedRoomPoints, snapRoomCenterToNeighbors } from '../../lib/housePlans/buildPlan';
 import { PIXELS_PER_METER, wallLengthMeters } from '../../lib/geometry/snapping';
 import { formatLength, parseLength } from '../../lib/measurements';
@@ -41,6 +47,7 @@ export function PlanEditLayer() {
   const unit = usePlannerStore((s) => s.unitSystem);
   const { invalidate, gl } = useThree();
   const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
+  const [growSide, setGrowSide] = useState<WallGrowSide>('right');
   const roomPlace = useRef<{ pointerId: number; active: boolean } | null>(null);
   const floorPlane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), []);
 
@@ -52,6 +59,12 @@ export function PlanEditLayer() {
     // Freehand wall drawing removed — clear any leftover draft.
     setDraftStart(null);
   }, [active, tool, setDraftStart]);
+
+  const selected = walls.find((w) => w.id === selectedWallId);
+
+  useEffect(() => {
+    if (selected) setGrowSide(defaultWallGrowSide(selected));
+  }, [selected?.id]);
 
   const shapeKind = pendingRoomShape ?? 'rectangle';
   const ghostOverlaps = useMemo(() => {
@@ -140,8 +153,6 @@ export function PlanEditLayer() {
     }, 40);
   };
 
-  const selected = walls.find((w) => w.id === selectedWallId);
-
   const selectedLen = selected ? wallLengthMeters(selected.start, selected.end) : 0;
 
   const selectedFrame = selected
@@ -154,26 +165,16 @@ export function PlanEditLayer() {
         const angle = -Math.atan2(ez - sz, ex - sx);
         const side = wallExteriorSide(selected, roomsForExterior);
         const layout = wallDimFieldLayout(selected, side);
-        // Plan (nx,ny) maps to world (nx, nz) — same left-handed normal as start→end.
-        const { nx, ny: nz, dirX, dirY: dirZ, sideOffsetM, endOffsetM, endExteriorM } = layout;
+        const { nx, ny: nz, cardOffsetM, placement, verticalOnPlan } = layout;
         const s = layout.side;
         return {
           len,
           midX,
           midZ,
           angle,
-          side: s,
-          lengthPos: [midX + nx * s * sideOffsetM, 0.06, midZ + nz * s * sideOffsetM] as [number, number, number],
-          widthPos: [
-            sx - dirX * endOffsetM + nx * s * endExteriorM,
-            0.06,
-            sz - dirZ * endOffsetM + nz * s * endExteriorM,
-          ] as [number, number, number],
-          heightPos: [
-            ex + dirX * endOffsetM + nx * s * endExteriorM,
-            0.06,
-            ez + dirZ * endOffsetM + nz * s * endExteriorM,
-          ] as [number, number, number],
+          placement,
+          verticalOnPlan,
+          cardPos: [midX + nx * s * cardOffsetM, 0.06, midZ + nz * s * cardOffsetM] as [number, number, number],
         };
       })()
     : null;
@@ -212,39 +213,90 @@ export function PlanEditLayer() {
             <meshBasicMaterial color="#0058a3" transparent opacity={0.2} depthWrite={false} />
           </mesh>
 
-          {/* Compact fields around the wall — length / width / height stay off the wall body. */}
-          <Html position={selectedFrame.lengthPos} center zIndexRange={[40, 0]} style={{ pointerEvents: 'auto' }}>
-            <WallDimField
-              key={`L-${selected.id}-${unit}-${selectedLen.toFixed(3)}`}
-              label="L"
-              ariaLabel="Wall length"
-              valueM={selectedLen}
-              unit={unit}
-              min={0.25}
-              onChange={(meters) => setWallLength(selected.id, meters)}
-            />
-          </Html>
-          <Html position={selectedFrame.widthPos} center zIndexRange={[40, 0]} style={{ pointerEvents: 'auto' }}>
-            <WallDimField
-              key={`W-${selected.id}-${unit}-${selected.thickness.toFixed(3)}`}
-              label="W"
-              ariaLabel="Wall width"
-              valueM={selected.thickness}
-              unit={unit}
-              min={0.05}
-              onChange={(meters) => updateWall(selected.id, { thickness: meters })}
-            />
-          </Html>
-          <Html position={selectedFrame.heightPos} center zIndexRange={[40, 0]} style={{ pointerEvents: 'auto' }}>
-            <WallDimField
-              key={`H-${selected.id}-${unit}-${selected.height.toFixed(3)}`}
-              label="H"
-              ariaLabel="Wall height"
-              valueM={selected.height}
-              unit={unit}
-              min={2}
-              onChange={(meters) => updateWall(selected.id, { height: meters })}
-            />
+          <Html position={selectedFrame.cardPos} center zIndexRange={[40, 0]} style={{ pointerEvents: 'auto' }}>
+            <div
+              className={`wall-dim-card wall-dim-card--${selectedFrame.placement}`}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              <div className="wall-dim-card-grow" role="group" aria-label="Which side to resize">
+                {selectedFrame.verticalOnPlan ? (
+                  <>
+                    <button
+                      type="button"
+                      className={growSide === 'up' ? 'is-active' : ''}
+                      aria-pressed={growSide === 'up'}
+                      title="Change the top end · keep bottom fixed"
+                      onClick={() => setGrowSide('up')}
+                    >
+                      <ArrowUp size={14} />
+                      <span>Up</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={growSide === 'down' ? 'is-active' : ''}
+                      aria-pressed={growSide === 'down'}
+                      title="Change the bottom end · keep top fixed"
+                      onClick={() => setGrowSide('down')}
+                    >
+                      <ArrowDown size={14} />
+                      <span>Down</span>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      className={growSide === 'left' ? 'is-active' : ''}
+                      aria-pressed={growSide === 'left'}
+                      title="Change the left end · keep right fixed"
+                      onClick={() => setGrowSide('left')}
+                    >
+                      <ArrowLeft size={14} />
+                      <span>Left</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={growSide === 'right' ? 'is-active' : ''}
+                      aria-pressed={growSide === 'right'}
+                      title="Change the right end · keep left fixed"
+                      onClick={() => setGrowSide('right')}
+                    >
+                      <ArrowRight size={14} />
+                      <span>Right</span>
+                    </button>
+                  </>
+                )}
+              </div>
+              <div className="wall-dim-card-fields">
+                <WallDimField
+                  key={`L-${selected.id}-${unit}-${selectedLen.toFixed(3)}-${growSide}`}
+                  label="L"
+                  ariaLabel="Wall length"
+                  valueM={selectedLen}
+                  unit={unit}
+                  min={0.25}
+                  onChange={(meters) => setWallLength(selected.id, meters, growSide)}
+                />
+                <WallDimField
+                  key={`W-${selected.id}-${unit}-${selected.thickness.toFixed(3)}`}
+                  label="W"
+                  ariaLabel="Wall width"
+                  valueM={selected.thickness}
+                  unit={unit}
+                  min={0.05}
+                  onChange={(meters) => updateWall(selected.id, { thickness: meters })}
+                />
+                <WallDimField
+                  key={`H-${selected.id}-${unit}-${selected.height.toFixed(3)}`}
+                  label="H"
+                  ariaLabel="Wall height"
+                  valueM={selected.height}
+                  unit={unit}
+                  min={2}
+                  onChange={(meters) => updateWall(selected.id, { height: meters })}
+                />
+              </div>
+            </div>
           </Html>
         </group>
       )}
@@ -281,7 +333,7 @@ function WallDimField({
   };
 
   return (
-    <form className="wall-length-field" onSubmit={onSubmit} onPointerDown={(e) => e.stopPropagation()}>
+    <form className="wall-length-field" onSubmit={onSubmit}>
       <strong>{label}</strong>
       <input
         ref={inputRef}
