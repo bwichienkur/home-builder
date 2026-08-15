@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Wall } from '../../types';
-import { framingFromWalls, orbitViewPose, topViewHeight } from './planFraming';
+import { framingFromWalls, freeAreaFit, orbitViewPose, topViewHeight, worldShiftForFreeArea } from './planFraming';
 
 const rect: Wall[] = [
   { id: 'w1', start: { x: 180, y: 150 }, end: { x: 660, y: 150 }, thickness: 0.15, height: 2.7 },
@@ -43,5 +43,21 @@ describe('plan framing', () => {
     const tightBoth = framingFromWalls(rect, { pad: 1.18, orbitPad: 1.18 });
     expect(looseTop.orbitPose[1]).toBeCloseTo(tightBoth.orbitPose[1], 3);
     expect(looseTop.topHeight).toBeGreaterThan(tightBoth.topHeight);
+  });
+
+  it('scales pad and shifts left so content clears the right rail on mobile', () => {
+    const fit = freeAreaFit({
+      width: 390,
+      height: 844,
+      rightChromePx: 72,
+      gutterPx: 64,
+      topChromePx: 72,
+      bottomChromePx: 150,
+    });
+    // Free width is well under the full canvas — must zoom out.
+    expect(fit.padScale).toBeGreaterThan(1.35);
+    expect(fit.rightReserve).toBe(136);
+    const shift = worldShiftForFreeArea(fit.shiftFraction, 30, 42, 390 / 844);
+    expect(shift).toBeLessThan(-1.5);
   });
 });

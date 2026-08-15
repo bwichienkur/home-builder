@@ -90,3 +90,55 @@ export function framingFromWalls(walls: Wall[], opts?: FramingOpts): PlanFraming
   const points = walls.flatMap((w) => [w.start, w.end]);
   return framingFromPoints(points, { minSpan: 3, minHeight: opts?.minHeight ?? 12, pad: opts?.pad, orbitPad: opts?.orbitPad });
 }
+
+export type FreeAreaChrome = {
+  /** Full canvas CSS pixels. */
+  width: number;
+  height: number;
+  /** Right overlay width (rail or inspector), not including gutter. */
+  rightChromePx: number;
+  /** Extra clear space between content and the right chrome. */
+  gutterPx?: number;
+  /** Top floating chrome (menu / breadcrumb). */
+  topChromePx?: number;
+  /** Bottom dock + browser chrome. */
+  bottomChromePx?: number;
+};
+
+/**
+ * How much to zoom out / shift so a plate centered in the free rectangle
+ * (left of the rail, between top bar and dock) stays fully visible.
+ */
+export function freeAreaFit(chrome: FreeAreaChrome) {
+  const W = Math.max(1, chrome.width);
+  const H = Math.max(1, chrome.height);
+  const gutter = chrome.gutterPx ?? 0;
+  const right = Math.max(0, chrome.rightChromePx) + gutter;
+  const top = Math.max(0, chrome.topChromePx ?? 0);
+  const bottom = Math.max(0, chrome.bottomChromePx ?? 0);
+  const freeW = Math.max(120, W - right);
+  const freeH = Math.max(160, H - top - bottom);
+  const widthScale = W / freeW;
+  const heightScale = H / freeH;
+  // Fit the plate inside the free rect, not the full screen.
+  const padScale = Math.max(widthScale, heightScale);
+  return {
+    freeW,
+    freeH,
+    rightReserve: right,
+    padScale,
+    /** Fraction of canvas width: rightReserve / (2W). */
+    shiftFraction: right / (2 * W),
+  };
+}
+
+/**
+ * World X offset so the look target sits on the free-area center line
+ * (left of the right chrome + gutter).
+ */
+export function worldShiftForFreeArea(shiftFraction: number, cameraDist: number, fovDeg: number, aspect: number) {
+  const fov = (fovDeg * Math.PI) / 180;
+  const visibleW = 2 * Math.tan(fov / 2) * Math.max(cameraDist, 0.01) * Math.max(aspect, 0.35);
+  // freeCenter - fullCenter = -rightReserve/2 px → NDC shift → -shiftFraction * visibleW
+  return -shiftFraction * visibleW;
+}
