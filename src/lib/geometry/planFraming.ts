@@ -1,5 +1,6 @@
 import type { Point, Wall } from '../../types';
 import { WORLD_ORIGIN } from './placement';
+import { wallDimFieldLayout } from './roomWalls';
 import { PIXELS_PER_METER } from './snapping';
 
 export type PlanFraming = {
@@ -108,10 +109,12 @@ export function framingFromWall(wall: Wall, opts?: FramingOpts): PlanFraming {
   const nx = -dz / length;
   const nz = dx / length;
   const side = opts?.exteriorSide;
-  // Match PlanEditLayer exterior field offsets, plus Html chip size (~0.45 m).
-  const sideOffset = Math.max(0.78, wall.thickness * 0.5 + 0.62) + 0.45;
-  const endOffset = Math.max(0.85, wall.thickness * 0.5 + 0.65) + 0.45;
-  const endExterior = sideOffset * 0.55;
+  const layout = wallDimFieldLayout(wall, side === 1 || side === -1 ? side : 1);
+  // Match PlanEditLayer field centers, plus a little Html chip margin.
+  const chipPad = 0.4;
+  const sideOffset = layout.sideOffsetM + chipPad;
+  const endOffset = layout.endOffsetM + chipPad;
+  const endExterior = layout.endExteriorM + chipPad * 0.5;
   const halfThick = Math.max(wall.thickness, 0.12) * 0.5 + 0.25;
   const px = PIXELS_PER_METER;
   const midX = (wall.start.x + wall.end.x) / 2;
@@ -163,7 +166,7 @@ export function framingFromWall(wall: Wall, opts?: FramingOpts): PlanFraming {
             y: wall.end.y + dirZ * endOffset * px,
           },
         ];
-  const minSpan = Math.max(length * 1.28, 2.6);
+  const minSpan = Math.max(length * 1.28, layout.verticalOnPlan ? 3.2 : 2.6);
   return framingFromPoints(corners, {
     minSpan,
     minHeight: opts?.minHeight ?? 5.5,

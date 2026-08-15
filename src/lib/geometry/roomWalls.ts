@@ -66,6 +66,54 @@ export function wallExteriorSide(wall: Wall, rooms: PlanRoomLabel[], probePx = 2
   return -ny >= 0 ? 1 : -1;
 }
 
+export type WallDimFieldLayout = {
+  side: 1 | -1;
+  /** Wall runs mostly along plan Y (up/down on screen) — chips need wider side clearance. */
+  verticalOnPlan: boolean;
+  /** Meters from wall centerline to L chip center (exterior). */
+  sideOffsetM: number;
+  /** Meters past each endpoint for W / H. */
+  endOffsetM: number;
+  /** Exterior nudge for W / H (meters). */
+  endExteriorM: number;
+  dirX: number;
+  dirY: number;
+  nx: number;
+  ny: number;
+};
+
+/**
+ * Shared L/W/H chip offsets. Html pills are wide (~1 m at focus zoom) and short (~0.4 m),
+ * so vertical walls need much more exterior clearance than horizontal ones.
+ */
+export function wallDimFieldLayout(wall: Wall, exteriorSide: 1 | -1): WallDimFieldLayout {
+  const dx = wall.end.x - wall.start.x;
+  const dy = wall.end.y - wall.start.y;
+  const len = Math.hypot(dx, dy) || 1;
+  const dirX = dx / len;
+  const dirY = dy / len;
+  const nx = -dy / len;
+  const ny = dx / len;
+  const verticalOnPlan = Math.abs(dirY) >= Math.abs(dirX);
+  // Screen-space pills ≈ 110×42 px ≈ 1.05×0.4 m at wall-focus zoom.
+  const sideClear = verticalOnPlan ? 1.28 : 0.72;
+  const sideOffsetM = Math.max(sideClear, wall.thickness * 0.5 + (verticalOnPlan ? 1.12 : 0.55));
+  const endOffsetM = Math.max(verticalOnPlan ? 1.05 : 0.85, wall.thickness * 0.5 + 0.7);
+  // Vertical: keep W/H fully outside (same clear as L). Horizontal: lighter end nudge.
+  const endExteriorM = verticalOnPlan ? sideOffsetM : sideOffsetM * 0.55;
+  return {
+    side: exteriorSide,
+    verticalOnPlan,
+    sideOffsetM,
+    endOffsetM,
+    endExteriorM,
+    dirX,
+    dirY,
+    nx,
+    ny,
+  };
+}
+
 /** Point-in-polygon for plan-pixel coordinates (room focus furniture filter). */
 export function pointInPlanRoom(x: number, y: number, room: PlanRoomLabel) {
   const pts = room.points;

@@ -85,6 +85,13 @@ describe('plan framing', () => {
     expect(outside.span).toBeGreaterThan(6);
   });
 
+  it('frames vertical walls with enough side span for wide Html chips', () => {
+    const vertical = rect[1]!;
+    const framing = framingFromWall(vertical, { pad: 2.05, minHeight: 6.2, exteriorSide: -1 });
+    // Bare wall length ≈ 4.5 m; side chips need extra span beyond that.
+    expect(framing.span).toBeGreaterThan(4.5);
+  });
+
   it('zooms a page-centered plate so it clears the right rail', () => {
     const fit = pageCenterFit({
       width: 390,

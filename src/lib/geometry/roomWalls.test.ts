@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { PlanRoomLabel, Wall } from '../../types';
-import { pointInPlanRoom, wallBelongsToRoom, wallExteriorSide, wallsBelongingToRoom } from './roomWalls';
+import { pointInPlanRoom, wallBelongsToRoom, wallDimFieldLayout, wallExteriorSide, wallsBelongingToRoom } from './roomWalls';
 
 const room: PlanRoomLabel = {
   id: 'r1',
@@ -53,5 +53,16 @@ describe('room wall membership', () => {
     // Reverse a wall: travel CW, so +normal is outside.
     const flipped = { ...walls[0], start: walls[0].end, end: walls[0].start };
     expect(wallExteriorSide(flipped, [room])).toBe(1);
+  });
+
+  it('gives vertical walls wider exterior clearance than horizontal ones', () => {
+    const horizontal = wallDimFieldLayout(walls[0], -1);
+    const vertical = wallDimFieldLayout(walls[1], -1);
+    expect(horizontal.verticalOnPlan).toBe(false);
+    expect(vertical.verticalOnPlan).toBe(true);
+    // Html pills are wide: vertical walls offset into the long axis of the chip.
+    expect(vertical.sideOffsetM).toBeGreaterThan(horizontal.sideOffsetM + 0.35);
+    expect(vertical.endExteriorM).toBeCloseTo(vertical.sideOffsetM, 5);
+    expect(horizontal.endExteriorM).toBeLessThan(horizontal.sideOffsetM);
   });
 });

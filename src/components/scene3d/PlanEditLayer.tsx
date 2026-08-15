@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import * as THREE from 'three';
 import { WORLD_ORIGIN } from '../../lib/geometry/placement';
 import { detectRoomPolygons } from '../../lib/geometry/rooms';
-import { wallExteriorSide } from '../../lib/geometry/roomWalls';
+import { wallDimFieldLayout, wallExteriorSide } from '../../lib/geometry/roomWalls';
 import { proposedRoomOverlaps, shapedRoomPoints, snapRoomCenterToNeighbors } from '../../lib/housePlans/buildPlan';
 import { PIXELS_PER_METER, snapWallPoint, wallLengthMeters } from '../../lib/geometry/snapping';
 import { formatLength, parseLength } from '../../lib/measurements';
@@ -181,29 +181,31 @@ export function PlanEditLayer() {
         const [sx, sz] = world(selected.start.x, selected.start.y);
         const [ex, ez] = world(selected.end.x, selected.end.y);
         const len = Math.hypot(ex - sx, ez - sz) || 1;
-        const dirX = (ex - sx) / len;
-        const dirZ = (ez - sz) / len;
-        const nx = -dirZ;
-        const nz = dirX;
         const midX = (sx + ex) / 2;
         const midZ = (sz + ez) / 2;
         const angle = -Math.atan2(ez - sz, ex - sx);
-        // Always place fields on the exterior side — never over the room floor.
         const side = wallExteriorSide(selected, roomsForExterior);
-        const sideOffset = Math.max(0.78, selected.thickness * 0.5 + 0.62);
-        const endOffset = Math.max(0.85, selected.thickness * 0.5 + 0.65);
-        // Keep W/H outside too: past each end, then nudged further out along the exterior normal.
-        const outX = nx * side * sideOffset * 0.55;
-        const outZ = nz * side * sideOffset * 0.55;
+        const layout = wallDimFieldLayout(selected, side);
+        // Plan (nx,ny) maps to world (nx, nz) — same left-handed normal as start→end.
+        const { nx, ny: nz, dirX, dirY: dirZ, sideOffsetM, endOffsetM, endExteriorM } = layout;
+        const s = layout.side;
         return {
           len,
           midX,
           midZ,
           angle,
-          side,
-          lengthPos: [midX + nx * side * sideOffset, 0.06, midZ + nz * side * sideOffset] as [number, number, number],
-          widthPos: [sx - dirX * endOffset + outX, 0.06, sz - dirZ * endOffset + outZ] as [number, number, number],
-          heightPos: [ex + dirX * endOffset + outX, 0.06, ez + dirZ * endOffset + outZ] as [number, number, number],
+          side: s,
+          lengthPos: [midX + nx * s * sideOffsetM, 0.06, midZ + nz * s * sideOffsetM] as [number, number, number],
+          widthPos: [
+            sx - dirX * endOffsetM + nx * s * endExteriorM,
+            0.06,
+            sz - dirZ * endOffsetM + nz * s * endExteriorM,
+          ] as [number, number, number],
+          heightPos: [
+            ex + dirX * endOffsetM + nx * s * endExteriorM,
+            0.06,
+            ez + dirZ * endOffsetM + nz * s * endExteriorM,
+          ] as [number, number, number],
         };
       })()
     : null;
