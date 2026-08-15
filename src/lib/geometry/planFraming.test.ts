@@ -47,20 +47,27 @@ describe('plan framing', () => {
 
   it('frames a single wall with a closer camera than the whole plate', () => {
     const plate = framingFromWalls(rect);
-    const one = framingFromWall(rect[0]!, { pad: 2.2, minHeight: 5.5 });
+    const one = framingFromWall(rect[0]!, { pad: 1.85, minHeight: 5.8 });
     expect(one.topHeight).toBeLessThan(plate.topHeight);
   });
 
   it('zooms out when the focused wall grows longer', () => {
     const short = framingFromWall(
       { id: 'a', start: { x: 200, y: 200 }, end: { x: 280, y: 200 }, thickness: 0.15, height: 2.7 },
-      { pad: 2.2, minHeight: 5.5 },
+      { pad: 1.85, minHeight: 5.8 },
     );
     const long = framingFromWall(
       { id: 'a', start: { x: 200, y: 200 }, end: { x: 520, y: 200 }, thickness: 0.15, height: 2.7 },
-      { pad: 2.2, minHeight: 5.5 },
+      { pad: 1.85, minHeight: 5.8 },
     );
     expect(long.topHeight).toBeGreaterThan(short.topHeight);
+  });
+
+  it('leaves margin around a focused wall so side fields fit', () => {
+    const one = framingFromWall(rect[0]!, { pad: 1.85, minHeight: 5.8 });
+    // Span should exceed bare wall length (~6 m) so L/W/H have breathing room.
+    expect(one.span).toBeGreaterThan(6);
+    expect(one.topHeight).toBeGreaterThan(one.span * 0.9);
   });
 
   it('zooms a page-centered plate so it clears the right rail', () => {

@@ -177,18 +177,18 @@ export function PlanEditLayer() {
         const angle = -Math.atan2(ez - sz, ex - sx);
         // Prefer the side that reads “above” the wall on a north-up plan (screen up ≈ −Z).
         const side = -nz >= 0 ? 1 : -1;
-        const sideOffset = Math.max(0.58, selected.thickness * 0.5 + 0.45);
-        const endOffset = Math.max(0.7, selected.thickness * 0.5 + 0.55);
+        const sideOffset = Math.max(0.62, selected.thickness * 0.5 + 0.48);
+        const endOffset = Math.max(0.75, selected.thickness * 0.5 + 0.58);
         return {
           len,
           midX,
           midZ,
           angle,
-          // Length — long face, screen-up side
+          // Length alone on the long face (screen-up) so W/H don’t crowd it
           lengthPos: [midX + nx * side * sideOffset, 0.06, midZ + nz * side * sideOffset] as [number, number, number],
-          // Width (thickness) — opposite long face so it doesn’t stack on length
-          widthPos: [midX - nx * side * sideOffset, 0.06, midZ - nz * side * sideOffset] as [number, number, number],
-          // Height — beyond the end of the wall along its axis
+          // Width at the start end — opposite side of the wall from height
+          widthPos: [sx - dirX * endOffset, 0.06, sz - dirZ * endOffset] as [number, number, number],
+          // Height at the far end
           heightPos: [ex + dirX * endOffset, 0.06, ez + dirZ * endOffset] as [number, number, number],
         };
       })()
