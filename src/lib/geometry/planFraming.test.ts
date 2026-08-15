@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Wall } from '../../types';
-import { framingFromWalls, freeAreaFit, orbitViewPose, topViewHeight, worldShiftForFreeArea } from './planFraming';
+import { framingFromWalls, orbitViewPose, pageCenterFit, topViewHeight } from './planFraming';
 
 const rect: Wall[] = [
   { id: 'w1', start: { x: 180, y: 150 }, end: { x: 660, y: 150 }, thickness: 0.15, height: 2.7 },
@@ -45,20 +45,18 @@ describe('plan framing', () => {
     expect(looseTop.topHeight).toBeGreaterThan(tightBoth.topHeight);
   });
 
-  it('scales pad and shifts so content clears the right rail on mobile', () => {
-    const fit = freeAreaFit({
+  it('zooms a page-centered plate so it clears the right rail', () => {
+    const fit = pageCenterFit({
       width: 390,
       height: 844,
       rightChromePx: 72,
-      gutterPx: 88,
+      gutterPx: 24,
       topChromePx: 72,
       bottomChromePx: 150,
     });
-    // Free width is well under the full canvas — must zoom out.
-    expect(fit.padScale).toBeGreaterThan(1.4);
-    expect(fit.rightReserve).toBe(160);
-    // Positive X pans the view so the plate sits left of the rail on screen.
-    const shift = worldShiftForFreeArea(fit.shiftFraction, 30, 42, 390 / 844);
-    expect(shift).toBeGreaterThan(1.5);
+    // Page-centered: usable width is W - 2*rightReserve, so zoom out more than free-area centering.
+    expect(fit.rightReserve).toBe(96);
+    expect(fit.maxPlateW).toBe(390 - 2 * 96);
+    expect(fit.padScale).toBeGreaterThan(1.8);
   });
 });

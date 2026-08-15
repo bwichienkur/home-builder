@@ -91,7 +91,7 @@ export function framingFromWalls(walls: Wall[], opts?: FramingOpts): PlanFraming
   return framingFromPoints(points, { minSpan: 3, minHeight: opts?.minHeight ?? 12, pad: opts?.pad, orbitPad: opts?.orbitPad });
 }
 
-export type FreeAreaChrome = {
+export type ChromeFit = {
   /** Full canvas CSS pixels. */
   width: number;
   height: number;
@@ -106,42 +106,35 @@ export type FreeAreaChrome = {
 };
 
 /**
- * How much to zoom out / shift so a plate centered in the free rectangle
- * (left of the rail, between top bar and dock) stays fully visible.
+ * Zoom scale so a plate centered on the FULL page still clears the right chrome.
+ *
+ * No lateral shift — the look target stays on the geometric page center.
+ * Because the rail only covers the right side, a page-centered plate can only
+ * grow to `width - 2 * rightReserve` before its right edge goes under the bar.
  */
-export function freeAreaFit(chrome: FreeAreaChrome) {
+export function pageCenterFit(chrome: ChromeFit) {
   const W = Math.max(1, chrome.width);
   const H = Math.max(1, chrome.height);
   const gutter = chrome.gutterPx ?? 0;
   const right = Math.max(0, chrome.rightChromePx) + gutter;
   const top = Math.max(0, chrome.topChromePx ?? 0);
   const bottom = Math.max(0, chrome.bottomChromePx ?? 0);
-  const freeW = Math.max(120, W - right);
+  // Symmetric about page center: right half must end before the rail.
+  const maxPlateW = Math.max(140, W - 2 * right);
   const freeH = Math.max(160, H - top - bottom);
-  const widthScale = W / freeW;
+  const widthScale = W / maxPlateW;
   const heightScale = H / freeH;
-  // Fit the plate inside the free rect, not the full screen.
-  const padScale = Math.max(widthScale, heightScale);
+  const padScale = Math.max(widthScale, heightScale, 1);
   return {
-    freeW,
+    maxPlateW,
     freeH,
     rightReserve: right,
     padScale,
-    /** Fraction of canvas width: rightReserve / (2W). */
-    shiftFraction: right / (2 * W),
   };
 }
 
-/**
- * World X offset applied to camera + look target so the plate appears centered
- * in the free area LEFT of the right chrome.
- *
- * Panning camera/target toward +X makes fixed world content slide LEFT on screen
- * (Three.js / OrbitControls top view). Right chrome therefore needs a positive shift.
- */
-export function worldShiftForFreeArea(shiftFraction: number, cameraDist: number, fovDeg: number, aspect: number) {
-  const fov = (fovDeg * Math.PI) / 180;
-  const visibleW = 2 * Math.tan(fov / 2) * Math.max(cameraDist, 0.01) * Math.max(aspect, 0.35);
-  // Move view toward +X so the plate sits on the free-area center (left of the rail).
-  return shiftFraction * visibleW;
+/** @deprecated Use pageCenterFit. */
+export function freeAreaFit(chrome: ChromeFit) {
+  const fit = pageCenterFit(chrome);
+  return { ...fit, shiftFraction: 0, freeW: fit.maxPlateW };
 }
