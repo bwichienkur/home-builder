@@ -45,29 +45,44 @@ describe('plan framing', () => {
     expect(looseTop.topHeight).toBeGreaterThan(tightBoth.topHeight);
   });
 
-  it('frames a single wall with a closer camera than the whole plate', () => {
-    const plate = framingFromWalls(rect);
-    const one = framingFromWall(rect[0]!, { pad: 1.85, minHeight: 5.8 });
+  it('frames a single wall with a closer camera than a large house plate', () => {
+    const large: Wall[] = [
+      { id: 'a', start: { x: 100, y: 100 }, end: { x: 1400, y: 100 }, thickness: 0.15, height: 2.7 },
+      { id: 'b', start: { x: 1400, y: 100 }, end: { x: 1400, y: 1000 }, thickness: 0.15, height: 2.7 },
+      { id: 'c', start: { x: 1400, y: 1000 }, end: { x: 100, y: 1000 }, thickness: 0.15, height: 2.7 },
+      { id: 'd', start: { x: 100, y: 1000 }, end: { x: 100, y: 100 }, thickness: 0.15, height: 2.7 },
+    ];
+    const plate = framingFromWalls(large);
+    const one = framingFromWall(large[0]!, { pad: 2.05, minHeight: 6.2, exteriorSide: -1 });
     expect(one.topHeight).toBeLessThan(plate.topHeight);
   });
 
   it('zooms out when the focused wall grows longer', () => {
     const short = framingFromWall(
       { id: 'a', start: { x: 200, y: 200 }, end: { x: 280, y: 200 }, thickness: 0.15, height: 2.7 },
-      { pad: 1.85, minHeight: 5.8 },
+      { pad: 2.05, minHeight: 6.2, exteriorSide: 1 },
     );
     const long = framingFromWall(
       { id: 'a', start: { x: 200, y: 200 }, end: { x: 520, y: 200 }, thickness: 0.15, height: 2.7 },
-      { pad: 1.85, minHeight: 5.8 },
+      { pad: 2.05, minHeight: 6.2, exteriorSide: 1 },
     );
     expect(long.topHeight).toBeGreaterThan(short.topHeight);
   });
 
   it('leaves margin around a focused wall so side fields fit', () => {
-    const one = framingFromWall(rect[0]!, { pad: 1.85, minHeight: 5.8 });
+    const one = framingFromWall(rect[0]!, { pad: 2.05, minHeight: 6.2, exteriorSide: -1 });
     // Span should exceed bare wall length (~6 m) so L/W/H have breathing room.
     expect(one.span).toBeGreaterThan(6);
     expect(one.topHeight).toBeGreaterThan(one.span * 0.9);
+  });
+
+  it('biases framing toward the exterior side that holds L/W/H', () => {
+    const wall = rect[0]!;
+    const outside = framingFromWall(wall, { pad: 2.05, minHeight: 6.2, exteriorSide: -1 });
+    const inside = framingFromWall(wall, { pad: 2.05, minHeight: 6.2, exteriorSide: 1 });
+    // Top wall (y=150): exterior −normal is toward −Z / smaller plan y, so center Z should be smaller.
+    expect(outside.center[2]).toBeLessThan(inside.center[2]);
+    expect(outside.span).toBeGreaterThan(6);
   });
 
   it('zooms a page-centered plate so it clears the right rail', () => {

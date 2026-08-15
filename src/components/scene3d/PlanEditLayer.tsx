@@ -3,10 +3,13 @@ import { useThree } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import * as THREE from 'three';
 import { WORLD_ORIGIN } from '../../lib/geometry/placement';
+import { detectRoomPolygons } from '../../lib/geometry/rooms';
+import { wallExteriorSide } from '../../lib/geometry/roomWalls';
 import { proposedRoomOverlaps, shapedRoomPoints, snapRoomCenterToNeighbors } from '../../lib/housePlans/buildPlan';
 import { PIXELS_PER_METER, snapWallPoint, wallLengthMeters } from '../../lib/geometry/snapping';
 import { formatLength, parseLength } from '../../lib/measurements';
 import { usePlannerStore } from '../../store/plannerStore';
+import type { PlanRoomLabel } from '../../types';
 
 const world = (x: number, y: number): [number, number] => [
   (x - WORLD_ORIGIN.x) / PIXELS_PER_METER,
@@ -65,6 +68,15 @@ export function PlanEditLayer() {
     const loop = [...pts, pts[0]!];
     return loop.map((p) => [world(p.x, p.y)[0], 0.1, world(p.x, p.y)[1]] as [number, number, number]);
   }, [placingRoom, cursor, shapeKind, planRooms]);
+  const roomsForExterior = useMemo((): PlanRoomLabel[] => {
+    if (planRooms.length) return planRooms;
+    return detectRoomPolygons(walls).map((points, i) => ({
+      id: `detected-${i}`,
+      name: `Room ${i + 1}`,
+      roomType: 'Living room' as const,
+      points,
+    }));
+  }, [planRooms, walls]);
 
   if (!active) return null;
 
@@ -163,6 +175,7 @@ export function PlanEditLayer() {
       : null;
 
   const selectedLen = selected ? wallLengthMeters(selected.start, selected.end) : 0;
+
   const selectedFrame = selected
     ? (() => {
         const [sx, sz] = world(selected.start.x, selected.start.y);
@@ -175,21 +188,22 @@ export function PlanEditLayer() {
         const midX = (sx + ex) / 2;
         const midZ = (sz + ez) / 2;
         const angle = -Math.atan2(ez - sz, ex - sx);
-        // Prefer the side that reads “above” the wall on a north-up plan (screen up ≈ −Z).
-        const side = -nz >= 0 ? 1 : -1;
-        const sideOffset = Math.max(0.62, selected.thickness * 0.5 + 0.48);
-        const endOffset = Math.max(0.75, selected.thickness * 0.5 + 0.58);
+        // Always place fields on the exterior side — never over the room floor.
+        const side = wallExteriorSide(selected, roomsForExterior);
+        const sideOffset = Math.max(0.78, selected.thickness * 0.5 + 0.62);
+        const endOffset = Math.max(0.85, selected.thickness * 0.5 + 0.65);
+        // Keep W/H outside too: past each end, then nudged further out along the exterior normal.
+        const outX = nx * side * sideOffset * 0.55;
+        const outZ = nz * side * sideOffset * 0.55;
         return {
           len,
           midX,
           midZ,
           angle,
-          // Length alone on the long face (screen-up) so W/H don’t crowd it
+          side,
           lengthPos: [midX + nx * side * sideOffset, 0.06, midZ + nz * side * sideOffset] as [number, number, number],
-          // Width at the start end — opposite side of the wall from height
-          widthPos: [sx - dirX * endOffset, 0.06, sz - dirZ * endOffset] as [number, number, number],
-          // Height at the far end
-          heightPos: [ex + dirX * endOffset, 0.06, ez + dirZ * endOffset] as [number, number, number],
+          widthPos: [sx - dirX * endOffset + outX, 0.06, sz - dirZ * endOffset + outZ] as [number, number, number],
+          heightPos: [ex + dirX * endOffset + outX, 0.06, ez + dirZ * endOffset + outZ] as [number, number, number],
         };
       })()
     : null;

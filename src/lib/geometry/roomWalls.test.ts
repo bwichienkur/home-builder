@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { PlanRoomLabel, Wall } from '../../types';
-import { pointInPlanRoom, wallBelongsToRoom, wallsBelongingToRoom } from './roomWalls';
+import { pointInPlanRoom, wallBelongsToRoom, wallExteriorSide, wallsBelongingToRoom } from './roomWalls';
 
 const room: PlanRoomLabel = {
   id: 'r1',
@@ -42,5 +42,16 @@ describe('room wall membership', () => {
   it('tests points inside the room polygon', () => {
     expect(pointInPlanRoom(200, 180, room)).toBe(true);
     expect(pointInPlanRoom(50, 50, room)).toBe(false);
+  });
+
+  it('picks the exterior normal side for boundary walls', () => {
+    // Walls travel CCW around the room; left-handed normal (+side) points inside → exterior is −1.
+    expect(wallExteriorSide(walls[0], [room])).toBe(-1);
+    expect(wallExteriorSide(walls[1], [room])).toBe(-1);
+    expect(wallExteriorSide(walls[2], [room])).toBe(-1);
+    expect(wallExteriorSide(walls[3], [room])).toBe(-1);
+    // Reverse a wall: travel CW, so +normal is outside.
+    const flipped = { ...walls[0], start: walls[0].end, end: walls[0].start };
+    expect(wallExteriorSide(flipped, [room])).toBe(1);
   });
 });

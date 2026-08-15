@@ -8,6 +8,7 @@ import type { FurnitureItem } from '../../types';
 import { detectRoomPolygons, roomShape } from '../../lib/geometry/rooms';
 import { alignmentGuides, clampWallMountY, constrainPlacement, pointOnWall, roomFloorCenter, wallFrame, WORLD_ORIGIN } from '../../lib/geometry/placement';
 import { framingFromPoints, framingFromWall, framingFromWalls, freeAreaFit, pageCenterFit, worldShiftForFreeArea } from '../../lib/geometry/planFraming';
+import { wallExteriorSide } from '../../lib/geometry/roomWalls';
 import { pointInPlanRoom, wallsBelongingToRoom } from '../../lib/geometry/roomWalls';
 import { wallCutawayOpacity } from '../../lib/geometry/wallCutaway';
 import { orbitCeilingOpacity, orbitFloorOpacity } from '../../lib/geometry/plateFade';
@@ -172,18 +173,28 @@ function CameraRig() {
     const pad = basePad * chromeFit.padScale;
     const orbitPad = baseOrbit * Math.max(1, chromeFit.padScale * 0.9);
     if (focusWall) {
-      // Full wall in view with breathing room for L / W / H around the edges.
+      const roomsForExterior =
+        planRooms.length > 0
+          ? planRooms
+          : detectRoomPolygons(walls).map((points, i) => ({
+              id: `detected-${i}`,
+              name: `Room ${i + 1}`,
+              roomType: 'Living room' as const,
+              points,
+            }));
+      // Full wall + exterior L/W/H fields stay in view.
       return framingFromWall(focusWall, {
-        pad: coarse ? 1.95 : 1.85,
+        pad: coarse ? 2.2 : 2.05,
         orbitPad: 1.15,
-        minHeight: 5.8,
+        minHeight: 6.2,
+        exteriorSide: wallExteriorSide(focusWall, roomsForExterior),
       });
     }
     if (focusRoom?.points.length) {
       return framingFromPoints(focusRoom.points, { pad, orbitPad, minSpan: 2.5, minHeight: 11 });
     }
     return framingFromWalls(walls, { pad, orbitPad, minHeight: 15 });
-  }, [walls, focusRoom, focusWall, coarse, menuOpen, chromeFit.padScale]);
+  }, [walls, planRooms, focusRoom, focusWall, coarse, menuOpen, chromeFit.padScale]);
   const center = framing.center;
   const fovDeg = mode === 'walk' ? 58 : mode === 'top' ? 42 : 48;
   const aspect = Math.max(0.35, canvasW / Math.max(1, canvasH));

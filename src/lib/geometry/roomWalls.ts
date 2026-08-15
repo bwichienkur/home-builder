@@ -43,6 +43,29 @@ export function wallsBelongingToRoom(room: PlanRoomLabel, walls: Wall[], tol = 2
   return walls.filter((w) => wallBelongsToRoom(w, room, tol));
 }
 
+/**
+ * Which unit normal side of the wall is outside the room(s).
+ * Returns +1 for the (+normal) side, -1 for the (−normal) side.
+ * Normal is left-handed relative to start→end in plan pixels: (−dy, dx).
+ */
+export function wallExteriorSide(wall: Wall, rooms: PlanRoomLabel[], probePx = 28): 1 | -1 {
+  const dx = wall.end.x - wall.start.x;
+  const dy = wall.end.y - wall.start.y;
+  const len = Math.hypot(dx, dy) || 1;
+  const nx = -dy / len;
+  const ny = dx / len;
+  const mid = { x: (wall.start.x + wall.end.x) / 2, y: (wall.start.y + wall.end.y) / 2 };
+  const plus = { x: mid.x + nx * probePx, y: mid.y + ny * probePx };
+  const minus = { x: mid.x - nx * probePx, y: mid.y - ny * probePx };
+  const plusIn = rooms.some((r) => pointInPlanRoom(plus.x, plus.y, r));
+  const minusIn = rooms.some((r) => pointInPlanRoom(minus.x, minus.y, r));
+  if (plusIn && !minusIn) return -1;
+  if (minusIn && !plusIn) return 1;
+  if (!rooms.length) return 1;
+  // Fallback — prefer north-ish outside on our plan plates.
+  return -ny >= 0 ? 1 : -1;
+}
+
 /** Point-in-polygon for plan-pixel coordinates (room focus furniture filter). */
 export function pointInPlanRoom(x: number, y: number, room: PlanRoomLabel) {
   const pts = room.points;

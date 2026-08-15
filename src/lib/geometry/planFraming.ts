@@ -20,6 +20,11 @@ export type FramingOpts = {
   orbitPad?: number;
   minSpan?: number;
   minHeight?: number;
+  /**
+   * Exterior unit normal side of the wall (+1 / −1, left of start→end).
+   * When set, label padding is biased outside the room so L/W/H stay in frame.
+   */
+  exteriorSide?: 1 | -1;
 };
 
 function world(x: number, y: number): [number, number] {
@@ -102,28 +107,67 @@ export function framingFromWall(wall: Wall, opts?: FramingOpts): PlanFraming {
   const dirZ = dz / length;
   const nx = -dz / length;
   const nz = dx / length;
-  // Margin for L on one long side + W/H past opposite ends, with leftover screen space.
-  const sidePad = Math.max(wall.thickness, 0.12) * 0.5 + 1.15;
-  const endPad = 1.25;
-  const corners: Point[] = [
-    { x: wall.start.x + nx * sidePad * PIXELS_PER_METER, y: wall.start.y + nz * sidePad * PIXELS_PER_METER },
-    { x: wall.start.x - nx * sidePad * PIXELS_PER_METER, y: wall.start.y - nz * sidePad * PIXELS_PER_METER },
-    { x: wall.end.x + nx * sidePad * PIXELS_PER_METER, y: wall.end.y + nz * sidePad * PIXELS_PER_METER },
-    { x: wall.end.x - nx * sidePad * PIXELS_PER_METER, y: wall.end.y - nz * sidePad * PIXELS_PER_METER },
-    {
-      x: wall.start.x - dirX * endPad * PIXELS_PER_METER,
-      y: wall.start.y - dirZ * endPad * PIXELS_PER_METER,
-    },
-    {
-      x: wall.end.x + dirX * endPad * PIXELS_PER_METER,
-      y: wall.end.y + dirZ * endPad * PIXELS_PER_METER,
-    },
-  ];
-  const minSpan = Math.max(length * 1.2, 2.2);
+  const side = opts?.exteriorSide;
+  // Match PlanEditLayer exterior field offsets, plus Html chip size (~0.45 m).
+  const sideOffset = Math.max(0.78, wall.thickness * 0.5 + 0.62) + 0.45;
+  const endOffset = Math.max(0.85, wall.thickness * 0.5 + 0.65) + 0.45;
+  const endExterior = sideOffset * 0.55;
+  const halfThick = Math.max(wall.thickness, 0.12) * 0.5 + 0.25;
+  const px = PIXELS_PER_METER;
+  const midX = (wall.start.x + wall.end.x) / 2;
+  const midY = (wall.start.y + wall.end.y) / 2;
+  const corners: Point[] =
+    side === 1 || side === -1
+      ? [
+          // Wall body (thin interior pad so the wall itself stays visible).
+          { x: wall.start.x + nx * halfThick * px, y: wall.start.y + nz * halfThick * px },
+          { x: wall.start.x - nx * halfThick * px, y: wall.start.y - nz * halfThick * px },
+          { x: wall.end.x + nx * halfThick * px, y: wall.end.y + nz * halfThick * px },
+          { x: wall.end.x - nx * halfThick * px, y: wall.end.y - nz * halfThick * px },
+          // L mid-span outside the room.
+          { x: midX + nx * side * sideOffset * px, y: midY + nz * side * sideOffset * px },
+          // W past start, H past end — both nudged exterior.
+          {
+            x: wall.start.x - dirX * endOffset * px + nx * side * endExterior * px,
+            y: wall.start.y - dirZ * endOffset * px + nz * side * endExterior * px,
+          },
+          {
+            x: wall.end.x + dirX * endOffset * px + nx * side * endExterior * px,
+            y: wall.end.y + dirZ * endOffset * px + nz * side * endExterior * px,
+          },
+        ]
+      : [
+          // Legacy: pad both long sides + both ends.
+          {
+            x: wall.start.x + nx * sideOffset * px,
+            y: wall.start.y + nz * sideOffset * px,
+          },
+          {
+            x: wall.start.x - nx * sideOffset * px,
+            y: wall.start.y - nz * sideOffset * px,
+          },
+          {
+            x: wall.end.x + nx * sideOffset * px,
+            y: wall.end.y + nz * sideOffset * px,
+          },
+          {
+            x: wall.end.x - nx * sideOffset * px,
+            y: wall.end.y - nz * sideOffset * px,
+          },
+          {
+            x: wall.start.x - dirX * endOffset * px,
+            y: wall.start.y - dirZ * endOffset * px,
+          },
+          {
+            x: wall.end.x + dirX * endOffset * px,
+            y: wall.end.y + dirZ * endOffset * px,
+          },
+        ];
+  const minSpan = Math.max(length * 1.28, 2.6);
   return framingFromPoints(corners, {
     minSpan,
     minHeight: opts?.minHeight ?? 5.5,
-    pad: opts?.pad ?? 1.75,
+    pad: opts?.pad ?? 1.9,
     orbitPad: opts?.orbitPad ?? 1.15,
   });
 }
