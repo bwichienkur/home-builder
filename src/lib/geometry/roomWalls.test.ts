@@ -64,11 +64,15 @@ describe('room wall membership', () => {
     expect(horizontal.placement).toBe('top');
     // Right wall parks the card to the right of the room.
     expect(vertical.placement).toBe('right');
-    // Card center clears wall half-thickness + gap + half card.
-    expect(horizontal.cardOffsetM).toBeGreaterThan(0.7);
-    expect(vertical.cardOffsetM).toBeGreaterThan(0.85);
-    expect(horizontal.cardHalfAlongNormalM).toBeGreaterThan(0.4);
-    expect(vertical.cardHalfAlongNormalM).toBeGreaterThan(0.55);
+    // Card center clears wall half-thickness + large gap + half card.
+    expect(horizontal.cardOffsetM).toBeGreaterThan(1.2);
+    expect(vertical.cardOffsetM).toBeGreaterThan(1.4);
+    expect(horizontal.cardHalfAlongNormalM).toBeGreaterThan(0.6);
+    expect(vertical.cardHalfAlongNormalM).toBeGreaterThan(0.85);
+    // Near face of card = offset - halfNormal > wall half-thickness + margin.
+    const halfThick = 0.15 * 0.5;
+    expect(horizontal.cardOffsetM - horizontal.cardHalfAlongNormalM).toBeGreaterThan(halfThick + 0.55);
+    expect(vertical.cardOffsetM - vertical.cardHalfAlongNormalM).toBeGreaterThan(halfThick + 0.55);
   });
 
   it('maps grow sides to the endpoint that should move', () => {

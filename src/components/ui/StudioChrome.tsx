@@ -504,6 +504,10 @@ export function StudioChrome({
         <div className="studio-selection-hint studio-hint-float">Wall selected · add a door or opening · dim card outside the room</div>
       )}
 
+      {selectedOpening && !pending && (
+        <div className="studio-selection-hint studio-hint-float">Drag the opening to slide it along the wall</div>
+      )}
+
       {wallEditMode && selectedWall && !pending && (
         <div className="studio-selection-fabs" role="toolbar" aria-label="Wall actions">
           <button
