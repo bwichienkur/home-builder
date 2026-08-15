@@ -207,7 +207,7 @@ export function StudioChrome({
   const showPlanRoomActions = atPlanLevel && !pending && !!selectedRoom;
   /** Never render an empty black rail strip (e.g. 3D plan with nothing selected). */
   const showPlanRail =
-    (atPlanLevel && !pending && isTop) || showPlanRoomActions;
+    (((atPlanLevel && !pending && isTop) || showPlanRoomActions) && !selectedWall);
 
   useEffect(() => {
     if (inRoom) setStudioMode('furnish');
@@ -482,7 +482,7 @@ export function StudioChrome({
       )}
 
       {showPlanTools && tool === 'select' && !selectedWall && !selectedRoom && (
-        <div className="studio-selection-hint studio-hint-float">Tap a wall · drag ends to resize</div>
+        <div className="studio-selection-hint studio-hint-float">Tap a wall · enter length on the plan</div>
       )}
       {showPlanTools && tool === 'wall' && (
         <div className="studio-selection-hint studio-hint-float">
@@ -501,7 +501,7 @@ export function StudioChrome({
       {pending && <div className="studio-selection-hint studio-hint-float">Placing {pending.name} · move then tap to confirm</div>}
 
       {hasSelection && !pending && !selectedItem && !inRoom && wallEditMode && selectedWall && (
-        <div className="studio-selection-hint studio-hint-float">Wall selected · drag blue handles to resize</div>
+        <div className="studio-selection-hint studio-hint-float">Wall selected · edit length on the plan</div>
       )}
 
       {wallEditMode && selectedWall && !pending && (

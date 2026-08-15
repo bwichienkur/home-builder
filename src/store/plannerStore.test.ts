@@ -110,4 +110,25 @@ describe('IKEA-style wall editing',()=>{
   const next=usePlannerStore.getState(),moved=next.walls.find(w=>w.id===wall.id)!,neighbor=next.walls.find(w=>w.id===connected!.id)!;
   expect(neighbor.start).toEqual(moved.end);
  });
+
+ it('updates room outline points when wall length changes',()=>{
+  usePlannerStore.setState({
+   walls:[
+    {id:'w1',start:{x:180,y:150},end:{x:660,y:150},thickness:0.15,height:2.7},
+    {id:'w2',start:{x:660,y:150},end:{x:660,y:510},thickness:0.15,height:2.7},
+    {id:'w3',start:{x:660,y:510},end:{x:180,y:510},thickness:0.15,height:2.7},
+    {id:'w4',start:{x:180,y:510},end:{x:180,y:150},thickness:0.15,height:2.7},
+   ],
+   planRooms:[{
+    id:'r1',name:'Room',roomType:'Bedroom',
+    points:[{x:180,y:150},{x:660,y:150},{x:660,y:510},{x:180,y:510}],
+   }],
+  });
+  usePlannerStore.getState().setWallLength('w1',4);
+  const next=usePlannerStore.getState();
+  const updated=next.walls.find(w=>w.id==='w1')!;
+  const len=Math.hypot(updated.end.x-updated.start.x,updated.end.y-updated.start.y)/80;
+  expect(len).toBeCloseTo(4,1);
+  expect(next.planRooms[0]!.points.some(p=>Math.hypot(p.x-updated.end.x,p.y-updated.end.y)<1)).toBe(true);
+ });
 });

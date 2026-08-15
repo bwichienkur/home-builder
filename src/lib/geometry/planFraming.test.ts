@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Wall } from '../../types';
-import { framingFromWalls, freeAreaFit, orbitViewPose, pageCenterFit, topViewHeight, worldShiftForFreeArea } from './planFraming';
+import { framingFromWall, framingFromWalls, freeAreaFit, orbitViewPose, pageCenterFit, topViewHeight, worldShiftForFreeArea } from './planFraming';
 
 const rect: Wall[] = [
   { id: 'w1', start: { x: 180, y: 150 }, end: { x: 660, y: 150 }, thickness: 0.15, height: 2.7 },
@@ -43,6 +43,24 @@ describe('plan framing', () => {
     const tightBoth = framingFromWalls(rect, { pad: 1.18, orbitPad: 1.18 });
     expect(looseTop.orbitPose[1]).toBeCloseTo(tightBoth.orbitPose[1], 3);
     expect(looseTop.topHeight).toBeGreaterThan(tightBoth.topHeight);
+  });
+
+  it('frames a single wall with a closer camera than the whole plate', () => {
+    const plate = framingFromWalls(rect);
+    const one = framingFromWall(rect[0]!, { pad: 2.2, minHeight: 5.5 });
+    expect(one.topHeight).toBeLessThan(plate.topHeight);
+  });
+
+  it('zooms out when the focused wall grows longer', () => {
+    const short = framingFromWall(
+      { id: 'a', start: { x: 200, y: 200 }, end: { x: 280, y: 200 }, thickness: 0.15, height: 2.7 },
+      { pad: 2.2, minHeight: 5.5 },
+    );
+    const long = framingFromWall(
+      { id: 'a', start: { x: 200, y: 200 }, end: { x: 520, y: 200 }, thickness: 0.15, height: 2.7 },
+      { pad: 2.2, minHeight: 5.5 },
+    );
+    expect(long.topHeight).toBeGreaterThan(short.topHeight);
   });
 
   it('zooms a page-centered plate so it clears the right rail', () => {

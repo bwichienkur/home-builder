@@ -91,6 +91,34 @@ export function framingFromWalls(walls: Wall[], opts?: FramingOpts): PlanFraming
   return framingFromPoints(points, { minSpan: 3, minHeight: opts?.minHeight ?? 12, pad: opts?.pad, orbitPad: opts?.orbitPad });
 }
 
+/** Frame a single wall so it fills the free viewport (plan edit focus). */
+export function framingFromWall(wall: Wall, opts?: FramingOpts): PlanFraming {
+  const start = world(wall.start.x, wall.start.y);
+  const end = world(wall.end.x, wall.end.y);
+  const dx = end[0] - start[0];
+  const dz = end[1] - start[1];
+  const length = Math.hypot(dx, dz) || 1;
+  const nx = -dz / length;
+  const nz = dx / length;
+  const halfT = Math.max(wall.thickness, 0.12) * 0.5 + 0.35;
+  // Build a padded AABB around the wall segment so thickness/length drive zoom.
+  const corners: Point[] = [
+    { x: wall.start.x + nx * halfT * PIXELS_PER_METER, y: wall.start.y + nz * halfT * PIXELS_PER_METER },
+    { x: wall.start.x - nx * halfT * PIXELS_PER_METER, y: wall.start.y - nz * halfT * PIXELS_PER_METER },
+    { x: wall.end.x + nx * halfT * PIXELS_PER_METER, y: wall.end.y + nz * halfT * PIXELS_PER_METER },
+    { x: wall.end.x - nx * halfT * PIXELS_PER_METER, y: wall.end.y - nz * halfT * PIXELS_PER_METER },
+  ];
+  const minSpan = Math.max(length * 1.15, wall.thickness * 6, 2.2);
+  // Slightly tighter pad so one wall reads large; height nudges zoom with wall height.
+  const heightBoost = 1 + Math.max(0, wall.height - 2.4) * 0.08;
+  return framingFromPoints(corners, {
+    minSpan,
+    minHeight: opts?.minHeight ?? 6,
+    pad: (opts?.pad ?? 2.2) * heightBoost,
+    orbitPad: opts?.orbitPad ?? 1.15,
+  });
+}
+
 export type ChromeFit = {
   /** Full canvas CSS pixels. */
   width: number;
