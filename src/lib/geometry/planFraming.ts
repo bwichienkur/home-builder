@@ -102,25 +102,29 @@ export function framingFromWall(wall: Wall, opts?: FramingOpts): PlanFraming {
   const dirZ = dz / length;
   const nx = -dz / length;
   const nz = dx / length;
-  // Leave room on both long sides + past one end for L / W / H fields.
-  const sidePad = Math.max(wall.thickness, 0.12) * 0.5 + 1.05;
-  const endPad = 1.15;
+  // Margin for L on one long side + W/H past opposite ends, with leftover screen space.
+  const sidePad = Math.max(wall.thickness, 0.12) * 0.5 + 1.15;
+  const endPad = 1.25;
   const corners: Point[] = [
     { x: wall.start.x + nx * sidePad * PIXELS_PER_METER, y: wall.start.y + nz * sidePad * PIXELS_PER_METER },
     { x: wall.start.x - nx * sidePad * PIXELS_PER_METER, y: wall.start.y - nz * sidePad * PIXELS_PER_METER },
     { x: wall.end.x + nx * sidePad * PIXELS_PER_METER, y: wall.end.y + nz * sidePad * PIXELS_PER_METER },
     { x: wall.end.x - nx * sidePad * PIXELS_PER_METER, y: wall.end.y - nz * sidePad * PIXELS_PER_METER },
     {
+      x: wall.start.x - dirX * endPad * PIXELS_PER_METER,
+      y: wall.start.y - dirZ * endPad * PIXELS_PER_METER,
+    },
+    {
       x: wall.end.x + dirX * endPad * PIXELS_PER_METER,
       y: wall.end.y + dirZ * endPad * PIXELS_PER_METER,
     },
   ];
-  const minSpan = Math.max(length * 1.12, 1.8);
+  const minSpan = Math.max(length * 1.2, 2.2);
   return framingFromPoints(corners, {
     minSpan,
-    minHeight: opts?.minHeight ?? 4.2,
-    pad: opts?.pad ?? 1.35,
-    orbitPad: opts?.orbitPad ?? 1.1,
+    minHeight: opts?.minHeight ?? 5.5,
+    pad: opts?.pad ?? 1.75,
+    orbitPad: opts?.orbitPad ?? 1.15,
   });
 }
 
