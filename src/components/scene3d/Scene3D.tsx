@@ -4,13 +4,14 @@ import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { usePlannerStore } from '../../store/plannerStore';
 import { catalog } from '../catalog/catalogData';
-import type { FurnitureItem } from '../../types';
+import type { FurnitureItem, Opening } from '../../types';
 import { detectRoomPolygons, roomShape } from '../../lib/geometry/rooms';
 import { alignmentGuides, clampWallMountY, constrainPlacement, pointOnWall, roomFloorCenter, wallFrame, WORLD_ORIGIN } from '../../lib/geometry/placement';
 import { doorSwingZones, furnitureHitsDoorSwing } from '../../lib/geometry/doorClearance';
 import { framingFromPoints, framingFromWall, framingFromWalls, freeAreaFit, pageCenterFit, worldShiftForFreeArea } from '../../lib/geometry/planFraming';
 import { wallExteriorSide } from '../../lib/geometry/roomWalls';
 import { pointInPlanRoom, wallsBelongingToRoom } from '../../lib/geometry/roomWalls';
+import { clampOpeningOffset, wallOffsetFromWorldPoint, wallSolidBoxes } from '../../lib/geometry/wallOpenings';
 import { wallCutawayOpacity } from '../../lib/geometry/wallCutaway';
 import { orbitCeilingOpacity, orbitFloorOpacity } from '../../lib/geometry/plateFade';
 import { PIXELS_PER_METER } from '../../lib/geometry/snapping';
@@ -514,6 +515,119 @@ function DoorLeaf({
   );
 }
 
+/** Drag openings along their host wall in top + 3D views. */
+function OpeningDragHandle({
+  opening,
+  wall,
+  x,
+  z,
+  angle,
+  selected,
+}: {
+  opening: Opening;
+  wall: Wall;
+  x: number;
+  z: number;
+  angle: number;
+  selected: boolean;
+}) {
+  const selectOpening = usePlannerStore((s) => s.selectOpening);
+  const updateLive = usePlannerStore((s) => s.updateOpeningLive);
+  const updateOpening = usePlannerStore((s) => s.updateOpening);
+  const openings = usePlannerStore((s) => s.openings);
+  const cameraMode = usePlannerStore((s) => s.cameraMode);
+  const { camera, gl } = useThree();
+  const drag = useRef<{ pointerId: number; moved: boolean } | null>(null);
+  const plane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), []);
+  const raycaster = useMemo(() => new THREE.Raycaster(), []);
+  const ndc = useMemo(() => new THREE.Vector2(), []);
+  const hit = useMemo(() => new THREE.Vector3(), []);
+  const wallLen = wallFrame(wall).length;
+  const handleH = Math.max(0.35, opening.height * 0.55);
+  const handleY = opening.sill + opening.height * 0.45;
+  const idleOpacity = cameraMode === 'top' ? 0.16 : 0.04;
+
+  const project = (clientX: number, clientY: number) => {
+    const rect = gl.domElement.getBoundingClientRect();
+    ndc.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    ndc.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+    raycaster.setFromCamera(ndc, camera);
+    if (!raycaster.ray.intersectPlane(plane, hit)) return null;
+    return { x: hit.x, z: hit.z };
+  };
+
+  const applyAt = (clientX: number, clientY: number) => {
+    const p = project(clientX, clientY);
+    if (!p) return;
+    const raw = wallOffsetFromWorldPoint(wall, p.x, p.z, WORLD_ORIGIN, PIXELS_PER_METER);
+    const offset = clampOpeningOffset({ ...opening, offset: raw }, openings, wallLen);
+    updateLive(opening.id, { offset });
+  };
+
+  const onPointerDown = (e: any) => {
+    e.stopPropagation();
+    try {
+      gl.domElement.setPointerCapture?.(e.pointerId);
+    } catch {
+      /* ignore */
+    }
+    selectOpening(opening.id);
+    drag.current = { pointerId: e.pointerId, moved: false };
+    document.body.dataset.movingFurniture = 'true';
+    window.dispatchEvent(new Event('roomcraft-drag-start'));
+    const move = (ev: PointerEvent) => {
+      if (!drag.current || drag.current.pointerId !== ev.pointerId) return;
+      drag.current.moved = true;
+      applyAt(ev.clientX, ev.clientY);
+    };
+    const end = (ev: PointerEvent) => {
+      if (!drag.current || drag.current.pointerId !== ev.pointerId) return;
+      const moved = drag.current.moved;
+      drag.current = null;
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', end);
+      window.removeEventListener('pointercancel', end);
+      try {
+        gl.domElement.releasePointerCapture?.(ev.pointerId);
+      } catch {
+        /* ignore */
+      }
+      delete document.body.dataset.movingFurniture;
+      window.dispatchEvent(new Event('roomcraft-drag-end'));
+      if (moved) {
+        const current = usePlannerStore.getState().openings.find((o) => o.id === opening.id);
+        if (current) updateOpening(opening.id, { offset: current.offset });
+      }
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', end);
+    window.addEventListener('pointercancel', end);
+  };
+
+  return (
+    <mesh
+      position={[x, handleY, z]}
+      rotation={[0, angle, 0]}
+      userData={{ openingPick: true, openingId: opening.id }}
+      onPointerDown={onPointerDown}
+      onClick={(e) => {
+        e.stopPropagation();
+        selectOpening(opening.id);
+      }}
+      renderOrder={8}
+    >
+      <boxGeometry args={[Math.max(opening.width, 0.45), handleH, Math.max(wall.thickness + 0.2, 0.35)]} />
+      <meshBasicMaterial
+        color={selected ? '#0058a3' : '#64748b'}
+        transparent
+        opacity={selected ? 0.32 : idleOpacity}
+        depthWrite={false}
+        depthTest={false}
+      />
+    </mesh>
+  );
+}
+
 function useDollhouseCutaway(walls: ReturnType<typeof usePlannerStore.getState>['walls']) {
   const cameraMode = usePlannerStore((s) => s.cameraMode);
   const { camera, invalidate } = useThree();
@@ -591,6 +705,7 @@ function WallMeshes() {
   const openings = usePlannerStore((s) => s.openings);
   const color = usePlannerStore((s) => s.wallColor);
   const selectedId = usePlannerStore((s) => s.selectedWallId);
+  const selectedOpeningId = usePlannerStore((s) => s.selectedOpeningId);
   const select = usePlannerStore((s) => s.selectWall);
   const cameraMode = usePlannerStore((s) => s.cameraMode);
   const studioMode = usePlannerStore((s) => s.studioMode);
@@ -601,6 +716,8 @@ function WallMeshes() {
   const orbiting = cameraMode === 'orbit';
   // Walls are only selectable in top-view Walls edit mode — not while furnishing or orbiting.
   const wallEditMode = studioMode === 'architect' && cameraMode === 'top' && tool === 'select';
+  // Openings can be dragged in top plan and 3D orbit (not walk).
+  const openingDragEnabled = tool === 'select' && (cameraMode === 'top' || cameraMode === 'orbit');
   const onWallClick = (id: string) => {
     if (!wallEditMode) return;
     select(id);
@@ -693,15 +810,8 @@ function WallMeshes() {
         const soft = orbiting || drawOpacity < 0.999;
         const fading = drawOpacity < 0.97;
         const related = visibleOpenings.filter((o) => o.wallId === w.id);
-        let ranges: [number, number][] = [[0, length]];
-        related.forEach((o) => {
-          const center = extend + o.offset * origLen;
-          const a = Math.max(0, center - o.width / 2);
-          const b = Math.min(length, center + o.width / 2);
-          ranges = ranges.flatMap(([r1, r2]) =>
-            b <= r1 || a >= r2 ? [[r1, r2]] : ([[r1, Math.max(r1, a)], [Math.min(r2, b), r2]].filter((r) => r[1] - r[0] > 0.02) as [number, number][]),
-          );
-        });
+        // Horizontal bands: lintels / sills stay one continuous piece with the wall.
+        const solids = wallSolidBoxes(w.height, length, origLen, extend, related);
         // Cutaway + top (non-edit) must not steal furniture picks; solid orbit walls still block.
         const skipRay = fading || (cameraMode === 'top' && !wallEditMode) ? () => {} : undefined;
         const wallMat = {
@@ -715,16 +825,18 @@ function WallMeshes() {
           polygonOffsetFactor: 1,
           polygonOffsetUnits: 1,
         } as const;
-        const base = ranges.flatMap(([a, b], i) => {
-          const c = (a + b) / 2;
+        const base = solids.map((box, i) => {
+          const c = (box.along0 + box.along1) / 2;
           const t = c / length;
           const x = sx + (ex - sx) * t;
           const z = sz + (ez - sz) * t;
-          const segLen = b - a;
-          const meshes: ReactElement[] = [
+          const segLen = box.along1 - box.along0;
+          const segH = box.y1 - box.y0;
+          const y = (box.y0 + box.y1) / 2;
+          return (
             <mesh
               key={w.id + 'b' + i}
-              position={[x, w.height / 2, z]}
+              position={[x, y, z]}
               rotation={[0, angle, 0]}
               castShadow={!fading}
               receiveShadow={!fading}
@@ -735,52 +847,34 @@ function WallMeshes() {
                 onWallClick(w.id);
               }}
             >
-              <boxGeometry args={[segLen, w.height, w.thickness]} />
+              <boxGeometry args={[segLen, segH, w.thickness]} />
               <meshStandardMaterial {...wallMat} />
-            </mesh>,
-          ];
-          if (selected) {
-            // Inflated halo above coplanar wall/post overlaps — stable while orbiting.
-            meshes.push(
-              <mesh key={w.id + 'sel' + i} position={[x, w.height / 2, z]} rotation={[0, angle, 0]} raycast={() => {}} renderOrder={3}>
-                <boxGeometry args={[segLen + 0.02, w.height + 0.04, w.thickness + 0.05]} />
-                <meshBasicMaterial
-                  color="#0058a3"
-                  transparent
-                  opacity={0.28 * Math.max(drawOpacity, 0.35)}
-                  depthWrite={false}
-                  depthTest
-                  toneMapped={false}
-                  polygonOffset
-                  polygonOffsetFactor={-2}
-                  polygonOffsetUnits={-2}
-                />
-              </mesh>,
-            );
-          }
-          return meshes;
+            </mesh>
+          );
         });
-        const fills = related.flatMap((o) => {
+        const selectionHalo =
+          selected ? (
+            <mesh key={w.id + 'sel'} position={[midX, w.height / 2, midZ]} rotation={[0, angle, 0]} raycast={() => {}} renderOrder={3}>
+              <boxGeometry args={[origLen + 0.02, w.height + 0.04, w.thickness + 0.05]} />
+              <meshBasicMaterial
+                color="#0058a3"
+                transparent
+                opacity={0.28 * Math.max(drawOpacity, 0.35)}
+                depthWrite={false}
+                depthTest
+                toneMapped={false}
+                polygonOffset
+                polygonOffsetFactor={-2}
+                polygonOffsetUnits={-2}
+              />
+            </mesh>
+          ) : null;
+        const fixtures = related.flatMap((o) => {
           const c = extend + o.offset * origLen;
           const t = c / length;
           const x = sx + (ex - sx) * t;
           const z = sz + (ez - sz) * t;
           const parts: ReactElement[] = [];
-          if (o.sill > 0)
-            parts.push(
-              <mesh key={o.id + 'sill'} position={[x, o.sill / 2, z]} rotation={[0, angle, 0]} raycast={skipRay}>
-                <boxGeometry args={[o.width, o.sill, w.thickness]} />
-                <meshStandardMaterial {...wallMat} />
-              </mesh>,
-            );
-          const top = w.height - (o.sill + o.height);
-          if (top > 0)
-            parts.push(
-              <mesh key={o.id + 'top'} position={[x, o.sill + o.height + top / 2, z]} rotation={[0, angle, 0]} raycast={skipRay}>
-                <boxGeometry args={[o.width, top, w.thickness]} />
-                <meshStandardMaterial {...wallMat} />
-              </mesh>,
-            );
           if (o.type === 'window')
             parts.push(
               <mesh key={o.id + 'glass'} position={[x, o.sill + o.height / 2, z]} rotation={[0, angle, 0]} raycast={skipRay}>
@@ -816,6 +910,18 @@ function WallMeshes() {
                 <meshBasicMaterial color="#0058a3" transparent opacity={0.28 * drawOpacity} />
               </mesh>,
             );
+          if (openingDragEnabled && !fading)
+            parts.push(
+              <OpeningDragHandle
+                key={o.id + 'drag'}
+                opening={o}
+                wall={w}
+                x={x}
+                z={z}
+                angle={angle}
+                selected={o.id === selectedOpeningId}
+              />,
+            );
           return parts;
         });
         // Top-plan pick strip always available in Walls mode; 3D pick proxy while fading.
@@ -823,7 +929,8 @@ function WallMeshes() {
           ...(topPick ? [topPick] : []),
           ...(fading && wallEditMode ? [pickProxy] : []),
           ...base,
-          ...fills,
+          ...(selectionHalo ? [selectionHalo] : []),
+          ...fixtures,
         ];
       })}
       {(() => {

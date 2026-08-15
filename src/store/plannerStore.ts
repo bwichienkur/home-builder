@@ -120,6 +120,7 @@ type PlannerState = SceneSnapshot & {
   selectSurface: (surface: SurfaceTarget | null) => void;
   addOpening: (wallId: string, type: 'door' | 'window' | 'passage', shape?: OpeningShape) => boolean;
   updateOpening: (id: string, patch: Partial<Opening>) => boolean;
+  updateOpeningLive: (id: string, patch: Partial<Opening>) => void;
   deleteOpening: (id: string) => void;
   clearOpeningNotice: () => void;
   addFurniture: (
@@ -816,6 +817,20 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       mutate({ openings: get().openings.map((o) => (o.id === id ? next : o)) });
       set({ openingNotice: '' });
       return true;
+    },
+    updateOpeningLive: (id, patch) => {
+      const current = get().openings.find((o) => o.id === id);
+      if (!current) return;
+      const nextType = patch.type ?? current.type;
+      const next: Opening = {
+        ...current,
+        ...patch,
+        width: patch.width === undefined ? current.width : Math.max(0.3, Math.min(6, patch.width)),
+        height: patch.height === undefined ? current.height : Math.max(0.3, Math.min(6, patch.height)),
+        offset: patch.offset === undefined ? current.offset : Math.max(0.03, Math.min(0.97, patch.offset)),
+        sill: nextType === 'window' ? (patch.sill === undefined ? current.sill : Math.max(0, patch.sill)) : 0,
+      };
+      set({ openings: get().openings.map((o) => (o.id === id ? next : o)) });
     },
     deleteOpening: (id) => {
       mutate({ openings: get().openings.filter((o) => o.id !== id) });
