@@ -17,7 +17,6 @@ import {
   Layers3,
   LayoutTemplate,
   Menu,
-  MousePointer2,
   PencilRuler,
   Plus,
   Redo2,
@@ -91,6 +90,7 @@ export function StudioChrome({
 }: Props) {
   const [storiesOpen, setStoriesOpen] = useState(false);
   const [fabsOpen, setFabsOpen] = useState(true);
+  const [roomShapesOpen, setRoomShapesOpen] = useState(false);
   const camera = usePlannerStore((s) => s.cameraMode);
   const setView = usePlannerStore((s) => s.setView);
   const setCamera = usePlannerStore((s) => s.setCameraMode);
@@ -198,11 +198,16 @@ export function StudioChrome({
   const atPlanLevel = !atStart && !inRoom;
   const showPlanTools = atPlanLevel && isTop && !pending && studioMode === 'architect';
   const showFloorChrome = atPlanLevel && !pending;
-  const showPlanRail = atPlanLevel && !pending;
   const pendingRoomShape = usePlannerStore((s) => s.pendingRoomShape);
   const setPendingRoomShape = usePlannerStore((s) => s.setPendingRoomShape);
   const deletePlanRoom = usePlannerStore((s) => s.deletePlanRoom);
   const enterRoom = usePlannerStore((s) => s.enterRoom);
+  const showPlanToolButtons = showPlanTools;
+  const showRoomShapeMenu = atPlanLevel && !pending && isTop && (roomShapesOpen || !!pendingRoomShape);
+  const showPlanRoomActions = atPlanLevel && !pending && !!selectedRoom;
+  /** Never render an empty black rail strip (e.g. 3D plan with nothing selected). */
+  const showPlanRail =
+    (atPlanLevel && !pending && isTop) || showPlanRoomActions;
 
   useEffect(() => {
     if (inRoom) setStudioMode('furnish');
@@ -211,6 +216,23 @@ export function StudioChrome({
   useEffect(() => {
     if (inRoom && tool === 'room') setTool('select');
   }, [inRoom, tool, setTool]);
+
+  useEffect(() => {
+    if (!atPlanLevel || !isTop) {
+      setRoomShapesOpen(false);
+      if (pendingRoomShape) setPendingRoomShape(null);
+    }
+  }, [atPlanLevel, isTop, pendingRoomShape, setPendingRoomShape]);
+
+  useEffect(() => {
+    const hasRail = showPlanRail || showCatalogRail;
+    if (hasRail) document.body.dataset.rightRail = '1';
+    else delete document.body.dataset.rightRail;
+    window.dispatchEvent(new Event('roomcraft-rail-changed'));
+    return () => {
+      delete document.body.dataset.rightRail;
+    };
+  }, [showPlanRail, showCatalogRail]);
 
   const goBackToHouse = () => {
     exitRoom();
@@ -238,7 +260,7 @@ export function StudioChrome({
     if (pending) setFabsOpen(true);
   }, [pending]);
 
-  const planTools: { id: Tool; label: string; icon: typeof MousePointer2 }[] = [
+  const planTools: { id: Tool; label: string; icon: typeof PencilRuler }[] = [
     { id: 'select', label: 'Walls', icon: PencilRuler },
     { id: 'wall', label: 'Draw', icon: Wallpaper },
   ];
@@ -251,6 +273,7 @@ export function StudioChrome({
 
   const choosePlanTool = (id: Tool) => {
     setPendingRoomShape(null);
+    setRoomShapesOpen(false);
     setStudioMode('architect');
     setTool(id);
     setDraftStart(null);
@@ -259,10 +282,26 @@ export function StudioChrome({
     if (id !== 'select') usePlannerStore.getState().selectWall(null);
   };
 
+  const toggleRoomShapes = () => {
+    setStudioMode('architect');
+    setView('3d');
+    setCamera('top');
+    setTool('select');
+    setDraftStart(null);
+    if (roomShapesOpen || pendingRoomShape) {
+      setRoomShapesOpen(false);
+      setPendingRoomShape(null);
+      return;
+    }
+    setRoomShapesOpen(true);
+  };
+
   const chooseRoomShape = (shape: 'rectangle' | 'wide' | 'l-shape') => {
     setStudioMode('architect');
     setView('3d');
     setCamera('top');
+    setTool('select');
+    setRoomShapesOpen(true);
     setPendingRoomShape(pendingRoomShape === shape ? null : shape);
   };
 
@@ -271,6 +310,7 @@ export function StudioChrome({
     if (!selectedRoomId) return;
     enterRoom(selectedRoomId);
     setPendingRoomShape(null);
+    setRoomShapesOpen(false);
     window.setTimeout(() => {
       window.dispatchEvent(new Event('roomcraft-fit-plan'));
       window.dispatchEvent(new Event('roomcraft-refocus'));
@@ -382,8 +422,9 @@ export function StudioChrome({
         </div>
 
         {showFloorChrome && (
-          <div className="studio-top-tools" aria-label="Stories and plan tools">
-            <div className="studio-floor-stack studio-floor-stack--bar" role="tablist" aria-label="Stories">
+          <div className="studio-story-bar" aria-label="Stories">
+            <div className="studio-story-bar-label">Stories</div>
+            <div className="studio-floor-stack studio-floor-stack--bar" role="tablist" aria-label="Floor levels">
               {floors.map((f) => (
                 <button
                   key={f.id}
@@ -394,43 +435,43 @@ export function StudioChrome({
                   onClick={() => goToFloor(f.id)}
                   title={f.name}
                 >
-                  {f.name}
+                  {f.name.replace(/\s*floor$/i, '') || f.name}
                 </button>
               ))}
-              <div className="studio-floor-stack-actions">
+            </div>
+            <div className="studio-story-bar-actions">
+              <button
+                type="button"
+                className="studio-floor-add"
+                aria-label="Add story"
+                title="Add story"
+                onClick={() => {
+                  setStudioMode('architect');
+                  addFloor();
+                  window.setTimeout(() => {
+                    window.dispatchEvent(new Event('roomcraft-fit-plan'));
+                    window.dispatchEvent(new Event('roomcraft-refocus'));
+                  }, 80);
+                }}
+              >
+                <Plus size={15} />
+              </button>
+              {floors.length > 1 && (
                 <button
                   type="button"
-                  className="studio-floor-add"
-                  aria-label="Add story"
-                  title="Add story"
-                  onClick={() => {
-                    setStudioMode('architect');
-                    addFloor();
-                    window.setTimeout(() => {
-                      window.dispatchEvent(new Event('roomcraft-fit-plan'));
-                      window.dispatchEvent(new Event('roomcraft-refocus'));
-                    }, 80);
-                  }}
+                  className="studio-floor-delete"
+                  aria-label="Delete current story"
+                  title="Delete current story"
+                  onClick={() => removeFloor(activeFloorId)}
                 >
-                  <Plus size={14} />
+                  <Trash2 size={14} />
                 </button>
-                {floors.length > 1 && (
-                  <button
-                    type="button"
-                    className="studio-floor-delete"
-                    aria-label="Delete current story"
-                    title="Delete current story"
-                    onClick={() => removeFloor(activeFloorId)}
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                )}
-                {floors.length > 1 && (
-                  <button type="button" className="studio-floor-all" onClick={() => setStoriesOpen(true)} title="View all stories">
-                    All
-                  </button>
-                )}
-              </div>
+              )}
+              {floors.length > 1 && (
+                <button type="button" className="studio-floor-all" onClick={() => setStoriesOpen(true)} title="View all stories">
+                  All
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -542,10 +583,10 @@ export function StudioChrome({
 
       {showPlanRail && (
         <div className="studio-category-rail studio-plan-rail" aria-label="Plan tools">
-          {isTop &&
+          {showPlanToolButtons &&
             planTools.map((t) => {
               const Icon = t.icon;
-              const active = !pendingRoomShape && studioMode === 'architect' && tool === t.id;
+              const active = !pendingRoomShape && !roomShapesOpen && studioMode === 'architect' && tool === t.id;
               return (
                 <button key={t.id} type="button" className={active ? 'is-active' : ''} onClick={() => choosePlanTool(t.id)} aria-label={t.label} title={t.label}>
                   <Icon />
@@ -553,18 +594,38 @@ export function StudioChrome({
                 </button>
               );
             })}
-          {isTop &&
+          {isTop && atPlanLevel && !pending && (
+            <button
+              type="button"
+              className={roomShapesOpen || pendingRoomShape ? 'is-active' : ''}
+              onClick={toggleRoomShapes}
+              aria-expanded={showRoomShapeMenu}
+              aria-label="Add room"
+              title="Add room"
+            >
+              <Plus />
+              <span>Add room</span>
+            </button>
+          )}
+          {showRoomShapeMenu &&
             roomShapes.map((s) => {
               const Icon = s.icon;
               const active = pendingRoomShape === s.id;
               return (
-                <button key={s.id} type="button" className={active ? 'is-active' : ''} onClick={() => chooseRoomShape(s.id)} aria-label={`Place ${s.label} room`} title={`Place ${s.label} room`}>
+                <button
+                  key={s.id}
+                  type="button"
+                  className={`studio-rail-sub${active ? ' is-active' : ''}`}
+                  onClick={() => chooseRoomShape(s.id)}
+                  aria-label={`Place ${s.label} room`}
+                  title={`Place ${s.label} room`}
+                >
                   <Icon />
                   <span>{s.label}</span>
                 </button>
               );
             })}
-          {selectedRoom && (
+          {showPlanRoomActions && (
             <>
               <button type="button" onClick={editSelectedPlanRoom} aria-label="Enter room" title="Enter room">
                 <PencilRuler />
