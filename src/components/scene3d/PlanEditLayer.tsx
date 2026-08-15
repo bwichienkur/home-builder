@@ -20,6 +20,17 @@ const planFromWorld = (x: number, z: number) => ({
 
 type DragKind = 'corner' | 'stretch';
 
+type HandleDrag = {
+  wallId: string;
+  end: 'start' | 'end';
+  kind: DragKind;
+  last: { x: number; y: number };
+  anchor: { x: number; y: number };
+  dirX: number;
+  dirY: number;
+  pointerId: number;
+};
+
 /**
  * Top-view plan tools: draw walls, drag corners, and stretch ends along the wall axis.
  * Active in architect mode while camera is top.
@@ -41,21 +52,15 @@ export function PlanEditLayer() {
   const selectedWallId = usePlannerStore((s) => s.selectedWallId);
   const selectWall = usePlannerStore((s) => s.selectWall);
   const unit = usePlannerStore((s) => s.unitSystem);
-  const { invalidate, gl } = useThree();
+  const { invalidate, gl, camera } = useThree();
   const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
-  const drag = useRef<{
-    wallId: string;
-    end: 'start' | 'end';
-    kind: DragKind;
-    last: { x: number; y: number };
-    anchor: { x: number; y: number };
-    dirX: number;
-    dirY: number;
-    pointerId: number;
-  } | null>(null);
+  const [handleDragging, setHandleDragging] = useState(false);
+  const drag = useRef<HandleDrag | null>(null);
   const roomPlace = useRef<{ pointerId: number; active: boolean } | null>(null);
-  const dragEndListener = useRef<((e: PointerEvent) => void) | null>(null);
+  const dragListeners = useRef<{ move: (e: PointerEvent) => void; end: (e: PointerEvent) => void } | null>(null);
   const floorPlane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), []);
+  const dragRaycaster = useMemo(() => new THREE.Raycaster(), []);
+  const dragNdc = useMemo(() => new THREE.Vector2(), []);
 
   const active = studioMode === 'architect' && cameraMode === 'top';
   const wallEdit = active && tool === 'select';
@@ -68,10 +73,11 @@ export function PlanEditLayer() {
 
   useEffect(
     () => () => {
-      if (dragEndListener.current) {
-        window.removeEventListener('pointerup', dragEndListener.current);
-        window.removeEventListener('pointercancel', dragEndListener.current);
-        dragEndListener.current = null;
+      if (dragListeners.current) {
+        window.removeEventListener('pointermove', dragListeners.current.move);
+        window.removeEventListener('pointerup', dragListeners.current.end);
+        window.removeEventListener('pointercancel', dragListeners.current.end);
+        dragListeners.current = null;
       }
       if (document.body.dataset.movingFurniture) {
         delete document.body.dataset.movingFurniture;
@@ -103,7 +109,18 @@ export function PlanEditLayer() {
     return planFromWorld(hit.x, hit.z);
   };
 
-  const projectStretch = (raw: { x: number; y: number }, d: NonNullable<typeof drag.current>) => {
+  const hitPlanFromClient = (clientX: number, clientY: number) => {
+    const rect = gl.domElement.getBoundingClientRect();
+    if (rect.width < 1 || rect.height < 1) return null;
+    dragNdc.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    dragNdc.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+    dragRaycaster.setFromCamera(dragNdc, camera);
+    const hit = new THREE.Vector3();
+    if (!dragRaycaster.ray.intersectPlane(floorPlane, hit)) return null;
+    return planFromWorld(hit.x, hit.z);
+  };
+
+  const projectStretch = (raw: { x: number; y: number }, d: HandleDrag) => {
     const vx = raw.x - d.anchor.x;
     const vy = raw.y - d.anchor.y;
     const along = vx * d.dirX + vy * d.dirY;
@@ -115,22 +132,27 @@ export function PlanEditLayer() {
     };
   };
 
+  const applyHandleDrag = (raw: { x: number; y: number }) => {
+    if (!drag.current) return;
+    let next = raw;
+    if (drag.current.kind === 'stretch') {
+      next = projectStretch(raw, drag.current);
+    } else {
+      next = snapWallPoint(raw, usePlannerStore.getState().walls, drag.current.wallId);
+    }
+    drag.current.last = next;
+    updateWallEndpointLive(drag.current.wallId, drag.current.end, next);
+    setCursor(next);
+    invalidate();
+  };
+
   const onFloorPointerMove = (e: any) => {
     if (!drawing && !drag.current && !placingRoom) return;
     e.stopPropagation();
     const raw = hitPlan(e);
     if (!raw) return;
     if (drag.current) {
-      let next = raw;
-      if (drag.current.kind === 'stretch') {
-        next = projectStretch(raw, drag.current);
-      } else {
-        next = snapWallPoint(raw, walls, drag.current.wallId);
-      }
-      drag.current.last = next;
-      updateWallEndpointLive(drag.current.wallId, drag.current.end, next);
-      setCursor(next);
-      invalidate();
+      applyHandleDrag(raw);
       return;
     }
     if (placingRoom) {
@@ -208,6 +230,39 @@ export function PlanEditLayer() {
     invalidate();
   };
 
+  const clearDragListeners = () => {
+    if (!dragListeners.current) return;
+    window.removeEventListener('pointermove', dragListeners.current.move);
+    window.removeEventListener('pointerup', dragListeners.current.end);
+    window.removeEventListener('pointercancel', dragListeners.current.end);
+    dragListeners.current = null;
+  };
+
+  const endHandleDrag = (e?: PointerEvent | { pointerId?: number; stopPropagation?: () => void }) => {
+    e?.stopPropagation?.();
+    if (!drag.current && !dragListeners.current) return;
+    if (e && 'pointerId' in e && drag.current && e.pointerId != null && drag.current.pointerId !== e.pointerId) {
+      return;
+    }
+    clearDragListeners();
+    if (drag.current) {
+      updateWallEndpoint(drag.current.wallId, drag.current.end, drag.current.last);
+      selectWall(drag.current.wallId);
+    }
+    const pointerId = drag.current?.pointerId ?? e?.pointerId;
+    drag.current = null;
+    setHandleDragging(false);
+    delete document.body.dataset.movingFurniture;
+    window.dispatchEvent(new Event('roomcraft-drag-end'));
+    if (pointerId != null) {
+      try {
+        gl.domElement.releasePointerCapture?.(pointerId);
+      } catch {
+        /* ignore */
+      }
+    }
+  };
+
   const beginHandleDrag = (
     e: any,
     wallId: string,
@@ -219,52 +274,31 @@ export function PlanEditLayer() {
     dirY: number,
   ) => {
     e.stopPropagation();
+    // Finish any stuck drag so orbit/pan cannot stay locked.
+    if (drag.current) endHandleDrag();
     drag.current = { wallId, end, kind, last: { ...point }, anchor, dirX, dirY, pointerId: e.pointerId };
+    setHandleDragging(true);
     document.body.dataset.movingFurniture = 'true';
     window.dispatchEvent(new Event('roomcraft-drag-start'));
-    // Window end survives handle remount while the wall live-updates.
-    if (dragEndListener.current) {
-      window.removeEventListener('pointerup', dragEndListener.current);
-      window.removeEventListener('pointercancel', dragEndListener.current);
-    }
+
+    const onMove = (ev: PointerEvent) => {
+      if (!drag.current || ev.pointerId !== drag.current.pointerId) return;
+      const raw = hitPlanFromClient(ev.clientX, ev.clientY);
+      if (!raw) return;
+      applyHandleDrag(raw);
+    };
     const onEnd = (ev: PointerEvent) => endHandleDrag(ev);
-    dragEndListener.current = onEnd;
+    clearDragListeners();
+    dragListeners.current = { move: onMove, end: onEnd };
+    window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onEnd);
     window.addEventListener('pointercancel', onEnd);
+
     try {
       gl.domElement.setPointerCapture?.(e.pointerId);
     } catch {
       /* ignore */
     }
-  };
-
-  const endHandleDrag = (e?: PointerEvent | { pointerId?: number; stopPropagation?: () => void }) => {
-    e?.stopPropagation?.();
-    if (!drag.current && !dragEndListener.current) return;
-    if (e && 'pointerId' in e && drag.current && e.pointerId != null && drag.current.pointerId !== e.pointerId) {
-      return;
-    }
-    if (dragEndListener.current) {
-      window.removeEventListener('pointerup', dragEndListener.current);
-      window.removeEventListener('pointercancel', dragEndListener.current);
-      dragEndListener.current = null;
-    }
-    if (drag.current) {
-      updateWallEndpoint(drag.current.wallId, drag.current.end, drag.current.last);
-      selectWall(drag.current.wallId);
-    }
-    const pointerId = drag.current?.pointerId ?? e?.pointerId;
-    drag.current = null;
-    delete document.body.dataset.movingFurniture;
-    window.dispatchEvent(new Event('roomcraft-drag-end'));
-    if (pointerId != null) {
-      try {
-        gl.domElement.releasePointerCapture?.(pointerId);
-      } catch {
-        /* ignore */
-      }
-    }
-    // Keep wall selected after resize — properties open from the Edit control.
   };
 
   const selected = walls.find((w) => w.id === selectedWallId);
@@ -294,7 +328,7 @@ export function PlanEditLayer() {
   return (
     <group>
       {/* Pick plane only while drawing / placing / actively dragging handles — not while selecting walls. */}
-      {(drawing || placingRoom || !!drag.current) && (
+      {(drawing || placingRoom || handleDragging) && (
         <mesh
           rotation={[-Math.PI / 2, 0, 0]}
           position={[0, 0.01, 0]}
@@ -306,18 +340,6 @@ export function PlanEditLayer() {
           onPointerMissed={() => {
             if (tool === 'wall') setDraftStart(null);
           }}
-        >
-          <planeGeometry args={[120, 120]} />
-          <meshBasicMaterial transparent opacity={0} depthWrite={false} />
-        </mesh>
-      )}
-      {/* Wall-edit: invisible move plane only while a handle drag is live (see window listeners). */}
-      {wallEdit && !drag.current && (
-        <mesh
-          rotation={[-Math.PI / 2, 0, 0]}
-          position={[0, 0.01, 0]}
-          onPointerMove={onFloorPointerMove}
-          raycast={() => {}}
         >
           <planeGeometry args={[120, 120]} />
           <meshBasicMaterial transparent opacity={0} depthWrite={false} />
@@ -379,26 +401,20 @@ export function PlanEditLayer() {
                 <mesh
                   position={[x, 0.14, z]}
                   onPointerDown={(e) => beginHandleDrag(e, selected.id, end, 'corner', p, other, dirX, dirY)}
-                  onPointerMove={onFloorPointerMove}
-                  onPointerUp={endHandleDrag}
-                  onPointerCancel={endHandleDrag}
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <sphereGeometry args={[0.16, 20, 20]} />
-                  <meshStandardMaterial color="#0058a3" emissive="#003d70" emissiveIntensity={0.3} />
+                  <sphereGeometry args={[0.18, 20, 20]} />
+                  <meshStandardMaterial color="#0058a3" emissive="#003d70" emissiveIntensity={0.35} />
                 </mesh>
                 {/* Axis stretch handle — drag along wall to lengthen/shorten */}
                 <mesh
                   position={[stretchX, 0.14, stretchZ]}
                   rotation={[0, angle, 0]}
                   onPointerDown={(e) => beginHandleDrag(e, selected.id, end, 'stretch', p, other, dirX, dirY)}
-                  onPointerMove={onFloorPointerMove}
-                  onPointerUp={endHandleDrag}
-                  onPointerCancel={endHandleDrag}
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <boxGeometry args={[0.28, 0.1, 0.16]} />
-                  <meshStandardMaterial color="#111820" emissive="#0058a3" emissiveIntensity={0.2} />
+                  <boxGeometry args={[0.32, 0.12, 0.18]} />
+                  <meshStandardMaterial color="#111820" emissive="#0058a3" emissiveIntensity={0.25} />
                 </mesh>
               </group>
             );

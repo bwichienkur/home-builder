@@ -217,7 +217,10 @@ function StudioApp() {
       return;
     }
     setProductCardOpen(false);
-    if (selectedWallId || selectedOpeningId) setInspectorOpen(true);
+    // Openings need the inspector to edit size/type. Walls stay on-plan so end
+    // handles remain draggable — open properties from the wall Edit fab instead.
+    if (selectedOpeningId) setInspectorOpen(true);
+    else if (selectedWallId) setInspectorOpen(false);
   }, [selectedWallId, selectedOpeningId, selectedFurnitureId, pendingPlacement]);
 
   useEffect(() => {
