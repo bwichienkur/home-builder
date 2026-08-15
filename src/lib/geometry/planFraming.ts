@@ -98,17 +98,24 @@ export function framingFromWall(wall: Wall, opts?: FramingOpts): PlanFraming {
   const dx = end[0] - start[0];
   const dz = end[1] - start[1];
   const length = Math.hypot(dx, dz) || 1;
+  const dirX = dx / length;
+  const dirZ = dz / length;
   const nx = -dz / length;
   const nz = dx / length;
-  // Leave room beside the wall for the length field (~0.85 m offset).
-  const halfT = Math.max(wall.thickness, 0.12) * 0.5 + 0.95;
+  // Leave room on both long sides + past one end for L / W / H fields.
+  const sidePad = Math.max(wall.thickness, 0.12) * 0.5 + 1.05;
+  const endPad = 1.15;
   const corners: Point[] = [
-    { x: wall.start.x + nx * halfT * PIXELS_PER_METER, y: wall.start.y + nz * halfT * PIXELS_PER_METER },
-    { x: wall.start.x - nx * halfT * PIXELS_PER_METER, y: wall.start.y - nz * halfT * PIXELS_PER_METER },
-    { x: wall.end.x + nx * halfT * PIXELS_PER_METER, y: wall.end.y + nz * halfT * PIXELS_PER_METER },
-    { x: wall.end.x - nx * halfT * PIXELS_PER_METER, y: wall.end.y - nz * halfT * PIXELS_PER_METER },
+    { x: wall.start.x + nx * sidePad * PIXELS_PER_METER, y: wall.start.y + nz * sidePad * PIXELS_PER_METER },
+    { x: wall.start.x - nx * sidePad * PIXELS_PER_METER, y: wall.start.y - nz * sidePad * PIXELS_PER_METER },
+    { x: wall.end.x + nx * sidePad * PIXELS_PER_METER, y: wall.end.y + nz * sidePad * PIXELS_PER_METER },
+    { x: wall.end.x - nx * sidePad * PIXELS_PER_METER, y: wall.end.y - nz * sidePad * PIXELS_PER_METER },
+    {
+      x: wall.end.x + dirX * endPad * PIXELS_PER_METER,
+      y: wall.end.y + dirZ * endPad * PIXELS_PER_METER,
+    },
   ];
-  const minSpan = Math.max(length * 1.08, 1.6);
+  const minSpan = Math.max(length * 1.12, 1.8);
   return framingFromPoints(corners, {
     minSpan,
     minHeight: opts?.minHeight ?? 4.2,

@@ -1986,35 +1986,42 @@
   }
 }
 
-/* Compact length field beside a selected wall (not a covering card). */
+/* Compact dimension fields around a selected wall (not a covering card). */
 .wall-length-field {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 8px 6px 10px;
+  gap: 5px;
+  padding: 5px 8px 5px 8px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.97);
   box-shadow: 0 8px 22px rgba(17, 24, 32, 0.16), 0 0 0 1px rgba(0, 88, 163, 0.18);
   pointer-events: auto;
   white-space: nowrap;
 }
+.wall-length-field strong {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #0058a3;
+  min-width: 0.9em;
+}
 .wall-length-field input {
-  width: 4.6em;
-  min-height: 34px;
+  width: 4.2em;
+  min-height: 32px;
   border: 0;
   outline: none;
   background: transparent;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 800;
   color: #111820;
   text-align: right;
   padding: 0;
 }
 .wall-length-field span {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
   color: #6b7280;
-  padding-right: 2px;
+  padding-right: 1px;
 }
 .wall-length-field:focus-within {
   box-shadow: 0 8px 22px rgba(17, 24, 32, 0.18), 0 0 0 2px #0058a3;
