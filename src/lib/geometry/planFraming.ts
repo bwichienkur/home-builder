@@ -111,8 +111,9 @@ export function framingFromWall(wall: Wall, opts?: FramingOpts): PlanFraming {
   const side = opts?.exteriorSide;
   const layout = wallDimFieldLayout(wall, side === 1 || side === -1 ? side : 1);
   // Card center + half extents + spare margin so the whole dim card stays in frame.
-  const chipPad = 0.85;
-  const sideOffset = layout.cardOffsetM + layout.cardHalfAlongNormalM + chipPad;
+  const chipPad = 1.15;
+  const cardNear = layout.cardOffsetM - layout.cardHalfAlongNormalM;
+  const cardFar = layout.cardOffsetM + layout.cardHalfAlongNormalM + chipPad;
   const alongPad = layout.cardHalfAlongWallM + chipPad;
   const halfThick = Math.max(wall.thickness, 0.12) * 0.5 + 0.25;
   const px = PIXELS_PER_METER;
@@ -125,18 +126,22 @@ export function framingFromWall(wall: Wall, opts?: FramingOpts): PlanFraming {
     { x: wall.start.x - nx * halfThick * px, y: wall.start.y - nz * halfThick * px },
     { x: wall.end.x + nx * halfThick * px, y: wall.end.y + nz * halfThick * px },
     { x: wall.end.x - nx * halfThick * px, y: wall.end.y - nz * halfThick * px },
-    // Dim card AABB fully outside the room.
+    // Dim card AABB fully outside the room (near edge, far edge, along span).
     {
-      x: midX + nx * s * layout.cardOffsetM * px + dirX * alongPad * px,
-      y: midY + nz * s * layout.cardOffsetM * px + dirZ * alongPad * px,
+      x: midX + nx * s * cardNear * px + dirX * alongPad * px,
+      y: midY + nz * s * cardNear * px + dirZ * alongPad * px,
     },
     {
-      x: midX + nx * s * layout.cardOffsetM * px - dirX * alongPad * px,
-      y: midY + nz * s * layout.cardOffsetM * px - dirZ * alongPad * px,
+      x: midX + nx * s * cardNear * px - dirX * alongPad * px,
+      y: midY + nz * s * cardNear * px - dirZ * alongPad * px,
     },
     {
-      x: midX + nx * s * sideOffset * px,
-      y: midY + nz * s * sideOffset * px,
+      x: midX + nx * s * cardFar * px + dirX * alongPad * px,
+      y: midY + nz * s * cardFar * px + dirZ * alongPad * px,
+    },
+    {
+      x: midX + nx * s * cardFar * px - dirX * alongPad * px,
+      y: midY + nz * s * cardFar * px - dirZ * alongPad * px,
     },
   ];
   const minSpan = Math.max(length * 1.35, layout.verticalOnPlan ? 4.2 : 3.6);

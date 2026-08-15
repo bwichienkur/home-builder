@@ -1790,22 +1790,18 @@
   pointer-events: auto;
   user-select: none;
 }
-/* Extra screen-space push away from the wall so the card never kisses the face. */
+/* Extra screen nudge in the exterior direction (world center already clears the face). */
 .wall-dim-card--top {
-  position: relative;
-  top: -18px;
+  margin-top: -48px;
 }
 .wall-dim-card--bottom {
-  position: relative;
-  top: 18px;
+  margin-top: 48px;
 }
 .wall-dim-card--left {
-  position: relative;
-  left: -18px;
+  margin-left: -48px;
 }
 .wall-dim-card--right {
-  position: relative;
-  left: 18px;
+  margin-left: 48px;
 }
 .wall-dim-card-grow {
   display: grid;

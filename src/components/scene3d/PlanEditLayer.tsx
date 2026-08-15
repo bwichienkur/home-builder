@@ -167,6 +167,8 @@ export function PlanEditLayer() {
         const layout = wallDimFieldLayout(selected, side);
         const { nx, ny: nz, cardOffsetM, placement, verticalOnPlan } = layout;
         const s = layout.side;
+        // Card *center* in world meters fully past the exterior face (Html `center`).
+        // CSS translate is a backup nudge in the same exterior direction.
         return {
           len,
           midX,
@@ -174,7 +176,7 @@ export function PlanEditLayer() {
           angle,
           placement,
           verticalOnPlan,
-          cardPos: [midX + nx * s * cardOffsetM, 0.06, midZ + nz * s * cardOffsetM] as [number, number, number],
+          cardPos: [midX + nx * s * cardOffsetM, 0.12, midZ + nz * s * cardOffsetM] as [number, number, number],
         };
       })()
     : null;
@@ -213,7 +215,7 @@ export function PlanEditLayer() {
             <meshBasicMaterial color="#0058a3" transparent opacity={0.2} depthWrite={false} />
           </mesh>
 
-          <Html position={selectedFrame.cardPos} center zIndexRange={[40, 0]} style={{ pointerEvents: 'auto' }}>
+          <Html position={selectedFrame.cardPos} center zIndexRange={[120, 60]} style={{ pointerEvents: 'auto' }}>
             <div
               className={`wall-dim-card wall-dim-card--${selectedFrame.placement}`}
               onPointerDown={(e) => e.stopPropagation()}

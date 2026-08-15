@@ -79,6 +79,27 @@ export function wallOffsetFromWorldPoint(
   return Math.max(0.03, Math.min(0.97, t));
 }
 
+/** World XZ center of an opening — same along-wall basis as `wallSolidBoxes` holes. */
+export function openingCenterOnWall(
+  wall: Wall,
+  offset: number,
+  worldOrigin: { x: number; y: number },
+  pixelsPerMeter: number,
+): { x: number; z: number; length: number; angle: number } {
+  const sx = (wall.start.x - worldOrigin.x) / pixelsPerMeter;
+  const sz = (wall.start.y - worldOrigin.y) / pixelsPerMeter;
+  const ex = (wall.end.x - worldOrigin.x) / pixelsPerMeter;
+  const ez = (wall.end.y - worldOrigin.y) / pixelsPerMeter;
+  const length = Math.hypot(ex - sx, ez - sz) || 1;
+  const t = Math.max(0, Math.min(1, offset));
+  return {
+    x: sx + (ex - sx) * t,
+    z: sz + (ez - sz) * t,
+    length,
+    angle: -Math.atan2(ez - sz, ex - sx),
+  };
+}
+
 /** Keep an opening on-wall and clear of neighbors; returns a safe offset. */
 export function clampOpeningOffset(candidate: Opening, openings: Opening[], wallLengthM: number): number {
   const half = candidate.width / 2;
