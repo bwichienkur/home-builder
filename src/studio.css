@@ -1986,91 +1986,43 @@
   }
 }
 
-/* On-plan wall dimension chip (length / width / height) */
-.wall-dim-chip {
-  width: min(220px, 72vw);
-  padding: 10px 12px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.97);
-  box-shadow: 0 10px 28px rgba(17, 24, 32, 0.18), 0 0 0 1px rgba(17, 24, 32, 0.06);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  color: #111820;
-  font-family: inherit;
-  pointer-events: auto;
-}
-.wall-dim-chip-head {
-  display: flex;
+/* Compact dimension fields around a selected wall (not a covering card). */
+.wall-length-field {
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  gap: 5px;
+  padding: 5px 8px 5px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 8px 22px rgba(17, 24, 32, 0.16), 0 0 0 1px rgba(0, 88, 163, 0.18);
+  pointer-events: auto;
+  white-space: nowrap;
 }
-.wall-dim-chip-head strong {
-  font-size: 12px;
+.wall-length-field strong {
+  font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: #6b7280;
+  color: #0058a3;
+  min-width: 0.9em;
 }
-.wall-dim-chip-head button {
-  width: 28px;
-  height: 28px;
+.wall-length-field input {
+  width: 4.2em;
+  min-height: 32px;
   border: 0;
-  border-radius: 8px;
-  background: rgba(17, 24, 32, 0.06);
-  color: #111820;
-  font-size: 18px;
-  line-height: 1;
-  cursor: pointer;
-}
-.wall-dim-chip-primary {
-  display: grid;
-  grid-template-columns: 52px 1fr auto;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  font-weight: 700;
-  color: #5c6770;
-}
-.wall-dim-chip-primary input {
-  min-height: 40px;
-  border: 1px solid #d8dee4;
-  border-radius: 10px;
-  padding: 0 10px;
-  font-size: 16px;
+  outline: none;
+  background: transparent;
+  font-size: 15px;
   font-weight: 800;
   color: #111820;
-  background: #fff;
-  width: 100%;
+  text-align: right;
+  padding: 0;
 }
-.wall-dim-chip-primary em {
-  font-style: normal;
-  font-size: 11px;
+.wall-length-field span {
+  font-size: 10px;
   font-weight: 800;
-  color: #9aa3ad;
-}
-.wall-dim-chip-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-.wall-dim-chip-row label {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 11px;
-  font-weight: 700;
   color: #6b7280;
+  padding-right: 1px;
 }
-.wall-dim-chip-row input {
-  min-height: 34px;
-  border: 1px solid #d8dee4;
-  border-radius: 8px;
-  padding: 0 8px;
-  font-size: 13px;
-  font-weight: 700;
-  color: #111820;
-  background: #fff;
-  width: 100%;
+.wall-length-field:focus-within {
+  box-shadow: 0 8px 22px rgba(17, 24, 32, 0.18), 0 0 0 2px #0058a3;
 }

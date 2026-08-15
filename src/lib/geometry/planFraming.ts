@@ -98,24 +98,29 @@ export function framingFromWall(wall: Wall, opts?: FramingOpts): PlanFraming {
   const dx = end[0] - start[0];
   const dz = end[1] - start[1];
   const length = Math.hypot(dx, dz) || 1;
+  const dirX = dx / length;
+  const dirZ = dz / length;
   const nx = -dz / length;
   const nz = dx / length;
-  const halfT = Math.max(wall.thickness, 0.12) * 0.5 + 0.35;
-  // Build a padded AABB around the wall segment so thickness/length drive zoom.
+  // Leave room on both long sides + past one end for L / W / H fields.
+  const sidePad = Math.max(wall.thickness, 0.12) * 0.5 + 1.05;
+  const endPad = 1.15;
   const corners: Point[] = [
-    { x: wall.start.x + nx * halfT * PIXELS_PER_METER, y: wall.start.y + nz * halfT * PIXELS_PER_METER },
-    { x: wall.start.x - nx * halfT * PIXELS_PER_METER, y: wall.start.y - nz * halfT * PIXELS_PER_METER },
-    { x: wall.end.x + nx * halfT * PIXELS_PER_METER, y: wall.end.y + nz * halfT * PIXELS_PER_METER },
-    { x: wall.end.x - nx * halfT * PIXELS_PER_METER, y: wall.end.y - nz * halfT * PIXELS_PER_METER },
+    { x: wall.start.x + nx * sidePad * PIXELS_PER_METER, y: wall.start.y + nz * sidePad * PIXELS_PER_METER },
+    { x: wall.start.x - nx * sidePad * PIXELS_PER_METER, y: wall.start.y - nz * sidePad * PIXELS_PER_METER },
+    { x: wall.end.x + nx * sidePad * PIXELS_PER_METER, y: wall.end.y + nz * sidePad * PIXELS_PER_METER },
+    { x: wall.end.x - nx * sidePad * PIXELS_PER_METER, y: wall.end.y - nz * sidePad * PIXELS_PER_METER },
+    {
+      x: wall.end.x + dirX * endPad * PIXELS_PER_METER,
+      y: wall.end.y + dirZ * endPad * PIXELS_PER_METER,
+    },
   ];
-  const minSpan = Math.max(length * 1.15, wall.thickness * 6, 2.2);
-  // Slightly tighter pad so one wall reads large; height nudges zoom with wall height.
-  const heightBoost = 1 + Math.max(0, wall.height - 2.4) * 0.08;
+  const minSpan = Math.max(length * 1.12, 1.8);
   return framingFromPoints(corners, {
     minSpan,
-    minHeight: opts?.minHeight ?? 6,
-    pad: (opts?.pad ?? 2.2) * heightBoost,
-    orbitPad: opts?.orbitPad ?? 1.15,
+    minHeight: opts?.minHeight ?? 4.2,
+    pad: opts?.pad ?? 1.35,
+    orbitPad: opts?.orbitPad ?? 1.1,
   });
 }
 

@@ -1,4 +1,4 @@
-import { Html, Line, Text } from '@react-three/drei';
+import { Html, Line } from '@react-three/drei';
 import { useThree } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import * as THREE from 'three';
@@ -35,7 +35,6 @@ export function PlanEditLayer() {
   const pendingRoomShape = usePlannerStore((s) => s.pendingRoomShape);
   const setPendingRoomShape = usePlannerStore((s) => s.setPendingRoomShape);
   const selectedWallId = usePlannerStore((s) => s.selectedWallId);
-  const selectWall = usePlannerStore((s) => s.selectWall);
   const setWallLength = usePlannerStore((s) => s.setWallLength);
   const updateWall = usePlannerStore((s) => s.updateWall);
   const unit = usePlannerStore((s) => s.unitSystem);
@@ -169,10 +168,29 @@ export function PlanEditLayer() {
         const [sx, sz] = world(selected.start.x, selected.start.y);
         const [ex, ez] = world(selected.end.x, selected.end.y);
         const len = Math.hypot(ex - sx, ez - sz) || 1;
+        const dirX = (ex - sx) / len;
+        const dirZ = (ez - sz) / len;
+        const nx = -dirZ;
+        const nz = dirX;
         const midX = (sx + ex) / 2;
         const midZ = (sz + ez) / 2;
         const angle = -Math.atan2(ez - sz, ex - sx);
-        return { sx, sz, ex, ez, len, midX, midZ, angle };
+        // Prefer the side that reads “above” the wall on a north-up plan (screen up ≈ −Z).
+        const side = -nz >= 0 ? 1 : -1;
+        const sideOffset = Math.max(0.58, selected.thickness * 0.5 + 0.45);
+        const endOffset = Math.max(0.7, selected.thickness * 0.5 + 0.55);
+        return {
+          len,
+          midX,
+          midZ,
+          angle,
+          // Length — long face, screen-up side
+          lengthPos: [midX + nx * side * sideOffset, 0.06, midZ + nz * side * sideOffset] as [number, number, number],
+          // Width (thickness) — opposite long face so it doesn’t stack on length
+          widthPos: [midX - nx * side * sideOffset, 0.06, midZ - nz * side * sideOffset] as [number, number, number],
+          // Height — beyond the end of the wall along its axis
+          heightPos: [ex + dirX * endOffset, 0.06, ez + dirZ * endOffset] as [number, number, number],
+        };
       })()
     : null;
 
@@ -212,33 +230,41 @@ export function PlanEditLayer() {
         <group>
           <mesh position={[selectedFrame.midX, 0.04, selectedFrame.midZ]} rotation={[-Math.PI / 2, 0, selectedFrame.angle]} raycast={() => {}}>
             <planeGeometry args={[selectedFrame.len, Math.max(0.18, (selected.thickness || 0.15) + 0.08)]} />
-            <meshBasicMaterial color="#0058a3" transparent opacity={0.22} depthWrite={false} />
+            <meshBasicMaterial color="#0058a3" transparent opacity={0.2} depthWrite={false} />
           </mesh>
 
-          <Text
-            position={[selectedFrame.midX, 0.22, selectedFrame.midZ]}
-            rotation={[-Math.PI / 2, 0, 0]}
-            fontSize={0.18}
-            color="#0058a3"
-            anchorX="center"
-            anchorY="middle"
-            outlineWidth={0.018}
-            outlineColor="#ffffff"
-          >
-            {formatLength(selectedLen, unit)}
-          </Text>
-
-          <Html position={[selectedFrame.midX, 0.05, selectedFrame.midZ]} center zIndexRange={[40, 0]} style={{ pointerEvents: 'auto' }}>
-            <WallDimChip
-              key={`${selected.id}-${unit}-${selectedLen.toFixed(3)}-${selected.thickness.toFixed(3)}-${selected.height.toFixed(3)}`}
-              lengthM={selectedLen}
-              thicknessM={selected.thickness}
-              heightM={selected.height}
+          {/* Compact fields around the wall — length / width / height stay off the wall body. */}
+          <Html position={selectedFrame.lengthPos} center zIndexRange={[40, 0]} style={{ pointerEvents: 'auto' }}>
+            <WallDimField
+              key={`L-${selected.id}-${unit}-${selectedLen.toFixed(3)}`}
+              label="L"
+              ariaLabel="Wall length"
+              valueM={selectedLen}
               unit={unit}
-              onLength={(meters) => setWallLength(selected.id, meters)}
-              onThickness={(meters) => updateWall(selected.id, { thickness: meters })}
-              onHeight={(meters) => updateWall(selected.id, { height: meters })}
-              onClose={() => selectWall(null)}
+              min={0.25}
+              onChange={(meters) => setWallLength(selected.id, meters)}
+            />
+          </Html>
+          <Html position={selectedFrame.widthPos} center zIndexRange={[40, 0]} style={{ pointerEvents: 'auto' }}>
+            <WallDimField
+              key={`W-${selected.id}-${unit}-${selected.thickness.toFixed(3)}`}
+              label="W"
+              ariaLabel="Wall width"
+              valueM={selected.thickness}
+              unit={unit}
+              min={0.05}
+              onChange={(meters) => updateWall(selected.id, { thickness: meters })}
+            />
+          </Html>
+          <Html position={selectedFrame.heightPos} center zIndexRange={[40, 0]} style={{ pointerEvents: 'auto' }}>
+            <WallDimField
+              key={`H-${selected.id}-${unit}-${selected.height.toFixed(3)}`}
+              label="H"
+              ariaLabel="Wall height"
+              valueM={selected.height}
+              unit={unit}
+              min={2}
+              onChange={(meters) => updateWall(selected.id, { height: meters })}
             />
           </Html>
         </group>
@@ -247,90 +273,49 @@ export function PlanEditLayer() {
   );
 }
 
-function WallDimChip({
-  lengthM,
-  thicknessM,
-  heightM,
+function WallDimField({
+  label,
+  ariaLabel,
+  valueM,
   unit,
-  onLength,
-  onThickness,
-  onHeight,
-  onClose,
+  min,
+  onChange,
 }: {
-  lengthM: number;
-  thicknessM: number;
-  heightM: number;
+  label: string;
+  ariaLabel: string;
+  valueM: number;
   unit: 'metric' | 'imperial';
-  onLength: (meters: number) => void;
-  onThickness: (meters: number) => void;
-  onHeight: (meters: number) => void;
-  onClose: () => void;
+  min: number;
+  onChange: (meters: number) => void;
 }) {
-  const lengthRef = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    const id = window.setTimeout(() => lengthRef.current?.focus(), 40);
-    return () => window.clearTimeout(id);
-  }, []);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const commit = (raw: string, min: number, apply: (m: number) => void) => {
+  const commit = (raw: string) => {
     const parsed = parseLength(raw, unit);
     if (parsed == null) return;
-    apply(Math.max(min, parsed));
+    onChange(Math.max(min, parsed));
   };
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (lengthRef.current) commit(lengthRef.current.value, 0.25, onLength);
+    if (inputRef.current) commit(inputRef.current.value);
   };
 
   return (
-    <form className="wall-dim-chip" onSubmit={onSubmit} onPointerDown={(e) => e.stopPropagation()}>
-      <div className="wall-dim-chip-head">
-        <strong>Wall</strong>
-        <button type="button" aria-label="Deselect wall" onClick={onClose}>
-          ×
-        </button>
-      </div>
-      <label className="wall-dim-chip-primary">
-        <span>Length</span>
-        <input
-          ref={lengthRef}
-          type="text"
-          inputMode="decimal"
-          defaultValue={unit === 'metric' ? lengthM.toFixed(2) : formatLength(lengthM, unit)}
-          onBlur={(e) => commit(e.target.value, 0.25, onLength)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-          }}
-        />
-        <em>{unit === 'metric' ? 'm' : 'ft/in'}</em>
-      </label>
-      <div className="wall-dim-chip-row">
-        <label>
-          <span>Width</span>
-          <input
-            type="text"
-            inputMode="decimal"
-            defaultValue={unit === 'metric' ? thicknessM.toFixed(2) : formatLength(thicknessM, unit)}
-            onBlur={(e) => commit(e.target.value, 0.05, onThickness)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-            }}
-          />
-        </label>
-        <label>
-          <span>Height</span>
-          <input
-            type="text"
-            inputMode="decimal"
-            defaultValue={unit === 'metric' ? heightM.toFixed(2) : formatLength(heightM, unit)}
-            onBlur={(e) => commit(e.target.value, 2, onHeight)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-            }}
-          />
-        </label>
-      </div>
+    <form className="wall-length-field" onSubmit={onSubmit} onPointerDown={(e) => e.stopPropagation()}>
+      <strong>{label}</strong>
+      <input
+        ref={inputRef}
+        type="text"
+        inputMode="decimal"
+        aria-label={ariaLabel}
+        defaultValue={unit === 'metric' ? valueM.toFixed(2) : formatLength(valueM, unit)}
+        onBlur={(e) => commit(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+        }}
+      />
+      <span>{unit === 'metric' ? 'm' : 'ft/in'}</span>
     </form>
   );
 }
