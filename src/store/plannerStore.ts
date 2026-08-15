@@ -302,18 +302,33 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       if (Math.hypot(end.x - start.x, end.y - start.y) < 20) return;
       mutate({ walls: [...get().walls, { id: crypto.randomUUID(), start, end, thickness: 0.15, height: 2.7 }] });
     },
-    updateWall: (id, patch) => mutate({ walls: get().walls.map((w) => (w.id === id ? { ...w, ...patch } : w)) }),
+    updateWall: (id, patch) => {
+      // Height drives the ceiling plate — keep every wall on the same story height.
+      if (patch.height !== undefined) {
+        mutate({ walls: get().walls.map((w) => ({ ...w, ...patch, height: patch.height! })) });
+        return;
+      }
+      mutate({ walls: get().walls.map((w) => (w.id === id ? { ...w, ...patch } : w)) });
+    },
     updateWallEndpoint: (id, end, point) => {
       const wall = get().walls.find((w) => w.id === id);
       if (!wall) return;
       const old = wall[end];
       const same = (p: Point) => Math.hypot(p.x - old.x, p.y - old.y) < 1;
-      mutate({
-        walls: get().walls.map((w) => ({
-          ...w,
-          start: same(w.start) ? point : w.start,
-          end: same(w.end) ? point : w.end,
-        })),
+      const walls = get().walls.map((w) => ({
+        ...w,
+        start: same(w.start) ? point : w.start,
+        end: same(w.end) ? point : w.end,
+      }));
+      // Floor / ceiling polygons follow wall corners.
+      const planRooms = get().planRooms.map((room) => ({
+        ...room,
+        points: room.points.map((p) => (same(p) ? { ...point } : p)),
+      }));
+      mutate({ walls });
+      set({
+        planRooms,
+        floors: get().floors.map((f) => (f.id === get().activeFloorId ? { ...f, planRooms, scene: { ...f.scene, walls } } : f)),
       });
     },
     updateWallEndpointLive: (id, end, point) => {
@@ -321,13 +336,16 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       if (!wall) return;
       const old = wall[end];
       const same = (p: Point) => Math.hypot(p.x - old.x, p.y - old.y) < 1;
-      set({
-        walls: get().walls.map((w) => ({
-          ...w,
-          start: same(w.start) ? point : w.start,
-          end: same(w.end) ? point : w.end,
-        })),
-      });
+      const walls = get().walls.map((w) => ({
+        ...w,
+        start: same(w.start) ? point : w.start,
+        end: same(w.end) ? point : w.end,
+      }));
+      const planRooms = get().planRooms.map((room) => ({
+        ...room,
+        points: room.points.map((p) => (same(p) ? { ...point } : p)),
+      }));
+      set({ walls, planRooms });
     },
     setWallLength: (id, meters) => {
       const wall = get().walls.find((w) => w.id === id);
@@ -482,7 +500,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         selectedOpeningId: null,
         selectedFurnitureId: null,
         selectedSurface: null,
-        selectedRoomId: get().workflowStage === 'room' ? get().selectedRoomId : null,
+        selectedRoomId:
+          get().workflowStage === 'room' ? get().selectedRoomId : selectedWallId ? null : get().selectedRoomId,
       }),
     selectOpening: (selectedOpeningId) =>
       set({

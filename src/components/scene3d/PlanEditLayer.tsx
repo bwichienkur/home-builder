@@ -1,11 +1,11 @@
-import { Line, Text } from '@react-three/drei';
+import { Html, Line, Text } from '@react-three/drei';
 import { useThree } from '@react-three/fiber';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import * as THREE from 'three';
 import { WORLD_ORIGIN } from '../../lib/geometry/placement';
 import { proposedRoomOverlaps, shapedRoomPoints, snapRoomCenterToNeighbors } from '../../lib/housePlans/buildPlan';
 import { PIXELS_PER_METER, snapWallPoint, wallLengthMeters } from '../../lib/geometry/snapping';
-import { formatLength } from '../../lib/measurements';
+import { formatLength, parseLength } from '../../lib/measurements';
 import { usePlannerStore } from '../../store/plannerStore';
 
 const world = (x: number, y: number): [number, number] => [
@@ -18,22 +18,9 @@ const planFromWorld = (x: number, z: number) => ({
   y: z * PIXELS_PER_METER + WORLD_ORIGIN.y,
 });
 
-type DragKind = 'corner' | 'stretch';
-
-type HandleDrag = {
-  wallId: string;
-  end: 'start' | 'end';
-  kind: DragKind;
-  last: { x: number; y: number };
-  anchor: { x: number; y: number };
-  dirX: number;
-  dirY: number;
-  pointerId: number;
-};
-
 /**
- * Top-view plan tools: draw walls, drag corners, and stretch ends along the wall axis.
- * Active in architect mode while camera is top.
+ * Top-view plan tools: draw walls / place rooms, and edit wall length via an on-plan input.
+ * Wall end-handle dragging is intentionally disabled (unreliable on mobile).
  */
 export function PlanEditLayer() {
   const tool = usePlannerStore((s) => s.tool);
@@ -47,20 +34,15 @@ export function PlanEditLayer() {
   const placePlanRoom = usePlannerStore((s) => s.placePlanRoom);
   const pendingRoomShape = usePlannerStore((s) => s.pendingRoomShape);
   const setPendingRoomShape = usePlannerStore((s) => s.setPendingRoomShape);
-  const updateWallEndpoint = usePlannerStore((s) => s.updateWallEndpoint);
-  const updateWallEndpointLive = usePlannerStore((s) => s.updateWallEndpointLive);
   const selectedWallId = usePlannerStore((s) => s.selectedWallId);
   const selectWall = usePlannerStore((s) => s.selectWall);
+  const setWallLength = usePlannerStore((s) => s.setWallLength);
+  const updateWall = usePlannerStore((s) => s.updateWall);
   const unit = usePlannerStore((s) => s.unitSystem);
-  const { invalidate, gl, camera } = useThree();
+  const { invalidate, gl } = useThree();
   const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
-  const [handleDragging, setHandleDragging] = useState(false);
-  const drag = useRef<HandleDrag | null>(null);
   const roomPlace = useRef<{ pointerId: number; active: boolean } | null>(null);
-  const dragListeners = useRef<{ move: (e: PointerEvent) => void; end: (e: PointerEvent) => void } | null>(null);
   const floorPlane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), []);
-  const dragRaycaster = useMemo(() => new THREE.Raycaster(), []);
-  const dragNdc = useMemo(() => new THREE.Vector2(), []);
 
   const active = studioMode === 'architect' && cameraMode === 'top';
   const wallEdit = active && tool === 'select';
@@ -70,22 +52,6 @@ export function PlanEditLayer() {
   useEffect(() => {
     if (!active || tool !== 'wall') setDraftStart(null);
   }, [active, tool, setDraftStart]);
-
-  useEffect(
-    () => () => {
-      if (dragListeners.current) {
-        window.removeEventListener('pointermove', dragListeners.current.move);
-        window.removeEventListener('pointerup', dragListeners.current.end);
-        window.removeEventListener('pointercancel', dragListeners.current.end);
-        dragListeners.current = null;
-      }
-      if (document.body.dataset.movingFurniture) {
-        delete document.body.dataset.movingFurniture;
-        window.dispatchEvent(new Event('roomcraft-drag-end'));
-      }
-    },
-    [],
-  );
 
   const shapeKind = pendingRoomShape ?? 'rectangle';
   const ghostOverlaps = useMemo(() => {
@@ -109,52 +75,11 @@ export function PlanEditLayer() {
     return planFromWorld(hit.x, hit.z);
   };
 
-  const hitPlanFromClient = (clientX: number, clientY: number) => {
-    const rect = gl.domElement.getBoundingClientRect();
-    if (rect.width < 1 || rect.height < 1) return null;
-    dragNdc.x = ((clientX - rect.left) / rect.width) * 2 - 1;
-    dragNdc.y = -((clientY - rect.top) / rect.height) * 2 + 1;
-    dragRaycaster.setFromCamera(dragNdc, camera);
-    const hit = new THREE.Vector3();
-    if (!dragRaycaster.ray.intersectPlane(floorPlane, hit)) return null;
-    return planFromWorld(hit.x, hit.z);
-  };
-
-  const projectStretch = (raw: { x: number; y: number }, d: HandleDrag) => {
-    const vx = raw.x - d.anchor.x;
-    const vy = raw.y - d.anchor.y;
-    const along = vx * d.dirX + vy * d.dirY;
-    const minPx = 0.25 * PIXELS_PER_METER;
-    const clamped = Math.max(minPx, along);
-    return {
-      x: d.anchor.x + d.dirX * clamped,
-      y: d.anchor.y + d.dirY * clamped,
-    };
-  };
-
-  const applyHandleDrag = (raw: { x: number; y: number }) => {
-    if (!drag.current) return;
-    let next = raw;
-    if (drag.current.kind === 'stretch') {
-      next = projectStretch(raw, drag.current);
-    } else {
-      next = snapWallPoint(raw, usePlannerStore.getState().walls, drag.current.wallId);
-    }
-    drag.current.last = next;
-    updateWallEndpointLive(drag.current.wallId, drag.current.end, next);
-    setCursor(next);
-    invalidate();
-  };
-
   const onFloorPointerMove = (e: any) => {
-    if (!drawing && !drag.current && !placingRoom) return;
+    if (!drawing && !placingRoom) return;
     e.stopPropagation();
     const raw = hitPlan(e);
     if (!raw) return;
-    if (drag.current) {
-      applyHandleDrag(raw);
-      return;
-    }
     if (placingRoom) {
       const snapped = snapRoomCenterToNeighbors(raw, shapeKind, planRooms);
       setCursor(snapped);
@@ -201,7 +126,6 @@ export function PlanEditLayer() {
     }
     const snapped = snapRoomCenterToNeighbors(raw, shapeKind, planRooms);
     if (proposedRoomOverlaps(snapped, shapeKind, planRooms)) {
-      // Keep shape tool armed so the user can drag beside existing rooms.
       setCursor(snapped);
       return;
     }
@@ -230,77 +154,6 @@ export function PlanEditLayer() {
     invalidate();
   };
 
-  const clearDragListeners = () => {
-    if (!dragListeners.current) return;
-    window.removeEventListener('pointermove', dragListeners.current.move);
-    window.removeEventListener('pointerup', dragListeners.current.end);
-    window.removeEventListener('pointercancel', dragListeners.current.end);
-    dragListeners.current = null;
-  };
-
-  const endHandleDrag = (e?: PointerEvent | { pointerId?: number; stopPropagation?: () => void }) => {
-    e?.stopPropagation?.();
-    if (!drag.current && !dragListeners.current) return;
-    if (e && 'pointerId' in e && drag.current && e.pointerId != null && drag.current.pointerId !== e.pointerId) {
-      return;
-    }
-    clearDragListeners();
-    if (drag.current) {
-      updateWallEndpoint(drag.current.wallId, drag.current.end, drag.current.last);
-      selectWall(drag.current.wallId);
-    }
-    const pointerId = drag.current?.pointerId ?? e?.pointerId;
-    drag.current = null;
-    setHandleDragging(false);
-    delete document.body.dataset.movingFurniture;
-    window.dispatchEvent(new Event('roomcraft-drag-end'));
-    if (pointerId != null) {
-      try {
-        gl.domElement.releasePointerCapture?.(pointerId);
-      } catch {
-        /* ignore */
-      }
-    }
-  };
-
-  const beginHandleDrag = (
-    e: any,
-    wallId: string,
-    end: 'start' | 'end',
-    kind: DragKind,
-    point: { x: number; y: number },
-    anchor: { x: number; y: number },
-    dirX: number,
-    dirY: number,
-  ) => {
-    e.stopPropagation();
-    // Finish any stuck drag so orbit/pan cannot stay locked.
-    if (drag.current) endHandleDrag();
-    drag.current = { wallId, end, kind, last: { ...point }, anchor, dirX, dirY, pointerId: e.pointerId };
-    setHandleDragging(true);
-    document.body.dataset.movingFurniture = 'true';
-    window.dispatchEvent(new Event('roomcraft-drag-start'));
-
-    const onMove = (ev: PointerEvent) => {
-      if (!drag.current || ev.pointerId !== drag.current.pointerId) return;
-      const raw = hitPlanFromClient(ev.clientX, ev.clientY);
-      if (!raw) return;
-      applyHandleDrag(raw);
-    };
-    const onEnd = (ev: PointerEvent) => endHandleDrag(ev);
-    clearDragListeners();
-    dragListeners.current = { move: onMove, end: onEnd };
-    window.addEventListener('pointermove', onMove);
-    window.addEventListener('pointerup', onEnd);
-    window.addEventListener('pointercancel', onEnd);
-
-    try {
-      gl.domElement.setPointerCapture?.(e.pointerId);
-    } catch {
-      /* ignore */
-    }
-  };
-
   const selected = walls.find((w) => w.id === selectedWallId);
   const draftLine =
     draftStart && cursor
@@ -316,19 +169,16 @@ export function PlanEditLayer() {
         const [sx, sz] = world(selected.start.x, selected.start.y);
         const [ex, ez] = world(selected.end.x, selected.end.y);
         const len = Math.hypot(ex - sx, ez - sz) || 1;
-        const dirX = (ex - sx) / len;
-        const dirZ = (ez - sz) / len;
         const midX = (sx + ex) / 2;
         const midZ = (sz + ez) / 2;
         const angle = -Math.atan2(ez - sz, ex - sx);
-        return { sx, sz, ex, ez, len, dirX, dirZ, midX, midZ, angle };
+        return { sx, sz, ex, ez, len, midX, midZ, angle };
       })()
     : null;
 
   return (
     <group>
-      {/* Pick plane only while drawing / placing / actively dragging handles — not while selecting walls. */}
-      {(drawing || placingRoom || handleDragging) && (
+      {(drawing || placingRoom) && (
         <mesh
           rotation={[-Math.PI / 2, 0, 0]}
           position={[0, 0.01, 0]}
@@ -360,67 +210,127 @@ export function PlanEditLayer() {
 
       {wallEdit && selected && selectedFrame && (
         <group>
-          {/* Selected wall highlight stripe */}
           <mesh position={[selectedFrame.midX, 0.04, selectedFrame.midZ]} rotation={[-Math.PI / 2, 0, selectedFrame.angle]} raycast={() => {}}>
             <planeGeometry args={[selectedFrame.len, Math.max(0.18, (selected.thickness || 0.15) + 0.08)]} />
             <meshBasicMaterial color="#0058a3" transparent opacity={0.22} depthWrite={false} />
           </mesh>
 
           <Text
-            position={[selectedFrame.midX, 0.28, selectedFrame.midZ]}
+            position={[selectedFrame.midX, 0.22, selectedFrame.midZ]}
             rotation={[-Math.PI / 2, 0, 0]}
-            fontSize={0.22}
+            fontSize={0.18}
             color="#0058a3"
             anchorX="center"
             anchorY="middle"
-            outlineWidth={0.02}
+            outlineWidth={0.018}
             outlineColor="#ffffff"
           >
             {formatLength(selectedLen, unit)}
           </Text>
 
-          {(['start', 'end'] as const).map((end) => {
-            const p = selected[end];
-            const [x, z] = world(p.x, p.y);
-            const other = end === 'start' ? selected.end : selected.start;
-            const dx = p.x - other.x;
-            const dy = p.y - other.y;
-            const len = Math.hypot(dx, dy) || 1;
-            const dirX = dx / len;
-            const dirY = dy / len;
-            // Stretch handle sits just beyond the end along the wall axis.
-            const stretchPlan = {
-              x: p.x + dirX * 0.35 * PIXELS_PER_METER,
-              y: p.y + dirY * 0.35 * PIXELS_PER_METER,
-            };
-            const [stretchX, stretchZ] = world(stretchPlan.x, stretchPlan.y);
-            const angle = -Math.atan2(dirY, dirX);
-            return (
-              <group key={end}>
-                {/* Corner joint handle — free move with snap */}
-                <mesh
-                  position={[x, 0.14, z]}
-                  onPointerDown={(e) => beginHandleDrag(e, selected.id, end, 'corner', p, other, dirX, dirY)}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <sphereGeometry args={[0.18, 20, 20]} />
-                  <meshStandardMaterial color="#0058a3" emissive="#003d70" emissiveIntensity={0.35} />
-                </mesh>
-                {/* Axis stretch handle — drag along wall to lengthen/shorten */}
-                <mesh
-                  position={[stretchX, 0.14, stretchZ]}
-                  rotation={[0, angle, 0]}
-                  onPointerDown={(e) => beginHandleDrag(e, selected.id, end, 'stretch', p, other, dirX, dirY)}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <boxGeometry args={[0.32, 0.12, 0.18]} />
-                  <meshStandardMaterial color="#111820" emissive="#0058a3" emissiveIntensity={0.25} />
-                </mesh>
-              </group>
-            );
-          })}
+          <Html position={[selectedFrame.midX, 0.05, selectedFrame.midZ]} center zIndexRange={[40, 0]} style={{ pointerEvents: 'auto' }}>
+            <WallDimChip
+              key={`${selected.id}-${unit}-${selectedLen.toFixed(3)}-${selected.thickness.toFixed(3)}-${selected.height.toFixed(3)}`}
+              lengthM={selectedLen}
+              thicknessM={selected.thickness}
+              heightM={selected.height}
+              unit={unit}
+              onLength={(meters) => setWallLength(selected.id, meters)}
+              onThickness={(meters) => updateWall(selected.id, { thickness: meters })}
+              onHeight={(meters) => updateWall(selected.id, { height: meters })}
+              onClose={() => selectWall(null)}
+            />
+          </Html>
         </group>
       )}
     </group>
+  );
+}
+
+function WallDimChip({
+  lengthM,
+  thicknessM,
+  heightM,
+  unit,
+  onLength,
+  onThickness,
+  onHeight,
+  onClose,
+}: {
+  lengthM: number;
+  thicknessM: number;
+  heightM: number;
+  unit: 'metric' | 'imperial';
+  onLength: (meters: number) => void;
+  onThickness: (meters: number) => void;
+  onHeight: (meters: number) => void;
+  onClose: () => void;
+}) {
+  const lengthRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const id = window.setTimeout(() => lengthRef.current?.focus(), 40);
+    return () => window.clearTimeout(id);
+  }, []);
+
+  const commit = (raw: string, min: number, apply: (m: number) => void) => {
+    const parsed = parseLength(raw, unit);
+    if (parsed == null) return;
+    apply(Math.max(min, parsed));
+  };
+
+  const onSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (lengthRef.current) commit(lengthRef.current.value, 0.25, onLength);
+  };
+
+  return (
+    <form className="wall-dim-chip" onSubmit={onSubmit} onPointerDown={(e) => e.stopPropagation()}>
+      <div className="wall-dim-chip-head">
+        <strong>Wall</strong>
+        <button type="button" aria-label="Deselect wall" onClick={onClose}>
+          ×
+        </button>
+      </div>
+      <label className="wall-dim-chip-primary">
+        <span>Length</span>
+        <input
+          ref={lengthRef}
+          type="text"
+          inputMode="decimal"
+          defaultValue={unit === 'metric' ? lengthM.toFixed(2) : formatLength(lengthM, unit)}
+          onBlur={(e) => commit(e.target.value, 0.25, onLength)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+          }}
+        />
+        <em>{unit === 'metric' ? 'm' : 'ft/in'}</em>
+      </label>
+      <div className="wall-dim-chip-row">
+        <label>
+          <span>Width</span>
+          <input
+            type="text"
+            inputMode="decimal"
+            defaultValue={unit === 'metric' ? thicknessM.toFixed(2) : formatLength(thicknessM, unit)}
+            onBlur={(e) => commit(e.target.value, 0.05, onThickness)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+            }}
+          />
+        </label>
+        <label>
+          <span>Height</span>
+          <input
+            type="text"
+            inputMode="decimal"
+            defaultValue={unit === 'metric' ? heightM.toFixed(2) : formatLength(heightM, unit)}
+            onBlur={(e) => commit(e.target.value, 2, onHeight)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+            }}
+          />
+        </label>
+      </div>
+    </form>
   );
 }

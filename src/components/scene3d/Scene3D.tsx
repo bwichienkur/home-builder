@@ -7,7 +7,7 @@ import { catalog } from '../catalog/catalogData';
 import type { FurnitureItem } from '../../types';
 import { detectRoomPolygons, roomShape } from '../../lib/geometry/rooms';
 import { alignmentGuides, clampWallMountY, constrainPlacement, pointOnWall, roomFloorCenter, wallFrame, WORLD_ORIGIN } from '../../lib/geometry/placement';
-import { framingFromPoints, framingFromWalls, freeAreaFit, pageCenterFit, worldShiftForFreeArea } from '../../lib/geometry/planFraming';
+import { framingFromPoints, framingFromWall, framingFromWalls, freeAreaFit, pageCenterFit, worldShiftForFreeArea } from '../../lib/geometry/planFraming';
 import { pointInPlanRoom, wallsBelongingToRoom } from '../../lib/geometry/roomWalls';
 import { wallCutawayOpacity } from '../../lib/geometry/wallCutaway';
 import { orbitCeilingOpacity, orbitFloorOpacity } from '../../lib/geometry/plateFade';
@@ -76,12 +76,19 @@ function CameraRig() {
   const walls = usePlannerStore((s) => s.walls);
   const planRooms = usePlannerStore((s) => s.planRooms);
   const selectedRoomId = usePlannerStore((s) => s.selectedRoomId);
+  const selectedWallId = usePlannerStore((s) => s.selectedWallId);
+  const studioMode = usePlannerStore((s) => s.studioMode);
+  const tool = usePlannerStore((s) => s.tool);
   const workflowStage = usePlannerStore((s) => s.workflowStage);
   const placing = usePlannerStore((s) => !!s.pendingPlacement);
   const [moving, setMoving] = useState(false);
   const controls = useRef<any>(null);
   const { invalidate, get, size } = useThree();
   const focusRoom = workflowStage === 'room' ? planRooms.find((r) => r.id === selectedRoomId) : null;
+  const focusWall =
+    studioMode === 'architect' && mode === 'top' && tool === 'select'
+      ? walls.find((w) => w.id === selectedWallId) ?? null
+      : null;
   const coarse = useMemo(() => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches, []);
   const [menuOpen, setMenuOpen] = useState(() => document.body.dataset.menuOpen === '1');
   const [inspectorTick, setInspectorTick] = useState(0);
@@ -129,12 +136,16 @@ function CameraRig() {
   const canvasW = size?.width || (typeof window !== 'undefined' ? window.innerWidth : 390);
   const canvasH = size?.height || (typeof window !== 'undefined' ? window.innerHeight : 844);
 
-  // Rail: page-centered + zoom. Edit inspector: shift into the free area left of the card.
+  // Rail: page-centered + zoom. Edit inspector / wall focus: shift into the free area left of chrome.
   const chromeFit = useMemo(() => {
-    const topChromePx = coarse ? 72 : 64;
+    const topChromePx = coarse ? (focusWall ? 88 : 72) : focusWall ? 80 : 64;
     const bottomChromePx = coarse ? 150 : 110;
-    if (inspectorOpen) {
-      const rightChromePx = Math.min(260, Math.round(canvasW * 0.44));
+    if (inspectorOpen || focusWall) {
+      const rightChromePx = inspectorOpen
+        ? Math.min(260, Math.round(canvasW * 0.44))
+        : showRightRail
+          ? 72
+          : 0;
       return freeAreaFit({
         width: canvasW,
         height: canvasH,
@@ -153,26 +164,33 @@ function CameraRig() {
       topChromePx,
       bottomChromePx,
     });
-  }, [canvasW, canvasH, inspectorOpen, showRightRail, coarse, inspectorTick]);
+  }, [canvasW, canvasH, inspectorOpen, showRightRail, coarse, inspectorTick, focusWall]);
 
   const framing = useMemo(() => {
     const basePad = (coarse ? 3.1 : 2.85) * (menuOpen ? 1.45 : 1);
     const baseOrbit = (coarse ? 1.65 : 1.45) * (menuOpen ? 1.25 : 1);
     const pad = basePad * chromeFit.padScale;
     const orbitPad = baseOrbit * Math.max(1, chromeFit.padScale * 0.9);
+    if (focusWall) {
+      return framingFromWall(focusWall, {
+        pad: Math.max(1.65, pad * 0.72),
+        orbitPad,
+        minHeight: 5.5,
+      });
+    }
     if (focusRoom?.points.length) {
       return framingFromPoints(focusRoom.points, { pad, orbitPad, minSpan: 2.5, minHeight: 11 });
     }
     return framingFromWalls(walls, { pad, orbitPad, minHeight: 15 });
-  }, [walls, focusRoom, coarse, menuOpen, chromeFit.padScale]);
+  }, [walls, focusRoom, focusWall, coarse, menuOpen, chromeFit.padScale]);
   const center = framing.center;
   const fovDeg = mode === 'walk' ? 58 : mode === 'top' ? 42 : 48;
   const aspect = Math.max(0.35, canvasW / Math.max(1, canvasH));
 
-  // Page center by default; when the edit card is open, pan into the free left area.
+  // Page center by default; when the edit card or a wall is focused, pan into the free left area.
   const shiftX = useMemo(() => {
     const menuShiftX = menuOpen ? framing.span * 0.28 : 0;
-    if (!inspectorOpen || chromeFit.shiftFraction <= 0) return menuShiftX;
+    if ((!inspectorOpen && !focusWall) || chromeFit.shiftFraction <= 0) return menuShiftX;
     const dist =
       mode === 'top'
         ? framing.topHeight
@@ -181,7 +199,7 @@ function CameraRig() {
           : Math.hypot(framing.orbitPose[0] - center[0], framing.orbitPose[1], framing.orbitPose[2] - center[2]) ||
             framing.topHeight;
     return menuShiftX + worldShiftForFreeArea(chromeFit.shiftFraction, dist, fovDeg, aspect);
-  }, [menuOpen, framing, inspectorOpen, chromeFit.shiftFraction, mode, center, fovDeg, aspect]);
+  }, [menuOpen, framing, inspectorOpen, focusWall, chromeFit.shiftFraction, mode, center, fovDeg, aspect]);
   const targetTuple = useMemo<[number, number, number]>(
     () => [center[0] + shiftX, 0, center[2]],
     [center, shiftX],
@@ -281,14 +299,33 @@ function CameraRig() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, menuOpen]);
 
-  // Room enter / chrome pad changes — skip while the edit card owns framing.
+  // Room enter / chrome pad / wall focus — skip while the edit card owns framing.
   useEffect(() => {
     if (inspectorOpen) return;
     if (performance.now() < modeAnimUntil.current) return;
     if (performance.now() < inspectorAnimUntil.current) return;
     animateToPose(mode === 'top' ? 360 : 480);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focusRoom?.id, workflowStage, chromeFit.padScale, chromeFit.shiftFraction, inspectorOpen]);
+  }, [focusRoom?.id, workflowStage, chromeFit.padScale, chromeFit.shiftFraction, inspectorOpen, focusWall?.id]);
+
+  // Keep the selected wall centered as length / width / height change.
+  useEffect(() => {
+    if (!focusWall || inspectorOpen) return;
+    if (performance.now() < modeAnimUntil.current) return;
+    if (mode !== 'top') return;
+    animateToPose(280);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    focusWall?.id,
+    focusWall?.start.x,
+    focusWall?.start.y,
+    focusWall?.end.x,
+    focusWall?.end.y,
+    focusWall?.thickness,
+    focusWall?.height,
+    framing.topHeight,
+    shiftX,
+  ]);
 
   // Edit card open/close — ease into free area / restore the pre-panel view.
   useEffect(() => {
@@ -1321,10 +1358,6 @@ function Room() {
     }
     selectSurface('floor');
   };
-  const chooseCeiling = (e: any) => {
-    e.stopPropagation();
-    selectSurface('ceiling');
-  };
   const isolating = workflowStage === 'room' && !!selectedRoomId;
   const roomEntries = useMemo(() => {
     if (planRooms.length) {
@@ -1383,8 +1416,7 @@ function Room() {
                 <mesh
                   rotation={[Math.PI / 2, 0, 0]}
                   position={[0, ceilingHeight, 0]}
-                  onClick={chooseCeiling}
-                  raycast={cameraMode === 'top' ? () => {} : undefined}
+                  raycast={() => {}}
                 >
                   <shapeGeometry args={[roomShape(points)]} />
                   <meshStandardMaterial
@@ -1428,7 +1460,7 @@ function Room() {
             <meshStandardMaterial color={floor} roughness={0.95} />
           </mesh>
           {showCeiling && (
-            <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, ceilingHeight, 0]} onClick={chooseCeiling}>
+            <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, ceilingHeight, 0]} raycast={() => {}}>
               <planeGeometry args={[14, 12]} />
               <meshStandardMaterial
                 color={ceiling}
