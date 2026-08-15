@@ -630,35 +630,45 @@
   color: #fff !important;
 }
 
-/* Menu sheet — narrow left drawer so the room stays visible */
+/* Menu sheet — flush right edge (same pattern as catalog / inspector) */
+.menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  border: 0;
+  background: rgba(17, 24, 32, 0.12);
+  animation: fade-in 180ms ease-out;
+}
 .studio-menu-sheet {
   position: fixed;
   z-index: 60;
-  left: max(12px, env(safe-area-inset-left));
-  top: max(76px, calc(env(safe-area-inset-top) + 64px));
-  width: min(340px, calc(100vw - 24px));
-  max-height: min(70vh, 640px);
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: min(300px, 46vw);
+  max-height: none;
   overflow: auto;
   background: var(--surface);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: 16px;
-  animation: sheet-up 220ms ease-out;
+  border-radius: 16px 0 0 16px;
+  box-shadow: -8px 0 28px rgba(17, 24, 32, 0.16), 0 0 0 1px rgba(17, 24, 32, 0.06);
+  padding: max(14px, env(safe-area-inset-top)) 14px max(96px, calc(env(safe-area-inset-bottom) + 88px));
+  animation: drawer-in 240ms cubic-bezier(0.22, 1, 0.36, 1);
   -webkit-overflow-scrolling: touch;
 }
 .studio-menu-sheet.studio-menu-drawer {
-  top: max(12px, env(safe-area-inset-top));
-  bottom: max(12px, env(safe-area-inset-bottom));
-  left: max(8px, env(safe-area-inset-left));
-  width: min(280px, calc(100vw - 88px));
+  top: 0;
+  bottom: 0;
+  left: auto;
+  right: 0;
+  width: min(280px, 46vw);
   max-height: none;
-  border-radius: 0 16px 16px 0;
-  padding: 14px 12px 18px;
-  box-shadow: 8px 0 28px rgba(17, 24, 32, 0.14);
+  border-radius: 14px 0 0 14px;
+  padding: max(14px, env(safe-area-inset-top)) 12px max(96px, calc(env(safe-area-inset-bottom) + 88px));
+  box-shadow: -8px 0 28px rgba(17, 24, 32, 0.14);
   animation: drawer-in 240ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 @keyframes drawer-in {
-  from { opacity: 0; transform: translateX(-12px); }
+  from { opacity: 0; transform: translateX(18px); }
   to { opacity: 1; transform: translateX(0); }
 }
 .studio-menu-sheet > header {
@@ -936,6 +946,14 @@
 }
 
 /* Selection inspector — flush right edge, narrow so the canvas stays usable */
+.inspector-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 65;
+  border: 0;
+  background: rgba(17, 24, 32, 0.1);
+  animation: fade-in 180ms ease-out;
+}
 .selection-inspector {
   position: fixed;
   z-index: 70;

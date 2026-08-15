@@ -15,7 +15,6 @@ import { CatalogPanel } from './components/catalog/CatalogPanel';
 import { catalog as catalogItems } from './components/catalog/catalogData';
 import { BomDialog } from './components/ui/BomDialog';
 import { SelectionInspector } from './components/ui/SelectionInspector';
-import { SelectedProductCard } from './components/ui/SelectedProductCard';
 import { StudioChrome } from './components/ui/StudioChrome';
 import { DesignStart } from './components/ui/DesignStart';
 import { AdminPage } from './components/admin/AdminPage';
@@ -81,6 +80,8 @@ function StudioApp() {
   const openProjectMenu = useCallback(() => {
     setMenuOpen(true);
     setCatalogOpen(false);
+    setInspectorOpen(false);
+    setProductCardOpen(false);
     document.body.dataset.menuOpen = '1';
     window.dispatchEvent(new Event('roomcraft-menu-changed'));
     window.setTimeout(() => {
@@ -183,46 +184,35 @@ function StudioApp() {
 
   useEffect(() => {
     const open = () => {
-      // Walls/floors/ceilings → inspector. Never stack with the retail product card.
+      // Walls/floors/ceilings/room → right inspector. Never open a product detail card.
       setInspectorOpen(true);
       setProductCardOpen(false);
       setCatalogOpen(false);
       closeProjectMenu();
     };
-    const openCard = () => {
-      setProductCardOpen(true);
-      setInspectorOpen(false);
-      setCatalogOpen(false);
-      setMenuOpen(false);
-    };
     const dismissCard = () => setProductCardOpen(false);
     window.addEventListener('roomcraft-open-properties', open);
-    window.addEventListener('roomcraft-open-product-card', openCard);
     window.addEventListener('roomcraft-dismiss-product-card', dismissCard);
     return () => {
       window.removeEventListener('roomcraft-open-properties', open);
-      window.removeEventListener('roomcraft-open-product-card', openCard);
       window.removeEventListener('roomcraft-dismiss-product-card', dismissCard);
     };
-  }, []);
+  }, [closeProjectMenu]);
 
   const pendingPlacement = usePlannerStore((s) => s.pendingPlacement);
   useEffect(() => {
-    // One panel at a time: furniture → product card; walls/openings auto-open inspector.
-    // Room/floor edit opens only from the right-rail Edit control (or open-properties).
+    // Selecting furniture only highlights it + left FABs (rotate/delete) — no detail card.
     if (pendingPlacement) {
       setInspectorOpen(false);
       setProductCardOpen(false);
       return;
     }
+    setProductCardOpen(false);
+    // Openings need the inspector to edit size/type. Walls stay on-plan.
     if (selectedFurnitureId) {
-      setProductCardOpen(true);
       setInspectorOpen(false);
       return;
     }
-    setProductCardOpen(false);
-    // Openings need the inspector to edit size/type. Walls stay on-plan so end
-    // handles remain draggable — open properties from the wall Edit fab instead.
     if (selectedOpeningId) setInspectorOpen(true);
     else if (selectedWallId) setInspectorOpen(false);
   }, [selectedWallId, selectedOpeningId, selectedFurnitureId, pendingPlacement]);
@@ -313,6 +303,7 @@ function StudioApp() {
     productCardOpen && selectedFurnitureId && !pendingPlacement && !inspectorOpen ? 'has-product-card' : '',
     selectedFurnitureId || pendingPlacement ? 'has-action-fabs' : '',
     inspectorOpen ? 'has-inspector' : '',
+    catalogOpen ? 'has-catalog' : '',
   ]
     .filter(Boolean)
     .join(' ');
@@ -348,6 +339,8 @@ function StudioApp() {
           store.setStudioMode('furnish');
           setCatalogOpen(true);
           setMenuOpen(false);
+          setInspectorOpen(false);
+          setProductCardOpen(false);
         }}
         openMenu={openProjectMenu}
         closeMenu={closeProjectMenu}
@@ -361,32 +354,27 @@ function StudioApp() {
         }}
       />
 
-      {productCardOpen &&
-        selectedFurnitureId &&
-        !inspectorOpen &&
-        !pendingPlacement &&
-        !catalogOpen &&
-        !menuOpen && (
-        <SelectedProductCard
-          roomType={roomType}
-          onModify={() => {
-            setInspectorOpen(true);
-            setProductCardOpen(false);
-            setCatalogOpen(false);
-            setMenuOpen(false);
-          }}
-          onClose={() => setProductCardOpen(false)}
-          onPlaceComplement={() => {
-            setInspectorOpen(false);
-            setProductCardOpen(false);
-            setCatalogOpen(false);
-            setMenuOpen(false);
-          }}
+      {catalogOpen && <CatalogPanel close={closeCatalog} onAdd={startGhostPlacement} roomType={roomType} />}
+
+      {inspectorOpen && (
+        <button
+          type="button"
+          className="inspector-backdrop"
+          aria-label="Close panel"
+          onClick={() => setInspectorOpen(false)}
         />
       )}
+      <SelectionInspector
+        open={inspectorOpen}
+        onClose={() => {
+          setInspectorOpen(false);
+        }}
+      />
 
       {menuOpen && (
-        <aside className="studio-menu-sheet studio-menu-drawer" role="dialog" aria-label="Project menu">
+        <>
+          <button type="button" className="menu-backdrop" aria-label="Close menu" onClick={closeProjectMenu} />
+          <aside className="studio-menu-sheet studio-menu-drawer" role="dialog" aria-label="Project menu">
           <header>
             <button className="project-name" onClick={rename}>
               {projectName} <ChevronDown size={15} />
@@ -481,16 +469,8 @@ function StudioApp() {
             </section>
           )}
         </aside>
+        </>
       )}
-
-      {catalogOpen && <CatalogPanel close={closeCatalog} onAdd={startGhostPlacement} roomType={roomType} />}
-
-      <SelectionInspector
-        open={inspectorOpen}
-        onClose={() => {
-          setInspectorOpen(false);
-        }}
-      />
 
       {notice && (
         <div className="app-notice" role="status">

@@ -554,14 +554,6 @@ export function StudioChrome({
               <RotateCw />
             </button>
             {!coarsePointer && (
-              <button onClick={() => window.dispatchEvent(new Event('roomcraft-open-product-card'))} aria-label="Product details">
-                <Info />
-              </button>
-            )}
-            <button onClick={onOpenInspector} aria-label="Edit product">
-              <PencilRuler />
-            </button>
-            {!coarsePointer && (
               <button onClick={() => duplicateSelected()} aria-label="Duplicate product">
                 <Copy />
               </button>

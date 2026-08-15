@@ -1081,7 +1081,6 @@ function Furniture() {
       update(itemId, pending.current);
       pending.current = null;
     }
-    if (!moved) window.dispatchEvent(new Event('roomcraft-open-product-card'));
   };
 
   const moveItemDrag = (e: PointerEvent) => {
@@ -1199,10 +1198,9 @@ function Furniture() {
                 colliding={collisions.has(i.id)}
                 onSelect={(e) => {
                   e.stopPropagation();
-                  // Plane-drag path opens the card on pointer-up if it was a tap.
+                  // Plane-drag path selects on pointer-down; tap opens nothing else.
                   if (usePlaneDrag) return;
                   select(i.id);
-                  window.dispatchEvent(new Event('roomcraft-open-product-card'));
                 }}
                 onPointerDown={usePlaneDrag ? (e) => beginItemDrag(e, i) : undefined}
               />
