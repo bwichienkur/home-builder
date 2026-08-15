@@ -81,7 +81,6 @@ function StudioApp() {
     setMenuOpen(true);
     setCatalogOpen(false);
     setInspectorOpen(false);
-    setProductCardOpen(false);
     document.body.dataset.menuOpen = '1';
     window.dispatchEvent(new Event('roomcraft-menu-changed'));
     window.setTimeout(() => {
@@ -90,7 +89,6 @@ function StudioApp() {
     }, 40);
   }, []);
   const [inspectorOpen, setInspectorOpen] = useState(false);
-  const [productCardOpen, setProductCardOpen] = useState(false);
   const [bom, setBom] = useState(false);
   const [projectName, setProjectName] = useState('Bedroom study');
   const [notice, setNotice] = useState('');
@@ -112,7 +110,6 @@ function StudioApp() {
     setCatalogOpen(false);
     setMenuOpen(false);
     setInspectorOpen(false);
-    setProductCardOpen(false);
     window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 0);
   }, [store]);
 
@@ -184,31 +181,25 @@ function StudioApp() {
 
   useEffect(() => {
     const open = () => {
-      // Walls/floors/ceilings/room → right inspector. Never open a product detail card.
+      // Walls/floors/ceilings/room → right inspector. Never a product editor.
+      usePlannerStore.getState().selectFurniture(null);
       setInspectorOpen(true);
-      setProductCardOpen(false);
       setCatalogOpen(false);
       closeProjectMenu();
     };
-    const dismissCard = () => setProductCardOpen(false);
     window.addEventListener('roomcraft-open-properties', open);
-    window.addEventListener('roomcraft-dismiss-product-card', dismissCard);
     return () => {
       window.removeEventListener('roomcraft-open-properties', open);
-      window.removeEventListener('roomcraft-dismiss-product-card', dismissCard);
     };
   }, [closeProjectMenu]);
 
   const pendingPlacement = usePlannerStore((s) => s.pendingPlacement);
   useEffect(() => {
-    // Selecting furniture only highlights it + left FABs (rotate/delete) — no detail card.
+    // Furniture select: highlight + rotate/delete FABs only — no card, no inspector.
     if (pendingPlacement) {
       setInspectorOpen(false);
-      setProductCardOpen(false);
       return;
     }
-    setProductCardOpen(false);
-    // Openings need the inspector to edit size/type. Walls stay on-plan.
     if (selectedFurnitureId) {
       setInspectorOpen(false);
       return;
@@ -300,7 +291,6 @@ function StudioApp() {
     pendingPlacement ? 'is-placing' : '',
     workflowStage === 'start' ? 'is-start' : '',
     workflowStage === 'room' ? 'is-room-focus' : '',
-    productCardOpen && selectedFurnitureId && !pendingPlacement && !inspectorOpen ? 'has-product-card' : '',
     selectedFurnitureId || pendingPlacement ? 'has-action-fabs' : '',
     inspectorOpen ? 'has-inspector' : '',
     catalogOpen ? 'has-catalog' : '',
@@ -340,15 +330,15 @@ function StudioApp() {
           setCatalogOpen(true);
           setMenuOpen(false);
           setInspectorOpen(false);
-          setProductCardOpen(false);
         }}
         openMenu={openProjectMenu}
         closeMenu={closeProjectMenu}
         openBom={() => setBom(true)}
         openCategory={openCategory}
         onOpenInspector={() => {
+          // Room / wall / opening config only — never a product editor.
+          if (store.selectedFurnitureId) store.selectFurniture(null);
           setInspectorOpen(true);
-          setProductCardOpen(false);
           setCatalogOpen(false);
           setMenuOpen(false);
         }}

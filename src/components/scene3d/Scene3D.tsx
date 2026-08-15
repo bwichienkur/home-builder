@@ -1097,7 +1097,6 @@ function Furniture() {
       drag.orbitLocked = true;
       document.body.dataset.movingFurniture = 'true';
       setDragging(true);
-      window.dispatchEvent(new Event('roomcraft-dismiss-product-card'));
       window.dispatchEvent(new Event('roomcraft-drag-start'));
     }
 
@@ -1225,7 +1224,6 @@ function Furniture() {
               if (selected.placementKind === 'perimeter-trim') return;
               document.body.dataset.movingFurniture = 'true';
               setDragging(true);
-              window.dispatchEvent(new Event('roomcraft-dismiss-product-card'));
               window.dispatchEvent(new Event('roomcraft-drag-start'));
             }}
             onDrag={(m) => {

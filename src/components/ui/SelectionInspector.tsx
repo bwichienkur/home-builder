@@ -5,7 +5,7 @@ import { wallLengthMeters } from '../../lib/geometry/snapping';
 import { formatLength, parseLength } from '../../lib/measurements';
 import { olsenHousePlans } from '../../lib/housePlans/olsenPlans';
 import { planRoomSizeFeet } from '../../lib/housePlans/buildPlan';
-import type { FurnitureItem, Opening, PlanRoomLabel, RoomType, Wall } from '../../types';
+import type { Opening, PlanRoomLabel, RoomType, Wall } from '../../types';
 
 const finishes: [string, string][] = [
   ['Oak', '#c9b18f'],
@@ -35,16 +35,13 @@ const roomTypes: RoomType[] = [
 export function SelectionInspector({ open, onClose }: { open: boolean; onClose: () => void }) {
   const walls = usePlannerStore((s) => s.walls);
   const openings = usePlannerStore((s) => s.openings);
-  const furniture = usePlannerStore((s) => s.furniture);
   const planRooms = usePlannerStore((s) => s.planRooms);
   const selectedWallId = usePlannerStore((s) => s.selectedWallId);
   const selectedOpeningId = usePlannerStore((s) => s.selectedOpeningId);
-  const selectedFurnitureId = usePlannerStore((s) => s.selectedFurnitureId);
   const selectedRoomId = usePlannerStore((s) => s.selectedRoomId);
   const selectedSurface = usePlannerStore((s) => s.selectedSurface);
   const selectedWall = walls.find((w) => w.id === selectedWallId);
   const selectedOpening = openings.find((o) => o.id === selectedOpeningId);
-  const selectedFurniture = furniture.find((f) => f.id === selectedFurnitureId);
   const selectedRoom = planRooms.find((r) => r.id === selectedRoomId);
 
   if (!open) return null;
@@ -53,15 +50,13 @@ export function SelectionInspector({ open, onClose }: { open: boolean; onClose: 
     ? 'Opening'
     : selectedWall
       ? 'Wall'
-      : selectedFurniture
-        ? selectedFurniture.name
-        : selectedRoom
-          ? selectedRoom.name
-          : selectedSurface === 'ceiling'
-            ? 'Ceiling'
-            : selectedSurface === 'floor'
-              ? 'Floor'
-              : 'Room';
+      : selectedRoom
+        ? selectedRoom.name
+        : selectedSurface === 'ceiling'
+          ? 'Ceiling'
+          : selectedSurface === 'floor'
+            ? 'Floor'
+            : 'Room';
 
   return (
     <aside className="selection-inspector" aria-label="Selection properties">
@@ -79,8 +74,6 @@ export function SelectionInspector({ open, onClose }: { open: boolean; onClose: 
           <OpeningProperties opening={selectedOpening} />
         ) : selectedWall ? (
           <WallProperties wall={selectedWall} />
-        ) : selectedFurniture ? (
-          <FurnitureProperties item={selectedFurniture} />
         ) : selectedRoom ? (
           <PlanRoomProperties room={selectedRoom} />
         ) : (
@@ -294,66 +287,6 @@ export function RoomDesigner({ compact = false, hidePlans = false }: { compact?:
         </>
       )}
     </div>
-  );
-}
-
-function FurnitureProperties({ item }: { item: FurnitureItem }) {
-  const update = usePlannerStore((s) => s.updateFurniture);
-  const move = usePlannerStore((s) => s.moveSelected);
-  const duplicate = usePlannerStore((s) => s.duplicateSelected);
-  const remove = usePlannerStore((s) => s.deleteSelected);
-  const unit = usePlannerStore((s) => s.unitSystem);
-  return (
-    <>
-      <p className="muted">
-        {item.category}
-        {item.mountingType === 'wall' ? ' · Wall mount' : item.mountingType === 'ceiling' ? ' · Ceiling' : ' · Floor'}
-      </p>
-      <label>
-        Mounting
-        <select value={item.mountingType ?? 'floor'} onChange={(e) => update(item.id, { mountingType: e.target.value as FurnitureItem['mountingType'] })}>
-          <option value="floor">Floor</option>
-          <option value="wall">Wall</option>
-          <option value="ceiling">Ceiling</option>
-        </select>
-      </label>
-      <Numeric label="Position X" value={item.x} onChange={(x) => update(item.id, { x })} />
-      <Numeric label="Position Z" value={item.z} onChange={(z) => update(item.id, { z })} />
-      {(item.mountingType === 'wall' || item.mountingType === 'ceiling') && (
-        <Numeric label="Height Y" value={item.y ?? 0} onChange={(y) => update(item.id, { y })} />
-      )}
-      <p className="muted">
-        Size {formatLength(item.width, unit)} × {formatLength(item.depth, unit)} × {formatLength(item.height, unit)}
-      </p>
-      <label>
-        Rotation
-        <input className="property-input" type="range" min="0" max="6.28" step="0.1" value={item.rotation} onChange={(e) => update(item.id, { rotation: +e.target.value })} />
-      </label>
-      <label className="room-filter">
-        <input type="checkbox" checked={!!item.showClearance} onChange={(e) => update(item.id, { showClearance: e.target.checked })} />
-        Show clearance
-      </label>
-      <div className="nudge">
-        <button onClick={() => move(-0.25, 0)}>←</button>
-        <button onClick={() => move(0, -0.25)}>↑</button>
-        <button onClick={() => move(0, 0.25)}>↓</button>
-        <button onClick={() => move(0.25, 0)}>→</button>
-      </div>
-      <button className="duplicate" onClick={duplicate}>
-        Duplicate item
-      </button>
-      <button className="delete-item" onClick={remove}>
-        Delete item
-      </button>
-      <label>
-        Color
-        <div className="swatches">
-          {finishes.slice(0, 6).map(([name, color]) => (
-            <button title={name} key={color} style={{ background: color }} onClick={() => update(item.id, { color })} />
-          ))}
-        </div>
-      </label>
-    </>
   );
 }
 

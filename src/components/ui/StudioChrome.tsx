@@ -7,7 +7,6 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
-  Copy,
   FileSpreadsheet,
   Focus,
   Grid2X2,
@@ -123,7 +122,6 @@ export function StudioChrome({
   const cancelPending = usePlannerStore((s) => s.cancelPendingPlacement);
   const rotatePending = usePlannerStore((s) => s.rotatePendingPlacement);
   const rotateSelected = usePlannerStore((s) => s.rotateSelected);
-  const duplicateSelected = usePlannerStore((s) => s.duplicateSelected);
   const deleteSelected = usePlannerStore((s) => s.deleteSelected);
   const categories = roomCategories[roomType];
   const isTop = camera === 'top';
@@ -553,11 +551,6 @@ export function StudioChrome({
             <button onClick={() => rotateSelected()} aria-label="Rotate product">
               <RotateCw />
             </button>
-            {!coarsePointer && (
-              <button onClick={() => duplicateSelected()} aria-label="Duplicate product">
-                <Copy />
-              </button>
-            )}
             <button className="is-danger" onClick={() => deleteSelected()} aria-label="Delete product">
               <Trash2 />
             </button>
