@@ -412,7 +412,7 @@ function WallProperties({ wall }: { wall: Wall }) {
         <button type="button" onClick={() => split(wall.id)}>Split wall</button>
         <button type="button" onClick={() => offset(wall.id, 0.25)}>Move +{unit === 'metric' ? '25 cm' : '10 in'}</button>
       </div>
-      <p className="muted">Edit length, width, and height on the plan chip centered on this wall.</p>
+      <p className="muted">Edit length in the field beside the wall on the plan. Width and height are here.</p>
       <Property label="Openings" value={String(openings.length)} />
       {openings.map((o) => (
         <div className="opening-editor" key={o.id}>

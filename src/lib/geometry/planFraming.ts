@@ -100,22 +100,20 @@ export function framingFromWall(wall: Wall, opts?: FramingOpts): PlanFraming {
   const length = Math.hypot(dx, dz) || 1;
   const nx = -dz / length;
   const nz = dx / length;
-  const halfT = Math.max(wall.thickness, 0.12) * 0.5 + 0.35;
-  // Build a padded AABB around the wall segment so thickness/length drive zoom.
+  // Leave room beside the wall for the length field (~0.85 m offset).
+  const halfT = Math.max(wall.thickness, 0.12) * 0.5 + 0.95;
   const corners: Point[] = [
     { x: wall.start.x + nx * halfT * PIXELS_PER_METER, y: wall.start.y + nz * halfT * PIXELS_PER_METER },
     { x: wall.start.x - nx * halfT * PIXELS_PER_METER, y: wall.start.y - nz * halfT * PIXELS_PER_METER },
     { x: wall.end.x + nx * halfT * PIXELS_PER_METER, y: wall.end.y + nz * halfT * PIXELS_PER_METER },
     { x: wall.end.x - nx * halfT * PIXELS_PER_METER, y: wall.end.y - nz * halfT * PIXELS_PER_METER },
   ];
-  const minSpan = Math.max(length * 1.15, wall.thickness * 6, 2.2);
-  // Slightly tighter pad so one wall reads large; height nudges zoom with wall height.
-  const heightBoost = 1 + Math.max(0, wall.height - 2.4) * 0.08;
+  const minSpan = Math.max(length * 1.08, 1.6);
   return framingFromPoints(corners, {
     minSpan,
-    minHeight: opts?.minHeight ?? 6,
-    pad: (opts?.pad ?? 2.2) * heightBoost,
-    orbitPad: opts?.orbitPad ?? 1.15,
+    minHeight: opts?.minHeight ?? 4.2,
+    pad: opts?.pad ?? 1.35,
+    orbitPad: opts?.orbitPad ?? 1.1,
   });
 }
 

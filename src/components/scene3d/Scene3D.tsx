@@ -172,10 +172,12 @@ function CameraRig() {
     const pad = basePad * chromeFit.padScale;
     const orbitPad = baseOrbit * Math.max(1, chromeFit.padScale * 0.9);
     if (focusWall) {
+      // Ignore chrome padScale here — it was zooming the wall out to a speck.
+      // Frame tightly so the wall dominates the free viewport beside the length field.
       return framingFromWall(focusWall, {
-        pad: Math.max(1.65, pad * 0.72),
-        orbitPad,
-        minHeight: 5.5,
+        pad: coarse ? 1.42 : 1.32,
+        orbitPad: 1.1,
+        minHeight: 3.8,
       });
     }
     if (focusRoom?.points.length) {
