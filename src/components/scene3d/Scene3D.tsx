@@ -500,6 +500,11 @@ function DoorLeaf({
   const swingStart = swing === 'left' ? 0 : Math.PI / 2;
   return (
     <group position={[x, 0, z]} rotation={[0, angle, 0]}>
+      {/* Plan silhouette — thin 3D leaf is nearly invisible from above; this fills the hole. */}
+      <mesh position={[0, 0.025, 0]} rotation={[-Math.PI / 2, 0, 0]} raycast={() => {}}>
+        <planeGeometry args={[leafW, 0.22]} />
+        <meshBasicMaterial color="#b8956a" transparent opacity={0.92} depthWrite={false} />
+      </mesh>
       <mesh position={[0, leafH / 2, 0]} castShadow>
         <boxGeometry args={[leafW, leafH, 0.045]} />
         <meshStandardMaterial color="#c4a574" roughness={0.7} />
@@ -513,7 +518,7 @@ function DoorLeaf({
       {swing !== 'none' && (
         <mesh position={[hingeX, 0.012, 0]} rotation={[-Math.PI / 2, faceFlip, 0]}>
           <ringGeometry args={[0.02, leafW, 28, 1, swingStart, Math.PI / 2]} />
-          <meshBasicMaterial color="#0058a3" transparent opacity={0.22} side={THREE.DoubleSide} />
+          <meshBasicMaterial color="#0058a3" transparent opacity={0.18} side={THREE.DoubleSide} />
         </mesh>
       )}
     </group>
@@ -859,23 +864,40 @@ function WallMeshes() {
             </mesh>
           );
         });
-        const selectionHalo =
-          selected ? (
-            <mesh key={w.id + 'sel'} position={[midX, w.height / 2, midZ]} rotation={[0, angle, 0]} raycast={() => {}} renderOrder={3}>
-              <boxGeometry args={[origLen + 0.02, w.height + 0.04, w.thickness + 0.05]} />
-              <meshBasicMaterial
-                color="#0058a3"
-                transparent
-                opacity={0.28 * Math.max(drawOpacity, 0.35)}
-                depthWrite={false}
-                depthTest
-                toneMapped={false}
-                polygonOffset
-                polygonOffsetFactor={-2}
-                polygonOffsetUnits={-2}
-              />
-            </mesh>
-          ) : null;
+        const selectionHalo = selected
+          ? solids.map((box, i) => {
+              // Halo each solid segment so openings stay visible as gaps (not a full-run slab).
+              const c = (box.along0 + box.along1) / 2;
+              const t = c / length;
+              const x = sx + (ex - sx) * t;
+              const z = sz + (ez - sz) * t;
+              const segLen = box.along1 - box.along0;
+              const segH = box.y1 - box.y0;
+              const y = (box.y0 + box.y1) / 2;
+              return (
+                <mesh
+                  key={w.id + 'sel' + i}
+                  position={[x, y, z]}
+                  rotation={[0, angle, 0]}
+                  raycast={() => {}}
+                  renderOrder={3}
+                >
+                  <boxGeometry args={[segLen + 0.02, segH + 0.04, w.thickness + 0.05]} />
+                  <meshBasicMaterial
+                    color="#0058a3"
+                    transparent
+                    opacity={0.28 * Math.max(drawOpacity, 0.35)}
+                    depthWrite={false}
+                    depthTest
+                    toneMapped={false}
+                    polygonOffset
+                    polygonOffsetFactor={-2}
+                    polygonOffsetUnits={-2}
+                  />
+                </mesh>
+              );
+            })
+          : [];
         const fixtures = related.flatMap((o) => {
           // Shared helper — identical center for hole, leaf, swing, and drag handle.
           const placed = openingCenterOnWall(w, o.offset, WORLD_ORIGIN, PIXELS_PER_METER);
@@ -883,6 +905,15 @@ function WallMeshes() {
           const z = placed.z;
           const openAngle = placed.angle;
           const parts: ReactElement[] = [];
+          // Plan: floor plate marks the opening so the gap is obvious under the leaf.
+          if (cameraMode === 'top' && (o.type === 'door' || o.type === 'passage')) {
+            parts.push(
+              <mesh key={o.id + 'plate'} position={[x, 0.02, z]} rotation={[-Math.PI / 2, 0, openAngle]} raycast={() => {}}>
+                <planeGeometry args={[o.width, Math.max(w.thickness + 0.16, 0.28)]} />
+                <meshBasicMaterial color="#0058a3" transparent opacity={0.2} depthWrite={false} />
+              </mesh>,
+            );
+          }
           if (o.type === 'window')
             parts.push(
               <mesh key={o.id + 'glass'} position={[x, o.sill + o.height / 2, z]} rotation={[0, openAngle, 0]} raycast={skipRay}>
@@ -937,7 +968,7 @@ function WallMeshes() {
           ...(topPick ? [topPick] : []),
           ...(fading && wallEditMode ? [pickProxy] : []),
           ...base,
-          ...(selectionHalo ? [selectionHalo] : []),
+          ...selectionHalo,
           ...fixtures,
         ];
       })}

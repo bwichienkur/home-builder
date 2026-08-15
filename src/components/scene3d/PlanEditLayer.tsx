@@ -1,4 +1,4 @@
-import { Html, Line } from '@react-three/drei';
+import { Line } from '@react-three/drei';
 import { useThree } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import * as THREE from 'three';
@@ -16,6 +16,7 @@ import { PIXELS_PER_METER, wallLengthMeters } from '../../lib/geometry/snapping'
 import { formatLength, parseLength } from '../../lib/measurements';
 import { usePlannerStore } from '../../store/plannerStore';
 import type { PlanRoomLabel } from '../../types';
+import { WallDimCardHtml } from './WallDimCardHtml';
 
 const world = (x: number, y: number): [number, number] => [
   (x - WORLD_ORIGIN.x) / PIXELS_PER_METER,
@@ -165,9 +166,11 @@ export function PlanEditLayer() {
         const angle = -Math.atan2(ez - sz, ex - sx);
         const side = wallExteriorSide(selected, roomsForExterior);
         const layout = wallDimFieldLayout(selected, side);
-        const { nx, ny: nz, cardOffsetM, placement, verticalOnPlan } = layout;
+        const { nx, ny: nz, placement, verticalOnPlan } = layout;
         const s = layout.side;
-        // World-space card *center* fully outside the exterior face (Html `center`).
+        const halfThick = Math.max(selected.thickness || 0.15, 0.12) * 0.5;
+        // Anchor on the exterior face; WallDimCardHtml pushes the card clear in screen px.
+        const faceOffsetM = halfThick + 0.12;
         return {
           len,
           midX,
@@ -175,7 +178,7 @@ export function PlanEditLayer() {
           angle,
           placement,
           verticalOnPlan,
-          cardPos: [midX + nx * s * cardOffsetM, 0.12, midZ + nz * s * cardOffsetM] as [number, number, number],
+          facePos: [midX + nx * s * faceOffsetM, 0.12, midZ + nz * s * faceOffsetM] as [number, number, number],
         };
       })()
     : null;
@@ -214,11 +217,8 @@ export function PlanEditLayer() {
             <meshBasicMaterial color="#0058a3" transparent opacity={0.2} depthWrite={false} />
           </mesh>
 
-          <Html position={selectedFrame.cardPos} center zIndexRange={[100, 50]} style={{ pointerEvents: 'auto' }}>
-            <div
-              className={`wall-dim-card wall-dim-card--${selectedFrame.placement}`}
-              onPointerDown={(e) => e.stopPropagation()}
-            >
+          <WallDimCardHtml facePos={selectedFrame.facePos} placement={selectedFrame.placement}>
+            <div className="wall-dim-card">
               <div className="wall-dim-card-grow" role="group" aria-label="Which side to resize">
                 {selectedFrame.verticalOnPlan ? (
                   <>
@@ -298,7 +298,7 @@ export function PlanEditLayer() {
                 />
               </div>
             </div>
-          </Html>
+          </WallDimCardHtml>
         </group>
       )}
     </group>
