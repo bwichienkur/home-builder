@@ -93,6 +93,25 @@ describe('perimeter trim',()=>{
  });
 });
 
+describe('floor fill and undo',()=>{
+ it('applies a tile color to a room floor and undoes it',()=>{
+  usePlannerStore.getState().placePlanRoom({x:400,y:300},'rectangle','Tile Room');
+  const room=usePlannerStore.getState().planRooms[0]!;
+  const before=room.floorColor;
+  usePlannerStore.getState().beginFloorFill({catalogId:'its-afyon-gold-18',name:'Afyon Gold',color:'#cdb58d'});
+  expect(usePlannerStore.getState().pendingFloorFill?.name).toBe('Afyon Gold');
+  expect(usePlannerStore.getState().applyFloorFillToRoom(room.id)).toBe(true);
+  expect(usePlannerStore.getState().planRooms.find(r=>r.id===room.id)?.floorColor).toBe('#cdb58d');
+  usePlannerStore.getState().undo();
+  expect(usePlannerStore.getState().planRooms.find(r=>r.id===room.id)?.floorColor).toBe(before);
+ });
+
+ it('ignores freehand wall draw tool requests',()=>{
+  usePlannerStore.getState().setTool('wall');
+  expect(usePlannerStore.getState().tool).toBe('select');
+ });
+});
+
 describe('IKEA-style wall editing',()=>{
  it('splits a wall into two equal connected segments',()=>{
   const before=usePlannerStore.getState().walls.length,wall=usePlannerStore.getState().walls[0];

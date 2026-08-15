@@ -25,6 +25,8 @@ import {
   Trash2,
   Undo2,
   Wallpaper,
+  DoorOpen,
+  SquareDashed,
   X,
 } from 'lucide-react';
 import { roomCategories } from '../catalog/CatalogPanel';
@@ -101,6 +103,9 @@ export function StudioChrome({
   const selectedWall = usePlannerStore((s) => s.selectedWallId);
   const selectedOpening = usePlannerStore((s) => s.selectedOpeningId);
   const pending = usePlannerStore((s) => s.pendingPlacement);
+  const pendingFloorFill = usePlannerStore((s) => s.pendingFloorFill);
+  const cancelFloorFill = usePlannerStore((s) => s.cancelFloorFill);
+  const addOpening = usePlannerStore((s) => s.addOpening);
   const workflowStage = usePlannerStore((s) => s.workflowStage);
   const studioMode = usePlannerStore((s) => s.studioMode);
   const setStudioMode = usePlannerStore((s) => s.setStudioMode);
@@ -116,7 +121,6 @@ export function StudioChrome({
   const showStart = usePlannerStore((s) => s.showStart);
   const tool = usePlannerStore((s) => s.tool);
   const setTool = usePlannerStore((s) => s.setTool);
-  const draftStart = usePlannerStore((s) => s.draftStart);
   const setDraftStart = usePlannerStore((s) => s.setDraftStart);
   const commitPending = usePlannerStore((s) => s.commitPendingPlacement);
   const cancelPending = usePlannerStore((s) => s.cancelPendingPlacement);
@@ -260,7 +264,6 @@ export function StudioChrome({
 
   const planTools: { id: Tool; label: string; icon: typeof PencilRuler }[] = [
     { id: 'select', label: 'Walls', icon: PencilRuler },
-    { id: 'wall', label: 'Draw', icon: Wallpaper },
   ];
 
   const roomShapes: { id: 'rectangle' | 'wide' | 'l-shape'; label: string; icon: typeof Square }[] = [
@@ -273,7 +276,8 @@ export function StudioChrome({
     setPendingRoomShape(null);
     setRoomShapesOpen(false);
     setStudioMode('architect');
-    setTool(id);
+    // Freehand wall drawing is removed — rooms come from Add room shapes.
+    setTool(id === 'wall' ? 'select' : id);
     setDraftStart(null);
     setView('3d');
     setCamera('top');
@@ -480,16 +484,14 @@ export function StudioChrome({
       )}
 
       {showPlanTools && tool === 'select' && !selectedWall && !selectedRoom && (
-        <div className="studio-selection-hint studio-hint-float">Tap a wall · enter length on the plan</div>
+        <div className="studio-selection-hint studio-hint-float">Tap a wall · enter length on the plan · add openings from wall actions</div>
       )}
-      {showPlanTools && tool === 'wall' && (
+      {pendingFloorFill && (
         <div className="studio-selection-hint studio-hint-float">
-          {draftStart ? 'Tap wall end' : 'Tap to draw walls'}
-          {draftStart && (
-            <button type="button" className="studio-hint-action" onClick={() => setDraftStart(null)}>
-              Cancel
-            </button>
-          )}
+          Tap a room to tile the floor with {pendingFloorFill.name}
+          <button type="button" className="studio-hint-action" onClick={() => cancelFloorFill()}>
+            Cancel
+          </button>
         </div>
       )}
       {pendingRoomShape && (
@@ -499,11 +501,27 @@ export function StudioChrome({
       {pending && <div className="studio-selection-hint studio-hint-float">Placing {pending.name} · move then tap to confirm</div>}
 
       {hasSelection && !pending && !selectedItem && !inRoom && wallEditMode && selectedWall && (
-        <div className="studio-selection-hint studio-hint-float">Wall selected · L / W / H around the wall</div>
+        <div className="studio-selection-hint studio-hint-float">Wall selected · add a door or opening · L / W / H around the wall</div>
       )}
 
       {wallEditMode && selectedWall && !pending && (
         <div className="studio-selection-fabs" role="toolbar" aria-label="Wall actions">
+          <button
+            type="button"
+            onClick={() => addOpening(selectedWall, 'door')}
+            aria-label="Add door"
+            title="Add door"
+          >
+            <DoorOpen />
+          </button>
+          <button
+            type="button"
+            onClick={() => addOpening(selectedWall, 'passage')}
+            aria-label="Add opening"
+            title="Add room opening"
+          >
+            <SquareDashed />
+          </button>
           <button
             type="button"
             className="is-danger"

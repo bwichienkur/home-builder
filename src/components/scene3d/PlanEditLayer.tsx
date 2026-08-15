@@ -6,7 +6,7 @@ import { WORLD_ORIGIN } from '../../lib/geometry/placement';
 import { detectRoomPolygons } from '../../lib/geometry/rooms';
 import { wallDimFieldLayout, wallExteriorSide } from '../../lib/geometry/roomWalls';
 import { proposedRoomOverlaps, shapedRoomPoints, snapRoomCenterToNeighbors } from '../../lib/housePlans/buildPlan';
-import { PIXELS_PER_METER, snapWallPoint, wallLengthMeters } from '../../lib/geometry/snapping';
+import { PIXELS_PER_METER, wallLengthMeters } from '../../lib/geometry/snapping';
 import { formatLength, parseLength } from '../../lib/measurements';
 import { usePlannerStore } from '../../store/plannerStore';
 import type { PlanRoomLabel } from '../../types';
@@ -22,8 +22,8 @@ const planFromWorld = (x: number, z: number) => ({
 });
 
 /**
- * Top-view plan tools: draw walls / place rooms, and edit wall length via an on-plan input.
- * Wall end-handle dragging is intentionally disabled (unreliable on mobile).
+ * Top-view plan tools: place rooms and edit wall length via an on-plan input.
+ * Freehand wall drawing is disabled — rooms come from Add room shapes.
  */
 export function PlanEditLayer() {
   const tool = usePlannerStore((s) => s.tool);
@@ -31,9 +31,7 @@ export function PlanEditLayer() {
   const cameraMode = usePlannerStore((s) => s.cameraMode);
   const walls = usePlannerStore((s) => s.walls);
   const planRooms = usePlannerStore((s) => s.planRooms);
-  const draftStart = usePlannerStore((s) => s.draftStart);
   const setDraftStart = usePlannerStore((s) => s.setDraftStart);
-  const addWall = usePlannerStore((s) => s.addWall);
   const placePlanRoom = usePlannerStore((s) => s.placePlanRoom);
   const pendingRoomShape = usePlannerStore((s) => s.pendingRoomShape);
   const setPendingRoomShape = usePlannerStore((s) => s.setPendingRoomShape);
@@ -49,10 +47,10 @@ export function PlanEditLayer() {
   const active = studioMode === 'architect' && cameraMode === 'top';
   const wallEdit = active && tool === 'select';
   const placingRoom = active && (!!pendingRoomShape || tool === 'room');
-  const drawing = active && (tool === 'wall' || placingRoom);
 
   useEffect(() => {
-    if (!active || tool !== 'wall') setDraftStart(null);
+    // Freehand wall drawing removed — clear any leftover draft.
+    setDraftStart(null);
   }, [active, tool, setDraftStart]);
 
   const shapeKind = pendingRoomShape ?? 'rectangle';
@@ -87,17 +85,11 @@ export function PlanEditLayer() {
   };
 
   const onFloorPointerMove = (e: any) => {
-    if (!drawing && !placingRoom) return;
+    if (!placingRoom) return;
     e.stopPropagation();
     const raw = hitPlan(e);
     if (!raw) return;
-    if (placingRoom) {
-      const snapped = snapRoomCenterToNeighbors(raw, shapeKind, planRooms);
-      setCursor(snapped);
-      invalidate();
-      return;
-    }
-    const snapped = snapWallPoint(raw, walls);
+    const snapped = snapRoomCenterToNeighbors(raw, shapeKind, planRooms);
     setCursor(snapped);
     invalidate();
   };
@@ -148,31 +140,7 @@ export function PlanEditLayer() {
     }, 40);
   };
 
-  const onFloorClick = (e: any) => {
-    if (!drawing || placingRoom) return;
-    e.stopPropagation();
-    const raw = hitPlan(e);
-    if (!raw) return;
-    const snapped = snapWallPoint(raw, walls);
-    if (!draftStart) {
-      setDraftStart(snapped);
-      setCursor(snapped);
-    } else {
-      addWall(draftStart, snapped);
-      setDraftStart(null);
-      setCursor(null);
-    }
-    invalidate();
-  };
-
   const selected = walls.find((w) => w.id === selectedWallId);
-  const draftLine =
-    draftStart && cursor
-      ? ([
-          [world(draftStart.x, draftStart.y)[0], 0.08, world(draftStart.x, draftStart.y)[1]],
-          [world(cursor.x, cursor.y)[0], 0.08, world(cursor.x, cursor.y)[1]],
-        ] as [number, number, number][])
-      : null;
 
   const selectedLen = selected ? wallLengthMeters(selected.start, selected.end) : 0;
 
@@ -212,25 +180,20 @@ export function PlanEditLayer() {
 
   return (
     <group>
-      {(drawing || placingRoom) && (
+      {placingRoom && (
         <mesh
           rotation={[-Math.PI / 2, 0, 0]}
           position={[0, 0.01, 0]}
           onPointerMove={onFloorPointerMove}
-          onPointerDown={placingRoom ? onFloorPointerDown : undefined}
-          onPointerUp={placingRoom ? onFloorPointerUp : undefined}
-          onPointerCancel={placingRoom ? onFloorPointerUp : undefined}
-          onClick={drawing && !placingRoom ? onFloorClick : undefined}
-          onPointerMissed={() => {
-            if (tool === 'wall') setDraftStart(null);
-          }}
+          onPointerDown={onFloorPointerDown}
+          onPointerUp={onFloorPointerUp}
+          onPointerCancel={onFloorPointerUp}
         >
           <planeGeometry args={[120, 120]} />
           <meshBasicMaterial transparent opacity={0} depthWrite={false} />
         </mesh>
       )}
 
-      {draftLine && <Line points={draftLine} color="#0058a3" lineWidth={3} dashed dashSize={0.18} gapSize={0.1} />}
       {ghostPoints && (
         <Line
           points={ghostPoints}

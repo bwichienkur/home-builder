@@ -1,8 +1,10 @@
 import { Download, X } from 'lucide-react';
 import type { CatalogItem } from '../catalog/catalogData';
-import type { FurnitureItem } from '../../types';
+import type { FurnitureItem, Opening, Wall } from '../../types';
+import { wallsNetAreaM2 } from '../../lib/geometry/doorClearance';
 
 const M_TO_FT = 1 / 0.3048;
+const M2_TO_SQFT = M_TO_FT * M_TO_FT;
 
 function lineQty(item: FurnitureItem, product?: CatalogItem) {
   if (product?.priceUnit === 'linear ft' || item.placementKind === 'perimeter-trim') {
@@ -12,37 +14,92 @@ function lineQty(item: FurnitureItem, product?: CatalogItem) {
 }
 
 function formatQty(qty: number, unit?: string) {
-  if (unit === 'linear ft') return qty.toFixed(1);
+  if (unit === 'linear ft' || unit === 'sq ft') return qty.toFixed(1);
   return String(Math.round(qty));
 }
 
-export function BomDialog({ items, catalog, close }: { items: FurnitureItem[]; catalog: CatalogItem[]; close: () => void }) {
-  const rows = Object.values(
-    items.reduce<Record<string, { item: FurnitureItem; qty: number; product?: CatalogItem }>>((all, item) => {
+type BomRow = {
+  key: string;
+  name: string;
+  brand?: string;
+  sku?: string;
+  category: string;
+  qty: number;
+  unit?: string;
+  price?: number;
+};
+
+export function BomDialog({
+  items,
+  catalog,
+  walls = [],
+  openings = [],
+  close,
+}: {
+  items: FurnitureItem[];
+  catalog: CatalogItem[];
+  walls?: Wall[];
+  openings?: Opening[];
+  close: () => void;
+}) {
+  const productRows: BomRow[] = Object.values(
+    items.reduce<Record<string, BomRow>>((all, item) => {
       const product = catalog.find((p) => p.id === item.catalogId);
       const add = lineQty(item, product);
       const row = all[item.catalogId];
       if (row) row.qty += add;
-      else all[item.catalogId] = { item, qty: add, product };
+      else
+        all[item.catalogId] = {
+          key: item.catalogId,
+          name: item.name,
+          brand: product?.brand,
+          sku: product?.sku ?? item.catalogId,
+          category: item.category,
+          qty: add,
+          unit: product?.priceUnit ?? 'each',
+          price: product?.price,
+        };
       return all;
     }, {}),
-  ).sort((a, b) => (a.product?.brand ?? '').localeCompare(b.product?.brand ?? '') || a.item.name.localeCompare(b.item.name));
-  const total = rows.reduce((sum, row) => sum + (row.product?.price ?? 0) * row.qty, 0);
-  const missing = rows.filter((row) => row.product?.price == null).length;
+  );
+
+  const paint = catalog.find((p) => p.id === 'interior-paint');
+  const netWallM2 = wallsNetAreaM2(walls, openings);
+  const wallRows: BomRow[] =
+    walls.length && paint
+      ? [
+          {
+            key: 'interior-paint',
+            name: paint.name,
+            brand: paint.brand,
+            sku: paint.sku ?? paint.id,
+            category: paint.category,
+            qty: netWallM2 * M2_TO_SQFT,
+            unit: paint.priceUnit ?? 'sq ft',
+            price: paint.price,
+          },
+        ]
+      : [];
+
+  const rows = [...wallRows, ...productRows].sort(
+    (a, b) => (a.brand ?? '').localeCompare(b.brand ?? '') || a.name.localeCompare(b.name),
+  );
+  const total = rows.reduce((sum, row) => sum + (row.price ?? 0) * row.qty, 0);
+  const missing = rows.filter((row) => row.price == null).length;
   const download = () => {
     const csv = [
       'Vendor,SKU,Product,Category,Quantity,Unit,Unit price,Subtotal,Price status',
-      ...rows.map(({ item, qty, product }) =>
+      ...rows.map((row) =>
         [
-          product?.brand ?? '',
-          product?.sku ?? item.catalogId,
-          item.name,
-          item.category,
-          formatQty(qty, product?.priceUnit),
-          product?.priceUnit ?? 'each',
-          product?.price ?? '',
-          product?.price != null ? (product.price * qty).toFixed(2) : '',
-          product?.price == null ? 'Quote required' : 'Reference price',
+          row.brand ?? '',
+          row.sku ?? row.key,
+          row.name,
+          row.category,
+          formatQty(row.qty, row.unit),
+          row.unit ?? 'each',
+          row.price ?? '',
+          row.price != null ? (row.price * row.qty).toFixed(2) : '',
+          row.price == null ? 'Quote required' : 'Reference price',
         ]
           .map((v) => `"${String(v).replaceAll('"', '""')}"`)
           .join(','),
@@ -66,6 +123,11 @@ export function BomDialog({ items, catalog, close }: { items: FurnitureItem[]; c
             <X />
           </button>
         </header>
+        {walls.length > 0 && (
+          <p className="muted">
+            Wall finish uses net area after openings ({netWallM2.toFixed(1)} m² / {(netWallM2 * M2_TO_SQFT).toFixed(0)} sf).
+          </p>
+        )}
         {missing > 0 && (
           <div className="inventory-warning">
             {missing} product {missing === 1 ? 'line needs' : 'lines need'} a vendor quote. The total below only includes known reference prices and is not treated as $0.
@@ -83,19 +145,19 @@ export function BomDialog({ items, catalog, close }: { items: FurnitureItem[]; c
               </tr>
             </thead>
             <tbody>
-              {rows.map(({ item, qty, product }) => (
-                <tr key={item.catalogId}>
+              {rows.map((row) => (
+                <tr key={row.key}>
                   <td>
-                    <strong>{item.name}</strong>
-                    <small>{product?.priceUnit ?? 'each'}</small>
+                    <strong>{row.name}</strong>
+                    <small>{row.unit ?? 'each'}</small>
                   </td>
                   <td>
-                    {product?.brand ?? '—'}
-                    <small>{product?.sku ?? item.catalogId}</small>
+                    {row.brand ?? '—'}
+                    <small>{row.sku ?? row.key}</small>
                   </td>
-                  <td>{formatQty(qty, product?.priceUnit)}</td>
-                  <td>{product?.price == null ? 'Quote required' : `$${product.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}</td>
-                  <td>{product?.price == null ? '—' : `$${(product.price * qty).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}</td>
+                  <td>{formatQty(row.qty, row.unit)}</td>
+                  <td>{row.price == null ? 'Quote required' : `$${row.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}</td>
+                  <td>{row.price == null ? '—' : `$${(row.price * row.qty).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}</td>
                 </tr>
               ))}
             </tbody>
