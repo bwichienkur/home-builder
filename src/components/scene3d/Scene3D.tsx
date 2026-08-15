@@ -129,16 +129,14 @@ function CameraRig() {
 
   const framing = useMemo(() => {
     const basePad = (coarse ? 3.1 : 2.85) * (menuOpen ? 1.45 : 1);
-    // 3D stays close so the room fills the frame — chrome zoom-out is for top/plan only.
-    const baseOrbit = (coarse ? 1.35 : 1.22) * (menuOpen ? 1.15 : 1);
+    const baseOrbit = (coarse ? 1.65 : 1.45) * (menuOpen ? 1.25 : 1);
     const pad = basePad * chromeFit.padScale;
-    // Inspector may nudge orbit slightly; never inherit the full page-clear padScale.
-    const orbitPad = inspectorOpen ? baseOrbit * Math.min(1.12, 1 + (chromeFit.padScale - 1) * 0.12) : baseOrbit;
+    const orbitPad = baseOrbit * Math.max(1, chromeFit.padScale * 0.9);
     if (focusRoom?.points.length) {
       return framingFromPoints(focusRoom.points, { pad, orbitPad, minSpan: 2.5, minHeight: 11 });
     }
     return framingFromWalls(walls, { pad, orbitPad, minHeight: 15 });
-  }, [walls, focusRoom, coarse, menuOpen, chromeFit.padScale, inspectorOpen]);
+  }, [walls, focusRoom, coarse, menuOpen, chromeFit.padScale]);
   const center = framing.center;
   const fovDeg = mode === 'walk' ? 58 : mode === 'top' ? 42 : 48;
   const aspect = Math.max(0.35, canvasW / Math.max(1, canvasH));
@@ -360,10 +358,13 @@ function SceneAtmosphere() {
   const mode = usePlannerStore((s) => s.cameraMode);
   const walls = usePlannerStore((s) => s.walls);
   const framing = useMemo(() => framingFromWalls(walls), [walls]);
-  // Top plan view: no fog (old far=70 blanked house plates when the camera sat above it).
-  if (mode === 'top') return <color attach="background" args={['#e8eaed']} />;
-  const near = Math.max(18, framing.span * 1.1);
-  const far = Math.max(near + 20, framing.span * 3.2, framing.topHeight * 1.4);
+  // Top + orbit: no distance fog — zooming out used to dissolve the whole plate into the
+  // background (fog near ≈ 18m). Walk keeps a soft depth cue farther out.
+  if (mode === 'top' || mode === 'orbit') {
+    return <color attach="background" args={['#e8eaed']} />;
+  }
+  const near = Math.max(40, framing.span * 3.5);
+  const far = Math.max(near + 40, framing.span * 8);
   return (
     <>
       <color attach="background" args={['#e8eaed']} />

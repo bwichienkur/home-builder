@@ -45,13 +45,6 @@ describe('plan framing', () => {
     expect(looseTop.topHeight).toBeGreaterThan(tightBoth.topHeight);
   });
 
-  it('keeps default orbit close enough that a room fills the frame', () => {
-    const framing = framingFromWalls(rect, { orbitPad: 1.22 });
-    // Dollhouse open should not look like a speck — height stays within a tight band of span.
-    expect(framing.orbitPose[1]).toBeLessThan(framing.span * 1.35);
-    expect(framing.orbitPose[1]).toBeGreaterThan(framing.span * 0.35);
-  });
-
   it('zooms a page-centered plate so it clears the right rail', () => {
     const fit = pageCenterFit({
       width: 390,
