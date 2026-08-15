@@ -45,19 +45,20 @@ describe('plan framing', () => {
     expect(looseTop.topHeight).toBeGreaterThan(tightBoth.topHeight);
   });
 
-  it('scales pad and shifts left so content clears the right rail on mobile', () => {
+  it('scales pad and shifts so content clears the right rail on mobile', () => {
     const fit = freeAreaFit({
       width: 390,
       height: 844,
       rightChromePx: 72,
-      gutterPx: 64,
+      gutterPx: 88,
       topChromePx: 72,
       bottomChromePx: 150,
     });
     // Free width is well under the full canvas — must zoom out.
-    expect(fit.padScale).toBeGreaterThan(1.35);
-    expect(fit.rightReserve).toBe(136);
+    expect(fit.padScale).toBeGreaterThan(1.4);
+    expect(fit.rightReserve).toBe(160);
+    // Positive X pans the view so the plate sits left of the rail on screen.
     const shift = worldShiftForFreeArea(fit.shiftFraction, 30, 42, 390 / 844);
-    expect(shift).toBeLessThan(-1.5);
+    expect(shift).toBeGreaterThan(1.5);
   });
 });
