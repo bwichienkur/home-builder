@@ -3,6 +3,7 @@ import { useThree } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { WORLD_ORIGIN } from '../../lib/geometry/placement';
+import { shapedRoomPoints, snapRoomCenterToNeighbors } from '../../lib/housePlans/buildPlan';
 import { PIXELS_PER_METER, snapWallPoint, wallLengthMeters } from '../../lib/geometry/snapping';
 import { formatLength } from '../../lib/measurements';
 import { usePlannerStore } from '../../store/plannerStore';
@@ -17,8 +18,6 @@ const planFromWorld = (x: number, z: number) => ({
   y: z * PIXELS_PER_METER + WORLD_ORIGIN.y,
 });
 
-const openProperties = () => window.dispatchEvent(new Event('roomcraft-open-properties'));
-
 type DragKind = 'corner' | 'stretch';
 
 /**
@@ -30,10 +29,13 @@ export function PlanEditLayer() {
   const studioMode = usePlannerStore((s) => s.studioMode);
   const cameraMode = usePlannerStore((s) => s.cameraMode);
   const walls = usePlannerStore((s) => s.walls);
+  const planRooms = usePlannerStore((s) => s.planRooms);
   const draftStart = usePlannerStore((s) => s.draftStart);
   const setDraftStart = usePlannerStore((s) => s.setDraftStart);
   const addWall = usePlannerStore((s) => s.addWall);
-  const addSquareRoom = usePlannerStore((s) => s.addSquareRoom);
+  const placePlanRoom = usePlannerStore((s) => s.placePlanRoom);
+  const pendingRoomShape = usePlannerStore((s) => s.pendingRoomShape);
+  const setPendingRoomShape = usePlannerStore((s) => s.setPendingRoomShape);
   const updateWallEndpoint = usePlannerStore((s) => s.updateWallEndpoint);
   const updateWallEndpointLive = usePlannerStore((s) => s.updateWallEndpointLive);
   const selectedWallId = usePlannerStore((s) => s.selectedWallId);
@@ -51,12 +53,14 @@ export function PlanEditLayer() {
     dirY: number;
     pointerId: number;
   } | null>(null);
+  const roomPlace = useRef<{ pointerId: number; active: boolean } | null>(null);
   const dragEndListener = useRef<((e: PointerEvent) => void) | null>(null);
   const floorPlane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), []);
 
   const active = studioMode === 'architect' && cameraMode === 'top';
   const wallEdit = active && tool === 'select';
-  const drawing = active && (tool === 'wall' || tool === 'room');
+  const placingRoom = active && (!!pendingRoomShape || tool === 'room');
+  const drawing = active && (tool === 'wall' || placingRoom);
 
   useEffect(() => {
     if (!active || tool !== 'wall') setDraftStart(null);
@@ -76,6 +80,15 @@ export function PlanEditLayer() {
     },
     [],
   );
+
+  const shapeKind = pendingRoomShape ?? 'rectangle';
+  const ghostPoints = useMemo(() => {
+    if (!placingRoom || !cursor) return null;
+    const snapped = snapRoomCenterToNeighbors(cursor, shapeKind, planRooms);
+    const pts = shapedRoomPoints(shapeKind, snapped);
+    const loop = [...pts, pts[0]!];
+    return loop.map((p) => [world(p.x, p.y)[0], 0.1, world(p.x, p.y)[1]] as [number, number, number]);
+  }, [placingRoom, cursor, shapeKind, planRooms]);
 
   if (!active) return null;
 
@@ -98,7 +111,7 @@ export function PlanEditLayer() {
   };
 
   const onFloorPointerMove = (e: any) => {
-    if (!drawing && !drag.current) return;
+    if (!drawing && !drag.current && !placingRoom) return;
     e.stopPropagation();
     const raw = hitPlan(e);
     if (!raw) return;
@@ -115,39 +128,65 @@ export function PlanEditLayer() {
       invalidate();
       return;
     }
+    if (placingRoom) {
+      const snapped = snapRoomCenterToNeighbors(raw, shapeKind, planRooms);
+      setCursor(snapped);
+      invalidate();
+      return;
+    }
     const snapped = snapWallPoint(raw, walls);
     setCursor(snapped);
     invalidate();
   };
 
+  const onFloorPointerDown = (e: any) => {
+    if (!placingRoom) return;
+    e.stopPropagation();
+    const raw = hitPlan(e);
+    if (!raw) return;
+    roomPlace.current = { pointerId: e.pointerId, active: true };
+    const snapped = snapRoomCenterToNeighbors(raw, shapeKind, planRooms);
+    setCursor(snapped);
+    document.body.dataset.movingFurniture = 'true';
+    window.dispatchEvent(new Event('roomcraft-drag-start'));
+    try {
+      gl.domElement.setPointerCapture?.(e.pointerId);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const onFloorPointerUp = (e: any) => {
+    if (!roomPlace.current || roomPlace.current.pointerId !== e.pointerId) return;
+    e.stopPropagation();
+    const raw = hitPlan(e) ?? cursor;
+    roomPlace.current = null;
+    delete document.body.dataset.movingFurniture;
+    window.dispatchEvent(new Event('roomcraft-drag-end'));
+    try {
+      gl.domElement.releasePointerCapture?.(e.pointerId);
+    } catch {
+      /* ignore */
+    }
+    if (!raw) {
+      setPendingRoomShape(null);
+      return;
+    }
+    const snapped = snapRoomCenterToNeighbors(raw, shapeKind, planRooms);
+    placePlanRoom(snapped, shapeKind);
+    setCursor(null);
+    window.setTimeout(() => {
+      window.dispatchEvent(new Event('roomcraft-fit-plan'));
+      window.dispatchEvent(new Event('roomcraft-refocus'));
+    }, 40);
+  };
+
   const onFloorClick = (e: any) => {
-    if (!drawing) return;
+    if (!drawing || placingRoom) return;
     e.stopPropagation();
     const raw = hitPlan(e);
     if (!raw) return;
     const snapped = snapWallPoint(raw, walls);
-    if (tool === 'room') {
-      const id = addSquareRoom(snapped, 12, 12);
-      if (id) {
-        const room = usePlannerStore.getState().planRooms.find((r) => r.id === id);
-        if (room) {
-          const xs = room.points.map((p) => (p.x - WORLD_ORIGIN.x) / PIXELS_PER_METER);
-          const zs = room.points.map((p) => (p.y - WORLD_ORIGIN.y) / PIXELS_PER_METER);
-          const span = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...zs) - Math.min(...zs), 2);
-          window.dispatchEvent(
-            new CustomEvent('roomcraft-focus-room', {
-              detail: {
-                x: xs.reduce((a, b) => a + b, 0) / xs.length,
-                z: zs.reduce((a, b) => a + b, 0) / zs.length,
-                span,
-              },
-            }),
-          );
-        }
-        openProperties();
-      }
-      return;
-    }
     if (!draftStart) {
       setDraftStart(snapped);
       setCursor(snapped);
@@ -215,7 +254,7 @@ export function PlanEditLayer() {
         /* ignore */
       }
     }
-    openProperties();
+    // Keep wall selected after resize — properties open from the Edit control.
   };
 
   const selected = walls.find((w) => w.id === selectedWallId);
@@ -245,12 +284,15 @@ export function PlanEditLayer() {
   return (
     <group>
       {/* Large pick plane: draw tools + receive stretch/corner drag moves */}
-      {(drawing || wallEdit) && (
+      {(drawing || wallEdit || placingRoom) && (
         <mesh
           rotation={[-Math.PI / 2, 0, 0]}
           position={[0, 0.01, 0]}
           onPointerMove={onFloorPointerMove}
-          onClick={drawing ? onFloorClick : undefined}
+          onPointerDown={placingRoom ? onFloorPointerDown : undefined}
+          onPointerUp={placingRoom ? onFloorPointerUp : undefined}
+          onPointerCancel={placingRoom ? onFloorPointerUp : undefined}
+          onClick={drawing && !placingRoom ? onFloorClick : undefined}
           onPointerMissed={() => {
             if (tool === 'wall') setDraftStart(null);
           }}
@@ -261,6 +303,7 @@ export function PlanEditLayer() {
       )}
 
       {draftLine && <Line points={draftLine} color="#0058a3" lineWidth={3} dashed dashSize={0.18} gapSize={0.1} />}
+      {ghostPoints && <Line points={ghostPoints} color="#0058a3" lineWidth={3} dashed dashSize={0.2} gapSize={0.12} />}
 
       {wallEdit && selected && selectedFrame && (
         <group>

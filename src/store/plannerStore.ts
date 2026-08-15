@@ -3,8 +3,10 @@ import type { CameraMode, FurnitureItem, MountingType, Opening, PlanRoomLabel, P
 import { clampWallMountY, constrainPlacement, openingConflicts, resolveMountingType, roomFloorCenter } from '../lib/geometry/placement';
 import { detectRoomPolygons } from '../lib/geometry/rooms';
 import { writeRecoverySnapshot } from '../lib/designShare';
-import { buildHouse, rebuildFromPlanRooms, resizePlanRoomPoints, splitPlanRoomPoints, squareRoomPoints } from '../lib/housePlans/buildPlan';
+import { buildHouse, rebuildFromPlanRooms, resizePlanRoomPoints, shapedRoomPoints, snapRoomCenterToNeighbors, splitPlanRoomPoints, type PlanRoomShape } from '../lib/housePlans/buildPlan';
 import { getHousePlan } from '../lib/housePlans/olsenPlans';
+
+export type { PlanRoomShape };
 
 type View = '2d' | '3d';
 type FloorRecord = { id: string; name: string; scene: SceneSnapshot; planRooms?: PlanRoomLabel[] };
@@ -95,6 +97,9 @@ type PlannerState = SceneSnapshot & {
   resizePlanRoom: (id: string, widthFt: number, depthFt: number) => void;
   deletePlanRoom: (id: string) => void;
   addSquareRoom: (center: Point, widthFt?: number, depthFt?: number, name?: string) => string | null;
+  pendingRoomShape: PlanRoomShape | null;
+  setPendingRoomShape: (shape: PlanRoomShape | null) => void;
+  placePlanRoom: (center: Point, shape?: PlanRoomShape, name?: string) => string | null;
   splitPlanRoom: (id: string, axis?: 'x' | 'y') => void;
   setWorkflowStage: (stage: WorkflowStage) => void;
   setStudioMode: (mode: StudioMode) => void;
@@ -247,6 +252,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     housePlanId: null,
     housePlanName: null,
     planRooms: [],
+    pendingRoomShape: null,
     workflowStage: 'start',
     studioMode: 'architect',
     setTool: (tool) => set({ tool, draftStart: null }),
@@ -371,7 +377,6 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         roomType: get().roomType,
         points,
       }));
-      const first = planRooms[0] ?? null;
       set({
         selectedWallId: null,
         selectedOpeningId: null,
@@ -381,10 +386,12 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         housePlanId: null,
         housePlanName: null,
         planRooms,
-        workflowStage: first ? 'room' : 'house',
-        studioMode: first ? 'furnish' : 'architect',
-        selectedRoomId: first?.id ?? null,
-        selectedSurface: first ? 'floor' : null,
+        // Stay at plan level — do not auto-enter room edit / inspector.
+        workflowStage: 'house',
+        studioMode: 'architect',
+        selectedRoomId: null,
+        selectedSurface: null,
+        pendingRoomShape: null,
         cameraMode: 'top',
         view: '3d',
         floors: get().floors.map((f) =>
@@ -464,7 +471,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         selectedFurnitureId: null,
         selectedSurface: null,
         roomType: selectedRoomId ? get().planRooms.find((r) => r.id === selectedRoomId)?.roomType ?? get().roomType : get().roomType,
-        workflowStage: selectedRoomId ? 'room' : get().workflowStage === 'start' ? 'start' : get().workflowStage === 'room' ? 'house' : get().workflowStage,
+        // Selecting a room at plan level must not enter room focus — use enterRoom for that.
       }),
     setWorkflowStage: (workflowStage) => set({ workflowStage }),
     setStudioMode: (studioMode) => set({ studioMode }),
@@ -579,13 +586,29 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       });
     },
     addSquareRoom: (center, widthFt = 12, depthFt = 12, name) => {
+      // Prefer shaped placement; width/depth kept for API compat (rectangle uses 12×12 defaults).
+      void widthFt;
+      void depthFt;
+      return get().placePlanRoom(center, 'rectangle', name);
+    },
+    setPendingRoomShape: (pendingRoomShape) =>
+      set({
+        pendingRoomShape,
+        tool: pendingRoomShape ? 'room' : get().tool === 'room' ? 'select' : get().tool,
+        draftStart: null,
+        selectedWallId: null,
+        studioMode: 'architect',
+      }),
+    placePlanRoom: (center, shape, name) => {
+      const kind = shape ?? get().pendingRoomShape ?? 'rectangle';
+      const snapped = snapRoomCenterToNeighbors(center, kind, get().planRooms);
       const id = crypto.randomUUID();
       const roomType = get().roomType;
       const label: PlanRoomLabel = {
         id,
         name: name ?? `Room ${get().planRooms.length + 1}`,
         roomType,
-        points: squareRoomPoints(center, widthFt, depthFt),
+        points: shapedRoomPoints(kind, snapped),
       };
       const nextLabels = [...get().planRooms, label];
       const height = get().walls[0]?.height ?? 2.74;
@@ -598,11 +621,13 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       set({
         planRooms,
         selectedRoomId: id,
-        workflowStage: 'room',
-        selectedSurface: 'floor',
+        workflowStage: 'house',
+        studioMode: 'architect',
+        selectedSurface: null,
         selectedWallId: null,
         selectedOpeningId: null,
         selectedFurnitureId: null,
+        pendingRoomShape: null,
         cameraMode: 'top',
         view: '3d',
         tool: 'select',

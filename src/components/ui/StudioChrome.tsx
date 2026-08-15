@@ -14,6 +14,7 @@ import {
   Info,
   Lamp,
   Layers3,
+  LayoutTemplate,
   Menu,
   MousePointer2,
   PencilRuler,
@@ -195,7 +196,11 @@ export function StudioChrome({
   const atPlanLevel = !atStart && !inRoom;
   const showPlanTools = atPlanLevel && isTop && !pending && studioMode === 'architect';
   const showFloorChrome = atPlanLevel && !pending;
-  const showPlanToolChrome = atPlanLevel && isTop && !pending;
+  const showPlanRail = atPlanLevel && !pending;
+  const pendingRoomShape = usePlannerStore((s) => s.pendingRoomShape);
+  const setPendingRoomShape = usePlannerStore((s) => s.setPendingRoomShape);
+  const deletePlanRoom = usePlannerStore((s) => s.deletePlanRoom);
+  const enterRoom = usePlannerStore((s) => s.enterRoom);
 
   useEffect(() => {
     if (inRoom) setStudioMode('furnish');
@@ -234,16 +239,52 @@ export function StudioChrome({
   const planTools: { id: Tool; label: string; icon: typeof MousePointer2 }[] = [
     { id: 'select', label: 'Walls', icon: PencilRuler },
     { id: 'wall', label: 'Draw', icon: Wallpaper },
-    { id: 'room', label: 'Square', icon: Square },
+  ];
+
+  const roomShapes: { id: 'rectangle' | 'wide' | 'l-shape'; label: string; icon: typeof Square }[] = [
+    { id: 'rectangle', label: 'Square', icon: Square },
+    { id: 'wide', label: 'Wide', icon: LayoutTemplate },
+    { id: 'l-shape', label: 'L-shape', icon: Home },
   ];
 
   const choosePlanTool = (id: Tool) => {
+    setPendingRoomShape(null);
     setStudioMode('architect');
     setTool(id);
     setDraftStart(null);
     setView('3d');
     setCamera('top');
     if (id !== 'select') usePlannerStore.getState().selectWall(null);
+  };
+
+  const chooseRoomShape = (shape: 'rectangle' | 'wide' | 'l-shape') => {
+    setStudioMode('architect');
+    setView('3d');
+    setCamera('top');
+    setPendingRoomShape(pendingRoomShape === shape ? null : shape);
+  };
+
+  const editSelectedPlanRoom = () => {
+    if (!selectedRoomId) return;
+    enterRoom(selectedRoomId);
+    setPendingRoomShape(null);
+    window.setTimeout(() => {
+      window.dispatchEvent(new Event('roomcraft-fit-plan'));
+      window.dispatchEvent(new Event('roomcraft-refocus'));
+      onOpenInspector();
+    }, 60);
+  };
+
+  const removeSelectedPlanRoom = () => {
+    if (!selectedRoomId) return;
+    const room = planRooms.find((r) => r.id === selectedRoomId);
+    if (!room) return;
+    if (!window.confirm(`Remove “${room.name}” from this floor?`)) return;
+    deletePlanRoom(selectedRoomId);
+    window.setTimeout(() => {
+      window.dispatchEvent(new Event('roomcraft-fit-plan'));
+      window.dispatchEvent(new Event('roomcraft-refocus'));
+    }, 40);
   };
 
   useEffect(() => {
@@ -387,17 +428,11 @@ export function StudioChrome({
         )}
       </div>
 
-      {!inRoom && planRooms.length > 1 && !pending && !selectedItem && tool === 'select' && (
-        <div className="studio-selection-hint studio-hint-float">Tap a room to open its top view</div>
+      {!inRoom && planRooms.length >= 1 && !pending && !selectedItem && tool === 'select' && !selectedRoom && (
+        <div className="studio-selection-hint studio-hint-float">Tap a room to select · use the right rail to edit or remove</div>
       )}
 
-      {pending && <div className="studio-selection-hint studio-hint-float">Placing {pending.name} · move then tap to confirm</div>}
-
-      {hasSelection && !pending && !selectedItem && !inRoom && wallEditMode && selectedWall && (
-        <div className="studio-selection-hint studio-hint-float">Wall selected · drag blue handles to resize</div>
-      )}
-
-      {showPlanTools && tool === 'select' && !selectedWall && (
+      {showPlanTools && tool === 'select' && !selectedWall && !selectedRoom && (
         <div className="studio-selection-hint studio-hint-float">Tap a wall · drag ends to resize</div>
       )}
       {showPlanTools && tool === 'wall' && (
@@ -410,7 +445,15 @@ export function StudioChrome({
           )}
         </div>
       )}
-      {showPlanTools && tool === 'room' && <div className="studio-selection-hint studio-hint-float">Tap to place 12×12 ft</div>}
+      {pendingRoomShape && (
+        <div className="studio-selection-hint studio-hint-float">Drag on the plan to place a {pendingRoomShape === 'l-shape' ? 'L-shaped' : pendingRoomShape} room</div>
+      )}
+
+      {pending && <div className="studio-selection-hint studio-hint-float">Placing {pending.name} · move then tap to confirm</div>}
+
+      {hasSelection && !pending && !selectedItem && !inRoom && wallEditMode && selectedWall && (
+        <div className="studio-selection-hint studio-hint-float">Wall selected · drag blue handles to resize</div>
+      )}
 
       {wallEditMode && selectedWall && !pending && (
         <div className="studio-selection-fabs" role="toolbar" aria-label="Wall actions">
@@ -489,8 +532,51 @@ export function StudioChrome({
         </div>
       )}
 
+      {showPlanRail && (
+        <div className="studio-category-rail studio-plan-rail" aria-label="Plan tools">
+          {isTop &&
+            planTools.map((t) => {
+              const Icon = t.icon;
+              const active = !pendingRoomShape && studioMode === 'architect' && tool === t.id;
+              return (
+                <button key={t.id} type="button" className={active ? 'is-active' : ''} onClick={() => choosePlanTool(t.id)} aria-label={t.label} title={t.label}>
+                  <Icon />
+                  <span>{t.label}</span>
+                </button>
+              );
+            })}
+          {isTop &&
+            roomShapes.map((s) => {
+              const Icon = s.icon;
+              const active = pendingRoomShape === s.id;
+              return (
+                <button key={s.id} type="button" className={active ? 'is-active' : ''} onClick={() => chooseRoomShape(s.id)} aria-label={`Place ${s.label} room`} title={`Place ${s.label} room`}>
+                  <Icon />
+                  <span>{s.label}</span>
+                </button>
+              );
+            })}
+          {selectedRoom && (
+            <>
+              <button type="button" className="is-active" onClick={editSelectedPlanRoom} aria-label="Edit room" title="Edit room">
+                <PencilRuler />
+                <span>Edit</span>
+              </button>
+              <button type="button" className="is-danger" onClick={removeSelectedPlanRoom} aria-label="Remove room" title="Remove room">
+                <Trash2 />
+                <span>Remove</span>
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
       {showCatalogRail && (
         <div className={`studio-category-rail${catalogOpen ? ' is-active' : ''}`} aria-label={`${roomType} product categories`}>
+          <button type="button" onClick={onOpenInspector} aria-label="Edit room" title="Edit room">
+            <PencilRuler />
+            <span>Edit</span>
+          </button>
           {categories.map((category) => {
             const Icon = icons[category] ?? ShoppingBag;
             return (
@@ -515,37 +601,9 @@ export function StudioChrome({
               <span>3D</span>
             </button>
           </div>
-          {showPlanToolChrome && (
-            <>
-              <div className="studio-dock-divider" aria-hidden="true" />
-              <div className="studio-dock-seg studio-dock-plan-tools" role="group" aria-label="Plan tools">
-                {planTools.map((t) => {
-                  const Icon = t.icon;
-                  const active = studioMode === 'architect' && tool === t.id;
-                  return (
-                    <button
-                      key={t.id}
-                      type="button"
-                      className={active ? 'is-active' : ''}
-                      onClick={() => choosePlanTool(t.id)}
-                      title={t.label}
-                      aria-label={t.label}
-                    >
-                      <Icon size={16} />
-                      <span>{t.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </>
-          )}
           <button type="button" className="studio-dock-action" onClick={refocus} title="Fit in view">
             <Focus size={15} />
             <span>Fit</span>
-          </button>
-          <button type="button" className="studio-dock-action" onClick={onOpenInspector} disabled={!hasSelection || !!pending} title="Edit selected">
-            <PencilRuler size={15} />
-            <span>Edit</span>
           </button>
           <button type="button" className="studio-dock-action" onClick={undo} disabled={historyIndex === 0} title="Undo">
             <Undo2 size={15} />

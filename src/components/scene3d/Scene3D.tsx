@@ -85,35 +85,47 @@ function CameraRig() {
   const focusRoom = workflowStage === 'room' ? planRooms.find((r) => r.id === selectedRoomId) : null;
   const coarse = useMemo(() => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches, []);
   const [menuOpen, setMenuOpen] = useState(() => document.body.dataset.menuOpen === '1');
+  const [inspectorTick, setInspectorTick] = useState(0);
+  const savedView = useRef<{ pose: THREE.Vector3; target: THREE.Vector3 } | null>(null);
   useEffect(() => {
     const sync = () => setMenuOpen(document.body.dataset.menuOpen === '1');
+    const syncInspector = () => setInspectorTick((n) => n + 1);
     window.addEventListener('roomcraft-menu-changed', sync);
-    return () => window.removeEventListener('roomcraft-menu-changed', sync);
+    window.addEventListener('roomcraft-inspector-changed', syncInspector);
+    return () => {
+      window.removeEventListener('roomcraft-menu-changed', sync);
+      window.removeEventListener('roomcraft-inspector-changed', syncInspector);
+    };
   }, []);
   const framing = useMemo(() => {
-    // Zoom out when the left project menu is open so the whole room stays visible beside it.
-    const pad = (coarse ? 3.1 : 2.8) * (menuOpen ? 1.7 : 1);
-    const orbitPad = (coarse ? 1.28 : 1.18) * (menuOpen ? 1.35 : 1);
+    // Extra pad so the right tool rail (and open inspector) never clip the plate.
+    const inspectorOpen = typeof document !== 'undefined' && document.body.dataset.inspectorOpen === '1';
+    const rightPad = inspectorOpen ? 1.55 : 1.22;
+    const pad = (coarse ? 3.8 : 3.5) * (menuOpen ? 1.7 : 1) * rightPad;
+    const orbitPad = (coarse ? 1.55 : 1.42) * (menuOpen ? 1.35 : 1) * (inspectorOpen ? 1.28 : 1.12);
     if (focusRoom?.points.length) {
-      return framingFromPoints(focusRoom.points, { pad, orbitPad, minSpan: 2.5, minHeight: 8 });
+      return framingFromPoints(focusRoom.points, { pad, orbitPad, minSpan: 2.5, minHeight: 10 });
     }
-    return framingFromWalls(walls, { pad, orbitPad, minHeight: 12 });
-  }, [walls, focusRoom, coarse, menuOpen]);
+    return framingFromWalls(walls, { pad, orbitPad, minHeight: 14 });
+  }, [walls, focusRoom, coarse, menuOpen, inspectorTick]);
   const center = framing.center;
-  // Shift right so content clears the narrow left drawer.
+  // Shift content away from left menu / right rail+inspector.
   const menuShiftX = menuOpen ? framing.span * 0.3 : 0;
+  const inspectorOpen = typeof document !== 'undefined' && document.body.dataset.inspectorOpen === '1';
+  const rightShiftX = -(framing.span * (inspectorOpen ? 0.28 : 0.1));
+  const shiftX = menuShiftX + rightShiftX;
   const targetTuple = useMemo<[number, number, number]>(
-    () => [center[0] + menuShiftX, 0, center[2]],
-    [center, menuShiftX],
+    () => [center[0] + shiftX, 0, center[2]],
+    [center, shiftX],
   );
   const poseTuple = useMemo<[number, number, number]>(() => {
-    if (mode === 'top') return [framing.topPose[0] + menuShiftX, framing.topPose[1], framing.topPose[2]];
+    if (mode === 'top') return [framing.topPose[0] + shiftX, framing.topPose[1], framing.topPose[2]];
     if (mode === 'walk') {
       const back = Math.max(4.2, framing.span * 0.55);
-      return [center[0] + menuShiftX, 1.55, center[2] + back];
+      return [center[0] + shiftX, 1.55, center[2] + back];
     }
-    return [framing.orbitPose[0] + menuShiftX, framing.orbitPose[1], framing.orbitPose[2]];
-  }, [mode, center, framing, menuShiftX]);
+    return [framing.orbitPose[0] + shiftX, framing.orbitPose[1], framing.orbitPose[2]];
+  }, [mode, center, framing, shiftX]);
 
   const maxDistance =
     mode === 'top'
@@ -183,6 +195,28 @@ function CameraRig() {
     else animateToPose(560);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, menuOpen, poseTuple[0], poseTuple[1], poseTuple[2]]);
+
+  // When the edit card opens, zoom to fit the remaining canvas; restore prior view on close.
+  useEffect(() => {
+    const open = document.body.dataset.inspectorOpen === '1';
+    const camera = get().camera;
+    if (open) {
+      if (!savedView.current && controls.current) {
+        savedView.current = {
+          pose: camera.position.clone(),
+          target: controls.current.target.clone(),
+        };
+      }
+      applyPose(new THREE.Vector3(...poseTuple), new THREE.Vector3(...targetTuple), 420);
+      return;
+    }
+    if (savedView.current) {
+      const { pose, target } = savedView.current;
+      savedView.current = null;
+      applyPose(pose, target, 420);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inspectorTick]);
 
   useEffect(() => {
     const fit = () => snapToPose();
@@ -1062,6 +1096,7 @@ function Room() {
   const planRooms = usePlannerStore((s) => s.planRooms);
   const selectedRoomId = usePlannerStore((s) => s.selectedRoomId);
   const enterRoom = usePlannerStore((s) => s.enterRoom);
+  const selectRoom = usePlannerStore((s) => s.selectRoom);
   const workflowStage = usePlannerStore((s) => s.workflowStage);
   const cameraMode = usePlannerStore((s) => s.cameraMode);
   const selectedSurface = usePlannerStore((s) => s.selectedSurface);
@@ -1109,10 +1144,14 @@ function Room() {
       // Already editing this room in 3D — selecting the floor must NOT reset camera to top.
       if (workflowStage === 'room' && selectedRoomId === roomId) {
         selectSurface('floor');
-        openSurfaceProperties();
         return;
       }
-      // Enter room top-view only — do not open the inspector/settings sheet.
+      // Plan level: select the room only — Edit / Remove live on the right rail.
+      if (workflowStage !== 'room') {
+        selectRoom(roomId);
+        return;
+      }
+      // Switching rooms while already in room focus.
       enterRoom(roomId);
       const room = planRooms.find((r) => r.id === roomId);
       if (room) {
@@ -1132,12 +1171,10 @@ function Room() {
       return;
     }
     selectSurface('floor');
-    openSurfaceProperties();
   };
   const chooseCeiling = (e: any) => {
     e.stopPropagation();
     selectSurface('ceiling');
-    openSurfaceProperties();
   };
   const isolating = workflowStage === 'room' && !!selectedRoomId;
   const roomEntries = useMemo(() => {
