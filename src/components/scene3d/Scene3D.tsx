@@ -8,6 +8,7 @@ import type { FurnitureItem, Opening } from '../../types';
 import { detectRoomPolygons, roomShape } from '../../lib/geometry/rooms';
 import { alignmentGuides, clampWallMountY, constrainPlacement, pointOnWall, roomFloorCenter, wallFrame, WORLD_ORIGIN } from '../../lib/geometry/placement';
 import { doorSwingZones, furnitureHitsDoorSwing } from '../../lib/geometry/doorClearance';
+import { wouldOverlapFurniture } from '../../lib/collisions';
 import { framingFromPoints, framingFromWall, framingFromWalls, freeAreaFit, pageCenterFit, worldShiftForFreeArea } from '../../lib/geometry/planFraming';
 import { wallExteriorSide } from '../../lib/geometry/roomWalls';
 import { pointInPlanRoom, wallsBelongingToRoom } from '../../lib/geometry/roomWalls';
@@ -489,15 +490,16 @@ function DoorLeaf({
   face?: 'in' | 'out';
   shape?: 'rect' | 'arch' | 'wide';
 }) {
-  // Doors stay closed in the opening; swing arc shows the no-place zone when open.
+  // Doors stay closed in the opening; clearance rectangle blocks furniture in front.
   const leafH = shape === 'arch' ? height * 0.92 : height;
   const leafW = width * (shape === 'wide' ? 0.98 : 0.96);
   // Hinge on the swing side of the leaf (local +X = along wall toward end).
   const hingeX = swing === 'left' ? -leafW / 2 : leafW / 2;
-  // Face flips which side of the wall the arc sweeps into (local +Z ↔ −Z).
+  // Face flips which side of the wall the arc / clear box sits on (local +Z ↔ −Z).
   const faceFlip = face === 'out' ? Math.PI : 0;
-  // Left: sweep from along-wall (+X) into +Z; right: from −X into +Z (then faceFlip).
   const swingStart = swing === 'left' ? 0 : Math.PI / 2;
+  const clearDepth = leafW;
+  const clearZ = face === 'out' ? -clearDepth / 2 : clearDepth / 2;
   return (
     <group position={[x, 0, z]} rotation={[0, angle, 0]}>
       {/* Plan silhouette — thin 3D leaf is nearly invisible from above; this fills the hole. */}
@@ -516,10 +518,17 @@ function DoorLeaf({
         </mesh>
       )}
       {swing !== 'none' && (
-        <mesh position={[hingeX, 0.012, 0]} rotation={[-Math.PI / 2, faceFlip, 0]}>
-          <ringGeometry args={[0.02, leafW, 28, 1, swingStart, Math.PI / 2]} />
-          <meshBasicMaterial color="#0058a3" transparent opacity={0.18} side={THREE.DoubleSide} />
-        </mesh>
+        <>
+          {/* Blocked clear space: door-width × door-width into the room (hinge-independent). */}
+          <mesh position={[0, 0.014, clearZ]} rotation={[-Math.PI / 2, 0, 0]} raycast={() => {}}>
+            <planeGeometry args={[leafW, clearDepth]} />
+            <meshBasicMaterial color="#0058a3" transparent opacity={0.14} depthWrite={false} />
+          </mesh>
+          <mesh position={[hingeX, 0.012, 0]} rotation={[-Math.PI / 2, faceFlip, 0]} raycast={() => {}}>
+            <ringGeometry args={[0.02, leafW, 28, 1, swingStart, Math.PI / 2]} />
+            <meshBasicMaterial color="#0058a3" transparent opacity={0.12} side={THREE.DoubleSide} />
+          </mesh>
+        </>
       )}
     </group>
   );
@@ -716,6 +725,8 @@ function WallMeshes() {
   const color = usePlannerStore((s) => s.wallColor);
   const selectedId = usePlannerStore((s) => s.selectedWallId);
   const selectedOpeningId = usePlannerStore((s) => s.selectedOpeningId);
+  const selectedRoomId = usePlannerStore((s) => s.selectedRoomId);
+  const workflowStage = usePlannerStore((s) => s.workflowStage);
   const select = usePlannerStore((s) => s.selectWall);
   const cameraMode = usePlannerStore((s) => s.cameraMode);
   const studioMode = usePlannerStore((s) => s.studioMode);
@@ -726,6 +737,8 @@ function WallMeshes() {
   const orbiting = cameraMode === 'orbit';
   // Walls are only selectable in top-view Walls edit mode — not while furnishing or orbiting.
   const wallEditMode = studioMode === 'architect' && cameraMode === 'top' && tool === 'select';
+  // Hide wide wall picks while a room is selected so plan rooms stay draggable.
+  const showPlanWallPicks = wallEditMode && workflowStage !== 'room' && !selectedRoomId;
   // Openings can be dragged in top plan and 3D orbit (not walk).
   const openingDragEnabled = tool === 'select' && (cameraMode === 'top' || cameraMode === 'orbit');
   const onWallClick = (id: string) => {
@@ -774,7 +787,7 @@ function WallMeshes() {
 
         // Wide, shallow top-view strip — walls are hard to hit from plan otherwise (thin edges).
         const topPick =
-          wallEditMode ? (
+          showPlanWallPicks ? (
             <mesh
               key={w.id + 'top-pick'}
               userData={{ planWallPick: true, wallId: w.id }}
@@ -1081,7 +1094,13 @@ function ClearanceVolume({ item }: { item: FurnitureItem }) {
 }
 
 function Guides({ selected, others }: { selected: FurnitureItem; others: FurnitureItem[] }) {
-  const guides = useMemo(() => alignmentGuides(selected, others), [selected, others]);
+  const guides = useMemo(() => {
+    if (selected.placementKind === 'perimeter-trim') return [];
+    return alignmentGuides(
+      selected,
+      others.filter((o) => o.placementKind !== 'perimeter-trim'),
+    );
+  }, [selected, others]);
   return (
     <>
       {guides.map((g, i) => (
@@ -1227,11 +1246,26 @@ function Furniture() {
       wallOffset: placed.wallOffset,
       ...(item.mountingType === 'wall' || item.mountingType === 'ceiling' ? { y: nextY } : {}),
     };
-    // Block door swing footprints — keep previous position if the move would collide.
+    // Block door clearance + stacking on other products.
     if (
       furnitureHitsDoorSwing(
         { x: next.x, z: next.z, width: item.width, depth: item.depth, rotation: next.rotation },
         doorSwingZones(openings, walls),
+      ) ||
+      wouldOverlapFurniture(
+        {
+          id: item.id,
+          x: next.x,
+          y: nextY,
+          z: next.z,
+          width: item.width,
+          depth: item.depth,
+          height: item.height,
+          rotation: next.rotation,
+          mountingType: item.mountingType,
+          placementKind: item.placementKind,
+        },
+        usePlannerStore.getState().furniture.filter((f) => f.id !== item.id),
       )
     ) {
       return {
@@ -1376,6 +1410,7 @@ function Furniture() {
           const urls = urlsFor(i);
           return (
             <group key={i.id} position={[i.x, itemY(i), i.z]} rotation={[0, i.rotation, 0]} userData={{ furniturePick: true }}>
+              <group rotation={[0, 0, i.mountingType === 'wall' ? i.roll ?? 0 : 0]}>
               <FurnitureVisual
                 item={i}
                 lowUrl={urls.lowUrl}
@@ -1391,6 +1426,7 @@ function Furniture() {
                 onPointerDown={usePlaneDrag ? (e) => beginItemDrag(e, i) : undefined}
               />
               {i.showClearance && <ClearanceVolume item={i} />}
+              </group>
             </group>
           );
         })}
@@ -1442,6 +1478,7 @@ function Furniture() {
             )}
           >
             <group userData={{ furniturePick: true }}>
+              <group rotation={[0, 0, selected.mountingType === 'wall' ? selected.roll ?? 0 : 0]}>
               <FurnitureVisual
                 item={selected}
                 {...urlsFor(selected)}
@@ -1450,6 +1487,7 @@ function Furniture() {
                 onPointerDown={usePlaneDrag ? (e) => beginItemDrag(e, selected) : undefined}
               />
               {selected.showClearance && <ClearanceVolume item={selected} />}
+              </group>
             </group>
           </PivotControls>
         </>
@@ -1467,6 +1505,8 @@ function Room() {
   const enterRoom = usePlannerStore((s) => s.enterRoom);
   const selectRoom = usePlannerStore((s) => s.selectRoom);
   const selectWall = usePlannerStore((s) => s.selectWall);
+  const movePlanRoom = usePlannerStore((s) => s.movePlanRoom);
+  const commitPlanRoomMove = usePlannerStore((s) => s.commitPlanRoomMove);
   const workflowStage = usePlannerStore((s) => s.workflowStage);
   const cameraMode = usePlannerStore((s) => s.cameraMode);
   const studioMode = usePlannerStore((s) => s.studioMode);
@@ -1476,7 +1516,7 @@ function Room() {
   const detected = useMemo(() => detectRoomPolygons(walls), [walls]);
   const rooms = planRooms.length ? planRooms.map((r) => r.points) : detected;
   const ceilingHeight = walls[0]?.height ?? 2.7;
-  const { camera, invalidate } = useThree();
+  const { camera, invalidate, gl } = useThree();
   const ceilingSmooth = useRef(0.22);
   const floorSmooth = useRef(1);
   const plateKey = useRef('');
@@ -1485,6 +1525,98 @@ function Room() {
   // Top / bird’s-eye must see the floor — a solid ceiling makes the room unusable to edit.
   const showCeiling = cameraMode !== 'top' || selectedSurface === 'ceiling';
   const wallEditMode = studioMode === 'architect' && cameraMode === 'top' && tool === 'select';
+  const roomDragRef = useRef<{
+    roomId: string;
+    lastX: number;
+    lastZ: number;
+    moved: boolean;
+    listeners: { move: (e: PointerEvent) => void; end: (e: PointerEvent) => void } | null;
+  } | null>(null);
+  const floorPlane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), []);
+  const dragRaycaster = useMemo(() => new THREE.Raycaster(), []);
+  const dragNdc = useMemo(() => new THREE.Vector2(), []);
+
+  const hitFloorPlane = (clientX: number, clientY: number) => {
+    const rect = gl.domElement.getBoundingClientRect();
+    dragNdc.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    dragNdc.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+    dragRaycaster.setFromCamera(dragNdc, camera);
+    const hit = new THREE.Vector3();
+    if (!dragRaycaster.ray.intersectPlane(floorPlane, hit)) return null;
+    return hit;
+  };
+
+  const beginPlanRoomDrag = (e: any, roomId: string) => {
+    if (workflowStage === 'room' || tool !== 'select') return;
+    if (usePlannerStore.getState().pendingRoomShape) return;
+    if (usePlannerStore.getState().pendingFloorFill) return;
+    e.stopPropagation();
+    (e.target as any)?.setPointerCapture?.(e.pointerId);
+    selectRoom(roomId);
+    const hit = hitFloorPlane(e.clientX, e.clientY);
+    if (!hit) return;
+    const drag = {
+      roomId,
+      lastX: hit.x,
+      lastZ: hit.z,
+      moved: false,
+      listeners: null as null | { move: (e: PointerEvent) => void; end: (e: PointerEvent) => void },
+    };
+    const onMove = (ev: PointerEvent) => {
+      const next = hitFloorPlane(ev.clientX, ev.clientY);
+      if (!next) return;
+      const dx = next.x - drag.lastX;
+      const dz = next.z - drag.lastZ;
+      if (!drag.moved) {
+        if (Math.hypot(next.x - hit.x, next.z - hit.z) < 0.06) return;
+        drag.moved = true;
+        document.body.dataset.movingFurniture = '1';
+        window.dispatchEvent(new Event('roomcraft-drag-start'));
+      }
+      if (Math.hypot(dx, dz) < 1e-4) return;
+      if (movePlanRoom(roomId, dx, dz, { live: true })) {
+        drag.lastX = next.x;
+        drag.lastZ = next.z;
+        invalidate();
+      }
+    };
+    const onEnd = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onEnd);
+      window.removeEventListener('pointercancel', onEnd);
+      if (roomDragRef.current?.listeners) roomDragRef.current.listeners = null;
+      if (drag.moved) {
+        commitPlanRoomMove();
+        delete document.body.dataset.movingFurniture;
+        window.dispatchEvent(new Event('roomcraft-drag-end'));
+        window.setTimeout(() => {
+          window.dispatchEvent(new Event('roomcraft-fit-plan'));
+        }, 40);
+      }
+      roomDragRef.current = null;
+    };
+    drag.listeners = { move: onMove, end: onEnd };
+    roomDragRef.current = drag;
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onEnd);
+    window.addEventListener('pointercancel', onEnd);
+  };
+
+  useEffect(
+    () => () => {
+      const drag = roomDragRef.current;
+      if (drag?.listeners) {
+        window.removeEventListener('pointermove', drag.listeners.move);
+        window.removeEventListener('pointerup', drag.listeners.end);
+        window.removeEventListener('pointercancel', drag.listeners.end);
+      }
+      if (document.body.dataset.movingFurniture) {
+        delete document.body.dataset.movingFurniture;
+        window.dispatchEvent(new Event('roomcraft-drag-end'));
+      }
+    },
+    [],
+  );
 
   useFrame((_, delta) => {
     const targetCeiling = orbitCeilingOpacity(camera.position.y, ceilingHeight, {
@@ -1513,13 +1645,14 @@ function Room() {
 
   const chooseFloor = (e: any, roomId?: string) => {
     e.stopPropagation();
+    if (roomDragRef.current?.moved) return;
     const fill = usePlannerStore.getState().pendingFloorFill;
     if (fill) {
       usePlannerStore.getState().applyFloorFillToRoom(roomId ?? null);
       return;
     }
     // Plan Walls mode: prefer wall pick strips even when the room floor is closer.
-    if (wallEditMode && workflowStage !== 'room') {
+    if (wallEditMode && workflowStage !== 'room' && !roomId) {
       const wallHit = (e.intersections as THREE.Intersection[] | undefined)?.find((h) => h.object.userData?.planWallPick);
       if (wallHit?.object.userData?.wallId) {
         selectWall(String(wallHit.object.userData.wallId));
@@ -1585,6 +1718,11 @@ function Room() {
                 receiveShadow
                 position={[0, -0.035, 0]}
                 onClick={(e) => chooseFloor(e, label?.id)}
+                onPointerDown={
+                  label && workflowStage !== 'room' && tool === 'select'
+                    ? (e) => beginPlanRoomDrag(e, label.id)
+                    : undefined
+                }
               >
                 <shapeGeometry args={[roomShape(points)]} />
                 <meshStandardMaterial
@@ -1646,6 +1784,11 @@ function Room() {
                   outlineWidth={0.02}
                   outlineColor={selected ? '#003d70' : '#ffffff'}
                   onClick={(e) => chooseFloor(e, label.id)}
+                  onPointerDown={
+                    workflowStage !== 'room' && tool === 'select'
+                      ? (e) => beginPlanRoomDrag(e, label.id)
+                      : undefined
+                  }
                 >
                   {label.name}
                 </Text>

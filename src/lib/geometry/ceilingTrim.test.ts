@@ -49,8 +49,45 @@ describe('ceiling / floor perimeter trim', () => {
       expect(seg.y).toBeCloseTo(2.7 - 0.09, 5);
       expect(seg.height).toBeCloseTo(0.09, 5);
       expect(seg.depth).toBeCloseTo(0.05, 5);
+      // Mitered: shorter than full wall length by profile depth.
       expect(seg.width).toBeGreaterThan(1);
+      expect(seg.width).toBeLessThan(6);
     }
+  });
+
+  it('skips baseboard on walls covered by counters', () => {
+    const counter = {
+      id: 'c1',
+      catalogId: 'counter',
+      name: 'Kitchen counter',
+      category: 'Kitchen',
+      x: 0,
+      y: 0,
+      z: ((150 + 510) / 2 - 330) / 80,
+      rotation: Math.PI / 2,
+      color: '#ccc',
+      width: 3,
+      depth: 0.6,
+      height: 0.9,
+      mountingType: 'floor' as const,
+    };
+    // Place counter along left wall (w4: x=180).
+    const left = {
+      ...counter,
+      x: (180 - 420) / 80,
+      z: 0,
+      width: 3.5,
+      depth: 0.65,
+      rotation: Math.PI / 2,
+    };
+    const segs = perimeterTrimSegments(room, walls, {
+      profileDepth: 0.015,
+      profileHeight: 0.09,
+      edge: 'floor',
+      furniture: [left],
+    });
+    expect(segs.length).toBeLessThan(4);
+    expect(segs.every((s) => s.wallId !== 'w4')).toBe(true);
   });
 
   it('places floor baseboard strips on the floor plane', () => {

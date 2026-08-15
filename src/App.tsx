@@ -181,8 +181,12 @@ function StudioApp() {
 
   useEffect(() => {
     const open = () => {
-      // Walls/floors/ceilings/room → right inspector. Never a product editor.
-      usePlannerStore.getState().selectFurniture(null);
+      const state = usePlannerStore.getState();
+      const item = state.furniture.find((f) => f.id === state.selectedFurnitureId);
+      // Walls/floors/ceilings/room → right inspector. Keep trim selection for trim edit.
+      if (!item || item.placementKind !== 'perimeter-trim') {
+        usePlannerStore.getState().selectFurniture(null);
+      }
       setInspectorOpen(true);
       setCatalogOpen(false);
       closeProjectMenu();
@@ -196,16 +200,22 @@ function StudioApp() {
   const pendingPlacement = usePlannerStore((s) => s.pendingPlacement);
   useEffect(() => {
     // Furniture select: highlight + rotate/delete FABs only — no card, no inspector.
+    // Trim is the exception: Edit FAB opens the inspector for profile height / finish.
     if (pendingPlacement) {
       setInspectorOpen(false);
       return;
     }
     if (selectedFurnitureId) {
+      const item = usePlannerStore.getState().furniture.find((f) => f.id === selectedFurnitureId);
+      if (item?.placementKind !== 'perimeter-trim') setInspectorOpen(false);
+      return;
+    }
+    // Openings: keep the current view; edit opens from the FAB, not automatically.
+    if (selectedOpeningId) {
       setInspectorOpen(false);
       return;
     }
-    if (selectedOpeningId) setInspectorOpen(true);
-    else if (selectedWallId) setInspectorOpen(false);
+    if (selectedWallId) setInspectorOpen(false);
   }, [selectedWallId, selectedOpeningId, selectedFurnitureId, pendingPlacement]);
 
   useEffect(() => {
@@ -336,8 +346,10 @@ function StudioApp() {
         openBom={() => setBom(true)}
         openCategory={openCategory}
         onOpenInspector={() => {
-          // Room / wall / opening config only — never a product editor.
-          if (store.selectedFurnitureId) store.selectFurniture(null);
+          // Room / wall / opening / trim config — not free furniture product cards.
+          const fid = store.selectedFurnitureId;
+          const item = fid ? store.furniture.find((f) => f.id === fid) : null;
+          if (fid && item?.placementKind !== 'perimeter-trim') store.selectFurniture(null);
           setInspectorOpen(true);
           setCatalogOpen(false);
           setMenuOpen(false);

@@ -1,6 +1,45 @@
 /// <reference lib="webworker" />
 
-type Item = { id: string; x: number; y?: number; z: number; width: number; depth: number; height: number };
+type Item = {
+  id: string;
+  x: number;
+  y?: number;
+  z: number;
+  width: number;
+  depth: number;
+  height: number;
+  rotation?: number;
+  placementKind?: string;
+  mountingType?: string;
+};
+
+function planOverlap(a: Item, b: Item) {
+  const rotA = a.rotation ?? 0;
+  const rotB = b.rotation ?? 0;
+  const ca = Math.abs(Math.cos(rotA));
+  const sa = Math.abs(Math.sin(rotA));
+  const cb = Math.abs(Math.cos(rotB));
+  const sb = Math.abs(Math.sin(rotB));
+  const halfWa = (a.width * ca + a.depth * sa) / 2;
+  const halfDa = (a.width * sa + a.depth * ca) / 2;
+  const halfWb = (b.width * cb + b.depth * sb) / 2;
+  const halfDb = (b.width * sb + b.depth * cb) / 2;
+  return !(a.x + halfWa < b.x - halfWb || a.x - halfWa > b.x + halfWb || a.z + halfDa < b.z - halfDb || a.z - halfDa > b.z + halfDb);
+}
+
+function blocks(a: Item, b: Item) {
+  if (a.placementKind === 'perimeter-trim' || b.placementKind === 'perimeter-trim') return false;
+  const aMount = a.mountingType ?? 'floor';
+  const bMount = b.mountingType ?? 'floor';
+  if (aMount === 'ceiling' && bMount !== 'ceiling') return false;
+  if (bMount === 'ceiling' && aMount !== 'ceiling') return false;
+  if (aMount === 'wall' && bMount === 'floor') return false;
+  if (bMount === 'wall' && aMount === 'floor') return false;
+  const ay = a.y ?? 0;
+  const by = b.y ?? 0;
+  if (Math.abs(ay - by) >= (a.height + b.height) / 2 - 0.02) return false;
+  return planOverlap(a, b);
+}
 
 self.onmessage = (event: MessageEvent) => {
   const { type, payload, requestId } = event.data as { type: string; payload: any; requestId?: number };
@@ -9,15 +48,7 @@ self.onmessage = (event: MessageEvent) => {
     const collisions: string[][] = [];
     for (let i = 0; i < items.length; i++) {
       for (let j = i + 1; j < items.length; j++) {
-        const a = items[i];
-        const b = items[j];
-        if (
-          Math.abs(a.x - b.x) < (a.width + b.width) / 2 &&
-          Math.abs(a.z - b.z) < (a.depth + b.depth) / 2 &&
-          Math.abs((a.y ?? 0) - (b.y ?? 0)) < (a.height + b.height) / 2
-        ) {
-          collisions.push([a.id, b.id]);
-        }
+        if (blocks(items[i]!, items[j]!)) collisions.push([items[i]!.id, items[j]!.id]);
       }
     }
     self.postMessage({ type: 'collisions', requestId, collisions });

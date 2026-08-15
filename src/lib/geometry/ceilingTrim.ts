@@ -1,4 +1,4 @@
-import type { PlanRoomLabel, Wall } from '../../types';
+import type { FurnitureItem, PlanRoomLabel, Wall } from '../../types';
 import { planToWorld, pointOnWall, wallFrame } from './placement';
 import { wallsBelongingToRoom } from './roomWalls';
 
@@ -58,22 +58,64 @@ export function boundaryWallsForRoom(room: PlanRoomLabel, walls: Wall[], tol = 2
   });
 }
 
+const BUILTIN_RE = /counter|cabinet|base cabinet|kitchen island|vanity|cupboard|sideboard/i;
+
+/** Floor built-ins that baseboard should route around (not crown). */
+export function isTrimBypassBuiltin(item: Pick<FurnitureItem, 'name' | 'category' | 'mountingType' | 'placementKind'>) {
+  if (item.placementKind === 'perimeter-trim') return false;
+  if (item.mountingType === 'wall' || item.mountingType === 'ceiling') return false;
+  return BUILTIN_RE.test(`${item.name} ${item.category}`);
+}
+
+function builtinCoversWall(
+  item: Pick<FurnitureItem, 'x' | 'z' | 'width' | 'depth' | 'rotation'>,
+  wall: Wall,
+  coverRatio = 0.45,
+) {
+  const frame = wallFrame(wall);
+  const c = Math.abs(Math.cos(item.rotation ?? 0));
+  const s = Math.abs(Math.sin(item.rotation ?? 0));
+  const halfW = (item.width * c + item.depth * s) / 2;
+  const halfD = (item.width * s + item.depth * c) / 2;
+  // Distance from item center to wall centerline.
+  const vx = item.x - frame.start.x;
+  const vz = item.z - frame.start.z;
+  const along = vx * frame.dirX + vz * frame.dirZ;
+  const perp = vx * frame.normalX + vz * frame.normalZ;
+  if (Math.abs(perp) > Math.max(halfD, halfW) + wall.thickness + 0.35) return false;
+  if (along < -0.2 || along > frame.length + 0.2) return false;
+  const span = Math.max(item.width, item.depth);
+  return span / frame.length >= coverRatio;
+}
+
 /**
  * Build trim strips along the room’s wall–ceiling or wall–floor junctions,
- * inset to the interior face so the profile sits in the corner.
+ * inset to the interior face. Ends are shortened for a simple miter meet.
+ * Floor trim skips walls dominated by counters / cabinets.
  */
 export function perimeterTrimSegments(
   room: PlanRoomLabel,
   walls: Wall[],
-  opts: { profileDepth: number; profileHeight: number; edge: PerimeterTrimEdge },
+  opts: {
+    profileDepth: number;
+    profileHeight: number;
+    edge: PerimeterTrimEdge;
+    furniture?: FurnitureItem[];
+  },
 ): PerimeterTrimSegment[] {
   const boundary = boundaryWallsForRoom(room, walls);
   if (!boundary.length) return [];
   const roomWorld = room.points.map((p) => planToWorld(p));
   const depth = Math.max(0.03, opts.profileDepth);
   const height = Math.max(0.03, opts.profileHeight);
+  const builtins =
+    opts.edge === 'floor'
+      ? (opts.furniture ?? []).filter(isTrimBypassBuiltin)
+      : [];
 
-  return boundary.map((wall) => {
+  const out: PerimeterTrimSegment[] = [];
+  for (const wall of boundary) {
+    if (builtins.some((b) => builtinCoversWall(b, wall))) continue;
     const frame = wallFrame(wall);
     const inset = wall.thickness / 2 + depth / 2 + 0.004;
     const plus = pointOnWall(wall, 0.5, inset);
@@ -85,16 +127,19 @@ export function perimeterTrimSegments(
     else if (minusInside && !plusInside) side = -1;
     const placed = side > 0 ? plus : minus;
     const y = opts.edge === 'ceiling' ? Math.max(0.05, wall.height - height) : 0;
-    return {
+    // Shorten by profile depth so adjacent strips meet at a miter instead of overlapping.
+    const width = Math.max(0.15, frame.length - depth);
+    out.push({
       wallId: wall.id,
       x: placed.x,
       z: placed.z,
       y,
       rotation: placed.rotation + (side < 0 ? Math.PI : 0),
-      width: Math.max(0.2, frame.length),
+      width,
       depth,
       height,
       wallOffset: 0.5,
-    };
-  });
+    });
+  }
+  return out;
 }

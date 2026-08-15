@@ -435,6 +435,28 @@ export function proposedRoomOverlaps(
 }
 
 /**
+ * True when room `id`'s polygon overlaps another room's interior
+ * (edge-flush adjacency is allowed).
+ */
+export function planRoomLabelOverlaps(
+  id: string,
+  labels: { id: string; points: Point[] }[],
+  minOverlapPx = 0.25 * PIXELS_PER_METER,
+): boolean {
+  const self = labels.find((r) => r.id === id);
+  if (!self || self.points.length < 3) return false;
+  const proposed = pointsAabb(self.points);
+  for (const room of labels) {
+    if (room.id === id || room.points.length < 3) continue;
+    const other = pointsAabb(room.points);
+    const xOverlap = overlap1d(proposed.minX, proposed.maxX, other.minX, other.maxX);
+    const yOverlap = overlap1d(proposed.minY, proposed.maxY, other.minY, other.maxY);
+    if (xOverlap > minOverlapPx && yOverlap > minOverlapPx) return true;
+  }
+  return false;
+}
+
+/**
  * Nudge a proposed room center so its AABB flushes against a nearby existing room.
  * Used while dragging new rooms at plan level.
  */

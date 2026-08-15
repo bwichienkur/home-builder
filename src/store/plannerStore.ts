@@ -1,12 +1,14 @@
 import { create } from 'zustand';
 import type { CameraMode, FurnitureItem, MountingType, Opening, OpeningShape, PendingFloorFill, PlanRoomLabel, Point, RoomType, SceneSnapshot, StudioMode, SurfaceTarget, Tool, UnitSystem, Wall, WorkflowStage } from '../types';
 import { doorSwingZones, furnitureHitsDoorSwing } from '../lib/geometry/doorClearance';
+import { wouldOverlapFurniture } from '../lib/collisions';
 import { clampWallMountY, constrainPlacement, openingConflicts, resolveMountingType, roomFloorCenter, WORLD_ORIGIN } from '../lib/geometry/placement';
 import { detectRoomPolygons } from '../lib/geometry/rooms';
 import { perimeterTrimSegments, type PerimeterTrimEdge } from '../lib/geometry/ceilingTrim';
 import { writeRecoverySnapshot } from '../lib/designShare';
-import { buildHouse, rebuildFromPlanRooms, resizePlanRoomPoints, shapedRoomPoints, snapRoomCenterToNeighbors, splitPlanRoomPoints, proposedRoomOverlaps, type PlanRoomShape } from '../lib/housePlans/buildPlan';
+import { buildHouse, rebuildFromPlanRooms, resizePlanRoomPoints, shapedRoomPoints, snapRoomCenterToNeighbors, splitPlanRoomPoints, proposedRoomOverlaps, planRoomLabelOverlaps, type PlanRoomShape } from '../lib/housePlans/buildPlan';
 import { getHousePlan } from '../lib/housePlans/olsenPlans';
+import { remapFurnitureAfterPlanRebuild } from '../lib/geometry/planFurnitureRemap';
 import { pointInPlanRoom, wallEndpointForGrowSide, type WallGrowSide } from '../lib/geometry/roomWalls';
 import { PIXELS_PER_METER } from '../lib/geometry/snapping';
 
@@ -108,6 +110,10 @@ type PlannerState = SceneSnapshot & {
   pendingRoomShape: PlanRoomShape | null;
   setPendingRoomShape: (shape: PlanRoomShape | null) => void;
   placePlanRoom: (center: Point, shape?: PlanRoomShape, name?: string) => string | null;
+  /** Translate a plan room in world meters; rebuilds walls and remaps furniture/trim. */
+  movePlanRoom: (id: string, dxM: number, dzM: number, opts?: { live?: boolean }) => boolean;
+  /** Push current plan geometry onto undo history after a live room drag. */
+  commitPlanRoomMove: () => void;
   splitPlanRoom: (id: string, axis?: 'x' | 'y') => void;
   setWorkflowStage: (stage: WorkflowStage) => void;
   setStudioMode: (mode: StudioMode) => void;
@@ -148,6 +154,12 @@ type PlannerState = SceneSnapshot & {
   moveSelected: (dx: number, dz: number) => void;
   duplicateSelected: () => void;
   deleteSelected: () => void;
+  /** Remove every furniture line for a catalog id (shopping bag remove). */
+  removeCatalogFromRoom: (catalogId: string) => void;
+  /** Remove crown or baseboard runs in the focused room. */
+  removePerimeterTrim: (edge: PerimeterTrimEdge) => void;
+  /** Clear per-room (or global) floor finish color. */
+  clearFloorFinish: () => void;
   setFinish: (target: SurfaceTarget, color: string) => void;
   addFloor: (opts?: { copyActive?: boolean }) => void;
   switchFloor: (id: string) => void;
@@ -265,6 +277,74 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       return { ...next, planRooms: next.planRooms ?? s.planRooms, floors, history, historyIndex: history.length - 1 };
     });
   const mutate = (patch: Partial<SceneSnapshot>) => commit({ ...snap(), ...patch });
+  /** Rebuild walls from plan labels and remap furniture/trim so recenter doesn’t orphan strips. */
+  const applyPlanRoomRebuild = (
+    nextLabels: PlanRoomLabel[],
+    opts?: { live?: boolean; selectedRoomId?: string | null },
+  ) => {
+    const prevRooms = get().planRooms;
+    const prevFurniture = get().furniture;
+    const height = get().walls[0]?.height ?? 2.74;
+    const rebuilt = rebuildFromPlanRooms(nextLabels, get().activeFloorId, height);
+    const planRooms = rebuilt.roomPolygons.map((p) => ({
+      ...p,
+      floorColor: nextLabels.find((l) => l.id === p.id)?.floorColor,
+    }));
+    const furniture = remapFurnitureAfterPlanRebuild(
+      prevRooms,
+      planRooms,
+      rebuilt.scene.walls,
+      prevFurniture,
+    );
+    const patch: Partial<SceneSnapshot> = {
+      walls: rebuilt.scene.walls,
+      openings: rebuilt.scene.openings,
+      furniture,
+      planRooms,
+    };
+    if (opts?.live) {
+      set((s) => ({
+        ...patch,
+        floors: s.floors.map((f) =>
+          f.id === s.activeFloorId
+            ? {
+                ...f,
+                scene: {
+                  ...f.scene,
+                  walls: rebuilt.scene.walls,
+                  openings: rebuilt.scene.openings,
+                  furniture,
+                  planRooms,
+                },
+                planRooms,
+              }
+            : f,
+        ),
+        ...(opts?.selectedRoomId !== undefined ? { selectedRoomId: opts.selectedRoomId } : {}),
+      }));
+    } else {
+      mutate(patch);
+      set((s) => ({
+        floors: s.floors.map((f) =>
+          f.id === s.activeFloorId
+            ? {
+                ...f,
+                scene: {
+                  ...f.scene,
+                  walls: rebuilt.scene.walls,
+                  openings: rebuilt.scene.openings,
+                  furniture,
+                  planRooms,
+                },
+                planRooms,
+              }
+            : f,
+        ),
+        ...(opts?.selectedRoomId !== undefined ? { selectedRoomId: opts.selectedRoomId } : {}),
+      }));
+    }
+    return planRooms;
+  };
   const projectPayload = () => {
     const s = get();
     return {
@@ -521,7 +601,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     selectOpening: (selectedOpeningId) =>
       set({
         selectedOpeningId,
-        selectedWallId: selectedOpeningId ? get().openings.find((o) => o.id === selectedOpeningId)?.wallId ?? null : null,
+        // Keep the current room framing — do not select the host wall (that zooms the plan).
+        selectedWallId: null,
         selectedFurnitureId: null,
         selectedSurface: null,
         selectedRoomId: get().workflowStage === 'room' ? get().selectedRoomId : null,
@@ -647,44 +728,17 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       const nextLabels = current.map((r) =>
         r.id === id ? { ...r, points: resizePlanRoomPoints(r.points, widthFt, depthFt) } : r,
       );
-      const height = get().walls[0]?.height ?? 2.74;
-      const rebuilt = rebuildFromPlanRooms(nextLabels, get().activeFloorId, height);
-      const planRooms = rebuilt.roomPolygons.map((p) => ({
-        ...p,
-        floorColor: nextLabels.find((l) => l.id === p.id)?.floorColor,
-      }));
-      mutate({
-        walls: rebuilt.scene.walls,
-        openings: rebuilt.scene.openings,
-        furniture: get().furniture,
-      });
-      set({
-        planRooms,
-        floors: get().floors.map((f) =>
-          f.id === get().activeFloorId ? { ...f, scene: { ...f.scene, walls: rebuilt.scene.walls, openings: rebuilt.scene.openings }, planRooms } : f,
-        ),
-      });
+      applyPlanRoomRebuild(nextLabels);
     },
     deletePlanRoom: (id) => {
       const nextLabels = get().planRooms.filter((r) => r.id !== id);
       if (!nextLabels.length) {
-        mutate({ walls: [], openings: [], furniture: get().furniture });
-        set({ planRooms: [], selectedRoomId: null, floors: get().floors.map((f) => (f.id === get().activeFloorId ? { ...f, planRooms: [] } : f)) });
+        mutate({ walls: [], openings: [], furniture: [], planRooms: [] });
+        set({ planRooms: [], selectedRoomId: null, floors: get().floors.map((f) => (f.id === get().activeFloorId ? { ...f, planRooms: [], scene: { ...f.scene, walls: [], openings: [], furniture: [], planRooms: [] } } : f)) });
         return;
       }
-      const height = get().walls[0]?.height ?? 2.74;
-      const rebuilt = rebuildFromPlanRooms(nextLabels, get().activeFloorId, height);
-      const planRooms = rebuilt.roomPolygons.map((p) => ({
-        ...p,
-        floorColor: nextLabels.find((l) => l.id === p.id)?.floorColor,
-      }));
-      mutate({ walls: rebuilt.scene.walls, openings: rebuilt.scene.openings, furniture: get().furniture });
-      set({
-        planRooms,
+      applyPlanRoomRebuild(nextLabels, {
         selectedRoomId: get().selectedRoomId === id ? null : get().selectedRoomId,
-        floors: get().floors.map((f) =>
-          f.id === get().activeFloorId ? { ...f, scene: { ...f.scene, walls: rebuilt.scene.walls, openings: rebuilt.scene.openings }, planRooms } : f,
-        ),
       });
     },
     addSquareRoom: (center, widthFt = 12, depthFt = 12, name) => {
@@ -717,16 +771,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         points: shapedRoomPoints(kind, snapped),
       };
       const nextLabels = [...get().planRooms, label];
-      const height = get().walls[0]?.height ?? 2.74;
-      const rebuilt = rebuildFromPlanRooms(nextLabels, get().activeFloorId, height);
-      const planRooms = rebuilt.roomPolygons.map((p) => ({
-        ...p,
-        floorColor: nextLabels.find((l) => l.id === p.id)?.floorColor,
-      }));
-      mutate({ walls: rebuilt.scene.walls, openings: rebuilt.scene.openings, furniture: get().furniture });
+      applyPlanRoomRebuild(nextLabels, { selectedRoomId: id });
       set({
-        planRooms,
-        selectedRoomId: id,
         workflowStage: 'house',
         studioMode: 'architect',
         selectedSurface: null,
@@ -738,11 +784,37 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         view: '3d',
         tool: 'select',
         draftStart: null,
-        floors: get().floors.map((f) =>
-          f.id === get().activeFloorId ? { ...f, scene: { ...f.scene, walls: rebuilt.scene.walls, openings: rebuilt.scene.openings }, planRooms } : f,
-        ),
+        openingNotice: '',
       });
       return id;
+    },
+    movePlanRoom: (id, dxM, dzM, opts) => {
+      if (!Number.isFinite(dxM) || !Number.isFinite(dzM)) return false;
+      if (Math.abs(dxM) < 1e-6 && Math.abs(dzM) < 1e-6) return true;
+      const current = get().planRooms;
+      if (!current.some((r) => r.id === id)) return false;
+      const dxPx = dxM * PIXELS_PER_METER;
+      const dyPx = dzM * PIXELS_PER_METER;
+      const nextLabels = current.map((r) =>
+        r.id === id
+          ? { ...r, points: r.points.map((p) => ({ x: p.x + dxPx, y: p.y + dyPx })) }
+          : r,
+      );
+      if (planRoomLabelOverlaps(id, nextLabels)) {
+        set({ openingNotice: 'Rooms can’t overlap — keep them edge-to-edge or apart.' });
+        return false;
+      }
+      applyPlanRoomRebuild(nextLabels, { live: opts?.live, selectedRoomId: id });
+      set({ openingNotice: '' });
+      return true;
+    },
+    commitPlanRoomMove: () => {
+      mutate({
+        walls: get().walls,
+        openings: get().openings,
+        furniture: get().furniture,
+        planRooms: get().planRooms,
+      });
     },
     splitPlanRoom: (id, axis) => {
       const current = get().planRooms;
@@ -758,21 +830,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
               { ...r, id: bId, name: `${r.name} B`, points: bPts },
             ],
       );
-      const height = get().walls[0]?.height ?? 2.74;
-      const rebuilt = rebuildFromPlanRooms(nextLabels, get().activeFloorId, height);
-      const planRooms = rebuilt.roomPolygons.map((p) => ({
-        ...p,
-        floorColor: nextLabels.find((l) => l.id === p.id)?.floorColor,
-      }));
-      mutate({ walls: rebuilt.scene.walls, openings: rebuilt.scene.openings, furniture: get().furniture });
-      set({
-        planRooms,
-        selectedRoomId: id,
-        workflowStage: 'room',
-        floors: get().floors.map((f) =>
-          f.id === get().activeFloorId ? { ...f, scene: { ...f.scene, walls: rebuilt.scene.walls, openings: rebuilt.scene.openings }, planRooms } : f,
-        ),
-      });
+      applyPlanRoomRebuild(nextLabels, { selectedRoomId: id });
+      set({ workflowStage: 'room' });
     },
     addOpening: (wallId, type, shape = 'rect') => {
       const id = crypto.randomUUID();
@@ -909,14 +968,22 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       const pending = get().pendingPlacement;
       if (!pending) return null;
       const probe = {
+        id: '__pending__',
         x: pending.x,
+        y: pending.y ?? 0,
         z: pending.z,
         width: pending.width,
         depth: pending.depth,
+        height: pending.height,
         rotation: pending.rotation,
+        mountingType: pending.mountingType as import('../types').MountingType | undefined,
       };
       if (furnitureHitsDoorSwing(probe, doorSwingZones(get().openings, get().walls))) {
-        set({ openingNotice: 'Cannot place in a door swing zone. Move clear of the opening arc.' });
+        set({ openingNotice: 'Cannot place in a door clearance zone. Move clear of the opening.' });
+        return null;
+      }
+      if (wouldOverlapFurniture(probe, get().furniture)) {
+        set({ openingNotice: 'Cannot stack items. Move clear of other products.' });
         return null;
       }
       set({ pendingPlacement: null, openingNotice: '' });
@@ -981,6 +1048,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         profileDepth: depth,
         profileHeight: height,
         edge,
+        furniture: get().furniture,
       });
       if (!segments.length) {
         set({ openingNotice: 'No wall corners found for trim in this room.' });
@@ -1048,13 +1116,33 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       const item = get().furniture.find((f) => f.id === id);
       if (!item) return;
       if (item.placementKind === 'perimeter-trim') {
-        // Trim runs are fixed to wall junctions — only color / finish-style patches.
-        const allowed: Partial<FurnitureItem> = {};
-        if (patch.color !== undefined) allowed.color = patch.color;
-        if (patch.name !== undefined) allowed.name = patch.name;
-        if (Object.keys(allowed).length) {
-          mutate({ furniture: get().furniture.map((f) => (f.id === id ? { ...f, ...allowed } : f)) });
-        }
+        // Trim is on/off for shape — only finish + profile height (affects $/LF take-off).
+        const runId = item.runId;
+        if (!runId) return;
+        const nextHeight = patch.height;
+        const nextColor = patch.color;
+        const nextName = patch.name;
+        if (nextHeight === undefined && nextColor === undefined && nextName === undefined) return;
+        mutate({
+          furniture: get().furniture.map((f) => {
+            if (f.runId !== runId) return f;
+            const y =
+              nextHeight !== undefined && f.trimEdge === 'ceiling'
+                ? Math.max(0.05, (get().walls.find((w) => w.id === f.wallId)?.height ?? 2.7) - nextHeight)
+                : f.y;
+            return {
+              ...f,
+              ...(nextColor !== undefined ? { color: nextColor } : {}),
+              ...(nextName !== undefined ? { name: nextName } : {}),
+              ...(nextHeight !== undefined
+                ? {
+                    height: Math.max(0.03, nextHeight),
+                    y: f.trimEdge === 'floor' ? 0 : y,
+                  }
+                : {}),
+            };
+          }),
+        });
         return;
       }
       const mounting = resolveMountingType(patch.mountingType ?? item.mountingType);
@@ -1087,6 +1175,11 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     rotateSelected: (delta = Math.PI / 2) => {
       const item = get().furniture.find((f) => f.id === get().selectedFurnitureId);
       if (!item || item.placementKind === 'perimeter-trim') return;
+      // Wall mounts: rotate in the wall plane (roll), not yaw off the wall.
+      if (item.mountingType === 'wall') {
+        get().updateFurniture(item.id, { roll: (item.roll ?? 0) + delta });
+        return;
+      }
       get().updateFurniture(item.id, { rotation: item.rotation + delta });
     },
     duplicateSelected: () => {
@@ -1111,6 +1204,34 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         else mutate({ furniture: get().furniture.filter((f) => f.id !== fid) });
       }
       set({ selectedWallId: null, selectedOpeningId: null, selectedFurnitureId: null });
+    },
+    removeCatalogFromRoom: (catalogId) => {
+      mutate({
+        furniture: get().furniture.filter((f) => f.catalogId !== catalogId),
+      });
+      const sel = get().selectedFurnitureId;
+      if (sel && !get().furniture.some((f) => f.id === sel)) set({ selectedFurnitureId: null });
+    },
+    removePerimeterTrim: (edge) => {
+      const room = focusedTrimRoom(get());
+      mutate({
+        furniture: get().furniture.filter((f) => {
+          if (f.placementKind !== 'perimeter-trim' || f.trimEdge !== edge) return true;
+          if (!room) return false;
+          return !furnitureInRoom(f, room);
+        }),
+      });
+      set({ selectedFurnitureId: null, openingNotice: edge === 'ceiling' ? 'Crown molding removed.' : 'Baseboard removed.' });
+    },
+    clearFloorFinish: () => {
+      const roomId = get().selectedRoomId;
+      if (roomId) {
+        get().updatePlanRoom(roomId, { floorColor: undefined });
+        set({ openingNotice: 'Floor finish cleared for this room.' });
+        return;
+      }
+      mutate({ floorColor: '#c9b18f' });
+      set({ openingNotice: 'Floor finish reset.' });
     },
     setFinish: (target, color) => {
       if (target === 'floor') {

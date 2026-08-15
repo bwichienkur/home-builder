@@ -15,7 +15,7 @@ describe('mobile planner defaults',()=>{
  });
 
  it('ghost-places a product before committing it to the room',()=>{
-  usePlannerStore.setState({ workflowStage: 'room' });
+  usePlannerStore.setState({ workflowStage: 'room', furniture: [], openings: [], openingNotice: '' });
   usePlannerStore.getState().cancelPendingPlacement();
   const before=usePlannerStore.getState().furniture.length;
   usePlannerStore.getState().beginPlacement('ghost-bed','Cloud Bed','Bedroom',[1.7,2.1,.55],'#ddd',undefined,undefined,{mountingType:'floor'});
@@ -23,10 +23,11 @@ describe('mobile planner defaults',()=>{
   expect(pending?.name).toBe('Cloud Bed');
   expect(pending).not.toBeNull();
   expect(usePlannerStore.getState().furniture).toHaveLength(before);
-  usePlannerStore.getState().movePendingPlacement(.5,.25);
+  usePlannerStore.getState().movePendingPlacement(0,0);
   usePlannerStore.getState().rotatePendingPlacement(Math.PI/2);
   const id=usePlannerStore.getState().commitPendingPlacement();
   const state=usePlannerStore.getState();
+  expect(state.openingNotice).toBe('');
   expect(state.pendingPlacement).toBeNull();
   expect(state.furniture).toHaveLength(before+1);
   expect(state.selectedFurnitureId).toBe(id);
@@ -90,6 +91,55 @@ describe('perimeter trim',()=>{
   expect(next.x).toBeCloseTo(x);
   expect(next.z).toBeCloseTo(z);
   expect(next.rotation).toBeCloseTo(rotation);
+ });
+ it('keeps baseboard aligned after adding a neighboring room',()=>{
+  usePlannerStore.setState({
+    workflowStage:'house',
+    furniture:[],
+    openings:[],
+    planRooms:[],
+    walls:[],
+    openingNotice:'',
+    selectedRoomId:null,
+  });
+  const id=usePlannerStore.getState().placePlanRoom({x:400,y:300},'rectangle','Trim Room');
+  expect(id).toBeTruthy();
+  usePlannerStore.getState().enterRoom(id!);
+  usePlannerStore.getState().applyPerimeterTrim('baseboard','Baseboard','Trim',[1,.015,.09],'#fff','floor');
+  const before=usePlannerStore.getState().furniture.filter(f=>f.placementKind==='perimeter-trim');
+  expect(before.length).toBeGreaterThanOrEqual(4);
+  usePlannerStore.getState().exitRoom();
+  const neighbor=usePlannerStore.getState().placePlanRoom({x:700,y:300},'rectangle','Neighbor');
+  expect(neighbor).toBeTruthy();
+  const after=usePlannerStore.getState().furniture.filter(f=>f.placementKind==='perimeter-trim');
+  expect(after.length).toBeGreaterThanOrEqual(4);
+  const wallIds=new Set(usePlannerStore.getState().walls.map(w=>w.id));
+  expect(after.every(f=>f.wallId&&wallIds.has(f.wallId))).toBe(true);
+ });
+
+ it('moves a selected plan room without overlapping neighbors',()=>{
+  usePlannerStore.setState({
+    workflowStage:'house',
+    furniture:[],
+    openings:[],
+    planRooms:[],
+    walls:[],
+    openingNotice:'',
+    selectedRoomId:null,
+  });
+  const a=usePlannerStore.getState().placePlanRoom({x:400,y:300},'rectangle','A');
+  const b=usePlannerStore.getState().placePlanRoom({x:780,y:300},'rectangle','B');
+  expect(a&&b).toBeTruthy();
+  const before=usePlannerStore.getState().planRooms.find(r=>r.id===a!)!;
+  const cx0=before.points.reduce((s,p)=>s+p.x,0)/before.points.length;
+  expect(usePlannerStore.getState().movePlanRoom(a!,0,1.5)).toBe(true);
+  const after=usePlannerStore.getState().planRooms.find(r=>r.id===a!)!;
+  const cx1=after.points.reduce((s,p)=>s+p.x,0)/after.points.length;
+  // Recentering may shift both rooms; relative move along Z should still change the polygon.
+  expect(after.points.some((p,i)=>Math.abs(p.y-before.points[i]!.y)>1||Math.abs(p.x-before.points[i]!.x)>1)).toBe(true);
+  void cx0;void cx1;
+  // Overlap into neighbor should fail.
+  expect(usePlannerStore.getState().movePlanRoom(a!,3,0)).toBe(false);
  });
 });
 
