@@ -738,16 +738,12 @@ function WallMeshes() {
         const [sx0, sz0] = world(w.start.x, w.start.y);
         const [ex0, ez0] = world(w.end.x, w.end.y);
         const origLen = Math.hypot(ex0 - sx0, ez0 - sz0) || 0.01;
-        const ux = (ex0 - sx0) / origLen;
-        const uz = (ez0 - sz0) / origLen;
-        // Keep opening holes / door leaves on the true wall run (no corner-extend skew).
-        // Slight end overlap still seals into corner posts without shifting openings.
-        const endSeal = w.thickness * 0.15;
-        const sx = sx0 - ux * endSeal;
-        const sz = sz0 - uz * endSeal;
-        const ex = ex0 + ux * endSeal;
-        const ez = ez0 + uz * endSeal;
-        const length = origLen + endSeal * 2;
+        // Openings / doors use the true wall run only — corner posts seal joints.
+        const sx = sx0;
+        const sz = sz0;
+        const ex = ex0;
+        const ez = ez0;
+        const length = origLen;
         const angle = -Math.atan2(ez0 - sz0, ex0 - sx0);
         const midX = (sx0 + ex0) / 2;
         const midZ = (sz0 + ez0) / 2;
@@ -814,8 +810,13 @@ function WallMeshes() {
         const soft = orbiting || drawOpacity < 0.999;
         const fading = drawOpacity < 0.97;
         const related = visibleOpenings.filter((o) => o.wallId === w.id);
-        // Horizontal bands on the true wall length so holes line up with door/window leaves.
-        const solids = wallSolidBoxes(w.height, origLen, origLen, 0, related);
+        // Orbit keeps continuous lintels/sills; top plan cuts full-height so the gap
+        // lines up with the door/window leaf (lintels hid the opening from above).
+        const planOpenings =
+          cameraMode === 'top'
+            ? related.map((o) => ({ ...o, sill: 0, height: Math.max(w.height, o.height) }))
+            : related;
+        const solids = wallSolidBoxes(w.height, origLen, origLen, 0, planOpenings);
         // Cutaway + top (non-edit) must not steal furniture picks; solid orbit walls still block.
         const skipRay = fading || (cameraMode === 'top' && !wallEditMode) ? () => {} : undefined;
         const wallMat = {
@@ -830,14 +831,11 @@ function WallMeshes() {
           polygonOffsetUnits: 1,
         } as const;
         const base = solids.map((box, i) => {
-          // Map original-run along → sealed segment (endSeal pads both ends evenly).
-          const along0 = endSeal + box.along0;
-          const along1 = endSeal + box.along1;
-          const c = (along0 + along1) / 2;
+          const c = (box.along0 + box.along1) / 2;
           const t = c / length;
           const x = sx + (ex - sx) * t;
           const z = sz + (ez - sz) * t;
-          const segLen = along1 - along0;
+          const segLen = box.along1 - box.along0;
           const segH = box.y1 - box.y0;
           const y = (box.y0 + box.y1) / 2;
           return (
@@ -877,10 +875,11 @@ function WallMeshes() {
             </mesh>
           ) : null;
         const fixtures = related.flatMap((o) => {
-          // Same parametrization as wall holes / pointOnWall — opening center on the true run.
-          const placed = pointOnWall(w, o.offset);
-          const x = placed.x;
-          const z = placed.z;
+          // Same along-wall center as wallSolidBoxes holes (offset * origLen on true run).
+          const along = o.offset * origLen;
+          const t = along / length;
+          const x = sx + (ex - sx) * t;
+          const z = sz + (ez - sz) * t;
           const parts: ReactElement[] = [];
           if (o.type === 'window')
             parts.push(

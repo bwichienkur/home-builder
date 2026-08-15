@@ -167,7 +167,7 @@ export function PlanEditLayer() {
         const layout = wallDimFieldLayout(selected, side);
         const { nx, ny: nz, cardOffsetM, placement, verticalOnPlan } = layout;
         const s = layout.side;
-        // Anchor sits on the exterior face — CSS then parks the full card outside.
+        // World-space card *center* fully outside the exterior face (Html `center`).
         return {
           len,
           midX,
@@ -175,7 +175,7 @@ export function PlanEditLayer() {
           angle,
           placement,
           verticalOnPlan,
-          cardPos: [midX + nx * s * cardOffsetM, 0.08, midZ + nz * s * cardOffsetM] as [number, number, number],
+          cardPos: [midX + nx * s * cardOffsetM, 0.12, midZ + nz * s * cardOffsetM] as [number, number, number],
         };
       })()
     : null;
@@ -214,12 +214,11 @@ export function PlanEditLayer() {
             <meshBasicMaterial color="#0058a3" transparent opacity={0.2} depthWrite={false} />
           </mesh>
 
-          <Html position={selectedFrame.cardPos} zIndexRange={[40, 0]} style={{ pointerEvents: 'auto' }}>
+          <Html position={selectedFrame.cardPos} center zIndexRange={[100, 50]} style={{ pointerEvents: 'auto' }}>
             <div
-              className={`wall-dim-card-anchor wall-dim-card-anchor--${selectedFrame.placement}`}
+              className={`wall-dim-card wall-dim-card--${selectedFrame.placement}`}
               onPointerDown={(e) => e.stopPropagation()}
             >
-              <div className="wall-dim-card">
               <div className="wall-dim-card-grow" role="group" aria-label="Which side to resize">
                 {selectedFrame.verticalOnPlan ? (
                   <>
@@ -297,7 +296,6 @@ export function PlanEditLayer() {
                   min={2}
                   onChange={(meters) => updateWall(selected.id, { height: meters })}
                 />
-              </div>
               </div>
             </div>
           </Html>

@@ -64,6 +64,19 @@ describe('wallSolidBoxes', () => {
     const placed = pointOnWall(wall, door.offset);
     expect(holeCenter).toBeCloseTo(door.offset * 5, 5);
     expect(placed.x).toBeCloseTo(door.offset * 5, 5);
+    // Scene places fixtures with the same along/length ratio as the hole center.
+    const t = holeCenter / 5;
+    expect(t).toBeCloseTo(door.offset, 5);
+  });
+
+  it('cuts a full-height plan gap at the same offset as the door leaf', () => {
+    const planDoor = { ...door, sill: 0, height: 2.7 };
+    const boxes = wallSolidBoxes(2.7, 5, 5, 0, [planDoor]);
+    const mid = boxes.filter((b) => b.y0 < 1.2 && b.y1 > 1.2);
+    expect(mid.every((b) => b.along1 <= 2.0 + 0.01 || b.along0 >= 3.0 - 0.01)).toBe(true);
+    const top = boxes.filter((b) => b.y0 > 2.0);
+    // Full-height cut: no continuous lintel through the door in plan mode.
+    expect(top.every((b) => b.along1 <= 2.0 + 0.01 || b.along0 >= 3.0 - 0.01)).toBe(true);
   });
 });
 

@@ -64,13 +64,12 @@ describe('room wall membership', () => {
     expect(horizontal.placement).toBe('top');
     // Right wall parks the card to the right of the room.
     expect(vertical.placement).toBe('right');
-    // Anchor sits just outside the wall face; CSS parks the full card beyond it.
-    expect(horizontal.cardOffsetM).toBeGreaterThan(0.2);
-    expect(vertical.cardOffsetM).toBeGreaterThan(0.2);
-    expect(horizontal.sideOffsetM).toBeGreaterThan(horizontal.cardOffsetM + 0.8);
-    expect(vertical.sideOffsetM).toBeGreaterThan(vertical.cardOffsetM + 0.9);
+    // Card center sits past the exterior face by half the card + gap.
     const halfThick = 0.15 * 0.5;
-    expect(horizontal.cardOffsetM).toBeGreaterThan(halfThick + 0.15);
+    expect(horizontal.cardOffsetM).toBeGreaterThan(halfThick + horizontal.cardHalfAlongNormalM + 0.4);
+    expect(vertical.cardOffsetM).toBeGreaterThan(halfThick + vertical.cardHalfAlongNormalM + 0.4);
+    expect(horizontal.sideOffsetM).toBe(horizontal.cardOffsetM);
+    expect(vertical.sideOffsetM).toBe(vertical.cardOffsetM);
   });
 
   it('maps grow sides to the endpoint that should move', () => {
