@@ -4,15 +4,17 @@ import {
   Download,
   FileJson,
   Home,
+  LogIn,
   ReceiptText,
   Save,
   Share2,
   Upload,
+  X,
 } from 'lucide-react';
 import { CatalogPanel } from './components/catalog/CatalogPanel';
 import { catalog as catalogItems } from './components/catalog/catalogData';
 import { BomDialog } from './components/ui/BomDialog';
-import { SelectionInspector, RoomDesigner } from './components/ui/SelectionInspector';
+import { SelectionInspector } from './components/ui/SelectionInspector';
 import { SelectedProductCard } from './components/ui/SelectedProductCard';
 import { StudioChrome } from './components/ui/StudioChrome';
 import { DesignStart } from './components/ui/DesignStart';
@@ -63,8 +65,6 @@ function StudioApp() {
     selectedFurnitureId,
     cameraMode,
     roomType,
-    floors,
-    activeFloorId,
   } = store;
 
   const [catalogOpen, setCatalogOpen] = useState(false);
@@ -305,6 +305,7 @@ function StudioApp() {
     workflowStage === 'room' ? 'is-room-focus' : '',
     productCardOpen && selectedFurnitureId && !pendingPlacement && !inspectorOpen ? 'has-product-card' : '',
     selectedFurnitureId || pendingPlacement ? 'has-action-fabs' : '',
+    inspectorOpen ? 'has-inspector' : '',
   ]
     .filter(Boolean)
     .join(' ');
@@ -383,63 +384,19 @@ function StudioApp() {
             <button className="project-name" onClick={rename}>
               {projectName} <ChevronDown size={15} />
             </button>
-          </header>
-          <RoomDesigner compact hidePlans />
-          <div className="floor-row">
-            <select
-              aria-label="Active floor"
-              value={activeFloorId}
-              onChange={(e) => {
-                store.switchFloor(e.target.value);
-                window.setTimeout(() => {
-                  window.dispatchEvent(new Event('roomcraft-fit-plan'));
-                  window.dispatchEvent(new Event('roomcraft-refocus'));
-                }, 80);
-              }}
-            >
-              {floors.map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.name}
-                </option>
-              ))}
-            </select>
-            <button
-              onClick={() => {
-                store.addFloor();
-                window.setTimeout(() => {
-                  window.dispatchEvent(new Event('roomcraft-fit-plan'));
-                  window.dispatchEvent(new Event('roomcraft-refocus'));
-                }, 80);
-              }}
-              title="Add story"
-            >
-              +
+            <button type="button" className="menu-close" onClick={closeProjectMenu} aria-label="Close menu">
+              <X size={18} />
             </button>
-            {floors.length > 1 && (
-              <button
-                onClick={() => {
-                  const floor = floors.find((f) => f.id === activeFloorId);
-                  if (!floor) return;
-                  if (!window.confirm(`Delete “${floor.name}”? This cannot be undone.`)) return;
-                  if (!store.deleteFloor(activeFloorId)) return;
-                  window.setTimeout(() => {
-                    window.dispatchEvent(new Event('roomcraft-fit-plan'));
-                    window.dispatchEvent(new Event('roomcraft-refocus'));
-                  }, 80);
-                }}
-                title="Delete current story"
-                aria-label="Delete current story"
-              >
-                −
-              </button>
-            )}
-          </div>
+          </header>
           {!validation.valid && walls.length > 0 && <div className="plan-warning">Connect the highlighted endpoints to close the room.</div>}
           <p className="menu-meta">
             {formatArea(area, unitSystem)} · {walls.length} walls · {furniture.length} items
             {missingPrices > 0 ? ` · ${missingPrices} need quote` : ''}
           </p>
           <div className="menu-actions">
+            <button type="button" onClick={() => notify('Sign-in is coming soon')}>
+              <LogIn size={16} /> Log in
+            </button>
             <button
               onClick={() => {
                 store.showStart();
@@ -479,9 +436,6 @@ function StudioApp() {
             <button onClick={() => setBom(true)}>
               <ReceiptText size={16} /> Shopping list
             </button>
-            <a href="/admin" className="menu-advanced">
-              Advanced · inventory
-            </a>
           </div>
           {designs.length > 0 && (
             <section className="design-library">

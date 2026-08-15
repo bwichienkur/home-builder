@@ -100,19 +100,24 @@ function CameraRig() {
   const framing = useMemo(() => {
     // Extra pad so the right tool rail (and open inspector) never clip the plate.
     const inspectorOpen = typeof document !== 'undefined' && document.body.dataset.inspectorOpen === '1';
-    const rightPad = inspectorOpen ? 1.55 : 1.22;
-    const pad = (coarse ? 3.8 : 3.5) * (menuOpen ? 1.7 : 1) * rightPad;
-    const orbitPad = (coarse ? 1.55 : 1.42) * (menuOpen ? 1.35 : 1) * (inspectorOpen ? 1.28 : 1.12);
+    const inRoom = !!focusRoom;
+    // Room-level 3D needs more zoom-out — the black category rail sits on the right.
+    const railPad = inRoom ? (coarse ? 1.35 : 1.28) : 1.18;
+    const rightPad = inspectorOpen ? (coarse ? 1.85 : 1.7) : railPad;
+    const pad = (coarse ? 4.2 : 3.8) * (menuOpen ? 1.7 : 1) * rightPad;
+    const orbitPad =
+      (coarse ? 1.85 : 1.7) * (menuOpen ? 1.35 : 1) * (inspectorOpen ? 1.55 : inRoom ? 1.38 : 1.18);
     if (focusRoom?.points.length) {
-      return framingFromPoints(focusRoom.points, { pad, orbitPad, minSpan: 2.5, minHeight: 10 });
+      return framingFromPoints(focusRoom.points, { pad, orbitPad, minSpan: 2.5, minHeight: 12 });
     }
-    return framingFromWalls(walls, { pad, orbitPad, minHeight: 14 });
+    return framingFromWalls(walls, { pad, orbitPad, minHeight: 16 });
   }, [walls, focusRoom, coarse, menuOpen, inspectorTick]);
   const center = framing.center;
-  // Shift content away from left menu / right rail+inspector.
-  const menuShiftX = menuOpen ? framing.span * 0.3 : 0;
+  // Shift content away from left menu / right rail+inspector so the plate stays fully visible.
+  const menuShiftX = menuOpen ? framing.span * 0.32 : 0;
   const inspectorOpen = typeof document !== 'undefined' && document.body.dataset.inspectorOpen === '1';
-  const rightShiftX = -(framing.span * (inspectorOpen ? 0.28 : 0.1));
+  // Push the room into the free left canvas when the edit card is open (not under it).
+  const rightShiftX = inspectorOpen ? -(framing.span * (coarse ? 0.42 : 0.36)) : -(framing.span * (focusRoom ? 0.2 : 0.12));
   const shiftX = menuShiftX + rightShiftX;
   const targetTuple = useMemo<[number, number, number]>(
     () => [center[0] + shiftX, 0, center[2]],
@@ -196,7 +201,7 @@ function CameraRig() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, menuOpen, poseTuple[0], poseTuple[1], poseTuple[2]]);
 
-  // When the edit card opens, zoom to fit the remaining canvas; restore prior view on close.
+  // When the edit card opens, zoom/pan to fit the remaining left canvas; restore prior view on close.
   useEffect(() => {
     const open = document.body.dataset.inspectorOpen === '1';
     const camera = get().camera;
@@ -207,6 +212,7 @@ function CameraRig() {
           target: controls.current.target.clone(),
         };
       }
+      // Always reframe into the free left region (do not keep the old centered pose).
       applyPose(new THREE.Vector3(...poseTuple), new THREE.Vector3(...targetTuple), 420);
       return;
     }
@@ -214,6 +220,8 @@ function CameraRig() {
       const { pose, target } = savedView.current;
       savedView.current = null;
       applyPose(pose, target, 420);
+    } else {
+      snapToPose();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inspectorTick]);
