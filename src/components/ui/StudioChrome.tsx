@@ -7,7 +7,6 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
-  Columns2,
   FileSpreadsheet,
   Focus,
   Grid2X2,
@@ -16,7 +15,6 @@ import {
   Lamp,
   Layers3,
   Menu,
-  PencilRuler,
   Plus,
   Redo2,
   RotateCw,
@@ -30,7 +28,7 @@ import {
 } from 'lucide-react';
 import { roomCategories } from '../catalog/CatalogPanel';
 import { usePlannerStore } from '../../store/plannerStore';
-import type { RoomType, Tool } from '../../types';
+import type { RoomType } from '../../types';
 import { WORLD_ORIGIN } from '../../lib/geometry/placement';
 import { StoryOverview } from './StoryOverview';
 
@@ -178,7 +176,6 @@ export function StudioChrome({
   const showCatalogRail = inRoom && !pending;
   /** Plan-level wall tools (house/floor plate) — not while inside a room. */
   const atPlanLevel = !atStart && !inRoom;
-  const showPlanTools = atPlanLevel && isTop && !pending && studioMode === 'architect';
   const showFloorChrome = atPlanLevel && !pending;
   const pendingRoomShape = usePlannerStore((s) => s.pendingRoomShape);
   const setPendingRoomShape = usePlannerStore((s) => s.setPendingRoomShape);
@@ -187,11 +184,9 @@ export function StudioChrome({
   const placePlanRoom = usePlannerStore((s) => s.placePlanRoom);
   const deletePlanRoom = usePlannerStore((s) => s.deletePlanRoom);
   const enterRoom = usePlannerStore((s) => s.enterRoom);
-  const showPlanToolButtons = showPlanTools;
   const showPlanRoomActions = atPlanLevel && !pending && !!selectedRoom;
-  /** Never render an empty black rail strip (e.g. 3D plan with nothing selected). */
-  const showPlanRail =
-    (((atPlanLevel && !pending && isTop) || showPlanRoomActions) && !selectedWall);
+  /** Black rail only after a room is selected — never empty tool chrome on plan load. */
+  const showPlanRail = showPlanRoomActions;
 
   useEffect(() => {
     if (inRoom) setStudioMode('furnish');
@@ -207,6 +202,11 @@ export function StudioChrome({
       if (pendingAttachMode) setPendingAttachMode(false);
     }
   }, [atPlanLevel, isTop, pendingRoomShape, pendingAttachMode, setPendingRoomShape, setPendingAttachMode]);
+
+  useEffect(() => {
+    // Walls tool removed from the rail — keep planWallTool off.
+    if (planWallTool) setPlanWallTool(false);
+  }, [planWallTool, setPlanWallTool]);
 
   useEffect(() => {
     const hasRail = showPlanRail || showCatalogRail;
@@ -243,26 +243,6 @@ export function StudioChrome({
   useEffect(() => {
     if (pending) setFabsOpen(true);
   }, [pending]);
-
-  const planTools: { id: Tool; label: string; icon: typeof PencilRuler }[] = [
-    { id: 'select', label: 'Walls', icon: Columns2 },
-  ];
-
-  const choosePlanTool = (id: Tool) => {
-    setPendingRoomShape(null);
-    setPendingAttachMode(false);
-    setStudioMode('architect');
-    setTool(id === 'wall' ? 'select' : id);
-    setDraftStart(null);
-    setView('3d');
-    setCamera('top');
-    if (id === 'select') {
-      setPlanWallTool(!planWallTool);
-    } else {
-      setPlanWallTool(false);
-      usePlannerStore.getState().selectWall(null);
-    }
-  };
 
   const startAddRoom = () => {
     setStudioMode('architect');
@@ -332,7 +312,7 @@ export function StudioChrome({
   useEffect(() => {
     // Plan no longer selects individual walls — clear any leftover wall selection.
     if (usePlannerStore.getState().selectedWallId) usePlannerStore.getState().selectWall(null);
-  }, [planWallTool, isTop]);
+  }, [isTop]);
 
   const openFurnishCategory = (category: string) => {
     setStudioMode('furnish');
@@ -562,62 +542,35 @@ export function StudioChrome({
 
       {showPlanRail && (
         <div className="studio-category-rail studio-plan-rail" aria-label="Plan tools">
-          {showPlanToolButtons &&
-            planTools.map((t) => {
-              const Icon = t.icon;
-              const active = planWallTool && !pendingAttachMode && studioMode === 'architect' && tool === t.id;
-              return (
-                <button
-                  key={t.id}
-                  type="button"
-                  className={`studio-rail-walls${active ? ' is-active' : ''}`}
-                  onClick={() => choosePlanTool(t.id)}
-                  aria-pressed={planWallTool}
-                  aria-label={t.label}
-                  title={t.label}
-                >
-                  <Icon />
-                  <span>{t.label}</span>
-                </button>
-              );
-            })}
-          {showPlanRoomActions && (
-            <>
-              <button
-                type="button"
-                className="studio-rail-room-edit"
-                onClick={openSelectedPlanRoomEditor}
-                aria-label="Edit room"
-                title="Edit room"
-              >
-                <SlidersHorizontal />
-                <span>Edit</span>
-              </button>
-              <button
-                type="button"
-                className="studio-rail-furnish"
-                onClick={editSelectedPlanRoom}
-                aria-label="Furnish room"
-                title="Furnish room"
-              >
-                <Sofa />
-                <span>Furnish</span>
-              </button>
-              <button type="button" className="is-danger" onClick={removeSelectedPlanRoom} aria-label="Remove room" title="Remove room">
-                <Trash2 />
-                <span>Remove</span>
-              </button>
-            </>
-          )}
+          <button
+            type="button"
+            className="studio-rail-room-edit"
+            onClick={openSelectedPlanRoomEditor}
+            aria-label="Edit room"
+            title="Edit room"
+          >
+            <SlidersHorizontal />
+            <span>Edit</span>
+          </button>
+          <button
+            type="button"
+            className="studio-rail-furnish"
+            onClick={editSelectedPlanRoom}
+            aria-label="Furnish room"
+            title="Furnish room"
+          >
+            <Sofa />
+            <span>Furnish</span>
+          </button>
+          <button type="button" className="is-danger" onClick={removeSelectedPlanRoom} aria-label="Remove room" title="Remove room">
+            <Trash2 />
+            <span>Remove</span>
+          </button>
         </div>
       )}
 
       {showCatalogRail && (
         <div className={`studio-category-rail${catalogOpen ? ' is-active' : ''}`} aria-label={`${roomType} product categories`}>
-          <button type="button" className="studio-rail-room-edit" onClick={onOpenInspector} aria-label="Room properties" title="Room properties">
-            <SlidersHorizontal />
-            <span>Room</span>
-          </button>
           {categories.map((category) => {
             const Icon = icons[category] ?? ShoppingBag;
             return (
