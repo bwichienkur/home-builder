@@ -7,6 +7,11 @@ import type {
   InventoryRecord,
   Vendor,
 } from '../lib/crm/types';
+import {
+  removeInventoryFromCatalog,
+  syncAllInventoryToCatalog,
+  syncInventoryToCatalog,
+} from '../lib/crm/inventoryCatalogBridge';
 import { clientSchema, inventoryRecordSchema, vendorSchema } from '../lib/crm/types';
 import type { CrmSnapshot } from '../lib/platform/crmProvider';
 import { getCrmProvider } from '../lib/platform/getCrmProvider';
@@ -62,14 +67,24 @@ export const useCrmStore = create<CrmState>((set, get) => ({
   hydrate: async () => {
     try {
       const data = await getCrmProvider().load();
+      const inventory = (Array.isArray(data.inventory) ? data.inventory : [])
+        .map((row) => {
+          try {
+            return inventoryRecordSchema.parse(row);
+          } catch {
+            return null;
+          }
+        })
+        .filter((row): row is NonNullable<typeof row> => row != null);
       set({
         clients: Array.isArray(data.clients) ? data.clients : [],
         vendors: Array.isArray(data.vendors) ? data.vendors : [],
-        inventory: Array.isArray(data.inventory) ? data.inventory : [],
+        inventory,
         customFields: Array.isArray(data.customFields) ? data.customFields : [],
         housePlans: Array.isArray(data.housePlans) ? data.housePlans : [],
         ready: true,
       });
+      syncAllInventoryToCatalog(inventory);
     } catch (err) {
       console.warn('CRM hydrate failed', err);
       set({ ready: true });
@@ -130,15 +145,47 @@ export const useCrmStore = create<CrmState>((set, get) => ({
       sku: input.sku,
       name: input.name,
       vendorName: input.vendorName ?? existing?.vendorName ?? '',
+      brand: input.brand ?? existing?.brand ?? '',
+      model: input.model ?? existing?.model ?? '',
       category: input.category,
+      subcategory: input.subcategory ?? existing?.subcategory ?? '',
       description: input.description ?? existing?.description ?? '',
+      note: input.note ?? existing?.note ?? '',
       width: input.width ?? existing?.width ?? 0,
       depth: input.depth ?? existing?.depth ?? 0,
       height: input.height ?? existing?.height ?? 0,
       unit: input.unit ?? existing?.unit ?? 'm',
-      price: input.price ?? existing?.price,
+      color: input.color ?? existing?.color ?? '#b9b9b2',
+      mountingType: input.mountingType ?? existing?.mountingType ?? 'floor',
+      placementSurfaces: input.placementSurfaces ?? existing?.placementSurfaces ?? ['floor'],
+      placementMode: 'placementMode' in input ? input.placementMode || undefined : existing?.placementMode,
+      roomTypes: input.roomTypes ?? existing?.roomTypes ?? [],
+      tags: input.tags ?? existing?.tags ?? [],
+      price: 'price' in input ? input.price : existing?.price,
+      priceUnit: input.priceUnit ?? existing?.priceUnit ?? 'each',
       currency: input.currency ?? existing?.currency ?? 'USD',
+      msrp: 'msrp' in input ? input.msrp : existing?.msrp,
+      cost: 'cost' in input ? input.cost : existing?.cost,
+      laborCost: 'laborCost' in input ? input.laborCost : existing?.laborCost,
+      priceVerifiedAt: input.priceVerifiedAt ?? existing?.priceVerifiedAt ?? '',
+      sellable: input.sellable ?? existing?.sellable ?? true,
+      placeholderOnly: input.placeholderOnly ?? existing?.placeholderOnly ?? false,
       active: input.active ?? existing?.active ?? true,
+      finish: input.finish ?? existing?.finish ?? '',
+      material: input.material ?? existing?.material ?? '',
+      variantGroup: input.variantGroup ?? existing?.variantGroup ?? '',
+      variantName: input.variantName ?? existing?.variantName ?? '',
+      availability: input.availability ?? existing?.availability ?? '',
+      leadTimeDays: 'leadTimeDays' in input ? input.leadTimeDays : existing?.leadTimeDays,
+      thumbnailUrl: input.thumbnailUrl ?? existing?.thumbnailUrl ?? '',
+      textureUrl: input.textureUrl ?? existing?.textureUrl ?? '',
+      textureRepeat: 'textureRepeat' in input ? input.textureRepeat : existing?.textureRepeat,
+      roughness: 'roughness' in input ? input.roughness : existing?.roughness,
+      modelUrl: input.modelUrl ?? existing?.modelUrl ?? '',
+      lowPolyModelUrl: input.lowPolyModelUrl ?? existing?.lowPolyModelUrl ?? '',
+      emoji: input.emoji ?? existing?.emoji ?? '▧',
+      sourceUrl: input.sourceUrl ?? existing?.sourceUrl ?? '',
+      sourceLabel: input.sourceLabel ?? existing?.sourceLabel ?? '',
       customFields: input.customFields ?? existing?.customFields ?? {},
       createdAt: existing?.createdAt ?? now(),
       updatedAt: now(),
@@ -149,6 +196,7 @@ export const useCrmStore = create<CrmState>((set, get) => ({
         ? get().inventory.map((v) => (v.id === row.id ? row : v))
         : [row, ...get().inventory],
     });
+    syncInventoryToCatalog(row);
     schedulePersist(get);
     return row;
   },
@@ -158,9 +206,11 @@ export const useCrmStore = create<CrmState>((set, get) => ({
     } else if (kind === 'vendor') {
       set({ vendors: get().vendors.map((v) => (v.id === id ? { ...v, archived: true, updatedAt: now() } : v)) });
     } else {
+      const row = get().inventory.find((v) => v.id === id);
       set({
         inventory: get().inventory.map((v) => (v.id === id ? { ...v, archived: true, updatedAt: now() } : v)),
       });
+      if (row) removeInventoryFromCatalog(row);
     }
     schedulePersist(get);
   },

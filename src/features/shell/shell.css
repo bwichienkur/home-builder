@@ -214,6 +214,9 @@
   overflow: auto;
   box-shadow: var(--shadow);
 }
+.data-drawer-panel-wide {
+  width: min(560px, 100%);
+}
 .data-drawer-panel h2 {
   margin: 0 0 14px;
   font-size: 1.2rem;
@@ -221,6 +224,54 @@
 .data-form {
   display: grid;
   gap: 10px;
+}
+.data-form-section {
+  margin: 0;
+  padding: 12px 0 4px;
+  border: none;
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 10px;
+}
+.data-form-section:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+.data-form-section legend {
+  padding: 0;
+  margin: 0 0 2px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.data-form-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.data-form-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: center;
+}
+.data-form-checks-label {
+  width: 100%;
+  font-size: 13px;
+  font-weight: 600;
+}
+.data-form-check {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500 !important;
+  grid-template-columns: none !important;
+}
+.data-form-check input {
+  width: auto;
+  margin: 0;
 }
 .data-form label {
   display: grid;
@@ -243,6 +294,11 @@
   display: flex;
   gap: 8px;
   margin-top: 8px;
+}
+@media (max-width: 640px) {
+  .data-form-row {
+    grid-template-columns: 1fr;
+  }
 }
 .home-grid {
   display: grid;

@@ -28,4 +28,14 @@ describe('crm csv', () => {
     expect(headers).toContain('name');
     expect(headers).toContain('custom.lead_source');
   });
+
+  it('builds inventory headers with planner placement fields', () => {
+    const headers = csvHeaders('inventory', []);
+    expect(headers).toContain('sku');
+    expect(headers).toContain('placementMode');
+    expect(headers).toContain('priceUnit');
+    expect(headers).toContain('roomTypes');
+    expect(headers).toContain('modelUrl');
+    expect(headers).toContain('textureUrl');
+  });
 });
