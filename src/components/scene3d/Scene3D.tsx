@@ -1,5 +1,5 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Bvh, Environment, Html, Line, OrbitControls, PerspectiveCamera, PivotControls, Text, useTexture } from '@react-three/drei';
+import { Bvh, Environment, Html, Line, OrbitControls, OrthographicCamera, PerspectiveCamera, PivotControls, Text, useTexture } from '@react-three/drei';
 import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { usePlannerStore } from '../../store/plannerStore';
@@ -51,6 +51,11 @@ function preferInteriorPicks(hits: THREE.Intersection[]) {
     if (plane.length) return plane;
     return hits.filter((h) => !hasUserDataFlag(h.object, 'furniturePick'));
   }
+  // Plan: wall edge strips win over room floors so Exterior / openings stay discoverable.
+  if (usePlannerStore.getState().cameraMode === 'top') {
+    const wallPlan = hits.filter((h) => hasUserDataFlag(h.object, 'wallPlanPick'));
+    if (wallPlan.length) return wallPlan;
+  }
   const furniture = hits.filter((h) => hasUserDataFlag(h.object, 'furniturePick'));
   if (!furniture.length) return hits;
   // If any cutaway proxy/soft wall is closer than furniture, keep the furniture hits so
@@ -88,21 +93,14 @@ function CameraRig() {
   const walls = usePlannerStore((s) => s.walls);
   const planRooms = usePlannerStore((s) => s.planRooms);
   const selectedRoomId = usePlannerStore((s) => s.selectedRoomId);
-  const selectedWallId = usePlannerStore((s) => s.selectedWallId);
-  const studioMode = usePlannerStore((s) => s.studioMode);
-  const tool = usePlannerStore((s) => s.tool);
-  const planWallTool = usePlannerStore((s) => s.planWallTool);
   const workflowStage = usePlannerStore((s) => s.workflowStage);
   const placing = usePlannerStore((s) => !!s.pendingPlacement);
   const [moving, setMoving] = useState(false);
   const controls = useRef<any>(null);
   const { invalidate, get, size } = useThree();
   const focusRoom = workflowStage === 'room' ? planRooms.find((r) => r.id === selectedRoomId) : null;
-  // Wall-zoom was for the dim card; during Walls resize keep the full plate centered.
-  const focusWall =
-    studioMode === 'architect' && mode === 'top' && tool === 'select' && !planWallTool
-      ? walls.find((w) => w.id === selectedWallId) ?? null
-      : null;
+  // Keep full-plate framing while tagging walls — no single-wall zoom.
+  const focusWall = null as Wall | null;
   const coarse = useMemo(() => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches, []);
   const [menuOpen, setMenuOpen] = useState(() => document.body.dataset.menuOpen === '1');
   const [inspectorTick, setInspectorTick] = useState(0);
@@ -276,6 +274,13 @@ function CameraRig() {
         : Math.max(framing.orbitPose[1] * 2.6, framing.span * 5.5, 52);
   const minDistance = mode === 'walk' ? 1.2 : mode === 'top' ? Math.max(3, framing.span * 0.08) : Math.max(2.5, framing.span * 0.12);
 
+  // Orthographic plan zoom — true top-down (no perspective tilt).
+  const orthoZoom = useMemo(() => {
+    const half = Math.max(framing.span * 0.62, 5);
+    const px = Math.min(size.width, size.height) || 800;
+    return Math.max(8, px / (2 * half));
+  }, [framing.span, size.width, size.height]);
+
   const animating = useRef(false);
   const modeAnimUntil = useRef(0);
   const applyPose = (to: THREE.Vector3, target: THREE.Vector3, duration = 0) => {
@@ -355,7 +360,7 @@ function CameraRig() {
 
   // Keep the selected wall centered as length / width / height change (not during plan wall resize).
   useEffect(() => {
-    if (!focusWall || inspectorOpen || planWallTool) return;
+    if (!focusWall || inspectorOpen) return;
     if (document.body.dataset.movingFurniture === '1') return;
     if (performance.now() < modeAnimUntil.current) return;
     if (mode !== 'top') return;
@@ -372,7 +377,6 @@ function CameraRig() {
     framing.topHeight,
     shiftWorldX,
     shiftWorldZ,
-    planWallTool,
   ]);
 
   // Edit card open/close — ease into free area / restore the pre-panel view.
@@ -452,17 +456,42 @@ function CameraRig() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [get, invalidate, poseTuple, targetTuple, mode, coarse, placing]);
 
+  // Sync ortho zoom when framing changes — avoid fighting pinch-zoom every frame.
+  useEffect(() => {
+    if (mode !== 'top') return;
+    const cam = get().camera as THREE.OrthographicCamera;
+    if (cam?.isOrthographicCamera) {
+      cam.zoom = orthoZoom;
+      cam.updateProjectionMatrix();
+      invalidate();
+    }
+  }, [mode, orthoZoom, get, invalidate]);
+
   return (
     <>
-      <PerspectiveCamera makeDefault position={poseTuple} fov={mode === 'walk' ? 58 : mode === 'top' ? 42 : 48} />
+      {mode === 'top' ? (
+        <OrthographicCamera
+          key="plan-ortho"
+          makeDefault
+          position={poseTuple}
+          near={0.1}
+          far={2000}
+        />
+      ) : (
+        <PerspectiveCamera
+          key="persp"
+          makeDefault
+          position={poseTuple}
+          fov={mode === 'walk' ? 58 : 48}
+        />
+      )}
       <OrbitControls
         ref={controls}
         enabled={!moving && !placing}
         target={[targetTuple[0], mode === 'walk' ? 1.1 : targetTuple[1], targetTuple[2]]}
-        // Near-vertical top view (~3–5°) — head-on plan without lookAt singularity at polar 0.
-        minPolarAngle={mode === 'top' ? 0.04 : mode === 'walk' ? 0.7 : 0}
-        // Orbit may go under the plate so you can inspect underside / open dollhouse from below.
-        maxPolarAngle={mode === 'top' ? 0.09 : mode === 'walk' ? Math.PI / 2.05 : Math.PI - 0.06}
+        // Strict plan: lock polar near zero (epsilon avoids lookAt singularity).
+        minPolarAngle={mode === 'top' ? 1e-4 : mode === 'walk' ? 0.7 : 0}
+        maxPolarAngle={mode === 'top' ? 1e-3 : mode === 'walk' ? Math.PI / 2.05 : Math.PI - 0.06}
         minAzimuthAngle={mode === 'top' ? viewYawRad : -Infinity}
         maxAzimuthAngle={mode === 'top' ? viewYawRad : Infinity}
         minDistance={minDistance}
@@ -896,6 +925,7 @@ function WallMeshes() {
   const selectedOpeningId = usePlannerStore((s) => s.selectedOpeningId);
   const selectedRoomId = usePlannerStore((s) => s.selectedRoomId);
   const workflowStage = usePlannerStore((s) => s.workflowStage);
+  const unitSystem = usePlannerStore((s) => s.unitSystem);
   const select = usePlannerStore((s) => s.selectWall);
   const cameraMode = usePlannerStore((s) => s.cameraMode);
   const tool = usePlannerStore((s) => s.tool);
@@ -908,9 +938,9 @@ function WallMeshes() {
   const { invalidate } = useThree();
 
   const onWallClick = (id: string) => {
-    // Plan Walls tool edits room dimensions via the dim card — not individual walls.
-    if (cameraMode === 'top' && workflowStage !== 'room') return;
     select(id);
+    // Open wall inspector (type, openings, length) — house plan included.
+    window.dispatchEvent(new Event('roomcraft-open-properties'));
   };
 
   return (
@@ -951,11 +981,27 @@ function WallMeshes() {
           </mesh>
         );
 
-        // Plan walls are not individually pickable — room dims use the exterior card.
-        const topPick = null;
+        // Plan: thin pick strip so builders can tag walls / add openings without a Walls CAD tool.
+        const topPick =
+          cameraMode === 'top' ? (
+            <mesh
+              key={w.id + 'toppick'}
+              userData={{ wallPlanPick: true }}
+              position={[midX, 0.04, midZ]}
+              rotation={[-Math.PI / 2, 0, angle]}
+              onClick={(e) => {
+                e.stopPropagation();
+                onWallClick(w.id);
+              }}
+            >
+              <planeGeometry args={[origLen || 0.2, Math.max(w.thickness * 4.5, 0.45)]} />
+              <meshBasicMaterial transparent opacity={0} depthWrite={false} side={THREE.DoubleSide} />
+            </mesh>
+          ) : null;
 
         if (hidden) {
           return [
+            ...(topPick ? [topPick] : []),
             pickProxy,
             ...(selected
               ? [
@@ -985,8 +1031,8 @@ function WallMeshes() {
             ? related.map((o) => ({ ...o, sill: 0, height: Math.max(w.height, o.height) }))
             : related;
         const solids = wallSolidBoxes(w.height, origLen, origLen, 0, planOpenings);
-        // Top plan walls never steal room picks; cutaway fades stay non-blocking too.
-        const skipRay = fading || cameraMode === 'top' ? () => {} : undefined;
+        // Top plan walls stay pickable via topPick; fade still skips solid raycasts.
+        const skipRay = fading ? () => {} : cameraMode === 'top' ? () => {} : undefined;
         const tinted = new THREE.Color(color);
         const role = w.assembly ?? 'interior';
         if (role === 'exterior') tinted.lerp(new THREE.Color('#7a746c'), 0.16);
@@ -1130,10 +1176,34 @@ function WallMeshes() {
         });
         // 3D pick proxy while fading so cut-away walls remain selectable.
         return [
+          ...(topPick ? [topPick] : []),
           ...(fading && cameraMode !== 'top' ? [pickProxy] : []),
           ...base,
           ...selectionHalo,
           ...fixtures,
+          ...(cameraMode === 'top'
+            ? [
+                <Html
+                  key={w.id + 'len'}
+                  position={[midX, 0.12, midZ]}
+                  center
+                  style={{ pointerEvents: 'auto' }}
+                  zIndexRange={[40, 20]}
+                >
+                  <button
+                    type="button"
+                    className={`wall-length-chip${selected ? ' is-selected' : ''}${ (w.assembly ?? 'interior') === 'exterior' ? ' is-exterior' : ''}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onWallClick(w.id);
+                    }}
+                    title="Edit wall"
+                  >
+                    {formatLength(origLen, unitSystem)}
+                  </button>
+                </Html>,
+              ]
+            : []),
         ];
       })}
       {(() => {

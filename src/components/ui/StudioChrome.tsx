@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -34,6 +34,8 @@ import { roomCategories } from '../catalog/CatalogPanel';
 import { usePlannerStore } from '../../store/plannerStore';
 import type { RoomType } from '../../types';
 import { WORLD_ORIGIN } from '../../lib/geometry/placement';
+import { computeConstructionTakeoff } from '../../lib/constructionTakeoff';
+import { formatArea, formatLength } from '../../lib/measurements';
 import { StoryOverview } from './StoryOverview';
 
 const icons: Record<string, typeof ShoppingBag> = {
@@ -67,6 +69,7 @@ type Props = {
   /** Quick-access project actions — keep Save/Share usable without opening the menu. */
   onSave?: () => void;
   onShare?: () => void;
+  onOpenElevations?: () => void;
 };
 
 export function StudioChrome({
@@ -82,6 +85,7 @@ export function StudioChrome({
   onOpenInspector,
   onSave,
   onShare,
+  onOpenElevations,
 }: Props) {
   const [storiesOpen, setStoriesOpen] = useState(false);
   const [fabsOpen, setFabsOpen] = useState(true);
@@ -125,8 +129,16 @@ export function StudioChrome({
   const duplicateSelected = usePlannerStore((s) => s.duplicateSelected);
   const deleteSelected = usePlannerStore((s) => s.deleteSelected);
   const furniture = usePlannerStore((s) => s.furniture);
+  const walls = usePlannerStore((s) => s.walls);
+  const openings = usePlannerStore((s) => s.openings);
+  const unitSystem = usePlannerStore((s) => s.unitSystem);
   const selectedFurniture = furniture.find((f) => f.id === selectedItem);
   const isTrimSelected = selectedFurniture?.placementKind === 'perimeter-trim';
+
+  const takeoff = useMemo(
+    () => computeConstructionTakeoff({ walls, openings, furniture }),
+    [walls, openings, furniture],
+  );
   const categories = roomCategories[roomType];
   const isTop = camera === 'top';
   const planWallTool = usePlannerStore((s) => s.planWallTool);
@@ -411,6 +423,21 @@ export function StudioChrome({
           </button>
         </div>
 
+        {!atStart && walls.length > 0 && (
+          <div className="studio-takeoff-strip" aria-label="Construction takeoff">
+            <span title="Floor area">{formatArea(takeoff.floorAreaM2, unitSystem)}</span>
+            <span title="Wall length">{formatLength(takeoff.wallLengthM, unitSystem)} walls</span>
+            {takeoff.exteriorWallLengthM > 0 && (
+              <span title="Exterior wall length">{formatLength(takeoff.exteriorWallLengthM, unitSystem)} ext</span>
+            )}
+            <span title="Doors / windows / openings">
+              {takeoff.doorCount} dr · {takeoff.windowCount} win
+              {takeoff.passageCount ? ` · ${takeoff.passageCount} open` : ''}
+            </span>
+            {takeoff.stairCount > 0 && <span>{takeoff.stairCount} stair</span>}
+          </div>
+        )}
+
         {showFloorChrome && (
           <div className="studio-story-bar" aria-label="Floors">
             <div className="studio-floor-stack studio-floor-stack--bar" role="tablist" aria-label="Floor levels">
@@ -616,7 +643,7 @@ export function StudioChrome({
         <div className="studio-dock-shell studio-dock-flat">
           <div className="studio-dock-row">
             <div className="studio-dock-seg" role="group" aria-label="View mode">
-              <button type="button" className={isTop ? 'is-active' : ''} onClick={chooseTop} title="Plan view">
+              <button type="button" className={isTop ? 'is-active' : ''} onClick={chooseTop} title="Plan view — orthographic">
                 <Grid2X2 size={16} />
                 <span>Plan</span>
               </button>
@@ -625,6 +652,12 @@ export function StudioChrome({
                 <span>3D</span>
               </button>
             </div>
+            {onOpenElevations && !atStart && (
+              <button type="button" className="studio-dock-action" onClick={onOpenElevations} title="Elevation preview" disabled={walls.length === 0}>
+                <FileSpreadsheet size={15} />
+                <span>Elev</span>
+              </button>
+            )}
             {atPlanLevel && isTop && !pending && (
               <button
                 type="button"
