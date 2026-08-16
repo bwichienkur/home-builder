@@ -151,39 +151,40 @@ function CameraRig() {
 
   // Rail: page-centered + zoom. Edit inspector / wall focus: shift into the free area left of chrome.
   const chromeFit = useMemo(() => {
-    const topChromePx = coarse ? (focusWall ? 100 : 72) : focusWall ? 92 : 64;
-    const bottomChromePx = coarse ? (focusWall ? 175 : 150) : focusWall ? 135 : 110;
+    const topChromePx = coarse ? (focusWall ? 100 : 68) : focusWall ? 92 : 58;
+    const bottomChromePx = coarse ? (focusWall ? 160 : 130) : focusWall ? 120 : 96;
     if (inspectorOpen || focusWall) {
       const rightChromePx = inspectorOpen
         ? Math.min(260, Math.round(canvasW * 0.44))
         : showRightRail
-          ? 72
+          ? 68
           : 0;
       return freeAreaFit({
         width: canvasW,
         height: canvasH,
         rightChromePx,
-        gutterPx: coarse ? 16 : 12,
+        gutterPx: coarse ? 10 : 8,
         topChromePx,
         bottomChromePx,
       });
     }
-    const rightChromePx = showRightRail ? 72 : 0;
+    // Rail is ~64px wide; keep a small gutter so the plate nearly fills the free canvas.
+    const rightChromePx = showRightRail ? 68 : 0;
     return pageCenterFit({
       width: canvasW,
       height: canvasH,
       rightChromePx,
-      gutterPx: rightChromePx ? (coarse ? 24 : 16) : 0,
+      gutterPx: rightChromePx ? (coarse ? 10 : 8) : 0,
       topChromePx,
       bottomChromePx,
     });
   }, [canvasW, canvasH, inspectorOpen, showRightRail, coarse, inspectorTick, focusWall]);
 
   const framing = useMemo(() => {
-    const basePad = (coarse ? 3.1 : 2.85) * (menuOpen ? 1.45 : 1);
-    const baseOrbit = (coarse ? 1.65 : 1.45) * (menuOpen ? 1.25 : 1);
+    const basePad = (coarse ? 2.55 : 2.35) * (menuOpen ? 1.45 : 1);
+    const baseOrbit = (coarse ? 1.32 : 1.18) * (menuOpen ? 1.25 : 1);
     const pad = basePad * chromeFit.padScale;
-    const orbitPad = baseOrbit * Math.max(1, chromeFit.padScale * 0.9);
+    const orbitPad = baseOrbit * Math.max(1, chromeFit.padScale * 0.88);
     if (focusWall) {
       const roomsForExterior =
         planRooms.length > 0
@@ -203,9 +204,9 @@ function CameraRig() {
       });
     }
     if (focusRoom?.points.length) {
-      return framingFromPoints(focusRoom.points, { pad, orbitPad, minSpan: 2.5, minHeight: 11 });
+      return framingFromPoints(focusRoom.points, { pad, orbitPad, minSpan: 2.5, minHeight: 9 });
     }
-    return framingFromWalls(walls, { pad, orbitPad, minHeight: 15 });
+    return framingFromWalls(walls, { pad, orbitPad, minHeight: 12 });
   }, [walls, planRooms, focusRoom, focusWall, coarse, menuOpen, chromeFit.padScale]);
   const center = framing.center;
   const viewYawRad = ((viewYawDeg % 360) + 360) % 360 * (Math.PI / 180);
