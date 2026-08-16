@@ -1,7 +1,11 @@
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import {
   CORE_CSV,
+  CUSTOM_FIELD_TYPE_OPTIONS,
+  builtinFieldType,
   coreFieldLabel,
+  customFieldTypeLabel,
+  isPicklistType,
   type CustomFieldDefinition,
   type CustomFieldType,
   type EntityKind,
@@ -9,60 +13,177 @@ import {
 import { platformConfig } from '../../lib/platform/config';
 import { useCrmStore } from '../../store/crmStore';
 
-const TYPES: CustomFieldType[] = ['text', 'number', 'bool', 'date', 'select'];
-
-const OBJECTS: { id: EntityKind; label: string; blurb: string }[] = [
-  { id: 'client', label: 'Clients', blurb: 'Built-in and custom fields on client forms and CSV.' },
-  { id: 'vendor', label: 'Vendors', blurb: 'Built-in and custom fields on vendor forms and CSV.' },
-  { id: 'inventory', label: 'Inventory', blurb: 'Built-in and custom fields on inventory forms, CSV, and the Build shop.' },
+const OBJECTS: { id: EntityKind; label: string }[] = [
+  { id: 'client', label: 'Clients' },
+  { id: 'vendor', label: 'Vendors' },
+  { id: 'inventory', label: 'Inventory' },
 ];
+
+type FieldRow = {
+  id: string;
+  label: string;
+  key: string;
+  type: CustomFieldType;
+  source: 'builtin' | 'custom';
+  required: boolean;
+  custom?: CustomFieldDefinition;
+};
+
+function ObjectTypeahead({
+  value,
+  onChange,
+}: {
+  value: EntityKind | null;
+  onChange: (next: EntityKind | null) => void;
+}) {
+  const [query, setQuery] = useState('');
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const selected = OBJECTS.find((o) => o.id === value) ?? null;
+
+  const options = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return OBJECTS;
+    return OBJECTS.filter((o) => o.label.toLowerCase().includes(q) || o.id.includes(q));
+  }, [query]);
+
+  useEffect(() => {
+    const onDoc = (e: MouseEvent) => {
+      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, []);
+
+  return (
+    <div className="settings-typeahead" ref={rootRef}>
+      <label className="settings-filter-label" htmlFor="settings-object-search">
+        Object
+      </label>
+      <div className="settings-typeahead-control">
+        <input
+          id="settings-object-search"
+          role="combobox"
+          aria-expanded={open}
+          aria-controls="settings-object-listbox"
+          aria-autocomplete="list"
+          placeholder="Search clients, vendors, inventory…"
+          value={open || !selected ? query : selected.label}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setOpen(true);
+            if (selected) onChange(null);
+          }}
+          onFocus={() => {
+            setOpen(true);
+            setQuery('');
+          }}
+        />
+        {selected && (
+          <button
+            type="button"
+            className="settings-typeahead-clear"
+            aria-label="Clear object selection"
+            onClick={() => {
+              onChange(null);
+              setQuery('');
+              setOpen(false);
+            }}
+          >
+            Clear
+          </button>
+        )}
+      </div>
+      {open && (
+        <ul id="settings-object-listbox" role="listbox" className="settings-typeahead-menu">
+          {options.length === 0 ? (
+            <li className="settings-typeahead-empty">No matching objects</li>
+          ) : (
+            options.map((o) => (
+              <li key={o.id} role="option" aria-selected={value === o.id}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onChange(o.id);
+                    setQuery('');
+                    setOpen(false);
+                  }}
+                >
+                  {o.label}
+                </button>
+              </li>
+            ))
+          )}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 export function SettingsPage() {
   const fields = useCrmStore((s) => s.customFields);
   const upsert = useCrmStore((s) => s.upsertCustomField);
   const archive = useCrmStore((s) => s.archiveCustomField);
-  const [object, setObject] = useState<EntityKind>('client');
+  const [object, setObject] = useState<EntityKind | null>('client');
+  const [fieldQuery, setFieldQuery] = useState('');
   const [draft, setDraft] = useState<CustomFieldDefinition | null>(null);
   const [error, setError] = useState('');
 
-  const activeMeta = OBJECTS.find((o) => o.id === object)!;
-  const objectFields = useMemo(
-    () =>
-      fields
-        .filter((f) => f.entity === object && !f.archived)
-        .sort((a, b) => a.order - b.order || a.label.localeCompare(b.label)),
+  const activeMeta = object ? OBJECTS.find((o) => o.id === object)! : null;
+
+  const rows = useMemo(() => {
+    if (!object) return [] as FieldRow[];
+    const builtin: FieldRow[] = CORE_CSV[object].map((key) => ({
+      id: `builtin-${key}`,
+      label: coreFieldLabel(key),
+      key,
+      type: builtinFieldType(key),
+      source: 'builtin',
+      required: key === 'name' || key === 'sku' || key === 'category',
+    }));
+    const custom: FieldRow[] = fields
+      .filter((f) => f.entity === object && !f.archived)
+      .sort((a, b) => a.order - b.order || a.label.localeCompare(b.label))
+      .map((f) => ({
+        id: f.id,
+        label: f.label,
+        key: f.key,
+        type: f.type === 'select' ? 'picklist' : f.type,
+        source: 'custom',
+        required: f.required,
+        custom: f,
+      }));
+    return [...builtin, ...custom];
+  }, [fields, object]);
+
+  const filteredRows = useMemo(() => {
+    const q = fieldQuery.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter(
+      (r) =>
+        r.label.toLowerCase().includes(q) ||
+        r.key.toLowerCase().includes(q) ||
+        customFieldTypeLabel(r.type).toLowerCase().includes(q),
+    );
+  }, [rows, fieldQuery]);
+
+  const customCount = useMemo(
+    () => (object ? fields.filter((f) => f.entity === object && !f.archived).length : 0),
     [fields, object],
   );
-  const builtinKeys = CORE_CSV[object];
 
-  const fieldsByObject = useMemo(() => {
-    const map: Record<EntityKind, CustomFieldDefinition[]> = {
-      client: [],
-      vendor: [],
-      inventory: [],
-    };
-    for (const f of fields) {
-      if (f.archived) continue;
-      map[f.entity].push(f);
-    }
-    for (const kind of Object.keys(map) as EntityKind[]) {
-      map[kind].sort((a, b) => a.order - b.order || a.label.localeCompare(b.label));
-    }
-    return map;
-  }, [fields]);
-
-  const startNew = (entity: EntityKind = object) => {
-    setObject(entity);
+  const startNew = () => {
+    if (!object) return;
     setError('');
     setDraft({
       id: crypto.randomUUID(),
-      entity,
+      entity: object,
       key: '',
       label: '',
       type: 'text',
       required: false,
       options: [],
-      order: fieldsByObject[entity].length,
+      order: customCount,
       archived: false,
     });
   };
@@ -89,13 +210,14 @@ export function SettingsPage() {
       setError(`A ${draft.entity} field already uses the key “${draft.key}”.`);
       return;
     }
-    upsert({ ...draft, entity: draft.entity });
+    const type = draft.type === 'select' ? 'picklist' : draft.type;
+    upsert({ ...draft, type, entity: draft.entity });
     setObject(draft.entity);
     setDraft(null);
     setError('');
   };
 
-  const draftMeta = OBJECTS.find((o) => o.id === (draft?.entity ?? object))!;
+  const draftMeta = OBJECTS.find((o) => o.id === (draft?.entity ?? object ?? 'client'))!;
 
   return (
     <div className="data-page">
@@ -104,173 +226,123 @@ export function SettingsPage() {
           <p className="eyebrow">Settings</p>
           <h1>Fields</h1>
           <p className="muted">
-            Built-in fields ship with each object. Custom fields are scoped per object and never cross clients,
-            vendors, or inventory.
+            Choose an object to list its built-in and custom fields. Custom fields stay scoped to that object.
           </p>
           <p className="muted" style={{ marginTop: 8 }}>
             Platform: <strong>{platformConfig.label()}</strong>
           </p>
         </div>
         <div className="data-page-actions">
-          <button type="button" className="primary" onClick={() => startNew(object)}>
-            Add {activeMeta.label.toLowerCase().replace(/s$/, '')} custom field
+          <button type="button" className="primary" onClick={startNew} disabled={!object}>
+            Add custom field
           </button>
         </div>
       </header>
 
-      <section className="settings-all-objects" aria-label="Current fields by object">
-        <h2 className="settings-section-title">Current fields by object</h2>
-        <div className="settings-object-overview">
-          {OBJECTS.map((o) => {
-            const custom = fieldsByObject[o.id];
-            return (
-              <article key={o.id} className="settings-object-card">
-                <header>
-                  <h3>{o.label}</h3>
-                  <button type="button" className="auth-link" onClick={() => setObject(o.id)}>
-                    Manage
-                  </button>
-                </header>
-                <p className="muted">{o.blurb}</p>
-                <div className="settings-field-group">
-                  <span className="settings-field-group-label">Built-in ({CORE_CSV[o.id].length})</span>
-                  <div className="settings-field-chips">
-                    {CORE_CSV[o.id].map((key) => (
-                      <span key={key} className="settings-field-chip is-builtin" title={key}>
-                        {coreFieldLabel(key)}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                <div className="settings-field-group">
-                  <span className="settings-field-group-label">Custom ({custom.length})</span>
-                  {custom.length === 0 ? (
-                    <p className="muted settings-field-empty">No custom fields yet.</p>
-                  ) : (
-                    <div className="settings-field-chips">
-                      {custom.map((f) => (
-                        <span key={f.id} className="settings-field-chip is-custom" title={f.key}>
-                          {f.label}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </article>
-            );
-          })}
+      <div className="settings-filters">
+        <ObjectTypeahead
+          value={object}
+          onChange={(next) => {
+            setObject(next);
+            setFieldQuery('');
+            setDraft(null);
+            setError('');
+          }}
+        />
+        <div className="settings-field-search">
+          <label className="settings-filter-label" htmlFor="settings-field-query">
+            Search fields
+          </label>
+          <div className="settings-typeahead-control">
+            <input
+              id="settings-field-query"
+              placeholder={object ? `Search ${activeMeta?.label.toLowerCase()} field names…` : 'Select an object first'}
+              value={fieldQuery}
+              disabled={!object}
+              onChange={(e) => setFieldQuery(e.target.value)}
+            />
+            {fieldQuery && (
+              <button
+                type="button"
+                className="settings-typeahead-clear"
+                aria-label="Clear field search"
+                onClick={() => setFieldQuery('')}
+              >
+                Clear
+              </button>
+            )}
+          </div>
         </div>
-      </section>
-
-      <div className="settings-object-tabs" role="tablist" aria-label="Object type">
-        {OBJECTS.map((o) => {
-          const count = fieldsByObject[o.id].length;
-          return (
-            <button
-              key={o.id}
-              type="button"
-              role="tab"
-              aria-selected={object === o.id}
-              className={object === o.id ? 'is-active' : undefined}
-              onClick={() => {
-                setObject(o.id);
-                setDraft(null);
-                setError('');
-              }}
-            >
-              {o.label}
-              <span className="settings-object-count">{count}</span>
-            </button>
-          );
-        })}
       </div>
-      <p className="muted settings-object-blurb">{activeMeta.blurb}</p>
 
-      <section className="settings-field-block">
-        <div className="settings-field-block-head">
-          <h2 className="settings-section-title">Built-in {activeMeta.label.toLowerCase()} fields</h2>
-          <span className="muted">{builtinKeys.length} on forms &amp; CSV</span>
-        </div>
-        <div className="data-table-wrap">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Label</th>
-                <th>Key</th>
-                <th>Source</th>
-              </tr>
-            </thead>
-            <tbody>
-              {builtinKeys.map((key) => (
-                <tr key={key}>
-                  <td>{coreFieldLabel(key)}</td>
-                  <td>
-                    <code>{key}</code>
-                  </td>
-                  <td>Built-in</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section className="settings-field-block">
-        <div className="settings-field-block-head">
-          <h2 className="settings-section-title">Custom {activeMeta.label.toLowerCase()} fields</h2>
-          <button type="button" className="auth-link" onClick={() => startNew(object)}>
-            Add custom field
-          </button>
-        </div>
-        <div className="data-table-wrap">
-          {objectFields.length === 0 ? (
-            <div className="data-empty">
-              No custom fields for {activeMeta.label.toLowerCase()} yet. Built-in fields above always appear on forms;
-              add a custom field to extend this object only.
-            </div>
-          ) : (
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Label</th>
-                  <th>Key</th>
-                  <th>Type</th>
-                  <th>Required</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {objectFields.map((f) => (
-                  <tr key={f.id}>
-                    <td>{f.label}</td>
-                    <td>
-                      <code>{f.key}</code>
-                    </td>
-                    <td>{f.type}</td>
-                    <td>{f.required ? 'Yes' : 'No'}</td>
-                    <td>
-                      <button
-                        type="button"
-                        className="auth-link"
-                        onClick={() => {
-                          setError('');
-                          setDraft({ ...f });
-                        }}
-                      >
-                        Edit
-                      </button>
-                      {' · '}
-                      <button type="button" className="auth-link" onClick={() => archive(f.id)}>
-                        Archive
-                      </button>
-                    </td>
+      {!object ? (
+        <div className="data-empty">Select Clients, Vendors, or Inventory to view fields.</div>
+      ) : (
+        <section className="settings-field-block">
+          <div className="settings-field-block-head">
+            <h2 className="settings-section-title">{activeMeta?.label} fields</h2>
+            <span className="muted">
+              {filteredRows.length} shown · {rows.length} total
+            </span>
+          </div>
+          <div className="data-table-wrap">
+            {filteredRows.length === 0 ? (
+              <div className="data-empty">No fields match “{fieldQuery}”.</div>
+            ) : (
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Label</th>
+                    <th>Key</th>
+                    <th>Type</th>
+                    <th>Source</th>
+                    <th>Required</th>
+                    <th>Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </section>
+                </thead>
+                <tbody>
+                  {filteredRows.map((r) => (
+                    <tr key={r.id}>
+                      <td>{r.label}</td>
+                      <td>
+                        <code>{r.key}</code>
+                      </td>
+                      <td>{customFieldTypeLabel(r.type)}</td>
+                      <td>{r.source === 'builtin' ? 'Built-in' : 'Custom'}</td>
+                      <td>{r.required ? 'Yes' : 'No'}</td>
+                      <td>
+                        {r.source === 'custom' && r.custom ? (
+                          <>
+                            <button
+                              type="button"
+                              className="auth-link"
+                              onClick={() => {
+                                setError('');
+                                setDraft({
+                                  ...r.custom!,
+                                  type: r.custom!.type === 'select' ? 'picklist' : r.custom!.type,
+                                });
+                              }}
+                            >
+                              Edit
+                            </button>
+                            {' · '}
+                            <button type="button" className="auth-link" onClick={() => archive(r.custom!.id)}>
+                              Archive
+                            </button>
+                          </>
+                        ) : (
+                          <span className="muted">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </section>
+      )}
 
       {draft && (
         <div
@@ -328,19 +400,19 @@ export function SettingsPage() {
                 <label>
                   Type
                   <select
-                    value={draft.type}
+                    value={draft.type === 'select' ? 'picklist' : draft.type}
                     onChange={(e) => setDraft({ ...draft, type: e.target.value as CustomFieldType })}
                   >
-                    {TYPES.map((t) => (
-                      <option key={t} value={t}>
-                        {t}
+                    {CUSTOM_FIELD_TYPE_OPTIONS.map((t) => (
+                      <option key={t.value} value={t.value}>
+                        {t.label}
                       </option>
                     ))}
                   </select>
                 </label>
-                {draft.type === 'select' && (
+                {isPicklistType(draft.type) && (
                   <label>
-                    Options (comma-separated)
+                    Picklist options (comma-separated)
                     <input
                       value={draft.options.join(', ')}
                       onChange={(e) =>

@@ -388,129 +388,104 @@
   line-height: 1.4;
 }
 
-.settings-object-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin: 0 0 10px;
-  padding: 4px;
-  border-radius: 12px;
-  background: var(--soft);
-  width: fit-content;
-  max-width: 100%;
+.settings-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin: 0 0 18px;
+  align-items: end;
 }
-.settings-object-tabs button {
-  border: 0;
-  background: transparent;
-  border-radius: 9px;
-  padding: 8px 12px;
-  font-weight: 650;
-  font-size: 13px;
+.settings-filter-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   color: var(--muted);
-  cursor: pointer;
-  display: inline-flex;
+}
+.settings-typeahead,
+.settings-field-search {
+  position: relative;
+  min-width: 0;
+}
+.settings-typeahead-control {
+  display: flex;
   align-items: center;
   gap: 8px;
-}
-.settings-object-tabs button.is-active {
+  border: 1px solid var(--line);
+  border-radius: 10px;
   background: #fff;
+  padding: 0 10px 0 0;
+  min-height: 42px;
+}
+.settings-typeahead-control input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  padding: 10px 12px;
+  font-size: 14px;
+  outline: none;
+}
+.settings-typeahead-control input:disabled {
+  color: var(--muted);
+}
+.settings-typeahead-clear {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+  padding: 6px 4px;
+  flex-shrink: 0;
+}
+.settings-typeahead-clear:hover {
   color: var(--ink);
-  box-shadow: 0 1px 2px rgba(17, 24, 32, 0.06);
 }
-.settings-object-count {
-  min-width: 1.4em;
-  padding: 1px 6px;
-  border-radius: 999px;
-  background: rgba(17, 24, 32, 0.06);
-  font-size: 11px;
-  font-weight: 700;
-  text-align: center;
+.settings-typeahead-menu {
+  position: absolute;
+  z-index: 8;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  max-height: 220px;
+  overflow: auto;
 }
-.settings-object-tabs button.is-active .settings-object-count {
-  background: var(--accent-soft);
-  color: var(--accent-ink);
+.settings-typeahead-menu button {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  padding: 9px 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--ink);
 }
-.settings-object-blurb {
-  margin: 0 0 14px;
+.settings-typeahead-menu button:hover,
+.settings-typeahead-menu li[aria-selected='true'] button {
+  background: var(--soft);
+}
+.settings-typeahead-empty {
+  padding: 10px;
+  font-size: 13px;
+  color: var(--muted);
 }
 .settings-section-title {
   margin: 0;
   font-size: 1rem;
   font-weight: 700;
   letter-spacing: -0.02em;
-}
-.settings-all-objects {
-  margin: 0 0 28px;
-  display: grid;
-  gap: 12px;
-}
-.settings-object-overview {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 12px;
-}
-.settings-object-card {
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: #fff;
-  padding: 14px 16px;
-  display: grid;
-  gap: 10px;
-}
-.settings-object-card > header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-.settings-object-card h3 {
-  margin: 0;
-  font-size: 0.98rem;
-}
-.settings-object-card > .muted {
-  margin: 0;
-  font-size: 12px;
-}
-.settings-field-group {
-  display: grid;
-  gap: 6px;
-}
-.settings-field-group-label {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-.settings-field-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.settings-field-chip {
-  display: inline-flex;
-  align-items: center;
-  max-width: 100%;
-  padding: 4px 8px;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1.2;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.settings-field-chip.is-builtin {
-  background: var(--soft);
-  color: var(--ink);
-}
-.settings-field-chip.is-custom {
-  background: var(--accent-soft);
-  color: var(--accent-ink);
-}
-.settings-field-empty {
-  margin: 0;
-  font-size: 12px;
 }
 .settings-field-block {
   margin: 0 0 22px;

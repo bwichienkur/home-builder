@@ -215,42 +215,58 @@ export function CustomFieldsInputs({
   if (!active.length) return null;
   return (
     <>
-      {active.map((f) => (
-        <label key={f.id}>
-          {f.label}
-          {f.type === 'bool' ? (
-            <input
-              type="checkbox"
-              checked={Boolean(values[f.key])}
-              onChange={(e) => onChange({ ...values, [f.key]: e.target.checked })}
-            />
-          ) : f.type === 'select' ? (
-            <select
-              value={String(values[f.key] ?? '')}
-              onChange={(e) => onChange({ ...values, [f.key]: e.target.value })}
-            >
-              <option value="">—</option>
-              {f.options.map((o) => (
-                <option key={o} value={o}>
-                  {o}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <input
-              type={f.type === 'number' ? 'number' : f.type === 'date' ? 'date' : 'text'}
-              value={values[f.key] == null ? '' : String(values[f.key])}
-              onChange={(e) =>
-                onChange({
-                  ...values,
-                  [f.key]: f.type === 'number' ? Number(e.target.value) : e.target.value,
-                })
-              }
-              required={f.required}
-            />
-          )}
-        </label>
-      ))}
+      {active.map((f) => {
+        const picklist = f.type === 'picklist' || f.type === 'select';
+        const inputType =
+          f.type === 'number'
+            ? 'number'
+            : f.type === 'date'
+              ? 'date'
+              : f.type === 'url'
+                ? 'url'
+                : f.type === 'email'
+                  ? 'email'
+                  : f.type === 'phone'
+                    ? 'tel'
+                    : 'text';
+        return (
+          <label key={f.id}>
+            {f.label}
+            {f.type === 'bool' ? (
+              <input
+                type="checkbox"
+                checked={Boolean(values[f.key])}
+                onChange={(e) => onChange({ ...values, [f.key]: e.target.checked })}
+              />
+            ) : picklist ? (
+              <select
+                value={String(values[f.key] ?? '')}
+                onChange={(e) => onChange({ ...values, [f.key]: e.target.value })}
+                required={f.required}
+              >
+                <option value="">—</option>
+                {f.options.map((o) => (
+                  <option key={o} value={o}>
+                    {o}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                type={inputType}
+                value={values[f.key] == null ? '' : String(values[f.key])}
+                onChange={(e) =>
+                  onChange({
+                    ...values,
+                    [f.key]: f.type === 'number' ? Number(e.target.value) : e.target.value,
+                  })
+                }
+                required={f.required}
+              />
+            )}
+          </label>
+        );
+      })}
     </>
   );
 }
