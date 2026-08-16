@@ -27,30 +27,25 @@ function formatQty(qty: number, unit?: string) {
   return String(Math.round(qty * 100) / 100);
 }
 
-function collectFromPayload(payload: {
-  floors?: Array<{
-    planRooms?: PlanRoomLabel[];
-    scene?: { furniture?: FurnitureItem[]; planRooms?: PlanRoomLabel[] };
-  }>;
-}) {
+type DesignFloorLike = {
+  planRooms?: PlanRoomLabel[];
+  scene?: { furniture?: FurnitureItem[]; planRooms?: PlanRoomLabel[] };
+};
+
+/** Accept saved-build payloads whose floors are typed loosely (`unknown[]`). */
+type DesignPayloadLike = { floors?: DesignFloorLike[] | unknown[] };
+
+function collectFromPayload(payload: DesignPayloadLike) {
   const items: FurnitureItem[] = [];
   const planRooms: PlanRoomLabel[] = [];
-  for (const floor of payload.floors ?? []) {
+  for (const floor of (payload.floors ?? []) as DesignFloorLike[]) {
     items.push(...(floor.scene?.furniture ?? []));
     planRooms.push(...(floor.planRooms ?? floor.scene?.planRooms ?? []));
   }
   return { items, planRooms };
 }
 
-export function buildShoppingListRows(
-  payload: {
-    floors?: Array<{
-      planRooms?: PlanRoomLabel[];
-      scene?: { furniture?: FurnitureItem[]; planRooms?: PlanRoomLabel[] };
-    }>;
-  },
-  catalog: CatalogItem[],
-): BomRow[] {
+export function buildShoppingListRows(payload: DesignPayloadLike, catalog: CatalogItem[]): BomRow[] {
   const { items, planRooms } = collectFromPayload(payload);
 
   const productRows = Object.values(
@@ -94,15 +89,7 @@ export function buildShoppingListRows(
   return [...productRows, ...floorRows];
 }
 
-export function shoppingListCsvFromDesign(
-  payload: {
-    floors?: Array<{
-      planRooms?: PlanRoomLabel[];
-      scene?: { furniture?: FurnitureItem[]; planRooms?: PlanRoomLabel[] };
-    }>;
-  },
-  catalog: CatalogItem[],
-) {
+export function shoppingListCsvFromDesign(payload: DesignPayloadLike, catalog: CatalogItem[]) {
   const rows = buildShoppingListRows(payload, catalog);
   return [
     'Vendor,SKU,Product,Category,Quantity,Unit,Unit price,Subtotal,Price status',
