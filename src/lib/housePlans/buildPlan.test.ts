@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildHouse, livingAreaSqFt } from './buildPlan';
+import { buildHouse, livingAreaSqFt, insertPlanRoomVertexPoints, movePlanRoomVertexPoints, removePlanRoomVertexPoints } from './buildPlan';
 import { assertPlanCatalog, getHousePlan, listBuiltinHousePlans } from './planRegistry';
 import { importDxfHousePlan } from './dxfImport';
 import { usePlannerStore } from '../../store/plannerStore';
@@ -108,5 +108,57 @@ EOF
     expect(result.plan.floors[0]!.rooms.length).toBeGreaterThanOrEqual(1);
     const built = buildHouse(result.plan);
     expect(built.floors[0]!.scene.walls.length).toBeGreaterThan(0);
+  });
+});
+
+describe('polygon vertex edit', () => {
+  const origin = { x: 420, y: 330 };
+  const ppm = 80;
+  const ft = (n: number) => n * 0.3048 * ppm;
+  const square = [
+    { x: origin.x, y: origin.y },
+    { x: origin.x + ft(12), y: origin.y },
+    { x: origin.x + ft(12), y: origin.y + ft(12) },
+    { x: origin.x, y: origin.y + ft(12) },
+  ];
+
+  it('moves a vertex without collapsing the room', () => {
+    const next = movePlanRoomVertexPoints(square, 1, { x: origin.x + ft(14), y: origin.y - ft(2) });
+    expect(next).not.toBeNull();
+    expect(next![1]!.x).toBeCloseTo(origin.x + ft(14));
+    expect(next!.length).toBe(4);
+  });
+
+  it('rejects moves that shrink below 3 ft', () => {
+    const triangle = [
+      { x: origin.x, y: origin.y },
+      { x: origin.x + ft(12), y: origin.y },
+      { x: origin.x + ft(6), y: origin.y + ft(12) },
+    ];
+    const next = movePlanRoomVertexPoints(triangle, 2, { x: origin.x + ft(6), y: origin.y + ft(1) });
+    expect(next).toBeNull();
+  });
+
+  it('rejects an out-of-range vertex index', () => {
+    expect(movePlanRoomVertexPoints(square, 9, { x: origin.x, y: origin.y })).toBeNull();
+  });
+
+  it('inserts a midpoint vertex on an edge', () => {
+    const next = insertPlanRoomVertexPoints(square, 0);
+    expect(next).not.toBeNull();
+    expect(next!.length).toBe(5);
+    expect(next![1]!.x).toBeCloseTo(origin.x + ft(6));
+  });
+
+  it('removes a vertex when four or more remain', () => {
+    const five = insertPlanRoomVertexPoints(square, 0)!;
+    const next = removePlanRoomVertexPoints(five, 1);
+    expect(next).not.toBeNull();
+    expect(next!.length).toBe(4);
+  });
+
+  it('refuses to remove below three corners', () => {
+    const triangle = square.slice(0, 3);
+    expect(removePlanRoomVertexPoints(triangle, 0)).toBeNull();
   });
 });

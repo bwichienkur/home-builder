@@ -6,7 +6,7 @@ import { clampWallMountY, constrainPlacement, openingConflicts, pointInWorldRoom
 import { detectRoomPolygons } from '../lib/geometry/rooms';
 import { perimeterTrimSegments, type PerimeterTrimEdge } from '../lib/geometry/ceilingTrim';
 import { writeRecoverySnapshot } from '../lib/designShare';
-import { buildHouse, rebuildFromPlanRooms, resizePlanRoomPoints, shapedRoomPoints, snapRoomCenterToNeighbors, splitPlanRoomPoints, proposedRoomOverlaps, planRoomLabelOverlaps, attachSquareRoomPoints, attachSideBlocked, nudgePlanRoomsByWall, planRoomsCenterFt, type PlanRoomShape, type AttachSide } from '../lib/housePlans/buildPlan';
+import { buildHouse, rebuildFromPlanRooms, resizePlanRoomPoints, shapedRoomPoints, snapRoomCenterToNeighbors, splitPlanRoomPoints, proposedRoomOverlaps, planRoomLabelOverlaps, attachSquareRoomPoints, attachSideBlocked, nudgePlanRoomsByWall, planRoomsCenterFt, movePlanRoomVertexPoints, insertPlanRoomVertexPoints, removePlanRoomVertexPoints, type PlanRoomShape, type AttachSide } from '../lib/housePlans/buildPlan';
 import type { HousePlan } from '../lib/housePlans/buildPlan';
 import { getHousePlan } from '../lib/housePlans/planRegistry';
 import { remapFurnitureAfterPlanRebuild } from '../lib/geometry/planFurnitureRemap';
@@ -133,6 +133,13 @@ type PlannerState = SceneSnapshot & {
   movePlanRoom: (id: string, dxM: number, dzM: number, opts?: { live?: boolean }) => boolean;
   /** Push current plan geometry onto undo history after a live room drag. */
   commitPlanRoomMove: () => void;
+  /** Drag a polygon vertex (plan pixels) for angled / non-rect rooms. */
+  movePlanRoomVertex: (id: string, vertexIndex: number, point: Point, opts?: { live?: boolean }) => boolean;
+  commitPlanRoomVertex: () => void;
+  insertPlanRoomVertex: (id: string, edgeIndex: number) => boolean;
+  removePlanRoomVertex: (id: string, vertexIndex: number) => boolean;
+  /** Place a stair annotation linking two floors. */
+  addStair: (fromFloorId: string, toFloorId: string, x?: number, z?: number) => void;
   /** Drag a wall perpendicular to itself to change room width/depth. */
   nudgeWall: (id: string, dxM: number, dzM: number, opts?: { live?: boolean }) => boolean;
   commitWallNudge: () => void;
@@ -956,6 +963,90 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         furniture: get().furniture,
         planRooms: get().planRooms,
       });
+    },
+    movePlanRoomVertex: (id, vertexIndex, point, opts) => {
+      const current = get().planRooms;
+      const room = current.find((r) => r.id === id);
+      if (!room) return false;
+      const nextPoints = movePlanRoomVertexPoints(room.points, vertexIndex, point);
+      if (!nextPoints) {
+        set({ openingNotice: 'Room can’t get smaller than 3 ft on a side.' });
+        return false;
+      }
+      const nextLabels = current.map((r) => (r.id === id ? { ...r, points: nextPoints } : r));
+      if (planRoomLabelOverlaps(id, nextLabels)) {
+        set({ openingNotice: 'Rooms can’t overlap — keep corners clear of neighbors.' });
+        return false;
+      }
+      applyPlanRoomRebuild(nextLabels, { live: opts?.live, selectedRoomId: id });
+      set({ openingNotice: '' });
+      return true;
+    },
+    commitPlanRoomVertex: () => {
+      mutate({
+        walls: get().walls,
+        openings: get().openings,
+        furniture: get().furniture,
+        planRooms: get().planRooms,
+      });
+    },
+    insertPlanRoomVertex: (id, edgeIndex) => {
+      const current = get().planRooms;
+      const room = current.find((r) => r.id === id);
+      if (!room) return false;
+      const nextPoints = insertPlanRoomVertexPoints(room.points, edgeIndex);
+      if (!nextPoints) return false;
+      const nextLabels = current.map((r) => (r.id === id ? { ...r, points: nextPoints } : r));
+      applyPlanRoomRebuild(nextLabels, { selectedRoomId: id });
+      return true;
+    },
+    removePlanRoomVertex: (id, vertexIndex) => {
+      const current = get().planRooms;
+      const room = current.find((r) => r.id === id);
+      if (!room) return false;
+      const nextPoints = removePlanRoomVertexPoints(room.points, vertexIndex);
+      if (!nextPoints) {
+        set({ openingNotice: 'Need at least 3 corners to keep the room.' });
+        return false;
+      }
+      const nextLabels = current.map((r) => (r.id === id ? { ...r, points: nextPoints } : r));
+      if (planRoomLabelOverlaps(id, nextLabels)) {
+        set({ openingNotice: 'Rooms can’t overlap after removing that corner.' });
+        return false;
+      }
+      applyPlanRoomRebuild(nextLabels, { selectedRoomId: id });
+      set({ openingNotice: '' });
+      return true;
+    },
+    addStair: (fromFloorId, toFloorId, x = 0, z = 0) => {
+      const floors = get().floors;
+      if (!floors.some((f) => f.id === fromFloorId) || !floors.some((f) => f.id === toFloorId)) return;
+      if (fromFloorId === toFloorId) return;
+      // Ensure we're editing the from-floor scene.
+      if (get().activeFloorId !== fromFloorId) get().switchFloor(fromFloorId);
+      mutate({
+        furniture: [
+          ...get().furniture,
+          {
+            id: crypto.randomUUID(),
+            catalogId: 'stair',
+            name: 'Stair',
+            category: 'Circulation',
+            x,
+            y: 0,
+            z,
+            rotation: 0,
+            color: '#8b7355',
+            width: 1.1,
+            depth: 2.4,
+            height: Math.max(get().walls[0]?.height ?? 2.7, 2.4),
+            mountingType: 'floor',
+            placementKind: 'stair',
+            stair: { fromFloorId, toFloorId },
+          },
+        ],
+      });
+      get().selectFurniture(get().furniture[get().furniture.length - 1]?.id ?? null);
     },
     nudgeWall: (id, dxM, dzM, opts) => {
       if (!Number.isFinite(dxM) || !Number.isFinite(dzM)) return false;

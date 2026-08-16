@@ -157,6 +157,36 @@ export function ProxyFurniture({
   const name = item.name.toLowerCase();
   const halo = <SelectionHalo width={item.width} depth={item.depth} height={item.height} selected={selected} colliding={colliding} />;
 
+  if (item.placementKind === 'stair' || name === 'stair' || category.includes('circulation')) {
+    const steps = 10;
+    const rise = Math.max(item.height > 1 ? item.height : 2.7, 2.4);
+    const run = item.depth / steps;
+    return (
+      <group {...handlers}>
+        {Array.from({ length: steps }, (_, i) => (
+          <mesh
+            key={i}
+            position={[0, rise * ((i + 0.5) / steps), -item.depth / 2 + run * (i + 0.5)]}
+            castShadow
+            receiveShadow
+          >
+            <boxGeometry args={[item.width, rise / steps, run * 0.92]} />
+            <meshStandardMaterial color={color} roughness={0.78} />
+          </mesh>
+        ))}
+        <mesh position={[-item.width / 2 + 0.03, rise * 0.55, 0]} castShadow>
+          <boxGeometry args={[0.04, rise * 0.9, item.depth]} />
+          <meshStandardMaterial color="#6e5844" roughness={0.7} />
+        </mesh>
+        <mesh position={[item.width / 2 - 0.03, rise * 0.55, 0]} castShadow>
+          <boxGeometry args={[0.04, rise * 0.9, item.depth]} />
+          <meshStandardMaterial color="#6e5844" roughness={0.7} />
+        </mesh>
+        {halo}
+      </group>
+    );
+  }
+
   if (textureUrl && (item.mountingType === 'wall' || name.includes('picture') || name.includes('mirror') || name.includes('art'))) {
     return (
       <group {...handlers}>

@@ -4,6 +4,7 @@ import { usePlannerStore } from '../../store/plannerStore';
 import { formatLength, parseLength } from '../../lib/measurements';
 import { listBuiltinHousePlans } from '../../lib/housePlans/planRegistry';
 import { planRoomSizeFeet } from '../../lib/housePlans/buildPlan';
+import { openingMetersFromOffset, openingOffsetFromMeters, wallLengthM } from '../../lib/planExport/drawFloorPlan';
 import type { Opening, PlanRoomLabel, RoomType, Wall } from '../../types';
 
 const finishes: [string, string][] = [
@@ -100,10 +101,18 @@ export function SelectionInspector({ open, onClose }: { open: boolean; onClose: 
 function FurnitureProperties({ item }: { item: import('../../types').FurnitureItem }) {
   const remove = usePlannerStore((s) => s.deleteSelected);
   const unit = usePlannerStore((s) => s.unitSystem);
+  const floors = usePlannerStore((s) => s.floors);
+  const fromFloor = item.stair ? floors.find((f) => f.id === item.stair!.fromFloorId) : null;
+  const toFloor = item.stair ? floors.find((f) => f.id === item.stair!.toFloorId) : null;
   return (
     <>
       <p className="muted">{item.category}</p>
       <Property label="Name" value={item.name} />
+      {item.placementKind === 'stair' && (
+        <p className="muted">
+          Links {fromFloor?.name ?? 'lower'} → {toFloor?.name ?? 'upper'}. Drag to place on the plan.
+        </p>
+      )}
       <Property
         label="Size"
         value={
@@ -187,6 +196,8 @@ function PlanRoomProperties({ room }: { room: PlanRoomLabel }) {
   const resize = usePlannerStore((s) => s.resizePlanRoom);
   const remove = usePlannerStore((s) => s.deletePlanRoom);
   const split = usePlannerStore((s) => s.splitPlanRoom);
+  const insertVertex = usePlannerStore((s) => s.insertPlanRoomVertex);
+  const removeVertex = usePlannerStore((s) => s.removePlanRoomVertex);
   const setCeiling = usePlannerStore((s) => s.setCeilingHeight);
   const unit = usePlannerStore((s) => s.unitSystem);
   const setUnit = usePlannerStore((s) => s.setUnitSystem);
@@ -220,13 +231,14 @@ function PlanRoomProperties({ room }: { room: PlanRoomLabel }) {
         </select>
       </label>
       <p className="muted room-size-line">
-        About {Math.round(areaSqFt).toLocaleString()} sf
+        About {Math.round(areaSqFt).toLocaleString()} sf · {room.points.length} corners
       </p>
       <p className="muted room-size-line">
         {unit === 'metric'
           ? `${formatLength(size.widthFt * 0.3048, unit)} × ${formatLength(size.depthFt * 0.3048, unit)}`
           : `${size.widthFt.toFixed(1)}′ × ${size.depthFt.toFixed(1)}′`}
       </p>
+      <p className="muted">Drag blue corners on the plan to angle walls. Tap a mid-edge square to add a corner.</p>
       <LengthField
         label="Width"
         value={size.widthFt * 0.3048}
@@ -241,8 +253,19 @@ function PlanRoomProperties({ room }: { room: PlanRoomLabel }) {
         max={30}
         onChange={(meters) => resize(room.id, size.widthFt, meters / 0.3048)}
       />
+      <p className="muted">Width/Depth reset the footprint to a rectangle.</p>
       <LengthField label="Ceiling height" value={ceiling} min={2} max={6} onChange={setCeiling} />
       <div className="wall-actions">
+        <button type="button" onClick={() => insertVertex(room.id, 0)}>
+          Add corner
+        </button>
+        <button
+          type="button"
+          disabled={room.points.length <= 3}
+          onClick={() => removeVertex(room.id, room.points.length - 1)}
+        >
+          Remove corner
+        </button>
         <button type="button" onClick={() => split(room.id)}>
           Split room
         </button>
@@ -368,6 +391,9 @@ export function RoomDesigner({ compact = false, hidePlans = false }: { compact?:
 function OpeningProperties({ opening }: { opening: Opening }) {
   const update = usePlannerStore((s) => s.updateOpening);
   const remove = usePlannerStore((s) => s.deleteOpening);
+  const walls = usePlannerStore((s) => s.walls);
+  const wall = walls.find((w) => w.id === opening.wallId);
+  const distanceM = wall ? openingMetersFromOffset(opening.offset, wall) : 0;
   return (
     <>
       <h2>{opening.type[0].toUpperCase() + opening.type.slice(1)}</h2>
@@ -386,6 +412,15 @@ function OpeningProperties({ opening }: { opening: Opening }) {
         Position along wall
         <input type="range" min=".03" max=".97" step=".01" value={opening.offset} onChange={(e) => update(opening.id, { offset: +e.target.value })} />
       </label>
+      {wall && (
+        <LengthField
+          label="Distance from start"
+          value={distanceM}
+          min={0.05}
+          max={Math.max(0.1, wallLengthM(wall) - 0.05)}
+          onChange={(meters) => update(opening.id, { offset: openingOffsetFromMeters(meters, wall) })}
+        />
+      )}
       <LengthField label="Width" value={opening.width} min={0.3} onChange={(width) => update(opening.id, { width })} />
       {opening.type !== 'passage' && (
         <LengthField label="Height" value={opening.height} min={0.3} onChange={(height) => update(opening.id, { height })} />

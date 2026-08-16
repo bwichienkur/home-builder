@@ -39,13 +39,15 @@ export type FurnitureItem = {
    * Fixed architectural trim (crown / baseboard). Not freely dragged —
    * one strip per boundary wall, linked by `runId`.
    */
-  placementKind?: 'perimeter-trim';
+  placementKind?: 'perimeter-trim' | 'stair';
   /** Shared id for all segments of one Apply Trim action. */
   runId?: string;
   /** Ceiling junction vs floor junction. */
   trimEdge?: 'ceiling' | 'floor';
   /** Roll in the wall plane (wall-mounted art / shelves). */
   roll?: number;
+  /** Stair connects two floor ids when placementKind is stair. */
+  stair?: { fromFloorId: string; toFloorId: string };
 };
 export type CameraMode = 'top' | 'orbit' | 'walk';
 export type UnitSystem = 'metric' | 'imperial';

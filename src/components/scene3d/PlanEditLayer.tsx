@@ -35,8 +35,8 @@ const ATTACH_SIDES: { side: AttachSide; label: string; Icon: typeof ArrowLeft }[
 ];
 
 /**
- * Top-view plan tools: attach rooms beside a host, and room width/depth card
- * when the Walls tool is armed (no per-wall picking).
+ * Top-view plan tools: attach rooms beside a host, drag polygon corners for
+ * angled rooms, and room width/depth card when the Walls tool is armed.
  */
 export function PlanEditLayer() {
   const tool = usePlannerStore((s) => s.tool);
@@ -49,6 +49,9 @@ export function PlanEditLayer() {
   const attachPlanRoom = usePlannerStore((s) => s.attachPlanRoom);
   const resizePlanRoom = usePlannerStore((s) => s.resizePlanRoom);
   const setCeilingHeight = usePlannerStore((s) => s.setCeilingHeight);
+  const movePlanRoomVertex = usePlannerStore((s) => s.movePlanRoomVertex);
+  const commitPlanRoomVertex = usePlannerStore((s) => s.commitPlanRoomVertex);
+  const insertPlanRoomVertex = usePlannerStore((s) => s.insertPlanRoomVertex);
   const pendingRoomShape = usePlannerStore((s) => s.pendingRoomShape);
   const pendingAttachMode = usePlannerStore((s) => s.pendingAttachMode);
   const planWallTool = usePlannerStore((s) => s.planWallTool);
@@ -58,12 +61,15 @@ export function PlanEditLayer() {
   const { invalidate } = useThree();
   const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
   const roomPlace = useRef<{ pointerId: number; active: boolean } | null>(null);
+  const vertexDrag = useRef<{ roomId: string; index: number; pointerId: number } | null>(null);
+  const [vertexDragging, setVertexDragging] = useState(false);
   const floorPlane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), []);
 
   const active = studioMode === 'architect' && cameraMode === 'top';
   const placingRoom = active && (!!pendingRoomShape || tool === 'room');
   const hostRoom = planRooms.find((r) => r.id === selectedRoomId) ?? null;
   const showAttachSides = active && pendingAttachMode && !!hostRoom;
+  const showVertices = active && !!hostRoom && !placingRoom && !pendingAttachMode;
   const dimRoom = active && planWallTool && !pendingAttachMode ? hostRoom : null;
   const ceiling = walls[0]?.height ?? 2.7;
 
@@ -175,16 +181,58 @@ export function PlanEditLayer() {
     }, 40);
   };
 
+  const endVertexDrag = () => {
+    if (!vertexDrag.current) return;
+    vertexDrag.current = null;
+    setVertexDragging(false);
+    commitPlanRoomVertex();
+    delete document.body.dataset.movingFurniture;
+    window.dispatchEvent(new Event('roomcraft-drag-end'));
+    window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-fit-plan')), 40);
+  };
+
+  const onVertexPointerDown = (e: any, roomId: string, index: number) => {
+    e.stopPropagation();
+    vertexDrag.current = { roomId, index, pointerId: e.pointerId };
+    setVertexDragging(true);
+    document.body.dataset.movingFurniture = 'true';
+    window.dispatchEvent(new Event('roomcraft-drag-start'));
+    try {
+      (e.target as any).setPointerCapture?.(e.pointerId);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const onVertexPointerMove = (e: any) => {
+    const drag = vertexDrag.current;
+    if (!drag || drag.pointerId !== e.pointerId) return;
+    e.stopPropagation();
+    const pt = hitPlan(e);
+    if (!pt) return;
+    movePlanRoomVertex(drag.roomId, drag.index, pt, { live: true });
+    invalidate();
+  };
+
+  const onVertexPointerUp = (e: any) => {
+    const drag = vertexDrag.current;
+    if (!drag || drag.pointerId !== e.pointerId) return;
+    e.stopPropagation();
+    const pt = hitPlan(e);
+    if (pt) movePlanRoomVertex(drag.roomId, drag.index, pt, { live: false });
+    endVertexDrag();
+  };
+
   return (
     <group>
-      {placingRoom && (
+      {(placingRoom || vertexDragging) && (
         <mesh
           rotation={[-Math.PI / 2, 0, 0]}
           position={[0, 0.01, 0]}
-          onPointerMove={onFloorPointerMove}
-          onPointerDown={onFloorPointerDown}
-          onPointerUp={onFloorPointerUp}
-          onPointerCancel={onFloorPointerUp}
+          onPointerMove={placingRoom ? onFloorPointerMove : onVertexPointerMove}
+          onPointerDown={placingRoom ? onFloorPointerDown : undefined}
+          onPointerUp={placingRoom ? onFloorPointerUp : onVertexPointerUp}
+          onPointerCancel={placingRoom ? onFloorPointerUp : onVertexPointerUp}
         >
           <planeGeometry args={[120, 120]} />
           <meshBasicMaterial transparent opacity={0} depthWrite={false} />
@@ -233,6 +281,49 @@ export function PlanEditLayer() {
             </Html>
           </group>
         ))}
+
+      {showVertices &&
+        hostRoom!.points.map((p, i) => {
+          const pos = world(p.x, p.y);
+          return (
+            <mesh
+              key={`v-${hostRoom!.id}-${i}`}
+              position={[pos[0], 0.16, pos[1]]}
+              onPointerDown={(e) => onVertexPointerDown(e, hostRoom!.id, i)}
+              onPointerMove={onVertexPointerMove}
+              onPointerUp={onVertexPointerUp}
+              onPointerCancel={onVertexPointerUp}
+              onDoubleClick={(e) => {
+                e.stopPropagation();
+                usePlannerStore.getState().removePlanRoomVertex(hostRoom!.id, i);
+              }}
+            >
+              <sphereGeometry args={[0.12, 16, 16]} />
+              <meshBasicMaterial color="#0058a3" />
+            </mesh>
+          );
+        })}
+
+      {showVertices &&
+        hostRoom!.points.map((p, i) => {
+          const next = hostRoom!.points[(i + 1) % hostRoom!.points.length]!;
+          const mid = { x: (p.x + next.x) / 2, y: (p.y + next.y) / 2 };
+          const pos = world(mid.x, mid.y);
+          return (
+            <mesh
+              key={`e-${hostRoom!.id}-${i}`}
+              position={[pos[0], 0.14, pos[1]]}
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                insertPlanRoomVertex(hostRoom!.id, i);
+              }}
+            >
+              <boxGeometry args={[0.14, 0.04, 0.14]} />
+              <meshBasicMaterial color="#7eb6e8" />
+            </mesh>
+          );
+        })}
 
       {dimRoom && dimCard && (
         <Html position={dimCard.pos} center zIndexRange={[120, 60]} style={{ pointerEvents: 'auto' }}>
