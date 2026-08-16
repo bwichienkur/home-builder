@@ -1,8 +1,85 @@
 import { z } from 'zod';
 
-export const customFieldTypeSchema = z.enum(['text', 'number', 'bool', 'date', 'select']);
+/** Custom field types shown in Settings and forms. `select` kept for older data (= picklist). */
+export const customFieldTypeSchema = z.enum([
+  'text',
+  'number',
+  'bool',
+  'date',
+  'picklist',
+  'select',
+  'url',
+  'email',
+  'phone',
+]);
 export type CustomFieldType = z.infer<typeof customFieldTypeSchema>;
 
+export const CUSTOM_FIELD_TYPE_OPTIONS: { value: CustomFieldType; label: string }[] = [
+  { value: 'text', label: 'Text' },
+  { value: 'number', label: 'Number' },
+  { value: 'bool', label: 'Checkbox' },
+  { value: 'date', label: 'Date' },
+  { value: 'picklist', label: 'Picklist' },
+  { value: 'url', label: 'URL' },
+  { value: 'email', label: 'Email' },
+  { value: 'phone', label: 'Phone' },
+];
+
+export function customFieldTypeLabel(type: CustomFieldType | string): string {
+  if (type === 'select' || type === 'picklist') return 'Picklist';
+  const found = CUSTOM_FIELD_TYPE_OPTIONS.find((t) => t.value === type);
+  return found?.label ?? type;
+}
+
+export function isPicklistType(type: CustomFieldType | string): boolean {
+  return type === 'picklist' || type === 'select';
+}
+
+/** Best-effort type for built-in CRM columns in the Settings field list. */
+export function builtinFieldType(key: string): CustomFieldType {
+  switch (key) {
+    case 'email':
+      return 'email';
+    case 'phone':
+      return 'phone';
+    case 'website':
+    case 'sourceUrl':
+    case 'thumbnailUrl':
+    case 'textureUrl':
+    case 'modelUrl':
+    case 'lowPolyModelUrl':
+      return 'url';
+    case 'width':
+    case 'depth':
+    case 'height':
+    case 'price':
+    case 'msrp':
+    case 'cost':
+    case 'laborCost':
+    case 'leadTimeDays':
+    case 'textureRepeat':
+    case 'roughness':
+    case 'beds':
+    case 'baths':
+    case 'stories':
+    case 'livingSqFt':
+      return 'number';
+    case 'active':
+    case 'sellable':
+    case 'placeholderOnly':
+      return 'bool';
+    case 'priceVerifiedAt':
+      return 'date';
+    case 'placementMode':
+    case 'priceUnit':
+    case 'mountingType':
+    case 'unit':
+    case 'category':
+      return 'picklist';
+    default:
+      return 'text';
+  }
+}
 export const entityKindSchema = z.enum(['client', 'vendor', 'inventory']);
 export type EntityKind = z.infer<typeof entityKindSchema>;
 
