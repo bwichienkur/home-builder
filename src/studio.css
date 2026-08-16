@@ -1886,6 +1886,13 @@
   display: none;
 }
 
+@media (max-width: 900px) {
+  .studio-dock-action span,
+  .studio-dock-seg button span {
+    display: none;
+  }
+}
+
 @media (max-width: 720px) {
   .studio-bag strong {
     display: none;
