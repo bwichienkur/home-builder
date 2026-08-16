@@ -13,3 +13,7 @@ olson-data/
 .DS_Store
 *.log
 
+data/*.json
+
+# CRM file store
+data/

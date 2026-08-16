@@ -7,7 +7,8 @@ import { detectRoomPolygons } from '../lib/geometry/rooms';
 import { perimeterTrimSegments, type PerimeterTrimEdge } from '../lib/geometry/ceilingTrim';
 import { writeRecoverySnapshot } from '../lib/designShare';
 import { buildHouse, rebuildFromPlanRooms, resizePlanRoomPoints, shapedRoomPoints, snapRoomCenterToNeighbors, splitPlanRoomPoints, proposedRoomOverlaps, planRoomLabelOverlaps, attachSquareRoomPoints, attachSideBlocked, nudgePlanRoomsByWall, planRoomsCenterFt, type PlanRoomShape, type AttachSide } from '../lib/housePlans/buildPlan';
-import { getHousePlan } from '../lib/housePlans/olsenPlans';
+import type { HousePlan } from '../lib/housePlans/buildPlan';
+import { getHousePlan } from '../lib/housePlans/planRegistry';
 import { remapFurnitureAfterPlanRebuild } from '../lib/geometry/planFurnitureRemap';
 import { pointInPlanRoom, wallEndpointForGrowSide, type WallGrowSide } from '../lib/geometry/roomWalls';
 import { PIXELS_PER_METER } from '../lib/geometry/snapping';
@@ -108,6 +109,7 @@ type PlannerState = SceneSnapshot & {
   setCeilingHeight: (meters: number) => void;
   applyRoomTemplate: (shape: 'rectangle' | 'wide' | 'l-shape') => void;
   applyHousePlan: (planId: string) => boolean;
+  applyHousePlanObject: (plan: HousePlan) => boolean;
   housePlanId: string | null;
   housePlanName: string | null;
   planRooms: PlanRoomLabel[];
@@ -599,6 +601,9 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     applyHousePlan: (planId) => {
       const plan = getHousePlan(planId);
       if (!plan) return false;
+      return get().applyHousePlanObject(plan);
+    },
+    applyHousePlanObject: (plan) => {
       const built = buildHouse(plan);
       const floors: FloorRecord[] = built.floors.map((f) => ({
         id: f.id,
