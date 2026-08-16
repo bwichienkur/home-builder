@@ -1859,13 +1859,14 @@ function Room() {
   );
 }
 
-/** Flat or gable roof over the plan envelope + site setback guides. */
+/** Optional roof + outdoor patio + site setback guides (roof off by default). */
 function RoofAndSite() {
   const walls = usePlannerStore((s) => s.walls);
   const planRooms = usePlannerStore((s) => s.planRooms);
   const roofStyle = usePlannerStore((s) => s.roofStyle);
   const siteSetback = usePlannerStore((s) => s.siteSetback);
   const cameraMode = usePlannerStore((s) => s.cameraMode);
+  const studioMode = usePlannerStore((s) => s.studioMode);
   const height = walls[0]?.height ?? 2.7;
 
   const envelope = useMemo(() => {
@@ -1885,12 +1886,20 @@ function RoofAndSite() {
   }, [walls, planRooms]);
 
   if (!envelope) return null;
-  const w = envelope.maxX - envelope.minX;
-  const d = envelope.maxZ - envelope.minZ;
+  const w = Math.max(0.5, envelope.maxX - envelope.minX);
+  const d = Math.max(0.5, envelope.maxZ - envelope.minZ);
   const cx = (envelope.minX + envelope.maxX) / 2;
   const cz = (envelope.minZ + envelope.maxZ) / 2;
 
   const outdoorRooms = planRooms.filter((r) => r.roomType === 'Outdoor');
+  // Only show roofs in exterior orbit — never while walking inside or on top plan.
+  const showRoof = roofStyle !== 'none' && cameraMode === 'orbit';
+  const showSetback = cameraMode === 'top' && studioMode === 'architect';
+  const rise = Math.min(1.1, Math.max(0.4, Math.min(w, d) * 0.2));
+  const ridgeAlongZ = w >= d;
+  const halfSpan = (ridgeAlongZ ? w : d) / 2;
+  const slopeLen = Math.hypot(halfSpan, rise);
+  const pitch = Math.atan2(rise, halfSpan);
 
   return (
     <group>
@@ -1903,38 +1912,54 @@ function RoofAndSite() {
           </mesh>
         );
       })}
-      {roofStyle !== 'none' && cameraMode !== 'top' && (
-        <group position={[cx, height + 0.05, cz]}>
+      {showRoof && (
+        <group position={[cx, height + 0.02, cz]}>
           {roofStyle === 'flat' ? (
-            <mesh position={[0, 0.08, 0]} castShadow>
-              <boxGeometry args={[w + 0.4, 0.12, d + 0.4]} />
+            <mesh position={[0, 0.06, 0]} castShadow>
+              <boxGeometry args={[w + 0.35, 0.1, d + 0.35]} />
               <meshStandardMaterial color="#6b7280" roughness={0.85} />
             </mesh>
+          ) : ridgeAlongZ ? (
+            <>
+              <mesh position={[-halfSpan / 2, rise / 2, 0]} rotation={[0, 0, pitch]} castShadow>
+                <boxGeometry args={[slopeLen, 0.05, d + 0.3]} />
+                <meshStandardMaterial color="#7c8491" roughness={0.82} side={THREE.DoubleSide} />
+              </mesh>
+              <mesh position={[halfSpan / 2, rise / 2, 0]} rotation={[0, 0, -pitch]} castShadow>
+                <boxGeometry args={[slopeLen, 0.05, d + 0.3]} />
+                <meshStandardMaterial color="#7c8491" roughness={0.82} side={THREE.DoubleSide} />
+              </mesh>
+            </>
           ) : (
             <>
-              <mesh position={[0, 0.55, 0]} rotation={[0, 0, Math.atan2(0.9, w / 2)]} castShadow>
-                <boxGeometry args={[Math.hypot(w / 2, 0.9) * 2, 0.08, d + 0.35]} />
-                <meshStandardMaterial color="#7c8491" roughness={0.8} side={THREE.DoubleSide} />
+              <mesh position={[0, rise / 2, -halfSpan / 2]} rotation={[-pitch, 0, 0]} castShadow>
+                <boxGeometry args={[w + 0.3, 0.05, slopeLen]} />
+                <meshStandardMaterial color="#7c8491" roughness={0.82} side={THREE.DoubleSide} />
+              </mesh>
+              <mesh position={[0, rise / 2, halfSpan / 2]} rotation={[pitch, 0, 0]} castShadow>
+                <boxGeometry args={[w + 0.3, 0.05, slopeLen]} />
+                <meshStandardMaterial color="#7c8491" roughness={0.82} side={THREE.DoubleSide} />
               </mesh>
             </>
           )}
         </group>
       )}
-      {/* Site setback rectangle */}
-      <Line
-        points={[
-          [envelope.minX - siteSetback.sideM, 0.02, envelope.minZ - siteSetback.frontM],
-          [envelope.maxX + siteSetback.sideM, 0.02, envelope.minZ - siteSetback.frontM],
-          [envelope.maxX + siteSetback.sideM, 0.02, envelope.maxZ + siteSetback.rearM],
-          [envelope.minX - siteSetback.sideM, 0.02, envelope.maxZ + siteSetback.rearM],
-          [envelope.minX - siteSetback.sideM, 0.02, envelope.minZ - siteSetback.frontM],
-        ]}
-        color="#9aa3ad"
-        dashed
-        dashSize={0.25}
-        gapSize={0.15}
-        lineWidth={1}
-      />
+      {showSetback && (
+        <Line
+          points={[
+            [envelope.minX - siteSetback.sideM, 0.02, envelope.minZ - siteSetback.frontM],
+            [envelope.maxX + siteSetback.sideM, 0.02, envelope.minZ - siteSetback.frontM],
+            [envelope.maxX + siteSetback.sideM, 0.02, envelope.maxZ + siteSetback.rearM],
+            [envelope.minX - siteSetback.sideM, 0.02, envelope.maxZ + siteSetback.rearM],
+            [envelope.minX - siteSetback.sideM, 0.02, envelope.minZ - siteSetback.frontM],
+          ]}
+          color="#9aa3ad"
+          dashed
+          dashSize={0.25}
+          gapSize={0.15}
+          lineWidth={1}
+        />
+      )}
     </group>
   );
 }
