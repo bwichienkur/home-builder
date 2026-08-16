@@ -5,6 +5,7 @@ import {
   ArrowUpDown,
   Bath,
   BedDouble,
+  Box,
   Check,
   ChevronDown,
   ChevronUp,
@@ -18,6 +19,7 @@ import {
   Lamp,
   Layers3,
   Menu,
+  PanelTop,
   Plus,
   Redo2,
   RotateCw,
@@ -95,6 +97,7 @@ export function StudioChrome({
 }: Props) {
   const [storiesOpen, setStoriesOpen] = useState(false);
   const [fabsOpen, setFabsOpen] = useState(true);
+  const [takeoffOpen, setTakeoffOpen] = useState(false);
   const camera = usePlannerStore((s) => s.cameraMode);
   const rotateViewYaw = usePlannerStore((s) => s.rotateViewYaw);
   const setView = usePlannerStore((s) => s.setView);
@@ -434,28 +437,45 @@ export function StudioChrome({
               {itemCount}
             </span>
             <strong>
-              ${total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              $
+              {total >= 1000
+                ? `${(total / 1000).toFixed(total >= 10000 ? 0 : 1)}k`
+                : total.toLocaleString(undefined, { maximumFractionDigits: 0 })}
             </strong>
             <ArrowRight />
           </button>
         </div>
 
         {!atStart && walls.length > 0 && (
-          <div className="studio-takeoff-strip" aria-label="Construction takeoff">
-            <span title="Floor area">{formatArea(takeoff.floorAreaM2, unitSystem)}</span>
-            <span title="Wall length">{formatLength(takeoff.wallLengthM, unitSystem)} walls</span>
-            {takeoff.exteriorWallLengthM > 0 && (
-              <span title="Exterior wall length">{formatLength(takeoff.exteriorWallLengthM, unitSystem)} ext</span>
-            )}
-            <span title="Drywall both faces (net)">
-              {formatArea(takeoff.drywallAreaM2, unitSystem)} drywall
-            </span>
-            <span title="Studs at 16 in OC">{takeoff.studCount} studs</span>
-            <span title="Doors / windows / openings">
-              {takeoff.doorCount} dr · {takeoff.windowCount} win
-              {takeoff.passageCount ? ` · ${takeoff.passageCount} open` : ''}
-            </span>
-            {takeoff.stairCount > 0 && <span>{takeoff.stairCount} stair</span>}
+          <div className={`studio-takeoff-strip${takeoffOpen ? ' is-open' : ''}`} aria-label="Construction takeoff">
+            <button
+              type="button"
+              className="studio-takeoff-toggle"
+              aria-expanded={takeoffOpen}
+              onClick={() => setTakeoffOpen((v) => !v)}
+              title="Construction takeoff"
+            >
+              {formatArea(takeoff.floorAreaM2, unitSystem)}
+              <span aria-hidden>·</span>
+              {takeoff.doorCount}d/{takeoff.windowCount}w
+              <ChevronDown size={14} />
+            </button>
+            <div className="studio-takeoff-details">
+              <span title="Floor area">{formatArea(takeoff.floorAreaM2, unitSystem)}</span>
+              <span title="Wall length">{formatLength(takeoff.wallLengthM, unitSystem)} walls</span>
+              {takeoff.exteriorWallLengthM > 0 && (
+                <span title="Exterior wall length">{formatLength(takeoff.exteriorWallLengthM, unitSystem)} ext</span>
+              )}
+              <span title="Drywall both faces (net)">
+                {formatArea(takeoff.drywallAreaM2, unitSystem)} drywall
+              </span>
+              <span title="Studs at 16 in OC">{takeoff.studCount} studs</span>
+              <span title="Doors / windows / openings">
+                {takeoff.doorCount} dr · {takeoff.windowCount} win
+                {takeoff.passageCount ? ` · ${takeoff.passageCount} open` : ''}
+              </span>
+              {takeoff.stairCount > 0 && <span>{takeoff.stairCount} stair</span>}
+            </div>
           </div>
         )}
 
@@ -506,7 +526,7 @@ export function StudioChrome({
                     window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 40);
                   }}
                 >
-                  <Layers3 size={14} />
+                  <Layers3 size={16} />
                 </button>
                 <button
                   type="button"
@@ -526,7 +546,7 @@ export function StudioChrome({
                     }, 80);
                   }}
                 >
-                  <ArrowUpDown size={14} />
+                  <ArrowUpDown size={16} />
                 </button>
                 <button
                   type="button"
@@ -535,7 +555,7 @@ export function StudioChrome({
                   title="Delete current floor"
                   onClick={() => removeFloor(activeFloorId)}
                 >
-                  <Trash2 size={14} />
+                  <Trash2 size={16} />
                 </button>
                 <button type="button" className="studio-floor-all" onClick={() => setStoriesOpen(true)} title="View all floors">
                   All
@@ -680,22 +700,16 @@ export function StudioChrome({
                 <span>Plan</span>
               </button>
               <button type="button" className={!isTop && camera === 'orbit' ? 'is-active' : ''} onClick={() => choose3d('orbit')} title="3D view">
-                <Layers3 size={16} />
+                <Box size={16} />
                 <span>3D</span>
               </button>
             </div>
-            {onOpenElevations && !atStart && (
-              <button type="button" className="studio-dock-action" onClick={onOpenElevations} title="Elevation preview" disabled={walls.length === 0}>
-                <FileSpreadsheet size={15} />
-                <span>Elev</span>
-              </button>
-            )}
-            {atPlanLevel && isTop && !pending && (
+            {atPlanLevel && !pending && (
               <>
                 <button
                   type="button"
-                  className={`studio-dock-action${tool === 'door' ? ' is-active' : ''}`}
-                  title="Place door — click a wall"
+                  className={`studio-dock-action studio-dock-priority${tool === 'door' ? ' is-active' : ''}`}
+                  title="Place door — switches to plan, then tap a wall"
                   aria-pressed={tool === 'door'}
                   onClick={() => {
                     setTool(tool === 'door' ? 'select' : 'door');
@@ -707,33 +721,20 @@ export function StudioChrome({
                 </button>
                 <button
                   type="button"
-                  className={`studio-dock-action${tool === 'window' ? ' is-active' : ''}`}
-                  title="Place window — click a wall"
+                  className={`studio-dock-action studio-dock-priority${tool === 'window' ? ' is-active' : ''}`}
+                  title="Place window — switches to plan, then tap a wall"
                   aria-pressed={tool === 'window'}
                   onClick={() => {
                     setTool(tool === 'window' ? 'select' : 'window');
                     setCamera('top');
                   }}
                 >
-                  <Square size={15} />
+                  <PanelTop size={15} />
                   <span>Win</span>
                 </button>
                 <button
                   type="button"
-                  className="studio-dock-action"
-                  title="Add plan note"
-                  onClick={() => {
-                    addAnnotation('note', roomFloorCenterHint.x, roomFloorCenterHint.z, 'Note');
-                    window.dispatchEvent(new Event('roomcraft-open-properties'));
-                  }}
-                >
-                  <StickyNote size={15} />
-                  <span>Note</span>
-                </button>
-                <LayersMenu />
-                <button
-                  type="button"
-                  className={`studio-dock-action${pendingAttachMode ? ' is-active' : ''}`}
+                  className={`studio-dock-action studio-dock-priority${pendingAttachMode ? ' is-active' : ''}`}
                   onClick={startAddRoom}
                   aria-pressed={pendingAttachMode}
                   title="Add room"
@@ -743,11 +744,32 @@ export function StudioChrome({
                 </button>
               </>
             )}
-            {!(atPlanLevel && isTop && !pending) && !atStart && <LayersMenu />}
-            <button type="button" className="studio-dock-action" onClick={refocus} title="Fit in view">
+            <button type="button" className="studio-dock-action studio-dock-priority" onClick={refocus} title="Fit in view">
               <Focus size={15} />
               <span>Fit</span>
             </button>
+            {onOpenElevations && !atStart && (
+              <button type="button" className="studio-dock-action" onClick={onOpenElevations} title="Elevation preview" disabled={walls.length === 0}>
+                <FileSpreadsheet size={15} />
+                <span>Elev</span>
+              </button>
+            )}
+            {atPlanLevel && !pending && (
+              <button
+                type="button"
+                className="studio-dock-action"
+                title="Add plan note"
+                onClick={() => {
+                  setCamera('top');
+                  addAnnotation('note', roomFloorCenterHint.x, roomFloorCenterHint.z, 'Note');
+                  window.dispatchEvent(new Event('roomcraft-open-properties'));
+                }}
+              >
+                <StickyNote size={15} />
+                <span>Note</span>
+              </button>
+            )}
+            {!atStart && <LayersMenu />}
             <button type="button" className="studio-dock-action" onClick={rotateView} title="Rotate view 90°">
               <RotateCw size={15} />
               <span>Rotate</span>

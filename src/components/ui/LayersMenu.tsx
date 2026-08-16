@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Layers3, X } from 'lucide-react';
+import { Blend, X } from 'lucide-react';
 import { usePlannerStore } from '../../store/plannerStore';
 import type { LayerVisibility } from '../../types';
 
@@ -22,7 +22,7 @@ export function LayersMenu() {
   const activeCount = useMemo(() => Object.values(layers).filter(Boolean).length, [layers]);
 
   return (
-    <div className="layers-menu-root">
+    <div className={`layers-menu-root${open ? ' is-open' : ''}`}>
       <button
         type="button"
         className={`studio-dock-action${open ? ' is-active' : ''}`}
@@ -30,7 +30,7 @@ export function LayersMenu() {
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
       >
-        <Layers3 size={15} />
+        <Blend size={15} />
         <span>Layers</span>
       </button>
       {open && (

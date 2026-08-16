@@ -537,7 +537,12 @@ export default function StudioApp() {
     <div className="studio-root">
       {!platformConfig.cloudConfigured() && workflowStage !== 'start' && (
         <div className="studio-local-save-banner" role="status">
-          Saves stay in this browser until <code>VITE_API_URL</code> is set. Link a client before handing off jobs.
+          <span className="studio-local-save-full">
+            Saves stay in this browser until <code>VITE_API_URL</code> is set. Link a client before handing off jobs.
+          </span>
+          <span className="studio-local-save-short">
+            Saves are local on this device until cloud API is connected.
+          </span>
         </div>
       )}
     <main className={shellClass}>
@@ -618,7 +623,7 @@ export default function StudioApp() {
           <button type="button" className="menu-backdrop" aria-label="Close menu" onClick={closeProjectMenu} />
           <aside className="studio-menu-sheet studio-menu-drawer" role="dialog" aria-label="Project menu">
           <header>
-            <button className="project-name" onClick={rename}>
+            <button className="project-name" onClick={rename} title="Rename project">
               {projectName} <ChevronDown size={15} />
             </button>
             <button type="button" className="menu-close" onClick={closeProjectMenu} aria-label="Close menu">
@@ -642,18 +647,20 @@ export default function StudioApp() {
             </button>
           </div>
 
-          <div className="menu-export-actions">
+          <details className="menu-export-fold">
+            <summary>Export drawings & estimate</summary>
+            <div className="menu-export-actions">
             <button type="button" className="menu-secondary" onClick={() => exportFloorPlan('pdf')} disabled={walls.length === 0}>
-              <Download size={16} /> Export construction set PDF
+              <Download size={16} /> Construction set PDF
             </button>
             <button type="button" className="menu-secondary" onClick={() => exportFloorPlan('png')} disabled={walls.length === 0}>
-              <Download size={16} /> Export plan sheet PNG
+              <Download size={16} /> Plan sheet PNG
             </button>
             <button type="button" className="menu-secondary" onClick={() => exportFloorPlan('dxf')} disabled={walls.length === 0}>
-              <FileJson size={16} /> Export CAD DXF
+              <FileJson size={16} /> CAD DXF
             </button>
             <button type="button" className="menu-secondary" onClick={() => exportFloorPlan('ifc')} disabled={walls.length === 0}>
-              <FileJson size={16} /> Export IFC4
+              <FileJson size={16} /> IFC4
             </button>
             <button
               type="button"
@@ -703,7 +710,7 @@ export default function StudioApp() {
                 notify('Bid proposal PDF exported');
               }}
             >
-              <ReceiptText size={16} /> Export bid proposal PDF
+              <ReceiptText size={16} /> Bid proposal PDF
             </button>
             <button
               type="button"
@@ -735,9 +742,10 @@ export default function StudioApp() {
                 notify(store.floors.length > 1 ? 'Whole-house takeoff CSV exported' : 'Construction takeoff CSV exported');
               }}
             >
-              <ReceiptText size={16} /> Export takeoff CSV
+              <ReceiptText size={16} /> Takeoff CSV
             </button>
-          </div>
+            </div>
+          </details>
 
           <label className="menu-client-link">
             Linked client
