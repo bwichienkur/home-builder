@@ -38,7 +38,7 @@ import { usePlannerStore } from '../../store/plannerStore';
 import type { RoomType } from '../../types';
 import { WORLD_ORIGIN } from '../../lib/geometry/placement';
 import { PIXELS_PER_METER } from '../../lib/geometry/snapping';
-import { computeConstructionTakeoff } from '../../lib/constructionTakeoff';
+import { computeConstructionTakeoff, mergeConstructionTakeoffs } from '../../lib/constructionTakeoff';
 import { formatArea, formatLength } from '../../lib/measurements';
 import { LayersMenu } from './LayersMenu';
 import { StoryOverview } from './StoryOverview';
@@ -140,10 +140,17 @@ export function StudioChrome({
   const selectedFurniture = furniture.find((f) => f.id === selectedItem);
   const isTrimSelected = selectedFurniture?.placementKind === 'perimeter-trim';
 
-  const takeoff = useMemo(
-    () => computeConstructionTakeoff({ walls, openings, furniture }),
-    [walls, openings, furniture],
-  );
+  const takeoff = useMemo(() => {
+    const parts = floors.map((f) => {
+      const live = f.id === activeFloorId;
+      return computeConstructionTakeoff({
+        walls: live ? walls : f.scene.walls,
+        openings: live ? openings : f.scene.openings,
+        furniture: live ? furniture : f.scene.furniture,
+      });
+    });
+    return mergeConstructionTakeoffs(parts);
+  }, [floors, activeFloorId, walls, openings, furniture]);
   const addAnnotation = usePlannerStore((s) => s.addAnnotation);
   const roomFloorCenterHint = useMemo(() => {
     if (!walls.length) return { x: 0, z: 0 };
@@ -627,8 +634,8 @@ export function StudioChrome({
             type="button"
             className={planWallTool ? 'is-active' : ''}
             onClick={() => setPlanWallTool(!planWallTool)}
-            aria-label="Wall dims — select a room wall to edit length"
-            title="Wall dims — select a room wall to edit length"
+            aria-label="Wall dims — drag edge handles or edit W/D/H"
+            title="Wall dims — drag edge handles or edit W/D/H"
             aria-pressed={planWallTool}
           >
             <Square />

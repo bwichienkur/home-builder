@@ -92,6 +92,7 @@ describe('CAD DXF export', () => {
     });
     expect(dxf).toContain('$INSUNITS');
     expect(dxf).toContain('WALLS');
+    expect(dxf).toContain('A-WALL-INT');
     expect(dxf).toContain('ROOMS');
     expect(dxf).toContain('OPENINGS');
     expect(dxf).toContain('DIMS');

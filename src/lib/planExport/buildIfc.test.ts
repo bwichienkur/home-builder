@@ -40,7 +40,24 @@ describe('IFC export', () => {
     expect(ifc).toContain('IFCWALLSTANDARDCASE');
     expect(ifc).toContain('IFCOPENINGELEMENT');
     expect(ifc).toContain('IFCSPACE');
+    expect(ifc).toContain('IFCARBITRARYCLOSEDPROFILEDEF');
     expect(ifc).toContain('Living');
+  });
+
+  it('stacks storeys by elevation', () => {
+    const ifc = buildPlanIfc({
+      name: 'Multi',
+      walls,
+      openings,
+      planRooms: rooms,
+      floors: [
+        { floorName: 'Level 1', walls, openings, planRooms: rooms, elevationM: 0 },
+        { floorName: 'Level 2', walls, openings, planRooms: rooms, elevationM: 2.7 },
+      ],
+    });
+    expect(ifc).toContain('Level 1');
+    expect(ifc).toContain('Level 2');
+    expect(ifc).toContain('2.7000');
   });
 
   it('inspects exported IFC text', () => {

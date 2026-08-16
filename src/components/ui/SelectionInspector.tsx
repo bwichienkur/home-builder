@@ -668,7 +668,10 @@ function WallProperties({ wall }: { wall: Wall }) {
         <button type="button" onClick={() => split(wall.id)}>Split wall</button>
         <button type="button" onClick={() => offset(wall.id, 0.25)}>Move +{unit === 'metric' ? '25 cm' : '10 in'}</button>
       </div>
-      <p className="muted">Drag a wall on the plan to reshape the room, or type an exact length above.</p>
+      <p className="muted">
+        With the Walls tool on, drag an edge handle on the plan to push/pull that wall — or type an exact length above /
+        use Move ±.
+      </p>
       <span className="template-label">Connect rooms</span>
       <div className="wall-actions">
         <button type="button" onClick={() => addOpening(wall.id, 'door')}>
