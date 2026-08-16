@@ -149,8 +149,23 @@ export function buildPlanIfc(input: IfcExportInput): string {
 
     for (const room of level.planRooms) {
       if (room.points.length < 3) continue;
+      const height =
+        level.walls.find((w) => w.height > 0)?.height ??
+        level.walls[0]?.height ??
+        2.7;
+      const polyPts = room.points.map((p) => {
+        const m = toM(p);
+        return add(`IFCCARTESIANPOINT((${m.x.toFixed(4)},${m.y.toFixed(4)}))`);
+      });
+      // Close the polyline for IFCARBITRARYCLOSEDPROFILEDEF.
+      const loopIds = [...polyPts, polyPts[0]!];
+      const poly = add(`IFCPOLYLINE((${loopIds.map((i) => `#${i}`).join(',')}))`);
+      const profile = add(`IFCARBITRARYCLOSEDPROFILEDEF(.AREA.,$,#${poly})`);
+      const solid = add(`IFCEXTRUDEDAREASOLID(#${profile},#${worldAxis},#${dirZ},${height.toFixed(4)})`);
+      const shape = add(`IFCSHAPEREPRESENTATION(#${bodyCtx},'Body','SweptSolid',(#${solid}))`);
+      const rep = add(`IFCPRODUCTDEFINITIONSHAPE($,$,(#${shape}))`);
       const spaceId = add(
-        `IFCSPACE('${gid()}',#${owner},'${esc(room.name)}',$,$,#${elevPlace},$,$,.ELEMENT.,.INTERNAL.,$)`,
+        `IFCSPACE('${gid()}',#${owner},'${esc(room.name)}',$,$,#${elevPlace},#${rep},$,.ELEMENT.,.INTERNAL.,$)`,
       );
       contained.push(spaceId);
     }

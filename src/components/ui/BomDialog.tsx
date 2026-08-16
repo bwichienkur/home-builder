@@ -3,21 +3,12 @@ import { useMemo, useState } from 'react';
 import type { CatalogItem } from '../catalog/catalogData';
 import type { FurnitureItem, Opening, PlanRoomLabel, UnitSystem, Wall } from '../../types';
 import { roomArea } from '../../lib/geometry/rooms';
-import { computeConstructionTakeoff } from '../../lib/constructionTakeoff';
+import { computeConstructionTakeoff, mergeConstructionTakeoffs } from '../../lib/constructionTakeoff';
 import { usePlannerStore } from '../../store/plannerStore';
+import { useTradeRatesStore } from '../../store/tradeRatesStore';
 
 const M_TO_FT = 1 / 0.3048;
 const M2_TO_SQFT = M_TO_FT * M_TO_FT;
-
-/** Soft allowance rates ($ / unit) for construction estimate lines when no catalog cost exists. */
-const ALLOWANCE = {
-  drywallPerSf: 1.85,
-  paintPerSf: 0.85,
-  studEach: 4.5,
-  sheathingPerSf: 1.35,
-  baseboardPerFt: 2.75,
-  laborPctOfMaterial: 0.55,
-};
 
 function lineQty(item: FurnitureItem, product?: CatalogItem) {
   if (product?.priceUnit === 'linear ft' || item.placementKind === 'perimeter-trim') {
@@ -74,10 +65,14 @@ export function BomDialog({
   const removeManualBomLine = usePlannerStore((s) => s.removeManualBomLine);
   const clearFloorFinish = usePlannerStore((s) => s.clearFloorFinish);
   const selectedRoomId = usePlannerStore((s) => s.selectedRoomId);
+  const floors = usePlannerStore((s) => s.floors);
+  const activeFloorId = usePlannerStore((s) => s.activeFloorId);
+  const rates = useTradeRatesStore();
   const [tab, setTab] = useState<Tab>('ffe');
   const [manualName, setManualName] = useState('');
   const [manualQty, setManualQty] = useState('1');
   const [manualPrice, setManualPrice] = useState('');
+  const [ratesOpen, setRatesOpen] = useState(false);
 
   const productRows: BomRow[] = Object.values(
     items
@@ -148,17 +143,26 @@ export function BomDialog({
     kind: 'manual',
   }));
 
-  const takeoff = useMemo(
-    () => computeConstructionTakeoff({ walls, openings, furniture: items }),
-    [walls, openings, items],
-  );
+  const takeoff = useMemo(() => {
+    const parts = floors.map((f) => {
+      const live = f.id === activeFloorId;
+      return computeConstructionTakeoff({
+        walls: live ? walls : f.scene.walls,
+        openings: live ? openings : f.scene.openings,
+        furniture: live ? items : f.scene.furniture,
+      });
+    });
+    return mergeConstructionTakeoffs(parts);
+  }, [floors, activeFloorId, walls, openings, items]);
 
+  const floorCount = floors.length;
   const imperial = unitSystem === 'imperial';
   const toSf = (m2: number) => (imperial ? m2 / 0.09290304 : m2);
   const toFt = (m: number) => (imperial ? m / 0.3048 : m);
   const areaUnit = imperial ? 'sq ft' : 'm2';
   const lenUnit = imperial ? 'linear ft' : 'm';
   const waste = 1 + takeoff.wasteFactor;
+  const laborPct = rates.laborPctOfMaterial;
 
   const constructionRows: BomRow[] = (
     [
@@ -168,8 +172,8 @@ export function BomDialog({
         category: 'Construction',
         qty: toSf(takeoff.drywallAreaM2) * waste,
         unit: areaUnit,
-        cost: ALLOWANCE.drywallPerSf,
-        laborCost: ALLOWANCE.drywallPerSf * ALLOWANCE.laborPctOfMaterial * toSf(takeoff.drywallAreaM2) * waste,
+        cost: rates.drywallPerSf,
+        laborCost: rates.drywallPerSf * laborPct * toSf(takeoff.drywallAreaM2) * waste,
         removable: false,
         kind: 'construction' as const,
       },
@@ -179,8 +183,8 @@ export function BomDialog({
         category: 'Construction',
         qty: toSf(takeoff.paintAreaM2) * waste,
         unit: areaUnit,
-        cost: ALLOWANCE.paintPerSf,
-        laborCost: ALLOWANCE.paintPerSf * ALLOWANCE.laborPctOfMaterial * toSf(takeoff.paintAreaM2) * waste,
+        cost: rates.paintPerSf,
+        laborCost: rates.paintPerSf * laborPct * toSf(takeoff.paintAreaM2) * waste,
         removable: false,
         kind: 'construction' as const,
       },
@@ -190,8 +194,8 @@ export function BomDialog({
         category: 'Construction',
         qty: takeoff.studCount,
         unit: 'each',
-        cost: ALLOWANCE.studEach,
-        laborCost: ALLOWANCE.studEach * ALLOWANCE.laborPctOfMaterial * takeoff.studCount,
+        cost: rates.studEach,
+        laborCost: rates.studEach * laborPct * takeoff.studCount,
         removable: false,
         kind: 'construction' as const,
       },
@@ -201,8 +205,8 @@ export function BomDialog({
         category: 'Construction',
         qty: toSf(takeoff.exteriorSheathingAreaM2) * waste,
         unit: areaUnit,
-        cost: ALLOWANCE.sheathingPerSf,
-        laborCost: ALLOWANCE.sheathingPerSf * ALLOWANCE.laborPctOfMaterial * toSf(takeoff.exteriorSheathingAreaM2) * waste,
+        cost: rates.sheathingPerSf,
+        laborCost: rates.sheathingPerSf * laborPct * toSf(takeoff.exteriorSheathingAreaM2) * waste,
         removable: false,
         kind: 'construction' as const,
       },
@@ -212,8 +216,8 @@ export function BomDialog({
         category: 'Construction',
         qty: toFt(takeoff.baseboardLengthM),
         unit: lenUnit,
-        cost: ALLOWANCE.baseboardPerFt,
-        laborCost: ALLOWANCE.baseboardPerFt * ALLOWANCE.laborPctOfMaterial * toFt(takeoff.baseboardLengthM),
+        cost: rates.baseboardPerFt,
+        laborCost: rates.baseboardPerFt * laborPct * toFt(takeoff.baseboardLengthM),
         removable: false,
         kind: 'construction' as const,
       },
@@ -356,8 +360,44 @@ export function BomDialog({
         )}
         {tab === 'estimate' && (
           <div className="inventory-warning">
-            Construction lines use geometric takeoff + soft allowance rates. Replace with your cost book before bidding.
-            Tax, permits, and markup are not included.
+            Construction takeoff is whole-house ({floorCount} floor{floorCount === 1 ? '' : 's'}) using your trade rate
+            book. Tax, permits, and markup are not included — edit rates before bidding.
+          </div>
+        )}
+
+        {tab === 'estimate' && (
+          <div className="bom-rate-book">
+            <button type="button" className="bom-rate-toggle" onClick={() => setRatesOpen((v) => !v)}>
+              {ratesOpen ? 'Hide trade rates' : 'Edit trade rates'}
+            </button>
+            {ratesOpen && (
+              <div className="bom-rate-grid">
+                {(
+                  [
+                    ['drywallPerSf', 'Drywall $/SF'],
+                    ['paintPerSf', 'Paint $/SF'],
+                    ['studEach', 'Stud $'],
+                    ['sheathingPerSf', 'Sheathing $/SF'],
+                    ['baseboardPerFt', 'Baseboard $/LF'],
+                    ['laborPctOfMaterial', 'Labor × material'],
+                  ] as const
+                ).map(([key, label]) => (
+                  <label key={key}>
+                    {label}
+                    <input
+                      type="number"
+                      min={0}
+                      step="any"
+                      value={rates[key]}
+                      onChange={(e) => rates.setRate(key, Number(e.target.value))}
+                    />
+                  </label>
+                ))}
+                <button type="button" className="bom-rate-reset" onClick={() => rates.resetRates()}>
+                  Reset defaults
+                </button>
+              </div>
+            )}
           </div>
         )}
 

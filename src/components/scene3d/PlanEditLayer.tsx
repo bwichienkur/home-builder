@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import * as THREE from 'three';
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp } from 'lucide-react';
 import { WORLD_ORIGIN } from '../../lib/geometry/placement';
+import { enclosureWallsForRoom } from '../../lib/geometry/roomWalls';
 import {
   attachSideBlocked,
   attachSquareRoomPoints,
@@ -36,7 +37,8 @@ const ATTACH_SIDES: { side: AttachSide; label: string; Icon: typeof ArrowLeft }[
 
 /**
  * Top-view plan tools: attach rooms beside a host, drag polygon corners for
- * angled rooms, and room width/depth card when the Walls tool is armed.
+ * angled rooms, push/pull walls via edge handles when Walls tool is armed,
+ * and room width/depth card for numeric dims.
  */
 export function PlanEditLayer() {
   const tool = usePlannerStore((s) => s.tool);
@@ -52,6 +54,9 @@ export function PlanEditLayer() {
   const movePlanRoomVertex = usePlannerStore((s) => s.movePlanRoomVertex);
   const commitPlanRoomVertex = usePlannerStore((s) => s.commitPlanRoomVertex);
   const insertPlanRoomVertex = usePlannerStore((s) => s.insertPlanRoomVertex);
+  const nudgeWall = usePlannerStore((s) => s.nudgeWall);
+  const commitWallNudge = usePlannerStore((s) => s.commitWallNudge);
+  const selectWall = usePlannerStore((s) => s.selectWall);
   const pendingRoomShape = usePlannerStore((s) => s.pendingRoomShape);
   const pendingAttachMode = usePlannerStore((s) => s.pendingAttachMode);
   const planWallTool = usePlannerStore((s) => s.planWallTool);
@@ -62,16 +67,36 @@ export function PlanEditLayer() {
   const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
   const roomPlace = useRef<{ pointerId: number; active: boolean } | null>(null);
   const vertexDrag = useRef<{ roomId: string; index: number; pointerId: number } | null>(null);
+  const wallDrag = useRef<{ wallId: string; pointerId: number; lastX: number; lastZ: number } | null>(null);
   const [vertexDragging, setVertexDragging] = useState(false);
+  const [wallDragging, setWallDragging] = useState(false);
   const floorPlane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), []);
 
   const active = studioMode === 'architect' && cameraMode === 'top';
   const placingRoom = active && (!!pendingRoomShape || tool === 'room');
   const hostRoom = planRooms.find((r) => r.id === selectedRoomId) ?? null;
   const showAttachSides = active && pendingAttachMode && !!hostRoom;
-  const showVertices = active && !!hostRoom && !placingRoom && !pendingAttachMode;
+  const showVertices = active && !!hostRoom && !placingRoom && !pendingAttachMode && !planWallTool;
+  const showWallHandles = active && planWallTool && !!hostRoom && !placingRoom && !pendingAttachMode;
   const dimRoom = active && planWallTool && !pendingAttachMode ? hostRoom : null;
   const ceiling = walls[0]?.height ?? 2.7;
+
+  const wallHandles = useMemo(() => {
+    if (!hostRoom || !showWallHandles) return [];
+    const enclosure = enclosureWallsForRoom(hostRoom, walls, ceiling);
+    const liveIds = new Set(walls.map((w) => w.id));
+    return enclosure
+      .map((edge, i) => {
+        if (!liveIds.has(edge.id)) return null;
+        const mid = {
+          x: (edge.start.x + edge.end.x) / 2,
+          y: (edge.start.y + edge.end.y) / 2,
+        };
+        const pos = world(mid.x, mid.y);
+        return { wallId: edge.id, edgeIndex: i, pos };
+      })
+      .filter(Boolean) as { wallId: string; edgeIndex: number; pos: [number, number] }[];
+  }, [hostRoom, showWallHandles, walls, ceiling]);
 
   useEffect(() => {
     setDraftStart(null);
@@ -133,6 +158,61 @@ export function PlanEditLayer() {
     const hit = new THREE.Vector3();
     if (!e.ray.intersectPlane(floorPlane, hit)) return null;
     return planFromWorld(hit.x, hit.z);
+  };
+
+  const hitWorld = (e: any) => {
+    const hit = new THREE.Vector3();
+    if (!e.ray.intersectPlane(floorPlane, hit)) return null;
+    return { x: hit.x, z: hit.z };
+  };
+
+  const endWallDrag = () => {
+    if (!wallDrag.current) return;
+    wallDrag.current = null;
+    setWallDragging(false);
+    commitWallNudge();
+    delete document.body.dataset.movingFurniture;
+    window.dispatchEvent(new Event('roomcraft-drag-end'));
+    window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-fit-plan')), 40);
+  };
+
+  const onWallPointerDown = (e: any, wallId: string) => {
+    e.stopPropagation();
+    const w = hitWorld(e);
+    if (!w) return;
+    wallDrag.current = { wallId, pointerId: e.pointerId, lastX: w.x, lastZ: w.z };
+    setWallDragging(true);
+    selectWall(wallId);
+    document.body.dataset.movingFurniture = 'true';
+    window.dispatchEvent(new Event('roomcraft-drag-start'));
+    try {
+      (e.target as any).setPointerCapture?.(e.pointerId);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const onWallPointerMove = (e: any) => {
+    const drag = wallDrag.current;
+    if (!drag || drag.pointerId !== e.pointerId) return;
+    e.stopPropagation();
+    const w = hitWorld(e);
+    if (!w) return;
+    const dxM = w.x - drag.lastX;
+    const dzM = w.z - drag.lastZ;
+    drag.lastX = w.x;
+    drag.lastZ = w.z;
+    if (Math.abs(dxM) < 1e-5 && Math.abs(dzM) < 1e-5) return;
+    nudgeWall(drag.wallId, dxM, dzM, { live: true });
+    invalidate();
+  };
+
+  const onWallPointerUp = (e: any) => {
+    const drag = wallDrag.current;
+    if (!drag || drag.pointerId !== e.pointerId) return;
+    e.stopPropagation();
+    onWallPointerMove(e);
+    endWallDrag();
   };
 
   const onFloorPointerMove = (e: any) => {
@@ -225,14 +305,20 @@ export function PlanEditLayer() {
 
   return (
     <group>
-      {(placingRoom || vertexDragging) && (
+      {(placingRoom || vertexDragging || wallDragging) && (
         <mesh
           rotation={[-Math.PI / 2, 0, 0]}
           position={[0, 0.01, 0]}
-          onPointerMove={placingRoom ? onFloorPointerMove : onVertexPointerMove}
+          onPointerMove={
+            placingRoom ? onFloorPointerMove : wallDragging ? onWallPointerMove : onVertexPointerMove
+          }
           onPointerDown={placingRoom ? onFloorPointerDown : undefined}
-          onPointerUp={placingRoom ? onFloorPointerUp : onVertexPointerUp}
-          onPointerCancel={placingRoom ? onFloorPointerUp : onVertexPointerUp}
+          onPointerUp={
+            placingRoom ? onFloorPointerUp : wallDragging ? onWallPointerUp : onVertexPointerUp
+          }
+          onPointerCancel={
+            placingRoom ? onFloorPointerUp : wallDragging ? onWallPointerUp : onVertexPointerUp
+          }
         >
           <planeGeometry args={[120, 120]} />
           <meshBasicMaterial transparent opacity={0} depthWrite={false} />
@@ -324,6 +410,21 @@ export function PlanEditLayer() {
             </mesh>
           );
         })}
+
+      {showWallHandles &&
+        wallHandles.map(({ wallId, edgeIndex, pos }) => (
+          <mesh
+            key={`wh-${wallId}-${edgeIndex}`}
+            position={[pos[0], 0.15, pos[1]]}
+            onPointerDown={(e) => onWallPointerDown(e, wallId)}
+            onPointerMove={onWallPointerMove}
+            onPointerUp={onWallPointerUp}
+            onPointerCancel={onWallPointerUp}
+          >
+            <boxGeometry args={[0.22, 0.05, 0.22]} />
+            <meshBasicMaterial color={wallDragging && wallDrag.current?.wallId === wallId ? '#003d70' : '#0058a3'} />
+          </mesh>
+        ))}
 
       {dimRoom && dimCard && (
         <Html position={dimCard.pos} center zIndexRange={[120, 60]} style={{ pointerEvents: 'auto' }}>

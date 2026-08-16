@@ -696,7 +696,7 @@ export function buildPlanDxf(input: PlanExportInput): string {
     '2',
     'LAYER',
     '70',
-    '4',
+    '7',
     '0',
     'LAYER',
     '2',
@@ -705,6 +705,26 @@ export function buildPlanDxf(input: PlanExportInput): string {
     '0',
     '62',
     '7',
+    '6',
+    'CONTINUOUS',
+    '0',
+    'LAYER',
+    '2',
+    'A-WALL-EXT',
+    '70',
+    '0',
+    '62',
+    '1',
+    '6',
+    'CONTINUOUS',
+    '0',
+    'LAYER',
+    '2',
+    'A-WALL-INT',
+    '70',
+    '0',
+    '62',
+    '5',
     '6',
     'CONTINUOUS',
     '0',
@@ -763,7 +783,25 @@ export function buildPlanDxf(input: PlanExportInput): string {
     lines.push('0', 'LINE', '8', layer, '10', String(A.x), '20', String(A.y), '30', '0', '11', String(B.x), '21', String(B.y), '31', '0');
   };
 
+  const offsetPair = (a: Point, bPt: Point, distPx: number) => {
+    const dx = bPt.x - a.x;
+    const dy = bPt.y - a.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const nx = (-dy / len) * distPx;
+    const ny = (dx / len) * distPx;
+    return {
+      left: { a: { x: a.x + nx, y: a.y + ny }, b: { x: bPt.x + nx, y: bPt.y + ny } },
+      right: { a: { x: a.x - nx, y: a.y - ny }, b: { x: bPt.x - nx, y: bPt.y - ny } },
+    };
+  };
+
   for (const wall of input.walls) {
+    const layer = wall.assembly === 'exterior' ? 'A-WALL-EXT' : 'A-WALL-INT';
+    const halfPx = ((wall.thickness || 0.15) * PIXELS_PER_METER) / 2;
+    const sides = offsetPair(wall.start, wall.end, halfPx);
+    pushLine(layer, sides.left.a, sides.left.b);
+    pushLine(layer, sides.right.a, sides.right.b);
+    // Centerline kept on WALLS for dim reference / older importers.
     pushLine('WALLS', wall.start, wall.end);
     const len = wallLengthM(wall);
     if (len < 0.3) continue;

@@ -281,10 +281,20 @@ export function drawStructureSheetToCanvas(
   ctx.strokeRect(24, 24, w - 48, h - 48);
   ctx.fillStyle = '#111820';
   ctx.font = '700 26px Figtree, system-ui, sans-serif';
-  ctx.fillText(input.kind === 'foundation' ? 'FOUNDATION PLAN' : 'ROOF PLAN', margin, margin);
+  ctx.fillText(
+    input.kind === 'foundation' ? 'FOUNDATION OUTLINE (SCHEMATIC)' : 'ROOF OUTLINE (SCHEMATIC)',
+    margin,
+    margin,
+  );
   ctx.font = '600 14px Figtree, system-ui, sans-serif';
   ctx.fillStyle = '#5c6770';
-  ctx.fillText([input.name, input.floorName].filter(Boolean).join(' · '), margin, margin + 28);
+  ctx.fillText(
+    [[input.name, input.floorName].filter(Boolean).join(' · '), 'Envelope only — not a structural drawing']
+      .filter(Boolean)
+      .join(' · '),
+    margin,
+    margin + 28,
+  );
 
   for (const wall of input.walls) {
     ctx.beginPath();

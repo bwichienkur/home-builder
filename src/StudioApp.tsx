@@ -294,13 +294,22 @@ export default function StudioApp() {
             openings: active?.openings ?? [],
             planRooms: active?.planRooms ?? [],
             unitSystem: store.unitSystem,
-            floors: inputs.map((input, i) => ({
-              floorName: input.floorName || `Level ${i + 1}`,
-              walls: input.walls,
-              openings: input.openings,
-              planRooms: input.planRooms,
-              elevationM: i * 3,
-            })),
+            floors: (() => {
+              let elev = 0;
+              return inputs.map((input) => {
+                const heights = input.walls.map((w) => w.height).filter((h) => Number.isFinite(h) && h > 0);
+                const storyH = heights.length ? heights.reduce((a, b) => a + b, 0) / heights.length : 2.7;
+                const entry = {
+                  floorName: input.floorName || 'Level',
+                  walls: input.walls,
+                  openings: input.openings,
+                  planRooms: input.planRooms,
+                  elevationM: elev,
+                };
+                elev += storyH;
+                return entry;
+              });
+            })(),
           },
           `${base}.ifc`,
         );

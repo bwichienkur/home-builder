@@ -457,6 +457,51 @@
   border-color: var(--accent, #0058a3);
   color: #fff;
 }
+.bom-rate-book {
+  margin: 0 0 12px;
+}
+.bom-rate-toggle {
+  border: 1px solid var(--line, #d5dbe3);
+  background: var(--soft, #f4f6f8);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.bom-rate-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--soft, #f4f6f8);
+  border: 1px solid var(--line, #d5dbe3);
+}
+.bom-rate-grid label {
+  display: grid;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted, #5c6770);
+}
+.bom-rate-grid input {
+  min-height: 36px;
+  border: 1px solid var(--line, #d5dbe3);
+  border-radius: 8px;
+  padding: 0 8px;
+  font: inherit;
+  color: var(--ink, #111820);
+}
+.bom-rate-reset {
+  align-self: end;
+  min-height: 36px;
+  border: 0;
+  background: transparent;
+  color: var(--accent, #0058a3);
+  font-weight: 700;
+  cursor: pointer;
+}
 .bom-dialog footer button { display: flex; align-items: center; gap: 7px; }
 .bom-remove {
   width: 36px;
