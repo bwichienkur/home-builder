@@ -24,10 +24,10 @@ function writeAccounts(accounts: Record<string, AccountRow>) {
   localStorage.setItem(STORAGE, JSON.stringify(accounts));
 }
 
-async function ensureDemo(accounts: Record<string, AccountRow>) {
+async function ensureDemo(accounts: Record<string, AccountRow>): Promise<Record<string, AccountRow>> {
   if (accounts[DEMO_EMAIL]) return accounts;
   const passwordHash = await sha256(DEMO_PASS);
-  const next = {
+  const next: Record<string, AccountRow> = {
     ...accounts,
     [DEMO_EMAIL]: { id: 'user-demo', name: 'Studio Admin', passwordHash },
   };
