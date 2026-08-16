@@ -94,6 +94,7 @@ describe('CAD DXF export', () => {
     expect(dxf).toContain('WALLS');
     expect(dxf).toContain('ROOMS');
     expect(dxf).toContain('OPENINGS');
+    expect(dxf).toContain('DIMS');
     expect(dxf).toContain('LWPOLYLINE');
     expect(dxf).toContain('Living');
     expect(dxf).toContain('D1');

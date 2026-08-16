@@ -1,5 +1,14 @@
 export type Point = { x: number; y: number };
-export type Wall = { id: string; start: Point; end: Point; thickness: number; height: number };
+export type WallAssembly = 'exterior' | 'interior' | 'party';
+export type Wall = {
+  id: string;
+  start: Point;
+  end: Point;
+  thickness: number;
+  height: number;
+  /** Structural assembly role for takeoffs / exports. */
+  assembly?: WallAssembly;
+};
 export type OpeningShape = 'rect' | 'arch' | 'wide';
 export type Opening = {
   id: string;
@@ -17,6 +26,17 @@ export type Opening = {
 };
 export type MountingType = 'floor' | 'wall' | 'ceiling';
 export type FurnitureClearance = { front?: number; back?: number; left?: number; right?: number };
+export type StairSpec = {
+  fromFloorId: string;
+  toFloorId: string;
+  /** Horizontal run (depth) in meters. */
+  runM?: number;
+  /** Total rise in meters (defaults to story height). */
+  riseM?: number;
+  steps?: number;
+  /** Landing depth at top in meters. */
+  landingM?: number;
+};
 export type FurnitureItem = {
   id: string;
   catalogId: string;
@@ -47,7 +67,7 @@ export type FurnitureItem = {
   /** Roll in the wall plane (wall-mounted art / shelves). */
   roll?: number;
   /** Stair connects two floor ids when placementKind is stair. */
-  stair?: { fromFloorId: string; toFloorId: string };
+  stair?: StairSpec;
 };
 export type CameraMode = 'top' | 'orbit' | 'walk';
 export type UnitSystem = 'metric' | 'imperial';
@@ -67,6 +87,8 @@ export type RoomType =
 export type SurfaceTarget = 'floor' | 'wall' | 'ceiling';
 export type WorkflowStage = 'start' | 'house' | 'room';
 export type StudioMode = 'architect' | 'furnish';
+export type RoofStyle = 'none' | 'flat' | 'gable';
+export type SiteSetback = { frontM: number; sideM: number; rearM: number };
 export type PlanRoomLabel = {
   id: string;
   name: string;
@@ -86,6 +108,8 @@ export type SceneSnapshot = {
   ceilingColor: string;
   /** Included so undo/redo restores per-room floor finishes. */
   planRooms?: PlanRoomLabel[];
+  roofStyle?: RoofStyle;
+  siteSetback?: SiteSetback;
 };
 export type PendingFloorFill = { catalogId: string; name: string; color: string };
 export type ManualBomLine = { id: string; name: string; qty: number; unit: string; price: number };

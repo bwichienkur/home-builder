@@ -1655,9 +1655,9 @@
   cursor: pointer;
   flex-shrink: 0;
 }
-.studio-floor-stair:hover,
-.studio-floor-stair:active {
-  background: rgba(0, 88, 163, 0.1);
+.studio-floor-stair.is-active {
+  background: rgba(0, 88, 163, 0.18);
+  color: #003d70;
 }
 .studio-floor-delete:hover,
 .studio-floor-delete:active {

@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { usePlannerStore } from '../../store/plannerStore';
 import { catalog } from '../catalog/catalogData';
 import type { FurnitureItem, Opening } from '../../types';
-import { detectRoomPolygons, roomShape } from '../../lib/geometry/rooms';
+import { detectRoomPolygons, roomShape, roomShapeWithHoles } from '../../lib/geometry/rooms';
 import { alignmentGuides, clampWallMountY, constrainPlacement, pointOnWall, roomFloorCenter, wallFrame, WORLD_ORIGIN } from '../../lib/geometry/placement';
 import { doorSwingZones, furnitureHitsDoorSwing } from '../../lib/geometry/doorClearance';
 import { wouldOverlapFurniture } from '../../lib/collisions';
@@ -1649,6 +1649,7 @@ function Room() {
   const ceiling = usePlannerStore((s) => s.ceilingColor);
   const walls = usePlannerStore((s) => s.walls);
   const planRooms = usePlannerStore((s) => s.planRooms);
+  const furniture = usePlannerStore((s) => s.furniture);
   const selectedRoomId = usePlannerStore((s) => s.selectedRoomId);
   const enterRoom = usePlannerStore((s) => s.enterRoom);
   const selectRoom = usePlannerStore((s) => s.selectRoom);
@@ -1661,6 +1662,7 @@ function Room() {
   const detected = useMemo(() => detectRoomPolygons(walls), [walls]);
   const rooms = planRooms.length ? planRooms.map((r) => r.points) : detected;
   const ceilingHeight = walls[0]?.height ?? 2.7;
+  const stairs = useMemo(() => furniture.filter((f) => f.placementKind === 'stair'), [furniture]);
   const { camera, invalidate } = useThree();
   const ceilingSmooth = useRef(0.22);
   const floorSmooth = useRef(1);
@@ -1762,7 +1764,7 @@ function Room() {
                 position={[0, -0.035, 0]}
                 onClick={(e) => chooseFloor(e, label?.id)}
               >
-                <shapeGeometry args={[roomShape(points)]} />
+                <shapeGeometry args={[roomShapeWithHoles(points, stairs)]} />
                 <FloorMaterial
                   color={floorColor}
                   catalogId={label?.floorCatalogId}
@@ -1774,7 +1776,7 @@ function Room() {
               </mesh>
               {selected && (
                 <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, -0.018, 0]} raycast={() => {}} renderOrder={2}>
-                  <shapeGeometry args={[roomShape(points)]} />
+                  <shapeGeometry args={[roomShapeWithHoles(points, stairs)]} />
                   <meshBasicMaterial
                     color="#0058a3"
                     transparent
@@ -1791,7 +1793,7 @@ function Room() {
                   position={[0, ceilingHeight, 0]}
                   raycast={() => {}}
                 >
-                  <shapeGeometry args={[roomShape(points)]} />
+                  <shapeGeometry args={[roomShapeWithHoles(points, stairs)]} />
                   <meshStandardMaterial
                     color={selectedSurface === 'ceiling' ? '#0058a3' : ceiling}
                     roughness={0.92}
@@ -1851,7 +1853,139 @@ function Room() {
       <Furniture />
       <GhostPlacement />
       <PlanEditLayer />
+      <RoofAndSite />
+      <StackedInactiveFloors />
     </Bvh>
+  );
+}
+
+/** Flat or gable roof over the plan envelope + site setback guides. */
+function RoofAndSite() {
+  const walls = usePlannerStore((s) => s.walls);
+  const planRooms = usePlannerStore((s) => s.planRooms);
+  const roofStyle = usePlannerStore((s) => s.roofStyle);
+  const siteSetback = usePlannerStore((s) => s.siteSetback);
+  const cameraMode = usePlannerStore((s) => s.cameraMode);
+  const height = walls[0]?.height ?? 2.7;
+
+  const envelope = useMemo(() => {
+    const pts = [
+      ...walls.flatMap((w) => [w.start, w.end]),
+      ...planRooms.flatMap((r) => r.points),
+    ];
+    if (!pts.length) return null;
+    const xs = pts.map((p) => (p.x - WORLD_ORIGIN.x) / PIXELS_PER_METER);
+    const zs = pts.map((p) => (p.y - WORLD_ORIGIN.y) / PIXELS_PER_METER);
+    return {
+      minX: Math.min(...xs),
+      maxX: Math.max(...xs),
+      minZ: Math.min(...zs),
+      maxZ: Math.max(...zs),
+    };
+  }, [walls, planRooms]);
+
+  if (!envelope) return null;
+  const w = envelope.maxX - envelope.minX;
+  const d = envelope.maxZ - envelope.minZ;
+  const cx = (envelope.minX + envelope.maxX) / 2;
+  const cz = (envelope.minZ + envelope.maxZ) / 2;
+
+  const outdoorRooms = planRooms.filter((r) => r.roomType === 'Outdoor');
+
+  return (
+    <group>
+      {outdoorRooms.map((room) => {
+        const shape = roomShape(room.points);
+        return (
+          <mesh key={`patio-${room.id}`} rotation={[Math.PI / 2, 0, 0]} position={[0, -0.05, 0]} receiveShadow>
+            <shapeGeometry args={[shape]} />
+            <meshStandardMaterial color="#9aa3ad" roughness={0.95} />
+          </mesh>
+        );
+      })}
+      {roofStyle !== 'none' && cameraMode !== 'top' && (
+        <group position={[cx, height + 0.05, cz]}>
+          {roofStyle === 'flat' ? (
+            <mesh position={[0, 0.08, 0]} castShadow>
+              <boxGeometry args={[w + 0.4, 0.12, d + 0.4]} />
+              <meshStandardMaterial color="#6b7280" roughness={0.85} />
+            </mesh>
+          ) : (
+            <>
+              <mesh position={[0, 0.55, 0]} rotation={[0, 0, Math.atan2(0.9, w / 2)]} castShadow>
+                <boxGeometry args={[Math.hypot(w / 2, 0.9) * 2, 0.08, d + 0.35]} />
+                <meshStandardMaterial color="#7c8491" roughness={0.8} side={THREE.DoubleSide} />
+              </mesh>
+            </>
+          )}
+        </group>
+      )}
+      {/* Site setback rectangle */}
+      <Line
+        points={[
+          [envelope.minX - siteSetback.sideM, 0.02, envelope.minZ - siteSetback.frontM],
+          [envelope.maxX + siteSetback.sideM, 0.02, envelope.minZ - siteSetback.frontM],
+          [envelope.maxX + siteSetback.sideM, 0.02, envelope.maxZ + siteSetback.rearM],
+          [envelope.minX - siteSetback.sideM, 0.02, envelope.maxZ + siteSetback.rearM],
+          [envelope.minX - siteSetback.sideM, 0.02, envelope.minZ - siteSetback.frontM],
+        ]}
+        color="#9aa3ad"
+        dashed
+        dashSize={0.25}
+        gapSize={0.15}
+        lineWidth={1}
+      />
+    </group>
+  );
+}
+
+/** When stackView is on, draw inactive floors as ghosted plates above/below. */
+function StackedInactiveFloors() {
+  const stackView = usePlannerStore((s) => s.stackView);
+  const floors = usePlannerStore((s) => s.floors);
+  const activeFloorId = usePlannerStore((s) => s.activeFloorId);
+  const cameraMode = usePlannerStore((s) => s.cameraMode);
+  if (!stackView || cameraMode === 'top' || floors.length < 2) return null;
+
+  const activeIdx = Math.max(0, floors.findIndex((f) => f.id === activeFloorId));
+  const story = 3.2;
+
+  return (
+    <group>
+      {floors.map((floor, i) => {
+        if (floor.id === activeFloorId) return null;
+        const y = (i - activeIdx) * story;
+        const rooms = floor.planRooms ?? floor.scene.planRooms ?? [];
+        const walls = floor.scene.walls ?? [];
+        return (
+          <group key={floor.id} position={[0, y, 0]}>
+            {rooms.map((room) => (
+              <mesh key={room.id} rotation={[Math.PI / 2, 0, 0]} position={[0, -0.02, 0]}>
+                <shapeGeometry args={[roomShape(room.points)]} />
+                <meshStandardMaterial color="#c5d0dc" transparent opacity={0.35} depthWrite={false} />
+              </mesh>
+            ))}
+            {walls.map((wall) => {
+              const ax = (wall.start.x - WORLD_ORIGIN.x) / PIXELS_PER_METER;
+              const az = (wall.start.y - WORLD_ORIGIN.y) / PIXELS_PER_METER;
+              const bx = (wall.end.x - WORLD_ORIGIN.x) / PIXELS_PER_METER;
+              const bz = (wall.end.y - WORLD_ORIGIN.y) / PIXELS_PER_METER;
+              return (
+                <Line
+                  key={wall.id}
+                  points={[
+                    [ax, 0.05, az],
+                    [bx, 0.05, bz],
+                  ]}
+                  color="#7a8794"
+                  lineWidth={1}
+                />
+              );
+            })}
+          </group>
+        );
+      })}
+    </group>
   );
 }
 

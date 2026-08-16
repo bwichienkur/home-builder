@@ -5,3 +5,29 @@ CREATE TABLE catalog_categories (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), 
 CREATE TABLE catalog_items (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), sku text UNIQUE NOT NULL, name text NOT NULL, category_id uuid REFERENCES catalog_categories(id), dimensions jsonb NOT NULL, thumbnail_url text NOT NULL, model_url text NOT NULL, low_poly_url text, asset_version integer NOT NULL DEFAULT 1, variants jsonb NOT NULL DEFAULT '[]', active boolean NOT NULL DEFAULT true, search_vector tsvector GENERATED ALWAYS AS (to_tsvector('english', name || ' ' || sku)) STORED);
 CREATE INDEX catalog_search_idx ON catalog_items USING GIN(search_vector);
 CREATE INDEX projects_user_idx ON projects(user_id, updated_at DESC);
+CREATE TABLE IF NOT EXISTS project_members (
+  project_id uuid REFERENCES projects(id) ON DELETE CASCADE,
+  user_id uuid REFERENCES users(id) ON DELETE CASCADE,
+  role text NOT NULL DEFAULT 'editor' CHECK (role IN ('owner','editor','viewer')),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (project_id, user_id)
+);
+CREATE TABLE IF NOT EXISTS project_versions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id uuid REFERENCES projects(id) ON DELETE CASCADE,
+  version integer NOT NULL,
+  scene_json jsonb NOT NULL,
+  note text,
+  created_by uuid REFERENCES users(id),
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS project_versions_idx ON project_versions(project_id, version DESC);
+CREATE TABLE IF NOT EXISTS project_audit (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id uuid REFERENCES projects(id) ON DELETE CASCADE,
+  user_id uuid REFERENCES users(id),
+  action text NOT NULL,
+  detail jsonb NOT NULL DEFAULT '{}',
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS project_audit_idx ON project_audit(project_id, created_at DESC);
