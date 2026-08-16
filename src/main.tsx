@@ -8,6 +8,8 @@ import './loading.css';
 import './advanced.css';
 import './openings.css';
 import './catalog.css';
+import './features/auth/auth.css';
+import './features/shell/shell.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

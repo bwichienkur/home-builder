@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { ChevronRight, Grid2X2, X } from 'lucide-react';
 import { usePlannerStore } from '../../store/plannerStore';
 import { formatLength, parseLength } from '../../lib/measurements';
-import { olsenHousePlans } from '../../lib/housePlans/olsenPlans';
+import { listBuiltinHousePlans } from '../../lib/housePlans/planRegistry';
 import { planRoomSizeFeet } from '../../lib/housePlans/buildPlan';
 import type { Opening, PlanRoomLabel, RoomType, Wall } from '../../types';
 
@@ -338,10 +338,10 @@ export function RoomDesigner({ compact = false, hidePlans = false }: { compact?:
       </div>
       {!hidePlans && (
         <>
-          <span className="template-label">House plans (buildable)</span>
+          <span className="template-label">Sample house plans</span>
           {housePlanName && <p className="muted house-plan-active">Loaded: {housePlanName}</p>}
           <div className="house-plan-list">
-            {olsenHousePlans.map((plan) => (
+            {listBuiltinHousePlans().map((plan) => (
               <button
                 key={plan.id}
                 type="button"
@@ -357,7 +357,7 @@ export function RoomDesigner({ compact = false, hidePlans = false }: { compact?:
             ))}
           </div>
           <p className="muted house-plan-note">
-            Original Mahnikka layouts sized from publicly listed room programs — not copied Olsen drawings. Switch floors in the project menu for two-story plans.
+            Open sample layouts with measured footprints. Import DXF/JSON from House plans. Not proprietary brochure tracings.
           </p>
         </>
       )}
