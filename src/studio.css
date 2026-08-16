@@ -2184,3 +2184,103 @@
   box-shadow: 0 0 0 2px #0058a3;
   background: #fff;
 }
+
+.wall-assembly-pills {
+  display: flex;
+  gap: 6px;
+  margin: 0 0 8px;
+}
+.wall-assembly-pills button {
+  flex: 1;
+  min-height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.wall-assembly-pills button.is-active {
+  background: #111820;
+  border-color: #111820;
+  color: #fff;
+}
+.building-checks {
+  position: absolute;
+  left: 12px;
+  right: 72px;
+  bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  z-index: 28;
+  display: grid;
+  gap: 6px;
+  pointer-events: none;
+}
+.building-check {
+  pointer-events: auto;
+  display: grid;
+  grid-template-columns: 18px 1fr 28px;
+  gap: 8px;
+  align-items: start;
+  padding: 10px 10px 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 8px 24px rgba(17, 24, 32, 0.12);
+  border: 1px solid rgba(17, 24, 32, 0.08);
+}
+.building-check strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  color: #111820;
+}
+.building-check span {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  line-height: 1.35;
+  color: #5c6770;
+}
+.building-check.is-warn {
+  border-color: rgba(180, 83, 9, 0.25);
+}
+.building-check.is-warn svg {
+  color: #b45309;
+}
+.building-check.is-info svg {
+  color: #0058a3;
+}
+.building-check button {
+  border: 0;
+  background: transparent;
+  color: #9aa3ad;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  border-radius: 8px;
+}
+.stack-floor-chip {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(17, 24, 32, 0.82);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.cloud-library-empty {
+  margin: 0;
+  font-size: 12px;
+}
+.design-library-head h3 {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.design-library + .design-library {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
