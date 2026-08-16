@@ -29,7 +29,7 @@ export type HousePlan = {
   livingSqFt: number;
   totalUnderRoofSqFt?: number;
   sourceUrl: string;
-  /** Clarifies these are Mahnikka layouts, not copied Olsen drawings. */
+  /** Clarifies these are flyer-derived layouts, not copied Olsen CAD drawings. */
   note: string;
   floors: HousePlanFloor[];
 };

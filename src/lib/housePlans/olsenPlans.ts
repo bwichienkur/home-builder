@@ -1,10 +1,10 @@
 import type { HousePlan, PlanRoomRect } from './buildPlan';
-import { livingAreaSqFt, row } from './buildPlan';
+import { livingAreaSqFt } from './buildPlan';
 import type { RoomType } from '../../types';
 
 const SOURCE = 'https://olsencustomhomes.com/floor-plans-with-a-custom-home-builder-new-smyrna/';
 const NOTE =
-  'Original Mahnikka multi-room layout sized from publicly listed room programs (beds/baths/sq ft). Not an Olsen drawing or CAD copy.';
+  'Room sizes and adjacency derived from Olsen Custom Homes published floor-plan flyers. Axis-aligned simplification for the planner — not a CAD tracing of Olsen drawings.';
 
 function plan(
   partial: Omit<HousePlan, 'note' | 'sourceUrl'> & { sourceUrl?: string; note?: string },
@@ -16,170 +16,90 @@ function plan(
   };
 }
 
-function R(name: string, roomType: RoomType, w: number, ceilingFt?: number) {
-  return { name, roomType, w, ceilingFt };
+/** Feet + inches → decimal feet (flyer dimension helper). */
+export function ft(feet: number, inches = 0) {
+  return feet + inches / 12;
 }
 
-/** Single-story Florida ranch: garage + foyer wing, great room core, owner suite, guest wing, lanai. */
-function ranch3Bed(opts: {
-  id: string;
-  name: string;
-  beds: number;
-  baths: number;
-  livingSqFt: number;
-  totalUnderRoofSqFt?: number;
-  stories?: 1 | 2;
-  garageW?: number;
-  garageD?: number;
-  greatW?: number;
-  greatD?: number;
-  ownerW?: number;
-  ownerD?: number;
-  kitchenW?: number;
-  lanaiW?: number;
-  study?: boolean;
-  game?: boolean;
-  nook?: boolean;
-}): HousePlan {
-  const garageW = opts.garageW ?? 24;
-  const garageD = opts.garageD ?? 22;
-  const greatW = opts.greatW ?? 22;
-  const greatD = opts.greatD ?? 20;
-  const ownerW = opts.ownerW ?? 15;
-  const ownerD = opts.ownerD ?? 18;
-  const kitchenW = opts.kitchenW ?? 14;
-  const lanaiW = opts.lanaiW ?? 36;
-  const study = opts.study !== false;
-
-  const rooms: PlanRoomRect[] = [];
-  // Front band
-  rooms.push(
-    ...row(0, garageD, [
-      R('Garage', 'Storage / wardrobe', garageW, 10),
-      R('Laundry', 'Laundry', 8, 10),
-      ...(study ? [R('Study', 'Office', 11, 12)] : [R('Flex', 'Office', 11, 12)]),
-      R('Foyer', 'Hallway', 10, 13),
-      R('Dining', 'Dining room', 12, 12),
-    ]),
-  );
-  const frontDepth = garageD;
-  // Living core
-  rooms.push(
-    ...row(frontDepth, greatD, [
-      R('Bedroom 2', 'Bedroom', 12, 10),
-      R('Bath 2', 'Bathroom', 7, 10),
-      R('Great Room', 'Living room', greatW, 12),
-      R('Kitchen', 'Kitchen', kitchenW, 12),
-      ...(opts.nook !== false ? [R('Nook', 'Dining room', 11, 12)] : [R('Pantry', 'Storage / wardrobe', 8, 10)]),
-    ]),
-  );
-  const midY = frontDepth + greatD;
-  // Owner + guest
-  const ownerRow = [
-    R("Owner's Suite", 'Bedroom', ownerW, 10),
-    R("Owner's Bath", 'Bathroom', 10, 10),
-    R('WIC', 'Storage / wardrobe', 8, 10),
-    R('Bedroom 3', 'Bedroom', 12, 10),
-    R('Bath 3', 'Bathroom', 7, 10),
-  ];
-  if (opts.beds >= 4) {
-    ownerRow.push(R('Bedroom 4', 'Bedroom', 12, 10));
-  }
-  if (opts.game) ownerRow.push(R('Game Room', 'Living room', 12, 10));
-  rooms.push(...row(midY, ownerD, ownerRow));
-  const backY = midY + ownerD;
-  rooms.push(...row(backY, 12, [R('Lanai', 'Outdoor', lanaiW, 10), R('Pool Court', 'Outdoor', Math.max(16, greatW - 4), 10)]));
-
-  return plan({
-    id: opts.id,
-    name: opts.name,
-    stories: opts.stories ?? 1,
-    beds: opts.beds,
-    baths: opts.baths,
-    livingSqFt: opts.livingSqFt,
-    totalUnderRoofSqFt: opts.totalUnderRoofSqFt,
-    floors: [{ id: `${opts.id}-1`, name: 'First story', rooms }],
-  });
+export function room(
+  name: string,
+  roomType: RoomType | string,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  ceilingFt?: number,
+): PlanRoomRect {
+  return {
+    id: `${name.toLowerCase().replace(/\W+/g, '-')}-${Math.round(x * 10)}-${Math.round(y * 10)}`,
+    name,
+    roomType: roomType as RoomType,
+    x,
+    y,
+    w,
+    h,
+    ceilingFt,
+  };
 }
 
-function twoStoryFamily(opts: {
-  id: string;
-  name: string;
-  beds: number;
-  baths: number;
-  livingSqFt: number;
-  totalUnderRoofSqFt?: number;
-  firstLiving?: number;
-  secondLiving?: number;
-}): HousePlan {
+function coral_sands(): HousePlan {
   const first: PlanRoomRect[] = [
-    ...row(0, 22, [
-      R('Garage', 'Storage / wardrobe', 23, 10),
-      R('Laundry', 'Laundry', 8, 10),
-      R('Study', 'Office', 12, 12),
-      R('Foyer', 'Hallway', 9, 18),
-      R('Dining', 'Dining room', 13, 12),
-    ]),
-    ...row(22, 18, [
-      R('Kitchen', 'Kitchen', 14, 12),
-      R('Pantry', 'Storage / wardrobe', 6, 12),
-      R('Living Room', 'Living room', 20, 12),
-      R("Owner's Suite", 'Bedroom', 14, 10),
-      R("Owner's Bath", 'Bathroom', 10, 10),
-    ]),
-    ...row(40, 12, [R('Lanai', 'Outdoor', 28, 12), R('Entry Porch', 'Outdoor', 12, 10)]),
+    room('Garage', 'Storage /wardrobe', 0, 0, 22.8333, 30.0833, 10),
+    room('Laundry', 'Laundry', 22.8333, 0, 8, 10, 10),
+    room('Storage', 'Storage /wardrobe', 30.8333, 0, 8, 10, 10),
+    room('Foyer', 'Hallway', 38.8333, 0, 10, 13.3333, 13.33),
+    room('Entry', 'Outdoor', 38.8333, -6, 10, 6, 10),
+    room('Study', 'Office', 48.8333, 0, 12.5, 12, 12),
+    room('Bedroom 2', 'Bedroom', 0, 30.0833, 12.4167, 12.1667, 10),
+    room('Bath 2', 'Bathroom', 12.4167, 30.0833, 7, 12.1667, 10),
+    room('Pantry', 'Storage /wardrobe', 19.4167, 30.0833, 12.4167, 12.1667, 12),
+    room('Kitchen', 'Kitchen', 32.0, 13.3333, 13.8333, 16.5833, 12),
+    room('Family Room', 'Living room', 45.8333, 13.3333, 22.5, 16.5833, 12),
+    room('Bedroom 3', 'Bedroom', 0, 42.25, 12.4167, 12, 10),
+    room('Bath 3', 'Bathroom', 12.4167, 42.25, 7, 12, 10),
+    room('Nook', 'Dining room', 32.0, 29.9167, 13.8333, 10.5, 12),
+    room("Owner's Suite", 'Bedroom', 45.8333, 29.9166, 14.3333, 17.3333, 10),
+    room("Owner's Bath", 'Bathroom', 60.1667, 29.9166, 10, 12, 10),
+    room('WIC', 'Storage /wardrobe', 70.1667, 29.9166, 8, 10, 10),
+    room('Lanai', 'Outdoor', 0, 54.25, 50.6667, 15, 12),
   ];
-
   const second: PlanRoomRect[] = [
-    ...row(0, 14, [
-      R('Loft', 'Living room', 18, 10),
-      R('Bedroom 2', 'Bedroom', 13, 10),
-      R('Bath 2', 'Bathroom', 7, 10),
-      R('Bedroom 3', 'Bedroom', 14, 10),
-      R('Bath 3', 'Bathroom', 7, 10),
-    ]),
-    ...row(14, 10, [R('Balcony', 'Outdoor', 16, 10), R('Hall', 'Hallway', 10, 10), ...(opts.beds >= 4 ? [R('Bedroom 4', 'Bedroom', 12, 10)] : [R('Flex Loft', 'Office', 12, 10)])]),
+    room('Loft', 'Living room', 0, 0, 14.25, 27, 10),
+    room('Bedroom 4', 'Bedroom', 14.25, 0, 11.75, 11, 10),
+    room('Bath 4', 'Bathroom', 26.0, 0, 7, 11, 10),
+    room('Bedroom 5', 'Bedroom', 33.0, 0, 13.5833, 11, 10),
+    room('Balcony', 'Outdoor', 0, 27, 19.1667, 8.3333, 10),
   ];
-
   return plan({
-    id: opts.id,
-    name: opts.name,
+    id: 'coral-sands',
+    name: 'Coral Sands',
     stories: 2,
-    beds: opts.beds,
-    baths: opts.baths,
-    livingSqFt: opts.livingSqFt,
-    totalUnderRoofSqFt: opts.totalUnderRoofSqFt,
-    floors: [
-      { id: `${opts.id}-1`, name: 'First story', rooms: first },
-      { id: `${opts.id}-2`, name: 'Second story', rooms: second },
-    ],
+    beds: 4,
+    baths: 4,
+    livingSqFt: 3721,
+    totalUnderRoofSqFt: 5481,
+    floors: [{ id: 'coral-sands-1', name: 'First story', rooms: first }, { id: 'coral-sands-2', name: 'Second story', rooms: second }],
   });
 }
 
-/** Islamorada-inspired: family room, kitchen/nook, owner wing, garage, lanai, game room (from public flyer room list). */
 function islamorada(): HousePlan {
   const rooms: PlanRoomRect[] = [
-    ...row(0, 24, [
-      R('Garage', 'Storage / wardrobe', 24, 10),
-      R('Laundry', 'Laundry', 8, 10),
-      R('Study', 'Office', 11, 10),
-      R("Owner's Suite", 'Bedroom', 15, 10),
-      R("Owner's Bath", 'Bathroom', 10, 10),
-    ]),
-    ...row(24, 20, [
-      R('Bedroom 3', 'Bedroom', 13, 12),
-      R('Bath 3', 'Bathroom', 7, 10),
-      R('Family Room', 'Living room', 20, 12),
-      R('Kitchen', 'Kitchen', 11, 12),
-      R('Nook', 'Dining room', 11, 12),
-    ]),
-    ...row(44, 14, [
-      R('Game Room', 'Living room', 12, 10),
-      R('Bath 2', 'Bathroom', 7, 10),
-      R('Bedroom 2', 'Bedroom', 12, 12),
-      R('Foyer', 'Hallway', 8, 12),
-      R('Lanai', 'Outdoor', 36, 10),
-    ]),
+    room('Study', 'Office', 0, 0, 11, 12, 10),
+    room('Foyer', 'Hallway', 11, 0, 8, 12, 12),
+    room('Bedroom 3', 'Bedroom', 19, 0, 13, 11.8333, 12),
+    room('Bath 3', 'Bathroom', 32, 0, 7, 11.8333, 10),
+    room('Laundry', 'Laundry', 39, 0, 8, 11.8333, 10),
+    room('Garage', 'Storage /wardrobe', 50, 0, 24, 32.75, 10),
+    room("Owner's Suite", 'Bedroom', 0, 12, 14.6667, 19, 10),
+    room("Owner's Bath", 'Bathroom', 0, 31, 10, 12, 10),
+    room('WIC', 'Storage /wardrobe', 10, 31, 8, 10, 10),
+    room('Family Room', 'Living room', 19, 11.8333, 20, 28.6667, 12),
+    room('Kitchen', 'Kitchen', 39, 11.8333, 10.5, 14.4167, 12),
+    room('Nook', 'Dining room', 39, 26.25, 10.5, 12.5833, 12),
+    room('Bedroom 2', 'Bedroom', 50, 32.75, 11.8333, 11.9167, 12),
+    room('Game Room', 'Living room', 50, 44.6667, 11.8333, 12.9167, 10),
+    room('Bath 2', 'Bathroom', 61.8333, 44.6667, 7, 12.9167, 10),
+    room('Lanai', 'Outdoor', 19, 44.6667, 31, 14, 10),
   ];
   return plan({
     id: 'islamorada',
@@ -193,32 +113,29 @@ function islamorada(): HousePlan {
   });
 }
 
-/** Largo-inspired from public flyer dimensions. */
 function largo(): HousePlan {
   const rooms: PlanRoomRect[] = [
-    ...row(0, 23, [
-      R('Garage', 'Storage / wardrobe', 23, 10),
-      R('Laundry', 'Laundry', 8, 10),
-      R('Study', 'Office', 11, 12),
-      R('Foyer', 'Hallway', 10, 13),
-      R('Dining', 'Dining room', 12.5, 12),
-    ]),
-    ...row(23, 23, [
-      R('Bedroom 2', 'Bedroom', 12, 10),
-      R('Bath 2', 'Bathroom', 7, 10),
-      R('Great Room', 'Living room', 22.5, 12),
-      R('Kitchen', 'Kitchen', 13, 12),
-      R('Nook', 'Dining room', 13, 10),
-    ]),
-    ...row(46, 18, [
-      R('Bedroom 3', 'Bedroom', 12, 10),
-      R('Bath 3', 'Bathroom', 7, 10),
-      R('Hall', 'Hallway', 6, 10),
-      R("Owner's Suite", 'Bedroom', 15.5, 10),
-      R("Owner's Bath", 'Bathroom', 10, 10),
-      R('WIC', 'Storage / wardrobe', 8, 10),
-    ]),
-    ...row(64, 12, [R('Lanai', 'Outdoor', 55, 10), R('Pool Area', 'Outdoor', 20, 10)]),
+    room('Garage', 'Storage /wardrobe', 0, 0, 23.3333, 30.3333, 10),
+    room('Dining', 'Dining room', 23.3333, 0, 12.5, 12.25, 12),
+    room('Foyer', 'Hallway', 35.8333, 0, 10, 12.25, 13.33),
+    room('Study', 'Office', 45.8333, 0, 10.8333, 11.6667, 12),
+    room('Entry', 'Outdoor', 35.8333, -6, 10, 6, 10),
+    room('Laundry', 'Laundry', 23.3333, 12.25, 8, 8, 10),
+    room('Kitchen', 'Kitchen', 31.3333, 12.25, 12.8333, 15.5, 12),
+    room('Great Room', 'Living room', 44.1667, 12.25, 22.4167, 23, 12),
+    room("Owner's Bath", 'Bathroom', 66.5833, 12.25, 10, 14, 10),
+    room('WIC', 'Storage /wardrobe', 76.5833, 12.25, 8, 10, 10),
+    room('Bedroom 2', 'Bedroom', 0, 30.3333, 12, 12.3333, 10),
+    room('Bath 2', 'Bathroom', 12, 30.3333, 11.3333, 12.3333, 10),
+    room('Bedroom 3', 'Bedroom', 0, 42.6667, 12, 15.3333, 10),
+    room('Bath 3', 'Bathroom', 12, 42.6667, 7, 15.3333, 10),
+    room('Pantry', 'Storage /wardrobe', 19, 42.6667, 12.3333, 8, 10),
+    room('Hall', 'Hallway', 23.3333, 20.25, 8, 7.5, 10),
+    room('Nook', 'Dining room', 31.3333, 27.75, 12.8333, 9, 10),
+    room("Owner's Suite", 'Bedroom', 66.5833, 26.25, 15.5, 21.3333, 10),
+    room('Owner Hall', 'Hallway', 58.5833, 35.25, 8, 6, 12),
+    room('Lanai', 'Outdoor', 0, 58.1667, 54.8333, 12.1667, 10),
+    room('Pool Area', 'Outdoor', 12, 70.3333, 30, 14, 10),
   ];
   return plan({
     id: 'largo',
@@ -232,35 +149,29 @@ function largo(): HousePlan {
   });
 }
 
-/** Captiva-inspired two-story from public flyer. */
 function captiva(): HousePlan {
   const first: PlanRoomRect[] = [
-    ...row(0, 22, [
-      R('Garage', 'Storage / wardrobe', 23, 10),
-      R('Laundry', 'Laundry', 8, 10),
-      R('Study', 'Office', 12, 12),
-      R('Foyer', 'Hallway', 8, 18),
-      R('Dining', 'Dining room', 13, 12),
-    ]),
-    ...row(22, 18, [
-      R('Kitchen', 'Kitchen', 10, 12),
-      R('Pantry', 'Storage / wardrobe', 6, 12),
-      R('Living Room', 'Living room', 20, 12),
-      R("Owner's Suite", 'Bedroom', 14, 10),
-      R("Owner's Bath", 'Bathroom', 10, 10),
-      R('WIC', 'Storage / wardrobe', 7, 10),
-    ]),
-    ...row(40, 12, [R('Lanai', 'Outdoor', 23, 12), R('Entry', 'Outdoor', 10, 10)]),
+    room('Garage', 'Storage /wardrobe', 0, 0, 22.8333, 20.0833, 10),
+    room('Laundry', 'Laundry', 0, 20.0833, 8, 8, 10),
+    room('Bedroom 2', 'Bedroom', 22.8333, 0, 12.6667, 12, 10),
+    room('Bath 2', 'Bathroom', 35.5, 0, 7, 12, 10),
+    room('Study', 'Office', 22.8333, 12, 12, 11.3333, 12),
+    room('Foyer', 'Hallway', 8, 20.0833, 7.6667, 7.75, 22),
+    room('Entry', 'Outdoor', 8, -6, 7.6667, 6, 10),
+    room('Pantry', 'Storage /wardrobe', 15.6667, 20.0833, 6, 8, 12),
+    room('Kitchen', 'Kitchen', 21.6667, 23.3333, 8.1667, 10, 12),
+    room('Dining', 'Dining room', 30.0, 23.3333, 8, 13.3333, 12),
+    room('Living Room', 'Living room', 8, 28.0833, 13.5, 20.6667, 12),
+    room("Owner's Suite", 'Bedroom', 0, 28.0833, 8, 20.6667, 10),
+    room("Owner's Bath", 'Bathroom', 0, 48.75, 10, 10, 10),
+    room('WIC', 'Storage /wardrobe', 10, 48.75, 7, 10, 10),
+    room('Lanai', 'Outdoor', 0, 58.75, 23.1667, 11, 12),
   ];
   const second: PlanRoomRect[] = [
-    ...row(0, 14, [
-      R('Loft', 'Living room', 21, 10),
-      R('Bedroom 2', 'Bedroom', 13, 10),
-      R('Bath 2', 'Bathroom', 7, 10),
-      R('Bedroom 3', 'Bedroom', 16, 10),
-      R('Bath 3', 'Bathroom', 7, 10),
-    ]),
-    ...row(14, 10, [R('Balcony', 'Outdoor', 16, 10)]),
+    room('Loft', 'Living room', 0, 0, 20.8333, 12.1667, 10),
+    room('Bedroom 3', 'Bedroom', 20.8333, 0, 15.75, 12, 10),
+    room('Bath 3', 'Bathroom', 36.5833, 0, 7, 12, 10),
+    room('Balcony', 'Outdoor', 0, 12.1667, 18, 9.5, 10),
   ];
   return plan({
     id: 'captiva',
@@ -270,87 +181,658 @@ function captiva(): HousePlan {
     baths: 3,
     livingSqFt: 2997,
     totalUnderRoofSqFt: 4065,
-    floors: [
-      { id: 'captiva-1', name: 'First story', rooms: first },
-      { id: 'captiva-2', name: 'Second story', rooms: second },
-    ],
+    floors: [{ id: 'captiva-1', name: 'First story', rooms: first }, { id: 'captiva-2', name: 'Second story', rooms: second }],
   });
 }
 
-/** Coral Sands-inspired two-story from public flyer room list. */
-function coralSands(): HousePlan {
+function key_biscayne(): HousePlan {
   const first: PlanRoomRect[] = [
-    ...row(0, 24, [
-      R('Garage', 'Storage / wardrobe', 23, 10),
-      R('Laundry', 'Laundry', 8, 10),
-      R('Study', 'Office', 12.5, 12),
-      R('Foyer', 'Hallway', 10, 13),
-      R('Storage', 'Storage / wardrobe', 8, 10),
-    ]),
-    ...row(24, 18, [
-      R('Bedroom 2', 'Bedroom', 12.5, 10),
-      R('Bath 2', 'Bathroom', 7, 10),
-      R('Family Room', 'Living room', 22.5, 12),
-      R('Kitchen', 'Kitchen', 14, 12),
-      R('Nook', 'Dining room', 14, 12),
-    ]),
-    ...row(42, 16, [
-      R('Bedroom 3', 'Bedroom', 12.5, 10),
-      R('Bath 3', 'Bathroom', 7, 10),
-      R('Pantry', 'Storage / wardrobe', 8, 12),
-      R("Owner's Suite", 'Bedroom', 14.5, 10),
-      R("Owner's Bath", 'Bathroom', 10, 10),
-      R('WIC', 'Storage / wardrobe', 8, 10),
-    ]),
-    ...row(58, 15, [R('Lanai', 'Outdoor', 51, 12)]),
+    room('Garage', 'Storage / wardrobe', 0, 0, 24, 32.75, 10),
+    room('Laundry', 'Laundry', 24, 0, 8, 8, 10),
+    room('Powder', 'Bathroom', 32, 0, 6, 8, 10),
+    room('Foyer', 'Hallway', 38, 0, 10, 12, 13.33),
+    room('Entry', 'Outdoor', 38, -6, 10, 6, 10),
+    room('Study', 'Office', 48, 0, 12.5833, 11.6667, 12),
+    room('Pantry', 'Storage /wardrobe', 24, 8, 8.75, 6.5, 10),
+    room('Kitchen', 'Kitchen', 32.75, 12, 15.25, 16.6667, 12),
+    room('Nook', 'Dining room', 48, 12, 14.8333, 11.5, 12),
+    room('Family Room', 'Living room', 24, 28.6667, 23.6667, 20.9167, 12),
+    room("Owner's Suite", 'Bedroom', 47.6667, 28.6667, 15.5, 18.5, 10),
+    room('Master Bath', 'Bathroom', 63.1667, 28.6667, 10, 12, 10),
+    room('WIC', 'Storage /wardrobe', 73.1667, 28.6667, 8, 10, 10),
+    room('Lanai', 'Outdoor', 24, 49.5834, 23.5, 17.3333, 10),
+    room('Pool Bath', 'Bathroom', 47.6667, 47.1667, 16.3333, 6.1667, 10),
   ];
   const second: PlanRoomRect[] = [
-    ...row(0, 14, [
-      R('Loft', 'Living room', 27, 10),
-      R('Bedroom 4', 'Bedroom', 12, 10),
-      R('Bath 4', 'Bathroom', 7, 10),
-      R('Bedroom 5', 'Bedroom', 14, 10),
-    ]),
-    ...row(14, 8, [R('Balcony', 'Outdoor', 19, 10)]),
+    room('Library', 'Office', 0, 0, 10, 12, 10),
+    room('Bedroom 2', 'Bedroom', 10, 0, 11.5, 13, 10),
+    room('Bath 2', 'Bathroom', 21.5, 0, 7, 13, 10),
+    room('Loft', 'Living room', 28.5, 0, 15.6667, 13, 10),
+    room('Bedroom 3', 'Bedroom', 0, 13, 12.6667, 12.5, 10),
+    room('Bedroom 4', 'Bedroom', 12.6667, 13, 15.3333, 12.5, 10),
+    room('Bath 4', 'Bathroom', 28.0, 13, 7, 12.5, 10),
+    room('Covered Balcony', 'Outdoor', 35.0, 13, 18, 10, 10),
   ];
   return plan({
-    id: 'coral-sands',
-    name: 'Coral Sands',
+    id: 'key-biscayne',
+    name: 'Key Biscayne',
     stories: 2,
     beds: 4,
     baths: 4,
-    livingSqFt: 3721,
-    totalUnderRoofSqFt: 5481,
-    floors: [
-      { id: 'coral-sands-1', name: 'First story', rooms: first },
-      { id: 'coral-sands-2', name: 'Second story', rooms: second },
-    ],
+    livingSqFt: 3894,
+    totalUnderRoofSqFt: 5703,
+    floors: [{ id: 'key-biscayne-1', name: 'First story', rooms: first }, { id: 'key-biscayne-2', name: 'Second story', rooms: second }],
+  });
+}
+
+function sanibel(): HousePlan {
+  const first: PlanRoomRect[] = [
+    room('Garage', 'Storage /wardrobe', 0, 0, 20, 19, 10),
+    room('Laundry', 'Laundry', 20, 0, 8, 8, 10),
+    room('Foyer', 'Hallway', 28, 0, 8, 12, 12),
+    room('Entry', 'Outdoor', 28, -5, 8, 5, 10),
+    room('Dining Room', 'Dining room', 36, 0, 10.3333, 12, 12),
+    room('Bedroom 2', 'Bedroom', 0, 19, 13.6667, 11, 10),
+    room('Bath 2', 'Bathroom', 13.6667, 19, 7, 11, 10),
+    room('Kitchen', 'Kitchen', 20.6667, 12, 8.6667, 15, 12),
+    room('Living Room', 'Living room', 29.3333, 12, 18.25, 18, 12),
+    room('Bedroom 3', 'Bedroom', 0, 30, 12.0833, 12.4167, 12),
+    room('Bath 3', 'Bathroom', 12.0833, 30, 7, 12.4167, 10),
+    room("Owner's Suite", 'Bedroom', 19.0833, 30, 13, 16.6667, 12),
+    room("Owner's Bath", 'Bathroom', 32.0833, 30, 10, 10, 10),
+    room('Lanai', 'Outdoor', 19.0833, 46.6667, 25.1667, 8, 12),
+  ];
+  const second: PlanRoomRect[] = [
+    room('Bonus Room', 'Living room', 0, 0, 19.5833, 20.1667, 10),
+    room('Bath 4', 'Bathroom', 19.5833, 0, 7, 10, 10),
+    room('Balcony', 'Outdoor', 0, 20.1667, 20.5833, 8, 10),
+  ];
+  return plan({
+    id: 'sanibel',
+    name: 'Sanibel',
+    stories: 2,
+    beds: 3,
+    baths: 4,
+    livingSqFt: 2997,
+    totalUnderRoofSqFt: 3822,
+    floors: [{ id: 'sanibel-1', name: 'First story', rooms: first }, { id: 'sanibel-2', name: 'Second story', rooms: second }],
+  });
+}
+
+function st_croix(): HousePlan {
+  const first: PlanRoomRect[] = [
+    room('Garage', 'Storage /wardrobe', 0, 0, 20, 21, 10),
+    room('Storage Area', 'Storage / wardrobe', 20, 0, 11.1667, 14, 10),
+    room('Laundry', 'Laundry', 31.1667, 0, 8.3333, 6, 10),
+    room('Foyer', 'Hallway', 39.5, 0, 8, 12, 12),
+    room('Entry', 'Outdoor', 39.5, -5, 8, 5, 10),
+    room('Study', 'Office', 47.5, 0, 11, 11.1667, 12),
+    room('Half Bath', 'Bathroom', 31.1667, 6, 8, 6, 10),
+    room('Kitchen', 'Kitchen', 0, 21, 18.3333, 16, 12),
+    room('Dining', 'Dining room', 18.3333, 21, 18.1667, 11.3333, 12),
+    room('Great Room', 'Living room', 36.5, 12, 22, 12.6667, 12),
+    room("Owner's Suite", 'Bedroom', 0, 37, 16.6667, 15.8333, 10),
+    room('WIC', 'Storage /wardrobe', 16.6667, 37, 5.3333, 7.9167, 10),
+    room("Owner's Bath", 'Bathroom', 22.0, 37, 10, 12, 10),
+    room('Lanai', 'Outdoor', 36.5, 24.6667, 22, 11.3333, 12),
+  ];
+  const second: PlanRoomRect[] = [
+    room('Loft', 'Living room', 0, 0, 15, 16.8333, 10),
+    room('Bedroom 2', 'Bedroom', 15, 0, 12.1667, 11.5833, 10),
+    room('Bath', 'Bathroom', 27.1667, 0, 7, 11.5833, 10),
+    room('Bedroom 3', 'Bedroom', 0, 16.8333, 12.1667, 11.3333, 10),
+    room('Balcony', 'Outdoor', 12.1667, 16.8333, 22.6667, 11.3333, 10),
+  ];
+  return plan({
+    id: 'st-croix',
+    name: 'St. Croix',
+    stories: 2,
+    beds: 4,
+    baths: 4,
+    livingSqFt: 2781,
+    totalUnderRoofSqFt: 3953,
+    floors: [{ id: 'st-croix-1', name: 'First story', rooms: first }, { id: 'st-croix-2', name: 'Second story', rooms: second }],
+  });
+}
+
+function st_thomas(): HousePlan {
+  const rooms: PlanRoomRect[] = [
+    room('Bedroom 4', 'Bedroom', 0, 0, 11, 11.1667, 10),
+    room('Foyer', 'Hallway', 11, 0, 8, 11.1667, 12),
+    room('Entry', 'Outdoor', 11, -5, 8, 5, 10),
+    room('Garage', 'Storage /wardrobe', 19, 0, 20, 22, 10),
+    room('Kitchen', 'Kitchen', 0, 11.1667, 18.3333, 16, 12),
+    room('Dining', 'Dining room', 0, 27.1667, 18.1667, 11, 12),
+    room('Great Room', 'Living room', 0, 38.1667, 23.5, 24.3333, 12),
+    room('Lanai', 'Outdoor', 0, 62.5, 22, 15, 10),
+    room('Laundry', 'Laundry', 19, 22, 8, 8, 10),
+    room('Bedroom 2', 'Bedroom', 27, 22, 11.1667, 8, 10),
+    room('Bath 3', 'Bathroom', 38.1667, 22, 7, 8, 10),
+    room('Bath 2', 'Bathroom', 19, 30, 7, 8, 10),
+    room('Bedroom 3', 'Bedroom', 26, 30, 14.8333, 8, 10),
+    room("Owner's Suite", 'Bedroom', 23.5, 38.1667, 16.6667, 15.8333, 10),
+    room('WIC', 'Storage /wardrobe', 40.1667, 38.1667, 8, 8, 10),
+    room("Owner's Bath", 'Bathroom', 40.1667, 46.1667, 10, 12, 10),
+  ];
+  return plan({
+    id: 'st-thomas',
+    name: 'St. Thomas',
+    stories: 1,
+    beds: 4,
+    baths: 3,
+    livingSqFt: 2568,
+    totalUnderRoofSqFt: 3402,
+    floors: [{ id: 'st-thomas-1', name: 'First story', rooms }],
+  });
+}
+
+function st_johns(): HousePlan {
+  const first: PlanRoomRect[] = [
+    room('Garage', 'Storage / wardrobe', 0, 0, 22, 22, 10),
+    room('Laundry', 'Laundry', 22, 0, 8, 8, 10),
+    room('Foyer', 'Hallway', 30, 0, 8, 12, 16),
+    room('Entry', 'Outdoor', 30, -5, 8, 5, 10),
+    room('Study', 'Office', 38, 0, 12, 11, 12),
+    room('Dining', 'Dining room', 50, 0, 12, 12, 12),
+    room('Kitchen', 'Kitchen', 22, 12, 12, 10, 12),
+    room('Pantry', 'Storage /wardrobe', 34, 12, 6, 8, 12),
+    room('Living Room', 'Living room', 40, 12, 20, 18, 12),
+    room("Owner's Suite", 'Bedroom', 0, 22, 14, 18, 10),
+    room("Owner's Bath", 'Bathroom', 14, 22, 8, 12, 10),
+    room('WIC', 'Storage /wardrobe', 14, 34, 8, 8, 10),
+    room('Lanai', 'Outdoor', 40, 30, 23, 12, 12),
+  ];
+  const second: PlanRoomRect[] = [
+    room('Loft', 'Living room', 0, 0, 18, 14, 10),
+    room('Bedroom 2', 'Bedroom', 18, 0, 13, 12, 10),
+    room('Bath 2', 'Bathroom', 31, 0, 7, 12, 10),
+    room('Bedroom 3', 'Bedroom', 38, 0, 14, 12, 10),
+    room('Bath 3', 'Bathroom', 52, 0, 7, 12, 10),
+    room('Balcony', 'Outdoor', 0, 14, 16, 10, 10),
+  ];
+  return plan({
+    id: 'st-johns',
+    name: 'St. Johns',
+    stories: 2,
+    beds: 3,
+    baths: 3,
+    livingSqFt: 2663,
+    totalUnderRoofSqFt: 3410,
+    floors: [{ id: 'st-johns-1', name: 'First story', rooms: first }, { id: 'st-johns-2', name: 'Second story', rooms: second }],
+  });
+}
+
+function ravello(): HousePlan {
+  const first: PlanRoomRect[] = [
+    room('Garage', 'Storage / wardrobe', 0, 0, 22, 22, 10),
+    room('Laundry', 'Laundry', 22, 0, 8, 8, 10),
+    room('Foyer', 'Hallway', 30, 0, 8, 12, 16),
+    room('Entry', 'Outdoor', 30, -5, 8, 5, 10),
+    room('Study', 'Office', 38, 0, 12, 11, 12),
+    room('Dining', 'Dining room', 50, 0, 12, 12, 12),
+    room('Kitchen', 'Kitchen', 22, 12, 12, 10, 12),
+    room('Pantry', 'Storage /wardrobe', 34, 12, 6, 8, 12),
+    room('Living Room', 'Living room', 40, 12, 20, 18, 12),
+    room("Owner's Suite", 'Bedroom', 0, 22, 14, 18, 10),
+    room("Owner's Bath", 'Bathroom', 14, 22, 8, 12, 10),
+    room('WIC', 'Storage /wardrobe', 14, 34, 8, 8, 10),
+    room('Lanai', 'Outdoor', 40, 30, 23, 12, 12),
+  ];
+  const second: PlanRoomRect[] = [
+    room('Loft', 'Living room', 0, 0, 18, 14, 10),
+    room('Bedroom 2', 'Bedroom', 18, 0, 13, 12, 10),
+    room('Bath 2', 'Bathroom', 31, 0, 7, 12, 10),
+    room('Bedroom 3', 'Bedroom', 38, 0, 14, 12, 10),
+    room('Bath 3', 'Bathroom', 52, 0, 7, 12, 10),
+    room('Balcony', 'Outdoor', 0, 14, 16, 10, 10),
+  ];
+  return plan({
+    id: 'ravello',
+    name: 'Ravello',
+    stories: 2,
+    beds: 3,
+    baths: 3,
+    livingSqFt: 2622,
+    totalUnderRoofSqFt: 3471,
+    floors: [{ id: 'ravello-1', name: 'First story', rooms: first }, { id: 'ravello-2', name: 'Second story', rooms: second }],
+  });
+}
+
+function tradewinds(): HousePlan {
+  const rooms: PlanRoomRect[] = [
+    room('Garage', 'Storage /wardrobe', 0, 0, 24, 34, 10),
+    room('Bedroom 2', 'Bedroom', 24, 0, 13, 12.8333, 10),
+    room('Bath 2', 'Bathroom', 37, 0, 7, 12.8333, 10),
+    room('Bedroom 3', 'Bedroom', 24, 12.8333, 12.8333, 14, 10),
+    room('Bath 3', 'Bathroom', 36.8333, 12.8333, 7, 8, 10),
+    room('Hall', 'Hallway', 36.8333, 20.8333, 7, 6, 10),
+    room('Laundry', 'Laundry', 24, 26.8333, 15, 6, 10),
+    room('Entry', 'Outdoor', 44, 0, 8, 5, 10),
+    room('Foyer', 'Hallway', 44, 5, 8, 8, 12),
+    room('Study', 'Office', 52, 0, 14.5, 13.0, 12),
+    room('Kitchen', 'Kitchen', 44, 13, 12.8333, 18, 12),
+    room('Pantry', 'Storage /wardrobe', 56.8333, 13, 6, 8, 10),
+    room('Nook', 'Dining room', 44, 31, 14.8333, 12.3333, 12),
+    room('Family Room', 'Living room', 62.8333, 13, 26.4167, 17.75, 12),
+    room("Owner's Bath", 'Bathroom', 89.25, 0, 11, 16, 10),
+    room('WIC', 'Storage /wardrobe', 89.25, 16, 8, 10, 10),
+    room("Owner's Suite", 'Bedroom', 89.25, 26, 15.5, 20, 10),
+    room('Lanai', 'Outdoor', 24, 43.3333, 65, 12, 10),
+  ];
+  return plan({
+    id: 'tradewinds',
+    name: 'Tradewinds',
+    stories: 1,
+    beds: 3,
+    baths: 3,
+    livingSqFt: 3110,
+    totalUnderRoofSqFt: 4739,
+    floors: [{ id: 'tradewinds-1', name: 'First story', rooms }],
+  });
+}
+
+function driftwood(): HousePlan {
+  const rooms: PlanRoomRect[] = [
+    room('Garage', 'Storage /wardrobe', 0, 0, 20.6667, 31.6667, 10),
+    room('Laundry', 'Laundry', 20.6667, 0, 8, 8, 10),
+    room('Dining', 'Dining room', 28.6667, 0, 11.5, 13.6667, 12),
+    room('Foyer', 'Hallway', 40.1667, 0, 10, 7.6667, 13),
+    room('Entry', 'Outdoor', 40.1667, -5, 10, 5, 10),
+    room('Study', 'Office', 50.1667, 0, 12, 11.6667, 12),
+    room("Owner's Bath", 'Bathroom', 62.1667, 0, 14.8333, 16.8333, 10),
+    room('WIC', 'Storage /wardrobe', 62.1667, 16.8333, 8, 10, 10),
+    room('Bedroom 3', 'Bedroom', 0, 31.6667, 12.8333, 12.6667, 10),
+    room('Bath 2', 'Bathroom', 12.8333, 31.6667, 7, 12.6667, 10),
+    room('Kitchen', 'Kitchen', 20.6667, 13.6667, 14, 16, 12),
+    room('Great Room', 'Living room', 34.6667, 13.6667, 23, 16, 12),
+    room('Bedroom 2', 'Bedroom', 0, 44.3333, 12.8333, 15.5, 10),
+    room('Bath 3', 'Bathroom', 12.8333, 44.3333, 7, 10, 10),
+    room('Nook', 'Dining room', 20.6667, 29.6667, 15.8333, 10.3333, 12),
+    room("Owner's Suite", 'Bedroom', 57.6667, 26.8333, 17.5, 17.6667, 10),
+    room('Lanai', 'Outdoor', 19.8333, 40, 32.6667, 13.3333, 10),
+  ];
+  return plan({
+    id: 'driftwood',
+    name: 'Driftwood',
+    stories: 1,
+    beds: 3,
+    baths: 3,
+    livingSqFt: 2947,
+    totalUnderRoofSqFt: 4211,
+    floors: [{ id: 'driftwood-1', name: 'First story', rooms }],
+  });
+}
+
+function oyster_bay(): HousePlan {
+  const rooms: PlanRoomRect[] = [
+    room('Garage', 'Storage /wardrobe', 0, 0, 28, 28, 10),
+    room('Laundry', 'Laundry', 28, 0, 8, 8, 10),
+    room('Foyer', 'Hallway', 36, 0, 9, 12, 13),
+    room('Entry', 'Outdoor', 36, -5, 9, 5, 10),
+    room('Study', 'Office', 45, 0, 11, 12, 12),
+    room('Dining', 'Dining room', 56, 0, 12, 12, 12),
+    room('Bedroom 2', 'Bedroom', 0, 28, 12, 12, 10),
+    room('Bath 2', 'Bathroom', 12, 28, 7, 12, 10),
+    room('Great Room', 'Living room', 19, 28, 24, 22, 12),
+    room('Kitchen', 'Kitchen', 43, 28, 14, 14.3, 12),
+    room('Nook', 'Dining room', 43, 42.3, 14, 7.7, 12),
+    room('Bedroom 3', 'Bedroom', 0, 50, 12, 14, 10),
+    room('Bath 3', 'Bathroom', 12, 50, 7, 14, 10),
+    room("Owner's Suite", 'Bedroom', 25.0, 50, 15, 18, 10),
+    room("Owner's Bath", 'Bathroom', 40.0, 50, 10, 12, 10),
+    room('WIC', 'Storage /wardrobe', 40.0, 62, 8, 8, 10),
+    room('Bedroom 4', 'Bedroom', 0, 64, 12, 12, 10),
+    room('Game Room', 'Living room', 0, 76, 14, 12, 10),
+    room('Lanai', 'Outdoor', 19, 70, 40, 14, 10),
+  ];
+  return plan({
+    id: 'oyster-bay',
+    name: 'Oyster Bay',
+    stories: 1,
+    beds: 4,
+    baths: 3,
+    livingSqFt: 3299,
+    totalUnderRoofSqFt: 5115,
+    floors: [{ id: 'oyster-bay-1', name: 'First story', rooms }],
+  });
+}
+
+function sandbridge(): HousePlan {
+  const rooms: PlanRoomRect[] = [
+    room('Garage', 'Storage /wardrobe', 0, 0, 28, 30, 10),
+    room('Laundry', 'Laundry', 28, 0, 8, 8, 10),
+    room('Foyer', 'Hallway', 36, 0, 9, 12, 13),
+    room('Entry', 'Outdoor', 36, -5, 9, 5, 10),
+    room('Study', 'Office', 45, 0, 11, 12, 12),
+    room('Dining', 'Dining room', 56, 0, 12, 12, 12),
+    room('Bedroom 2', 'Bedroom', 0, 30, 12, 12, 10),
+    room('Bath 2', 'Bathroom', 12, 30, 7, 12, 10),
+    room('Great Room', 'Living room', 19, 30, 28, 24, 12),
+    room('Kitchen', 'Kitchen', 47, 30, 16, 15.6, 12),
+    room('Nook', 'Dining room', 47, 45.6, 16, 8.4, 12),
+    room('Bedroom 3', 'Bedroom', 0, 54, 12, 14, 10),
+    room('Bath 3', 'Bathroom', 12, 54, 7, 14, 10),
+    room("Owner's Suite", 'Bedroom', 26.0, 54, 18, 20, 10),
+    room("Owner's Bath", 'Bathroom', 44.0, 54, 10, 12, 10),
+    room('WIC', 'Storage /wardrobe', 44.0, 66, 8, 8, 10),
+    room('Bedroom 4', 'Bedroom', 0, 68, 12, 12, 10),
+    room('Game Room', 'Living room', 0, 80, 14, 12, 10),
+    room('Lanai', 'Outdoor', 19, 74, 48, 14, 10),
+  ];
+  return plan({
+    id: 'sandbridge',
+    name: 'Sandbridge',
+    stories: 1,
+    beds: 5,
+    baths: 4,
+    livingSqFt: 4874,
+    totalUnderRoofSqFt: 6773,
+    floors: [{ id: 'sandbridge-1', name: 'First story', rooms }],
+  });
+}
+
+function marbella(): HousePlan {
+  const rooms: PlanRoomRect[] = [
+    room('Garage', 'Storage /wardrobe', 0, 0, 20, 22, 10),
+    room('Laundry', 'Laundry', 20, 0, 8, 8, 10),
+    room('Foyer', 'Hallway', 28, 0, 9, 12, 13),
+    room('Entry', 'Outdoor', 28, -5, 9, 5, 10),
+    room('Study', 'Office', 37, 0, 11, 12, 12),
+    room('Dining', 'Dining room', 48, 0, 12, 12, 12),
+    room('Bedroom 2', 'Bedroom', 0, 22, 12, 12, 10),
+    room('Bath 2', 'Bathroom', 12, 22, 7, 12, 10),
+    room('Great Room', 'Living room', 19, 22, 18, 18, 12),
+    room('Kitchen', 'Kitchen', 37, 22, 14, 11.7, 12),
+    room('Nook', 'Dining room', 37, 33.7, 14, 6.3, 12),
+    room('Bedroom 3', 'Bedroom', 0, 40, 12, 14, 10),
+    room('Bath 3', 'Bathroom', 12, 40, 7, 14, 10),
+    room("Owner's Suite", 'Bedroom', 23.5, 40, 14, 16, 10),
+    room("Owner's Bath", 'Bathroom', 37.5, 40, 10, 12, 10),
+    room('WIC', 'Storage /wardrobe', 37.5, 52, 8, 8, 10),
+    room('Bedroom 4', 'Bedroom', 0, 54, 12, 12, 10),
+    room('Lanai', 'Outdoor', 19, 60, 28, 12, 10),
+  ];
+  return plan({
+    id: 'marbella',
+    name: 'Marbella',
+    stories: 1,
+    beds: 4,
+    baths: 3,
+    livingSqFt: 2683,
+    totalUnderRoofSqFt: 3582,
+    floors: [{ id: 'marbella-1', name: 'First story', rooms }],
+  });
+}
+
+function verona(): HousePlan {
+  const rooms: PlanRoomRect[] = [
+    room('Garage', 'Storage /wardrobe', 0, 0, 24, 26, 10),
+    room('Laundry', 'Laundry', 24, 0, 8, 8, 10),
+    room('Foyer', 'Hallway', 32, 0, 9, 12, 13),
+    room('Entry', 'Outdoor', 32, -5, 9, 5, 10),
+    room('Study', 'Office', 41, 0, 11, 12, 12),
+    room('Dining', 'Dining room', 52, 0, 12, 12, 12),
+    room('Bedroom 2', 'Bedroom', 0, 26, 12, 12, 10),
+    room('Bath 2', 'Bathroom', 12, 26, 7, 12, 10),
+    room('Great Room', 'Living room', 19, 26, 24, 22, 12),
+    room('Kitchen', 'Kitchen', 43, 26, 14, 14.3, 12),
+    room('Nook', 'Dining room', 43, 40.3, 14, 7.7, 12),
+    room('Bedroom 3', 'Bedroom', 0, 48, 12, 14, 10),
+    room('Bath 3', 'Bathroom', 12, 48, 7, 14, 10),
+    room("Owner's Suite", 'Bedroom', 25.0, 48, 16, 18, 10),
+    room("Owner's Bath", 'Bathroom', 41.0, 48, 10, 12, 10),
+    room('WIC', 'Storage /wardrobe', 41.0, 60, 8, 8, 10),
+    room('Bedroom 4', 'Bedroom', 0, 62, 12, 12, 10),
+    room('Game Room', 'Living room', 0, 74, 14, 12, 10),
+    room('Lanai', 'Outdoor', 19, 68, 32, 14, 10),
+  ];
+  return plan({
+    id: 'verona',
+    name: 'Verona',
+    stories: 1,
+    beds: 4,
+    baths: 3,
+    livingSqFt: 3261,
+    totalUnderRoofSqFt: 4747,
+    floors: [{ id: 'verona-1', name: 'First story', rooms }],
+  });
+}
+
+function villa_della_dolce_vita(): HousePlan {
+  const first: PlanRoomRect[] = [
+    room('Garage', 'Storage / wardrobe', 0, 0, 22, 22, 10),
+    room('Laundry', 'Laundry', 22, 0, 8, 8, 10),
+    room('Foyer', 'Hallway', 30, 0, 8, 12, 16),
+    room('Entry', 'Outdoor', 30, -5, 8, 5, 10),
+    room('Study', 'Office', 38, 0, 12, 11, 12),
+    room('Dining', 'Dining room', 50, 0, 12, 12, 12),
+    room('Kitchen', 'Kitchen', 22, 12, 12, 10, 12),
+    room('Pantry', 'Storage /wardrobe', 34, 12, 6, 8, 12),
+    room('Living Room', 'Living room', 40, 12, 20, 18, 12),
+    room("Owner's Suite", 'Bedroom', 0, 22, 14, 18, 10),
+    room("Owner's Bath", 'Bathroom', 14, 22, 8, 12, 10),
+    room('WIC', 'Storage /wardrobe', 14, 34, 8, 8, 10),
+    room('Lanai', 'Outdoor', 40, 30, 23, 12, 12),
+  ];
+  const second: PlanRoomRect[] = [
+    room('Loft', 'Living room', 0, 0, 18, 14, 10),
+    room('Bedroom 2', 'Bedroom', 18, 0, 13, 12, 10),
+    room('Bath 2', 'Bathroom', 31, 0, 7, 12, 10),
+    room('Bedroom 3', 'Bedroom', 38, 0, 14, 12, 10),
+    room('Bath 3', 'Bathroom', 52, 0, 7, 12, 10),
+    room('Balcony', 'Outdoor', 0, 14, 16, 10, 10),
+    room('Bedroom 4', 'Bedroom', 0, 24, 12, 12, 10),
+    room('Bedroom 5', 'Bedroom', 12, 24, 12, 12, 10),
+  ];
+  return plan({
+    id: 'villa-della-dolce-vita',
+    name: 'Villa Della Dolce Vita',
+    stories: 2,
+    beds: 5,
+    baths: 4,
+    livingSqFt: 4176,
+    totalUnderRoofSqFt: 6670,
+    floors: [{ id: 'villa-della-dolce-vita-1', name: 'First story', rooms: first }, { id: 'villa-della-dolce-vita-2', name: 'Second story', rooms: second }],
+  });
+}
+
+function portofino(): HousePlan {
+  const first: PlanRoomRect[] = [
+    room('Garage', 'Storage / wardrobe', 0, 0, 22, 22, 10),
+    room('Laundry', 'Laundry', 22, 0, 8, 8, 10),
+    room('Foyer', 'Hallway', 30, 0, 8, 12, 16),
+    room('Entry', 'Outdoor', 30, -5, 8, 5, 10),
+    room('Study', 'Office', 38, 0, 12, 11, 12),
+    room('Dining', 'Dining room', 50, 0, 12, 12, 12),
+    room('Kitchen', 'Kitchen', 22, 12, 12, 10, 12),
+    room('Pantry', 'Storage /wardrobe', 34, 12, 6, 8, 12),
+    room('Living Room', 'Living room', 40, 12, 20, 18, 12),
+    room("Owner's Suite", 'Bedroom', 0, 22, 14, 18, 10),
+    room("Owner's Bath", 'Bathroom', 14, 22, 8, 12, 10),
+    room('WIC', 'Storage /wardrobe', 14, 34, 8, 8, 10),
+    room('Lanai', 'Outdoor', 40, 30, 23, 12, 12),
+  ];
+  const second: PlanRoomRect[] = [
+    room('Loft', 'Living room', 0, 0, 18, 14, 10),
+    room('Bedroom 2', 'Bedroom', 18, 0, 13, 12, 10),
+    room('Bath 2', 'Bathroom', 31, 0, 7, 12, 10),
+    room('Bedroom 3', 'Bedroom', 38, 0, 14, 12, 10),
+    room('Bath 3', 'Bathroom', 52, 0, 7, 12, 10),
+    room('Balcony', 'Outdoor', 0, 14, 16, 10, 10),
+    room('Bedroom 4', 'Bedroom', 0, 24, 12, 12, 10),
+  ];
+  return plan({
+    id: 'portofino',
+    name: 'Portofino',
+    stories: 2,
+    beds: 4,
+    baths: 4,
+    livingSqFt: 4272,
+    totalUnderRoofSqFt: 6528,
+    floors: [{ id: 'portofino-1', name: 'First story', rooms: first }, { id: 'portofino-2', name: 'Second story', rooms: second }],
+  });
+}
+
+function tidelands(): HousePlan {
+  const rooms: PlanRoomRect[] = [
+    room('Garage', 'Storage / wardrobe', 0, 0, 24, 34, 10),
+    room('Bedroom 2', 'Bedroom', 24, 0, 13, 12.9167, 10),
+    room('Bath 2', 'Bathroom', 37, 0, 9, 7.0833, 10),
+    room('Bedroom 3', 'Bedroom', 24, 12.9167, 13, 13.6667, 10),
+    room('Bath 3', 'Bathroom', 37, 12.9167, 9, 8.6667, 10),
+    room('Bedroom 4', 'Bedroom', 24, 26.5833, 13, 13, 10),
+    room('Bath 4', 'Bathroom', 37, 26.5833, 9, 8.6667, 10),
+    room('Hall', 'Hallway', 37, 35.25, 9, 6, 10),
+    room('Laundry', 'Laundry', 46, 0, 19.25, 8.3333, 10),
+    room('Entry', 'Outdoor', 46, -5, 8, 5, 10),
+    room('Foyer', 'Hallway', 65.25, 0, 8, 11.6667, 12),
+    room('Study', 'Office', 73.25, 0, 14.5, 11.6667, 12),
+    room('Kitchen', 'Kitchen', 46, 8.3333, 12.8333, 18.5, 12),
+    room('Pantry', 'Storage /wardrobe', 58.8333, 8.3333, 6, 9.3333, 10),
+    room('Nook', 'Dining room', 46, 26.8333, 14.8333, 12.3333, 12),
+    room('Family Room', 'Living room', 64.8333, 11.6667, 26.4167, 19.0833, 12),
+    room("Owner's Bath", 'Bathroom', 91.25, 0, 11, 16, 10),
+    room('WIC', 'Storage /wardrobe', 91.25, 16, 8, 10, 10),
+    room("Owner's Suite", 'Bedroom', 102.25, 16, 15.5, 20, 10),
+    room('Lanai', 'Outdoor', 46, 39.1667, 40.0, 14, 10),
+  ];
+  return plan({
+    id: 'tidelands',
+    name: 'Tidelands',
+    stories: 1,
+    beds: 4,
+    baths: 4,
+    livingSqFt: 3560,
+    totalUnderRoofSqFt: 5353,
+    floors: [{ id: 'tidelands-1', name: 'First story', rooms }],
+  });
+}
+
+function capri(): HousePlan {
+  const rooms: PlanRoomRect[] = [
+    room('Garage', 'Storage /wardrobe', 0, 0, 22, 24, 10),
+    room('Laundry', 'Laundry', 22, 0, 8, 8, 10),
+    room('Foyer', 'Hallway', 30, 0, 9, 12, 13),
+    room('Entry', 'Outdoor', 30, -5, 9, 5, 10),
+    room('Study', 'Office', 39, 0, 11, 12, 12),
+    room('Dining', 'Dining room', 50, 0, 12, 12, 12),
+    room('Bedroom 2', 'Bedroom', 0, 24, 12, 12, 10),
+    room('Bath 2', 'Bathroom', 12, 24, 7, 12, 10),
+    room('Great Room', 'Living room', 19, 24, 20, 18, 12),
+    room('Kitchen', 'Kitchen', 39, 24, 14, 11.7, 12),
+    room('Nook', 'Dining room', 39, 35.7, 14, 6.3, 12),
+    room('Bedroom 3', 'Bedroom', 0, 42, 12, 14, 10),
+    room('Bath 3', 'Bathroom', 12, 42, 7, 14, 10),
+    room("Owner's Suite", 'Bedroom', 24.0, 42, 14, 16, 10),
+    room("Owner's Bath", 'Bathroom', 38.0, 42, 10, 12, 10),
+    room('WIC', 'Storage /wardrobe', 38.0, 54, 8, 8, 10),
+    room('Lanai', 'Outdoor', 19, 62, 28, 12, 10),
+  ];
+  return plan({
+    id: 'capri',
+    name: 'Capri',
+    stories: 1,
+    beds: 3,
+    baths: 3,
+    livingSqFt: 2767,
+    totalUnderRoofSqFt: 3920,
+    floors: [{ id: 'capri-1', name: 'First story', rooms }],
+  });
+}
+
+function granada(): HousePlan {
+  const first: PlanRoomRect[] = [
+    room('Garage', 'Storage / wardrobe', 0, 0, 22, 22, 10),
+    room('Laundry', 'Laundry', 22, 0, 8, 8, 10),
+    room('Foyer', 'Hallway', 30, 0, 8, 12, 16),
+    room('Entry', 'Outdoor', 30, -5, 8, 5, 10),
+    room('Study', 'Office', 38, 0, 12, 11, 12),
+    room('Dining', 'Dining room', 50, 0, 12, 12, 12),
+    room('Kitchen', 'Kitchen', 22, 12, 12, 10, 12),
+    room('Pantry', 'Storage /wardrobe', 34, 12, 6, 8, 12),
+    room('Living Room', 'Living room', 40, 12, 20, 18, 12),
+    room("Owner's Suite", 'Bedroom', 0, 22, 14, 18, 10),
+    room("Owner's Bath", 'Bathroom', 14, 22, 8, 12, 10),
+    room('WIC', 'Storage /wardrobe', 14, 34, 8, 8, 10),
+    room('Lanai', 'Outdoor', 40, 30, 23, 12, 12),
+  ];
+  const second: PlanRoomRect[] = [
+    room('Loft', 'Living room', 0, 0, 18, 14, 10),
+    room('Bedroom 2', 'Bedroom', 18, 0, 13, 12, 10),
+    room('Bath 2', 'Bathroom', 31, 0, 7, 12, 10),
+    room('Bedroom 3', 'Bedroom', 38, 0, 14, 12, 10),
+    room('Bath 3', 'Bathroom', 52, 0, 7, 12, 10),
+    room('Balcony', 'Outdoor', 0, 14, 16, 10, 10),
+  ];
+  return plan({
+    id: 'granada',
+    name: 'Granada',
+    stories: 2,
+    beds: 3,
+    baths: 3,
+    livingSqFt: 2565,
+    totalUnderRoofSqFt: 3531,
+    floors: [{ id: 'granada-1', name: 'First story', rooms: first }, { id: 'granada-2', name: 'Second story', rooms: second }],
+  });
+}
+
+function santorini(): HousePlan {
+  const rooms: PlanRoomRect[] = [
+    room('Garage', 'Storage /wardrobe', 0, 0, 26, 28, 10),
+    room('Laundry', 'Laundry', 26, 0, 8, 8, 10),
+    room('Foyer', 'Hallway', 34, 0, 9, 12, 13),
+    room('Entry', 'Outdoor', 34, -5, 9, 5, 10),
+    room('Study', 'Office', 43, 0, 11, 12, 12),
+    room('Dining', 'Dining room', 54, 0, 12, 12, 12),
+    room('Bedroom 2', 'Bedroom', 0, 28, 12, 12, 10),
+    room('Bath 2', 'Bathroom', 12, 28, 7, 12, 10),
+    room('Great Room', 'Living room', 19, 28, 24, 22, 12),
+    room('Kitchen', 'Kitchen', 43, 28, 14, 14.3, 12),
+    room('Nook', 'Dining room', 43, 42.3, 14, 7.7, 12),
+    room('Bedroom 3', 'Bedroom', 0, 50, 12, 14, 10),
+    room('Bath 3', 'Bathroom', 12, 50, 7, 14, 10),
+    room("Owner's Suite", 'Bedroom', 25.0, 50, 16, 18, 10),
+    room("Owner's Bath", 'Bathroom', 41.0, 50, 10, 12, 10),
+    room('WIC', 'Storage /wardrobe', 41.0, 62, 8, 8, 10),
+    room('Bedroom 4', 'Bedroom', 0, 64, 12, 12, 10),
+    room('Game Room', 'Living room', 0, 76, 14, 12, 10),
+    room('Lanai', 'Outdoor', 19, 70, 36, 14, 10),
+  ];
+  return plan({
+    id: 'santorini',
+    name: 'Santorini',
+    stories: 1,
+    beds: 4,
+    baths: 4,
+    livingSqFt: 3505,
+    totalUnderRoofSqFt: 5220,
+    floors: [{ id: 'santorini-1', name: 'First story', rooms }],
   });
 }
 
 export const olsenHousePlans: HousePlan[] = [
-  coralSands(),
+  coral_sands(),
   islamorada(),
   largo(),
   captiva(),
-  twoStoryFamily({ id: 'key-biscayne', name: 'Key Biscayne', beds: 3, baths: 3, livingSqFt: 2997, totalUnderRoofSqFt: 4065 }),
-  twoStoryFamily({ id: 'sanibel', name: 'Sanibel', beds: 3, baths: 3, livingSqFt: 2997, totalUnderRoofSqFt: 3822 }),
-  ranch3Bed({ id: 'st-croix', name: 'St. Croix', beds: 4, baths: 3, livingSqFt: 3505, totalUnderRoofSqFt: 5220, greatW: 24, greatD: 22, lanaiW: 42, game: true }),
-  ranch3Bed({ id: 'st-thomas', name: 'St. Thomas', beds: 3, baths: 3, livingSqFt: 2568, totalUnderRoofSqFt: 3402, garageW: 20, garageD: 20, greatW: 18, ownerW: 14 }),
-  twoStoryFamily({ id: 'st-johns', name: 'St. Johns', beds: 3, baths: 3, livingSqFt: 2663, totalUnderRoofSqFt: 3410 }),
-  twoStoryFamily({ id: 'ravello', name: 'Ravello', beds: 3, baths: 3, livingSqFt: 2622, totalUnderRoofSqFt: 3471 }),
-  ranch3Bed({ id: 'tradewinds', name: 'Tradewinds', beds: 4, baths: 3, livingSqFt: 3110, totalUnderRoofSqFt: 4739, greatW: 24, lanaiW: 40, game: true }),
-  ranch3Bed({ id: 'driftwood', name: 'Driftwood', beds: 3, baths: 3, livingSqFt: 2947, totalUnderRoofSqFt: 4211, greatW: 22, lanaiW: 38 }),
-  ranch3Bed({ id: 'oyster-bay', name: 'Oyster Bay', beds: 4, baths: 3, livingSqFt: 3299, totalUnderRoofSqFt: 5115, greatW: 24, greatD: 22, lanaiW: 44, game: true }),
-  ranch3Bed({ id: 'sandbridge', name: 'Sandbridge', beds: 5, baths: 4, livingSqFt: 4874, totalUnderRoofSqFt: 6773, garageW: 28, garageD: 24, greatW: 28, greatD: 24, ownerW: 18, ownerD: 20, kitchenW: 16, lanaiW: 50, game: true }),
-  ranch3Bed({ id: 'marbella', name: 'Marbella', beds: 3, baths: 3, livingSqFt: 2683, totalUnderRoofSqFt: 3582, garageW: 20, greatW: 18, lanaiW: 32 }),
-  ranch3Bed({ id: 'verona', name: 'Verona', beds: 4, baths: 3, livingSqFt: 3261, totalUnderRoofSqFt: 4747, greatW: 24, lanaiW: 30, game: true }),
-  twoStoryFamily({ id: 'villa-della-dolce-vita', name: 'Villa Della Dolce Vita', beds: 5, baths: 4, livingSqFt: 4176, totalUnderRoofSqFt: 6670 }),
-  twoStoryFamily({ id: 'portofino', name: 'Portofino', beds: 4, baths: 4, livingSqFt: 4272, totalUnderRoofSqFt: 6528 }),
-  ranch3Bed({ id: 'tidelands', name: 'Tidelands', beds: 4, baths: 3, livingSqFt: 3560, totalUnderRoofSqFt: 5353, greatW: 26, greatD: 22, lanaiW: 44, game: true }),
-  ranch3Bed({ id: 'capri', name: 'Capri', beds: 3, baths: 3, livingSqFt: 2767, totalUnderRoofSqFt: 3920, greatW: 20, lanaiW: 34 }),
-  twoStoryFamily({ id: 'granada', name: 'Granada', beds: 3, baths: 3, livingSqFt: 2565, totalUnderRoofSqFt: 3531 }),
-  ranch3Bed({ id: 'santorini', name: 'Santorini', beds: 4, baths: 3, livingSqFt: 3505, totalUnderRoofSqFt: 5220, greatW: 24, lanaiW: 40, game: true }),
+  key_biscayne(),
+  sanibel(),
+  st_croix(),
+  st_thomas(),
+  st_johns(),
+  ravello(),
+  tradewinds(),
+  driftwood(),
+  oyster_bay(),
+  sandbridge(),
+  marbella(),
+  verona(),
+  villa_della_dolce_vita(),
+  portofino(),
+  tidelands(),
+  capri(),
+  granada(),
+  santorini(),
 ];
 
 export function getHousePlan(id: string) {
