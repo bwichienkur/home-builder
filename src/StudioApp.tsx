@@ -570,6 +570,17 @@ export default function StudioApp() {
             <button type="button" className="menu-secondary" onClick={() => exportFloorPlan('ifc')} disabled={walls.length === 0}>
               <FileJson size={16} /> Export IFC4
             </button>
+            <button
+              type="button"
+              className="menu-secondary"
+              disabled={walls.length === 0}
+              onClick={() => {
+                setElevationOpen(true);
+                closeProjectMenu();
+              }}
+            >
+              <FileJson size={16} /> Preview elevations
+            </button>
           </div>
 
           <button

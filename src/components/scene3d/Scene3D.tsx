@@ -51,6 +51,11 @@ function preferInteriorPicks(hits: THREE.Intersection[]) {
     if (plane.length) return plane;
     return hits.filter((h) => !hasUserDataFlag(h.object, 'furniturePick'));
   }
+  // Plan: wall edge strips win over room floors so Exterior / openings stay discoverable.
+  if (usePlannerStore.getState().cameraMode === 'top') {
+    const wallPlan = hits.filter((h) => hasUserDataFlag(h.object, 'wallPlanPick'));
+    if (wallPlan.length) return wallPlan;
+  }
   const furniture = hits.filter((h) => hasUserDataFlag(h.object, 'furniturePick'));
   if (!furniture.length) return hits;
   // If any cutaway proxy/soft wall is closer than furniture, keep the furniture hits so
@@ -88,21 +93,14 @@ function CameraRig() {
   const walls = usePlannerStore((s) => s.walls);
   const planRooms = usePlannerStore((s) => s.planRooms);
   const selectedRoomId = usePlannerStore((s) => s.selectedRoomId);
-  const selectedWallId = usePlannerStore((s) => s.selectedWallId);
-  const studioMode = usePlannerStore((s) => s.studioMode);
-  const tool = usePlannerStore((s) => s.tool);
-  const planWallTool = usePlannerStore((s) => s.planWallTool);
   const workflowStage = usePlannerStore((s) => s.workflowStage);
   const placing = usePlannerStore((s) => !!s.pendingPlacement);
   const [moving, setMoving] = useState(false);
   const controls = useRef<any>(null);
   const { invalidate, get, size } = useThree();
   const focusRoom = workflowStage === 'room' ? planRooms.find((r) => r.id === selectedRoomId) : null;
-  // Wall-zoom was for the dim card; during Walls resize keep the full plate centered.
-  const focusWall =
-    studioMode === 'architect' && mode === 'top' && tool === 'select' && !planWallTool
-      ? walls.find((w) => w.id === selectedWallId) ?? null
-      : null;
+  // Keep full-plate framing while tagging walls — no single-wall zoom.
+  const focusWall = null as Wall | null;
   const coarse = useMemo(() => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches, []);
   const [menuOpen, setMenuOpen] = useState(() => document.body.dataset.menuOpen === '1');
   const [inspectorTick, setInspectorTick] = useState(0);
@@ -362,7 +360,7 @@ function CameraRig() {
 
   // Keep the selected wall centered as length / width / height change (not during plan wall resize).
   useEffect(() => {
-    if (!focusWall || inspectorOpen || planWallTool) return;
+    if (!focusWall || inspectorOpen) return;
     if (document.body.dataset.movingFurniture === '1') return;
     if (performance.now() < modeAnimUntil.current) return;
     if (mode !== 'top') return;
@@ -379,7 +377,6 @@ function CameraRig() {
     framing.topHeight,
     shiftWorldX,
     shiftWorldZ,
-    planWallTool,
   ]);
 
   // Edit card open/close — ease into free area / restore the pre-panel view.
@@ -997,7 +994,7 @@ function WallMeshes() {
                 onWallClick(w.id);
               }}
             >
-              <planeGeometry args={[origLen || 0.2, Math.max(w.thickness * 2.2, 0.28)]} />
+              <planeGeometry args={[origLen || 0.2, Math.max(w.thickness * 4.5, 0.45)]} />
               <meshBasicMaterial transparent opacity={0} depthWrite={false} side={THREE.DoubleSide} />
             </mesh>
           ) : null;
@@ -1190,12 +1187,20 @@ function WallMeshes() {
                   key={w.id + 'len'}
                   position={[midX, 0.12, midZ]}
                   center
-                  style={{ pointerEvents: 'none' }}
+                  style={{ pointerEvents: 'auto' }}
                   zIndexRange={[40, 20]}
                 >
-                  <div className={`wall-length-chip${selected ? ' is-selected' : ''}${ (w.assembly ?? 'interior') === 'exterior' ? ' is-exterior' : ''}`}>
+                  <button
+                    type="button"
+                    className={`wall-length-chip${selected ? ' is-selected' : ''}${ (w.assembly ?? 'interior') === 'exterior' ? ' is-exterior' : ''}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onWallClick(w.id);
+                    }}
+                    title="Edit wall"
+                  >
                     {formatLength(origLen, unitSystem)}
-                  </div>
+                  </button>
                 </Html>,
               ]
             : []),
