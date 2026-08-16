@@ -1,4 +1,5 @@
 import { getProject, listProjects, saveProject, type CloudProjectSummary } from '../api/client';
+import { platformConfig } from './platform/config';
 
 const CLOUD_ID_KEY = 'mahnikka-cloud-project-id';
 const CLOUD_VERSION_KEY = 'mahnikka-cloud-project-version';
@@ -37,11 +38,10 @@ export type CloudSaveResult =
   | { ok: true; mode: 'local'; reason: string }
   | { ok: false; error: string };
 
-/** Try server save; fall back to local-only when API/DB unavailable. */
+/** Prefer cloud when VITE_API_URL is set; soft-fall back to local if API/DB is down. */
 export async function saveProjectToCloud(name: string, scene: unknown): Promise<CloudSaveResult> {
-  const apiUrl = import.meta.env.VITE_API_URL ?? '';
-  if (!apiUrl && !import.meta.env.DEV) {
-    return { ok: true, mode: 'local', reason: 'No API configured' };
+  if (!platformConfig.cloudConfigured()) {
+    return { ok: true, mode: 'local', reason: 'No API configured (set VITE_API_URL)' };
   }
   try {
     const ref = readCloudProjectRef();

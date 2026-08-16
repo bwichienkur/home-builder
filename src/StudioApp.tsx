@@ -37,12 +37,13 @@ import {
 } from './lib/designShare';
 import { downloadTextFile, shoppingListCsvFromDesign } from './lib/shoppingListCsv';
 import { formatArea } from './lib/measurements';
-import { computeConstructionTakeoff, constructionTakeoffCsv } from './lib/constructionTakeoff';
-import { drawFloorPlanToCanvas, downloadCanvasPng, downloadPlanDxf, downloadScaledPlanPdf } from './lib/planExport/drawFloorPlan';
+import { computeConstructionTakeoff, constructionTakeoffCsv, mergeConstructionTakeoffs } from './lib/constructionTakeoff';
+import { drawFloorPlanToCanvas, downloadCanvasPng, downloadMultiFloorScaledPlanPdf, downloadPlanDxf } from './lib/planExport/drawFloorPlan';
 import { downloadPlanIfc } from './lib/planExport/buildIfc';
 import { fetchCloudProjects, loadCloudProject, readCloudProjectRef, saveProjectToCloud } from './lib/cloudProjects';
 import type { CloudProjectSummary } from './api/client';
 import { useCrmStore } from './store/crmStore';
+import { platformConfig } from './lib/platform/config';
 
 const Scene3D = lazy(() => import('./components/scene3d/Scene3D').then((m) => ({ default: m.Scene3D })));
 
@@ -249,35 +250,76 @@ export default function StudioApp() {
 
   const exportFloorPlan = useCallback(
     (format: 'pdf' | 'png' | 'dxf' | 'ifc') => {
-      const activeFloor = store.floors.find((f) => f.id === store.activeFloorId);
-      const input = {
-        name: projectName,
-        floorName: activeFloor?.name,
-        walls: store.walls,
-        openings: store.openings,
-        planRooms: store.planRooms,
-        furniture: store.furniture,
-        unitSystem: store.unitSystem,
-      };
+      const floors = store.floors;
+      const inputs = floors.map((f) => {
+        const live = f.id === store.activeFloorId;
+        const walls = live ? store.walls : f.scene.walls;
+        const openings = live ? store.openings : f.scene.openings;
+        const furniture = live ? store.furniture : f.scene.furniture;
+        const planRooms = live ? store.planRooms : f.planRooms ?? f.scene.planRooms ?? [];
+        return {
+          name: projectName,
+          floorName: f.name,
+          walls,
+          openings,
+          planRooms,
+          furniture,
+          unitSystem: store.unitSystem,
+        };
+      });
+      const active = inputs.find((_, i) => floors[i]?.id === store.activeFloorId) ?? inputs[0];
       const base = `${projectName.replace(/[^\w\-]+/g, '-').toLowerCase() || 'mahnikka'}-plan`;
       if (format === 'dxf') {
-        downloadPlanDxf(input, `${base}.dxf`);
-        notify('CAD DXF exported (walls, rooms, openings, dims)');
+        if (inputs.length <= 1 && active) {
+          downloadPlanDxf(active, `${base}.dxf`);
+        } else {
+          inputs.forEach((input, i) => {
+            const slug = (input.floorName || `floor-${i + 1}`).replace(/[^\w\-]+/g, '-').toLowerCase();
+            window.setTimeout(() => downloadPlanDxf(input, `${base}-${slug}.dxf`), i * 200);
+          });
+        }
+        notify(
+          inputs.length > 1
+            ? `CAD DXF exported for ${inputs.length} floors`
+            : 'CAD DXF exported (walls, rooms, openings, dims)',
+        );
         return;
       }
       if (format === 'ifc') {
-        downloadPlanIfc(input, `${base}.ifc`);
-        notify('IFC4 walls/spaces exported');
+        downloadPlanIfc(
+          {
+            name: projectName,
+            floorName: active?.floorName,
+            walls: active?.walls ?? [],
+            openings: active?.openings ?? [],
+            planRooms: active?.planRooms ?? [],
+            unitSystem: store.unitSystem,
+            floors: inputs.map((input, i) => ({
+              floorName: input.floorName || `Level ${i + 1}`,
+              walls: input.walls,
+              openings: input.openings,
+              planRooms: input.planRooms,
+              elevationM: i * 3,
+            })),
+          },
+          `${base}.ifc`,
+        );
+        notify(inputs.length > 1 ? `IFC4 multi-storey export (${inputs.length} floors)` : 'IFC4 walls/spaces exported');
         return;
       }
       if (format === 'pdf') {
-        downloadScaledPlanPdf(input, `${base}.pdf`);
-        notify('Construction set PDF exported');
+        downloadMultiFloorScaledPlanPdf(inputs, `${base}.pdf`);
+        notify(
+          inputs.length > 1
+            ? `Construction set PDF exported (${inputs.length} floors)`
+            : 'Construction set PDF exported',
+        );
         return;
       }
-      const canvas = drawFloorPlanToCanvas(input);
+      if (!active) return;
+      const canvas = drawFloorPlanToCanvas(active);
       downloadCanvasPng(canvas, `${base}.png`);
-      notify('Floor plan sheet PNG exported');
+      notify('Floor plan sheet PNG exported (active floor)');
     },
     [projectName, store],
   );
@@ -460,6 +502,11 @@ export default function StudioApp() {
 
   return (
     <div className="studio-root">
+      {!platformConfig.cloudConfigured() && workflowStage !== 'start' && (
+        <div className="studio-local-save-banner" role="status">
+          Saves stay in this browser until <code>VITE_API_URL</code> is set. Link a client before handing off jobs.
+        </div>
+      )}
     <main className={shellClass}>
       <section className="studio-canvas" aria-label={isTop ? 'Top-down room view' : '3D room view'}>
         <div className="scene-layer">
@@ -591,17 +638,50 @@ export default function StudioApp() {
               className="menu-secondary"
               disabled={walls.length === 0}
               onClick={() => {
-                const takeoff = computeConstructionTakeoff({
-                  walls: store.walls,
-                  openings: store.openings,
-                  furniture: store.furniture,
+                // Prefer whole-house rollup when multiple floors exist.
+                const floors = store.floors;
+                const parts = floors.map((f) => {
+                  const scene =
+                    f.id === store.activeFloorId
+                      ? { walls: store.walls, openings: store.openings, furniture: store.furniture }
+                      : f.scene;
+                  return {
+                    takeoff: computeConstructionTakeoff({
+                      walls: scene.walls,
+                      openings: scene.openings,
+                      furniture: scene.furniture,
+                    }),
+                    floorName: f.name,
+                  };
                 });
-                const csv = constructionTakeoffCsv(takeoff, { name: projectName, unitSystem });
+                const merged = mergeConstructionTakeoffs(parts.map((p) => p.takeoff));
+                const csv =
+                  parts.length > 1
+                    ? [
+                        constructionTakeoffCsv(merged, {
+                          name: projectName,
+                          unitSystem,
+                          floorName: 'All floors',
+                        }),
+                        '',
+                        ...parts.map((p) =>
+                          constructionTakeoffCsv(p.takeoff, {
+                            name: projectName,
+                            unitSystem,
+                            floorName: p.floorName,
+                          }),
+                        ),
+                      ].join('\n')
+                    : constructionTakeoffCsv(merged, {
+                        name: projectName,
+                        unitSystem,
+                        floorName: parts[0]?.floorName,
+                      });
                 downloadTextFile(
                   `${projectName.replace(/[^\w\-]+/g, '-').toLowerCase() || 'mahnikka'}-takeoff.csv`,
                   csv,
                 );
-                notify('Construction takeoff CSV exported');
+                notify(parts.length > 1 ? 'Whole-house takeoff CSV exported' : 'Construction takeoff CSV exported');
               }}
             >
               <ReceiptText size={16} /> Export takeoff CSV
@@ -646,7 +726,7 @@ export default function StudioApp() {
               <span>{designs.length}</span>
             </div>
             {designs.length === 0 ? (
-              <p className="muted design-library-empty">Save this design to see it here. Open a build to edit, or export the file / shopping list from each row.</p>
+              <p className="muted design-library-empty">Save this design to see it here. Open a build to edit, or export the file / FF&E list from each row.</p>
             ) : (
               <ul>
                 {designs.map((design) => {
@@ -671,8 +751,8 @@ export default function StudioApp() {
                         </button>
                         <button
                           type="button"
-                          aria-label={`Export shopping list for ${design.name}`}
-                          title="Export shopping list"
+                          aria-label={`Export FF&E list for ${design.name}`}
+                          title="Export FF&E list"
                           onClick={() => exportSavedShoppingList(design)}
                         >
                           <ReceiptText size={15} />
@@ -783,6 +863,7 @@ export default function StudioApp() {
           walls={walls}
           openings={openings}
           planRooms={store.planRooms}
+          unitSystem={unitSystem}
           close={() => setBom(false)}
         />
       )}

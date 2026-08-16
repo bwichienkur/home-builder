@@ -25,9 +25,9 @@
 .plan-warning {
   font-size: 12px;
   line-height: 1.4;
-  color: #934b32;
-  background: #fff1ea;
-  border: 1px solid #f0c9b7;
+  color: var(--accent-ink, #003d70);
+  background: var(--accent-soft, #e8f2fb);
+  border: 1px solid #b7d3ea;
   border-radius: 8px;
   padding: 10px;
   margin: 0 0 12px;

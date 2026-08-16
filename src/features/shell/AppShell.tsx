@@ -8,12 +8,12 @@ import './shell.css';
 
 const NAV = [
   { to: '/', label: 'Home', end: true },
-  { to: '/build', label: 'Build' },
-  { to: '/clients', label: 'Clients' },
-  { to: '/vendors', label: 'Vendors' },
-  { to: '/inventory', label: 'Inventory' },
-  { to: '/plans', label: 'Plans' },
-  { to: '/settings', label: 'Settings' },
+  { to: '/build', label: 'Build', end: false },
+  { to: '/clients', label: 'Clients', end: false },
+  { to: '/vendors', label: 'Vendors', end: false },
+  { to: '/inventory', label: 'Materials', end: false },
+  { to: '/plans', label: 'Plans', end: false },
+  { to: '/settings', label: 'Settings', end: false },
 ];
 
 export function AppShell() {

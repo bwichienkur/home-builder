@@ -437,6 +437,26 @@
   color: #fff;
 }
 .bom-total strong { font-size: 22px; }
+.bom-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+.bom-tabs button {
+  flex: 1;
+  border: 1px solid var(--line, #d5dbe3);
+  background: var(--soft, #f4f6f8);
+  color: var(--ink, #1a1f24);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.bom-tabs button.active {
+  background: var(--accent, #0058a3);
+  border-color: var(--accent, #0058a3);
+  color: #fff;
+}
 .bom-dialog footer button { display: flex; align-items: center; gap: 7px; }
 .bom-remove {
   width: 36px;

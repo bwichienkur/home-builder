@@ -43,30 +43,27 @@ export function DesignStart({ onBegan }: { onBegan?: () => void }) {
   };
 
   return (
-    <section className="design-start" aria-label="Start your design">
+    <section className="design-start" aria-label="Start a job">
       <div className="design-start-panel">
-        <p className="design-start-eyebrow">Build</p>
-        <h1>Start a design</h1>
+        <p className="design-start-eyebrow">Mahnikka · Build</p>
+        <h1>Open a job</h1>
         <p className="design-start-lede">
-          Quick start here, or open the{' '}
-          <Link to="/plans" style={{ color: 'var(--accent)', fontWeight: 700 }}>
-            House plans
-          </Link>{' '}
-          library to import DXF/JSON.
+          Frame rooms, place materials, then pull FF&amp;E and takeoff from the bag. Or import from{' '}
+          <Link to="/plans">House plans</Link>.
         </p>
         <div className="design-start-choices">
           <button type="button" className="design-start-choice" onClick={startRoom}>
             <Home size={28} strokeWidth={1.6} />
             <div>
-              <strong>Start with one room</strong>
-              <span>A simple rectangle you can furnish right away</span>
+              <strong>One room</strong>
+              <span>Rectangle shell — furnish and price FF&amp;E</span>
             </div>
           </button>
           <button type="button" className="design-start-choice" onClick={startCustomHouse}>
             <Ruler size={28} strokeWidth={1.6} />
             <div>
-              <strong>Build a custom plan</strong>
-              <span>Begin with an L-shaped shell and shape rooms</span>
+              <strong>Custom plan</strong>
+              <span>L-shaped shell — edit walls, then takeoff</span>
             </div>
           </button>
         </div>
@@ -79,7 +76,7 @@ export function DesignStart({ onBegan }: { onBegan?: () => void }) {
               <LayoutTemplate size={18} />
               <strong>{plan.name}</strong>
               <span>
-                {plan.beds} bed · {plan.baths} bath · {plan.livingSqFt.toLocaleString()} sf
+                {plan.beds} bed · {plan.baths} bath · {plan.livingSqFt.toLocaleString()} sq ft
               </span>
             </button>
           ))}

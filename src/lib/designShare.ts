@@ -15,6 +15,7 @@ export type SharedDesign = {
     unitSystem: UnitSystem;
     activeFloorId: string;
     floors: unknown[];
+    clientId?: string | null;
   };
 };
 

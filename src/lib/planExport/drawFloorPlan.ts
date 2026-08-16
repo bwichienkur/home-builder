@@ -622,6 +622,19 @@ export function downloadScaledPlanPdf(input: PlanExportInput, filename: string) 
   downloadCanvasesPdf(buildConstructionSetCanvases(input), filename);
 }
 
+/** One construction-set sheet pack per floor, concatenated into a single PDF. */
+export function downloadMultiFloorScaledPlanPdf(inputs: PlanExportInput[], filename: string) {
+  if (!inputs.length) return;
+  if (inputs.length === 1) {
+    downloadScaledPlanPdf(inputs[0]!, filename);
+    return;
+  }
+  downloadCanvasesPdf(
+    inputs.flatMap((input) => buildConstructionSetCanvases(input)),
+    filename,
+  );
+}
+
 /** Full CD set: plan, schedule, elevations, section, foundation, roof. */
 export function buildConstructionSetCanvases(input: PlanExportInput) {
   return [

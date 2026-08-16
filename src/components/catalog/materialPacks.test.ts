@@ -21,10 +21,14 @@ describe('materialPacks / realistic inventory', () => {
     const counter = residentialFurniture.find((i) => i.id === 'counter-run-8ft');
     const sofa = residentialFurniture.find((i) => i.id === 'sofa-three-seat');
     const table = residentialFurniture.find((i) => i.id === 'dining-table-six');
-    expect(cab?.textureUrl).toMatch(/\/catalog\/materials\/pbr\//);
+    const bed = residentialFurniture.find((i) => i.id === 'king-platform-bed');
+    const washer = residentialFurniture.find((i) => i.id === 'washer-27');
+    expect(cab?.modelUrl).toBe(MODEL_PACKS.cabinetBase.modelUrl);
     expect(counter?.textureUrl).toMatch(/marble|quartz/);
     expect(sofa?.modelUrl).toBe(MODEL_PACKS.sofa.modelUrl);
     expect(table?.modelUrl).toBe(MODEL_PACKS.diningTable.modelUrl);
+    expect(bed?.modelUrl).toBe(MODEL_PACKS.bedKing.modelUrl);
+    expect(washer?.modelUrl).toBe(MODEL_PACKS.washer.modelUrl);
   });
 
   it('wires Quaternius bathroom fixtures and porcelain shower bases', () => {
@@ -43,9 +47,9 @@ describe('materialPacks / realistic inventory', () => {
   it('does not overwrite an existing textureUrl', () => {
     const item = enrichCatalogSurfaces([
       {
-        id: 'base-cab-36',
-        name: 'Base Cabinet',
-        category: 'Cabinetry',
+        id: 'custom-sideboard',
+        name: 'Sideboard',
+        category: 'Storage',
         color: '#ffffff',
         textureUrl: '/custom/keep.jpg',
       },
