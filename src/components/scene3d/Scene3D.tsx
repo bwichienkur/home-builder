@@ -1593,8 +1593,6 @@ function Room() {
   const enterRoom = usePlannerStore((s) => s.enterRoom);
   const selectRoom = usePlannerStore((s) => s.selectRoom);
   const selectWall = usePlannerStore((s) => s.selectWall);
-  const movePlanRoom = usePlannerStore((s) => s.movePlanRoom);
-  const commitPlanRoomMove = usePlannerStore((s) => s.commitPlanRoomMove);
   const workflowStage = usePlannerStore((s) => s.workflowStage);
   const cameraMode = usePlannerStore((s) => s.cameraMode);
   const studioMode = usePlannerStore((s) => s.studioMode);
@@ -1604,7 +1602,7 @@ function Room() {
   const detected = useMemo(() => detectRoomPolygons(walls), [walls]);
   const rooms = planRooms.length ? planRooms.map((r) => r.points) : detected;
   const ceilingHeight = walls[0]?.height ?? 2.7;
-  const { camera, invalidate, gl } = useThree();
+  const { camera, invalidate } = useThree();
   const ceilingSmooth = useRef(0.22);
   const floorSmooth = useRef(1);
   const plateKey = useRef('');
@@ -1614,99 +1612,6 @@ function Room() {
   const showCeiling = cameraMode !== 'top' || selectedSurface === 'ceiling';
   const planWallTool = usePlannerStore((s) => s.planWallTool);
   const wallEditMode = studioMode === 'architect' && cameraMode === 'top' && tool === 'select' && planWallTool;
-  const roomDragRef = useRef<{
-    roomId: string;
-    lastX: number;
-    lastZ: number;
-    moved: boolean;
-    listeners: { move: (e: PointerEvent) => void; end: (e: PointerEvent) => void } | null;
-  } | null>(null);
-  const floorPlane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), []);
-  const dragRaycaster = useMemo(() => new THREE.Raycaster(), []);
-  const dragNdc = useMemo(() => new THREE.Vector2(), []);
-
-  const hitFloorPlane = (clientX: number, clientY: number) => {
-    const rect = gl.domElement.getBoundingClientRect();
-    dragNdc.x = ((clientX - rect.left) / rect.width) * 2 - 1;
-    dragNdc.y = -((clientY - rect.top) / rect.height) * 2 + 1;
-    dragRaycaster.setFromCamera(dragNdc, camera);
-    const hit = new THREE.Vector3();
-    if (!dragRaycaster.ray.intersectPlane(floorPlane, hit)) return null;
-    return hit;
-  };
-
-  const beginPlanRoomDrag = (e: any, roomId: string) => {
-    if (workflowStage === 'room' || tool !== 'select') return;
-    if (usePlannerStore.getState().pendingRoomShape) return;
-    if (usePlannerStore.getState().pendingFloorFill) return;
-    if (usePlannerStore.getState().planWallTool) return;
-    e.stopPropagation();
-    (e.target as any)?.setPointerCapture?.(e.pointerId);
-    selectRoom(roomId);
-    const hit = hitFloorPlane(e.clientX, e.clientY);
-    if (!hit) return;
-    const drag = {
-      roomId,
-      lastX: hit.x,
-      lastZ: hit.z,
-      moved: false,
-      listeners: null as null | { move: (e: PointerEvent) => void; end: (e: PointerEvent) => void },
-    };
-    const onMove = (ev: PointerEvent) => {
-      const next = hitFloorPlane(ev.clientX, ev.clientY);
-      if (!next) return;
-      const dx = next.x - drag.lastX;
-      const dz = next.z - drag.lastZ;
-      if (!drag.moved) {
-        if (Math.hypot(next.x - hit.x, next.z - hit.z) < 0.06) return;
-        drag.moved = true;
-        document.body.dataset.movingFurniture = '1';
-        window.dispatchEvent(new Event('roomcraft-drag-start'));
-      }
-      if (Math.hypot(dx, dz) < 1e-4) return;
-      if (movePlanRoom(roomId, dx, dz, { live: true })) {
-        drag.lastX = next.x;
-        drag.lastZ = next.z;
-        invalidate();
-      }
-    };
-    const onEnd = () => {
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', onEnd);
-      window.removeEventListener('pointercancel', onEnd);
-      if (roomDragRef.current?.listeners) roomDragRef.current.listeners = null;
-      if (drag.moved) {
-        commitPlanRoomMove();
-        delete document.body.dataset.movingFurniture;
-        window.dispatchEvent(new Event('roomcraft-drag-end'));
-        window.setTimeout(() => {
-          window.dispatchEvent(new Event('roomcraft-fit-plan'));
-        }, 40);
-      }
-      roomDragRef.current = null;
-    };
-    drag.listeners = { move: onMove, end: onEnd };
-    roomDragRef.current = drag;
-    window.addEventListener('pointermove', onMove);
-    window.addEventListener('pointerup', onEnd);
-    window.addEventListener('pointercancel', onEnd);
-  };
-
-  useEffect(
-    () => () => {
-      const drag = roomDragRef.current;
-      if (drag?.listeners) {
-        window.removeEventListener('pointermove', drag.listeners.move);
-        window.removeEventListener('pointerup', drag.listeners.end);
-        window.removeEventListener('pointercancel', drag.listeners.end);
-      }
-      if (document.body.dataset.movingFurniture) {
-        delete document.body.dataset.movingFurniture;
-        window.dispatchEvent(new Event('roomcraft-drag-end'));
-      }
-    },
-    [],
-  );
 
   useFrame((_, delta) => {
     const targetCeiling = orbitCeilingOpacity(camera.position.y, ceilingHeight, {
@@ -1735,7 +1640,6 @@ function Room() {
 
   const chooseFloor = (e: any, roomId?: string) => {
     e.stopPropagation();
-    if (roomDragRef.current?.moved) return;
     const fill = usePlannerStore.getState().pendingFloorFill;
     if (fill) {
       usePlannerStore.getState().applyFloorFillToRoom(roomId ?? null);
@@ -1808,11 +1712,6 @@ function Room() {
                 receiveShadow
                 position={[0, -0.035, 0]}
                 onClick={(e) => chooseFloor(e, label?.id)}
-                onPointerDown={
-                  label && workflowStage !== 'room' && tool === 'select'
-                    ? (e) => beginPlanRoomDrag(e, label.id)
-                    : undefined
-                }
               >
                 <shapeGeometry args={[roomShape(points)]} />
                 <meshStandardMaterial
@@ -1874,11 +1773,6 @@ function Room() {
                   outlineWidth={0.02}
                   outlineColor={selected ? '#003d70' : '#ffffff'}
                   onClick={(e) => chooseFloor(e, label.id)}
-                  onPointerDown={
-                    workflowStage !== 'room' && tool === 'select'
-                      ? (e) => beginPlanRoomDrag(e, label.id)
-                      : undefined
-                  }
                 >
                   {label.name}
                 </Text>

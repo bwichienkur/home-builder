@@ -503,10 +503,10 @@ export function StudioChrome({
       </div>
 
       {!inRoom && planRooms.length >= 1 && !pending && !selectedItem && tool === 'select' && !selectedRoom && !pendingAttachMode && !planWallTool && (
-        <div className="studio-selection-hint studio-hint-float">Tap a room · drag to move</div>
+        <div className="studio-selection-hint studio-hint-float">Tap a room to select</div>
       )}
       {!inRoom && planRooms.length >= 1 && !pending && !selectedItem && tool === 'select' && selectedRoom && !pendingAttachMode && (
-        <div className="studio-selection-hint studio-hint-float">Drag to move · Furnish to enter</div>
+        <div className="studio-selection-hint studio-hint-float">Furnish to enter</div>
       )}
       {pendingAttachMode && !selectedRoom && planRooms.length >= 1 && (
         <div className="studio-selection-hint studio-hint-float">Select a room, then pick a side</div>
