@@ -7,7 +7,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DATA = path.join(__dirname, '../../data/crm-store.json');
+const DATA = path.join(__dirname, '../data/crm-store.json');
 
 function readStore() {
   try {

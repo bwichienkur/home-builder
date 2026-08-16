@@ -1,5 +1,22 @@
 import { apiHeaders, platformConfig } from './config';
-import type { AuthProvider, AuthResult, AuthUser } from './authProvider';
+import type {
+  AdminUserRow,
+  ApiKeyMeta,
+  AuthProvider,
+  AuthResult,
+  AuthUser,
+  CreateApiKeyResult,
+} from './authProvider';
+import { normalizeRole, type UserRole } from './roles';
+
+function asUser(raw: Partial<AuthUser> & { id: string; email: string; name: string }): AuthUser {
+  return {
+    id: raw.id,
+    email: raw.email,
+    name: raw.name,
+    role: normalizeRole(raw.role),
+  };
+}
 
 /**
  * Remote auth adapter — talks to YOUR API today ($0 file-backed /api/auth).
@@ -26,7 +43,7 @@ export class RemoteAuthProvider implements AuthProvider {
       const body = await res.json().catch(() => ({}));
       if (!res.ok) return { ok: false, error: body.error || 'Sign-in failed.' };
       if (body.token) localStorage.setItem('mahnikka-auth-token', body.token);
-      return { ok: true, user: body.user as AuthUser, token: body.token };
+      return { ok: true, user: asUser(body.user), token: body.token };
     } catch {
       return {
         ok: false,
@@ -45,7 +62,7 @@ export class RemoteAuthProvider implements AuthProvider {
       const body = await res.json().catch(() => ({}));
       if (!res.ok) return { ok: false, error: body.error || 'Registration failed.' };
       if (body.token) localStorage.setItem('mahnikka-auth-token', body.token);
-      return { ok: true, user: body.user as AuthUser, token: body.token };
+      return { ok: true, user: asUser(body.user), token: body.token };
     } catch {
       return {
         ok: false,
@@ -75,9 +92,59 @@ export class RemoteAuthProvider implements AuthProvider {
       const res = await fetch(`${platformConfig.apiUrl}/api/auth/me`, { headers: apiHeaders() });
       if (!res.ok) return null;
       const body = await res.json();
-      return (body.user as AuthUser) ?? null;
+      return body.user ? asUser(body.user) : null;
     } catch {
       return null;
     }
+  }
+
+  async listUsers(query = ''): Promise<AdminUserRow[]> {
+    const res = await fetch(`${this.base()}/api/admin/users?q=${encodeURIComponent(query)}`, {
+      headers: apiHeaders(),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.error || 'Could not load users.');
+    return (body.items as AdminUserRow[]) ?? [];
+  }
+
+  async setUserRole(userId: string, role: UserRole) {
+    const res = await fetch(`${this.base()}/api/admin/users/${encodeURIComponent(userId)}/role`, {
+      method: 'PATCH',
+      headers: apiHeaders(),
+      body: JSON.stringify({ role }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) return { ok: false as const, error: body.error || 'Could not update role.' };
+    return { ok: true as const };
+  }
+
+  async listApiKeys(userId: string): Promise<ApiKeyMeta[]> {
+    const res = await fetch(`${this.base()}/api/admin/users/${encodeURIComponent(userId)}/api-keys`, {
+      headers: apiHeaders(),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.error || 'Could not load API keys.');
+    return (body.items as ApiKeyMeta[]) ?? [];
+  }
+
+  async createApiKey(userId: string, label: string): Promise<CreateApiKeyResult> {
+    const res = await fetch(`${this.base()}/api/admin/users/${encodeURIComponent(userId)}/api-keys`, {
+      method: 'POST',
+      headers: apiHeaders(),
+      body: JSON.stringify({ label }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) return { ok: false, error: body.error || 'Could not create API key.' };
+    return { ok: true, key: body.key as string, meta: body.meta as ApiKeyMeta };
+  }
+
+  async revokeApiKey(userId: string, keyId: string) {
+    const res = await fetch(
+      `${this.base()}/api/admin/users/${encodeURIComponent(userId)}/api-keys/${encodeURIComponent(keyId)}`,
+      { method: 'DELETE', headers: apiHeaders() },
+    );
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) return { ok: false as const, error: body.error || 'Could not revoke API key.' };
+    return { ok: true as const };
   }
 }

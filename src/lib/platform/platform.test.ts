@@ -39,11 +39,35 @@ describe('platform providers ($0 defaults)', () => {
     expect(getCrmProvider()).toBeInstanceOf(LocalCrmProvider);
   });
 
-  it('local auth accepts the demo account', async () => {
+  it('local auth accepts the demo account as system admin', async () => {
     const auth = new LocalAuthProvider();
     const result = await auth.login(DEMO_LOGIN.email, DEMO_LOGIN.password);
     expect(result.ok).toBe(true);
-    if (result.ok) expect(result.user.email).toBe(DEMO_LOGIN.email);
+    if (result.ok) {
+      expect(result.user.email).toBe(DEMO_LOGIN.email);
+      expect(result.user.role).toBe('system_admin');
+    }
+  });
+
+  it('lists users, assigns roles, and issues API keys', async () => {
+    const auth = new LocalAuthProvider();
+    await auth.register('vendor@example.com', 'secret12', 'Vendor Co');
+    const listed = await auth.listUsers!('vendor');
+    expect(listed).toHaveLength(1);
+    expect(listed[0]?.role).toBe('user');
+
+    const roleResult = await auth.setUserRole!(listed[0]!.id, 'admin');
+    expect(roleResult.ok).toBe(true);
+    expect((await auth.listUsers!('vendor'))[0]?.role).toBe('admin');
+
+    const created = await auth.createApiKey!(listed[0]!.id, 'ERP sync');
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+    expect(created.key.startsWith('mnk_')).toBe(true);
+    const keys = await auth.listApiKeys!(listed[0]!.id);
+    expect(keys.some((k) => k.label === 'ERP sync' && !k.revokedAt)).toBe(true);
+    await auth.revokeApiKey!(listed[0]!.id, created.meta.id);
+    expect((await auth.listApiKeys!(listed[0]!.id)).find((k) => k.id === created.meta.id)?.revokedAt).toBeTruthy();
   });
 
   it('local CRM round-trips a snapshot', async () => {

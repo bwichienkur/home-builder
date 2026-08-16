@@ -3,6 +3,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { LogOut } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useCrmStore } from '../../store/crmStore';
+import { canManageUsers } from '../../lib/platform/roles';
 import './shell.css';
 
 const NAV = [
@@ -20,6 +21,7 @@ export function AppShell() {
   const logout = useAuthStore((s) => s.logout);
   const hydrateCrm = useCrmStore((s) => s.hydrate);
   const navigate = useNavigate();
+  const showUsers = canManageUsers(user?.role);
 
   useEffect(() => {
     void hydrateCrm();
@@ -37,6 +39,11 @@ export function AppShell() {
               {label}
             </NavLink>
           ))}
+          {showUsers && (
+            <NavLink to="/users" className={({ isActive }) => (isActive ? 'is-active' : undefined)}>
+              Users
+            </NavLink>
+          )}
         </nav>
         <div className="app-shell-user">
           <span className="app-shell-user-name" title={user?.email}>
