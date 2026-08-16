@@ -8,6 +8,8 @@ import { VendorsPage } from './features/crm/VendorsPage';
 import { InventoryPage } from './features/crm/InventoryPage';
 import { PlansPage } from './features/plans/PlansPage';
 import { SettingsPage } from './features/settings/SettingsPage';
+import { UsersPage } from './features/admin/UsersPage';
+import { ApiDocsPage } from './features/docs/ApiDocsPage';
 
 const StudioApp = lazy(() => import('./StudioApp'));
 const AdminPage = lazy(() =>
@@ -23,6 +25,7 @@ export function AppRouter() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/docs/api" element={<ApiDocsPage />} />
         <Route
           path="/admin"
           element={
@@ -54,6 +57,7 @@ export function AppRouter() {
           <Route path="inventory" element={<InventoryPage />} />
           <Route path="plans" element={<PlansPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="users" element={<UsersPage />} />
         </Route>
         <Route path="*" element={<AuthCatchAll />} />
       </Routes>

@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom';
-import { Boxes, Building2, LayoutTemplate, Package, Settings, Users } from 'lucide-react';
+import { BookOpen, Boxes, Building2, LayoutTemplate, Package, Settings, Shield, Users } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useCrmStore } from '../../store/crmStore';
 import { listBuiltinHousePlans } from '../../lib/housePlans/planRegistry';
+import { canManageUsers } from '../../lib/platform/roles';
 
 export function HomePage() {
   const user = useAuthStore((s) => s.user);
@@ -57,6 +58,18 @@ export function HomePage() {
           <strong>Settings</strong>
           <span>Custom fields for clients, vendors, inventory</span>
         </Link>
+        <Link className="home-card" to="/docs/api">
+          <BookOpen size={22} />
+          <strong>API docs</strong>
+          <span>Public endpoints for vendors and external apps</span>
+        </Link>
+        {canManageUsers(user?.role) && (
+          <Link className="home-card" to="/users">
+            <Shield size={22} />
+            <strong>Users</strong>
+            <span>Search accounts, roles, and API keys</span>
+          </Link>
+        )}
       </div>
     </div>
   );

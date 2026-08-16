@@ -39,6 +39,9 @@ Routes already exist:
 
 - `POST /api/auth/login|register|logout`, `GET /api/auth/me`
 - `GET/PUT /api/crm/:collection`
+- Public integration API: `GET/POST /api/v1/{clients,vendors,inventory,plans}` (API key)
+- System admin: `GET /api/admin/users`, role + API key management
+- In-app docs: `/docs/api` · user admin UI: `/users` (system admin)
 
 Later you only change **how those routes are implemented** (Postgres + IdP), not the React pages.
 
