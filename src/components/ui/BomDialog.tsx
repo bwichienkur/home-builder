@@ -14,6 +14,11 @@ import {
   diffEstimateAgainstBaseline,
   ESTIMATE_DISCLAIMER,
 } from '../../lib/estimateSnapshot';
+import {
+  downloadBidProposalPdf,
+  downloadTextFile as downloadBidFile,
+  scheduleOfValuesCsv,
+} from '../../lib/bidPackage';
 import { canEditTradeRates, canManageEstimates } from '../../lib/platform/roles';
 import { useAuthStore } from '../../store/authStore';
 
@@ -167,22 +172,33 @@ export function BomDialog({
   );
 
   const floorCount = floors.length;
-  const estimateLines = useMemo(() => buildEstimateLines(takeoff, ratesPicked), [takeoff, ratesPicked]);
+  const vendorQuotes = usePlannerStore((s) => s.vendorQuotes);
+  const addVendorQuote = usePlannerStore((s) => s.addVendorQuote);
+  const removeVendorQuote = usePlannerStore((s) => s.removeVendorQuote);
+  const bidSettings = usePlannerStore((s) => s.bidSettings);
+  const setBidSettings = usePlannerStore((s) => s.setBidSettings);
+  const setChangeOrderStatus = usePlannerStore((s) => s.setChangeOrderStatus);
+  const estimateLines = useMemo(
+    () => buildEstimateLines(takeoff, ratesPicked, vendorQuotes),
+    [takeoff, ratesPicked, vendorQuotes],
+  );
   const estimateTotals = useMemo(() => computeEstimateTotals(estimateLines, ratesPicked), [estimateLines, ratesPicked]);
 
-  const constructionRows: BomRow[] = estimateLines.map((l) => ({
-    key: `const-${l.key}`,
-    name: l.name,
-    category: 'Construction',
-    sku: l.csi,
-    csi: l.csi,
-    qty: l.qty,
-    unit: l.unit,
-    cost: l.unitCost,
-    laborCost: l.labor,
-    removable: false,
-    kind: 'construction',
-  }));
+  const constructionRows: BomRow[] = estimateLines
+    .filter((l) => !l.assemblyOf || l.material > 0 || l.labor > 0)
+    .map((l) => ({
+      key: `const-${l.key}`,
+      name: l.name,
+      category: 'Construction',
+      sku: l.csi,
+      csi: l.csi,
+      qty: l.qty,
+      unit: l.unit,
+      cost: l.unitCost,
+      laborCost: l.labor,
+      removable: false,
+      kind: 'construction',
+    }));
 
   const baseline = usePlannerStore((s) => s.baselineEstimate);
   const setEstimateSnapshot = usePlannerStore((s) => s.setEstimateSnapshot);
@@ -193,6 +209,11 @@ export function BomDialog({
   const role = useAuthStore((s) => s.user?.role);
   const canEditRates = canEditTradeRates(role);
   const canEstimate = canManageEstimates(role);
+  const [quoteVendor, setQuoteVendor] = useState('');
+  const [quoteLabel, setQuoteLabel] = useState('');
+  const [quoteAmount, setQuoteAmount] = useState('');
+  const [quoteLineKey, setQuoteLineKey] = useState('');
+  const [bidOpen, setBidOpen] = useState(false);
 
   const liveSnapPreview = useMemo(
     () => ({
@@ -362,19 +383,20 @@ export function BomDialog({
                   type="button"
                   className="bom-rate-toggle"
                   onClick={() => {
-                    const snap = buildEstimateSnapshot({
-                      takeoff,
-                      rates: ratesPicked,
-                      previousVersion: baseline?.version ?? 0,
-                      label: 'Baseline',
-                    });
-                    setEstimateSnapshot(snap);
-                    lockBaseline();
-                  }}
-                  title="Lock current live estimate as change-order baseline"
-                >
-                  Lock baseline
-                </button>
+                  const snap = buildEstimateSnapshot({
+                    takeoff,
+                    rates: ratesPicked,
+                    quotes: vendorQuotes,
+                    previousVersion: baseline?.version ?? 0,
+                    label: 'Baseline',
+                  });
+                  setEstimateSnapshot(snap);
+                  lockBaseline();
+                }}
+                title="Lock current live estimate as change-order baseline"
+              >
+                Lock baseline
+              </button>
               )}
               {canEstimate && baseline && (
                 <button
@@ -384,6 +406,7 @@ export function BomDialog({
                     const live = buildEstimateSnapshot({
                       takeoff,
                       rates: ratesPicked,
+                      quotes: vendorQuotes,
                       previousVersion: baseline.version,
                       label: `Live vs baseline v${baseline.version}`,
                     });
@@ -400,6 +423,65 @@ export function BomDialog({
                   Create CO
                 </button>
               )}
+              {canEstimate && (
+                <button
+                  type="button"
+                  className="bom-rate-toggle"
+                  onClick={() => {
+                    const snap = buildEstimateSnapshot({
+                      takeoff,
+                      rates: ratesPicked,
+                      quotes: vendorQuotes,
+                      previousVersion: baseline?.version ?? 0,
+                      label: 'Bid package',
+                    });
+                    setEstimateSnapshot(snap);
+                    downloadBidProposalPdf(
+                      snap,
+                      {
+                        projectName: 'Mahnikka project',
+                        jurisdiction: bidSettings.jurisdiction,
+                        validityDays: bidSettings.validityDays,
+                        paymentTerms: bidSettings.paymentTerms,
+                        inclusions: bidSettings.inclusions,
+                        exclusions: bidSettings.exclusions,
+                        alternateNotes: bidSettings.alternateNotes,
+                      },
+                      'bid-proposal.pdf',
+                    );
+                  }}
+                >
+                  Bid proposal PDF
+                </button>
+              )}
+              {canEstimate && (
+                <button
+                  type="button"
+                  className="bom-rate-toggle"
+                  onClick={() => {
+                    const snap = buildEstimateSnapshot({
+                      takeoff,
+                      rates: ratesPicked,
+                      quotes: vendorQuotes,
+                      previousVersion: baseline?.version ?? 0,
+                      label: 'SOV',
+                    });
+                    setEstimateSnapshot(snap);
+                    downloadBidFile(
+                      scheduleOfValuesCsv(snap, {
+                        projectName: 'Mahnikka project',
+                        jurisdiction: bidSettings.jurisdiction,
+                      }),
+                      'schedule-of-values.csv',
+                    );
+                  }}
+                >
+                  Export SOV CSV
+                </button>
+              )}
+              <button type="button" className="bom-rate-toggle" onClick={() => setBidOpen((v) => !v)}>
+                {bidOpen ? 'Hide bid terms' : 'Bid terms'}
+              </button>
               {canEstimate && baseline && (
                 <button type="button" className="bom-rate-reset" onClick={() => clearBaseline()}>
                   Clear baseline v{baseline.version}
@@ -434,16 +516,156 @@ export function BomDialog({
                 <ul className="muted" style={{ margin: '4px 0 0', paddingLeft: 18, fontSize: 12 }}>
                   {changeOrders.map((co) => (
                     <li key={co.id}>
-                      {co.label} · {co.delta >= 0 ? '+' : ''}$
-                      {co.delta.toLocaleString(undefined, { maximumFractionDigits: 0 })} ·{' '}
-                      {new Date(co.createdAt).toLocaleDateString()}
-                      {co.lineDeltas.length > 0
-                        ? ` · ${co.lineDeltas.length} line${co.lineDeltas.length === 1 ? '' : 's'}`
-                        : ''}
+                      {co.label} · {co.status ?? 'draft'} · {co.delta >= 0 ? '+' : ''}$
+                      {co.delta.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                      {canEstimate && (
+                        <span style={{ marginLeft: 8 }}>
+                          {(['draft', 'submitted', 'approved', 'rejected'] as const).map((st) => (
+                            <button
+                              key={st}
+                              type="button"
+                              className="bom-rate-reset"
+                              style={{ marginRight: 4, fontSize: 11 }}
+                              disabled={(co.status ?? 'draft') === st}
+                              onClick={() => setChangeOrderStatus(co.id, st)}
+                            >
+                              {st}
+                            </button>
+                          ))}
+                        </span>
+                      )}
                     </li>
                   ))}
                 </ul>
               </div>
+            )}
+            {bidOpen && (
+              <div className="bom-rate-grid" style={{ marginTop: 10 }}>
+                <label>
+                  Jurisdiction
+                  <input
+                    type="text"
+                    value={bidSettings.jurisdiction}
+                    disabled={!canEstimate}
+                    onChange={(e) => setBidSettings({ jurisdiction: e.target.value })}
+                  />
+                </label>
+                <label>
+                  Validity days
+                  <input
+                    type="number"
+                    min={1}
+                    value={bidSettings.validityDays}
+                    disabled={!canEstimate}
+                    onChange={(e) => setBidSettings({ validityDays: Number(e.target.value) || 30 })}
+                  />
+                </label>
+                <label style={{ gridColumn: '1 / -1' }}>
+                  Payment terms
+                  <input
+                    type="text"
+                    value={bidSettings.paymentTerms}
+                    disabled={!canEstimate}
+                    onChange={(e) => setBidSettings({ paymentTerms: e.target.value })}
+                  />
+                </label>
+                <label style={{ gridColumn: '1 / -1' }}>
+                  Inclusions
+                  <textarea
+                    rows={2}
+                    value={bidSettings.inclusions}
+                    disabled={!canEstimate}
+                    onChange={(e) => setBidSettings({ inclusions: e.target.value })}
+                  />
+                </label>
+                <label style={{ gridColumn: '1 / -1' }}>
+                  Exclusions
+                  <textarea
+                    rows={2}
+                    value={bidSettings.exclusions}
+                    disabled={!canEstimate}
+                    onChange={(e) => setBidSettings({ exclusions: e.target.value })}
+                  />
+                </label>
+              </div>
+            )}
+            {canEstimate && (
+              <form
+                className="bom-manual-add"
+                style={{ marginTop: 10 }}
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const amount = Number(quoteAmount);
+                  if (!quoteVendor.trim() || !quoteLabel.trim() || !Number.isFinite(amount) || amount < 0) return;
+                  addVendorQuote({
+                    vendor: quoteVendor.trim(),
+                    label: quoteLabel.trim(),
+                    amount,
+                    lineKey: quoteLineKey || undefined,
+                    quoteDate: new Date().toISOString().slice(0, 10),
+                  });
+                  setQuoteVendor('');
+                  setQuoteLabel('');
+                  setQuoteAmount('');
+                  setQuoteLineKey('');
+                }}
+              >
+                <strong>Vendor quote</strong>
+                <div className="bom-manual-fields">
+                  <input
+                    type="text"
+                    placeholder="Vendor"
+                    value={quoteVendor}
+                    onChange={(e) => setQuoteVendor(e.target.value)}
+                    aria-label="Vendor"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Quote label"
+                    value={quoteLabel}
+                    onChange={(e) => setQuoteLabel(e.target.value)}
+                    aria-label="Quote label"
+                  />
+                  <div className="bom-manual-row">
+                    <input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      placeholder="Amount $"
+                      value={quoteAmount}
+                      onChange={(e) => setQuoteAmount(e.target.value)}
+                      aria-label="Quote amount"
+                    />
+                    <select
+                      value={quoteLineKey}
+                      onChange={(e) => setQuoteLineKey(e.target.value)}
+                      aria-label="Link to line"
+                    >
+                      <option value="">New lump-sum line</option>
+                      {estimateLines.map((l) => (
+                        <option key={l.key} value={l.key}>
+                          {l.csi} {l.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button type="submit">
+                      <Plus size={16} /> Add quote
+                    </button>
+                  </div>
+                </div>
+                {vendorQuotes.length > 0 && (
+                  <ul className="muted" style={{ marginTop: 8, paddingLeft: 18, fontSize: 12 }}>
+                    {vendorQuotes.map((q) => (
+                      <li key={q.id}>
+                        {q.vendor}: {q.label} · ${q.amount.toLocaleString()}
+                        <button type="button" className="bom-rate-reset" onClick={() => removeVendorQuote(q.id)}>
+                          Remove
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </form>
             )}
             {ratesOpen && (
               <div className="bom-rate-grid">
@@ -463,10 +685,22 @@ export function BomDialog({
                     ['roofPerSf', 'Roof $/SF'],
                     ['doorEach', 'Door $'],
                     ['windowPerSf', 'Window $/SF'],
+                    ['electricalOutletEach', 'Outlet $'],
+                    ['lightingFixtureEach', 'Light $'],
+                    ['electricalPanelEach', 'Panel $'],
+                    ['plumbingFixtureEach', 'Plumbing fix $'],
+                    ['hvacTonEach', 'HVAC $/ton'],
+                    ['ductPerFt', 'Duct $/LF'],
+                    ['excavationPerCy', 'Excavation $/CY'],
+                    ['landscapingPerSf', 'Landscape $/SF'],
                     ['laborPctOfMaterial', 'Labor × mat'],
+                    ['laborRatePerHour', 'Labor $/hr'],
                     ['wasteFactor', 'Waste'],
+                    ['contingencyPct', 'Contingency'],
+                    ['escalationPct', 'Escalation'],
                     ['markupPct', 'OH&P markup'],
                     ['taxPct', 'Tax'],
+                    ['bondPct', 'Bond'],
                   ] as const
                 ).map(([key, label]) => (
                   <label key={key}>
@@ -625,9 +859,12 @@ export function BomDialog({
             <>
               <span>
                 {floorCount} fl · mat ${estimateTotals.material.toLocaleString(undefined, { maximumFractionDigits: 0 })} ·
-                labor ${estimateTotals.labor.toLocaleString(undefined, { maximumFractionDigits: 0 })} · OH&P $
+                labor ${estimateTotals.labor.toLocaleString(undefined, { maximumFractionDigits: 0 })} · cont $
+                {estimateTotals.contingency.toLocaleString(undefined, { maximumFractionDigits: 0 })} · esc $
+                {estimateTotals.escalation.toLocaleString(undefined, { maximumFractionDigits: 0 })} · OH&P $
                 {estimateTotals.markup.toLocaleString(undefined, { maximumFractionDigits: 0 })} · tax $
-                {estimateTotals.tax.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                {estimateTotals.tax.toLocaleString(undefined, { maximumFractionDigits: 0 })} · bond $
+                {estimateTotals.bond.toLocaleString(undefined, { maximumFractionDigits: 0 })}
               </span>
               <strong>
                 ${estimateTotals.grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}

@@ -103,6 +103,15 @@ type PlannerState = SceneSnapshot & {
   changeOrders: import('../lib/estimateSnapshot').ChangeOrderRecord[];
   addChangeOrder: (record: import('../lib/estimateSnapshot').ChangeOrderRecord) => void;
   clearChangeOrders: () => void;
+  setChangeOrderStatus: (
+    id: string,
+    status: import('../lib/estimateSnapshot').ChangeOrderStatus,
+  ) => void;
+  vendorQuotes: import('../lib/estimateSnapshot').VendorQuote[];
+  addVendorQuote: (quote: Omit<import('../lib/estimateSnapshot').VendorQuote, 'id'> & { id?: string }) => void;
+  removeVendorQuote: (id: string) => void;
+  bidSettings: import('../lib/estimateSnapshot').BidSettings;
+  setBidSettings: (patch: Partial<import('../lib/estimateSnapshot').BidSettings>) => void;
   history: SceneSnapshot[];
   historyIndex: number;
   openingNotice: string;
@@ -255,6 +264,8 @@ type PlannerState = SceneSnapshot & {
     estimateSnapshot?: import('../lib/estimateSnapshot').EstimateSnapshot | null;
     baselineEstimate?: import('../lib/estimateSnapshot').EstimateSnapshot | null;
     changeOrders?: import('../lib/estimateSnapshot').ChangeOrderRecord[];
+    vendorQuotes?: import('../lib/estimateSnapshot').VendorQuote[];
+    bidSettings?: import('../lib/estimateSnapshot').BidSettings;
   };
 };
 
@@ -455,6 +466,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       estimateSnapshot: s.estimateSnapshot,
       baselineEstimate: s.baselineEstimate,
       changeOrders: s.changeOrders,
+      vendorQuotes: s.vendorQuotes,
+      bidSettings: s.bidSettings,
     };
   };
 
@@ -486,6 +499,18 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     estimateSnapshot: null,
     baselineEstimate: null,
     changeOrders: [],
+    vendorQuotes: [],
+    bidSettings: {
+      jurisdiction: '',
+      validityDays: 30,
+      paymentTerms: 'Progress payments monthly; retainage 5%; final on punch completion.',
+      inclusions:
+        'Architectural framing, envelope allowances, interior finishes from takeoff, MEP rough allowances, sitework proxies, OH&P, tax, and bond as shown.',
+      exclusions:
+        'Specialty engineered systems, utility company fees, permits/impact fees unless listed, furnishings beyond FF&E schedule, hazardous materials, winter conditions, and owner-furnished equipment.',
+      alternateNotes:
+        'Unit prices and allowances are schematic; owner selections may adjust the contract sum via change order.',
+    },
     history: [initial],
     historyIndex: 0,
     openingNotice: '',
@@ -518,6 +543,33 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     addChangeOrder: (record) =>
       set((s) => ({ changeOrders: [...s.changeOrders, record] })),
     clearChangeOrders: () => set({ changeOrders: [] }),
+    setChangeOrderStatus: (id, status) =>
+      set((s) => ({
+        changeOrders: s.changeOrders.map((co) =>
+          co.id === id
+            ? {
+                ...co,
+                status,
+                decidedAt: status === 'draft' ? undefined : new Date().toISOString(),
+              }
+            : co,
+        ),
+      })),
+    addVendorQuote: (quote) =>
+      set((s) => ({
+        vendorQuotes: [
+          ...s.vendorQuotes,
+          {
+            ...quote,
+            id: quote.id ?? crypto.randomUUID(),
+            quoteDate: quote.quoteDate || new Date().toISOString().slice(0, 10),
+          },
+        ],
+      })),
+    removeVendorQuote: (id) =>
+      set((s) => ({ vendorQuotes: s.vendorQuotes.filter((q) => q.id !== id) })),
+    setBidSettings: (patch) =>
+      set((s) => ({ bidSettings: { ...s.bidSettings, ...patch } })),
     selectAnnotation: (selectedAnnotationId) => set({ selectedAnnotationId }),
     addAnnotation: (kind, x, z, text = '') => {
       const id = crypto.randomUUID();
@@ -1972,6 +2024,10 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
           estimateSnapshot: data.estimateSnapshot ?? null,
           baselineEstimate: data.baselineEstimate ?? null,
           changeOrders: Array.isArray(data.changeOrders) ? data.changeOrders : [],
+          vendorQuotes: Array.isArray(data.vendorQuotes) ? data.vendorQuotes : [],
+          bidSettings: data.bidSettings
+            ? { ...get().bidSettings, ...data.bidSettings }
+            : get().bidSettings,
           annotations: Array.isArray(data.annotations) ? data.annotations : [],
           layerVisibility: data.layerVisibility
             ? { ...DEFAULT_LAYER_VISIBILITY, ...data.layerVisibility }
