@@ -5,8 +5,8 @@ import { usePlannerStore } from '../../store/plannerStore';
 
 function jumpToCheck(check: BuildingCheck) {
   const store = usePlannerStore.getState();
-  if (check.id.startsWith('stair-')) {
-    const stairId = check.id.replace(/^stair-(?:riser|tread|width)-/, '');
+  if (check.id.startsWith('stair-') && check.id !== 'stair-missing-link') {
+    const stairId = check.id.replace(/^stair-(?:riser|tread|width|story)-/, '');
     const item = store.furniture.find((f) => f.id === stairId || check.id.endsWith(f.id));
     if (item) {
       store.selectFurniture(item.id);
@@ -29,19 +29,26 @@ export function BuildingChecksBar() {
   const furniture = usePlannerStore((s) => s.furniture);
   const siteSetback = usePlannerStore((s) => s.siteSetback);
   const workflowStage = usePlannerStore((s) => s.workflowStage);
+  const floors = usePlannerStore((s) => s.floors);
+  const activeFloorId = usePlannerStore((s) => s.activeFloorId);
   const [dismissed, setDismissed] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
 
-  const allChecks = useMemo(
-    () =>
-      evaluateBuildingChecks({
-        walls,
-        furniture,
-        siteSetback,
-        storyHeightM: walls[0]?.height,
-      }),
-    [walls, furniture, siteSetback],
-  );
+  const allChecks = useMemo(() => {
+    const floorsWithStairs = floors.filter((f) => {
+      const live = f.id === activeFloorId;
+      const list = live ? furniture : f.scene.furniture;
+      return list.some((item) => item.placementKind === 'stair');
+    }).length;
+    return evaluateBuildingChecks({
+      walls,
+      furniture,
+      siteSetback,
+      storyHeightM: walls[0]?.height,
+      floorCount: floors.length,
+      floorsWithStairs,
+    });
+  }, [walls, furniture, siteSetback, floors, activeFloorId]);
 
   const checks = allChecks.filter((c) => !dismissed.includes(c.id));
   const warnCount = checks.filter((c) => c.severity === 'warn').length;

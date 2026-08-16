@@ -457,6 +457,12 @@
   border-color: var(--accent, #0058a3);
   color: #fff;
 }
+.bom-rate-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
 .bom-rate-book {
   margin: 0 0 12px;
 }

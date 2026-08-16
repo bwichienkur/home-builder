@@ -1,4 +1,5 @@
 import type { RoomType, UnitSystem } from '../types';
+import type { EstimateSnapshot } from './estimateSnapshot';
 
 const DESIGNS_KEY = 'roomcraft-designs-v1';
 const RECOVERY_KEY = 'roomcraft-recovery-v1';
@@ -16,6 +17,10 @@ export type SharedDesign = {
     activeFloorId: string;
     floors: unknown[];
     clientId?: string | null;
+    /** Latest frozen estimate on save. */
+    estimateSnapshot?: EstimateSnapshot | null;
+    /** Locked baseline for change orders. */
+    baselineEstimate?: EstimateSnapshot | null;
   };
 };
 

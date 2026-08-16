@@ -12,6 +12,7 @@ import { buildHouse, rebuildFromPlanRooms, resizePlanRoomPoints, shapedRoomPoint
 import type { HousePlan } from '../lib/housePlans/buildPlan';
 import { getHousePlan } from '../lib/housePlans/planRegistry';
 import { remapFurnitureAfterPlanRebuild } from '../lib/geometry/planFurnitureRemap';
+import { remapOpeningsAfterPlanRebuild } from '../lib/geometry/planOpeningRemap';
 import { pointInPlanRoom, wallEndpointForGrowSide, type WallGrowSide } from '../lib/geometry/roomWalls';
 import { PIXELS_PER_METER } from '../lib/geometry/snapping';
 
@@ -83,6 +84,13 @@ type PlannerState = SceneSnapshot & {
   /** Linked CRM client for this design (optional). */
   clientId: string | null;
   setClientId: (id: string | null) => void;
+  /** Latest estimate frozen on save (also embedded in projectPayload). */
+  estimateSnapshot: import('../lib/estimateSnapshot').EstimateSnapshot | null;
+  /** Locked baseline for change-order diffs. */
+  baselineEstimate: import('../lib/estimateSnapshot').EstimateSnapshot | null;
+  setEstimateSnapshot: (snap: import('../lib/estimateSnapshot').EstimateSnapshot | null) => void;
+  lockEstimateBaseline: () => void;
+  clearEstimateBaseline: () => void;
   history: SceneSnapshot[];
   historyIndex: number;
   openingNotice: string;
@@ -344,6 +352,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
   ) => {
     const prevRooms = get().planRooms;
     const prevFurniture = get().furniture;
+    const prevWalls = get().walls;
+    const prevOpenings = get().openings;
     const height = get().walls[0]?.height ?? 2.74;
     const rebuilt = rebuildFromPlanRooms(nextLabels, get().activeFloorId, height, {
       centerFt: opts?.centerFt,
@@ -352,16 +362,22 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       ...p,
       floorColor: nextLabels.find((l) => l.id === p.id)?.floorColor,
     }));
+    const openings = remapOpeningsAfterPlanRebuild(
+      prevWalls,
+      rebuilt.scene.walls,
+      prevOpenings,
+      rebuilt.scene.openings,
+    );
     const furniture = remapFurnitureAfterPlanRebuild(
       prevRooms,
       planRooms,
       rebuilt.scene.walls,
       prevFurniture,
-      rebuilt.scene.openings,
+      openings,
     );
     const patch: Partial<SceneSnapshot> = {
       walls: rebuilt.scene.walls,
-      openings: rebuilt.scene.openings,
+      openings,
       furniture,
       planRooms,
     };
@@ -375,7 +391,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
                 scene: {
                   ...f.scene,
                   walls: rebuilt.scene.walls,
-                  openings: rebuilt.scene.openings,
+                  openings,
                   furniture,
                   planRooms,
                 },
@@ -395,7 +411,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
                 scene: {
                   ...f.scene,
                   walls: rebuilt.scene.walls,
-                  openings: rebuilt.scene.openings,
+                  openings,
                   furniture,
                   planRooms,
                 },
@@ -413,7 +429,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
   const projectPayload = () => {
     const s = get();
     return {
-      version: 5,
+      version: 6,
       roomType: s.roomType,
       unitSystem: s.unitSystem,
       activeFloorId: s.activeFloorId,
@@ -421,6 +437,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       clientId: s.clientId,
       annotations: s.annotations,
       layerVisibility: s.layerVisibility,
+      estimateSnapshot: s.estimateSnapshot,
+      baselineEstimate: s.baselineEstimate,
     };
   };
 
@@ -449,6 +467,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     annotations: [],
     selectedAnnotationId: null,
     clientId: null,
+    estimateSnapshot: null,
+    baselineEstimate: null,
     history: [initial],
     historyIndex: 0,
     openingNotice: '',
@@ -472,6 +492,12 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     setLayerVisibility: (patch) =>
       set((s) => ({ layerVisibility: { ...s.layerVisibility, ...patch } })),
     setClientId: (clientId) => set({ clientId }),
+    setEstimateSnapshot: (estimateSnapshot) => set({ estimateSnapshot }),
+    lockEstimateBaseline: () => {
+      const snap = get().estimateSnapshot;
+      if (snap) set({ baselineEstimate: snap });
+    },
+    clearEstimateBaseline: () => set({ baselineEstimate: null }),
     selectAnnotation: (selectedAnnotationId) => set({ selectedAnnotationId }),
     addAnnotation: (kind, x, z, text = '') => {
       const id = crypto.randomUUID();
@@ -1907,6 +1933,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
           housePlanId: data.housePlanId ?? null,
           housePlanName: data.housePlanName ?? null,
           clientId: data.clientId ?? null,
+          estimateSnapshot: data.estimateSnapshot ?? null,
+          baselineEstimate: data.baselineEstimate ?? null,
           annotations: Array.isArray(data.annotations) ? data.annotations : [],
           layerVisibility: data.layerVisibility
             ? { ...DEFAULT_LAYER_VISIBILITY, ...data.layerVisibility }

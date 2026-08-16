@@ -20,6 +20,11 @@ export function canManageUsers(role: UserRole | undefined | null): boolean {
   return role === 'system_admin';
 }
 
+/** Admins and system admins may edit the shared trade rate book. */
+export function canEditTradeRates(role: UserRole | undefined | null): boolean {
+  return role === 'admin' || role === 'system_admin';
+}
+
 export function roleRank(role: UserRole): number {
   switch (role) {
     case 'system_admin':

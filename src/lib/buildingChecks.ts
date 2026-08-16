@@ -15,6 +15,10 @@ export function evaluateBuildingChecks(input: {
   furniture: FurnitureItem[];
   siteSetback: SiteSetback;
   storyHeightM?: number;
+  /** Total floors in the house (multi-story continuity). */
+  floorCount?: number;
+  /** Floors that already have a stair placed. */
+  floorsWithStairs?: number;
 }): BuildingCheck[] {
   const checks: BuildingCheck[] = [];
   const story = input.storyHeightM ?? input.walls[0]?.height ?? 2.7;
@@ -51,6 +55,25 @@ export function evaluateBuildingChecks(input: {
         detail: `Stair width ${(item.width / FT).toFixed(1)}′ — confirm clear width for your jurisdiction.`,
       });
     }
+    if (Math.abs(rise - story) > 0.15) {
+      checks.push({
+        id: `stair-story-${item.id}`,
+        severity: 'info',
+        title: 'Stair rise vs story height',
+        detail: `Stair rise ${rise.toFixed(2)} m vs story ${story.toFixed(2)} m — confirm floor-to-floor match.`,
+      });
+    }
+  }
+
+  const floorCount = input.floorCount ?? 1;
+  const floorsWithStairs = input.floorsWithStairs ?? (input.furniture.some((f) => f.placementKind === 'stair') ? 1 : 0);
+  if (floorCount > 1 && floorsWithStairs < floorCount - 1) {
+    checks.push({
+      id: 'stair-missing-link',
+      severity: 'warn',
+      title: 'Missing stair between floors',
+      detail: `${floorCount} floors but only ${floorsWithStairs} stair placement(s) — link levels before bidding.`,
+    });
   }
 
   if (input.siteSetback.frontM < 3) {
@@ -80,14 +103,14 @@ export function evaluateBuildingChecks(input: {
     });
   }
 
-  return checks.slice(0, 6);
+  return checks.slice(0, 8);
 }
 
 export const WALL_ASSEMBLY_PRESETS: Record<
   'exterior' | 'interior' | 'party',
-  { label: string; thicknessM: number; hint: string }
+  { label: string; thicknessM: number; hint: string; studSpacingM: number }
 > = {
-  exterior: { label: 'Exterior', thicknessM: 0.18, hint: '~7″ wood frame + sheathing' },
-  interior: { label: 'Interior', thicknessM: 0.12, hint: '~5″ partition' },
-  party: { label: 'Party', thicknessM: 0.25, hint: '~10″ demising / fire separation' },
+  exterior: { label: 'Exterior', thicknessM: 0.18, hint: '~7″ wood frame + sheathing', studSpacingM: 0.4064 },
+  interior: { label: 'Interior', thicknessM: 0.12, hint: '~5″ partition', studSpacingM: 0.4064 },
+  party: { label: 'Party', thicknessM: 0.25, hint: '~10″ demising / fire separation', studSpacingM: 0.4064 },
 };

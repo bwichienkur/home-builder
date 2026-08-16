@@ -3,9 +3,18 @@ import { useMemo, useState } from 'react';
 import type { CatalogItem } from '../catalog/catalogData';
 import type { FurnitureItem, Opening, PlanRoomLabel, UnitSystem, Wall } from '../../types';
 import { roomArea } from '../../lib/geometry/rooms';
-import { computeConstructionTakeoff, mergeConstructionTakeoffs } from '../../lib/constructionTakeoff';
 import { usePlannerStore } from '../../store/plannerStore';
-import { useTradeRatesStore } from '../../store/tradeRatesStore';
+import { pickTradeRates, useTradeRatesStore } from '../../store/tradeRatesStore';
+import { computeHouseTakeoff } from '../../lib/houseEstimate';
+import {
+  buildEstimateLines,
+  buildEstimateSnapshot,
+  computeEstimateTotals,
+  diffEstimateAgainstBaseline,
+  ESTIMATE_DISCLAIMER,
+} from '../../lib/estimateSnapshot';
+import { canEditTradeRates } from '../../lib/platform/roles';
+import { useAuthStore } from '../../store/authStore';
 
 const M_TO_FT = 1 / 0.3048;
 const M2_TO_SQFT = M_TO_FT * M_TO_FT;
@@ -143,86 +152,58 @@ export function BomDialog({
     kind: 'manual',
   }));
 
-  const takeoff = useMemo(() => {
-    const parts = floors.map((f) => {
-      const live = f.id === activeFloorId;
-      return computeConstructionTakeoff({
-        walls: live ? walls : f.scene.walls,
-        openings: live ? openings : f.scene.openings,
-        furniture: live ? items : f.scene.furniture,
-      });
-    });
-    return mergeConstructionTakeoffs(parts);
-  }, [floors, activeFloorId, walls, openings, items]);
+  const ratesPicked = useMemo(() => pickTradeRates(rates), [rates]);
+  const takeoff = useMemo(
+    () =>
+      computeHouseTakeoff({
+        floors,
+        activeFloorId,
+        live: { walls, openings, furniture: items, planRooms },
+        wasteFactor: ratesPicked.wasteFactor,
+      }),
+    [floors, activeFloorId, walls, openings, items, planRooms, ratesPicked.wasteFactor],
+  );
 
   const floorCount = floors.length;
-  const imperial = unitSystem === 'imperial';
-  const toSf = (m2: number) => (imperial ? m2 / 0.09290304 : m2);
-  const toFt = (m: number) => (imperial ? m / 0.3048 : m);
-  const areaUnit = imperial ? 'sq ft' : 'm2';
-  const lenUnit = imperial ? 'linear ft' : 'm';
-  const waste = 1 + takeoff.wasteFactor;
-  const laborPct = rates.laborPctOfMaterial;
+  const estimateLines = useMemo(() => buildEstimateLines(takeoff, ratesPicked), [takeoff, ratesPicked]);
+  const estimateTotals = useMemo(() => computeEstimateTotals(estimateLines, ratesPicked), [estimateLines, ratesPicked]);
 
-  const constructionRows: BomRow[] = (
-    [
-      {
-        key: 'const-drywall',
-        name: 'Drywall (both faces + waste)',
-        category: 'Construction',
-        qty: toSf(takeoff.drywallAreaM2) * waste,
-        unit: areaUnit,
-        cost: rates.drywallPerSf,
-        laborCost: rates.drywallPerSf * laborPct * toSf(takeoff.drywallAreaM2) * waste,
-        removable: false,
-        kind: 'construction' as const,
-      },
-      {
-        key: 'const-paint',
-        name: 'Interior paint (+ waste)',
-        category: 'Construction',
-        qty: toSf(takeoff.paintAreaM2) * waste,
-        unit: areaUnit,
-        cost: rates.paintPerSf,
-        laborCost: rates.paintPerSf * laborPct * toSf(takeoff.paintAreaM2) * waste,
-        removable: false,
-        kind: 'construction' as const,
-      },
-      {
-        key: 'const-studs',
-        name: 'Studs (16″ OC)',
-        category: 'Construction',
-        qty: takeoff.studCount,
-        unit: 'each',
-        cost: rates.studEach,
-        laborCost: rates.studEach * laborPct * takeoff.studCount,
-        removable: false,
-        kind: 'construction' as const,
-      },
-      {
-        key: 'const-sheathing',
-        name: 'Exterior sheathing (+ waste)',
-        category: 'Construction',
-        qty: toSf(takeoff.exteriorSheathingAreaM2) * waste,
-        unit: areaUnit,
-        cost: rates.sheathingPerSf,
-        laborCost: rates.sheathingPerSf * laborPct * toSf(takeoff.exteriorSheathingAreaM2) * waste,
-        removable: false,
-        kind: 'construction' as const,
-      },
-      {
-        key: 'const-baseboard',
-        name: 'Baseboard (interior)',
-        category: 'Construction',
-        qty: toFt(takeoff.baseboardLengthM),
-        unit: lenUnit,
-        cost: rates.baseboardPerFt,
-        laborCost: rates.baseboardPerFt * laborPct * toFt(takeoff.baseboardLengthM),
-        removable: false,
-        kind: 'construction' as const,
-      },
-    ] as BomRow[]
-  ).filter((r) => r.qty > 0.05);
+  const constructionRows: BomRow[] = estimateLines.map((l) => ({
+    key: `const-${l.key}`,
+    name: l.name,
+    category: 'Construction',
+    qty: l.qty,
+    unit: l.unit,
+    cost: l.unitCost,
+    laborCost: l.labor,
+    removable: false,
+    kind: 'construction',
+  }));
+
+  const baseline = usePlannerStore((s) => s.baselineEstimate);
+  const setEstimateSnapshot = usePlannerStore((s) => s.setEstimateSnapshot);
+  const lockBaseline = usePlannerStore((s) => s.lockEstimateBaseline);
+  const clearBaseline = usePlannerStore((s) => s.clearEstimateBaseline);
+  const role = useAuthStore((s) => s.user?.role);
+  const canEditRates = canEditTradeRates(role);
+
+  const liveSnapPreview = useMemo(
+    () => ({
+      version: 0,
+      savedAt: '',
+      label: 'Live',
+      disclaimer: ESTIMATE_DISCLAIMER,
+      takeoff,
+      rates: ratesPicked,
+      lines: estimateLines,
+      totals: estimateTotals,
+    }),
+    [takeoff, ratesPicked, estimateLines, estimateTotals],
+  );
+  const changeOrder = useMemo(
+    () => diffEstimateAgainstBaseline(liveSnapPreview, baseline),
+    [liveSnapPreview, baseline],
+  );
 
   const ffeRows = [...floorRows, ...productRows, ...manualRows].sort(
     (a, b) => (a.brand ?? '').localeCompare(b.brand ?? '') || a.name.localeCompare(b.name),
@@ -359,17 +340,48 @@ export function BomDialog({
           </div>
         )}
         {tab === 'estimate' && (
-          <div className="inventory-warning">
-            Construction takeoff is whole-house ({floorCount} floor{floorCount === 1 ? '' : 's'}) using your trade rate
-            book. Tax, permits, and markup are not included — edit rates before bidding.
-          </div>
+          <div className="inventory-warning">{ESTIMATE_DISCLAIMER}</div>
         )}
 
         {tab === 'estimate' && (
           <div className="bom-rate-book">
-            <button type="button" className="bom-rate-toggle" onClick={() => setRatesOpen((v) => !v)}>
-              {ratesOpen ? 'Hide trade rates' : 'Edit trade rates'}
-            </button>
+            <div className="bom-rate-actions">
+              <button type="button" className="bom-rate-toggle" onClick={() => setRatesOpen((v) => !v)}>
+                {ratesOpen ? 'Hide trade rates' : canEditRates ? 'Edit trade rates' : 'View trade rates'}
+              </button>
+              <button
+                type="button"
+                className="bom-rate-toggle"
+                onClick={() => {
+                  const snap = buildEstimateSnapshot({
+                    takeoff,
+                    rates: ratesPicked,
+                    previousVersion: baseline?.version ?? 0,
+                    label: 'Baseline',
+                  });
+                  setEstimateSnapshot(snap);
+                  lockBaseline();
+                }}
+                title="Lock current live estimate as change-order baseline"
+              >
+                Lock baseline
+              </button>
+              {baseline && (
+                <button type="button" className="bom-rate-reset" onClick={() => clearBaseline()}>
+                  Clear baseline v{baseline.version}
+                </button>
+              )}
+            </div>
+            {changeOrder.hasBaseline && changeOrder.delta != null && (
+              <p className="muted" style={{ marginTop: 8 }}>
+                Change order vs baseline v{changeOrder.baselineVersion}:{' '}
+                <strong>
+                  {changeOrder.delta >= 0 ? '+' : ''}
+                  ${changeOrder.delta.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                </strong>{' '}
+                (live ${changeOrder.liveGrandTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })})
+              </p>
+            )}
             {ratesOpen && (
               <div className="bom-rate-grid">
                 {(
@@ -377,9 +389,21 @@ export function BomDialog({
                     ['drywallPerSf', 'Drywall $/SF'],
                     ['paintPerSf', 'Paint $/SF'],
                     ['studEach', 'Stud $'],
+                    ['platePerFt', 'Plate $/LF'],
+                    ['headerEach', 'Header $'],
                     ['sheathingPerSf', 'Sheathing $/SF'],
+                    ['insulationPerSf', 'Insulation $/SF'],
                     ['baseboardPerFt', 'Baseboard $/LF'],
-                    ['laborPctOfMaterial', 'Labor × material'],
+                    ['flooringPerSf', 'Flooring $/SF'],
+                    ['slabPerSf', 'Slab $/SF'],
+                    ['footingPerFt', 'Footing $/LF'],
+                    ['roofPerSf', 'Roof $/SF'],
+                    ['doorEach', 'Door $'],
+                    ['windowPerSf', 'Window $/SF'],
+                    ['laborPctOfMaterial', 'Labor × mat'],
+                    ['wasteFactor', 'Waste'],
+                    ['markupPct', 'OH&P markup'],
+                    ['taxPct', 'Tax'],
                   ] as const
                 ).map(([key, label]) => (
                   <label key={key}>
@@ -389,13 +413,16 @@ export function BomDialog({
                       min={0}
                       step="any"
                       value={rates[key]}
+                      disabled={!canEditRates}
                       onChange={(e) => rates.setRate(key, Number(e.target.value))}
                     />
                   </label>
                 ))}
-                <button type="button" className="bom-rate-reset" onClick={() => rates.resetRates()}>
-                  Reset defaults
-                </button>
+                {canEditRates && (
+                  <button type="button" className="bom-rate-reset" onClick={() => rates.resetRates()}>
+                    Reset defaults
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -530,11 +557,13 @@ export function BomDialog({
           ) : (
             <>
               <span>
-                Estimate · mat ${materialTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })} + labor $
-                {laborTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                {floorCount} fl · mat ${estimateTotals.material.toLocaleString(undefined, { maximumFractionDigits: 0 })} ·
+                labor ${estimateTotals.labor.toLocaleString(undefined, { maximumFractionDigits: 0 })} · OH&P $
+                {estimateTotals.markup.toLocaleString(undefined, { maximumFractionDigits: 0 })} · tax $
+                {estimateTotals.tax.toLocaleString(undefined, { maximumFractionDigits: 0 })}
               </span>
               <strong>
-                ${estimateTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                ${estimateTotals.grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </strong>
             </>
           )}
@@ -542,7 +571,7 @@ export function BomDialog({
         <p className="muted">
           {tab === 'ffe'
             ? 'Shopping list for furniture & finishes only — not a construction bid.'
-            : 'Soft allowances for drywall, paint, studs, sheathing, and baseboard from plan geometry. Override rates in your cost book.'}
+            : ESTIMATE_DISCLAIMER}
         </p>
         <footer>
           <button onClick={download}>

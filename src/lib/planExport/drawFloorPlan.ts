@@ -220,7 +220,7 @@ function drawTitleBlock(
   ctx.fillText('Mahnikka Planner', rect.x + rect.w * 0.55 + 10, rect.y + rect.h * 0.62 + 22);
   ctx.font = '500 10px Figtree, system-ui, sans-serif';
   ctx.fillStyle = '#5c6770';
-  ctx.fillText('Not for construction without review', rect.x + rect.w * 0.55 + 10, rect.y + rect.h * 0.62 + 40);
+  ctx.fillText('INTERNAL ESTIMATE SET — not a contract bid', rect.x + rect.w * 0.55 + 10, rect.y + rect.h * 0.62 + 40);
 }
 
 function drawScaleBar(
@@ -799,8 +799,16 @@ export function buildPlanDxf(input: PlanExportInput): string {
     const layer = wall.assembly === 'exterior' ? 'A-WALL-EXT' : 'A-WALL-INT';
     const halfPx = ((wall.thickness || 0.15) * PIXELS_PER_METER) / 2;
     const sides = offsetPair(wall.start, wall.end, halfPx);
-    pushLine(layer, sides.left.a, sides.left.b);
-    pushLine(layer, sides.right.a, sides.right.b);
+    // Closed rectangular face (4 edges) for hatch/area workflows.
+    const a1 = sides.left.a;
+    const b1 = sides.left.b;
+    const b2 = sides.right.b;
+    const a2 = sides.right.a;
+    const verts = [a1, b1, b2, a2].map(scaleCad);
+    lines.push('0', 'LWPOLYLINE', '8', layer, '90', '4', '70', '1');
+    for (const v of verts) {
+      lines.push('10', String(v.x), '20', String(v.y));
+    }
     // Centerline kept on WALLS for dim reference / older importers.
     pushLine('WALLS', wall.start, wall.end);
     const len = wallLengthM(wall);

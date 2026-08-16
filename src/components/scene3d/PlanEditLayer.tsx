@@ -77,8 +77,8 @@ export function PlanEditLayer() {
   const hostRoom = planRooms.find((r) => r.id === selectedRoomId) ?? null;
   const showAttachSides = active && pendingAttachMode && !!hostRoom;
   const showVertices = active && !!hostRoom && !placingRoom && !pendingAttachMode && !planWallTool;
-  const showWallHandles = active && planWallTool && !!hostRoom && !placingRoom && !pendingAttachMode;
-  const dimRoom = active && planWallTool && !pendingAttachMode ? hostRoom : null;
+  const showWallHandles = active && !!hostRoom && !placingRoom && !pendingAttachMode;
+  const dimRoom = active && (planWallTool || showWallHandles) && !pendingAttachMode ? hostRoom : null;
   const ceiling = walls[0]?.height ?? 2.7;
 
   const wallHandles = useMemo(() => {
