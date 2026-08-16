@@ -1,6 +1,6 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
-import { LoginPage, RequireAuth } from './features/auth/LoginPage';
+import { AuthCatchAll, LoginPage, RequireAuth } from './features/auth/LoginPage';
 import { AppShell } from './features/shell/AppShell';
 import { HomePage } from './features/home/HomePage';
 import { ClientsPage } from './features/crm/ClientsPage';
@@ -55,9 +55,8 @@ export function AppRouter() {
           <Route path="plans" element={<PlansPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<AuthCatchAll />} />
       </Routes>
     </BrowserRouter>
   );
 }
-

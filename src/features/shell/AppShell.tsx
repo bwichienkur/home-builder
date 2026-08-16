@@ -18,14 +18,12 @@ const NAV = [
 export function AppShell() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
-  const restoreSession = useAuthStore((s) => s.restoreSession);
   const hydrateCrm = useCrmStore((s) => s.hydrate);
   const navigate = useNavigate();
 
   useEffect(() => {
-    void restoreSession();
     void hydrateCrm();
-  }, [restoreSession, hydrateCrm]);
+  }, [hydrateCrm]);
 
   return (
     <div className="app-shell">
