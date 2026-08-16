@@ -26,8 +26,6 @@ import {
   Trash2,
   Undo2,
   Wallpaper,
-  DoorOpen,
-  SquareDashed,
   X,
 } from 'lucide-react';
 import { roomCategories } from '../catalog/CatalogPanel';
@@ -93,7 +91,6 @@ export function StudioChrome({
   const pending = usePlannerStore((s) => s.pendingPlacement);
   const pendingFloorFill = usePlannerStore((s) => s.pendingFloorFill);
   const cancelFloorFill = usePlannerStore((s) => s.cancelFloorFill);
-  const addOpening = usePlannerStore((s) => s.addOpening);
   const workflowStage = usePlannerStore((s) => s.workflowStage);
   const studioMode = usePlannerStore((s) => s.studioMode);
   const setStudioMode = usePlannerStore((s) => s.setStudioMode);
@@ -129,11 +126,9 @@ export function StudioChrome({
   const isTop = camera === 'top';
   const planWallTool = usePlannerStore((s) => s.planWallTool);
   const setPlanWallTool = usePlannerStore((s) => s.setPlanWallTool);
-  const wallEditMode = studioMode === 'architect' && isTop && tool === 'select' && planWallTool;
   const showSelectionFabs = !!selectedItem && !pending;
   const showOpeningFabs = !!selectedOpening && !pending && !selectedWall;
-  const showWallFabs = wallEditMode && !!selectedWall && !pending;
-  const showActionFabs = showSelectionFabs || !!pending || showWallFabs || showOpeningFabs || !!pendingFloorFill;
+  const showActionFabs = showSelectionFabs || !!pending || showOpeningFabs || !!pendingFloorFill;
 
   useEffect(() => {
     if (catalogOpen || menuOpen) setStoriesOpen(false);
@@ -301,6 +296,14 @@ export function StudioChrome({
     }, 60);
   };
 
+  /** Plan-level room properties panel (name, type, dims, units) — same sheet as furnish Room. */
+  const openSelectedPlanRoomEditor = () => {
+    if (!selectedRoomId) return;
+    setPlanWallTool(false);
+    usePlannerStore.getState().selectWall(null);
+    onOpenInspector();
+  };
+
   const removeSelectedPlanRoom = () => {
     if (!selectedRoomId) return;
     const room = planRooms.find((r) => r.id === selectedRoomId);
@@ -327,9 +330,9 @@ export function StudioChrome({
   };
 
   useEffect(() => {
-    if (wallEditMode) return;
+    // Plan no longer selects individual walls — clear any leftover wall selection.
     if (usePlannerStore.getState().selectedWallId) usePlannerStore.getState().selectWall(null);
-  }, [wallEditMode]);
+  }, [planWallTool, isTop]);
 
   const openFurnishCategory = (category: string) => {
     setStudioMode('furnish');
@@ -498,42 +501,6 @@ export function StudioChrome({
         </div>
       )}
 
-      {wallEditMode && selectedWall && !pending && (
-        <div className="studio-selection-fabs" role="toolbar" aria-label="Wall actions">
-          <button
-            type="button"
-            onClick={() => addOpening(selectedWall, 'door')}
-            aria-label="Add door"
-            title="Add door"
-          >
-            <DoorOpen />
-          </button>
-          <button
-            type="button"
-            onClick={() => addOpening(selectedWall, 'passage')}
-            aria-label="Add opening"
-            title="Add room opening"
-          >
-            <SquareDashed />
-          </button>
-          <button
-            type="button"
-            className="is-danger"
-            onClick={() => {
-              if (!window.confirm('Delete this wall?')) return;
-              deleteSelected();
-            }}
-            aria-label="Delete wall"
-            title="Delete wall"
-          >
-            <Trash2 />
-          </button>
-          <button type="button" onClick={onOpenInspector} aria-label="Wall properties" title="Wall properties">
-            <Info />
-          </button>
-        </div>
-      )}
-
       {pending && (
         <div className="studio-selection-fabs" role="toolbar" aria-label="Place product">
           <button onClick={() => rotatePending()} aria-label="Rotate preview">
@@ -616,6 +583,16 @@ export function StudioChrome({
             })}
           {showPlanRoomActions && (
             <>
+              <button
+                type="button"
+                className="studio-rail-room-edit"
+                onClick={openSelectedPlanRoomEditor}
+                aria-label="Edit room"
+                title="Edit room"
+              >
+                <SlidersHorizontal />
+                <span>Edit</span>
+              </button>
               <button
                 type="button"
                 className="studio-rail-furnish"

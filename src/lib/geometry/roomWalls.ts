@@ -44,6 +44,63 @@ export function wallsBelongingToRoom(room: PlanRoomLabel, walls: Wall[], tol = 2
 }
 
 /**
+ * Walls that lie on the room outline only (not neighbor walls that merely
+ * graze a corner or span past an edge — those caused “leftover” stubs in room focus).
+ */
+export function boundaryWallsForRoomOutline(room: PlanRoomLabel, walls: Wall[], tol = 28) {
+  const pts = room.points;
+  if (pts.length < 3) return wallsBelongingToRoom(room, walls, tol);
+  return walls.filter((wall) => {
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[i]!;
+      const b = pts[(i + 1) % pts.length]!;
+      if (pointNearSegment(wall.start, a, b, tol) && pointNearSegment(wall.end, a, b, tol)) return true;
+    }
+    return false;
+  });
+}
+
+/**
+ * Exact enclosure for room focus / furnish: one wall per polygon edge, clipped to
+ * the room corners so nothing sticks past. Reuses thickness/height/id from a
+ * matching outline wall when available so openings stay attached.
+ */
+export function enclosureWallsForRoom(room: PlanRoomLabel, walls: Wall[], defaultHeight = 2.7, tol = 28): Wall[] {
+  const pts = room.points;
+  if (pts.length < 3) return [];
+  const out: Wall[] = [];
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[i]!;
+    const b = pts[(i + 1) % pts.length]!;
+    const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    const edgeLen = dist(a, b);
+    let match: Wall | undefined;
+    let bestScore = Infinity;
+    for (const wall of walls) {
+      const onEdge =
+        pointNearSegment(wall.start, a, b, tol) && pointNearSegment(wall.end, a, b, tol);
+      const midOnWall = pointNearSegment(mid, wall.start, wall.end, tol);
+      if (!onEdge && !midOnWall) continue;
+      const wallLen = dist(wall.start, wall.end);
+      // Prefer walls whose length is closest to this edge (exact outline over long facades).
+      const score = onEdge ? Math.abs(wallLen - edgeLen) : Math.abs(wallLen - edgeLen) + 50;
+      if (score < bestScore) {
+        bestScore = score;
+        match = wall;
+      }
+    }
+    out.push({
+      id: match?.id ?? `${room.id}-edge-${i}`,
+      start: { x: a.x, y: a.y },
+      end: { x: b.x, y: b.y },
+      thickness: match?.thickness ?? 0.15,
+      height: match?.height ?? defaultHeight,
+    });
+  }
+  return out;
+}
+
+/**
  * Which unit normal side of the wall is outside the room(s).
  * Returns +1 for the (+normal) side, -1 for the (−normal) side.
  * Normal is left-handed relative to start→end in plan pixels: (−dy, dx).

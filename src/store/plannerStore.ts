@@ -112,7 +112,7 @@ type PlannerState = SceneSnapshot & {
   /** Plan-level “Add room” mode — pick a side of the selected room. */
   pendingAttachMode: boolean;
   setPendingAttachMode: (on: boolean) => void;
-  /** When true, plan-level Walls tool is armed (picks + drag-resize + openings). */
+  /** When true, plan-level Walls tool shows the room dimension card (no per-wall picks). */
   planWallTool: boolean;
   setPlanWallTool: (on: boolean) => void;
   placePlanRoom: (center: Point, shape?: PlanRoomShape, name?: string) => string | null;
@@ -791,20 +791,26 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         view: '3d',
         openingNotice: '',
       }),
-    setPlanWallTool: (planWallTool) =>
+    setPlanWallTool: (planWallTool) => {
+      const rooms = get().planRooms;
+      const keepRoom = get().selectedRoomId;
       set({
         planWallTool,
         pendingAttachMode: false,
         pendingRoomShape: null,
         tool: 'select',
         draftStart: null,
-        selectedWallId: planWallTool ? get().selectedWallId : null,
-        selectedRoomId: planWallTool ? null : get().selectedRoomId,
+        selectedWallId: null,
+        // Keep (or auto-pick) a room so the exterior dim card has a target.
+        selectedRoomId: planWallTool
+          ? keepRoom ?? (rooms.length === 1 ? rooms[0]!.id : keepRoom)
+          : keepRoom,
         studioMode: 'architect',
         cameraMode: 'top',
         view: '3d',
         openingNotice: '',
-      }),
+      });
+    },
     placePlanRoom: (center, shape, name) => {
       const kind = shape ?? get().pendingRoomShape ?? 'rectangle';
       const snapped = snapRoomCenterToNeighbors(center, kind, get().planRooms);

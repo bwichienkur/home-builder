@@ -1,18 +1,20 @@
 import { Html, Line } from '@react-three/drei';
 import { useThree } from '@react-three/fiber';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import * as THREE from 'three';
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp } from 'lucide-react';
 import { WORLD_ORIGIN } from '../../lib/geometry/placement';
 import {
   attachSideBlocked,
   attachSquareRoomPoints,
+  planRoomSizeFeet,
   proposedRoomOverlaps,
   shapedRoomPoints,
   snapRoomCenterToNeighbors,
   type AttachSide,
 } from '../../lib/housePlans/buildPlan';
 import { PIXELS_PER_METER } from '../../lib/geometry/snapping';
+import { formatLength, parseLength } from '../../lib/measurements';
 import { usePlannerStore } from '../../store/plannerStore';
 
 const world = (x: number, y: number): [number, number] => [
@@ -33,8 +35,8 @@ const ATTACH_SIDES: { side: AttachSide; label: string; Icon: typeof ArrowLeft }[
 ];
 
 /**
- * Top-view plan tools: attach rooms beside a host.
- * Per-wall L/W/H dim editing is disabled for now (clashes with wall drag-resize).
+ * Top-view plan tools: attach rooms beside a host, and room width/depth card
+ * when the Walls tool is armed (no per-wall picking).
  */
 export function PlanEditLayer() {
   const tool = usePlannerStore((s) => s.tool);
@@ -45,9 +47,14 @@ export function PlanEditLayer() {
   const setDraftStart = usePlannerStore((s) => s.setDraftStart);
   const placePlanRoom = usePlannerStore((s) => s.placePlanRoom);
   const attachPlanRoom = usePlannerStore((s) => s.attachPlanRoom);
+  const resizePlanRoom = usePlannerStore((s) => s.resizePlanRoom);
+  const setCeilingHeight = usePlannerStore((s) => s.setCeilingHeight);
   const pendingRoomShape = usePlannerStore((s) => s.pendingRoomShape);
   const pendingAttachMode = usePlannerStore((s) => s.pendingAttachMode);
+  const planWallTool = usePlannerStore((s) => s.planWallTool);
   const setPendingRoomShape = usePlannerStore((s) => s.setPendingRoomShape);
+  const unit = usePlannerStore((s) => s.unitSystem);
+  const walls = usePlannerStore((s) => s.walls);
   const { invalidate } = useThree();
   const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
   const roomPlace = useRef<{ pointerId: number; active: boolean } | null>(null);
@@ -57,6 +64,8 @@ export function PlanEditLayer() {
   const placingRoom = active && (!!pendingRoomShape || tool === 'room');
   const hostRoom = planRooms.find((r) => r.id === selectedRoomId) ?? null;
   const showAttachSides = active && pendingAttachMode && !!hostRoom;
+  const dimRoom = active && planWallTool && !pendingAttachMode ? hostRoom : null;
+  const ceiling = walls[0]?.height ?? 2.7;
 
   useEffect(() => {
     setDraftStart(null);
@@ -90,6 +99,27 @@ export function PlanEditLayer() {
       return { side, label, Icon, blocked, line, midX, midZ };
     });
   }, [hostRoom, planRooms]);
+
+  const dimCard = useMemo(() => {
+    if (!dimRoom || dimRoom.points.length < 3) return null;
+    const xs = dimRoom.points.map((p) => world(p.x, p.y)[0]);
+    const zs = dimRoom.points.map((p) => world(p.x, p.y)[1]);
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const minZ = Math.min(...zs);
+    const maxZ = Math.max(...zs);
+    const midZ = (minZ + maxZ) / 2;
+    const size = planRoomSizeFeet(dimRoom.points);
+    // Park the card in free space to the right of the room.
+    return {
+      pos: [maxX + 1.85, 0.14, midZ] as [number, number, number],
+      placement: 'right' as const,
+      widthM: size.widthFt * 0.3048,
+      depthM: size.depthFt * 0.3048,
+      widthFt: size.widthFt,
+      depthFt: size.depthFt,
+    };
+  }, [dimRoom]);
 
   if (!active) return null;
 
@@ -203,6 +233,101 @@ export function PlanEditLayer() {
             </Html>
           </group>
         ))}
+
+      {dimRoom && dimCard && (
+        <Html position={dimCard.pos} center zIndexRange={[120, 60]} style={{ pointerEvents: 'auto' }}>
+          <div
+            className={`wall-dim-card wall-dim-card--${dimCard.placement}`}
+            onPointerDown={(e) => e.stopPropagation()}
+          >
+            <div className="wall-dim-card-fields">
+              <RoomDimField
+                key={`W-${dimRoom.id}-${unit}-${dimCard.widthM.toFixed(3)}`}
+                label="W"
+                ariaLabel="Room width"
+                valueM={dimCard.widthM}
+                unit={unit}
+                min={1}
+                onChange={(meters) => {
+                  resizePlanRoom(dimRoom.id, meters / 0.3048, dimCard.depthFt);
+                  window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-fit-plan')), 40);
+                }}
+              />
+              <RoomDimField
+                key={`D-${dimRoom.id}-${unit}-${dimCard.depthM.toFixed(3)}`}
+                label="D"
+                ariaLabel="Room depth"
+                valueM={dimCard.depthM}
+                unit={unit}
+                min={1}
+                onChange={(meters) => {
+                  resizePlanRoom(dimRoom.id, dimCard.widthFt, meters / 0.3048);
+                  window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-fit-plan')), 40);
+                }}
+              />
+              <RoomDimField
+                key={`H-${dimRoom.id}-${unit}-${ceiling.toFixed(3)}`}
+                label="H"
+                ariaLabel="Ceiling height"
+                valueM={ceiling}
+                unit={unit}
+                min={2}
+                onChange={(meters) => {
+                  setCeilingHeight(meters);
+                  window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-fit-plan')), 40);
+                }}
+              />
+            </div>
+          </div>
+        </Html>
+      )}
     </group>
+  );
+}
+
+function RoomDimField({
+  label,
+  ariaLabel,
+  valueM,
+  unit,
+  min,
+  onChange,
+}: {
+  label: string;
+  ariaLabel: string;
+  valueM: number;
+  unit: 'metric' | 'imperial';
+  min: number;
+  onChange: (meters: number) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const commit = (raw: string) => {
+    const parsed = parseLength(raw, unit);
+    if (parsed == null) return;
+    onChange(Math.max(min, parsed));
+  };
+
+  const onSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (inputRef.current) commit(inputRef.current.value);
+  };
+
+  return (
+    <form className="wall-length-field" onSubmit={onSubmit}>
+      <strong>{label}</strong>
+      <input
+        ref={inputRef}
+        type="text"
+        inputMode="decimal"
+        aria-label={ariaLabel}
+        defaultValue={unit === 'metric' ? valueM.toFixed(2) : formatLength(valueM, unit)}
+        onBlur={(e) => commit(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+        }}
+      />
+      <span>{unit === 'metric' ? 'm' : 'ft/in'}</span>
+    </form>
   );
 }

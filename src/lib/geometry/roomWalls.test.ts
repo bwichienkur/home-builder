@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { PlanRoomLabel, Wall } from '../../types';
-import { pointInPlanRoom, wallBelongsToRoom, wallDimFieldLayout, wallEndpointForGrowSide, wallExteriorSide, wallsBelongingToRoom, defaultWallGrowSide } from './roomWalls';
+import { pointInPlanRoom, wallBelongsToRoom, wallDimFieldLayout, wallEndpointForGrowSide, wallExteriorSide, wallsBelongingToRoom, defaultWallGrowSide, enclosureWallsForRoom } from './roomWalls';
 
 const room: PlanRoomLabel = {
   id: 'r1',
@@ -37,6 +37,29 @@ describe('room wall membership', () => {
       height: 2.7,
     };
     expect(wallBelongsToRoom(divider, room)).toBe(true);
+  });
+
+  it('clips enclosure walls to the room polygon so neighbor stubs cannot stick out', () => {
+    const leftover: Wall = {
+      id: 'long-neighbor',
+      // Extends past both corners but still within the old permissive membership tol.
+      start: { x: 80, y: 100 },
+      end: { x: 320, y: 100 },
+      thickness: 0.15,
+      height: 2.7,
+    };
+    expect(wallBelongsToRoom(leftover, room)).toBe(true);
+    const enclosure = enclosureWallsForRoom(room, [...walls, leftover]);
+    expect(enclosure).toHaveLength(4);
+    for (const w of enclosure) {
+      expect(room.points.some((p) => Math.hypot(p.x - w.start.x, p.y - w.start.y) < 1)).toBe(true);
+      expect(room.points.some((p) => Math.hypot(p.x - w.end.x, p.y - w.end.y) < 1)).toBe(true);
+      const len = Math.hypot(w.end.x - w.start.x, w.end.y - w.start.y);
+      expect(len).toBeLessThanOrEqual(201);
+    }
+    const top = enclosure.find((w) => Math.abs(w.start.y - 100) < 1 && Math.abs(w.end.y - 100) < 1)!;
+    expect(top).toBeTruthy();
+    expect(Math.hypot(top.end.x - top.start.x, top.end.y - top.start.y)).toBeCloseTo(200, 0);
   });
 
   it('tests points inside the room polygon', () => {
