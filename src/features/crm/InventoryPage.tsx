@@ -224,7 +224,6 @@ export function InventoryPage() {
       <EntityDrawer
         title={draft?.id ? 'Edit inventory item' : 'Add inventory item'}
         open={!!draft}
-        wide
         onClose={() => setDraft(null)}
       >
         {draft && (
