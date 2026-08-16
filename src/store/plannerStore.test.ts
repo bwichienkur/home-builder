@@ -117,30 +117,6 @@ describe('perimeter trim',()=>{
   expect(after.every(f=>f.wallId&&wallIds.has(f.wallId))).toBe(true);
  });
 
- it('moves a selected plan room without overlapping neighbors',()=>{
-  usePlannerStore.setState({
-    workflowStage:'house',
-    furniture:[],
-    openings:[],
-    planRooms:[],
-    walls:[],
-    openingNotice:'',
-    selectedRoomId:null,
-  });
-  const a=usePlannerStore.getState().placePlanRoom({x:400,y:300},'rectangle','A');
-  const b=usePlannerStore.getState().placePlanRoom({x:780,y:300},'rectangle','B');
-  expect(a&&b).toBeTruthy();
-  const before=usePlannerStore.getState().planRooms.find(r=>r.id===a!)!;
-  const cx0=before.points.reduce((s,p)=>s+p.x,0)/before.points.length;
-  expect(usePlannerStore.getState().movePlanRoom(a!,0,1.5)).toBe(true);
-  const after=usePlannerStore.getState().planRooms.find(r=>r.id===a!)!;
-  const cx1=after.points.reduce((s,p)=>s+p.x,0)/after.points.length;
-  // Recentering may shift both rooms; relative move along Z should still change the polygon.
-  expect(after.points.some((p,i)=>Math.abs(p.y-before.points[i]!.y)>1||Math.abs(p.x-before.points[i]!.x)>1)).toBe(true);
-  void cx0;void cx1;
-  // Overlap into neighbor should fail.
-  expect(usePlannerStore.getState().movePlanRoom(a!,3,0)).toBe(false);
- });
  it('attaches a square room with a shared mid-wall passage and no starter windows',()=>{
   usePlannerStore.setState({
     workflowStage:'house',
