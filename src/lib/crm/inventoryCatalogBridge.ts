@@ -79,6 +79,8 @@ export function inventoryRecordToCatalogItem(row: InventoryRecord): CatalogItem 
     leadTimeDays: row.leadTimeDays,
     thumbnailUrl: row.thumbnailUrl || undefined,
     textureUrl: row.textureUrl || undefined,
+    roughnessMapUrl: row.roughnessMapUrl || undefined,
+    normalMapUrl: row.normalMapUrl || undefined,
     textureRepeat: row.textureRepeat,
     roughness: row.roughness,
     modelUrl: row.modelUrl || undefined,

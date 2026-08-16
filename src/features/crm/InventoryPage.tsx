@@ -50,6 +50,8 @@ const empty = (): Draft => ({
   availability: '',
   thumbnailUrl: '',
   textureUrl: '',
+  roughnessMapUrl: '',
+  normalMapUrl: '',
   modelUrl: '',
   lowPolyModelUrl: '',
   emoji: '▧',
@@ -207,6 +209,8 @@ export function InventoryPage() {
               leadTimeDays: optionalNumber(values.leadTimeDays),
               thumbnailUrl: values.thumbnailUrl ?? '',
               textureUrl: values.textureUrl ?? '',
+              roughnessMapUrl: values.roughnessMapUrl ?? '',
+              normalMapUrl: values.normalMapUrl ?? '',
               textureRepeat: optionalNumber(values.textureRepeat),
               roughness: optionalNumber(values.roughness),
               modelUrl: values.modelUrl ?? '',
@@ -603,6 +607,20 @@ export function InventoryPage() {
                 <input
                   value={draft.textureUrl ?? ''}
                   onChange={(e) => setDraft({ ...draft, textureUrl: e.target.value })}
+                />
+              </label>
+              <label>
+                Roughness map URL
+                <input
+                  value={draft.roughnessMapUrl ?? ''}
+                  onChange={(e) => setDraft({ ...draft, roughnessMapUrl: e.target.value })}
+                />
+              </label>
+              <label>
+                Normal map URL
+                <input
+                  value={draft.normalMapUrl ?? ''}
+                  onChange={(e) => setDraft({ ...draft, normalMapUrl: e.target.value })}
                 />
               </label>
               <div className="data-form-row">

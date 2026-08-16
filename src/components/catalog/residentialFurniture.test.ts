@@ -25,10 +25,13 @@ describe('residential furniture pack', () => {
     expect(floors.length).toBeGreaterThanOrEqual(8);
     for (const id of ['floor-oak-hardwood', 'floor-ash-laminate', 'floor-concrete-polished', 'floor-tile-ceramic-white']) {
       const item = catalog.find((i) => i.id === id);
-      expect(item?.textureUrl).toMatch(/^\/catalog\/floors\//);
+      expect(item?.textureUrl).toMatch(/^\/catalog\/floors\/pbr\/.+\.jpe?g$/i);
+      expect(item?.roughnessMapUrl).toMatch(/^\/catalog\/floors\/pbr\//);
       expect(item?.thumbnailUrl).toBeTruthy();
       expect(item?.priceUnit).toBe('sq ft');
     }
+    const oak = catalog.find((i) => i.id === 'floor-oak-hardwood');
+    expect(oak?.normalMapUrl).toMatch(/oak-normal/);
   });
 
   it('uses positive metric dimensions in realistic ranges', () => {

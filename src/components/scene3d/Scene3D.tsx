@@ -587,7 +587,8 @@ function FloorMaterial({
     >
       <TexturedFloorMaterial
         url={textureUrl}
-        color={color}
+        roughnessMapUrl={product?.roughnessMapUrl}
+        normalMapUrl={product?.normalMapUrl}
         repeatM={product?.textureRepeat ?? 0.4}
         worldSpan={worldSpan}
         roughness={product?.roughness ?? 0.88}
@@ -599,9 +600,19 @@ function FloorMaterial({
   );
 }
 
+function configureFloorMap(texture: THREE.Texture, tiles: number, srgb: boolean) {
+  if (srgb) texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(tiles, tiles);
+  texture.anisotropy = 8;
+  texture.needsUpdate = true;
+}
+
 function TexturedFloorMaterial({
   url,
-  color,
+  roughnessMapUrl,
+  normalMapUrl,
   repeatM,
   worldSpan,
   roughness,
@@ -610,7 +621,68 @@ function TexturedFloorMaterial({
   depthWrite,
 }: {
   url: string;
-  color: string;
+  roughnessMapUrl?: string;
+  normalMapUrl?: string;
+  repeatM: number;
+  worldSpan: number;
+  roughness: number;
+  opacity: number;
+  transparent: boolean;
+  depthWrite: boolean;
+}) {
+  // Hooks cannot be conditional — pick a loader branch with fixed URL arity.
+  if (roughnessMapUrl && normalMapUrl) {
+    return (
+      <TexturedFloorMaterialPBR
+        colorUrl={url}
+        roughUrl={roughnessMapUrl}
+        normalUrl={normalMapUrl}
+        repeatM={repeatM}
+        worldSpan={worldSpan}
+        roughness={roughness}
+        opacity={opacity}
+        transparent={transparent}
+        depthWrite={depthWrite}
+      />
+    );
+  }
+  if (roughnessMapUrl) {
+    return (
+      <TexturedFloorMaterialColorRough
+        colorUrl={url}
+        roughUrl={roughnessMapUrl}
+        repeatM={repeatM}
+        worldSpan={worldSpan}
+        roughness={roughness}
+        opacity={opacity}
+        transparent={transparent}
+        depthWrite={depthWrite}
+      />
+    );
+  }
+  return (
+    <TexturedFloorMaterialColorOnly
+      url={url}
+      repeatM={repeatM}
+      worldSpan={worldSpan}
+      roughness={roughness}
+      opacity={opacity}
+      transparent={transparent}
+      depthWrite={depthWrite}
+    />
+  );
+}
+
+function TexturedFloorMaterialColorOnly({
+  url,
+  repeatM,
+  worldSpan,
+  roughness,
+  opacity,
+  transparent,
+  depthWrite,
+}: {
+  url: string;
   repeatM: number;
   worldSpan: number;
   roughness: number;
@@ -620,20 +692,106 @@ function TexturedFloorMaterial({
 }) {
   const texture = useTexture(url);
   useLayoutEffect(() => {
-    texture.colorSpace = THREE.SRGBColorSpace;
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.RepeatWrapping;
-    // ShapeGeometry UVs are 0–1 over the room bbox — tile by world size / pattern scale.
     const tiles = Math.max(1, worldSpan / Math.max(0.08, repeatM));
-    texture.repeat.set(tiles, tiles);
-    texture.anisotropy = 8;
-    texture.needsUpdate = true;
+    configureFloorMap(texture, tiles, true);
   }, [texture, repeatM, worldSpan]);
   return (
     <meshStandardMaterial
       map={texture}
-      color={color}
+      color="#ffffff"
       roughness={roughness}
+      metalness={0.02}
+      side={THREE.DoubleSide}
+      transparent={transparent}
+      opacity={opacity}
+      depthWrite={depthWrite}
+      polygonOffset
+      polygonOffsetFactor={4}
+      polygonOffsetUnits={4}
+    />
+  );
+}
+
+function TexturedFloorMaterialColorRough({
+  colorUrl,
+  roughUrl,
+  repeatM,
+  worldSpan,
+  roughness,
+  opacity,
+  transparent,
+  depthWrite,
+}: {
+  colorUrl: string;
+  roughUrl: string;
+  repeatM: number;
+  worldSpan: number;
+  roughness: number;
+  opacity: number;
+  transparent: boolean;
+  depthWrite: boolean;
+}) {
+  const [map, roughnessMap] = useTexture([colorUrl, roughUrl]);
+  useLayoutEffect(() => {
+    const tiles = Math.max(1, worldSpan / Math.max(0.08, repeatM));
+    configureFloorMap(map, tiles, true);
+    configureFloorMap(roughnessMap, tiles, false);
+  }, [map, roughnessMap, repeatM, worldSpan]);
+  return (
+    <meshStandardMaterial
+      map={map}
+      roughnessMap={roughnessMap}
+      color="#ffffff"
+      roughness={roughness}
+      metalness={0.02}
+      side={THREE.DoubleSide}
+      transparent={transparent}
+      opacity={opacity}
+      depthWrite={depthWrite}
+      polygonOffset
+      polygonOffsetFactor={4}
+      polygonOffsetUnits={4}
+    />
+  );
+}
+
+function TexturedFloorMaterialPBR({
+  colorUrl,
+  roughUrl,
+  normalUrl,
+  repeatM,
+  worldSpan,
+  roughness,
+  opacity,
+  transparent,
+  depthWrite,
+}: {
+  colorUrl: string;
+  roughUrl: string;
+  normalUrl: string;
+  repeatM: number;
+  worldSpan: number;
+  roughness: number;
+  opacity: number;
+  transparent: boolean;
+  depthWrite: boolean;
+}) {
+  const [map, roughnessMap, normalMap] = useTexture([colorUrl, roughUrl, normalUrl]);
+  useLayoutEffect(() => {
+    const tiles = Math.max(1, worldSpan / Math.max(0.08, repeatM));
+    configureFloorMap(map, tiles, true);
+    configureFloorMap(roughnessMap, tiles, false);
+    configureFloorMap(normalMap, tiles, false);
+  }, [map, roughnessMap, normalMap, repeatM, worldSpan]);
+  return (
+    <meshStandardMaterial
+      map={map}
+      roughnessMap={roughnessMap}
+      normalMap={normalMap}
+      normalScale={new THREE.Vector2(0.55, 0.55)}
+      color="#ffffff"
+      roughness={roughness}
+      metalness={0.02}
       side={THREE.DoubleSide}
       transparent={transparent}
       opacity={opacity}

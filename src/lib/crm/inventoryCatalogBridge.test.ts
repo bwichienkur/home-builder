@@ -60,7 +60,9 @@ function sample(partial: Partial<InventoryRecord> = {}): InventoryRecord {
     variantName: '',
     availability: 'In stock',
     thumbnailUrl: '/catalog/thumbs/floor-tile.svg',
-    textureUrl: '/catalog/floors/tile-hex-stone.svg',
+    textureUrl: '/catalog/floors/pbr/stone-tile-color.jpg',
+    roughnessMapUrl: '/catalog/floors/pbr/stone-tile-rough.jpg',
+    normalMapUrl: '/catalog/floors/pbr/stone-tile-normal.jpg',
     textureRepeat: 0.45,
     modelUrl: '',
     lowPolyModelUrl: '',
@@ -92,7 +94,9 @@ describe('inventoryCatalogBridge', () => {
     expect(item.priceUnit).toBe('sq ft');
     expect(item.roomTypes).toEqual(['Kitchen', 'Bathroom']);
     expect(item.dims[0]).toBeCloseTo(0.4572, 4);
-    expect(item.textureUrl).toContain('tile-hex');
+    expect(item.textureUrl).toContain('stone-tile-color');
+    expect(item.roughnessMapUrl).toContain('stone-tile-rough');
+    expect(item.normalMapUrl).toContain('stone-tile-normal');
     expect(item.mountingType).toBe('floor');
   });
 

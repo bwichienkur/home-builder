@@ -37,5 +37,7 @@ describe('crm csv', () => {
     expect(headers).toContain('roomTypes');
     expect(headers).toContain('modelUrl');
     expect(headers).toContain('textureUrl');
+    expect(headers).toContain('roughnessMapUrl');
+    expect(headers).toContain('normalMapUrl');
   });
 });
