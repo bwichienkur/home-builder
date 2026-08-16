@@ -319,6 +319,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       planRooms,
       rebuilt.scene.walls,
       prevFurniture,
+      rebuilt.scene.openings,
     );
     const patch: Partial<SceneSnapshot> = {
       walls: rebuilt.scene.walls,
@@ -1287,6 +1288,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         profileHeight: height,
         edge,
         furniture: get().furniture,
+        openings: get().openings,
       });
       if (!segments.length) {
         set({ openingNotice: 'No wall corners found for trim in this room.' });
@@ -1328,8 +1330,9 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         showClearance: false,
       }));
       mutate({ furniture: [...kept, ...strips] });
+      // Apply immediately — no ghost placement / confirm step, no selected trim FABs.
       set({
-        selectedFurnitureId: strips[0]?.id ?? null,
+        selectedFurnitureId: null,
         selectedWallId: null,
         selectedOpeningId: null,
         selectedSurface: null,

@@ -109,16 +109,16 @@ export const CatalogPanel = memo(function CatalogPanel({
   };
 
   const addItem = (i: (typeof items)[number]) => {
-    if (i.placementMode === 'ceiling-perimeter' || i.placementMode === 'floor-perimeter') {
-      usePlannerStore.getState().applyPerimeterTrim(
-        i.id,
-        i.name,
-        i.category,
-        i.dims,
-        i.color,
-        i.placementMode === 'ceiling-perimeter' ? 'ceiling' : 'floor',
-      );
-      onAdd?.();
+    const perimeter =
+      i.placementMode === 'ceiling-perimeter' ||
+      i.placementMode === 'floor-perimeter' ||
+      (i.category === 'Trim' && /crown/i.test(i.name) && !/chair/i.test(i.name)) ||
+      (i.category === 'Trim' && /baseboard/i.test(i.name));
+    if (perimeter) {
+      const edge =
+        i.placementMode === 'floor-perimeter' || /baseboard/i.test(i.name) ? 'floor' : 'ceiling';
+      usePlannerStore.getState().applyPerimeterTrim(i.id, i.name, i.category, i.dims, i.color, edge);
+      close();
       return;
     }
     if (i.placementMode === 'floor-fill') {
