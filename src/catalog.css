@@ -604,4 +604,20 @@
     padding: 12px 0 max(4px, env(safe-area-inset-bottom));
   }
   .catalog-selects { grid-template-columns: 1fr; }
+  .bom-dialog .inventory-preview {
+    max-height: none;
+    flex: 1;
+  }
+  .bom-dialog .inventory-preview table {
+    font-size: 12px;
+  }
+  .bom-dialog .inventory-preview th:nth-child(2),
+  .bom-dialog .inventory-preview td:nth-child(2) {
+    display: none;
+  }
+  .bom-rate-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
 }

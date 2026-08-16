@@ -10,7 +10,8 @@
   align-items: center;
   gap: 16px;
   padding: 0 20px;
-  height: 52px;
+  padding-top: env(safe-area-inset-top, 0px);
+  height: calc(52px + env(safe-area-inset-top, 0px));
   border-bottom: 1px solid var(--line);
   background: #fff;
   position: relative;
@@ -84,11 +85,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 44px;
+  height: 44px;
   border: 0;
   background: transparent;
-  border-radius: 8px;
+  border-radius: 10px;
   color: var(--muted);
   cursor: pointer;
   flex-shrink: 0;
@@ -121,6 +122,7 @@
   .app-shell-top {
     gap: 12px;
     padding: 0 12px;
+    padding-top: env(safe-area-inset-top, 0px);
   }
   .app-shell-user-name {
     display: none;
@@ -128,6 +130,12 @@
   .app-shell-nav a {
     padding: 0 9px;
     font-size: 12px;
+  }
+  .app-shell-nav a[href='/inventory'],
+  .app-shell-nav a[href='/plans'],
+  .app-shell-nav a[href='/settings'],
+  .app-shell-nav a[href='/users'] {
+    display: none;
   }
 }
 
