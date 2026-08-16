@@ -44,6 +44,12 @@ function hasUserDataFlag(object: THREE.Object3D, key: string) {
 /** Prefer furniture inside the room over cutaway wall pick proxies that sit in front of the camera. */
 function preferInteriorPicks(hits: THREE.Intersection[]) {
   if (!hits.length) return hits;
+  // While ghost-placing, keep furniture from stealing floor/wall placement hits.
+  if (usePlannerStore.getState().pendingPlacement) {
+    const plane = hits.filter((h) => hasUserDataFlag(h.object, 'placementPlane'));
+    if (plane.length) return plane;
+    return hits.filter((h) => !hasUserDataFlag(h.object, 'furniturePick'));
+  }
   const furniture = hits.filter((h) => hasUserDataFlag(h.object, 'furniturePick'));
   if (!furniture.length) return hits;
   // If any cutaway proxy/soft wall is closer than furniture, keep the furniture hits so
@@ -1108,6 +1114,7 @@ function Furniture() {
   const planRooms = usePlannerStore((s) => s.planRooms);
   const selectedRoomId = usePlannerStore((s) => s.selectedRoomId);
   const workflowStage = usePlannerStore((s) => s.workflowStage);
+  const placing = usePlannerStore((s) => !!s.pendingPlacement);
   const items = useMemo(() => {
     if (workflowStage !== 'room' || !selectedRoomId) return allItems;
     const room = planRooms.find((r) => r.id === selectedRoomId);
@@ -1403,11 +1410,12 @@ function Furniture() {
                 colliding={collisions.has(i.id)}
                 onSelect={(e) => {
                   e.stopPropagation();
+                  if (placing) return;
                   // Plane-drag path selects on pointer-down; tap opens nothing else.
                   if (usePlaneDrag) return;
                   select(i.id);
                 }}
-                onPointerDown={usePlaneDrag ? (e) => beginItemDrag(e, i) : undefined}
+                onPointerDown={!placing && usePlaneDrag ? (e) => beginItemDrag(e, i) : undefined}
               />
               {i.showClearance && <ClearanceVolume item={i} />}
               </group>
@@ -1426,7 +1434,7 @@ function Furniture() {
             depthTest={false}
             scale={1.15}
             lineWidth={2}
-            enabled={!usePlaneDrag && selected.placementKind !== 'perimeter-trim'}
+            enabled={!placing && !usePlaneDrag && selected.placementKind !== 'perimeter-trim'}
             onDragStart={() => {
               if (selected.placementKind === 'perimeter-trim') return;
               document.body.dataset.movingFurniture = 'true';
@@ -1468,7 +1476,7 @@ function Furniture() {
                 {...urlsFor(selected)}
                 selected
                 colliding={collisions.has(selected.id)}
-                onPointerDown={usePlaneDrag ? (e) => beginItemDrag(e, selected) : undefined}
+                onPointerDown={!placing && usePlaneDrag ? (e) => beginItemDrag(e, selected) : undefined}
               />
               {selected.showClearance && <ClearanceVolume item={selected} />}
               </group>
@@ -1751,14 +1759,21 @@ function GhostPlacement() {
 
   return (
     <group>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]} onPointerMove={onMove} onClick={onPlace}>
-        <planeGeometry args={[40, 40]} />
-        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, 0.02, 0]}
+        userData={{ placementPlane: true }}
+        onPointerMove={onMove}
+        onClick={onPlace}
+      >
+        <planeGeometry args={[80, 80]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} depthTest={false} />
       </mesh>
       {pending.mountingType === 'wall' && pending.wallId && (
         <mesh
           position={[pending.x, (walls.find((w) => w.id === pending.wallId)?.height ?? 2.7) / 2, pending.z]}
           rotation={[0, pending.rotation, 0]}
+          userData={{ placementPlane: true }}
           onPointerMove={onMove}
           onClick={onPlace}
         >
@@ -1766,8 +1781,8 @@ function GhostPlacement() {
           <meshBasicMaterial transparent opacity={0} depthWrite={false} side={THREE.DoubleSide} />
         </mesh>
       )}
-      <group position={[pending.x, pending.y, pending.z]} rotation={[0, pending.rotation, 0]}>
-        <mesh position={[0, pending.height / 2, 0]}>
+      <group position={[pending.x, pending.y, pending.z]} rotation={[0, pending.rotation, 0]} userData={{ placementPlane: true }}>
+        <mesh position={[0, pending.height / 2, 0]} onPointerMove={onMove} onClick={onPlace}>
           <boxGeometry args={[pending.width, pending.height, pending.depth]} />
           <meshStandardMaterial color={pending.color} transparent opacity={0.55} depthWrite={false} />
         </mesh>
@@ -1875,7 +1890,9 @@ export function Scene3D() {
         </Suspense>
         <CameraRig />
       </Canvas>
-      {!pending && (
+      {pending ? (
+        <div className="scene-help">Move to place · Tap floor or Confirm to drop · Esc cancels</div>
+      ) : (
         <div className="scene-help">Drag furniture to move · Click through open walls · Empty space pans/orbits</div>
       )}
     </div>

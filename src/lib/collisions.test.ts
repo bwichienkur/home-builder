@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { findCollisions } from './collisions';
+import { findClearPlacementSpot, findCollisions, wouldOverlapFurniture } from './collisions';
 
 describe('collisions', () => {
   it('detects overlapping floor items', () => {
@@ -34,5 +34,20 @@ describe('collisions', () => {
       },
     ]);
     expect(pairs).toEqual([]);
+  });
+
+  it('spirals away from occupied footprints for clear placement', () => {
+    const blocker = { id: 'a', x: 0, y: 0, z: 0, width: 1.2, depth: 1.2, height: 0.8, rotation: 0 };
+    const spot = findClearPlacementSpot(
+      { x: 0, z: 0 },
+      { width: 1, depth: 1, height: 0.8 },
+      [blocker],
+      undefined,
+      { step: 0.5, maxRings: 6 },
+    );
+    expect(wouldOverlapFurniture({ id: 'new', ...spot, y: 0, width: 1, depth: 1, height: 0.8, rotation: 0 }, [blocker])).toBe(
+      false,
+    );
+    expect(Math.hypot(spot.x, spot.z)).toBeGreaterThan(0.4);
   });
 });

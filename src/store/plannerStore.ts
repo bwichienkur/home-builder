@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { CameraMode, FurnitureItem, ManualBomLine, MountingType, Opening, OpeningShape, PendingFloorFill, PlanRoomLabel, Point, RoomType, SceneSnapshot, StudioMode, SurfaceTarget, Tool, UnitSystem, Wall, WorkflowStage } from '../types';
 import { doorSwingZones, furnitureHitsDoorSwing } from '../lib/geometry/doorClearance';
-import { wouldOverlapFurniture } from '../lib/collisions';
+import { findClearPlacementSpot, wouldOverlapFurniture } from '../lib/collisions';
 import { clampWallMountY, constrainPlacement, openingConflicts, resolveMountingType, roomFloorCenter, WORLD_ORIGIN } from '../lib/geometry/placement';
 import { detectRoomPolygons } from '../lib/geometry/rooms';
 import { perimeterTrimSegments, type PerimeterTrimEdge } from '../lib/geometry/ceilingTrim';
@@ -1062,10 +1062,40 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     beginPlacement: (catalogId, name, category, [width, depth, height], color, x, z, meta) => {
       if (get().workflowStage !== 'room') return;
       const walls = get().walls;
+      const openings = get().openings;
+      const furniture = get().furniture;
       const center = roomFloorCenter(walls);
-      const startX = x ?? center.x;
-      const startZ = z ?? center.z;
-      const placed = placeFurniture(walls, width, depth, height, startX, startZ, {
+      const preferredX = x ?? center.x;
+      const preferredZ = z ?? center.z;
+      const mounting = resolveMountingType(meta?.mountingType);
+      const rotation = meta?.rotation ?? 0;
+      const zones = doorSwingZones(openings, walls);
+      const clear = findClearPlacementSpot(
+        { x: preferredX, z: preferredZ },
+        { width, depth, height, y: meta?.y ?? 0, rotation, mountingType: mounting },
+        [],
+        (cx, cz) => {
+          const trial = placeFurniture(walls, width, depth, height, cx, cz, {
+            ...meta,
+            category,
+            name,
+            live: true,
+          });
+          const probe = {
+            id: '__pending__',
+            x: trial.x,
+            y: trial.y ?? 0,
+            z: trial.z,
+            width,
+            depth,
+            height,
+            rotation: trial.rotation,
+            mountingType: trial.mountingType,
+          };
+          return furnitureHitsDoorSwing(probe, zones) || wouldOverlapFurniture(probe, furniture);
+        },
+      );
+      const placed = placeFurniture(walls, width, depth, height, clear.x, clear.z, {
         ...meta,
         category,
         name,
@@ -1169,7 +1199,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       );
       return get().selectedFurnitureId;
     },
-    cancelPendingPlacement: () => set({ pendingPlacement: null }),
+    cancelPendingPlacement: () => set({ pendingPlacement: null, openingNotice: '' }),
     addFurniture: (catalogId, name, category, [width, depth, height], color, x = 0, z = 0, meta) => {
       const id = crypto.randomUUID();
       const placed = placeFurniture(get().walls, width, depth, height, x, z, { ...meta, category, name });
@@ -1348,12 +1378,22 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     duplicateSelected: () => {
       const item = get().furniture.find((f) => f.id === get().selectedFurnitureId);
       if (!item || item.placementKind === 'perimeter-trim') return;
-      get().addFurniture(item.catalogId, item.name, item.category, [item.width, item.depth, item.height], item.color, item.x + 0.5, item.z + 0.5, {
-        mountingType: item.mountingType,
-        clearance: item.clearance,
-        rotation: item.rotation,
-        y: item.y,
-      });
+      // Ghost-place the clone so the user can pick a clear spot (same as catalog add).
+      get().beginPlacement(
+        item.catalogId,
+        item.name,
+        item.category,
+        [item.width, item.depth, item.height],
+        item.color,
+        item.x + 0.55,
+        item.z + 0.55,
+        {
+          mountingType: item.mountingType,
+          clearance: item.clearance,
+          rotation: item.rotation,
+          y: item.y,
+        },
+      );
     },
     deleteSelected: () => {
       const oid = get().selectedOpeningId;
