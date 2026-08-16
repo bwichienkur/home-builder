@@ -416,7 +416,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     floors: [{ id: 'ground', name: 'Ground floor', scene: initial }],
     activeFloorId: 'ground',
     stackView: false,
-    roofStyle: 'gable',
+    roofStyle: 'none',
     siteSetback: { frontM: 6, sideM: 1.5, rearM: 6 },
     history: [initial],
     historyIndex: 0,
