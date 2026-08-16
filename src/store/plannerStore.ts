@@ -725,7 +725,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         pendingFloorFill: fill,
         pendingPlacement: null,
         studioMode: 'furnish',
-        openingNotice: 'Tap a room floor to apply this tile everywhere in that room.',
+        openingNotice: '',
       }),
     cancelFloorFill: () => set({ pendingFloorFill: null, openingNotice: '' }),
     applyFloorFillToRoom: (roomId) => {
@@ -785,13 +785,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         studioMode: 'architect',
         cameraMode: 'top',
         view: '3d',
-        openingNotice: pendingAttachMode
-          ? get().planRooms.length
-            ? get().selectedRoomId
-              ? 'Choose left, right, above, or below to add a matching square room.'
-              : 'Select a room, then choose a side to add beside it.'
-            : 'Tap Add room again to place the first square room.'
-          : '',
+        openingNotice: '',
       }),
     setPlanWallTool: (planWallTool) =>
       set({
@@ -805,7 +799,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         studioMode: 'architect',
         cameraMode: 'top',
         view: '3d',
-        openingNotice: planWallTool ? 'Drag a wall to resize · tap to select for openings' : '',
+        openingNotice: '',
       }),
     placePlanRoom: (center, shape, name) => {
       const kind = shape ?? get().pendingRoomShape ?? 'rectangle';

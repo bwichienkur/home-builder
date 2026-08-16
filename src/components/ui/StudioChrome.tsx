@@ -36,19 +36,6 @@ import type { RoomType, Tool } from '../../types';
 import { WORLD_ORIGIN } from '../../lib/geometry/placement';
 import { StoryOverview } from './StoryOverview';
 
-function useCoarsePointer() {
-  const [coarse, setCoarse] = useState(() => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches);
-  useEffect(() => {
-    if (typeof matchMedia !== 'function') return;
-    const mq = matchMedia('(pointer: coarse)');
-    const sync = () => setCoarse(mq.matches);
-    sync();
-    mq.addEventListener?.('change', sync);
-    return () => mq.removeEventListener?.('change', sync);
-  }, []);
-  return coarse;
-}
-
 const icons: Record<string, typeof ShoppingBag> = {
   Bedroom: BedDouble,
   Lighting: Lamp,
@@ -146,9 +133,7 @@ export function StudioChrome({
   const showSelectionFabs = !!selectedItem && !pending;
   const showOpeningFabs = !!selectedOpening && !pending && !selectedWall;
   const showWallFabs = wallEditMode && !!selectedWall && !pending;
-  const showActionFabs = showSelectionFabs || !!pending || showWallFabs || showOpeningFabs;
-  const coarsePointer = useCoarsePointer();
-  const [gestureHint, setGestureHint] = useState(false);
+  const showActionFabs = showSelectionFabs || !!pending || showWallFabs || showOpeningFabs || !!pendingFloorFill;
 
   useEffect(() => {
     if (catalogOpen || menuOpen) setStoriesOpen(false);
@@ -163,21 +148,6 @@ export function StudioChrome({
       window.dispatchEvent(new Event('roomcraft-refocus'));
     }, 80);
   };
-
-  useEffect(() => {
-    if (!coarsePointer || pending) return;
-    try {
-      if (sessionStorage.getItem('roomcraft-gesture-hint') === '1') return;
-      setGestureHint(true);
-      const t = window.setTimeout(() => {
-        setGestureHint(false);
-        sessionStorage.setItem('roomcraft-gesture-hint', '1');
-      }, 4200);
-      return () => window.clearTimeout(t);
-    } catch {
-      /* private mode */
-    }
-  }, [coarsePointer, pending]);
 
   /** Flat top-down stay in WebGL — never leave the 3D scene. */
   const chooseTop = () => {
@@ -203,7 +173,6 @@ export function StudioChrome({
     window.dispatchEvent(new Event('roomcraft-refocus'));
   };
 
-  const hasSelection = !!(selectedItem || selectedWall || selectedOpening || selectedRoomId);
   const selectedRoom = planRooms.find((r) => r.id === selectedRoomId);
   const roomFloorColor = selectedRoom?.floorColor ?? floorColor;
   const hasCustomFloor = !!selectedRoom?.floorColor || floorColor !== '#c9b18f';
@@ -502,46 +471,6 @@ export function StudioChrome({
         )}
       </div>
 
-      {!inRoom && planRooms.length >= 1 && !pending && !selectedItem && tool === 'select' && !selectedRoom && !pendingAttachMode && !planWallTool && (
-        <div className="studio-selection-hint studio-hint-float">Tap a room to select</div>
-      )}
-      {!inRoom && planRooms.length >= 1 && !pending && !selectedItem && tool === 'select' && selectedRoom && !pendingAttachMode && (
-        <div className="studio-selection-hint studio-hint-float">Furnish to enter</div>
-      )}
-      {pendingAttachMode && !selectedRoom && planRooms.length >= 1 && (
-        <div className="studio-selection-hint studio-hint-float">Select a room, then pick a side</div>
-      )}
-      {pendingAttachMode && selectedRoom && (
-        <div className="studio-selection-hint studio-hint-float">Pick Left / Right / Above / Below</div>
-      )}
-      {planWallTool && !selectedWall && !pendingAttachMode && (
-        <div className="studio-selection-hint studio-hint-float">Drag a wall to resize</div>
-      )}
-      {pendingFloorFill && (
-        <div className="studio-selection-hint studio-hint-float">
-          Tap a room to tile the floor with {pendingFloorFill.name}
-          <button type="button" className="studio-hint-action" onClick={() => cancelFloorFill()}>
-            Cancel
-          </button>
-        </div>
-      )}
-
-      {pending && <div className="studio-selection-hint studio-hint-float">Placing {pending.name} · move then tap to confirm</div>}
-
-      {hasSelection && !pending && !selectedItem && !inRoom && wallEditMode && selectedWall && (
-        <div className="studio-selection-hint studio-hint-float">Wall selected · add a door or opening</div>
-      )}
-
-      {selectedOpening && !pending && (
-        <div className="studio-selection-hint studio-hint-float">Drag the opening to slide it · Edit for swing &amp; face</div>
-      )}
-
-      {isTrimSelected && !pending && (
-        <div className="studio-selection-hint studio-hint-float">
-          {selectedFurniture?.trimEdge === 'ceiling' ? 'Crown molding' : 'Baseboard'} selected · Edit profile height &amp; finish
-        </div>
-      )}
-
       {(hasCrown || hasBaseboard || roomFloorColor) && inRoom && !pending && (
         <div className="studio-finish-bar" role="status" aria-label="Room finishes">
           {hasCrown && (
@@ -558,6 +487,14 @@ export function StudioChrome({
             Floor
             <span className="studio-finish-swatch" style={{ background: roomFloorColor }} aria-hidden />
           </span>
+        </div>
+      )}
+
+      {pendingFloorFill && !pending && (
+        <div className="studio-selection-fabs" role="toolbar" aria-label="Floor fill">
+          <button type="button" className="is-danger" onClick={() => cancelFloorFill()} aria-label="Cancel floor fill" title="Cancel">
+            <X />
+          </button>
         </div>
       )}
 
@@ -653,14 +590,6 @@ export function StudioChrome({
               <Trash2 />
             </button>
           </div>
-        </div>
-      )}
-
-      {gestureHint && !pending && !atStart && (
-        <div className="studio-selection-hint studio-gesture-hint studio-hint-float">
-          {isTop
-            ? 'Drag furniture to move · Empty space pans · Pinch to zoom'
-            : 'Drag furniture through open walls · Drag empty space to orbit · Pinch to zoom'}
         </div>
       )}
 
