@@ -45,6 +45,7 @@ export function SelectionInspector({ open, onClose }: { open: boolean; onClose: 
   const selectedOpening = openings.find((o) => o.id === selectedOpeningId);
   const selectedRoom = planRooms.find((r) => r.id === selectedRoomId);
   const selectedTrim = furniture.find((f) => f.id === selectedFurnitureId && f.placementKind === 'perimeter-trim');
+  const selectedFurniture = furniture.find((f) => f.id === selectedFurnitureId && f.placementKind !== 'perimeter-trim');
 
   if (!open) return null;
 
@@ -52,17 +53,19 @@ export function SelectionInspector({ open, onClose }: { open: boolean; onClose: 
     ? selectedTrim.trimEdge === 'ceiling'
       ? 'Crown molding'
       : 'Baseboard'
-    : selectedOpening
-      ? 'Opening'
-      : selectedWall
-        ? 'Wall'
-        : selectedRoom
-          ? selectedRoom.name
-          : selectedSurface === 'ceiling'
-            ? 'Ceiling'
-            : selectedSurface === 'floor'
-              ? 'Floor'
-              : 'Room';
+    : selectedFurniture
+      ? selectedFurniture.name
+      : selectedOpening
+        ? 'Opening'
+        : selectedWall
+          ? 'Wall'
+          : selectedRoom
+            ? selectedRoom.name
+            : selectedSurface === 'ceiling'
+              ? 'Ceiling'
+              : selectedSurface === 'floor'
+                ? 'Floor'
+                : 'Room';
 
   return (
     <aside className="selection-inspector" aria-label="Selection properties">
@@ -78,6 +81,8 @@ export function SelectionInspector({ open, onClose }: { open: boolean; onClose: 
       <div className="selection-inspector-body">
         {selectedTrim ? (
           <TrimProperties item={selectedTrim} />
+        ) : selectedFurniture ? (
+          <FurnitureProperties item={selectedFurniture} />
         ) : selectedOpening ? (
           <OpeningProperties opening={selectedOpening} />
         ) : selectedWall ? (
@@ -89,6 +94,33 @@ export function SelectionInspector({ open, onClose }: { open: boolean; onClose: 
         )}
       </div>
     </aside>
+  );
+}
+
+function FurnitureProperties({ item }: { item: import('../../types').FurnitureItem }) {
+  const remove = usePlannerStore((s) => s.deleteSelected);
+  const unit = usePlannerStore((s) => s.unitSystem);
+  return (
+    <>
+      <p className="muted">{item.category}</p>
+      <Property label="Name" value={item.name} />
+      <Property
+        label="Size"
+        value={
+          unit === 'metric'
+            ? `${item.width.toFixed(2)} × ${item.depth.toFixed(2)} × ${item.height.toFixed(2)} m`
+            : `${(item.width / 0.3048).toFixed(1)} × ${(item.depth / 0.3048).toFixed(1)} × ${(item.height / 0.3048).toFixed(1)} ft`
+        }
+      />
+      <Property label="Mount" value={item.mountingType ?? 'floor'} />
+      <label>
+        Finish color
+        <input type="color" value={item.color} readOnly />
+      </label>
+      <button className="delete-item" onClick={() => remove()}>
+        Remove from room
+      </button>
+    </>
   );
 }
 

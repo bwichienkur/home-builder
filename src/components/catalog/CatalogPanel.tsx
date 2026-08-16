@@ -16,8 +16,8 @@ export const roomCategories: Record<RoomType, string[]> = {
   'Children’s room': ['Bedroom', 'Storage', 'Lighting', 'Decor', 'Textiles', 'Trim'],
   Laundry: ['Appliances', 'Cabinetry', 'Storage', 'Surfaces', 'Plumbing', 'Lighting', 'Trim'],
   Hallway: ['Storage', 'Tables', 'Lighting', 'Decor', 'Textiles', 'Trim'],
-  'Storage / wardrobe': ['Storage', 'Cabinetry', 'Lighting', 'Decor'],
-  Outdoor: ['Seating', 'Tables', 'Lighting', 'Decor', 'Surfaces'],
+  'Storage / wardrobe': ['Storage', 'Cabinetry', 'Lighting', 'Decor', 'Trim'],
+  Outdoor: ['Seating', 'Tables', 'Lighting', 'Decor', 'Surfaces', 'Trim'],
 };
 const money = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
 const PAGE = 36;

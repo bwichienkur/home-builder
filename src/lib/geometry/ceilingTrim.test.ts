@@ -49,9 +49,10 @@ describe('ceiling / floor perimeter trim', () => {
       expect(seg.y).toBeCloseTo(2.7 - 0.09, 5);
       expect(seg.height).toBeCloseTo(0.09, 5);
       expect(seg.depth).toBeCloseTo(0.05, 5);
-      // Mitered: shorter than full wall length by profile depth.
+      // Mitered: shorter than full wall length by 2× profile depth.
       expect(seg.width).toBeGreaterThan(1);
       expect(seg.width).toBeLessThan(6);
+      expect(seg.width).toBeLessThanOrEqual(6 - 2 * 0.05 + 1e-6);
     }
   });
 

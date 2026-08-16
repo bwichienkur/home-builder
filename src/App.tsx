@@ -199,24 +199,17 @@ function StudioApp() {
 
   const pendingPlacement = usePlannerStore((s) => s.pendingPlacement);
   useEffect(() => {
-    // Furniture select: highlight + rotate/delete FABs only — no card, no inspector.
-    // Trim is the exception: Edit FAB opens the inspector for profile height / finish.
+    // Opening a new selection closes the inspector; Info FAB re-opens it on demand.
     if (pendingPlacement) {
       setInspectorOpen(false);
       return;
     }
-    if (selectedFurnitureId) {
-      const item = usePlannerStore.getState().furniture.find((f) => f.id === selectedFurnitureId);
-      if (item?.placementKind !== 'perimeter-trim') setInspectorOpen(false);
-      return;
-    }
-    // Openings: keep the current view; edit opens from the FAB, not automatically.
     if (selectedOpeningId) {
       setInspectorOpen(false);
       return;
     }
     if (selectedWallId) setInspectorOpen(false);
-  }, [selectedWallId, selectedOpeningId, selectedFurnitureId, pendingPlacement]);
+  }, [selectedWallId, selectedOpeningId, pendingPlacement]);
 
   useEffect(() => {
     if (inspectorOpen) document.body.dataset.inspectorOpen = '1';
@@ -346,10 +339,6 @@ function StudioApp() {
         openBom={() => setBom(true)}
         openCategory={openCategory}
         onOpenInspector={() => {
-          // Room / wall / opening / trim config — not free furniture product cards.
-          const fid = store.selectedFurnitureId;
-          const item = fid ? store.furniture.find((f) => f.id === fid) : null;
-          if (fid && item?.placementKind !== 'perimeter-trim') store.selectFurniture(null);
           setInspectorOpen(true);
           setCatalogOpen(false);
           setMenuOpen(false);
@@ -512,7 +501,16 @@ function StudioApp() {
         </div>
       )}
 
-      {bom && <BomDialog items={furniture} catalog={allCatalog} walls={walls} openings={openings} close={() => setBom(false)} />}
+      {bom && (
+        <BomDialog
+          items={furniture}
+          catalog={allCatalog}
+          walls={walls}
+          openings={openings}
+          planRooms={store.planRooms}
+          close={() => setBom(false)}
+        />
+      )}
     </main>
   );
 }

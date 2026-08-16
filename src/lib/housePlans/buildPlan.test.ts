@@ -44,11 +44,11 @@ describe('house plan builder', () => {
     expect(alone.scene.openings).toHaveLength(0);
   });
 
-  it('attaches a square room flush to a host side', () => {
+  it('attaches a matching-size room flush to a host side', () => {
     const host = squareRoomPoints(WORLD_ORIGIN, 12, 10);
     const right = attachSquareRoomPoints(host, 'right');
     const size = planRoomSizeFeet(right);
-    expect(size.widthFt).toBeCloseTo(10, 1);
+    expect(size.widthFt).toBeCloseTo(12, 1);
     expect(size.depthFt).toBeCloseTo(10, 1);
     expect(attachSideBlocked('h', 'right', [{ id: 'h', points: host }])).toBe(false);
   });

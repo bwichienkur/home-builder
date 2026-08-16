@@ -451,6 +451,57 @@
 }
 .bom-remove:hover { background: #fbd0d0; }
 
+.bom-manual-add {
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--soft, #f4f6f8);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.bom-manual-add strong {
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted, #64748b);
+}
+.bom-manual-fields {
+  display: grid;
+  grid-template-columns: 1.4fr 0.6fr 0.7fr auto;
+  gap: 8px;
+}
+.bom-manual-fields input {
+  min-height: 40px;
+  border: 1px solid var(--line, #dbe1e8);
+  border-radius: 10px;
+  padding: 0 10px;
+  background: #fff;
+}
+.bom-manual-fields button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  border: 0;
+  border-radius: 10px;
+  padding: 0 12px;
+  background: var(--accent, #0058a3);
+  color: #fff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+@media (max-width: 650px) {
+  .bom-manual-fields {
+    grid-template-columns: 1fr 1fr;
+  }
+  .bom-manual-fields button {
+    grid-column: 1 / -1;
+  }
+}
+
 @media (max-width: 650px) {
   .inventory-dialog-backdrop { padding: 0; }
   .inventory-dialog {
