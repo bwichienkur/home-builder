@@ -1,0 +1,3 @@
+Bathroom fixtures converted from Quaternius Ultimate House Interior Pack (CC0).
+Source: https://quaternius.com/packs/ultimatehomeinterior.html
+Models: Toilet, Bathtub, Sink, Shower, Mirror, Towel — FBX→GLB via FBX2glTF.

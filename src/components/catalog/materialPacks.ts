@@ -61,6 +61,13 @@ export const SURFACE_PACKS = {
     textureRepeat: 0.35,
     roughness: 0.92,
   },
+  porcelain: {
+    textureUrl: '/catalog/materials/pbr/porcelain/color.jpg',
+    roughnessMapUrl: '/catalog/materials/pbr/porcelain/rough.jpg',
+    normalMapUrl: '/catalog/materials/pbr/porcelain/normal.jpg',
+    textureRepeat: 0.7,
+    roughness: 0.22,
+  },
 } as const satisfies Record<string, SurfacePack>;
 
 export type SurfacePackId = keyof typeof SURFACE_PACKS;
@@ -98,6 +105,31 @@ export const MODEL_PACKS = {
   sideTable: {
     modelUrl: '/catalog/models/side-table/side-table.gltf',
     lowPolyModelUrl: '/catalog/models/side-table/side-table.gltf',
+  },
+  /** Quaternius Ultimate House Interior (CC0) — bathroom fixtures. */
+  toilet: {
+    modelUrl: '/catalog/models/bathroom/toilet.glb',
+    lowPolyModelUrl: '/catalog/models/bathroom/toilet.glb',
+  },
+  bathtub: {
+    modelUrl: '/catalog/models/bathroom/bathtub.glb',
+    lowPolyModelUrl: '/catalog/models/bathroom/bathtub.glb',
+  },
+  sink: {
+    modelUrl: '/catalog/models/bathroom/sink.glb',
+    lowPolyModelUrl: '/catalog/models/bathroom/sink.glb',
+  },
+  shower: {
+    modelUrl: '/catalog/models/bathroom/shower.glb',
+    lowPolyModelUrl: '/catalog/models/bathroom/shower.glb',
+  },
+  bathMirror: {
+    modelUrl: '/catalog/models/bathroom/mirror.glb',
+    lowPolyModelUrl: '/catalog/models/bathroom/mirror.glb',
+  },
+  towel: {
+    modelUrl: '/catalog/models/bathroom/towel.glb',
+    lowPolyModelUrl: '/catalog/models/bathroom/towel.glb',
   },
 } as const;
 
@@ -160,6 +192,14 @@ export function enrichCatalogSurfaces<T extends Enrichable>(items: T[]): T[] {
     if (id === 'accent-lounge-chair') return withModel(item, MODEL_PACKS.loungeChair);
     if (id === 'nightstand-drawer' || id === 'end-table') return withModel(item, MODEL_PACKS.sideTable);
 
+    // Bathroom fixtures — Quaternius CC0 glb
+    if (id === 'toilet-standard') return withModel(item, MODEL_PACKS.toilet);
+    if (id === 'freestanding-tub') return withModel(item, MODEL_PACKS.bathtub);
+    if (id === 'bathroom-pedestal-sink' || id === 'bathroom-sink') return withModel(item, MODEL_PACKS.sink);
+    if (id.startsWith('shower-enclosure')) return withModel(item, MODEL_PACKS.shower);
+    if (id === 'bathroom-mirror') return withModel(item, MODEL_PACKS.bathMirror);
+    if (id === 'bath-towel') return withModel(item, MODEL_PACKS.towel);
+
     // Millwork / soft-goods proxies — ambientCG PBR
     if (cat === 'trim' || name.includes('crown') || name.includes('baseboard') || name.includes('chair rail')) {
       return withSurface(item, SURFACE_PACKS.painted);
@@ -188,8 +228,19 @@ export function enrichCatalogSurfaces<T extends Enrichable>(items: T[]): T[] {
     if (name.includes('dresser') || name.includes('bookshelf') || name.includes('bookcase') || name.includes('desk')) {
       return withSurface(item, SURFACE_PACKS.walnut);
     }
-    if (name.includes('fridge') || name.includes('dishwasher') || name.includes('range') || name.includes('washer') || name.includes('dryer')) {
+    if (
+      name.includes('fridge') ||
+      name.includes('dishwasher') ||
+      name.includes('range') ||
+      name.includes('washer') ||
+      name.includes('dryer') ||
+      name.includes('faucet') ||
+      (cat === 'plumbing' && name.includes('trim'))
+    ) {
       return withSurface(item, SURFACE_PACKS.metal);
+    }
+    if (name.includes('shower base') || name.includes('toilet') || name.includes('bathtub') || name.includes('tub')) {
+      return withSurface(item, SURFACE_PACKS.porcelain);
     }
     if ((cat.includes('seating') || name.includes('sofa') || name.includes('chair')) && !item.modelUrl) {
       return withSurface(item, SURFACE_PACKS.fabric);
