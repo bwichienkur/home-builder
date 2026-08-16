@@ -1,4 +1,4 @@
-import type { Opening, PlanRoomLabel, Point, UnitSystem, Wall } from '../../types';
+import type { FurnitureItem, Opening, PlanRoomLabel, Point, UnitSystem, Wall } from '../../types';
 import { PIXELS_PER_METER } from '../geometry/snapping';
 import { wallLengthM } from './drawFloorPlan';
 
@@ -8,6 +8,7 @@ export type IfcExportInput = {
   walls: Wall[];
   openings: Opening[];
   planRooms: PlanRoomLabel[];
+  furniture?: FurnitureItem[];
   unitSystem?: UnitSystem;
   /** When set, emit one IFCBUILDINGSTOREY per entry (multi-floor). */
   floors?: Array<{
@@ -15,6 +16,7 @@ export type IfcExportInput = {
     walls: Wall[];
     openings: Opening[];
     planRooms: PlanRoomLabel[];
+    furniture?: FurnitureItem[];
     elevationM?: number;
   }>;
 };
@@ -90,6 +92,7 @@ export function buildPlanIfc(input: IfcExportInput): string {
             walls: input.walls,
             openings: input.openings,
             planRooms: input.planRooms,
+            furniture: input.furniture,
             elevationM: 0,
           },
         ];
@@ -212,6 +215,33 @@ export function buildPlanIfc(input: IfcExportInput): string {
         `IFCSPACE('${gid()}',#${owner},'${esc(room.name)}',$,$,#${elevPlace},#${rep},$,.ELEMENT.,.INTERNAL.,$)`,
       );
       contained.push(spaceId);
+    }
+
+    for (const item of level.furniture ?? []) {
+      if (item.placementKind === 'stair') continue;
+      const fx = item.x;
+      const fz = item.z;
+      const furnPt = add(
+        `IFCCARTESIANPOINT((${fx.toFixed(4)},${(-fz).toFixed(4)},${(item.y ?? 0).toFixed(4)}))`,
+      );
+      const yaw = ((item.rotation ?? 0) * Math.PI) / 180;
+      const furnDir = add(
+        `IFCDIRECTION((${Math.cos(yaw).toFixed(6)},${Math.sin(yaw).toFixed(6)},0.))`,
+      );
+      const furnAxis = add(`IFCAXIS2PLACEMENT3D(#${furnPt},#${dirZ},#${furnDir})`);
+      const furnPlace = add(`IFCLOCALPLACEMENT(#${elevPlace},#${furnAxis})`);
+      const furnProf = add(
+        `IFCRECTANGLEPROFILEDEF(.AREA.,$,$,${Math.max(0.05, item.width).toFixed(4)},${Math.max(0.05, item.depth).toFixed(4)})`,
+      );
+      const furnSolid = add(
+        `IFCEXTRUDEDAREASOLID(#${furnProf},#${worldAxis},#${dirZ},${Math.max(0.05, item.height).toFixed(4)})`,
+      );
+      const furnShape = add(`IFCSHAPEREPRESENTATION(#${bodyCtx},'Body','SweptSolid',(#${furnSolid}))`);
+      const furnRep = add(`IFCPRODUCTDEFINITIONSHAPE($,$,(#${furnShape}))`);
+      const furnId = add(
+        `IFCFURNISHINGELEMENT('${gid()}',#${owner},'${esc(item.name || item.catalogId)}',$,$,#${furnPlace},#${furnRep},$)`,
+      );
+      contained.push(furnId);
     }
 
     if (contained.length) {

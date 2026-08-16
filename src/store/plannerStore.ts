@@ -19,7 +19,15 @@ import { PIXELS_PER_METER } from '../lib/geometry/snapping';
 export type { PlanRoomShape, AttachSide };
 
 type View = '2d' | '3d';
-type FloorRecord = { id: string; name: string; scene: SceneSnapshot; planRooms?: PlanRoomLabel[] };
+type FloorRecord = {
+  id: string;
+  name: string;
+  scene: SceneSnapshot;
+  planRooms?: PlanRoomLabel[];
+  /** Floor-to-floor height used for stacking and IFC elevations (m). */
+  storyHeightM?: number;
+};
+export type { FloorRecord };
 export type FurnitureAddMeta = {
   mountingType?: MountingType | string;
   clearance?: FurnitureItem['clearance'];
@@ -91,6 +99,10 @@ type PlannerState = SceneSnapshot & {
   setEstimateSnapshot: (snap: import('../lib/estimateSnapshot').EstimateSnapshot | null) => void;
   lockEstimateBaseline: () => void;
   clearEstimateBaseline: () => void;
+  /** Numbered change-order records minted from baseline diffs. */
+  changeOrders: import('../lib/estimateSnapshot').ChangeOrderRecord[];
+  addChangeOrder: (record: import('../lib/estimateSnapshot').ChangeOrderRecord) => void;
+  clearChangeOrders: () => void;
   history: SceneSnapshot[];
   historyIndex: number;
   openingNotice: string;
@@ -240,6 +252,9 @@ type PlannerState = SceneSnapshot & {
     clientId?: string | null;
     annotations?: PlanAnnotation[];
     layerVisibility?: LayerVisibility;
+    estimateSnapshot?: import('../lib/estimateSnapshot').EstimateSnapshot | null;
+    baselineEstimate?: import('../lib/estimateSnapshot').EstimateSnapshot | null;
+    changeOrders?: import('../lib/estimateSnapshot').ChangeOrderRecord[];
   };
 };
 
@@ -439,6 +454,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       layerVisibility: s.layerVisibility,
       estimateSnapshot: s.estimateSnapshot,
       baselineEstimate: s.baselineEstimate,
+      changeOrders: s.changeOrders,
     };
   };
 
@@ -458,7 +474,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     pendingPlacement: null,
     pendingFloorFill: null,
     draftStart: null,
-    floors: [{ id: 'ground', name: 'Ground floor', scene: initial }],
+    floors: [{ id: 'ground', name: 'Ground floor', scene: initial, storyHeightM: 2.7 }],
     activeFloorId: 'ground',
     stackView: false,
     roofStyle: 'none',
@@ -469,6 +485,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     clientId: null,
     estimateSnapshot: null,
     baselineEstimate: null,
+    changeOrders: [],
     history: [initial],
     historyIndex: 0,
     openingNotice: '',
@@ -497,7 +514,10 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       const snap = get().estimateSnapshot;
       if (snap) set({ baselineEstimate: snap });
     },
-    clearEstimateBaseline: () => set({ baselineEstimate: null }),
+    clearEstimateBaseline: () => set({ baselineEstimate: null, changeOrders: [] }),
+    addChangeOrder: (record) =>
+      set((s) => ({ changeOrders: [...s.changeOrders, record] })),
+    clearChangeOrders: () => set({ changeOrders: [] }),
     selectAnnotation: (selectedAnnotationId) => set({ selectedAnnotationId }),
     addAnnotation: (kind, x, z, text = '') => {
       const id = crypto.randomUUID();
@@ -644,7 +664,13 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     },
     setCeilingHeight: (meters) => {
       if (!Number.isFinite(meters)) return;
-      mutate({ walls: get().walls.map((w) => ({ ...w, height: Math.max(2, Math.min(6, meters)) })) });
+      const height = Math.max(2, Math.min(6, meters));
+      mutate({ walls: get().walls.map((w) => ({ ...w, height })) });
+      set((s) => ({
+        floors: s.floors.map((f) =>
+          f.id === s.activeFloorId ? { ...f, storyHeightM: height } : f,
+        ),
+      }));
     },
     applyRoomTemplate: (shape) => {
       const id = () => crypto.randomUUID();
@@ -1776,9 +1802,13 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         };
         planRooms = [];
       }
+      const storyHeightM =
+        (copy ? source.walls[0]?.height : undefined) ??
+        source.walls[0]?.height ??
+        2.74;
       set({
         ...scene,
-        floors: [...floors, { id, name, scene, planRooms }],
+        floors: [...floors, { id, name, scene, planRooms, storyHeightM }],
         activeFloorId: id,
         planRooms,
         history: [scene],
@@ -1799,8 +1829,14 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     switchFloor: (id) =>
       set((s) => {
         if (id === s.activeFloorId) return s;
+        const avgH =
+          s.walls.length > 0
+            ? s.walls.reduce((sum, w) => sum + w.height, 0) / s.walls.length
+            : s.floors.find((f) => f.id === s.activeFloorId)?.storyHeightM ?? 2.7;
         const current = s.floors.map((f) =>
-          f.id === s.activeFloorId ? { ...f, scene: snap(), planRooms: s.planRooms } : f,
+          f.id === s.activeFloorId
+            ? { ...f, scene: snap(), planRooms: s.planRooms, storyHeightM: avgH }
+            : f,
         );
         const target = current.find((f) => f.id === id);
         return target
@@ -1935,6 +1971,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
           clientId: data.clientId ?? null,
           estimateSnapshot: data.estimateSnapshot ?? null,
           baselineEstimate: data.baselineEstimate ?? null,
+          changeOrders: Array.isArray(data.changeOrders) ? data.changeOrders : [],
           annotations: Array.isArray(data.annotations) ? data.annotations : [],
           layerVisibility: data.layerVisibility
             ? { ...DEFAULT_LAYER_VISIBILITY, ...data.layerVisibility }

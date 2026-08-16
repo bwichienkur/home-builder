@@ -1,8 +1,9 @@
-export const USER_ROLES = ['user', 'admin', 'system_admin'] as const;
+export const USER_ROLES = ['designer', 'estimator', 'admin', 'system_admin'] as const;
 export type UserRole = (typeof USER_ROLES)[number];
 
 export const ROLE_LABELS: Record<UserRole, string> = {
-  user: 'User',
+  designer: 'Designer',
+  estimator: 'Estimator',
   admin: 'Admin',
   system_admin: 'System admin',
 };
@@ -12,25 +13,39 @@ export function isUserRole(value: unknown): value is UserRole {
 }
 
 export function normalizeRole(value: unknown): UserRole {
-  return isUserRole(value) ? value : 'user';
+  if (value === 'user') return 'designer';
+  return isUserRole(value) ? value : 'designer';
 }
 
-/** System admins manage users/API keys; admins can use staff tools; users are standard. */
+/** System admins manage users/API keys; admins can use staff tools. */
 export function canManageUsers(role: UserRole | undefined | null): boolean {
   return role === 'system_admin';
 }
 
-/** Admins and system admins may edit the shared trade rate book. */
+/** Estimators and admins may edit the shared trade rate book. */
 export function canEditTradeRates(role: UserRole | undefined | null): boolean {
-  return role === 'admin' || role === 'system_admin';
+  return role === 'estimator' || role === 'admin' || role === 'system_admin';
+}
+
+/** Authenticated users can edit plan geometry. */
+export function canEditPlan(role: UserRole | undefined | null): boolean {
+  return Boolean(role);
+}
+
+/** Estimators lock baselines / mint change orders. */
+export function canManageEstimates(role: UserRole | undefined | null): boolean {
+  return canEditTradeRates(role);
 }
 
 export function roleRank(role: UserRole): number {
   switch (role) {
     case 'system_admin':
-      return 3;
+      return 4;
     case 'admin':
+      return 3;
+    case 'estimator':
       return 2;
+    case 'designer':
     default:
       return 1;
   }

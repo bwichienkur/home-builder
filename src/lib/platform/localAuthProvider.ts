@@ -137,7 +137,7 @@ export class LocalAuthProvider implements AuthProvider {
       id,
       name: display,
       passwordHash,
-      role: 'user',
+      role: 'designer',
       createdAt: new Date().toISOString(),
       apiKeys: [],
     };

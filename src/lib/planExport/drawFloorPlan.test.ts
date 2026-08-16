@@ -93,10 +93,18 @@ describe('CAD DXF export', () => {
     expect(dxf).toContain('$INSUNITS');
     expect(dxf).toContain('WALLS');
     expect(dxf).toContain('A-WALL-INT');
+    expect(dxf).toContain('A-DOOR');
+    expect(dxf).toContain('A-GLAZ');
+    expect(dxf).toContain('A-FLOR');
     expect(dxf).toContain('ROOMS');
     expect(dxf).toContain('OPENINGS');
     expect(dxf).toContain('DIMS');
     expect(dxf).toContain('LWPOLYLINE');
+    expect(dxf).toContain('HATCH');
+    expect(dxf).toContain('BLOCK');
+    expect(dxf).toContain('INSERT');
+    expect(dxf).toContain('DOOR');
+    expect(dxf).toContain('WINDOW');
     expect(dxf).toContain('Living');
     expect(dxf).toContain('D1');
     expect(dxf).toContain('W1');

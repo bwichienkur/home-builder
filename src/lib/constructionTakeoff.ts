@@ -32,6 +32,8 @@ export type ConstructionTakeoff = {
   headerCount: number;
   /** Exterior wall cavity insulation SF. */
   insulationAreaM2: number;
+  /** Area-weighted average R-value for insulated walls (0 if none). */
+  avgInsulationR: number;
   /** Floor finish SF (room area). */
   flooringAreaM2: number;
   /** Ground-floor slab proxy (= floor area). */
@@ -100,6 +102,7 @@ export function computeConstructionTakeoff(input: {
   let paintGross = 0;
   let exteriorSheathing = 0;
   let insulationAreaM2 = 0;
+  let insulationRArea = 0;
   let openingAreaM2 = 0;
   let studCount = 0;
 
@@ -115,15 +118,23 @@ export function computeConstructionTakeoff(input: {
     const face = Math.max(0, len * h - openA);
     drywallGross += face * 2;
     const role = wall.assembly ?? 'interior';
+    const preset = WALL_ASSEMBLY_PRESETS[role];
+    const rVal = preset?.insulationR ?? 0;
     if (role === 'exterior') {
       exteriorWallLengthM += len;
       exteriorSheathing += face;
-      insulationAreaM2 += face;
+      if (rVal > 0) {
+        insulationAreaM2 += face;
+        insulationRArea += face * rVal;
+      }
       paintGross += face;
     } else if (role === 'party') {
       partyWallLengthM += len;
       paintGross += face * 2;
-      insulationAreaM2 += face; // fire/party often insulated
+      if (rVal > 0) {
+        insulationAreaM2 += face;
+        insulationRArea += face * rVal;
+      }
     } else {
       interiorWallLengthM += len;
       paintGross += face * 2;
@@ -159,6 +170,7 @@ export function computeConstructionTakeoff(input: {
     plateLengthM: wallLengthMTotal * 2,
     headerCount: doorCount + windowCount,
     insulationAreaM2,
+    avgInsulationR: insulationAreaM2 > 0 ? insulationRArea / insulationAreaM2 : 0,
     flooringAreaM2: floorAreaM2,
     slabAreaM2: includeEnvelope ? floorAreaM2 : 0,
     footingLengthM: includeEnvelope ? exteriorWallLengthM : 0,
@@ -245,6 +257,7 @@ export function mergeConstructionTakeoffs(parts: ConstructionTakeoff[]): Constru
       plateLengthM: a.plateLengthM + t.plateLengthM,
       headerCount: a.headerCount + t.headerCount,
       insulationAreaM2: a.insulationAreaM2 + t.insulationAreaM2,
+      avgInsulationR: a.avgInsulationR + t.avgInsulationR * t.insulationAreaM2,
       flooringAreaM2: a.flooringAreaM2 + t.flooringAreaM2,
       slabAreaM2: a.slabAreaM2 + t.slabAreaM2,
       footingLengthM: a.footingLengthM + t.footingLengthM,
@@ -273,6 +286,7 @@ export function mergeConstructionTakeoffs(parts: ConstructionTakeoff[]): Constru
       plateLengthM: 0,
       headerCount: 0,
       insulationAreaM2: 0,
+      avgInsulationR: 0,
       flooringAreaM2: 0,
       slabAreaM2: 0,
       footingLengthM: 0,
@@ -286,5 +300,6 @@ export function mergeConstructionTakeoffs(parts: ConstructionTakeoff[]): Constru
   return {
     ...sum,
     avgWallHeightM: sum.avgWallHeightM / parts.length,
+    avgInsulationR: sum.insulationAreaM2 > 0 ? sum.avgInsulationR / sum.insulationAreaM2 : 0,
   };
 }

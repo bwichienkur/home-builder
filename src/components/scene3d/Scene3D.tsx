@@ -2306,20 +2306,26 @@ function StackedInactiveFloors() {
   if (!stackView || cameraMode === 'top' || floors.length < 2) return null;
 
   const activeIdx = Math.max(0, floors.findIndex((f) => f.id === activeFloorId));
-  const story =
-    floors.reduce((max, f) => Math.max(max, f.scene.walls?.[0]?.height ?? 0), 0) ||
-    activeFurniture.find((f) => f.placementKind === 'stair')?.stair?.riseM ||
+  const storyHeightAt = (floor: (typeof floors)[number]) =>
+    floor.storyHeightM ??
+    floor.scene.walls?.[0]?.height ??
+    activeFurniture.find((f) => f.placementKind === 'stair')?.stair?.riseM ??
     3.0;
 
   return (
     <group>
       {floors.map((floor, i) => {
         if (floor.id === activeFloorId) return null;
-        const y = (i - activeIdx) * story;
+        let y = 0;
+        if (i > activeIdx) {
+          for (let k = activeIdx; k < i; k++) y += storyHeightAt(floors[k]!);
+        } else {
+          for (let k = i; k < activeIdx; k++) y -= storyHeightAt(floors[k]!);
+        }
         const rooms = floor.planRooms ?? floor.scene.planRooms ?? [];
         const walls = floor.scene.walls ?? [];
         const holes = stairsCuttingFloor(floor.id, floors, activeFloorId, activeFurniture);
-        const storyH = walls[0]?.height ?? story * 0.85;
+        const storyH = storyHeightAt(floor);
         return (
           <group key={floor.id} position={[0, y, 0]}>
             {rooms.map((room) => (

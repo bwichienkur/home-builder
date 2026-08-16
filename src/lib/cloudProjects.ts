@@ -38,7 +38,8 @@ export type CloudSaveResult =
   | { ok: true; mode: 'local'; reason: string }
   | { ok: false; error: string };
 
-/** Prefer cloud when VITE_API_URL is set; soft-fall back to local if API/DB is down. */
+/** Prefer cloud when VITE_API_URL is set; soft-fall back to local if API/DB is down.
+ *  Cloud saves carry the full project payload (including estimate + change orders). */
 export async function saveProjectToCloud(name: string, scene: unknown): Promise<CloudSaveResult> {
   if (!platformConfig.cloudConfigured()) {
     return { ok: true, mode: 'local', reason: 'No API configured (set VITE_API_URL)' };

@@ -108,9 +108,27 @@ export function evaluateBuildingChecks(input: {
 
 export const WALL_ASSEMBLY_PRESETS: Record<
   'exterior' | 'interior' | 'party',
-  { label: string; thicknessM: number; hint: string; studSpacingM: number }
+  { label: string; thicknessM: number; hint: string; studSpacingM: number; insulationR: number }
 > = {
-  exterior: { label: 'Exterior', thicknessM: 0.18, hint: '~7″ wood frame + sheathing', studSpacingM: 0.4064 },
-  interior: { label: 'Interior', thicknessM: 0.12, hint: '~5″ partition', studSpacingM: 0.4064 },
-  party: { label: 'Party', thicknessM: 0.25, hint: '~10″ demising / fire separation', studSpacingM: 0.4064 },
+  exterior: {
+    label: 'Exterior',
+    thicknessM: 0.18,
+    hint: '~7″ wood frame + sheathing · R-21 cavity',
+    studSpacingM: 0.4064, // 16" OC
+    insulationR: 21,
+  },
+  interior: {
+    label: 'Interior',
+    thicknessM: 0.12,
+    hint: '~5″ partition · 24″ OC · no cavity insulation',
+    studSpacingM: 0.6096, // 24" OC
+    insulationR: 0,
+  },
+  party: {
+    label: 'Party',
+    thicknessM: 0.25,
+    hint: '~10″ demising · 16″ OC · R-13 sound batts',
+    studSpacingM: 0.4064,
+    insulationR: 13,
+  },
 };
