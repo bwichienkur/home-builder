@@ -46,6 +46,8 @@ export function builtinFieldType(key: string): CustomFieldType {
     case 'sourceUrl':
     case 'thumbnailUrl':
     case 'textureUrl':
+    case 'roughnessMapUrl':
+    case 'normalMapUrl':
     case 'modelUrl':
     case 'lowPolyModelUrl':
       return 'url';
@@ -178,6 +180,8 @@ export const inventoryRecordSchema = z.object({
   leadTimeDays: z.number().nonnegative().optional(),
   thumbnailUrl: z.string().default(''),
   textureUrl: z.string().default(''),
+  roughnessMapUrl: z.string().default(''),
+  normalMapUrl: z.string().default(''),
   textureRepeat: z.number().positive().optional(),
   roughness: z.number().min(0).max(1).optional(),
   modelUrl: z.string().default(''),
@@ -251,6 +255,8 @@ export const CORE_CSV: Record<EntityKind, string[]> = {
     'leadTimeDays',
     'thumbnailUrl',
     'textureUrl',
+    'roughnessMapUrl',
+    'normalMapUrl',
     'textureRepeat',
     'roughness',
     'modelUrl',
@@ -308,6 +314,8 @@ export function coreFieldLabel(key: string): string {
     leadTimeDays: 'Lead time (days)',
     thumbnailUrl: 'Thumbnail URL',
     textureUrl: 'Texture URL',
+    roughnessMapUrl: 'Roughness map URL',
+    normalMapUrl: 'Normal map URL',
     textureRepeat: 'Texture repeat',
     roughness: 'Roughness',
     modelUrl: 'Model URL',
