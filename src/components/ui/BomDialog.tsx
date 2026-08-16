@@ -516,7 +516,7 @@ export function BomDialog({
                 <ul className="muted" style={{ margin: '4px 0 0', paddingLeft: 18, fontSize: 12 }}>
                   {changeOrders.map((co) => (
                     <li key={co.id}>
-                      {co.label} · {co.status} · {co.delta >= 0 ? '+' : ''}$
+                      {co.label} · {co.status ?? 'draft'} · {co.delta >= 0 ? '+' : ''}$
                       {co.delta.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                       {canEstimate && (
                         <span style={{ marginLeft: 8 }}>
@@ -526,7 +526,7 @@ export function BomDialog({
                               type="button"
                               className="bom-rate-reset"
                               style={{ marginRight: 4, fontSize: 11 }}
-                              disabled={co.status === st}
+                              disabled={(co.status ?? 'draft') === st}
                               onClick={() => setChangeOrderStatus(co.id, st)}
                             >
                               {st}
