@@ -503,21 +503,19 @@ export function StudioChrome({
       </div>
 
       {!inRoom && planRooms.length >= 1 && !pending && !selectedItem && tool === 'select' && !selectedRoom && !pendingAttachMode && !planWallTool && (
-        <div className="studio-selection-hint studio-hint-float">Tap a room to select · drag to move · Furnish on the right rail</div>
+        <div className="studio-selection-hint studio-hint-float">Tap a room · drag to move</div>
       )}
       {!inRoom && planRooms.length >= 1 && !pending && !selectedItem && tool === 'select' && selectedRoom && !pendingAttachMode && (
         <div className="studio-selection-hint studio-hint-float">Drag to move · Furnish to enter</div>
       )}
       {pendingAttachMode && !selectedRoom && planRooms.length >= 1 && (
-        <div className="studio-selection-hint studio-hint-float">Select a room, then pick Left / Right / Above / Below</div>
+        <div className="studio-selection-hint studio-hint-float">Select a room, then pick a side</div>
       )}
       {pendingAttachMode && selectedRoom && (
-        <div className="studio-selection-hint studio-hint-float">
-          Add a matching square beside “{selectedRoom.name}” — blocked sides stay grey
-        </div>
+        <div className="studio-selection-hint studio-hint-float">Pick Left / Right / Above / Below</div>
       )}
       {planWallTool && !selectedWall && !pendingAttachMode && (
-        <div className="studio-selection-hint studio-hint-float">Drag a wall to resize · tap a wall for openings</div>
+        <div className="studio-selection-hint studio-hint-float">Drag a wall to resize</div>
       )}
       {pendingFloorFill && (
         <div className="studio-selection-hint studio-hint-float">
