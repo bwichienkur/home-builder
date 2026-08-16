@@ -65,7 +65,16 @@ export type RoomType =
 export type SurfaceTarget = 'floor' | 'wall' | 'ceiling';
 export type WorkflowStage = 'start' | 'house' | 'room';
 export type StudioMode = 'architect' | 'furnish';
-export type PlanRoomLabel = { id: string; name: string; roomType: RoomType; points: Point[]; floorColor?: string };
+export type PlanRoomLabel = {
+  id: string;
+  name: string;
+  roomType: RoomType;
+  points: Point[];
+  floorColor?: string;
+  /** Catalog SKU applied as a floor fill (tile / surface) for shopping-list qty. */
+  floorCatalogId?: string;
+  floorName?: string;
+};
 export type SceneSnapshot = {
   walls: Wall[];
   openings: Opening[];
@@ -77,3 +86,4 @@ export type SceneSnapshot = {
   planRooms?: PlanRoomLabel[];
 };
 export type PendingFloorFill = { catalogId: string; name: string; color: string };
+export type ManualBomLine = { id: string; name: string; qty: number; unit: string; price: number };

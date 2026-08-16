@@ -818,7 +818,7 @@ export const residentialFurniture = [
     placementSurfaces: ['ceiling'],
     placementMode: 'ceiling-perimeter',
     tags: ['trim', 'crown', 'molding'],
-    roomTypes: ['Bedroom', 'Living room', 'Dining room', 'Office', 'Hallway', 'Children’s room'],
+    roomTypes: ['Bedroom', 'Living room', 'Dining room', 'Office', 'Hallway', 'Children’s room', 'Bathroom', 'Kitchen', 'Laundry'],
     note: '≈ 4.5 in profile · applies along ceiling–wall junction',
   },
   {
@@ -835,7 +835,7 @@ export const residentialFurniture = [
     placementSurfaces: ['ceiling'],
     placementMode: 'ceiling-perimeter',
     tags: ['trim', 'crown', 'molding'],
-    roomTypes: ['Living room', 'Dining room', 'Office', 'Hallway'],
+    roomTypes: ['Bedroom', 'Living room', 'Dining room', 'Office', 'Hallway', 'Children’s room', 'Bathroom', 'Kitchen', 'Laundry'],
     note: '≈ 6 in profile for taller ceilings',
   },
   {

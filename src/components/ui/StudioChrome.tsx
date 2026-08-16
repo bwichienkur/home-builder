@@ -110,16 +110,9 @@ export function StudioChrome({
   const rotatePending = usePlannerStore((s) => s.rotatePendingPlacement);
   const rotateSelected = usePlannerStore((s) => s.rotateSelected);
   const deleteSelected = usePlannerStore((s) => s.deleteSelected);
-  const removePerimeterTrim = usePlannerStore((s) => s.removePerimeterTrim);
-  const clearFloorFinish = usePlannerStore((s) => s.clearFloorFinish);
   const furniture = usePlannerStore((s) => s.furniture);
-  const floorColor = usePlannerStore((s) => s.floorColor);
   const selectedFurniture = furniture.find((f) => f.id === selectedItem);
   const isTrimSelected = selectedFurniture?.placementKind === 'perimeter-trim';
-  const hasCrown = furniture.some((f) => f.placementKind === 'perimeter-trim' && f.trimEdge === 'ceiling');
-  const hasBaseboard = furniture.some((f) => f.placementKind === 'perimeter-trim' && f.trimEdge === 'floor');
-  const crownName = furniture.find((f) => f.placementKind === 'perimeter-trim' && f.trimEdge === 'ceiling')?.name;
-  const baseName = furniture.find((f) => f.placementKind === 'perimeter-trim' && f.trimEdge === 'floor')?.name;
   const categories = roomCategories[roomType];
   const isTop = camera === 'top';
   const planWallTool = usePlannerStore((s) => s.planWallTool);
@@ -167,8 +160,6 @@ export function StudioChrome({
   };
 
   const selectedRoom = planRooms.find((r) => r.id === selectedRoomId);
-  const roomFloorColor = selectedRoom?.floorColor ?? floorColor;
-  const hasCustomFloor = !!selectedRoom?.floorColor || floorColor !== '#c9b18f';
   const activeFloor = floors.find((f) => f.id === activeFloorId);
   const houseLabel = housePlanName || (planRooms.length > 1 ? 'House plan' : 'Room');
   const atStart = workflowStage === 'start';
@@ -295,24 +286,6 @@ export function StudioChrome({
       window.dispatchEvent(new Event('roomcraft-refocus'));
     }, 40);
   };
-
-  const confirmClearCrown = () => {
-    if (!window.confirm('Remove crown molding from this room?')) return;
-    removePerimeterTrim('ceiling');
-  };
-  const confirmClearBaseboard = () => {
-    if (!window.confirm('Remove baseboard from this room?')) return;
-    removePerimeterTrim('floor');
-  };
-  const confirmClearFlooring = () => {
-    if (!window.confirm('Clear the floor finish from this room?')) return;
-    clearFloorFinish();
-  };
-
-  useEffect(() => {
-    // Plan no longer selects individual walls — clear any leftover wall selection.
-    if (usePlannerStore.getState().selectedWallId) usePlannerStore.getState().selectWall(null);
-  }, [isTop]);
 
   const openFurnishCategory = (category: string) => {
     setStudioMode('furnish');
@@ -454,25 +427,6 @@ export function StudioChrome({
         )}
       </div>
 
-      {(hasCrown || hasBaseboard || roomFloorColor) && inRoom && !pending && (
-        <div className="studio-finish-bar" role="status" aria-label="Room finishes">
-          {hasCrown && (
-            <span className="studio-finish-chip">
-              Crown: {crownName ?? 'on'}
-            </span>
-          )}
-          {hasBaseboard && (
-            <span className="studio-finish-chip">
-              Base: {baseName ?? 'on'}
-            </span>
-          )}
-          <span className="studio-finish-chip studio-finish-floor">
-            Floor
-            <span className="studio-finish-swatch" style={{ background: roomFloorColor }} aria-hidden />
-          </span>
-        </div>
-      )}
-
       {pendingFloorFill && !pending && (
         <div className="studio-selection-fabs" role="toolbar" aria-label="Floor fill">
           <button type="button" className="is-danger" onClick={() => cancelFloorFill()} aria-label="Cancel floor fill" title="Cancel">
@@ -524,11 +478,10 @@ export function StudioChrome({
             {fabsOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </button>
           <div className="studio-fabs-tray" aria-hidden={!fabsOpen}>
-            {isTrimSelected ? (
-              <button type="button" onClick={onOpenInspector} aria-label="Edit trim">
-                <Info />
-              </button>
-            ) : (
+            <button type="button" onClick={onOpenInspector} aria-label="Item info" title="Item info">
+              <Info />
+            </button>
+            {!isTrimSelected && (
               <button onClick={() => rotateSelected()} aria-label="Rotate product">
                 <RotateCw />
               </button>
@@ -621,19 +574,6 @@ export function StudioChrome({
               <span>Redo</span>
             </button>
           </div>
-          {inRoom && !pending && (
-            <div className="studio-dock-row studio-dock-clear" role="group" aria-label="Clear finishes">
-              <button type="button" className="studio-dock-action" disabled={!hasCrown} onClick={confirmClearCrown} title="Clear crown molding">
-                <span>Crown</span>
-              </button>
-              <button type="button" className="studio-dock-action" disabled={!hasBaseboard} onClick={confirmClearBaseboard} title="Clear baseboard">
-                <span>Base</span>
-              </button>
-              <button type="button" className="studio-dock-action" disabled={!hasCustomFloor} onClick={confirmClearFlooring} title="Clear flooring">
-                <span>Floor</span>
-              </button>
-            </div>
-          )}
         </div>
       </div>
 

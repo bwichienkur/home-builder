@@ -638,9 +638,7 @@ export function planRoomsCenterFt(labels: { points: Point[] }[]) {
 export type AttachSide = 'left' | 'right' | 'top' | 'bottom';
 
 /**
- * Square room flush to a host on `side`.
- * Left/right: square side equals host depth (shared vertical edge length).
- * Top/bottom: square side equals host width (shared horizontal edge length).
+ * Room flush to a host on `side`, matching the host width and depth.
  * Plan Y grows south — `top` is toward smaller Y, `bottom` toward larger Y.
  */
 export function attachSquareRoomPoints(hostPoints: Point[], side: AttachSide): Point[] {
@@ -649,18 +647,14 @@ export function attachSquareRoomPoints(hostPoints: Point[], side: AttachSide): P
     x: WORLD_ORIGIN.x + ftToPx(xFt),
     y: WORLD_ORIGIN.y + ftToPx(yFt),
   });
+  const w = size.widthFt;
+  const h = size.depthFt;
   let x: number;
   let y: number;
-  let w: number;
-  let h: number;
   if (side === 'left' || side === 'right') {
-    w = size.depthFt;
-    h = size.depthFt;
     y = size.minY;
     x = side === 'left' ? size.minX - w : size.maxX;
   } else {
-    w = size.widthFt;
-    h = size.widthFt;
     x = size.minX;
     y = side === 'top' ? size.minY - h : size.maxY;
   }

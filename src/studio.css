@@ -1102,10 +1102,10 @@
   .studio-selection-fabs {
     left: max(12px, env(safe-area-inset-left));
     right: auto;
-    top: auto;
-    bottom: max(140px, calc(env(safe-area-inset-bottom) + 128px));
-    transform: none;
-    animation: card-in 220ms ease-out;
+    top: 50%;
+    bottom: auto;
+    transform: translateY(-50%);
+    animation: fabs-in 220ms ease-out;
     gap: 8px;
   }
   .studio-selection-fabs button {

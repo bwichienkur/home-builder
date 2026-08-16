@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { CameraMode, FurnitureItem, MountingType, Opening, OpeningShape, PendingFloorFill, PlanRoomLabel, Point, RoomType, SceneSnapshot, StudioMode, SurfaceTarget, Tool, UnitSystem, Wall, WorkflowStage } from '../types';
+import type { CameraMode, FurnitureItem, ManualBomLine, MountingType, Opening, OpeningShape, PendingFloorFill, PlanRoomLabel, Point, RoomType, SceneSnapshot, StudioMode, SurfaceTarget, Tool, UnitSystem, Wall, WorkflowStage } from '../types';
 import { doorSwingZones, furnitureHitsDoorSwing } from '../lib/geometry/doorClearance';
 import { wouldOverlapFurniture } from '../lib/collisions';
 import { clampWallMountY, constrainPlacement, openingConflicts, resolveMountingType, roomFloorCenter, WORLD_ORIGIN } from '../lib/geometry/placement';
@@ -65,6 +65,10 @@ type PlannerState = SceneSnapshot & {
   openingNotice: string;
   workflowStage: WorkflowStage;
   studioMode: StudioMode;
+  /** Extra shopping-list lines the user added by hand. */
+  manualBomLines: ManualBomLine[];
+  addManualBomLine: (line: Omit<ManualBomLine, 'id'>) => void;
+  removeManualBomLine: (id: string) => void;
   setTool: (tool: Tool) => void;
   setView: (view: View) => void;
   setCameraMode: (mode: CameraMode) => void;
@@ -103,7 +107,7 @@ type PlannerState = SceneSnapshot & {
   housePlanName: string | null;
   planRooms: PlanRoomLabel[];
   selectRoom: (id: string | null) => void;
-  updatePlanRoom: (id: string, patch: Partial<Pick<PlanRoomLabel, 'name' | 'roomType' | 'floorColor'>>) => void;
+  updatePlanRoom: (id: string, patch: Partial<Pick<PlanRoomLabel, 'name' | 'roomType' | 'floorColor' | 'floorCatalogId' | 'floorName'>>) => void;
   resizePlanRoom: (id: string, widthFt: number, depthFt: number) => void;
   deletePlanRoom: (id: string) => void;
   addSquareRoom: (center: Point, widthFt?: number, depthFt?: number, name?: string) => string | null;
@@ -399,6 +403,15 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     planWallTool: false,
     workflowStage: 'start',
     studioMode: 'architect',
+    manualBomLines: [],
+    addManualBomLine: (line) =>
+      set((s) => ({
+        manualBomLines: [...s.manualBomLines, { ...line, id: crypto.randomUUID() }],
+      })),
+    removeManualBomLine: (id) =>
+      set((s) => ({
+        manualBomLines: s.manualBomLines.filter((row) => row.id !== id),
+      })),
     setTool: (tool) => set({ tool: tool === 'wall' ? 'select' : tool, draftStart: null }),
     setView: (view) => set({ view, draftStart: null }),
     setCameraMode: (cameraMode) => set({ cameraMode }),
@@ -737,7 +750,11 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       if (!fill) return false;
       const id = roomId ?? get().selectedRoomId;
       if (id) {
-        get().updatePlanRoom(id, { floorColor: fill.color });
+        get().updatePlanRoom(id, {
+          floorColor: fill.color,
+          floorCatalogId: fill.catalogId,
+          floorName: fill.name,
+        });
       } else {
         mutate({ floorColor: fill.color });
       }
@@ -1372,7 +1389,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     clearFloorFinish: () => {
       const roomId = get().selectedRoomId;
       if (roomId) {
-        get().updatePlanRoom(roomId, { floorColor: undefined });
+        get().updatePlanRoom(roomId, { floorColor: undefined, floorCatalogId: undefined, floorName: undefined });
         set({ openingNotice: 'Floor finish cleared for this room.' });
         return;
       }

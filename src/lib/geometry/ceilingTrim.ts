@@ -127,8 +127,8 @@ export function perimeterTrimSegments(
     else if (minusInside && !plusInside) side = -1;
     const placed = side > 0 ? plus : minus;
     const y = opts.edge === 'ceiling' ? Math.max(0.05, wall.height - height) : 0;
-    // Shorten by profile depth so adjacent strips meet at a miter instead of overlapping.
-    const width = Math.max(0.15, frame.length - depth);
+    // Shorten by 2× profile depth so adjacent strips meet at a miter instead of overlapping past the corner.
+    const width = Math.max(0.15, frame.length - 2 * depth);
     out.push({
       wallId: wall.id,
       x: placed.x,
