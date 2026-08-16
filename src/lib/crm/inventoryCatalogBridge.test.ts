@@ -26,7 +26,7 @@ function installMemoryLocalStorage() {
 }
 
 function sample(partial: Partial<InventoryRecord> = {}): InventoryRecord {
-  return {
+  const base: InventoryRecord = {
     id: 'inv-1',
     sku: 'TILE-01',
     name: 'Stone Tile',
@@ -50,6 +50,7 @@ function sample(partial: Partial<InventoryRecord> = {}): InventoryRecord {
     price: 12.5,
     priceUnit: 'sq ft',
     currency: 'USD',
+    priceVerifiedAt: '',
     sellable: true,
     placeholderOnly: false,
     active: true,
@@ -70,8 +71,8 @@ function sample(partial: Partial<InventoryRecord> = {}): InventoryRecord {
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
     archived: false,
-    ...partial,
   };
+  return { ...base, ...partial };
 }
 
 describe('inventoryCatalogBridge', () => {
