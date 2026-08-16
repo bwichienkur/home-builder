@@ -128,8 +128,20 @@ function ceilingMeters(rooms: PlanRoomRect[], fallback = 2.74) {
   return vals.length ? Math.max(...vals) : fallback;
 }
 
+export type FloorOpeningsMode = 'catalog' | 'shared-only' | 'none';
+
+export type BuildFloorOptions = {
+  /**
+   * `catalog` — house-plan defaults (windows + interior doors).
+   * `shared-only` — no exterior openings; one mid-edge passage on each shared wall.
+   * `none` — walls only.
+   */
+  openings?: FloorOpeningsMode;
+};
+
 /** Convert a floor of room rectangles into walls + openings centered on WORLD_ORIGIN. */
-export function buildFloorFromRooms(floor: HousePlanFloor): BuiltFloor {
+export function buildFloorFromRooms(floor: HousePlanFloor, opts?: BuildFloorOptions): BuiltFloor {
+  const openingsMode: FloorOpeningsMode = opts?.openings ?? 'catalog';
   const rooms = floor.rooms;
   if (!rooms.length) {
     return {
@@ -176,7 +188,10 @@ export function buildFloorFromRooms(floor: HousePlanFloor): BuiltFloor {
     };
     walls.push(wall);
 
+    if (openingsMode === 'none') return;
+
     if (edge.exterior) {
+      if (openingsMode !== 'catalog') return;
       const room = roomById(rooms, edge.rooms[0]);
       if (wantsWindow(room)) {
         const len = Math.hypot(edge.x2 - edge.x1, edge.y2 - edge.y1);
@@ -221,31 +236,43 @@ export function buildFloorFromRooms(floor: HousePlanFloor): BuiltFloor {
         }
       }
     } else if (edge.rooms.length >= 2) {
+      const len = Math.hypot(edge.x2 - edge.x1, edge.y2 - edge.y1);
+      if (len < 2.5) return;
+      if (openingsMode === 'shared-only') {
+        openings.push({
+          id: `${id}-open`,
+          wallId: id,
+          type: 'passage',
+          offset: 0.5,
+          width: Math.min(1.2, len * FT_TO_M * 0.4),
+          height: 2.1,
+          sill: 0,
+          swing: 'none',
+        });
+        return;
+      }
       const a = roomById(rooms, edge.rooms[0]);
       const b = roomById(rooms, edge.rooms[1]);
       if (wantsDoorBetween(a, b)) {
-        const len = Math.hypot(edge.x2 - edge.x1, edge.y2 - edge.y1);
-        if (len >= 2.5) {
-          const passage =
-            a?.roomType === 'Living room' ||
-            b?.roomType === 'Living room' ||
-            a?.roomType === 'Kitchen' ||
-            b?.roomType === 'Kitchen' ||
-            a?.roomType === 'Dining room' ||
-            b?.roomType === 'Dining room' ||
-            a?.roomType === 'Hallway' ||
-            b?.roomType === 'Hallway';
-          openings.push({
-            id: `${id}-open`,
-            wallId: id,
-            type: passage ? 'passage' : 'door',
-            offset: 0.5,
-            width: passage ? Math.min(1.6, len * FT_TO_M * 0.55) : 0.9,
-            height: 2.1,
-            sill: 0,
-            swing: passage ? 'none' : 'left',
-          });
-        }
+        const passage =
+          a?.roomType === 'Living room' ||
+          b?.roomType === 'Living room' ||
+          a?.roomType === 'Kitchen' ||
+          b?.roomType === 'Kitchen' ||
+          a?.roomType === 'Dining room' ||
+          b?.roomType === 'Dining room' ||
+          a?.roomType === 'Hallway' ||
+          b?.roomType === 'Hallway';
+        openings.push({
+          id: `${id}-open`,
+          wallId: id,
+          type: passage ? 'passage' : 'door',
+          offset: 0.5,
+          width: passage ? Math.min(1.6, len * FT_TO_M * 0.55) : 0.9,
+          height: 2.1,
+          sill: 0,
+          swing: passage ? 'none' : 'left',
+        });
       }
     }
   });
@@ -551,6 +578,7 @@ export function splitPlanRoomPoints(points: Point[], axis?: 'x' | 'y'): [Point[]
 /**
  * Rebuild walls/openings from edited plan-room labels (pixel polygons).
  * Preserves per-room floor colors when ids match.
+ * Interactive edits use shared-only openings (no starter windows/doors).
  */
 export function rebuildFromPlanRooms(labels: { id: string; name: string; roomType: RoomType; points: Point[]; floorColor?: string }[], floorId = 'edited', ceilingHeightM = 2.74) {
   const rooms: PlanRoomRect[] = labels.map((label) => {
@@ -566,11 +594,68 @@ export function rebuildFromPlanRooms(labels: { id: string; name: string; roomTyp
       ceilingFt: ceilingHeightM / FT_TO_M,
     };
   });
-  const built = buildFloorFromRooms({ id: floorId, name: 'Edited floor', rooms });
+  const built = buildFloorFromRooms({ id: floorId, name: 'Edited floor', rooms }, { openings: 'shared-only' });
   built.roomPolygons = built.roomPolygons.map((poly) => ({
     ...poly,
     floorColor: labels.find((l) => l.id === poly.id)?.floorColor,
   }));
   // Keep existing furniture out of the rebuilt empty scene — caller merges.
   return built;
+}
+
+export type AttachSide = 'left' | 'right' | 'top' | 'bottom';
+
+/**
+ * Square room flush to a host on `side`.
+ * Left/right: square side equals host depth (shared vertical edge length).
+ * Top/bottom: square side equals host width (shared horizontal edge length).
+ * Plan Y grows south — `top` is toward smaller Y, `bottom` toward larger Y.
+ */
+export function attachSquareRoomPoints(hostPoints: Point[], side: AttachSide): Point[] {
+  const size = planRoomSizeFeet(hostPoints);
+  const toPoint = (xFt: number, yFt: number): Point => ({
+    x: WORLD_ORIGIN.x + ftToPx(xFt),
+    y: WORLD_ORIGIN.y + ftToPx(yFt),
+  });
+  let x: number;
+  let y: number;
+  let w: number;
+  let h: number;
+  if (side === 'left' || side === 'right') {
+    w = size.depthFt;
+    h = size.depthFt;
+    y = size.minY;
+    x = side === 'left' ? size.minX - w : size.maxX;
+  } else {
+    w = size.widthFt;
+    h = size.widthFt;
+    x = size.minX;
+    y = side === 'top' ? size.minY - h : size.maxY;
+  }
+  return [
+    toPoint(x, y),
+    toPoint(x + w, y),
+    toPoint(x + w, y + h),
+    toPoint(x, y + h),
+  ];
+}
+
+/** True when attaching a square on `side` of `hostId` would overlap another room. */
+export function attachSideBlocked(
+  hostId: string,
+  side: AttachSide,
+  labels: { id: string; points: Point[] }[],
+  minOverlapPx = 0.25 * PIXELS_PER_METER,
+): boolean {
+  const host = labels.find((r) => r.id === hostId);
+  if (!host || host.points.length < 3) return true;
+  const proposed = pointsAabb(attachSquareRoomPoints(host.points, side));
+  for (const room of labels) {
+    if (room.id === hostId || room.points.length < 3) continue;
+    const other = pointsAabb(room.points);
+    const xOverlap = overlap1d(proposed.minX, proposed.maxX, other.minX, other.maxX);
+    const yOverlap = overlap1d(proposed.minY, proposed.maxY, other.minY, other.maxY);
+    if (xOverlap > minOverlapPx && yOverlap > minOverlapPx) return true;
+  }
+  return false;
 }

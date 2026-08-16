@@ -6,13 +6,13 @@ import { clampWallMountY, constrainPlacement, openingConflicts, resolveMountingT
 import { detectRoomPolygons } from '../lib/geometry/rooms';
 import { perimeterTrimSegments, type PerimeterTrimEdge } from '../lib/geometry/ceilingTrim';
 import { writeRecoverySnapshot } from '../lib/designShare';
-import { buildHouse, rebuildFromPlanRooms, resizePlanRoomPoints, shapedRoomPoints, snapRoomCenterToNeighbors, splitPlanRoomPoints, proposedRoomOverlaps, planRoomLabelOverlaps, type PlanRoomShape } from '../lib/housePlans/buildPlan';
+import { buildHouse, rebuildFromPlanRooms, resizePlanRoomPoints, shapedRoomPoints, snapRoomCenterToNeighbors, splitPlanRoomPoints, proposedRoomOverlaps, planRoomLabelOverlaps, attachSquareRoomPoints, attachSideBlocked, type PlanRoomShape, type AttachSide } from '../lib/housePlans/buildPlan';
 import { getHousePlan } from '../lib/housePlans/olsenPlans';
 import { remapFurnitureAfterPlanRebuild } from '../lib/geometry/planFurnitureRemap';
 import { pointInPlanRoom, wallEndpointForGrowSide, type WallGrowSide } from '../lib/geometry/roomWalls';
 import { PIXELS_PER_METER } from '../lib/geometry/snapping';
 
-export type { PlanRoomShape };
+export type { PlanRoomShape, AttachSide };
 
 type View = '2d' | '3d';
 type FloorRecord = { id: string; name: string; scene: SceneSnapshot; planRooms?: PlanRoomLabel[] };
@@ -109,7 +109,12 @@ type PlannerState = SceneSnapshot & {
   addSquareRoom: (center: Point, widthFt?: number, depthFt?: number, name?: string) => string | null;
   pendingRoomShape: PlanRoomShape | null;
   setPendingRoomShape: (shape: PlanRoomShape | null) => void;
+  /** Plan-level “Add room” mode — pick a side of the selected room. */
+  pendingAttachMode: boolean;
+  setPendingAttachMode: (on: boolean) => void;
   placePlanRoom: (center: Point, shape?: PlanRoomShape, name?: string) => string | null;
+  /** Attach a square room flush to a host on left/right/top/bottom. */
+  attachPlanRoom: (hostId: string, side: AttachSide, name?: string) => string | null;
   /** Translate a plan room in world meters; rebuilds walls and remaps furniture/trim. */
   movePlanRoom: (id: string, dxM: number, dzM: number, opts?: { live?: boolean }) => boolean;
   /** Push current plan geometry onto undo history after a live room drag. */
@@ -380,6 +385,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     housePlanName: null,
     planRooms: [],
     pendingRoomShape: null,
+    pendingAttachMode: false,
     workflowStage: 'start',
     studioMode: 'architect',
     setTool: (tool) => set({ tool: tool === 'wall' ? 'select' : tool, draftStart: null }),
@@ -750,10 +756,29 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     setPendingRoomShape: (pendingRoomShape) =>
       set({
         pendingRoomShape,
+        pendingAttachMode: false,
         tool: pendingRoomShape ? 'room' : get().tool === 'room' ? 'select' : get().tool,
         draftStart: null,
         selectedWallId: null,
         studioMode: 'architect',
+      }),
+    setPendingAttachMode: (pendingAttachMode) =>
+      set({
+        pendingAttachMode,
+        pendingRoomShape: null,
+        tool: 'select',
+        draftStart: null,
+        selectedWallId: null,
+        studioMode: 'architect',
+        cameraMode: 'top',
+        view: '3d',
+        openingNotice: pendingAttachMode
+          ? get().planRooms.length
+            ? get().selectedRoomId
+              ? 'Choose left, right, above, or below to add a matching square room.'
+              : 'Select a room, then choose a side to add beside it.'
+            : 'Tap Add room again to place the first square room.'
+          : '',
       }),
     placePlanRoom: (center, shape, name) => {
       const kind = shape ?? get().pendingRoomShape ?? 'rectangle';
@@ -780,12 +805,59 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         selectedOpeningId: null,
         selectedFurnitureId: null,
         pendingRoomShape: null,
+        pendingAttachMode: false,
         cameraMode: 'top',
         view: '3d',
         tool: 'select',
         draftStart: null,
         openingNotice: '',
       });
+      return id;
+    },
+    attachPlanRoom: (hostId, side, name) => {
+      const host = get().planRooms.find((r) => r.id === hostId);
+      if (!host) {
+        set({ openingNotice: 'Select a room first, then choose a side.' });
+        return null;
+      }
+      if (attachSideBlocked(hostId, side, get().planRooms)) {
+        set({ openingNotice: 'That side is blocked — pick another edge.' });
+        return null;
+      }
+      const id = crypto.randomUUID();
+      const label: PlanRoomLabel = {
+        id,
+        name: name ?? `Room ${get().planRooms.length + 1}`,
+        roomType: get().roomType,
+        points: attachSquareRoomPoints(host.points, side),
+      };
+      const nextLabels = [...get().planRooms, label];
+      if (planRoomLabelOverlaps(id, nextLabels)) {
+        set({ openingNotice: 'That side is blocked — pick another edge.' });
+        return null;
+      }
+      applyPlanRoomRebuild(nextLabels, { selectedRoomId: id });
+      set({
+        workflowStage: 'house',
+        studioMode: 'architect',
+        selectedSurface: null,
+        selectedWallId: null,
+        selectedOpeningId: null,
+        selectedFurnitureId: null,
+        pendingRoomShape: null,
+        pendingAttachMode: false,
+        cameraMode: 'top',
+        view: '3d',
+        tool: 'select',
+        draftStart: null,
+        openingNotice: '',
+      });
+      if (typeof window !== 'undefined') {
+        window.setTimeout(() => {
+          window.dispatchEvent(new Event('roomcraft-fit-plan'));
+          window.dispatchEvent(new Event('roomcraft-refocus'));
+        }, 40);
+      }
       return id;
     },
     movePlanRoom: (id, dxM, dzM, opts) => {
