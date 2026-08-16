@@ -10,8 +10,8 @@ import { alignmentGuides, clampWallMountY, constrainPlacement, pointOnWall, room
 import { doorSwingZones, furnitureHitsDoorSwing } from '../../lib/geometry/doorClearance';
 import { wouldOverlapFurniture } from '../../lib/collisions';
 import { framingFromPoints, framingFromWall, framingFromWalls, freeAreaFit, pageCenterFit, worldShiftForFreeArea } from '../../lib/geometry/planFraming';
+import { pointInPlanRoom, enclosureWallsForRoom } from '../../lib/geometry/roomWalls';
 import { wallExteriorSide } from '../../lib/geometry/roomWalls';
-import { pointInPlanRoom, wallsBelongingToRoom } from '../../lib/geometry/roomWalls';
 import { clampOpeningOffset, openingCenterOnWall, wallOffsetFromWorldPoint, wallSolidBoxes } from '../../lib/geometry/wallOpenings';
 import { wallCutawayOpacity } from '../../lib/geometry/wallCutaway';
 import { orbitCeilingOpacity, orbitFloorOpacity } from '../../lib/geometry/plateFade';
@@ -719,7 +719,9 @@ function useVisibleWalls(): Wall[] {
     if (workflowStage !== 'room' || !selectedRoomId) return walls;
     const room = planRooms.find((r) => r.id === selectedRoomId);
     if (!room) return walls;
-    return wallsBelongingToRoom(room, walls);
+    const height = walls[0]?.height ?? 2.7;
+    // Clip to the room polygon so neighbor facade stubs never stick past corners.
+    return enclosureWallsForRoom(room, walls, height);
   }, [walls, planRooms, selectedRoomId, workflowStage]);
 }
 
@@ -732,109 +734,19 @@ function WallMeshes() {
   const selectedRoomId = usePlannerStore((s) => s.selectedRoomId);
   const workflowStage = usePlannerStore((s) => s.workflowStage);
   const select = usePlannerStore((s) => s.selectWall);
-  const nudgeWall = usePlannerStore((s) => s.nudgeWall);
-  const commitWallNudge = usePlannerStore((s) => s.commitWallNudge);
-  const planWallTool = usePlannerStore((s) => s.planWallTool);
   const cameraMode = usePlannerStore((s) => s.cameraMode);
-  const studioMode = usePlannerStore((s) => s.studioMode);
   const tool = usePlannerStore((s) => s.tool);
   const opacityByWall = useDollhouseCutaway(walls);
   const wallIds = useMemo(() => new Set(walls.map((w) => w.id)), [walls]);
   const visibleOpenings = useMemo(() => openings.filter((o) => wallIds.has(o.wallId)), [openings, wallIds]);
   const orbiting = cameraMode === 'orbit';
-  // Walls tool must be explicitly armed — default select mode does not highlight Walls.
-  const wallEditMode = studioMode === 'architect' && cameraMode === 'top' && tool === 'select' && planWallTool;
-  // Hide wide wall picks while a room is selected so plan rooms stay draggable.
-  const showPlanWallPicks = wallEditMode && workflowStage !== 'room' && !selectedRoomId;
   // Openings can be dragged in top plan and 3D orbit (not walk).
   const openingDragEnabled = tool === 'select' && (cameraMode === 'top' || cameraMode === 'orbit');
-  const { camera, gl, invalidate } = useThree();
-  const floorPlane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), []);
-  const dragRaycaster = useMemo(() => new THREE.Raycaster(), []);
-  const dragNdc = useMemo(() => new THREE.Vector2(), []);
-  const wallDragRef = useRef<{
-    wallId: string;
-    lastX: number;
-    lastZ: number;
-    moved: boolean;
-    listeners: { move: (e: PointerEvent) => void; end: (e: PointerEvent) => void } | null;
-  } | null>(null);
-
-  const hitFloor = (clientX: number, clientY: number) => {
-    const rect = gl.domElement.getBoundingClientRect();
-    dragNdc.x = ((clientX - rect.left) / rect.width) * 2 - 1;
-    dragNdc.y = -((clientY - rect.top) / rect.height) * 2 + 1;
-    dragRaycaster.setFromCamera(dragNdc, camera);
-    const hit = new THREE.Vector3();
-    if (!dragRaycaster.ray.intersectPlane(floorPlane, hit)) return null;
-    return hit;
-  };
-
-  const beginWallDrag = (e: any, wallId: string) => {
-    if (!wallEditMode) return;
-    e.stopPropagation();
-    select(wallId);
-    const hit = hitFloor(e.clientX, e.clientY);
-    if (!hit) return;
-    const drag = {
-      wallId,
-      lastX: hit.x,
-      lastZ: hit.z,
-      moved: false,
-      listeners: null as null | { move: (e: PointerEvent) => void; end: (e: PointerEvent) => void },
-    };
-    const onMove = (ev: PointerEvent) => {
-      const next = hitFloor(ev.clientX, ev.clientY);
-      if (!next) return;
-      const dx = next.x - drag.lastX;
-      const dz = next.z - drag.lastZ;
-      if (!drag.moved) {
-        if (Math.hypot(next.x - hit.x, next.z - hit.z) < 0.04) return;
-        drag.moved = true;
-        document.body.dataset.movingFurniture = '1';
-        window.dispatchEvent(new Event('roomcraft-drag-start'));
-      }
-      // Keep nudging the wall captured at pointer-down — do not chase remapped ids mid-drag.
-      if (nudgeWall(drag.wallId, dx, dz, { live: true })) {
-        drag.lastX = next.x;
-        drag.lastZ = next.z;
-        invalidate();
-      }
-    };
-    const onEnd = () => {
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', onEnd);
-      window.removeEventListener('pointercancel', onEnd);
-      if (drag.moved) {
-        commitWallNudge();
-        delete document.body.dataset.movingFurniture;
-        window.dispatchEvent(new Event('roomcraft-drag-end'));
-        window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-fit-plan')), 40);
-      }
-      wallDragRef.current = null;
-    };
-    drag.listeners = { move: onMove, end: onEnd };
-    wallDragRef.current = drag;
-    window.addEventListener('pointermove', onMove);
-    window.addEventListener('pointerup', onEnd);
-    window.addEventListener('pointercancel', onEnd);
-  };
-
-  useEffect(
-    () => () => {
-      const drag = wallDragRef.current;
-      if (drag?.listeners) {
-        window.removeEventListener('pointermove', drag.listeners.move);
-        window.removeEventListener('pointerup', drag.listeners.end);
-        window.removeEventListener('pointercancel', drag.listeners.end);
-      }
-    },
-    [],
-  );
+  const { invalidate } = useThree();
 
   const onWallClick = (id: string) => {
-    if (!wallEditMode) return;
-    if (wallDragRef.current?.moved) return;
+    // Plan Walls tool edits room dimensions via the dim card — not individual walls.
+    if (cameraMode === 'top' && workflowStage !== 'room') return;
     select(id);
   };
 
@@ -876,30 +788,12 @@ function WallMeshes() {
           </mesh>
         );
 
-        // Wide, shallow top-view strip — walls are hard to hit from plan otherwise (thin edges).
-        const topPick =
-          showPlanWallPicks ? (
-            <mesh
-              key={w.id + 'top-pick'}
-              userData={{ planWallPick: true, wallId: w.id }}
-              position={[midX, 0.14, midZ]}
-              rotation={[0, angle, 0]}
-              renderOrder={6}
-              onClick={(e) => {
-                e.stopPropagation();
-                onWallClick(w.id);
-              }}
-              onPointerDown={(e) => beginWallDrag(e, w.id)}
-            >
-              <boxGeometry args={[Math.max(origLen, 0.35), 0.1, Math.max(w.thickness * 5, 0.48)]} />
-              <meshBasicMaterial transparent opacity={0} depthWrite={false} depthTest={false} side={THREE.DoubleSide} />
-            </mesh>
-          ) : null;
+        // Plan walls are not individually pickable — room dims use the exterior card.
+        const topPick = null;
 
         if (hidden) {
           return [
             pickProxy,
-            ...(topPick ? [topPick] : []),
             ...(selected
               ? [
                   <mesh
@@ -928,8 +822,8 @@ function WallMeshes() {
             ? related.map((o) => ({ ...o, sill: 0, height: Math.max(w.height, o.height) }))
             : related;
         const solids = wallSolidBoxes(w.height, origLen, origLen, 0, planOpenings);
-        // Cutaway + top (non-edit) must not steal furniture picks; solid orbit walls still block.
-        const skipRay = fading || (cameraMode === 'top' && !wallEditMode) ? () => {} : undefined;
+        // Top plan walls never steal room picks; cutaway fades stay non-blocking too.
+        const skipRay = fading || cameraMode === 'top' ? () => {} : undefined;
         const wallMat = {
           color,
           roughness: 0.86,
@@ -1067,10 +961,9 @@ function WallMeshes() {
             );
           return parts;
         });
-        // Top-plan pick strip always available in Walls mode; 3D pick proxy while fading.
+        // 3D pick proxy while fading so cut-away walls remain selectable.
         return [
-          ...(topPick ? [topPick] : []),
-          ...(fading && wallEditMode ? [pickProxy] : []),
+          ...(fading && cameraMode !== 'top' ? [pickProxy] : []),
           ...base,
           ...selectionHalo,
           ...fixtures,
@@ -1595,7 +1488,6 @@ function Room() {
   const selectedRoomId = usePlannerStore((s) => s.selectedRoomId);
   const enterRoom = usePlannerStore((s) => s.enterRoom);
   const selectRoom = usePlannerStore((s) => s.selectRoom);
-  const selectWall = usePlannerStore((s) => s.selectWall);
   const workflowStage = usePlannerStore((s) => s.workflowStage);
   const cameraMode = usePlannerStore((s) => s.cameraMode);
   const studioMode = usePlannerStore((s) => s.studioMode);
@@ -1613,8 +1505,6 @@ function Room() {
   const [floorOpacity, setFloorOpacity] = useState(1);
   // Top / bird’s-eye must see the floor — a solid ceiling makes the room unusable to edit.
   const showCeiling = cameraMode !== 'top' || selectedSurface === 'ceiling';
-  const planWallTool = usePlannerStore((s) => s.planWallTool);
-  const wallEditMode = studioMode === 'architect' && cameraMode === 'top' && tool === 'select' && planWallTool;
 
   useFrame((_, delta) => {
     const targetCeiling = orbitCeilingOpacity(camera.position.y, ceilingHeight, {
@@ -1648,21 +1538,13 @@ function Room() {
       usePlannerStore.getState().applyFloorFillToRoom(roomId ?? null);
       return;
     }
-    // Plan Walls mode: prefer wall pick strips even when the room floor is closer.
-    if (wallEditMode && workflowStage !== 'room' && !roomId) {
-      const wallHit = (e.intersections as THREE.Intersection[] | undefined)?.find((h) => h.object.userData?.planWallPick);
-      if (wallHit?.object.userData?.wallId) {
-        selectWall(String(wallHit.object.userData.wallId));
-        return;
-      }
-    }
     if (roomId) {
       // Already editing this room in 3D — selecting the floor must NOT reset camera to top.
       if (workflowStage === 'room' && selectedRoomId === roomId) {
         selectSurface('floor');
         return;
       }
-      // Plan level: select the room only — Edit / Remove live on the right rail.
+      // Plan level: select the room only — Edit / Furnish / Remove live on the right rail.
       if (workflowStage !== 'room') {
         selectRoom(roomId);
         return;
