@@ -54,7 +54,7 @@ describe('platform providers ($0 defaults)', () => {
     await auth.register('vendor@example.com', 'secret12', 'Vendor Co');
     const listed = await auth.listUsers!('vendor');
     expect(listed).toHaveLength(1);
-    expect(listed[0]?.role).toBe('user');
+    expect(listed[0]?.role).toBe('designer');
 
     const roleResult = await auth.setUserRole!(listed[0]!.id, 'admin');
     expect(roleResult.ok).toBe(true);

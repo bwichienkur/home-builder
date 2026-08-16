@@ -67,6 +67,9 @@ export function ClientsPage() {
                             d.payload.estimateSnapshot.totals.grandTotal,
                           ).toLocaleString()})`
                         : ''}
+                      {(d.payload.changeOrders?.length ?? 0) > 0
+                        ? ` · ${d.payload.changeOrders!.length} CO`
+                        : ''}
                     </a>
                   ))}
                   {linked.length > 3 ? ` +${linked.length - 3}` : ''}
@@ -156,6 +159,9 @@ export function ClientsPage() {
                               maximumFractionDigits: 0,
                             })}
                           </span>
+                        )}
+                        {(d.payload.changeOrders?.length ?? 0) > 0 && (
+                          <span className="muted"> · {d.payload.changeOrders!.length} CO</span>
                         )}
                       </li>
                     ))}

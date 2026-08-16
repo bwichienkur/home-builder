@@ -5,6 +5,8 @@ import { DEFAULT_TRADE_RATES } from '../store/tradeRatesStore';
 export type EstimateLine = {
   key: string;
   name: string;
+  /** MasterFormat-ish division code for GC sorting. */
+  csi?: string;
   qty: number;
   unit: string;
   unitCost: number;
@@ -32,6 +34,18 @@ export type EstimateSnapshot = {
   totals: EstimateTotals;
 };
 
+export type ChangeOrderRecord = {
+  id: string;
+  number: number;
+  createdAt: string;
+  label: string;
+  baselineVersion: number;
+  liveVersion: number;
+  delta: number;
+  lineDeltas: ChangeOrderDelta['lineDeltas'];
+  totals: { baseline: number; live: number };
+};
+
 const M2_TO_SF = 1 / 0.09290304;
 const M_TO_FT = 1 / 0.3048;
 
@@ -41,6 +55,7 @@ export const ESTIMATE_DISCLAIMER =
 function line(
   key: string,
   name: string,
+  csi: string,
   qty: number,
   unit: string,
   unitCost: number,
@@ -51,6 +66,7 @@ function line(
   return {
     key,
     name,
+    csi,
     qty,
     unit,
     unitCost,
@@ -66,27 +82,38 @@ export function buildEstimateLines(takeoff: ConstructionTakeoff, rates: TradeRat
   const sf = (m2: number) => m2 * M2_TO_SF;
   const ft = (m: number) => m * M_TO_FT;
   const raw: (EstimateLine | null)[] = [
-    line('drywall', 'Drywall (both faces + waste)', sf(takeoff.drywallAreaM2) * waste, 'sf', rates.drywallPerSf, laborPct),
-    line('paint', 'Interior paint (+ waste)', sf(takeoff.paintAreaM2) * waste, 'sf', rates.paintPerSf, laborPct),
-    line('studs', 'Studs', takeoff.studCount, 'ea', rates.studEach, laborPct),
-    line('plates', 'Top/bottom plates', ft(takeoff.plateLengthM), 'lf', rates.platePerFt, laborPct),
-    line('headers', 'Headers (rough openings)', takeoff.headerCount, 'ea', rates.headerEach, laborPct),
+    line('footing', 'Continuous footing', '03 30 00', ft(takeoff.footingLengthM), 'lf', rates.footingPerFt, laborPct),
+    line('slab', 'Slab on grade', '03 30 00', sf(takeoff.slabAreaM2), 'sf', rates.slabPerSf, laborPct),
+    line('studs', 'Studs', '06 10 00', takeoff.studCount, 'ea', rates.studEach, laborPct),
+    line('plates', 'Top/bottom plates', '06 10 00', ft(takeoff.plateLengthM), 'lf', rates.platePerFt, laborPct),
+    line('headers', 'Headers (rough openings)', '06 10 00', takeoff.headerCount, 'ea', rates.headerEach, laborPct),
     line(
       'sheathing',
       'Exterior sheathing (+ waste)',
+      '06 16 00',
       sf(takeoff.exteriorSheathingAreaM2) * waste,
       'sf',
       rates.sheathingPerSf,
       laborPct,
     ),
-    line('insulation', 'Wall insulation', sf(takeoff.insulationAreaM2) * waste, 'sf', rates.insulationPerSf, laborPct),
-    line('baseboard', 'Baseboard', ft(takeoff.baseboardLengthM), 'lf', rates.baseboardPerFt, laborPct),
-    line('flooring', 'Flooring allowance', sf(takeoff.flooringAreaM2), 'sf', rates.flooringPerSf, laborPct),
-    line('slab', 'Slab on grade', sf(takeoff.slabAreaM2), 'sf', rates.slabPerSf, laborPct),
-    line('footing', 'Continuous footing', ft(takeoff.footingLengthM), 'lf', rates.footingPerFt, laborPct),
-    line('roof', 'Roofing (envelope proxy)', sf(takeoff.roofAreaM2), 'sf', rates.roofPerSf, laborPct),
-    line('doors', 'Doors (allowance)', takeoff.doorCount, 'ea', rates.doorEach, laborPct),
-    line('windows', 'Windows (allowance)', sf(takeoff.windowAreaM2), 'sf', rates.windowPerSf, laborPct),
+    line('roof', 'Roofing (envelope proxy)', '07 30 00', sf(takeoff.roofAreaM2), 'sf', rates.roofPerSf, laborPct),
+    line(
+      'insulation',
+      takeoff.avgInsulationR != null
+        ? `Wall insulation (R-${takeoff.avgInsulationR.toFixed(0)})`
+        : 'Wall insulation',
+      '07 21 00',
+      sf(takeoff.insulationAreaM2) * waste,
+      'sf',
+      rates.insulationPerSf,
+      laborPct,
+    ),
+    line('drywall', 'Drywall (both faces + waste)', '09 29 00', sf(takeoff.drywallAreaM2) * waste, 'sf', rates.drywallPerSf, laborPct),
+    line('paint', 'Interior paint (+ waste)', '09 91 00', sf(takeoff.paintAreaM2) * waste, 'sf', rates.paintPerSf, laborPct),
+    line('baseboard', 'Baseboard', '06 20 00', ft(takeoff.baseboardLengthM), 'lf', rates.baseboardPerFt, laborPct),
+    line('flooring', 'Flooring allowance', '09 60 00', sf(takeoff.flooringAreaM2), 'sf', rates.flooringPerSf, laborPct),
+    line('doors', 'Doors (allowance)', '08 10 00', takeoff.doorCount, 'ea', rates.doorEach, laborPct),
+    line('windows', 'Windows (allowance)', '08 50 00', sf(takeoff.windowAreaM2), 'sf', rates.windowPerSf, laborPct),
   ];
   return raw.filter((l): l is EstimateLine => !!l);
 }
@@ -180,5 +207,30 @@ export function diffEstimateAgainstBaseline(
     baselineGrandTotal: baseline.totals.grandTotal,
     delta: live.totals.grandTotal - baseline.totals.grandTotal,
     lineDeltas,
+  };
+}
+
+/** Mint a numbered change-order record from a live-vs-baseline diff. */
+export function createChangeOrderRecord(input: {
+  live: EstimateSnapshot;
+  baseline: EstimateSnapshot;
+  previous?: ChangeOrderRecord[];
+  label?: string;
+}): ChangeOrderRecord {
+  const delta = diffEstimateAgainstBaseline(input.live, input.baseline);
+  const number = (input.previous?.reduce((m, r) => Math.max(m, r.number), 0) ?? 0) + 1;
+  return {
+    id: crypto.randomUUID(),
+    number,
+    createdAt: new Date().toISOString(),
+    label: input.label ?? `CO-${String(number).padStart(3, '0')}`,
+    baselineVersion: input.baseline.version,
+    liveVersion: input.live.version,
+    delta: delta.delta ?? 0,
+    lineDeltas: delta.lineDeltas,
+    totals: {
+      baseline: input.baseline.totals.grandTotal,
+      live: input.live.totals.grandTotal,
+    },
   };
 }

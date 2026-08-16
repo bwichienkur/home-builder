@@ -10,10 +10,11 @@ import {
   buildEstimateLines,
   buildEstimateSnapshot,
   computeEstimateTotals,
+  createChangeOrderRecord,
   diffEstimateAgainstBaseline,
   ESTIMATE_DISCLAIMER,
 } from '../../lib/estimateSnapshot';
-import { canEditTradeRates } from '../../lib/platform/roles';
+import { canEditTradeRates, canManageEstimates } from '../../lib/platform/roles';
 import { useAuthStore } from '../../store/authStore';
 
 const M_TO_FT = 1 / 0.3048;
@@ -36,6 +37,7 @@ type BomRow = {
   name: string;
   brand?: string;
   sku?: string;
+  csi?: string;
   category: string;
   qty: number;
   unit?: string;
@@ -172,6 +174,8 @@ export function BomDialog({
     key: `const-${l.key}`,
     name: l.name,
     category: 'Construction',
+    sku: l.csi,
+    csi: l.csi,
     qty: l.qty,
     unit: l.unit,
     cost: l.unitCost,
@@ -184,8 +188,11 @@ export function BomDialog({
   const setEstimateSnapshot = usePlannerStore((s) => s.setEstimateSnapshot);
   const lockBaseline = usePlannerStore((s) => s.lockEstimateBaseline);
   const clearBaseline = usePlannerStore((s) => s.clearEstimateBaseline);
+  const changeOrders = usePlannerStore((s) => s.changeOrders);
+  const addChangeOrder = usePlannerStore((s) => s.addChangeOrder);
   const role = useAuthStore((s) => s.user?.role);
   const canEditRates = canEditTradeRates(role);
+  const canEstimate = canManageEstimates(role);
 
   const liveSnapPreview = useMemo(
     () => ({
@@ -255,7 +262,7 @@ export function BomDialog({
   const download = () => {
     const isEstimate = tab === 'estimate';
     const header = isEstimate
-      ? 'Section,SKU,Item,Category,Quantity,Unit,Material unit $,Labor $,Subtotal (mat+labor),Notes'
+      ? 'CSI,Section,SKU,Item,Category,Quantity,Unit,Material unit $,Labor $,Subtotal (mat+labor),Notes'
       : 'Vendor,SKU,Product,Category,Quantity,Unit,Unit price,Subtotal,Price status';
     const body = rows.map((row) => {
       if (isEstimate) {
@@ -265,6 +272,7 @@ export function BomDialog({
             ? row.laborCost ?? 0
             : row.laborCost ?? mat * 0.25;
         return [
+          row.csi ?? '',
           row.kind === 'construction' ? 'Construction' : 'FF&E',
           row.sku ?? row.key,
           row.name,
@@ -349,38 +357,93 @@ export function BomDialog({
               <button type="button" className="bom-rate-toggle" onClick={() => setRatesOpen((v) => !v)}>
                 {ratesOpen ? 'Hide trade rates' : canEditRates ? 'Edit trade rates' : 'View trade rates'}
               </button>
-              <button
-                type="button"
-                className="bom-rate-toggle"
-                onClick={() => {
-                  const snap = buildEstimateSnapshot({
-                    takeoff,
-                    rates: ratesPicked,
-                    previousVersion: baseline?.version ?? 0,
-                    label: 'Baseline',
-                  });
-                  setEstimateSnapshot(snap);
-                  lockBaseline();
-                }}
-                title="Lock current live estimate as change-order baseline"
-              >
-                Lock baseline
-              </button>
-              {baseline && (
+              {canEstimate && (
+                <button
+                  type="button"
+                  className="bom-rate-toggle"
+                  onClick={() => {
+                    const snap = buildEstimateSnapshot({
+                      takeoff,
+                      rates: ratesPicked,
+                      previousVersion: baseline?.version ?? 0,
+                      label: 'Baseline',
+                    });
+                    setEstimateSnapshot(snap);
+                    lockBaseline();
+                  }}
+                  title="Lock current live estimate as change-order baseline"
+                >
+                  Lock baseline
+                </button>
+              )}
+              {canEstimate && baseline && (
+                <button
+                  type="button"
+                  className="bom-rate-toggle"
+                  onClick={() => {
+                    const live = buildEstimateSnapshot({
+                      takeoff,
+                      rates: ratesPicked,
+                      previousVersion: baseline.version,
+                      label: `Live vs baseline v${baseline.version}`,
+                    });
+                    setEstimateSnapshot(live);
+                    const record = createChangeOrderRecord({
+                      live,
+                      baseline,
+                      previous: changeOrders,
+                    });
+                    addChangeOrder(record);
+                  }}
+                  title="Mint a numbered change-order record from live vs baseline"
+                >
+                  Create CO
+                </button>
+              )}
+              {canEstimate && baseline && (
                 <button type="button" className="bom-rate-reset" onClick={() => clearBaseline()}>
                   Clear baseline v{baseline.version}
                 </button>
               )}
             </div>
             {changeOrder.hasBaseline && changeOrder.delta != null && (
-              <p className="muted" style={{ marginTop: 8 }}>
-                Change order vs baseline v{changeOrder.baselineVersion}:{' '}
-                <strong>
-                  {changeOrder.delta >= 0 ? '+' : ''}
-                  ${changeOrder.delta.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                </strong>{' '}
-                (live ${changeOrder.liveGrandTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })})
-              </p>
+              <div style={{ marginTop: 8 }}>
+                <p className="muted">
+                  Change order vs baseline v{changeOrder.baselineVersion}:{' '}
+                  <strong>
+                    {changeOrder.delta >= 0 ? '+' : ''}
+                    ${changeOrder.delta.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                  </strong>{' '}
+                  (live ${changeOrder.liveGrandTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })})
+                </p>
+                {changeOrder.lineDeltas.length > 0 && (
+                  <ul className="muted" style={{ margin: '6px 0 0', paddingLeft: 18, fontSize: 12 }}>
+                    {changeOrder.lineDeltas.slice(0, 8).map((d) => (
+                      <li key={d.key}>
+                        {d.name}: {d.delta >= 0 ? '+' : ''}$
+                        {d.delta.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+            {changeOrders.length > 0 && (
+              <div style={{ marginTop: 10 }}>
+                <strong style={{ fontSize: 12 }}>Change orders</strong>
+                <ul className="muted" style={{ margin: '4px 0 0', paddingLeft: 18, fontSize: 12 }}>
+                  {changeOrders.map((co) => (
+                    <li key={co.id}>
+                      {co.label} · {co.delta >= 0 ? '+' : ''}$
+                      {co.delta.toLocaleString(undefined, { maximumFractionDigits: 0 })} ·{' '}
+                      {new Date(co.createdAt).toLocaleDateString()}
+                      {co.lineDeltas.length > 0
+                        ? ` · ${co.lineDeltas.length} line${co.lineDeltas.length === 1 ? '' : 's'}`
+                        : ''}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
             {ratesOpen && (
               <div className="bom-rate-grid">
@@ -469,7 +532,11 @@ export function BomDialog({
                       </small>
                     </td>
                     <td>
-                      {tab === 'ffe' ? row.brand ?? '—' : row.kind === 'construction' ? 'Takeoff' : row.brand ?? '—'}
+                      {tab === 'ffe'
+                        ? row.brand ?? '—'
+                        : row.kind === 'construction'
+                          ? row.csi ?? 'Takeoff'
+                          : row.brand ?? '—'}
                       <small>{row.sku ?? row.key}</small>
                     </td>
                     <td>{formatQty(row.qty, row.unit)}</td>

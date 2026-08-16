@@ -311,17 +311,21 @@ export default function StudioApp() {
             walls: active?.walls ?? [],
             openings: active?.openings ?? [],
             planRooms: active?.planRooms ?? [],
+            furniture: active?.furniture,
             unitSystem: store.unitSystem,
             floors: (() => {
               let elev = 0;
-              return inputs.map((input) => {
+              return inputs.map((input, i) => {
+                const floor = store.floors[i];
                 const heights = input.walls.map((w) => w.height).filter((h) => Number.isFinite(h) && h > 0);
-                const storyH = heights.length ? heights.reduce((a, b) => a + b, 0) / heights.length : 2.7;
+                const avgWall = heights.length ? heights.reduce((a, b) => a + b, 0) / heights.length : 2.7;
+                const storyH = floor?.storyHeightM ?? avgWall;
                 const entry = {
                   floorName: input.floorName || 'Level',
                   walls: input.walls,
                   openings: input.openings,
                   planRooms: input.planRooms,
+                  furniture: input.furniture,
                   elevationM: elev,
                 };
                 elev += storyH;
@@ -728,21 +732,67 @@ export default function StudioApp() {
 
           <section className="design-library">
             <div className="design-library-head">
-              <h3>Saved builds</h3>
+              <h3>
+                <Cloud size={14} aria-hidden /> Cloud projects
+              </h3>
+              <span>{cloudLoading ? '…' : cloudProjects.length}</span>
+            </div>
+            {cloudLoading ? (
+              <p className="muted design-library-empty cloud-library-empty">Checking cloud library…</p>
+            ) : !platformConfig.cloudConfigured() ? (
+              <p className="muted design-library-empty cloud-library-empty">
+                Set <code>VITE_API_URL</code> to make cloud the primary job library (estimates sync with the payload).
+              </p>
+            ) : cloudProjects.length === 0 ? (
+              <p className="muted design-library-empty cloud-library-empty">
+                No cloud jobs yet — Save embeds the estimate snapshot and syncs here first.
+              </p>
+            ) : (
+              <ul>
+                {cloudProjects.map((project) => {
+                  const active = cloudRef?.id === project.id;
+                  return (
+                    <li key={project.id} className={active ? 'is-active' : undefined}>
+                      <button type="button" className="design-open" onClick={() => void openCloudBuild(project)}>
+                        <strong>{project.name}</strong>
+                        <span>
+                          v{project.version} · {new Date(project.updatedAt).toLocaleDateString()}
+                          {active ? ' · editing' : ''}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+
+          <section className="design-library">
+            <div className="design-library-head">
+              <h3>{platformConfig.cloudConfigured() ? 'Local cache' : 'Saved builds'}</h3>
               <span>{designs.length}</span>
             </div>
             {designs.length === 0 ? (
-              <p className="muted design-library-empty">Save this design to see it here. Open a build to edit, or export the file / FF&E list from each row.</p>
+              <p className="muted design-library-empty">
+                {platformConfig.cloudConfigured()
+                  ? 'Browser cache of recent saves — cloud is the source of truth when the API is up.'
+                  : 'Save this design to see it here. Open a build to edit, or export the file / FF&E list from each row.'}
+              </p>
             ) : (
               <ul>
                 {designs.map((design) => {
                   const stamp = design.updatedAt ?? design.createdAt;
+                  const cos = design.payload.changeOrders?.length ?? 0;
                   return (
                     <li key={design.code} className={activeDesignCode === design.code ? 'is-active' : undefined}>
                       <button type="button" className="design-open" onClick={() => openSavedBuild(design)}>
                         <strong>{design.name}</strong>
                         <span>
                           {design.code} · {new Date(stamp).toLocaleDateString()}
+                          {design.payload.estimateSnapshot
+                            ? ` · est v${design.payload.estimateSnapshot.version}`
+                            : ''}
+                          {cos > 0 ? ` · ${cos} CO` : ''}
                           {activeDesignCode === design.code ? ' · editing' : ''}
                         </span>
                       </button>
@@ -786,39 +836,6 @@ export default function StudioApp() {
               <FileJson size={15} /> Import build file
               <input type="file" accept="application/json,.json" onChange={importProject} />
             </label>
-          </section>
-
-          <section className="design-library">
-            <div className="design-library-head">
-              <h3>
-                <Cloud size={14} aria-hidden /> Cloud projects
-              </h3>
-              <span>{cloudLoading ? '…' : cloudProjects.length}</span>
-            </div>
-            {cloudLoading ? (
-              <p className="muted design-library-empty cloud-library-empty">Checking cloud library…</p>
-            ) : cloudProjects.length === 0 ? (
-              <p className="muted design-library-empty cloud-library-empty">
-                Save while the API is connected to sync here. Local Saved builds stay on this device.
-              </p>
-            ) : (
-              <ul>
-                {cloudProjects.map((project) => {
-                  const active = cloudRef?.id === project.id;
-                  return (
-                    <li key={project.id} className={active ? 'is-active' : undefined}>
-                      <button type="button" className="design-open" onClick={() => void openCloudBuild(project)}>
-                        <strong>{project.name}</strong>
-                        <span>
-                          v{project.version} · {new Date(project.updatedAt).toLocaleDateString()}
-                          {active ? ' · editing' : ''}
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
           </section>
         </aside>
         </>

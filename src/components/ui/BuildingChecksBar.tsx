@@ -44,7 +44,8 @@ export function BuildingChecksBar() {
       walls,
       furniture,
       siteSetback,
-      storyHeightM: walls[0]?.height,
+      storyHeightM:
+        floors.find((f) => f.id === activeFloorId)?.storyHeightM ?? walls[0]?.height,
       floorCount: floors.length,
       floorsWithStairs,
     });

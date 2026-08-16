@@ -1,5 +1,5 @@
 import type { RoomType, UnitSystem } from '../types';
-import type { EstimateSnapshot } from './estimateSnapshot';
+import type { ChangeOrderRecord, EstimateSnapshot } from './estimateSnapshot';
 
 const DESIGNS_KEY = 'roomcraft-designs-v1';
 const RECOVERY_KEY = 'roomcraft-recovery-v1';
@@ -21,6 +21,8 @@ export type SharedDesign = {
     estimateSnapshot?: EstimateSnapshot | null;
     /** Locked baseline for change orders. */
     baselineEstimate?: EstimateSnapshot | null;
+    /** Numbered CO records minted while estimating. */
+    changeOrders?: ChangeOrderRecord[];
   };
 };
 

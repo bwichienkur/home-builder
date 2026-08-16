@@ -4,7 +4,7 @@ import {
   constructionTakeoffCsv,
   mergeConstructionTakeoffs,
 } from './constructionTakeoff';
-import { buildEstimateSnapshot, diffEstimateAgainstBaseline } from './estimateSnapshot';
+import { buildEstimateSnapshot, createChangeOrderRecord, diffEstimateAgainstBaseline } from './estimateSnapshot';
 import { DEFAULT_TRADE_RATES } from '../store/tradeRatesStore';
 import type { Wall } from '../types';
 
@@ -61,10 +61,29 @@ describe('computeConstructionTakeoff', () => {
     });
     const snap = buildEstimateSnapshot({ takeoff, rates: DEFAULT_TRADE_RATES });
     expect(snap.lines.length).toBeGreaterThan(5);
+    expect(snap.lines.every((l) => l.csi)).toBe(true);
     expect(snap.totals.grandTotal).toBeGreaterThan(snap.totals.subtotal);
     const next = buildEstimateSnapshot({ takeoff, rates: { ...DEFAULT_TRADE_RATES, drywallPerSf: 3 }, previousVersion: snap.version });
     const delta = diffEstimateAgainstBaseline(next, snap);
     expect(delta.hasBaseline).toBe(true);
     expect(delta.delta).not.toBe(0);
+    const co = createChangeOrderRecord({ live: next, baseline: snap });
+    expect(co.number).toBe(1);
+    expect(co.label).toMatch(/^CO-/);
+    expect(co.lineDeltas.length).toBeGreaterThan(0);
+  });
+
+  it('uses assembly R-values and stud spacing', () => {
+    const exterior: Wall[] = [
+      { id: 'a', start: { x: 0, y: 0 }, end: { x: 800, y: 0 }, thickness: 0.18, height: 2.7, assembly: 'exterior' },
+    ];
+    const interior: Wall[] = [
+      { id: 'b', start: { x: 0, y: 0 }, end: { x: 800, y: 0 }, thickness: 0.12, height: 2.7, assembly: 'interior' },
+    ];
+    const ext = computeConstructionTakeoff({ walls: exterior, openings: [], furniture: [], includeEnvelope: false });
+    const int = computeConstructionTakeoff({ walls: interior, openings: [], furniture: [], includeEnvelope: false });
+    expect(ext.avgInsulationR).toBeGreaterThan(15);
+    expect(int.insulationAreaM2).toBe(0);
+    expect(ext.studCount).toBeGreaterThan(int.studCount);
   });
 });

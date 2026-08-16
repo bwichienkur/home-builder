@@ -62,6 +62,33 @@ describe('IFC export', () => {
     expect(ifc).toContain('2.7000');
   });
 
+  it('emits IFCFURNISHINGELEMENT for furniture', () => {
+    const ifc = buildPlanIfc({
+      name: 'Furn',
+      walls,
+      openings,
+      planRooms: rooms,
+      furniture: [
+        {
+          id: 'f1',
+          catalogId: 'sofa',
+          name: 'Sofa',
+          category: 'Seating',
+          x: 1,
+          z: 1,
+          y: 0,
+          width: 2,
+          depth: 0.9,
+          height: 0.8,
+          rotation: 0,
+          color: '#888',
+        },
+      ],
+    });
+    expect(ifc).toContain('IFCFURNISHINGELEMENT');
+    expect(ifc).toContain('Sofa');
+  });
+
   it('inspects exported IFC text', () => {
     const ifc = buildPlanIfc({ walls, openings, planRooms: rooms });
     const info = inspectIfc(ifc);
