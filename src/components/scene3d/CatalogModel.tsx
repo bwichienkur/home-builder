@@ -445,15 +445,31 @@ export function ProxyFurniture({
       <group {...handlers}>
         <mesh position={[0, item.height * 0.72, -item.depth * 0.15]} castShadow>
           <boxGeometry args={[item.width * 0.7, item.height * 0.45, item.depth * 0.45]} />
-          <meshStandardMaterial color="#f2f2f2" roughness={0.35} />
+          <Surface worldSpan={item.width} roughness={0.28} />
         </mesh>
         <mesh position={[0, item.height * 0.32, item.depth * 0.08]} castShadow receiveShadow>
           <cylinderGeometry args={[item.width * 0.38, item.width * 0.42, item.height * 0.35, 20]} />
-          <meshStandardMaterial color="#f7f7f7" roughness={0.32} />
+          <Surface worldSpan={item.width} roughness={0.26} />
         </mesh>
         <mesh position={[0, item.height * 0.5, item.depth * 0.08]} castShadow>
           <cylinderGeometry args={[item.width * 0.34, item.width * 0.34, 0.04, 20]} />
-          <meshStandardMaterial color="#e8e8e8" roughness={0.4} />
+          <Surface worldSpan={item.width} roughness={0.32} />
+        </mesh>
+        {halo}
+      </group>
+    );
+  }
+
+  if (name.includes('bathtub') || (name.includes('tub') && !name.includes('bath towel'))) {
+    return (
+      <group {...handlers}>
+        <mesh position={[0, item.height * 0.45, 0]} castShadow receiveShadow>
+          <boxGeometry args={[item.width, item.height * 0.85, item.depth]} />
+          <Surface worldSpan={span} roughness={0.22} />
+        </mesh>
+        <mesh position={[0, item.height * 0.72, 0]}>
+          <boxGeometry args={[item.width * 0.88, item.height * 0.12, item.depth * 0.82]} />
+          <meshStandardMaterial color="#dfe8ec" roughness={0.15} metalness={0.05} />
         </mesh>
         {halo}
       </group>
@@ -461,24 +477,29 @@ export function ProxyFurniture({
   }
 
   if (name.includes('shower')) {
+    const enclosure = item.height > 0.5;
     return (
       <group {...handlers}>
-        <mesh position={[0, 0.04, 0]} receiveShadow>
-          <boxGeometry args={[item.width, 0.08, item.depth]} />
-          <meshStandardMaterial color="#d5d8db" roughness={0.55} />
+        <mesh position={[0, enclosure ? 0.04 : item.height / 2, 0]} receiveShadow>
+          <boxGeometry args={[item.width, enclosure ? 0.08 : Math.max(0.06, item.height), item.depth]} />
+          <Surface worldSpan={span} roughness={0.4} />
         </mesh>
-        <mesh position={[0, item.height * 0.5, -item.depth * 0.48]}>
-          <boxGeometry args={[item.width, item.height, 0.02]} />
-          <meshPhysicalMaterial color="#d9eef2" roughness={0.08} transmission={0.65} thickness={0.02} transparent opacity={0.55} />
-        </mesh>
-        <mesh position={[-item.width * 0.48, item.height * 0.5, 0]}>
-          <boxGeometry args={[0.02, item.height, item.depth]} />
-          <meshPhysicalMaterial color="#d9eef2" roughness={0.08} transmission={0.65} thickness={0.02} transparent opacity={0.55} />
-        </mesh>
-        <mesh position={[item.width * 0.35, item.height * 0.75, -item.depth * 0.4]} castShadow>
-          <sphereGeometry args={[0.05, 12, 12]} />
-          <meshStandardMaterial color="#c0c4c6" metalness={0.8} roughness={0.25} />
-        </mesh>
+        {enclosure && (
+          <>
+            <mesh position={[0, item.height * 0.5, -item.depth * 0.48]}>
+              <boxGeometry args={[item.width, item.height, 0.02]} />
+              <meshPhysicalMaterial color="#d9eef2" roughness={0.08} transmission={0.65} thickness={0.02} transparent opacity={0.55} />
+            </mesh>
+            <mesh position={[-item.width * 0.48, item.height * 0.5, 0]}>
+              <boxGeometry args={[0.02, item.height, item.depth]} />
+              <meshPhysicalMaterial color="#d9eef2" roughness={0.08} transmission={0.65} thickness={0.02} transparent opacity={0.55} />
+            </mesh>
+            <mesh position={[item.width * 0.35, item.height * 0.75, -item.depth * 0.4]} castShadow>
+              <sphereGeometry args={[0.05, 12, 12]} />
+              <meshStandardMaterial color="#c0c4c6" metalness={0.8} roughness={0.25} />
+            </mesh>
+          </>
+        )}
         {halo}
       </group>
     );

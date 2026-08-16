@@ -27,6 +27,19 @@ describe('materialPacks / realistic inventory', () => {
     expect(table?.modelUrl).toBe(MODEL_PACKS.diningTable.modelUrl);
   });
 
+  it('wires Quaternius bathroom fixtures and porcelain shower bases', () => {
+    const toilet = residentialFurniture.find((i) => i.id === 'toilet-standard');
+    const tub = residentialFurniture.find((i) => i.id === 'freestanding-tub');
+    const sink = residentialFurniture.find((i) => i.id === 'bathroom-pedestal-sink');
+    const enclosure = residentialFurniture.find((i) => i.id === 'shower-enclosure-36');
+    const base = residentialFurniture.find((i) => i.id === 'shower-base-36');
+    expect(toilet?.modelUrl).toBe(MODEL_PACKS.toilet.modelUrl);
+    expect(tub?.modelUrl).toBe(MODEL_PACKS.bathtub.modelUrl);
+    expect(sink?.modelUrl).toBe(MODEL_PACKS.sink.modelUrl);
+    expect(enclosure?.modelUrl).toBe(MODEL_PACKS.shower.modelUrl);
+    expect(base?.textureUrl).toContain('/catalog/materials/pbr/porcelain/');
+  });
+
   it('does not overwrite an existing textureUrl', () => {
     const item = enrichCatalogSurfaces([
       {
