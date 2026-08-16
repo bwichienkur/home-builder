@@ -112,7 +112,7 @@ type PlannerState = SceneSnapshot & {
   /** Plan-level “Add room” mode — pick a side of the selected room. */
   pendingAttachMode: boolean;
   setPendingAttachMode: (on: boolean) => void;
-  /** When true, plan-level Walls tool is armed (picks + dim cards + drag-resize). */
+  /** When true, plan-level Walls tool is armed (picks + drag-resize + openings). */
   planWallTool: boolean;
   setPlanWallTool: (on: boolean) => void;
   placePlanRoom: (center: Point, shape?: PlanRoomShape, name?: string) => string | null;
@@ -805,7 +805,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         studioMode: 'architect',
         cameraMode: 'top',
         view: '3d',
-        openingNotice: planWallTool ? 'Drag a wall to resize · tap for length & openings' : '',
+        openingNotice: planWallTool ? 'Drag a wall to resize · tap to select for openings' : '',
       }),
     placePlanRoom: (center, shape, name) => {
       const kind = shape ?? get().pendingRoomShape ?? 'rectangle';

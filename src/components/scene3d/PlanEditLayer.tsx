@@ -1,16 +1,9 @@
 import { Html, Line } from '@react-three/drei';
 import { useThree } from '@react-three/fiber';
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp } from 'lucide-react';
 import { WORLD_ORIGIN } from '../../lib/geometry/placement';
-import { detectRoomPolygons } from '../../lib/geometry/rooms';
-import {
-  defaultWallGrowSide,
-  wallDimFieldLayout,
-  wallExteriorSide,
-  type WallGrowSide,
-} from '../../lib/geometry/roomWalls';
 import {
   attachSideBlocked,
   attachSquareRoomPoints,
@@ -19,10 +12,8 @@ import {
   snapRoomCenterToNeighbors,
   type AttachSide,
 } from '../../lib/housePlans/buildPlan';
-import { PIXELS_PER_METER, wallLengthMeters } from '../../lib/geometry/snapping';
-import { formatLength, parseLength } from '../../lib/measurements';
+import { PIXELS_PER_METER } from '../../lib/geometry/snapping';
 import { usePlannerStore } from '../../store/plannerStore';
-import type { PlanRoomLabel } from '../../types';
 
 const world = (x: number, y: number): [number, number] => [
   (x - WORLD_ORIGIN.x) / PIXELS_PER_METER,
@@ -42,13 +33,13 @@ const ATTACH_SIDES: { side: AttachSide; label: string; Icon: typeof ArrowLeft }[
 ];
 
 /**
- * Top-view plan tools: attach rooms beside a host and edit wall length via an on-plan input.
+ * Top-view plan tools: attach rooms beside a host.
+ * Per-wall L/W/H dim editing is disabled for now (clashes with wall drag-resize).
  */
 export function PlanEditLayer() {
   const tool = usePlannerStore((s) => s.tool);
   const studioMode = usePlannerStore((s) => s.studioMode);
   const cameraMode = usePlannerStore((s) => s.cameraMode);
-  const walls = usePlannerStore((s) => s.walls);
   const planRooms = usePlannerStore((s) => s.planRooms);
   const selectedRoomId = usePlannerStore((s) => s.selectedRoomId);
   const setDraftStart = usePlannerStore((s) => s.setDraftStart);
@@ -56,20 +47,13 @@ export function PlanEditLayer() {
   const attachPlanRoom = usePlannerStore((s) => s.attachPlanRoom);
   const pendingRoomShape = usePlannerStore((s) => s.pendingRoomShape);
   const pendingAttachMode = usePlannerStore((s) => s.pendingAttachMode);
-  const planWallTool = usePlannerStore((s) => s.planWallTool);
   const setPendingRoomShape = usePlannerStore((s) => s.setPendingRoomShape);
-  const selectedWallId = usePlannerStore((s) => s.selectedWallId);
-  const setWallLength = usePlannerStore((s) => s.setWallLength);
-  const updateWall = usePlannerStore((s) => s.updateWall);
-  const unit = usePlannerStore((s) => s.unitSystem);
   const { invalidate } = useThree();
   const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
-  const [growSide, setGrowSide] = useState<WallGrowSide>('right');
   const roomPlace = useRef<{ pointerId: number; active: boolean } | null>(null);
   const floorPlane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), []);
 
   const active = studioMode === 'architect' && cameraMode === 'top';
-  const wallEdit = active && tool === 'select' && !pendingAttachMode && planWallTool;
   const placingRoom = active && (!!pendingRoomShape || tool === 'room');
   const hostRoom = planRooms.find((r) => r.id === selectedRoomId) ?? null;
   const showAttachSides = active && pendingAttachMode && !!hostRoom;
@@ -77,12 +61,6 @@ export function PlanEditLayer() {
   useEffect(() => {
     setDraftStart(null);
   }, [active, tool, setDraftStart]);
-
-  const selected = walls.find((w) => w.id === selectedWallId);
-
-  useEffect(() => {
-    if (selected) setGrowSide(defaultWallGrowSide(selected));
-  }, [selected?.id]);
 
   const shapeKind = pendingRoomShape ?? 'rectangle';
   const ghostOverlaps = useMemo(() => {
@@ -112,16 +90,6 @@ export function PlanEditLayer() {
       return { side, label, Icon, blocked, line, midX, midZ };
     });
   }, [hostRoom, planRooms]);
-
-  const roomsForExterior = useMemo((): PlanRoomLabel[] => {
-    if (planRooms.length) return planRooms;
-    return detectRoomPolygons(walls).map((points, i) => ({
-      id: `detected-${i}`,
-      name: `Room ${i + 1}`,
-      roomType: 'Living room' as const,
-      points,
-    }));
-  }, [planRooms, walls]);
 
   if (!active) return null;
 
@@ -176,32 +144,6 @@ export function PlanEditLayer() {
       window.dispatchEvent(new Event('roomcraft-refocus'));
     }, 40);
   };
-
-  const selectedLen = selected ? wallLengthMeters(selected.start, selected.end) : 0;
-
-  const selectedFrame = selected
-    ? (() => {
-        const [sx, sz] = world(selected.start.x, selected.start.y);
-        const [ex, ez] = world(selected.end.x, selected.end.y);
-        const len = Math.hypot(ex - sx, ez - sz) || 1;
-        const midX = (sx + ex) / 2;
-        const midZ = (sz + ez) / 2;
-        const angle = -Math.atan2(ez - sz, ex - sx);
-        const side = wallExteriorSide(selected, roomsForExterior);
-        const layout = wallDimFieldLayout(selected, side);
-        const { nx, ny: nz, cardOffsetM, placement, verticalOnPlan } = layout;
-        const s = layout.side;
-        return {
-          len,
-          midX,
-          midZ,
-          angle,
-          placement,
-          verticalOnPlan,
-          cardPos: [midX + nx * s * cardOffsetM, 0.12, midZ + nz * s * cardOffsetM] as [number, number, number],
-        };
-      })()
-    : null;
 
   return (
     <group>
@@ -261,148 +203,6 @@ export function PlanEditLayer() {
             </Html>
           </group>
         ))}
-
-      {wallEdit && selected && selectedFrame && (
-        <group>
-          <mesh position={[selectedFrame.midX, 0.04, selectedFrame.midZ]} rotation={[-Math.PI / 2, 0, selectedFrame.angle]} raycast={() => {}}>
-            <planeGeometry args={[selectedFrame.len, Math.max(0.18, (selected.thickness || 0.15) + 0.08)]} />
-            <meshBasicMaterial color="#0058a3" transparent opacity={0.2} depthWrite={false} />
-          </mesh>
-
-          <Html position={selectedFrame.cardPos} center zIndexRange={[120, 60]} style={{ pointerEvents: 'auto' }}>
-            <div
-              className={`wall-dim-card wall-dim-card--${selectedFrame.placement}`}
-              onPointerDown={(e) => e.stopPropagation()}
-            >
-              <div className="wall-dim-card-grow" role="group" aria-label="Which side to resize">
-                {selectedFrame.verticalOnPlan ? (
-                  <>
-                    <button
-                      type="button"
-                      className={growSide === 'up' ? 'is-active' : ''}
-                      aria-pressed={growSide === 'up'}
-                      title="Change the top end · keep bottom fixed"
-                      onClick={() => setGrowSide('up')}
-                    >
-                      <ArrowUp size={14} />
-                      <span>Up</span>
-                    </button>
-                    <button
-                      type="button"
-                      className={growSide === 'down' ? 'is-active' : ''}
-                      aria-pressed={growSide === 'down'}
-                      title="Change the bottom end · keep top fixed"
-                      onClick={() => setGrowSide('down')}
-                    >
-                      <ArrowDown size={14} />
-                      <span>Down</span>
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      type="button"
-                      className={growSide === 'left' ? 'is-active' : ''}
-                      aria-pressed={growSide === 'left'}
-                      title="Change the left end · keep right fixed"
-                      onClick={() => setGrowSide('left')}
-                    >
-                      <ArrowLeft size={14} />
-                      <span>Left</span>
-                    </button>
-                    <button
-                      type="button"
-                      className={growSide === 'right' ? 'is-active' : ''}
-                      aria-pressed={growSide === 'right'}
-                      title="Change the right end · keep left fixed"
-                      onClick={() => setGrowSide('right')}
-                    >
-                      <ArrowRight size={14} />
-                      <span>Right</span>
-                    </button>
-                  </>
-                )}
-              </div>
-              <div className="wall-dim-card-fields">
-                <WallDimField
-                  key={`L-${selected.id}-${unit}-${selectedLen.toFixed(3)}-${growSide}`}
-                  label="L"
-                  ariaLabel="Wall length"
-                  valueM={selectedLen}
-                  unit={unit}
-                  min={0.25}
-                  onChange={(meters) => setWallLength(selected.id, meters, growSide)}
-                />
-                <WallDimField
-                  key={`W-${selected.id}-${unit}-${selected.thickness.toFixed(3)}`}
-                  label="W"
-                  ariaLabel="Wall width"
-                  valueM={selected.thickness}
-                  unit={unit}
-                  min={0.05}
-                  onChange={(meters) => updateWall(selected.id, { thickness: meters })}
-                />
-                <WallDimField
-                  key={`H-${selected.id}-${unit}-${selected.height.toFixed(3)}`}
-                  label="H"
-                  ariaLabel="Wall height"
-                  valueM={selected.height}
-                  unit={unit}
-                  min={2}
-                  onChange={(meters) => updateWall(selected.id, { height: meters })}
-                />
-              </div>
-            </div>
-          </Html>
-        </group>
-      )}
     </group>
-  );
-}
-
-function WallDimField({
-  label,
-  ariaLabel,
-  valueM,
-  unit,
-  min,
-  onChange,
-}: {
-  label: string;
-  ariaLabel: string;
-  valueM: number;
-  unit: 'metric' | 'imperial';
-  min: number;
-  onChange: (meters: number) => void;
-}) {
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const commit = (raw: string) => {
-    const parsed = parseLength(raw, unit);
-    if (parsed == null) return;
-    onChange(Math.max(min, parsed));
-  };
-
-  const onSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    if (inputRef.current) commit(inputRef.current.value);
-  };
-
-  return (
-    <form className="wall-length-field" onSubmit={onSubmit}>
-      <strong>{label}</strong>
-      <input
-        ref={inputRef}
-        type="text"
-        inputMode="decimal"
-        aria-label={ariaLabel}
-        defaultValue={unit === 'metric' ? valueM.toFixed(2) : formatLength(valueM, unit)}
-        onBlur={(e) => commit(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-        }}
-      />
-      <span>{unit === 'metric' ? 'm' : 'ft/in'}</span>
-    </form>
   );
 }
