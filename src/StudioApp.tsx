@@ -34,7 +34,7 @@ import {
 } from './lib/designShare';
 import { downloadTextFile, shoppingListCsvFromDesign } from './lib/shoppingListCsv';
 import { formatArea } from './lib/measurements';
-import { drawFloorPlanToCanvas, downloadCanvasPdf, downloadCanvasPng, downloadPlanDxf } from './lib/planExport/drawFloorPlan';
+import { drawFloorPlanToCanvas, downloadCanvasPng, downloadPlanDxf, downloadScaledPlanPdf } from './lib/planExport/drawFloorPlan';
 
 const Scene3D = lazy(() => import('./components/scene3d/Scene3D').then((m) => ({ default: m.Scene3D })));
 
@@ -215,17 +215,17 @@ export default function StudioApp() {
       const base = `${projectName.replace(/[^\w\-]+/g, '-').toLowerCase() || 'mahnikka'}-plan`;
       if (format === 'dxf') {
         downloadPlanDxf(input, `${base}.dxf`);
-        notify('DXF exported');
+        notify('CAD DXF exported (walls, rooms, openings)');
+        return;
+      }
+      if (format === 'pdf') {
+        downloadScaledPlanPdf(input, `${base}.pdf`);
+        notify('Scaled floor plan + schedule PDF exported');
         return;
       }
       const canvas = drawFloorPlanToCanvas(input);
-      if (format === 'pdf') {
-        downloadCanvasPdf(canvas, `${base}.pdf`);
-        notify('Floor plan PDF exported');
-      } else {
-        downloadCanvasPng(canvas, `${base}.png`);
-        notify('Floor plan PNG exported');
-      }
+      downloadCanvasPng(canvas, `${base}.png`);
+      notify('Floor plan sheet PNG exported');
     },
     [projectName, store],
   );
@@ -487,13 +487,13 @@ export default function StudioApp() {
 
           <div className="menu-export-actions">
             <button type="button" className="menu-secondary" onClick={() => exportFloorPlan('pdf')} disabled={walls.length === 0}>
-              <Download size={16} /> Export floor plan PDF
+              <Download size={16} /> Export scaled plan PDF
             </button>
             <button type="button" className="menu-secondary" onClick={() => exportFloorPlan('png')} disabled={walls.length === 0}>
-              <Download size={16} /> Export plan PNG
+              <Download size={16} /> Export plan sheet PNG
             </button>
             <button type="button" className="menu-secondary" onClick={() => exportFloorPlan('dxf')} disabled={walls.length === 0}>
-              <FileJson size={16} /> Export DXF
+              <FileJson size={16} /> Export CAD DXF
             </button>
           </div>
 
