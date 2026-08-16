@@ -60,6 +60,8 @@ export type HousePlan = {
   livingSqFt: number;
   totalUnderRoofSqFt?: number;
   sourceUrl: string;
+  /** Direct link to the published Olsen flyer / brochure PDF when known. */
+  flyerUrl?: string;
   /** Clarifies these are flyer-derived layouts, not copied Olsen CAD drawings. */
   note: string;
   floors: HousePlanFloor[];

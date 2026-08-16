@@ -218,6 +218,84 @@ describe('house plan builder', () => {
     expect(again.points.length).toBe(8);
   });
 
+  it('confirms published brochure stats and flyer URLs for every Olsen plan', () => {
+    const brochure: Record<string, { living: number; total: number; beds: number; baths: number; stories: 1 | 2 }> = {
+      'coral-sands': { living: 3721, total: 5481, beds: 4, baths: 4, stories: 2 },
+      islamorada: { living: 2638, total: 3864, beds: 4, baths: 3, stories: 1 },
+      largo: { living: 2907, total: 4163, beds: 3, baths: 3, stories: 1 },
+      captiva: { living: 2997, total: 4065, beds: 3, baths: 3, stories: 2 },
+      'key-biscayne': { living: 3894, total: 5703, beds: 4, baths: 4, stories: 2 },
+      sanibel: { living: 2997, total: 3822, beds: 3, baths: 4, stories: 2 },
+      'st-croix': { living: 2781, total: 3953, beds: 4, baths: 4, stories: 2 },
+      'st-thomas': { living: 2568, total: 3402, beds: 4, baths: 3, stories: 1 },
+      'st-johns': { living: 2663, total: 3410, beds: 4, baths: 2.5, stories: 2 },
+      ravello: { living: 2622, total: 3471, beds: 4, baths: 3.5, stories: 2 },
+      tradewinds: { living: 3110, total: 4739, beds: 3, baths: 3, stories: 1 },
+      driftwood: { living: 2947, total: 4211, beds: 3, baths: 3.5, stories: 1 },
+      'oyster-bay': { living: 3299, total: 5115, beds: 3, baths: 3.5, stories: 1 },
+      sandbridge: { living: 4874, total: 6773, beds: 4, baths: 4, stories: 1 },
+      marbella: { living: 2683, total: 3582, beds: 4, baths: 3, stories: 1 },
+      verona: { living: 3261, total: 4747, beds: 4, baths: 3.5, stories: 1 },
+      'villa-della-dolce-vita': { living: 4176, total: 6670, beds: 4, baths: 4, stories: 2 },
+      portofino: { living: 4272, total: 6528, beds: 4, baths: 3.5, stories: 2 },
+      tidelands: { living: 3560, total: 5353, beds: 4, baths: 4, stories: 1 },
+      capri: { living: 2767, total: 3920, beds: 3, baths: 3.5, stories: 1 },
+      granada: { living: 2565, total: 3531, beds: 4, baths: 2.5, stories: 2 },
+      santorini: { living: 3505, total: 5220, beds: 4, baths: 4, stories: 1 },
+    };
+    expect(Object.keys(brochure).sort()).toEqual(olsenHousePlans.map((p) => p.id).sort());
+    for (const plan of olsenHousePlans) {
+      const expected = brochure[plan.id]!;
+      expect(plan.livingSqFt).toBe(expected.living);
+      expect(plan.totalUnderRoofSqFt).toBe(expected.total);
+      expect(plan.beds).toBe(expected.beds);
+      expect(plan.baths).toBe(expected.baths);
+      expect(plan.stories).toBe(expected.stories);
+      expect(plan.flyerUrl).toMatch(/^https:\/\/olsencustomhomes\.com\/wp-content\/uploads\/.+\.pdf$/);
+      expect(buildHouse(plan).floors.length).toBe(expected.stories);
+    }
+  });
+
+  it('uses polygon footprints for non-rectangular brochure features', () => {
+    const isAxisAlignedRect = (pts: { x: number; y: number }[]) => {
+      if (pts.length !== 4) return false;
+      const xs = new Set(pts.map((p) => Math.round(p.x * 1000)));
+      const ys = new Set(pts.map((p) => Math.round(p.y * 1000)));
+      return xs.size === 2 && ys.size === 2;
+    };
+
+    const oyster = getHousePlan('oyster-bay')!;
+    const garage = oyster.floors[0]!.rooms.find((r) => r.name === 'Garage')!;
+    expect(garage.pointsFt).toBeTruthy();
+    expect(isAxisAlignedRect(garage.pointsFt!)).toBe(false);
+    expect(oyster.floors[0]!.rooms.find((r) => r.name === 'Breakfast')!.pointsFt!.length).toBeGreaterThan(4);
+    const maxX = Math.max(...oyster.floors[0]!.rooms.map((r) => r.x + r.w));
+    const maxY = Math.max(...oyster.floors[0]!.rooms.map((r) => r.y + r.h));
+    expect(maxX).toBeCloseTo(89, 0);
+    expect(maxY).toBeCloseTo(90, 0);
+
+    const driftwood = getHousePlan('driftwood')!;
+    expect(driftwood.floors[0]!.rooms.find((r) => r.name === 'Great Room')!.pointsFt!.length).toBeGreaterThan(4);
+    expect(driftwood.floors[0]!.rooms.find((r) => r.name === 'Lanai')!.pointsFt!.length).toBeGreaterThan(4);
+
+    const tidelands = getHousePlan('tidelands')!;
+    expect(tidelands.floors[0]!.rooms.find((r) => r.name === 'Lanai')!.pointsFt!.length).toBeGreaterThan(4);
+
+    const santorini = getHousePlan('santorini')!;
+    expect(santorini.floors[0]!.rooms.find((r) => r.name === 'Family Room')!.pointsFt).toHaveLength(8);
+    expect(santorini.floors[0]!.rooms.find((r) => r.name === 'Dinette')!.pointsFt!.length).toBeGreaterThan(4);
+
+    for (const id of ['oyster-bay', 'driftwood', 'santorini', 'sandbridge']) {
+      const built = buildHouse(getHousePlan(id)!);
+      const hasDiagonal = built.floors[0]!.scene.walls.some((w) => {
+        const dx = Math.abs(w.end.x - w.start.x);
+        const dy = Math.abs(w.end.y - w.start.y);
+        return dx > 1 && dy > 1;
+      });
+      expect(hasDiagonal).toBe(true);
+    }
+  });
+
   it('applies a house plan into the planner store with floors', () => {
     usePlannerStore.setState({
       walls: [],
