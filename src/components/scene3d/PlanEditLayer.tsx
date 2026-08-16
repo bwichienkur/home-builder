@@ -56,6 +56,7 @@ export function PlanEditLayer() {
   const attachPlanRoom = usePlannerStore((s) => s.attachPlanRoom);
   const pendingRoomShape = usePlannerStore((s) => s.pendingRoomShape);
   const pendingAttachMode = usePlannerStore((s) => s.pendingAttachMode);
+  const planWallTool = usePlannerStore((s) => s.planWallTool);
   const setPendingRoomShape = usePlannerStore((s) => s.setPendingRoomShape);
   const selectedWallId = usePlannerStore((s) => s.selectedWallId);
   const setWallLength = usePlannerStore((s) => s.setWallLength);
@@ -68,7 +69,7 @@ export function PlanEditLayer() {
   const floorPlane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), []);
 
   const active = studioMode === 'architect' && cameraMode === 'top';
-  const wallEdit = active && tool === 'select' && !pendingAttachMode;
+  const wallEdit = active && tool === 'select' && !pendingAttachMode && planWallTool;
   const placingRoom = active && (!!pendingRoomShape || tool === 'room');
   const hostRoom = planRooms.find((r) => r.id === selectedRoomId) ?? null;
   const showAttachSides = active && pendingAttachMode && !!hostRoom;

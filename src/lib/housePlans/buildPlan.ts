@@ -659,3 +659,54 @@ export function attachSideBlocked(
   }
   return false;
 }
+
+function pointNearWallSegment(
+  p: Point,
+  a: Point,
+  b: Point,
+  tol: number,
+) {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const len2 = dx * dx + dy * dy || 1;
+  const t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / len2));
+  const proj = { x: a.x + dx * t, y: a.y + dy * t };
+  return Math.hypot(p.x - proj.x, p.y - proj.y) <= tol;
+}
+
+/**
+ * Move plan-room corners that lie on `wall` by a plan-pixel delta constrained to the
+ * wall’s normal (vertical wall → horizontal resize; horizontal wall → depth resize).
+ * Returns null when the nudge would shrink a room below the minimum size.
+ */
+export function nudgePlanRoomsByWall(
+  wall: { start: Point; end: Point },
+  labels: { id: string; name: string; roomType: RoomType; points: Point[]; floorColor?: string }[],
+  deltaPxX: number,
+  deltaPxY: number,
+  tol = 28,
+  minFt = 3,
+): typeof labels | null {
+  const dx = wall.end.x - wall.start.x;
+  const dy = wall.end.y - wall.start.y;
+  const vertical = Math.abs(dx) <= Math.abs(dy);
+  const moveX = vertical ? deltaPxX : 0;
+  const moveY = vertical ? 0 : deltaPxY;
+  if (Math.abs(moveX) < 0.05 && Math.abs(moveY) < 0.05) return labels;
+
+  const next = labels.map((room) => ({
+    ...room,
+    points: room.points.map((p) =>
+      pointNearWallSegment(p, wall.start, wall.end, tol)
+        ? { x: p.x + moveX, y: p.y + moveY }
+        : p,
+    ),
+  }));
+
+  for (const room of next) {
+    if (room.points.length < 3) return null;
+    const size = planRoomSizeFeet(room.points);
+    if (size.widthFt < minFt || size.depthFt < minFt) return null;
+  }
+  return next;
+}
