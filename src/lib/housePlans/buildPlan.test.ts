@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildFloorFromRooms, buildHouse, livingAreaSqFt, planRoomSizeFeet, proposedRoomOverlaps, row, shapedRoomPoints, splitPlanRoomPoints, squareRoomPoints, attachSquareRoomPoints, attachSideBlocked, nudgePlanRoomsByWall } from './buildPlan';
+import { buildFloorFromRooms, buildHouse, livingAreaSqFt, planRoomSizeFeet, proposedRoomOverlaps, rebuildFromPlanRooms, row, shapedRoomPoints, splitPlanRoomPoints, squareRoomPoints, attachSquareRoomPoints, attachSideBlocked, nudgePlanRoomsByWall } from './buildPlan';
 import { WORLD_ORIGIN } from '../geometry/placement';
 import { assertPlanCatalog, getHousePlan, listHousePlanNames, olsenHousePlans } from './olsenPlans';
 import { usePlannerStore } from '../../store/plannerStore';
@@ -171,7 +171,9 @@ describe('house plan builder', () => {
     expect(plan.totalUnderRoofSqFt).toBe(6773);
     const rooms = plan.floors[0]!.rooms;
     const names = rooms.map((r) => r.name);
-    expect(names).toEqual(expect.arrayContaining(['Den', 'Garage', 'Great Room', 'Lanai', 'Club Room', "Owner's Suite"]));
+    expect(names).toEqual(
+      expect.arrayContaining(['Den', 'Garage', 'Great Room', 'Lanai', 'Club Room', "Owner's Suite", 'Gallery', 'Breakfast']),
+    );
     expect(names.filter((n) => /^Bedroom \d/.test(n) || n === "Owner's Suite")).toHaveLength(4);
 
     const maxX = Math.max(...rooms.map((r) => r.x + r.w));
@@ -184,10 +186,36 @@ describe('house plan builder', () => {
     expect(garage.w * garage.h).toBeCloseTo(1033, -1);
 
     const lanai = rooms.find((r) => r.name === 'Lanai')!;
-    expect(lanai.w * lanai.h).toBeCloseTo(785, -1);
-    // Lanai sits in the crook (not a rear strip across the full width)
+    expect(lanai.pointsFt?.length).toBeGreaterThan(4);
+    // Lanai sits in the crook with an angled rear edge
     expect(lanai.w).toBeLessThan(40);
     expect(lanai.x).toBeGreaterThan(10);
+
+    const gallery = rooms.find((r) => r.name === 'Gallery')!;
+    expect(gallery.pointsFt).toHaveLength(8);
+    const breakfast = rooms.find((r) => r.name === 'Breakfast')!;
+    expect(breakfast.pointsFt).toHaveLength(8);
+
+    const built = buildHouse(plan);
+    const polys = built.floors[0]!.roomPolygons;
+    expect(polys.find((p) => p.name === 'Gallery')!.points.length).toBe(8);
+    const diagonalWall = built.floors[0]!.scene.walls.some((w) => {
+      const dx = Math.abs(w.end.x - w.start.x);
+      const dy = Math.abs(w.end.y - w.start.y);
+      return dx > 1 && dy > 1;
+    });
+    expect(diagonalWall).toBe(true);
+  });
+
+  it('preserves non-rectangular room polygons when rebuilding from plan labels', () => {
+    const plan = getHousePlan('sandbridge')!;
+    const built = buildHouse(plan);
+    const labels = built.floors[0]!.roomPolygons;
+    const gallery = labels.find((p) => p.name === 'Gallery')!;
+    expect(gallery.points.length).toBe(8);
+    const rebuilt = rebuildFromPlanRooms(labels, 'sandbridge-1', 2.74);
+    const again = rebuilt.roomPolygons.find((p) => p.name === 'Gallery')!;
+    expect(again.points.length).toBe(8);
   });
 
   it('applies a house plan into the planner store with floors', () => {

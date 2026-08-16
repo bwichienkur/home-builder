@@ -4,7 +4,7 @@ import type { RoomType } from '../../types';
 
 const SOURCE = 'https://olsencustomhomes.com/floor-plans-with-a-custom-home-builder-new-smyrna/';
 const NOTE =
-  'Room sizes and adjacency derived from Olsen Custom Homes published floor-plan flyers. Axis-aligned simplification for the planner — not a CAD tracing of Olsen drawings.';
+  'Room sizes and adjacency derived from Olsen Custom Homes published floor-plan flyers. Polygon footprints (including octagons and 45° walls) where the flyer is non-rectangular; otherwise axis-aligned. Not a CAD tracing of Olsen drawings.';
 
 function plan(
   partial: Omit<HousePlan, 'note' | 'sourceUrl'> & { sourceUrl?: string; note?: string },
@@ -38,6 +38,32 @@ export function room(
     y,
     w,
     h,
+    ceilingFt,
+  };
+}
+
+/** Polygon room in plan feet; x/y/w/h become the axis-aligned bounds. */
+export function poly(
+  name: string,
+  roomType: RoomType | string,
+  pointsFt: { x: number; y: number }[],
+  ceilingFt?: number,
+): PlanRoomRect {
+  const xs = pointsFt.map((p) => p.x);
+  const ys = pointsFt.map((p) => p.y);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  return {
+    id: `${name.toLowerCase().replace(/\W+/g, '-')}-${Math.round(minX * 10)}-${Math.round(minY * 10)}`,
+    name,
+    roomType: roomType as RoomType,
+    x: minX,
+    y: minY,
+    w: maxX - minX,
+    h: maxY - minY,
+    pointsFt,
     ceilingFt,
   };
 }
@@ -499,36 +525,52 @@ function oyster_bay(): HousePlan {
 
 function sandbridge(): HousePlan {
   // Coastal Collection flyer: 70'w × 115'd, 4 bed / 4 bath / den / 3-car garage.
-  // C-courtyard topology (front at y=0): den + recessed entry left-of-garage,
-  // owner wing left, great room / kitchen center, guest bedrooms + club right,
-  // lanai in the rear crook. Axis-aligned simplification of angled wings.
+  // Non-rectangular flyer features kept as polygons: octagonal gallery + breakfast,
+  // chamfered den/owner suite/club, angled lanai. Wings remain mostly orthogonal.
   const rooms: PlanRoomRect[] = [
-    room('Garage', 'Storage /wardrobe', 36, 0, 34, 30.4, 10),
-    room('Den', 'Office', 0, 0, 16, 18, 12),
-    room('Entry', 'Outdoor', 16, 0, 20, 4.05, 10),
-    room('Foyer', 'Hallway', 16, 4.05, 20, 14, 13),
-    room('Powder', 'Bathroom', 0, 18, 8, 8, 10),
-    room("Owner's Suite", 'Bedroom', 0, 26, 18, 26, 10),
-    room("Owner's Bath", 'Bathroom', 0, 52, 10, 14, 10),
-    room('WIC', 'Storage / wardrobe', 10, 52, 8, 14, 10),
-    room('WIC B', 'Storage / wardrobe', 0, 66, 18, 8, 10),
-    room('Owner Hall', 'Hallway', 18, 26, 6, 48, 10),
-    room('Gallery', 'Hallway', 24, 18.05, 12, 12.35, 12),
-    room('Great Room', 'Living room', 24, 30.4, 28, 28, 12),
-    room('Kitchen', 'Kitchen', 52, 30.4, 12, 16, 12),
-    room('Breakfast', 'Dining room', 64, 30.4, 6, 16, 12),
-    room('Pantry', 'Storage /wardrobe', 52, 46.4, 8, 12, 12),
-    room('Laundry', 'Laundry', 60, 46.4, 10, 12, 10),
-    room('Bedroom 2', 'Bedroom', 52, 58.4, 12, 14, 10),
-    room('Bath 2', 'Bathroom', 64, 58.4, 6, 14, 10),
-    room('Bedroom 3', 'Bedroom', 52, 72.4, 12, 14, 10),
-    room('Bath 3', 'Bathroom', 64, 72.4, 6, 14, 10),
-    room('Bedroom 4', 'Bedroom', 52, 86.4, 12, 14, 10),
-    room('Bath 4', 'Bathroom', 64, 86.4, 6, 10, 10),
-    room('WIC 4', 'Storage / wardrobe', 64, 96.4, 6, 4, 10),
-    room('Club Room', 'Living room', 52, 100.4, 18, 14.6, 10),
-    room('Sitting', 'Living room', 0, 74, 24, 26, 10),
-    room('Lanai', 'Outdoor', 24, 58.4, 28, 28, 10),
+    poly('Garage', 'Storage /wardrobe', [{ x: 36, y: 0 }, { x: 70, y: 0 }, { x: 70, y: 30.4 }, { x: 36, y: 30.4 }], 10),
+    poly('Den', 'Office', [{ x: 0, y: 2 }, { x: 2, y: 0 }, { x: 16, y: 0 }, { x: 16, y: 18 }, { x: 0, y: 18 }], 12),
+    poly('Entry', 'Outdoor', [{ x: 16, y: 0 }, { x: 36, y: 0 }, { x: 36, y: 4.05 }, { x: 16, y: 4.05 }], 10),
+    poly('Powder', 'Bathroom', [{ x: 0, y: 18 }, { x: 8, y: 18 }, { x: 8, y: 26 }, { x: 0, y: 26 }], 10),
+    poly('Foyer', 'Hallway', [{ x: 16, y: 4.05 }, { x: 36, y: 4.05 }, { x: 36, y: 22 }, { x: 24, y: 22 }, { x: 20, y: 18 }, { x: 16, y: 18 }], 13),
+    poly("Owner's Suite", 'Bedroom', [{ x: 0, y: 26 }, { x: 18, y: 26 }, { x: 18, y: 50 }, { x: 12, y: 56 }, { x: 0, y: 56 }], 10),
+    poly("Owner's Bath", 'Bathroom', [{ x: 0, y: 56 }, { x: 10, y: 56 }, { x: 10, y: 70 }, { x: 0, y: 66 }], 10),
+    poly('WIC', 'Storage /wardrobe', [{ x: 10, y: 56 }, { x: 18, y: 56 }, { x: 18, y: 70 }, { x: 10, y: 70 }], 10),
+    poly('WIC B', 'Storage /wardrobe', [{ x: 0, y: 70 }, { x: 18, y: 70 }, { x: 18, y: 78 }, { x: 0, y: 78 }], 10),
+    poly('Owner Hall', 'Hallway', [{ x: 18, y: 26 }, { x: 20, y: 26 }, { x: 20, y: 78 }, { x: 18, y: 78 }], 10),
+    poly('Sitting', 'Living room', [{ x: 0, y: 78 }, { x: 24, y: 78 }, { x: 24, y: 100 }, { x: 0, y: 100 }], 10),
+    poly('Gallery', 'Hallway', [
+      { x: 27.3, y: 34 }, { x: 36.7, y: 34 }, { x: 40, y: 37.3 }, { x: 40, y: 46.7 },
+      { x: 36.7, y: 50 }, { x: 27.3, y: 50 }, { x: 24, y: 46.7 }, { x: 24, y: 37.3 },
+    ], 12),
+    poly('Vestibule', 'Hallway', [
+      { x: 24, y: 22 }, { x: 36, y: 22 }, { x: 36, y: 30.4 }, { x: 36.7, y: 30.4 },
+      { x: 36.7, y: 34 }, { x: 27.3, y: 34 }, { x: 24, y: 37.3 },
+    ], 13),
+    poly('Great Room', 'Living room', [
+      { x: 20, y: 22 }, { x: 24, y: 37.3 }, { x: 24, y: 46.7 }, { x: 27.3, y: 50 },
+      { x: 36.7, y: 50 }, { x: 48, y: 48 }, { x: 48, y: 56 }, { x: 20, y: 56 },
+    ], 12),
+    poly('Kitchen', 'Kitchen', [
+      { x: 36.7, y: 30.4 }, { x: 50.5, y: 30.4 }, { x: 50.5, y: 36.8 }, { x: 50.5, y: 43.2 },
+      { x: 50.5, y: 48 }, { x: 48, y: 48 }, { x: 36.7, y: 50 }, { x: 40, y: 46.7 },
+      { x: 40, y: 37.3 }, { x: 36.7, y: 34 },
+    ], 12),
+    poly('Breakfast', 'Dining room', [
+      { x: 52.8, y: 34.5 }, { x: 59.2, y: 34.5 }, { x: 61.5, y: 36.8 }, { x: 61.5, y: 43.2 },
+      { x: 59.2, y: 45.5 }, { x: 52.8, y: 45.5 }, { x: 50.5, y: 43.2 }, { x: 50.5, y: 36.8 },
+    ], 12),
+    poly('Pantry', 'Storage /wardrobe', [{ x: 48, y: 48 }, { x: 56, y: 48 }, { x: 56, y: 56 }, { x: 48, y: 56 }], 10),
+    poly('Laundry', 'Laundry', [{ x: 56, y: 48 }, { x: 70, y: 48 }, { x: 70, y: 56 }, { x: 56, y: 56 }], 10),
+    poly('Bedroom 2', 'Bedroom', [{ x: 48, y: 56 }, { x: 62, y: 56 }, { x: 62, y: 70 }, { x: 48, y: 70 }], 10),
+    poly('Bath 2', 'Bathroom', [{ x: 62, y: 56 }, { x: 70, y: 56 }, { x: 70, y: 70 }, { x: 62, y: 70 }], 10),
+    poly('Bedroom 3', 'Bedroom', [{ x: 48, y: 70 }, { x: 62, y: 70 }, { x: 62, y: 84 }, { x: 48, y: 84 }], 10),
+    poly('Bath 3', 'Bathroom', [{ x: 62, y: 70 }, { x: 70, y: 70 }, { x: 70, y: 84 }, { x: 62, y: 84 }], 10),
+    poly('Bedroom 4', 'Bedroom', [{ x: 48, y: 84 }, { x: 62, y: 84 }, { x: 62, y: 98 }, { x: 48, y: 98 }], 10),
+    poly('Bath 4', 'Bathroom', [{ x: 62, y: 84 }, { x: 70, y: 84 }, { x: 70, y: 94 }, { x: 62, y: 94 }], 10),
+    poly('WIC 4', 'Storage /wardrobe', [{ x: 62, y: 94 }, { x: 70, y: 94 }, { x: 70, y: 100 }, { x: 62, y: 100 }], 10),
+    poly('Club Room', 'Living room', [{ x: 48, y: 100 }, { x: 70, y: 100 }, { x: 70, y: 115 }, { x: 52, y: 115 }, { x: 48, y: 110 }], 10),
+    poly('Lanai', 'Outdoor', [{ x: 24, y: 56 }, { x: 48, y: 56 }, { x: 48, y: 82 }, { x: 36, y: 96 }, { x: 24, y: 82 }], 10),
   ];
   return plan({
     id: 'sandbridge',
