@@ -63,6 +63,7 @@ function sample(partial: Partial<InventoryRecord> = {}): InventoryRecord {
     textureUrl: '/catalog/floors/pbr/stone-tile-color.jpg',
     roughnessMapUrl: '/catalog/floors/pbr/stone-tile-rough.jpg',
     normalMapUrl: '/catalog/floors/pbr/stone-tile-normal.jpg',
+    metalnessMapUrl: '',
     textureRepeat: 0.45,
     modelUrl: '',
     lowPolyModelUrl: '',

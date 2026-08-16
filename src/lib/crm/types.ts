@@ -182,6 +182,7 @@ export const inventoryRecordSchema = z.object({
   textureUrl: z.string().default(''),
   roughnessMapUrl: z.string().default(''),
   normalMapUrl: z.string().default(''),
+  metalnessMapUrl: z.string().default(''),
   textureRepeat: z.number().positive().optional(),
   roughness: z.number().min(0).max(1).optional(),
   modelUrl: z.string().default(''),

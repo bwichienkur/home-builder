@@ -1817,10 +1817,25 @@ function Furniture() {
 
   const urlsFor = (item: FurnitureItem) => {
     const product = catalogById.get(item.catalogId);
+    const isWallArt =
+      item.mountingType === 'wall' ||
+      /picture|mirror|art/i.test(item.name) ||
+      product?.placementMode === 'wall-art';
     return {
       lowUrl: product?.lowPolyModelUrl || product?.modelUrl,
       fullUrl: product?.modelUrl || product?.lowPolyModelUrl,
-      textureUrl: product?.thumbnailUrl,
+      // Wall art still uses thumbnail / face images; millwork uses PBR textureUrl.
+      textureUrl: isWallArt ? product?.thumbnailUrl || product?.textureUrl : undefined,
+      surfaceMaps: product?.textureUrl
+        ? {
+            textureUrl: product.textureUrl,
+            roughnessMapUrl: product.roughnessMapUrl,
+            normalMapUrl: product.normalMapUrl,
+            metalnessMapUrl: product.metalnessMapUrl,
+            textureRepeat: product.textureRepeat,
+            roughness: product.roughness,
+          }
+        : undefined,
     };
   };
 
@@ -1840,6 +1855,7 @@ function Furniture() {
                 lowUrl={urls.lowUrl}
                 fullUrl={urls.fullUrl}
                 textureUrl={urls.textureUrl}
+                surfaceMaps={urls.surfaceMaps}
                 colliding={collisions.has(i.id)}
                 onSelect={(e) => {
                   e.stopPropagation();

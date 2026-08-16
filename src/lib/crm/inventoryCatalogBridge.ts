@@ -81,6 +81,7 @@ export function inventoryRecordToCatalogItem(row: InventoryRecord): CatalogItem 
     textureUrl: row.textureUrl || undefined,
     roughnessMapUrl: row.roughnessMapUrl || undefined,
     normalMapUrl: row.normalMapUrl || undefined,
+    metalnessMapUrl: row.metalnessMapUrl || undefined,
     textureRepeat: row.textureRepeat,
     roughness: row.roughness,
     modelUrl: row.modelUrl || undefined,

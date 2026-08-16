@@ -1,0 +1,2 @@
+Materials: ambientCG CC0 (Wood026, Wood048, PaintedPlaster017, Marble013, Granite001A, Metal034, Fabric048) — https://ambientcg.com/
+Models: Poly Haven CC0 (sofa_02, Sofa_01, wooden_table_02, CoffeeTable_01, ClassicConsole_01, modern_arm_chair_01, mid_century_lounge_chair, side_table_01) — https://polyhaven.com/

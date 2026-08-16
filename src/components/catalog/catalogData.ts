@@ -1,9 +1,10 @@
 import { residentialFlooring } from './residentialFlooring';
 import { residentialFurniture } from './residentialFurniture';
+import { enrichCatalogSurfaces } from './materialPacks';
 
 export type PriceUnit='each'|'set'|'box'|'sq ft'|'linear ft'|'allowance';
 export type CatalogPlacementMode = 'wall-art' | 'ceiling-perimeter' | 'floor-perimeter' | 'floor-fill';
-export type CatalogItem={id:string;sku?:string;vendorId?:string;name:string;brand?:string;model?:string;category:string;subcategory?:string;roomTypes?:string[];tags?:string[];dims:[number,number,number];color:string;price?:number;msrp?:number;cost?:number;laborCost?:number;currency?:string;priceUnit?:PriceUnit;priceVerifiedAt?:string;sellable?:boolean;placeholderOnly?:boolean;mountingType?:string;placementSurfaces?:string[];placementMode?:CatalogPlacementMode;finish?:string;material?:string;variantGroup?:string;variantName?:string;availability?:string;leadTimeDays?:number;thumbnailUrl?:string;/** Albedo / pattern map shown on room floors (floor-fill) or product faces. */textureUrl?:string;/** Optional roughness map (linear) for floor-fill PBR. */roughnessMapUrl?:string;/** Optional normal map for floor-fill PBR. */normalMapUrl?:string;/** World meters covered by one texture repeat (smaller = denser pattern). */textureRepeat?:number;roughness?:number;modelUrl?:string;lowPolyModelUrl?:string;emoji:string;sourceUrl?:string;sourceLabel?:string;note?:string};
+export type CatalogItem={id:string;sku?:string;vendorId?:string;name:string;brand?:string;model?:string;category:string;subcategory?:string;roomTypes?:string[];tags?:string[];dims:[number,number,number];color:string;price?:number;msrp?:number;cost?:number;laborCost?:number;currency?:string;priceUnit?:PriceUnit;priceVerifiedAt?:string;sellable?:boolean;placeholderOnly?:boolean;mountingType?:string;placementSurfaces?:string[];placementMode?:CatalogPlacementMode;finish?:string;material?:string;variantGroup?:string;variantName?:string;availability?:string;leadTimeDays?:number;thumbnailUrl?:string;/** Albedo / pattern map shown on room floors (floor-fill) or product faces. */textureUrl?:string;/** Optional roughness map (linear) for floor-fill / surface PBR. */roughnessMapUrl?:string;/** Optional normal map for floor-fill / surface PBR. */normalMapUrl?:string;/** Optional metalness map for appliance / metal surfaces. */metalnessMapUrl?:string;/** World meters covered by one texture repeat (smaller = denser pattern). */textureRepeat?:number;roughness?:number;modelUrl?:string;lowPolyModelUrl?:string;emoji:string;sourceUrl?:string;sourceLabel?:string;note?:string};
 
 const SAMPLE={
  chair:'https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/SheenChair/glTF-Binary/SheenChair.glb',
@@ -97,7 +98,7 @@ const legacyCatalog: CatalogItem[] = [
 
 /** Built-in catalog: legacy brand samples + residential furnishings + flooring. */
 export const catalog: CatalogItem[] = [
-  ...legacyCatalog,
+  ...enrichCatalogSurfaces(legacyCatalog as CatalogItem[]),
   ...(residentialFurniture as CatalogItem[]),
   ...(residentialFlooring as CatalogItem[]),
 ];

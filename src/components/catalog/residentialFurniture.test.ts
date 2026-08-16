@@ -20,6 +20,13 @@ describe('residential furniture pack', () => {
     }
   });
 
+  it('wires CC0 models or materials on hero residential SKUs', () => {
+    const sofa = residentialFurniture.find((i) => i.id === 'sofa-three-seat');
+    const cab = residentialFurniture.find((i) => i.id === 'base-cab-36');
+    expect(sofa?.modelUrl).toMatch(/\/catalog\/models\//);
+    expect(cab?.textureUrl).toMatch(/\/catalog\/materials\/pbr\//);
+  });
+
   it('includes floor-fill flooring finishes with visible textures', () => {
     const floors = catalog.filter((i) => i.category === 'Flooring' && i.placementMode === 'floor-fill');
     expect(floors.length).toBeGreaterThanOrEqual(8);
