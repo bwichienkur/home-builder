@@ -1,5 +1,5 @@
 import type { RoomType, UnitSystem } from '../types';
-import type { ChangeOrderRecord, EstimateSnapshot } from './estimateSnapshot';
+import type { BidSettings, ChangeOrderRecord, EstimateSnapshot, VendorQuote } from './estimateSnapshot';
 
 const DESIGNS_KEY = 'roomcraft-designs-v1';
 const RECOVERY_KEY = 'roomcraft-recovery-v1';
@@ -23,6 +23,8 @@ export type SharedDesign = {
     baselineEstimate?: EstimateSnapshot | null;
     /** Numbered CO records minted while estimating. */
     changeOrders?: ChangeOrderRecord[];
+    vendorQuotes?: VendorQuote[];
+    bidSettings?: BidSettings;
   };
 };
 

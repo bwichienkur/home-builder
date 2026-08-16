@@ -40,6 +40,7 @@ import { formatArea } from './lib/measurements';
 import { constructionTakeoffCsv } from './lib/constructionTakeoff';
 import { buildHouseEstimateSnapshot, computeHouseTakeoff } from './lib/houseEstimate';
 import { ESTIMATE_DISCLAIMER } from './lib/estimateSnapshot';
+import { downloadBidProposalPdf } from './lib/bidPackage';
 import { pickTradeRates, useTradeRatesStore } from './store/tradeRatesStore';
 import { drawFloorPlanToCanvas, downloadCanvasPng, downloadMultiFloorScaledPlanPdf, downloadPlanDxf } from './lib/planExport/drawFloorPlan';
 import { downloadPlanIfc } from './lib/planExport/buildIfc';
@@ -163,6 +164,7 @@ export default function StudioApp() {
         planRooms: store.planRooms,
       },
       rates,
+      quotes: store.vendorQuotes,
       previousVersion: prev,
     });
     store.setEstimateSnapshot(snap);
@@ -663,6 +665,45 @@ export default function StudioApp() {
               }}
             >
               <FileJson size={16} /> Preview elevations
+            </button>
+            <button
+              type="button"
+              className="menu-secondary"
+              disabled={walls.length === 0}
+              onClick={() => {
+                const rates = pickTradeRates(useTradeRatesStore.getState());
+                const snap = buildHouseEstimateSnapshot({
+                  floors: store.floors,
+                  activeFloorId: store.activeFloorId,
+                  live: {
+                    walls: store.walls,
+                    openings: store.openings,
+                    furniture: store.furniture,
+                    planRooms: store.planRooms,
+                  },
+                  rates,
+                  quotes: store.vendorQuotes,
+                  previousVersion: store.estimateSnapshot?.version ?? 0,
+                  label: 'Bid proposal',
+                });
+                store.setEstimateSnapshot(snap);
+                downloadBidProposalPdf(
+                  snap,
+                  {
+                    projectName,
+                    jurisdiction: store.bidSettings.jurisdiction,
+                    validityDays: store.bidSettings.validityDays,
+                    paymentTerms: store.bidSettings.paymentTerms,
+                    inclusions: store.bidSettings.inclusions,
+                    exclusions: store.bidSettings.exclusions,
+                    alternateNotes: store.bidSettings.alternateNotes,
+                  },
+                  `${projectName.replace(/[^\w\-]+/g, '-').toLowerCase() || 'mahnikka'}-bid.pdf`,
+                );
+                notify('Bid proposal PDF exported');
+              }}
+            >
+              <ReceiptText size={16} /> Export bid proposal PDF
             </button>
             <button
               type="button"

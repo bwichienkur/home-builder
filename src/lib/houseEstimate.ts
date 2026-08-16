@@ -50,6 +50,7 @@ export function buildHouseEstimateSnapshot(input: {
     planRooms: PlanRoomLabel[];
   };
   rates: TradeRates;
+  quotes?: import('./estimateSnapshot').VendorQuote[];
   previousVersion?: number;
   label?: string;
 }): EstimateSnapshot {
@@ -63,6 +64,7 @@ export function buildHouseEstimateSnapshot(input: {
   return buildEstimateSnapshot({
     takeoff,
     rates,
+    quotes: input.quotes,
     previousVersion: input.previousVersion,
     label: input.label,
   });

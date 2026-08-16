@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-/** Trade rate book ($ / unit) + job markups for GC estimates. */
+/** Trade rate book ($ / unit) + job markups for GC / bid estimates. */
 export type TradeRates = {
   drywallPerSf: number;
   paintPerSf: number;
@@ -17,14 +17,31 @@ export type TradeRates = {
   roofPerSf: number;
   doorEach: number;
   windowPerSf: number;
-  /** Labor as a fraction of material for construction allowance lines. */
+  /** Labor as a fraction of material when crew hours are not used. */
   laborPctOfMaterial: number;
+  /** Optional blended crew $/hr for hour-based labor on select lines. */
+  laborRatePerHour: number;
   /** Finish waste (0.1 = 10%). */
   wasteFactor: number;
-  /** Sales tax on material+labor (0.07 = 7%). */
+  /** Sales tax on taxable base (0.07 = 7%). */
   taxPct: number;
-  /** Overhead & profit markup on subtotal before tax (0.12 = 12%). */
+  /** Overhead & profit markup (0.12 = 12%). */
   markupPct: number;
+  /** Design contingency on direct costs (0.05 = 5%). */
+  contingencyPct: number;
+  /** Escalation on direct + contingency (0.03 = 3%). */
+  escalationPct: number;
+  /** Performance/payment bond on pre-bond total (0.015 = 1.5%). */
+  bondPct: number;
+  /** MEP / site unit rates */
+  electricalOutletEach: number;
+  lightingFixtureEach: number;
+  electricalPanelEach: number;
+  plumbingFixtureEach: number;
+  hvacTonEach: number;
+  ductPerFt: number;
+  excavationPerCy: number;
+  landscapingPerSf: number;
 };
 
 export const DEFAULT_TRADE_RATES: TradeRates = {
@@ -43,9 +60,21 @@ export const DEFAULT_TRADE_RATES: TradeRates = {
   doorEach: 350,
   windowPerSf: 55,
   laborPctOfMaterial: 0.55,
+  laborRatePerHour: 65,
   wasteFactor: 0.1,
   taxPct: 0.07,
   markupPct: 0.12,
+  contingencyPct: 0.05,
+  escalationPct: 0.03,
+  bondPct: 0.015,
+  electricalOutletEach: 85,
+  lightingFixtureEach: 120,
+  electricalPanelEach: 1800,
+  plumbingFixtureEach: 650,
+  hvacTonEach: 4200,
+  ductPerFt: 18,
+  excavationPerCy: 45,
+  landscapingPerSf: 4.5,
 };
 
 type TradeRatesState = TradeRates & {
@@ -59,7 +88,15 @@ function clampRate(value: number, min = 0, max = 1_000_000) {
   return Math.min(max, Math.max(min, value));
 }
 
-const PCT_KEYS: (keyof TradeRates)[] = ['laborPctOfMaterial', 'wasteFactor', 'taxPct', 'markupPct'];
+const PCT_KEYS: (keyof TradeRates)[] = [
+  'laborPctOfMaterial',
+  'wasteFactor',
+  'taxPct',
+  'markupPct',
+  'contingencyPct',
+  'escalationPct',
+  'bondPct',
+];
 
 export const useTradeRatesStore = create<TradeRatesState>()(
   persist(
@@ -81,7 +118,7 @@ export const useTradeRatesStore = create<TradeRatesState>()(
         }),
       resetRates: () => set({ ...DEFAULT_TRADE_RATES }),
     }),
-    { name: 'mahnikka-trade-rates-v2' },
+    { name: 'mahnikka-trade-rates-v3' },
   ),
 );
 

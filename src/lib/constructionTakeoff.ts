@@ -10,6 +10,8 @@ export const DEFAULT_WASTE_FACTOR = 0.1;
 /** Simple gable roof factor over footprint (allows for pitch / overhang). */
 export const DEFAULT_ROOF_AREA_FACTOR = 1.15;
 
+const M2_TO_SF = 1 / 0.09290304;
+
 export type ConstructionTakeoff = {
   floorAreaM2: number;
   wallLengthM: number;
@@ -48,6 +50,17 @@ export type ConstructionTakeoff = {
   windowAreaM2: number;
   baseboardLengthM: number;
   wasteFactor: number;
+  /** Schematic MEP / site proxies derived from geometry + room types. */
+  electricalOutletCount: number;
+  lightingFixtureCount: number;
+  electricalPanelCount: number;
+  plumbingFixtureCount: number;
+  hvacTons: number;
+  ductLengthM: number;
+  excavationCy: number;
+  landscapingAreaM2: number;
+  /** Room finish schedule rows (priced separately when named finishes exist). */
+  finishSchedule: Array<{ roomId: string; roomName: string; roomType: string; floorName?: string; areaM2: number }>;
 };
 
 function wallLengthM(wall: Wall): number {
@@ -151,6 +164,27 @@ export function computeConstructionTakeoff(input: {
   const doorWidthSumM = doors.reduce((s, d) => s + d.width, 0);
   const windowAreaM2 = windows.reduce((s, w) => s + w.width * w.height, 0);
 
+  const planRooms = input.planRooms ?? [];
+  const wetRooms = planRooms.filter((r) =>
+    /bath|kitchen|laundry|powder|toilet|utility/i.test(`${r.roomType} ${r.name}`),
+  );
+  const finishSchedule = planRooms.map((r) => ({
+    roomId: r.id,
+    roomName: r.name,
+    roomType: r.roomType,
+    floorName: r.floorName,
+    areaM2: roomArea(r.points),
+  }));
+  // Schematic MEP: outlets ~1 / 12 m², lights ~2 / room, panel per floor, fixtures from wet rooms.
+  const electricalOutletCount = Math.max(4, Math.round(floorAreaM2 / 12));
+  const lightingFixtureCount = Math.max(2, planRooms.length * 2 || Math.round(floorAreaM2 / 20));
+  const electricalPanelCount = includeEnvelope ? 1 : floorAreaM2 > 5 ? 1 : 0;
+  const plumbingFixtureCount = Math.max(wetRooms.length * 2, wetRooms.length ? 2 : 0);
+  const hvacTons = floorAreaM2 > 5 ? Math.max(1, Math.round((floorAreaM2 * M2_TO_SF) / 500)) : 0;
+  const ductLengthM = exteriorWallLengthM * 0.35 + interiorWallLengthM * 0.15;
+  const excavationCy = includeEnvelope ? (floorAreaM2 * 0.45) / 0.764555 : 0; // ~18" over footprint → CY
+  const landscapingAreaM2 = includeEnvelope ? floorAreaM2 * 0.25 : 0;
+
   return {
     floorAreaM2,
     wallLengthM: wallLengthMTotal,
@@ -179,6 +213,15 @@ export function computeConstructionTakeoff(input: {
     windowAreaM2,
     baseboardLengthM: interiorWallLengthM + partyWallLengthM,
     wasteFactor,
+    electricalOutletCount,
+    lightingFixtureCount,
+    electricalPanelCount,
+    plumbingFixtureCount,
+    hvacTons,
+    ductLengthM,
+    excavationCy,
+    landscapingAreaM2,
+    finishSchedule,
   };
 }
 
@@ -227,6 +270,14 @@ export function constructionTakeoffCsv(
     ['Window area', area(takeoff.windowAreaM2).toFixed(1), areaUnit],
     ['Passages', String(takeoff.passageCount), 'ea'],
     ['Stairs', String(takeoff.stairCount), 'ea'],
+    ['Elec outlets (proxy)', String(takeoff.electricalOutletCount), 'ea'],
+    ['Lighting fixtures (proxy)', String(takeoff.lightingFixtureCount), 'ea'],
+    ['Elec panels', String(takeoff.electricalPanelCount), 'ea'],
+    ['Plumbing fixtures (proxy)', String(takeoff.plumbingFixtureCount), 'ea'],
+    ['HVAC tons (proxy)', String(takeoff.hvacTons), 'ton'],
+    ['Duct LF (proxy)', len(takeoff.ductLengthM).toFixed(1), lenUnit],
+    ['Excavation CY (proxy)', takeoff.excavationCy.toFixed(1), 'cy'],
+    ['Landscaping', area(takeoff.landscapingAreaM2).toFixed(1), areaUnit],
     ['Waste factor', `${(w * 100).toFixed(0)}%`, ''],
   ];
   return rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n') + '\n';
@@ -266,6 +317,15 @@ export function mergeConstructionTakeoffs(parts: ConstructionTakeoff[]): Constru
       windowAreaM2: a.windowAreaM2 + t.windowAreaM2,
       baseboardLengthM: a.baseboardLengthM + t.baseboardLengthM,
       wasteFactor: t.wasteFactor,
+      electricalOutletCount: a.electricalOutletCount + t.electricalOutletCount,
+      lightingFixtureCount: a.lightingFixtureCount + t.lightingFixtureCount,
+      electricalPanelCount: a.electricalPanelCount + t.electricalPanelCount,
+      plumbingFixtureCount: a.plumbingFixtureCount + t.plumbingFixtureCount,
+      hvacTons: a.hvacTons + t.hvacTons,
+      ductLengthM: a.ductLengthM + t.ductLengthM,
+      excavationCy: a.excavationCy + t.excavationCy,
+      landscapingAreaM2: a.landscapingAreaM2 + t.landscapingAreaM2,
+      finishSchedule: [...a.finishSchedule, ...t.finishSchedule],
     }),
     {
       floorAreaM2: 0,
@@ -295,6 +355,15 @@ export function mergeConstructionTakeoffs(parts: ConstructionTakeoff[]): Constru
       windowAreaM2: 0,
       baseboardLengthM: 0,
       wasteFactor: DEFAULT_WASTE_FACTOR,
+      electricalOutletCount: 0,
+      lightingFixtureCount: 0,
+      electricalPanelCount: 0,
+      plumbingFixtureCount: 0,
+      hvacTons: 0,
+      ductLengthM: 0,
+      excavationCy: 0,
+      landscapingAreaM2: 0,
+      finishSchedule: [] as ConstructionTakeoff['finishSchedule'],
     },
   );
   return {
