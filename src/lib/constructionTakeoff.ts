@@ -1,11 +1,14 @@
-import type { FurnitureItem, Opening, UnitSystem, Wall } from '../types';
+import type { FurnitureItem, Opening, PlanRoomLabel, UnitSystem, Wall } from '../types';
 import { roomArea, validatePlan } from './geometry/rooms';
 import { PIXELS_PER_METER } from './geometry/snapping';
+import { WALL_ASSEMBLY_PRESETS } from './buildingChecks';
 
 /** Default stud spacing for framing takeoff (16 in OC). */
 export const DEFAULT_STUD_SPACING_M = 0.4064;
 /** Default waste factor applied to finish SF lines. */
 export const DEFAULT_WASTE_FACTOR = 0.1;
+/** Simple gable roof factor over footprint (allows for pitch / overhang). */
+export const DEFAULT_ROOF_AREA_FACTOR = 1.15;
 
 export type ConstructionTakeoff = {
   floorAreaM2: number;
@@ -17,19 +20,30 @@ export type ConstructionTakeoff = {
   windowCount: number;
   passageCount: number;
   stairCount: number;
-  /** Average wall height used for SF calcs (m). */
   avgWallHeightM: number;
-  /** Opening cutouts deducted from wall SF (m²). */
   openingAreaM2: number;
-  /** Both faces of all walls minus openings (m²). */
   drywallAreaM2: number;
-  /** Interior + party faces only, minus openings share (m²). */
   paintAreaM2: number;
-  /** Exterior face sheathing / cladding SF (m²). */
   exteriorSheathingAreaM2: number;
-  /** Rough stud count at 16" OC (both plates not included). */
   studCount: number;
-  /** Baseboard LF ≈ interior wall length (m). */
+  /** Top + bottom plates (2 × wall LF as count of plate pieces at 1 LF each). */
+  plateLengthM: number;
+  /** Rough headers ≈ one per door/window opening. */
+  headerCount: number;
+  /** Exterior wall cavity insulation SF. */
+  insulationAreaM2: number;
+  /** Floor finish SF (room area). */
+  flooringAreaM2: number;
+  /** Ground-floor slab proxy (= floor area). */
+  slabAreaM2: number;
+  /** Continuous footing LF ≈ exterior wall length. */
+  footingLengthM: number;
+  /** Roof SF proxy = footprint × pitch factor. */
+  roofAreaM2: number;
+  /** Sum of door leaf widths (m) for allowance pricing. */
+  doorWidthSumM: number;
+  /** Sum of window areas (m²). */
+  windowAreaM2: number;
   baseboardLengthM: number;
   wasteFactor: number;
 };
@@ -46,8 +60,13 @@ function openingAreaOnWall(wall: Wall, openings: Opening[]): number {
 
 function studsForLength(lengthM: number, spacingM: number): number {
   if (lengthM < 0.05) return 0;
-  // End studs + intermediates at spacing.
   return Math.max(2, Math.floor(lengthM / spacingM) + 1);
+}
+
+function studSpacingForWall(wall: Wall, fallback: number): number {
+  const role = wall.assembly ?? 'interior';
+  const preset = WALL_ASSEMBLY_PRESETS[role];
+  return preset?.studSpacingM ?? fallback;
 }
 
 /** Builder-facing quantities from floor geometry (not furniture $). */
@@ -55,13 +74,23 @@ export function computeConstructionTakeoff(input: {
   walls: Wall[];
   openings: Opening[];
   furniture: FurnitureItem[];
+  planRooms?: PlanRoomLabel[];
   studSpacingM?: number;
   wasteFactor?: number;
+  roofAreaFactor?: number;
+  /** When true, include slab/footing/roof (ground / whole-house envelope). */
+  includeEnvelope?: boolean;
 }): ConstructionTakeoff {
   const studSpacingM = input.studSpacingM ?? DEFAULT_STUD_SPACING_M;
   const wasteFactor = input.wasteFactor ?? DEFAULT_WASTE_FACTOR;
+  const roofFactor = input.roofAreaFactor ?? DEFAULT_ROOF_AREA_FACTOR;
+  const includeEnvelope = input.includeEnvelope ?? true;
   const validation = validatePlan(input.walls);
-  const floorAreaM2 = validation.rooms.reduce((sum, r) => sum + roomArea(r), 0);
+  const floorAreaM2 =
+    input.planRooms && input.planRooms.length
+      ? input.planRooms.reduce((sum, r) => sum + roomArea(r.points), 0)
+      : validation.rooms.reduce((sum, r) => sum + roomArea(r), 0);
+
   let wallLengthMTotal = 0;
   let exteriorWallLengthM = 0;
   let interiorWallLengthM = 0;
@@ -70,6 +99,7 @@ export function computeConstructionTakeoff(input: {
   let drywallGross = 0;
   let paintGross = 0;
   let exteriorSheathing = 0;
+  let insulationAreaM2 = 0;
   let openingAreaM2 = 0;
   let studCount = 0;
 
@@ -77,32 +107,38 @@ export function computeConstructionTakeoff(input: {
     const len = wallLengthM(wall);
     const h = wall.height > 0.5 ? wall.height : 2.7;
     const openA = openingAreaOnWall(wall, input.openings);
+    const spacing = studSpacingForWall(wall, studSpacingM);
     wallLengthMTotal += len;
     heightSum += h;
     openingAreaM2 += openA;
-    studCount += studsForLength(len, studSpacingM);
+    studCount += studsForLength(len, spacing);
     const face = Math.max(0, len * h - openA);
-    // Two faces for drywall on most partitions; exterior still gets interior face.
     drywallGross += face * 2;
     const role = wall.assembly ?? 'interior';
     if (role === 'exterior') {
       exteriorWallLengthM += len;
       exteriorSheathing += face;
-      paintGross += face; // interior face of exterior wall
+      insulationAreaM2 += face;
+      paintGross += face;
     } else if (role === 'party') {
       partyWallLengthM += len;
       paintGross += face * 2;
+      insulationAreaM2 += face; // fire/party often insulated
     } else {
       interiorWallLengthM += len;
       paintGross += face * 2;
     }
   }
 
-  const doorCount = input.openings.filter((o) => o.type === 'door').length;
-  const windowCount = input.openings.filter((o) => o.type === 'window').length;
+  const doors = input.openings.filter((o) => o.type === 'door');
+  const windows = input.openings.filter((o) => o.type === 'window');
+  const doorCount = doors.length;
+  const windowCount = windows.length;
   const passageCount = input.openings.filter((o) => o.type === 'passage').length;
   const stairCount = input.furniture.filter((f) => f.placementKind === 'stair').length;
   const avgWallHeightM = input.walls.length ? heightSum / input.walls.length : 2.7;
+  const doorWidthSumM = doors.reduce((s, d) => s + d.width, 0);
+  const windowAreaM2 = windows.reduce((s, w) => s + w.width * w.height, 0);
 
   return {
     floorAreaM2,
@@ -120,6 +156,15 @@ export function computeConstructionTakeoff(input: {
     paintAreaM2: paintGross,
     exteriorSheathingAreaM2: exteriorSheathing,
     studCount,
+    plateLengthM: wallLengthMTotal * 2,
+    headerCount: doorCount + windowCount,
+    insulationAreaM2,
+    flooringAreaM2: floorAreaM2,
+    slabAreaM2: includeEnvelope ? floorAreaM2 : 0,
+    footingLengthM: includeEnvelope ? exteriorWallLengthM : 0,
+    roofAreaM2: includeEnvelope ? floorAreaM2 * roofFactor : 0,
+    doorWidthSumM,
+    windowAreaM2,
     baseboardLengthM: interiorWallLengthM + partyWallLengthM,
     wasteFactor,
   };
@@ -131,7 +176,7 @@ function withWaste(value: number, waste: number): number {
 
 export function constructionTakeoffCsv(
   takeoff: ConstructionTakeoff,
-  opts?: { name?: string; unitSystem?: UnitSystem; floorName?: string },
+  opts?: { name?: string; unitSystem?: UnitSystem; floorName?: string; disclaimer?: string },
 ): string {
   const imperial = (opts?.unitSystem ?? 'imperial') === 'imperial';
   const area = (m2: number) => (imperial ? m2 / 0.09290304 : m2);
@@ -142,7 +187,12 @@ export function constructionTakeoffCsv(
   const rows: string[][] = [
     ['Project', opts?.name ?? 'Design'],
     ['Floor', opts?.floorName ?? 'Active'],
+    ['Disclaimer', opts?.disclaimer ?? 'Internal estimate quantities — not a contract bid'],
     ['Floor area', area(takeoff.floorAreaM2).toFixed(1), areaUnit],
+    ['Flooring SF', area(takeoff.flooringAreaM2).toFixed(1), areaUnit],
+    ['Slab SF', area(takeoff.slabAreaM2).toFixed(1), areaUnit],
+    ['Roof SF (proxy)', area(takeoff.roofAreaM2).toFixed(1), areaUnit],
+    ['Footing LF', len(takeoff.footingLengthM).toFixed(2), lenUnit],
     ['Wall length (all)', len(takeoff.wallLengthM).toFixed(2), lenUnit],
     ['Exterior wall', len(takeoff.exteriorWallLengthM).toFixed(2), lenUnit],
     ['Interior wall', len(takeoff.interiorWallLengthM).toFixed(2), lenUnit],
@@ -155,10 +205,14 @@ export function constructionTakeoffCsv(
     ['Paint + waste', area(withWaste(takeoff.paintAreaM2, w)).toFixed(1), areaUnit],
     ['Exterior sheathing (net)', area(takeoff.exteriorSheathingAreaM2).toFixed(1), areaUnit],
     ['Exterior sheathing + waste', area(withWaste(takeoff.exteriorSheathingAreaM2, w)).toFixed(1), areaUnit],
-    ['Studs @ 16 in OC (ea)', String(takeoff.studCount), 'ea'],
+    ['Insulation (cavity)', area(takeoff.insulationAreaM2).toFixed(1), areaUnit],
+    ['Studs (ea)', String(takeoff.studCount), 'ea'],
+    ['Plates LF', len(takeoff.plateLengthM).toFixed(2), lenUnit],
+    ['Headers (ea)', String(takeoff.headerCount), 'ea'],
     ['Baseboard (approx)', len(takeoff.baseboardLengthM).toFixed(2), lenUnit],
     ['Doors', String(takeoff.doorCount), 'ea'],
     ['Windows', String(takeoff.windowCount), 'ea'],
+    ['Window area', area(takeoff.windowAreaM2).toFixed(1), areaUnit],
     ['Passages', String(takeoff.passageCount), 'ea'],
     ['Stairs', String(takeoff.stairCount), 'ea'],
     ['Waste factor', `${(w * 100).toFixed(0)}%`, ''],
@@ -166,7 +220,7 @@ export function constructionTakeoffCsv(
   return rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n') + '\n';
 }
 
-/** Roll up takeoffs from multiple floors (sums quantities). */
+/** Roll up takeoffs from multiple floors (sums quantities). Envelope on first part only if callers set includeEnvelope. */
 export function mergeConstructionTakeoffs(parts: ConstructionTakeoff[]): ConstructionTakeoff {
   if (!parts.length) {
     return computeConstructionTakeoff({ walls: [], openings: [], furniture: [] });
@@ -188,6 +242,15 @@ export function mergeConstructionTakeoffs(parts: ConstructionTakeoff[]): Constru
       paintAreaM2: a.paintAreaM2 + t.paintAreaM2,
       exteriorSheathingAreaM2: a.exteriorSheathingAreaM2 + t.exteriorSheathingAreaM2,
       studCount: a.studCount + t.studCount,
+      plateLengthM: a.plateLengthM + t.plateLengthM,
+      headerCount: a.headerCount + t.headerCount,
+      insulationAreaM2: a.insulationAreaM2 + t.insulationAreaM2,
+      flooringAreaM2: a.flooringAreaM2 + t.flooringAreaM2,
+      slabAreaM2: a.slabAreaM2 + t.slabAreaM2,
+      footingLengthM: a.footingLengthM + t.footingLengthM,
+      roofAreaM2: a.roofAreaM2 + t.roofAreaM2,
+      doorWidthSumM: a.doorWidthSumM + t.doorWidthSumM,
+      windowAreaM2: a.windowAreaM2 + t.windowAreaM2,
       baseboardLengthM: a.baseboardLengthM + t.baseboardLengthM,
       wasteFactor: t.wasteFactor,
     }),
@@ -207,6 +270,15 @@ export function mergeConstructionTakeoffs(parts: ConstructionTakeoff[]): Constru
       paintAreaM2: 0,
       exteriorSheathingAreaM2: 0,
       studCount: 0,
+      plateLengthM: 0,
+      headerCount: 0,
+      insulationAreaM2: 0,
+      flooringAreaM2: 0,
+      slabAreaM2: 0,
+      footingLengthM: 0,
+      roofAreaM2: 0,
+      doorWidthSumM: 0,
+      windowAreaM2: 0,
       baseboardLengthM: 0,
       wasteFactor: DEFAULT_WASTE_FACTOR,
     },

@@ -37,7 +37,10 @@ import {
 } from './lib/designShare';
 import { downloadTextFile, shoppingListCsvFromDesign } from './lib/shoppingListCsv';
 import { formatArea } from './lib/measurements';
-import { computeConstructionTakeoff, constructionTakeoffCsv, mergeConstructionTakeoffs } from './lib/constructionTakeoff';
+import { constructionTakeoffCsv } from './lib/constructionTakeoff';
+import { buildHouseEstimateSnapshot, computeHouseTakeoff } from './lib/houseEstimate';
+import { ESTIMATE_DISCLAIMER } from './lib/estimateSnapshot';
+import { pickTradeRates, useTradeRatesStore } from './store/tradeRatesStore';
 import { drawFloorPlanToCanvas, downloadCanvasPng, downloadMultiFloorScaledPlanPdf, downloadPlanDxf } from './lib/planExport/drawFloorPlan';
 import { downloadPlanIfc } from './lib/planExport/buildIfc';
 import { fetchCloudProjects, loadCloudProject, readCloudProjectRef, saveProjectToCloud } from './lib/cloudProjects';
@@ -148,32 +151,47 @@ export default function StudioApp() {
   }, []);
 
   const persistToLibrary = useCallback(() => {
+    const rates = pickTradeRates(useTradeRatesStore.getState());
+    const prev = store.estimateSnapshot?.version ?? 0;
+    const snap = buildHouseEstimateSnapshot({
+      floors: store.floors,
+      activeFloorId: store.activeFloorId,
+      live: {
+        walls: store.walls,
+        openings: store.openings,
+        furniture: store.furniture,
+        planRooms: store.planRooms,
+      },
+      rates,
+      previousVersion: prev,
+    });
+    store.setEstimateSnapshot(snap);
     const entry = upsertSharedDesign(projectName, store.projectPayload(), activeDesignCode ?? undefined);
     rememberDesign(entry.code);
     history.replaceState(null, '', designShareUrl(entry.code));
     setDesigns(listSharedDesigns());
-    return entry;
+    return { entry, snap };
   }, [activeDesignCode, projectName, rememberDesign, store]);
 
   const saveBuild = useCallback(async () => {
     store.save();
-    const entry = persistToLibrary();
+    const { entry, snap } = persistToLibrary();
     const cloud = await saveProjectToCloud(projectName, store.projectPayload());
     if (cloud.ok && cloud.mode === 'cloud') {
       setCloudRef({ id: cloud.id, version: cloud.version });
       setCloudProjects(await fetchCloudProjects());
-      notify(`Saved “${entry.name}” · cloud v${cloud.version}`);
+      notify(`Saved “${entry.name}” · estimate v${snap.version} · cloud v${cloud.version}`);
     } else if (cloud.ok) {
-      notify(`Saved “${entry.name}” (local · ${cloud.reason})`);
+      notify(`Saved “${entry.name}” · estimate v${snap.version} (local · ${cloud.reason})`);
     } else {
-      notify(`Saved locally — cloud: ${cloud.error}`);
+      notify(`Saved locally · estimate v${snap.version} — cloud: ${cloud.error}`);
     }
   }, [persistToLibrary, projectName, store]);
 
   const share = useCallback(async () => {
     try {
       store.save();
-      const entry = persistToLibrary();
+      const { entry } = persistToLibrary();
       const url = designShareUrl(entry.code);
       if (navigator.share) await navigator.share({ title: projectName, text: `Mahnikka design ${entry.code}`, url });
       else {
@@ -647,50 +665,29 @@ export default function StudioApp() {
               className="menu-secondary"
               disabled={walls.length === 0}
               onClick={() => {
-                // Prefer whole-house rollup when multiple floors exist.
-                const floors = store.floors;
-                const parts = floors.map((f) => {
-                  const scene =
-                    f.id === store.activeFloorId
-                      ? { walls: store.walls, openings: store.openings, furniture: store.furniture }
-                      : f.scene;
-                  return {
-                    takeoff: computeConstructionTakeoff({
-                      walls: scene.walls,
-                      openings: scene.openings,
-                      furniture: scene.furniture,
-                    }),
-                    floorName: f.name,
-                  };
+                const rates = pickTradeRates(useTradeRatesStore.getState());
+                const takeoff = computeHouseTakeoff({
+                  floors: store.floors,
+                  activeFloorId: store.activeFloorId,
+                  live: {
+                    walls: store.walls,
+                    openings: store.openings,
+                    furniture: store.furniture,
+                    planRooms: store.planRooms,
+                  },
+                  wasteFactor: rates.wasteFactor,
                 });
-                const merged = mergeConstructionTakeoffs(parts.map((p) => p.takeoff));
-                const csv =
-                  parts.length > 1
-                    ? [
-                        constructionTakeoffCsv(merged, {
-                          name: projectName,
-                          unitSystem,
-                          floorName: 'All floors',
-                        }),
-                        '',
-                        ...parts.map((p) =>
-                          constructionTakeoffCsv(p.takeoff, {
-                            name: projectName,
-                            unitSystem,
-                            floorName: p.floorName,
-                          }),
-                        ),
-                      ].join('\n')
-                    : constructionTakeoffCsv(merged, {
-                        name: projectName,
-                        unitSystem,
-                        floorName: parts[0]?.floorName,
-                      });
+                const csv = constructionTakeoffCsv(takeoff, {
+                  name: projectName,
+                  unitSystem,
+                  floorName: store.floors.length > 1 ? 'All floors' : store.floors[0]?.name,
+                  disclaimer: ESTIMATE_DISCLAIMER,
+                });
                 downloadTextFile(
                   `${projectName.replace(/[^\w\-]+/g, '-').toLowerCase() || 'mahnikka'}-takeoff.csv`,
                   csv,
                 );
-                notify(parts.length > 1 ? 'Whole-house takeoff CSV exported' : 'Construction takeoff CSV exported');
+                notify(store.floors.length > 1 ? 'Whole-house takeoff CSV exported' : 'Construction takeoff CSV exported');
               }}
             >
               <ReceiptText size={16} /> Export takeoff CSV

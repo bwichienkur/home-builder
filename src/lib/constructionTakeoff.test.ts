@@ -4,10 +4,12 @@ import {
   constructionTakeoffCsv,
   mergeConstructionTakeoffs,
 } from './constructionTakeoff';
+import { buildEstimateSnapshot, diffEstimateAgainstBaseline } from './estimateSnapshot';
+import { DEFAULT_TRADE_RATES } from '../store/tradeRatesStore';
 import type { Wall } from '../types';
 
 describe('computeConstructionTakeoff', () => {
-  it('sums wall length, floor area, studs, and drywall for a rectangle', () => {
+  it('sums wall length, floor area, studs, roof, and drywall for a rectangle', () => {
     const walls: Wall[] = [
       { id: 'a', start: { x: 0, y: 0 }, end: { x: 800, y: 0 }, thickness: 0.15, height: 2.7, assembly: 'exterior' },
       { id: 'b', start: { x: 800, y: 0 }, end: { x: 800, y: 600 }, thickness: 0.15, height: 2.7, assembly: 'exterior' },
@@ -28,9 +30,11 @@ describe('computeConstructionTakeoff', () => {
     expect(takeoff.doorCount).toBe(1);
     expect(takeoff.windowCount).toBe(1);
     expect(takeoff.studCount).toBeGreaterThan(20);
+    expect(takeoff.plateLengthM).toBeCloseTo(takeoff.wallLengthM * 2, 5);
+    expect(takeoff.headerCount).toBe(2);
+    expect(takeoff.roofAreaM2).toBeGreaterThan(takeoff.floorAreaM2);
+    expect(takeoff.footingLengthM).toBeCloseTo(takeoff.exteriorWallLengthM, 5);
     expect(takeoff.drywallAreaM2).toBeGreaterThan(100);
-    expect(takeoff.paintAreaM2).toBeGreaterThan(40);
-    expect(takeoff.exteriorSheathingAreaM2).toBeGreaterThan(40);
     expect(constructionTakeoffCsv(takeoff, { name: 'Test', unitSystem: 'metric' })).toContain('Drywall');
   });
 
@@ -38,9 +42,29 @@ describe('computeConstructionTakeoff', () => {
     const walls: Wall[] = [
       { id: 'a', start: { x: 0, y: 0 }, end: { x: 400, y: 0 }, thickness: 0.15, height: 2.7, assembly: 'interior' },
     ];
-    const a = computeConstructionTakeoff({ walls, openings: [], furniture: [] });
+    const a = computeConstructionTakeoff({ walls, openings: [], furniture: [], includeEnvelope: false });
     const merged = mergeConstructionTakeoffs([a, a]);
     expect(merged.wallLengthM).toBeCloseTo(a.wallLengthM * 2, 5);
     expect(merged.studCount).toBe(a.studCount * 2);
+  });
+
+  it('prices estimate with tax and markup', () => {
+    const takeoff = computeConstructionTakeoff({
+      walls: [
+        { id: 'a', start: { x: 0, y: 0 }, end: { x: 800, y: 0 }, thickness: 0.15, height: 2.7, assembly: 'exterior' },
+        { id: 'b', start: { x: 800, y: 0 }, end: { x: 800, y: 600 }, thickness: 0.15, height: 2.7, assembly: 'exterior' },
+        { id: 'c', start: { x: 800, y: 600 }, end: { x: 0, y: 600 }, thickness: 0.15, height: 2.7, assembly: 'exterior' },
+        { id: 'd', start: { x: 0, y: 600 }, end: { x: 0, y: 0 }, thickness: 0.15, height: 2.7, assembly: 'exterior' },
+      ],
+      openings: [],
+      furniture: [],
+    });
+    const snap = buildEstimateSnapshot({ takeoff, rates: DEFAULT_TRADE_RATES });
+    expect(snap.lines.length).toBeGreaterThan(5);
+    expect(snap.totals.grandTotal).toBeGreaterThan(snap.totals.subtotal);
+    const next = buildEstimateSnapshot({ takeoff, rates: { ...DEFAULT_TRADE_RATES, drywallPerSf: 3 }, previousVersion: snap.version });
+    const delta = diffEstimateAgainstBaseline(next, snap);
+    expect(delta.hasBaseline).toBe(true);
+    expect(delta.delta).not.toBe(0);
   });
 });

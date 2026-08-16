@@ -41,6 +41,8 @@ describe('IFC export', () => {
     expect(ifc).toContain('IFCOPENINGELEMENT');
     expect(ifc).toContain('IFCSPACE');
     expect(ifc).toContain('IFCARBITRARYCLOSEDPROFILEDEF');
+    expect(ifc).toContain('IFCDOOR');
+    expect(ifc).toContain('IFCSLAB');
     expect(ifc).toContain('Living');
   });
 

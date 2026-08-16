@@ -62,6 +62,11 @@ export function ClientsPage() {
                   {linked.slice(0, 3).map((d) => (
                     <a key={d.code} href={`/build?design=${d.code}`} className="client-build-link">
                       {d.name || d.code}
+                      {d.payload.estimateSnapshot
+                        ? ` · est v${d.payload.estimateSnapshot.version} ($${Math.round(
+                            d.payload.estimateSnapshot.totals.grandTotal,
+                          ).toLocaleString()})`
+                        : ''}
                     </a>
                   ))}
                   {linked.length > 3 ? ` +${linked.length - 3}` : ''}
@@ -143,6 +148,15 @@ export function ClientsPage() {
                     {buildsFor(draft.id).map((d) => (
                       <li key={d.code}>
                         <a href={`/build?design=${d.code}`}>{d.name || d.code}</a>
+                        {d.payload.estimateSnapshot && (
+                          <span className="muted">
+                            {' '}
+                            · estimate v{d.payload.estimateSnapshot.version} · $
+                            {d.payload.estimateSnapshot.totals.grandTotal.toLocaleString(undefined, {
+                              maximumFractionDigits: 0,
+                            })}
+                          </span>
+                        )}
                       </li>
                     ))}
                   </ul>

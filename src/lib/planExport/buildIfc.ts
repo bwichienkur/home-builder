@@ -144,6 +144,50 @@ export function buildPlanIfc(input: IfcExportInput): string {
           `IFCOPENINGELEMENT('${gid()}',#${owner},'${esc(opening.id)}',$,$,#${openPlace},#${openRep},$)`,
         );
         add(`IFCRELVOIDSELEMENT('${gid()}',#${owner},$,$,#${wallId},#${openId})`);
+
+        if (opening.type === 'door' || opening.type === 'window') {
+          const typed =
+            opening.type === 'door'
+              ? add(
+                  `IFCDOOR('${gid()}',#${owner},'${esc(opening.id)}',$,$,#${openPlace},#${openRep},$,$,$)`,
+                )
+              : add(
+                  `IFCWINDOW('${gid()}',#${owner},'${esc(opening.id)}',$,$,#${openPlace},#${openRep},$,$,$)`,
+                );
+          contained.push(typed);
+          add(`IFCRELFILLSELEMENT('${gid()}',#${owner},$,$,#${openId},#${typed})`);
+        }
+      }
+    }
+
+    // Floor slab for the storey footprint (axis-aligned bounds of rooms/walls).
+    {
+      const pts = [
+        ...level.walls.flatMap((w) => [w.start, w.end]),
+        ...level.planRooms.flatMap((r) => r.points),
+      ];
+      if (pts.length >= 2) {
+        const xs = pts.map((p) => toM(p).x);
+        const ys = pts.map((p) => toM(p).y);
+        const minX = Math.min(...xs);
+        const maxX = Math.max(...xs);
+        const minY = Math.min(...ys);
+        const maxY = Math.max(...ys);
+        const w = Math.max(0.5, maxX - minX);
+        const d = Math.max(0.5, maxY - minY);
+        const cx = (minX + maxX) / 2;
+        const cy = (minY + maxY) / 2;
+        const slabPt = add(`IFCCARTESIANPOINT((${cx.toFixed(4)},${cy.toFixed(4)},0.))`);
+        const slabAxis = add(`IFCAXIS2PLACEMENT3D(#${slabPt},#${dirZ},#${dirX})`);
+        const slabPlace = add(`IFCLOCALPLACEMENT(#${elevPlace},#${slabAxis})`);
+        const slabProf = add(`IFCRECTANGLEPROFILEDEF(.AREA.,$,$,${w.toFixed(4)},${d.toFixed(4)})`);
+        const slabSolid = add(`IFCEXTRUDEDAREASOLID(#${slabProf},#${worldAxis},#${dirZ},0.2)`);
+        const slabShape = add(`IFCSHAPEREPRESENTATION(#${bodyCtx},'Body','SweptSolid',(#${slabSolid}))`);
+        const slabRep = add(`IFCPRODUCTDEFINITIONSHAPE($,$,(#${slabShape}))`);
+        const slabId = add(
+          `IFCSLAB('${gid()}',#${owner},'${esc(level.floorName + ' slab')}',$,$,#${slabPlace},#${slabRep},$,.FLOOR.)`,
+        );
+        contained.push(slabId);
       }
     }
 

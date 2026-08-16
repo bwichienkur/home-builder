@@ -38,7 +38,8 @@ import { usePlannerStore } from '../../store/plannerStore';
 import type { RoomType } from '../../types';
 import { WORLD_ORIGIN } from '../../lib/geometry/placement';
 import { PIXELS_PER_METER } from '../../lib/geometry/snapping';
-import { computeConstructionTakeoff, mergeConstructionTakeoffs } from '../../lib/constructionTakeoff';
+import { computeHouseTakeoff } from '../../lib/houseEstimate';
+import { pickTradeRates, useTradeRatesStore } from '../../store/tradeRatesStore';
 import { formatArea, formatLength } from '../../lib/measurements';
 import { LayersMenu } from './LayersMenu';
 import { StoryOverview } from './StoryOverview';
@@ -141,16 +142,14 @@ export function StudioChrome({
   const isTrimSelected = selectedFurniture?.placementKind === 'perimeter-trim';
 
   const takeoff = useMemo(() => {
-    const parts = floors.map((f) => {
-      const live = f.id === activeFloorId;
-      return computeConstructionTakeoff({
-        walls: live ? walls : f.scene.walls,
-        openings: live ? openings : f.scene.openings,
-        furniture: live ? furniture : f.scene.furniture,
-      });
+    const rates = pickTradeRates(useTradeRatesStore.getState());
+    return computeHouseTakeoff({
+      floors,
+      activeFloorId,
+      live: { walls, openings, furniture, planRooms },
+      wasteFactor: rates.wasteFactor,
     });
-    return mergeConstructionTakeoffs(parts);
-  }, [floors, activeFloorId, walls, openings, furniture]);
+  }, [floors, activeFloorId, walls, openings, furniture, planRooms]);
   const addAnnotation = usePlannerStore((s) => s.addAnnotation);
   const roomFloorCenterHint = useMemo(() => {
     if (!walls.length) return { x: 0, z: 0 };
