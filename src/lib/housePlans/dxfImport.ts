@@ -152,7 +152,18 @@ export function segmentsToOrthogonalRooms(segments: Seg[]): { rooms: PlanRoomRec
 
 export function importDxfHousePlan(dxfText: string, name = 'Imported DXF plan'): DxfImportResult {
   const { segments, warnings: w1 } = parseDxfToSegments(dxfText);
+  const warnings = [...w1];
+  if (!segments.length) {
+    warnings.push('No LINE/LWPOLYLINE geometry found.');
+  }
+  // Heuristic: values in the tens of thousands are often millimeters.
+  const sample = segments.slice(0, 40).flatMap((s) => [s.x1, s.y1, s.x2, s.y2]);
+  const maxAbs = sample.reduce((m, v) => Math.max(m, Math.abs(v)), 0);
+  if (maxAbs > 500) {
+    warnings.push('Coordinates look large (possibly mm). Review room sizes after import.');
+  }
   const { rooms, warnings: w2 } = segmentsToOrthogonalRooms(segments);
+  warnings.push(...w2);
   const maxX = Math.max(...rooms.map((r) => r.x + r.w), 0);
   const maxY = Math.max(...rooms.map((r) => r.y + r.h), 0);
   const living = rooms.reduce((s, r) => s + r.w * r.h, 0);
@@ -168,7 +179,7 @@ export function importDxfHousePlan(dxfText: string, name = 'Imported DXF plan'):
     note: 'Imported from DXF (LINE/LWPOLYLINE). Orthogonal cell detection; review walls in Build.',
     floors: [{ id: `dxf-floor-1`, name: 'First story', rooms }],
   };
-  return { plan, warnings: [...w1, ...w2], lineCount: segments.length };
+  return { plan, warnings, lineCount: segments.length };
 }
 
 /** IFC inspect — delegated to planExport/buildIfc (spaces/walls summary). */

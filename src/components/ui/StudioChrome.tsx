@@ -9,6 +9,7 @@ import {
   ChevronDown,
   ChevronUp,
   Copy,
+  DoorOpen,
   FileSpreadsheet,
   Focus,
   Grid2X2,
@@ -25,6 +26,8 @@ import {
   ShoppingBag,
   SlidersHorizontal,
   Sofa,
+  Square,
+  StickyNote,
   Trash2,
   Undo2,
   Wallpaper,
@@ -34,8 +37,10 @@ import { roomCategories } from '../catalog/CatalogPanel';
 import { usePlannerStore } from '../../store/plannerStore';
 import type { RoomType } from '../../types';
 import { WORLD_ORIGIN } from '../../lib/geometry/placement';
+import { PIXELS_PER_METER } from '../../lib/geometry/snapping';
 import { computeConstructionTakeoff } from '../../lib/constructionTakeoff';
 import { formatArea, formatLength } from '../../lib/measurements';
+import { LayersMenu } from './LayersMenu';
 import { StoryOverview } from './StoryOverview';
 
 const icons: Record<string, typeof ShoppingBag> = {
@@ -139,6 +144,16 @@ export function StudioChrome({
     () => computeConstructionTakeoff({ walls, openings, furniture }),
     [walls, openings, furniture],
   );
+  const addAnnotation = usePlannerStore((s) => s.addAnnotation);
+  const roomFloorCenterHint = useMemo(() => {
+    if (!walls.length) return { x: 0, z: 0 };
+    const xs = walls.flatMap((w) => [w.start.x, w.end.x]);
+    const ys = walls.flatMap((w) => [w.start.y, w.end.y]);
+    return {
+      x: ((Math.min(...xs) + Math.max(...xs)) / 2 - WORLD_ORIGIN.x) / PIXELS_PER_METER,
+      z: ((Math.min(...ys) + Math.max(...ys)) / 2 - WORLD_ORIGIN.y) / PIXELS_PER_METER,
+    };
+  }, [walls]);
   const categories = roomCategories[roomType];
   const isTop = camera === 'top';
   const planWallTool = usePlannerStore((s) => s.planWallTool);
@@ -498,7 +513,7 @@ export function StudioChrome({
                     const to = floors[idx + 1] ?? floors[idx - 1] ?? floors[0]!;
                     if (from.id === to.id) return;
                     setStudioMode('architect');
-                    addStair(from.id, to.id, 0, 0);
+                    addStair(from.id, to.id);
                     window.setTimeout(() => {
                       window.dispatchEvent(new Event('roomcraft-fit-plan'));
                       window.dispatchEvent(new Event('roomcraft-refocus'));
@@ -659,17 +674,59 @@ export function StudioChrome({
               </button>
             )}
             {atPlanLevel && isTop && !pending && (
-              <button
-                type="button"
-                className={`studio-dock-action${pendingAttachMode ? ' is-active' : ''}`}
-                onClick={startAddRoom}
-                aria-pressed={pendingAttachMode}
-                title="Add room"
-              >
-                <Plus size={15} />
-                <span>{pendingAttachMode ? 'Cancel' : 'Add'}</span>
-              </button>
+              <>
+                <button
+                  type="button"
+                  className={`studio-dock-action${tool === 'door' ? ' is-active' : ''}`}
+                  title="Place door — click a wall"
+                  aria-pressed={tool === 'door'}
+                  onClick={() => {
+                    setTool(tool === 'door' ? 'select' : 'door');
+                    setCamera('top');
+                  }}
+                >
+                  <DoorOpen size={15} />
+                  <span>Door</span>
+                </button>
+                <button
+                  type="button"
+                  className={`studio-dock-action${tool === 'window' ? ' is-active' : ''}`}
+                  title="Place window — click a wall"
+                  aria-pressed={tool === 'window'}
+                  onClick={() => {
+                    setTool(tool === 'window' ? 'select' : 'window');
+                    setCamera('top');
+                  }}
+                >
+                  <Square size={15} />
+                  <span>Win</span>
+                </button>
+                <button
+                  type="button"
+                  className="studio-dock-action"
+                  title="Add plan note"
+                  onClick={() => {
+                    addAnnotation('note', roomFloorCenterHint.x, roomFloorCenterHint.z, 'Note');
+                    window.dispatchEvent(new Event('roomcraft-open-properties'));
+                  }}
+                >
+                  <StickyNote size={15} />
+                  <span>Note</span>
+                </button>
+                <LayersMenu />
+                <button
+                  type="button"
+                  className={`studio-dock-action${pendingAttachMode ? ' is-active' : ''}`}
+                  onClick={startAddRoom}
+                  aria-pressed={pendingAttachMode}
+                  title="Add room"
+                >
+                  <Plus size={15} />
+                  <span>{pendingAttachMode ? 'Cancel' : 'Add'}</span>
+                </button>
+              </>
             )}
+            {!(atPlanLevel && isTop && !pending) && !atStart && <LayersMenu />}
             <button type="button" className="studio-dock-action" onClick={refocus} title="Fit in view">
               <Focus size={15} />
               <span>Fit</span>

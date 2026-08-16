@@ -927,17 +927,28 @@ function WallMeshes() {
   const workflowStage = usePlannerStore((s) => s.workflowStage);
   const unitSystem = usePlannerStore((s) => s.unitSystem);
   const select = usePlannerStore((s) => s.selectWall);
+  const placeOpeningAtWorld = usePlannerStore((s) => s.placeOpeningAtWorld);
+  const layers = usePlannerStore((s) => s.layerVisibility);
   const cameraMode = usePlannerStore((s) => s.cameraMode);
   const tool = usePlannerStore((s) => s.tool);
   const opacityByWall = useDollhouseCutaway(walls);
   const wallIds = useMemo(() => new Set(walls.map((w) => w.id)), [walls]);
-  const visibleOpenings = useMemo(() => openings.filter((o) => wallIds.has(o.wallId)), [openings, wallIds]);
+  const visibleOpenings = useMemo(
+    () => (layers.openings ? openings.filter((o) => wallIds.has(o.wallId)) : []),
+    [openings, wallIds, layers.openings],
+  );
   const orbiting = cameraMode === 'orbit';
   // Openings can be dragged in top plan and 3D orbit (not walk).
   const openingDragEnabled = tool === 'select' && (cameraMode === 'top' || cameraMode === 'orbit');
+  const placingOpening = tool === 'door' || tool === 'window' || tool === 'passage';
   const { invalidate } = useThree();
 
-  const onWallClick = (id: string) => {
+  const onWallClick = (id: string, point?: { x: number; z: number }) => {
+    if (placingOpening && point && (tool === 'door' || tool === 'window' || tool === 'passage')) {
+      placeOpeningAtWorld(id, tool, point.x, point.z);
+      window.dispatchEvent(new Event('roomcraft-open-properties'));
+      return;
+    }
     select(id);
     // Open wall inspector (type, openings, length) — house plan included.
     window.dispatchEvent(new Event('roomcraft-open-properties'));
@@ -973,7 +984,7 @@ function WallMeshes() {
             rotation={[0, angle, 0]}
             onClick={(e) => {
               e.stopPropagation();
-              onWallClick(w.id);
+              onWallClick(w.id, { x: e.point.x, z: e.point.z });
             }}
           >
             <boxGeometry args={[origLen || 0.2, w.height, Math.max(w.thickness, 0.12)]} />
@@ -991,7 +1002,7 @@ function WallMeshes() {
               rotation={[-Math.PI / 2, 0, angle]}
               onClick={(e) => {
                 e.stopPropagation();
-                onWallClick(w.id);
+                onWallClick(w.id, { x: e.point.x, z: e.point.z });
               }}
             >
               <planeGeometry args={[origLen || 0.2, Math.max(w.thickness * 4.5, 0.45)]} />
@@ -1067,7 +1078,7 @@ function WallMeshes() {
               userData={fading ? { wallCutawayPick: true } : undefined}
               onClick={(e) => {
                 e.stopPropagation();
-                onWallClick(w.id);
+                onWallClick(w.id, { x: e.point.x, z: e.point.z });
               }}
             >
               <boxGeometry args={[segLen, segH, w.thickness]} />
@@ -1181,7 +1192,7 @@ function WallMeshes() {
           ...base,
           ...selectionHalo,
           ...fixtures,
-          ...(cameraMode === 'top'
+          ...(cameraMode === 'top' && layers.dims
             ? [
                 <Html
                   key={w.id + 'len'}
@@ -1206,6 +1217,35 @@ function WallMeshes() {
             : []),
         ];
       })}
+      {placingOpening && cameraMode === 'top' && (
+        <Html position={[0, 0.35, 0]} center style={{ pointerEvents: 'none' }} zIndexRange={[55, 35]}>
+          <div className="opening-place-hint">Click a wall to place {tool}</div>
+        </Html>
+      )}
+      {layers.framing &&
+        walls.map((w) => {
+          const [sx, sz] = world(w.start.x, w.start.y);
+          const [ex, ez] = world(w.end.x, w.end.y);
+          const len = Math.hypot(ex - sx, ez - sz) || 0.01;
+          const ang = -Math.atan2(ez - sz, ex - sx);
+          const mx = (sx + ex) / 2;
+          const mz = (sz + ez) / 2;
+          const studs = Math.max(2, Math.round(len / 0.4064) + 1);
+          return (
+            <group key={`frame-${w.id}`} position={[mx, 0.02, mz]} rotation={[0, ang, 0]}>
+              {Array.from({ length: studs }, (_, i) => {
+                const t = studs === 1 ? 0.5 : i / (studs - 1);
+                const along = (t - 0.5) * len;
+                return (
+                  <mesh key={i} position={[along, w.height / 2, 0]} raycast={() => {}}>
+                    <boxGeometry args={[0.04, w.height * 0.98, 0.09]} />
+                    <meshBasicMaterial color="#c4a574" transparent opacity={0.55} depthWrite={false} />
+                  </mesh>
+                );
+              })}
+            </group>
+          );
+        })}
       {(() => {
         // Corner posts seal joints where wall boxes meet at shared plan endpoints.
         const seen = new Set<string>();
@@ -1340,6 +1380,7 @@ function Guides({ selected, others }: { selected: FurnitureItem; others: Furnitu
 
 function Furniture() {
   const allItems = usePlannerStore((s) => s.furniture);
+  const layers = usePlannerStore((s) => s.layerVisibility);
   const walls = usePlannerStore((s) => s.walls);
   const openings = usePlannerStore((s) => s.openings);
   const planRooms = usePlannerStore((s) => s.planRooms);
@@ -1347,15 +1388,18 @@ function Furniture() {
   const workflowStage = usePlannerStore((s) => s.workflowStage);
   const placing = usePlannerStore((s) => !!s.pendingPlacement);
   const items = useMemo(() => {
-    if (workflowStage !== 'room' || !selectedRoomId) return allItems;
+    const source = layers.furniture
+      ? allItems
+      : allItems.filter((f) => f.placementKind === 'stair' || f.placementKind === 'perimeter-trim');
+    if (workflowStage !== 'room' || !selectedRoomId) return source;
     const room = planRooms.find((r) => r.id === selectedRoomId);
-    if (!room) return allItems;
-    return allItems.filter((item) => {
+    if (!room) return source;
+    return source.filter((item) => {
       const planX = item.x * PIXELS_PER_METER + WORLD_ORIGIN.x;
       const planY = item.z * PIXELS_PER_METER + WORLD_ORIGIN.y;
       return pointInPlanRoom(planX, planY, room);
     });
-  }, [allItems, planRooms, selectedRoomId, workflowStage]);
+  }, [allItems, planRooms, selectedRoomId, workflowStage, layers.furniture]);
   const selectedId = usePlannerStore((s) => s.selectedFurnitureId);
   const select = usePlannerStore((s) => s.selectFurniture);
   const update = usePlannerStore((s) => s.updateFurniture);
@@ -1736,6 +1780,7 @@ function Room() {
   const tool = usePlannerStore((s) => s.tool);
   const selectedSurface = usePlannerStore((s) => s.selectedSurface);
   const selectSurface = usePlannerStore((s) => s.selectSurface);
+  const layers = usePlannerStore((s) => s.layerVisibility);
   const detected = useMemo(() => detectRoomPolygons(walls), [walls]);
   const rooms = planRooms.length ? planRooms.map((r) => r.points) : detected;
   const ceilingHeight = walls[0]?.height ?? 2.7;
@@ -1886,7 +1931,7 @@ function Room() {
                   />
                 </mesh>
               )}
-              {label && cameraMode === 'top' && (
+              {label && cameraMode === 'top' && layers.labels && (
                 <Text
                   position={[
                     points.reduce((s, p) => s + (p.x - WORLD_ORIGIN.x) / PIXELS_PER_METER, 0) / points.length,
@@ -1931,11 +1976,43 @@ function Room() {
       )}
       <WallMeshes />
       <Furniture />
+      <AnnotationLayer />
       <GhostPlacement />
       <PlanEditLayer />
       <RoofAndSite />
       <StackedInactiveFloors />
     </Bvh>
+  );
+}
+
+function AnnotationLayer() {
+  const layers = usePlannerStore((s) => s.layerVisibility);
+  const annotations = usePlannerStore((s) => s.annotations);
+  const activeFloorId = usePlannerStore((s) => s.activeFloorId);
+  const selectedId = usePlannerStore((s) => s.selectedAnnotationId);
+  const select = usePlannerStore((s) => s.selectAnnotation);
+  const cameraMode = usePlannerStore((s) => s.cameraMode);
+  if (!layers.annotations || cameraMode !== 'top') return null;
+  const rows = annotations.filter((a) => a.floorId === activeFloorId);
+  return (
+    <group>
+      {rows.map((a) => (
+        <Html key={a.id} position={[a.x, 0.25, a.z]} center style={{ pointerEvents: 'auto' }} zIndexRange={[60, 40]}>
+          <button
+            type="button"
+            className={`plan-annotation is-${a.kind}${selectedId === a.id ? ' is-selected' : ''}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              select(a.id);
+              window.dispatchEvent(new Event('roomcraft-open-properties'));
+            }}
+            title={a.text}
+          >
+            {a.kind === 'cloud' ? '☁' : a.kind === 'arrow' ? '➤' : '✎'} {a.text}
+          </button>
+        </Html>
+      ))}
+    </group>
   );
 }
 
@@ -1973,8 +2050,9 @@ function RoofAndSite() {
 
   const outdoorRooms = planRooms.filter((r) => r.roomType === 'Outdoor');
   // Only show roofs in exterior orbit — never while walking inside or on top plan.
-  const showRoof = roofStyle !== 'none' && cameraMode === 'orbit';
-  const showSetback = cameraMode === 'top' && studioMode === 'architect';
+  const layers = usePlannerStore((s) => s.layerVisibility);
+  const showRoof = layers.roof && roofStyle !== 'none' && cameraMode === 'orbit';
+  const showSetback = layers.setbacks && cameraMode === 'top' && studioMode === 'architect';
   const rise = Math.min(1.1, Math.max(0.4, Math.min(w, d) * 0.2));
   const ridgeAlongZ = w >= d;
   const halfSpan = (ridgeAlongZ ? w : d) / 2;
@@ -2054,7 +2132,10 @@ function StackedInactiveFloors() {
   if (!stackView || cameraMode === 'top' || floors.length < 2) return null;
 
   const activeIdx = Math.max(0, floors.findIndex((f) => f.id === activeFloorId));
-  const story = 3.2;
+  const story =
+    floors.reduce((max, f) => Math.max(max, f.scene.walls?.[0]?.height ?? 0), 0) ||
+    activeFurniture.find((f) => f.placementKind === 'stair')?.stair?.riseM ||
+    3.0;
 
   return (
     <group>
@@ -2064,7 +2145,7 @@ function StackedInactiveFloors() {
         const rooms = floor.planRooms ?? floor.scene.planRooms ?? [];
         const walls = floor.scene.walls ?? [];
         const holes = stairsCuttingFloor(floor.id, floors, activeFloorId, activeFurniture);
-        const storyH = walls[0]?.height ?? 2.7;
+        const storyH = walls[0]?.height ?? story * 0.85;
         return (
           <group key={floor.id} position={[0, y, 0]}>
             {rooms.map((room) => (
