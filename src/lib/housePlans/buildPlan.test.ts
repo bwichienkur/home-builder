@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildFloorFromRooms, buildHouse, livingAreaSqFt, planRoomSizeFeet, proposedRoomOverlaps, row, shapedRoomPoints, splitPlanRoomPoints, squareRoomPoints, attachSquareRoomPoints, attachSideBlocked } from './buildPlan';
+import { buildFloorFromRooms, buildHouse, livingAreaSqFt, planRoomSizeFeet, proposedRoomOverlaps, row, shapedRoomPoints, splitPlanRoomPoints, squareRoomPoints, attachSquareRoomPoints, attachSideBlocked, nudgePlanRoomsByWall } from './buildPlan';
 import { WORLD_ORIGIN } from '../geometry/placement';
 import { assertPlanCatalog, listHousePlanNames, olsenHousePlans } from './olsenPlans';
 import { usePlannerStore } from '../../store/plannerStore';
@@ -51,6 +51,17 @@ describe('house plan builder', () => {
     expect(size.widthFt).toBeCloseTo(10, 1);
     expect(size.depthFt).toBeCloseTo(10, 1);
     expect(attachSideBlocked('h', 'right', [{ id: 'h', points: host }])).toBe(false);
+  });
+
+  it('nudges a vertical wall to change room width', () => {
+    const pts = squareRoomPoints(WORLD_ORIGIN, 12, 12);
+    const wall = { start: pts[1]!, end: pts[2]! }; // right edge
+    const before = planRoomSizeFeet(pts);
+    const next = nudgePlanRoomsByWall(wall, [{ id: 'r', name: 'R', roomType: 'Bedroom', points: pts }], 80, 0);
+    expect(next).toBeTruthy();
+    const after = planRoomSizeFeet(next![0]!.points);
+    expect(after.widthFt).toBeGreaterThan(before.widthFt + 2);
+    expect(after.depthFt).toBeCloseTo(before.depthFt, 1);
   });
 
   it('covers every Olsen-named plan from the New Smyrna floor-plans page', () => {

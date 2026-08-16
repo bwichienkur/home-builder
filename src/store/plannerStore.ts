@@ -6,7 +6,7 @@ import { clampWallMountY, constrainPlacement, openingConflicts, resolveMountingT
 import { detectRoomPolygons } from '../lib/geometry/rooms';
 import { perimeterTrimSegments, type PerimeterTrimEdge } from '../lib/geometry/ceilingTrim';
 import { writeRecoverySnapshot } from '../lib/designShare';
-import { buildHouse, rebuildFromPlanRooms, resizePlanRoomPoints, shapedRoomPoints, snapRoomCenterToNeighbors, splitPlanRoomPoints, proposedRoomOverlaps, planRoomLabelOverlaps, attachSquareRoomPoints, attachSideBlocked, type PlanRoomShape, type AttachSide } from '../lib/housePlans/buildPlan';
+import { buildHouse, rebuildFromPlanRooms, resizePlanRoomPoints, shapedRoomPoints, snapRoomCenterToNeighbors, splitPlanRoomPoints, proposedRoomOverlaps, planRoomLabelOverlaps, attachSquareRoomPoints, attachSideBlocked, nudgePlanRoomsByWall, type PlanRoomShape, type AttachSide } from '../lib/housePlans/buildPlan';
 import { getHousePlan } from '../lib/housePlans/olsenPlans';
 import { remapFurnitureAfterPlanRebuild } from '../lib/geometry/planFurnitureRemap';
 import { pointInPlanRoom, wallEndpointForGrowSide, type WallGrowSide } from '../lib/geometry/roomWalls';
@@ -112,6 +112,9 @@ type PlannerState = SceneSnapshot & {
   /** Plan-level “Add room” mode — pick a side of the selected room. */
   pendingAttachMode: boolean;
   setPendingAttachMode: (on: boolean) => void;
+  /** When true, plan-level Walls tool is armed (picks + dim cards + drag-resize). */
+  planWallTool: boolean;
+  setPlanWallTool: (on: boolean) => void;
   placePlanRoom: (center: Point, shape?: PlanRoomShape, name?: string) => string | null;
   /** Attach a square room flush to a host on left/right/top/bottom. */
   attachPlanRoom: (hostId: string, side: AttachSide, name?: string) => string | null;
@@ -119,6 +122,9 @@ type PlannerState = SceneSnapshot & {
   movePlanRoom: (id: string, dxM: number, dzM: number, opts?: { live?: boolean }) => boolean;
   /** Push current plan geometry onto undo history after a live room drag. */
   commitPlanRoomMove: () => void;
+  /** Drag a wall perpendicular to itself to change room width/depth. */
+  nudgeWall: (id: string, dxM: number, dzM: number, opts?: { live?: boolean }) => boolean;
+  commitWallNudge: () => void;
   splitPlanRoom: (id: string, axis?: 'x' | 'y') => void;
   setWorkflowStage: (stage: WorkflowStage) => void;
   setStudioMode: (mode: StudioMode) => void;
@@ -386,6 +392,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     planRooms: [],
     pendingRoomShape: null,
     pendingAttachMode: false,
+    planWallTool: false,
     workflowStage: 'start',
     studioMode: 'architect',
     setTool: (tool) => set({ tool: tool === 'wall' ? 'select' : tool, draftStart: null }),
@@ -628,6 +635,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         selectedOpeningId: null,
         selectedFurnitureId: null,
         selectedSurface: null,
+        planWallTool: selectedRoomId ? false : get().planWallTool,
         roomType: selectedRoomId ? get().planRooms.find((r) => r.id === selectedRoomId)?.roomType ?? get().roomType : get().roomType,
         // Selecting a room at plan level must not enter room focus — use enterRoom for that.
       }),
@@ -643,6 +651,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         selectedOpeningId: null,
         selectedSurface: null,
         pendingPlacement: null,
+        planWallTool: false,
+        pendingAttachMode: false,
         cameraMode: 'top',
         view: '3d',
       }),
@@ -661,6 +671,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         view: '3d',
         tool: 'select',
         draftStart: null,
+        planWallTool: false,
+        pendingAttachMode: false,
       });
     },
     exitRoom: () =>
@@ -766,6 +778,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       set({
         pendingAttachMode,
         pendingRoomShape: null,
+        planWallTool: false,
         tool: 'select',
         draftStart: null,
         selectedWallId: null,
@@ -779,6 +792,20 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
               : 'Select a room, then choose a side to add beside it.'
             : 'Tap Add room again to place the first square room.'
           : '',
+      }),
+    setPlanWallTool: (planWallTool) =>
+      set({
+        planWallTool,
+        pendingAttachMode: false,
+        pendingRoomShape: null,
+        tool: 'select',
+        draftStart: null,
+        selectedWallId: planWallTool ? get().selectedWallId : null,
+        selectedRoomId: planWallTool ? null : get().selectedRoomId,
+        studioMode: 'architect',
+        cameraMode: 'top',
+        view: '3d',
+        openingNotice: planWallTool ? 'Drag a wall to resize · tap for length & openings' : '',
       }),
     placePlanRoom: (center, shape, name) => {
       const kind = shape ?? get().pendingRoomShape ?? 'rectangle';
@@ -881,6 +908,47 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       return true;
     },
     commitPlanRoomMove: () => {
+      mutate({
+        walls: get().walls,
+        openings: get().openings,
+        furniture: get().furniture,
+        planRooms: get().planRooms,
+      });
+    },
+    nudgeWall: (id, dxM, dzM, opts) => {
+      if (!Number.isFinite(dxM) || !Number.isFinite(dzM)) return false;
+      if (Math.abs(dxM) < 1e-6 && Math.abs(dzM) < 1e-6) return true;
+      const wall = get().walls.find((w) => w.id === id);
+      if (!wall) return false;
+      const labels = get().planRooms;
+      if (!labels.length) return false;
+      const dxPx = dxM * PIXELS_PER_METER;
+      const dyPx = dzM * PIXELS_PER_METER;
+      const nextLabels = nudgePlanRoomsByWall(wall, labels, dxPx, dyPx);
+      if (!nextLabels) {
+        set({ openingNotice: 'Rooms can’t get smaller than 3 ft on a side.' });
+        return false;
+      }
+      const expectMid = {
+        x: (wall.start.x + wall.end.x) / 2 + (Math.abs(wall.end.x - wall.start.x) <= Math.abs(wall.end.y - wall.start.y) ? dxPx : 0),
+        y: (wall.start.y + wall.end.y) / 2 + (Math.abs(wall.end.x - wall.start.x) <= Math.abs(wall.end.y - wall.start.y) ? 0 : dyPx),
+      };
+      applyPlanRoomRebuild(nextLabels, { live: opts?.live, selectedRoomId: get().selectedRoomId });
+      let bestId: string | null = null;
+      let bestD = Infinity;
+      for (const w of get().walls) {
+        const mx = (w.start.x + w.end.x) / 2;
+        const my = (w.start.y + w.end.y) / 2;
+        const d = Math.hypot(mx - expectMid.x, my - expectMid.y);
+        if (d < bestD) {
+          bestD = d;
+          bestId = w.id;
+        }
+      }
+      set({ selectedWallId: bestId, openingNotice: '' });
+      return true;
+    },
+    commitWallNudge: () => {
       mutate({
         walls: get().walls,
         openings: get().openings,

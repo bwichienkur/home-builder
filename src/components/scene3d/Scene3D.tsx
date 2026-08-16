@@ -728,6 +728,9 @@ function WallMeshes() {
   const selectedRoomId = usePlannerStore((s) => s.selectedRoomId);
   const workflowStage = usePlannerStore((s) => s.workflowStage);
   const select = usePlannerStore((s) => s.selectWall);
+  const nudgeWall = usePlannerStore((s) => s.nudgeWall);
+  const commitWallNudge = usePlannerStore((s) => s.commitWallNudge);
+  const planWallTool = usePlannerStore((s) => s.planWallTool);
   const cameraMode = usePlannerStore((s) => s.cameraMode);
   const studioMode = usePlannerStore((s) => s.studioMode);
   const tool = usePlannerStore((s) => s.tool);
@@ -735,16 +738,101 @@ function WallMeshes() {
   const wallIds = useMemo(() => new Set(walls.map((w) => w.id)), [walls]);
   const visibleOpenings = useMemo(() => openings.filter((o) => wallIds.has(o.wallId)), [openings, wallIds]);
   const orbiting = cameraMode === 'orbit';
-  // Walls are only selectable in top-view Walls edit mode — not while furnishing or orbiting.
-  const wallEditMode = studioMode === 'architect' && cameraMode === 'top' && tool === 'select';
+  // Walls tool must be explicitly armed — default select mode does not highlight Walls.
+  const wallEditMode = studioMode === 'architect' && cameraMode === 'top' && tool === 'select' && planWallTool;
   // Hide wide wall picks while a room is selected so plan rooms stay draggable.
   const showPlanWallPicks = wallEditMode && workflowStage !== 'room' && !selectedRoomId;
   // Openings can be dragged in top plan and 3D orbit (not walk).
   const openingDragEnabled = tool === 'select' && (cameraMode === 'top' || cameraMode === 'orbit');
+  const { camera, gl, invalidate } = useThree();
+  const floorPlane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), []);
+  const dragRaycaster = useMemo(() => new THREE.Raycaster(), []);
+  const dragNdc = useMemo(() => new THREE.Vector2(), []);
+  const wallDragRef = useRef<{
+    wallId: string;
+    lastX: number;
+    lastZ: number;
+    moved: boolean;
+    listeners: { move: (e: PointerEvent) => void; end: (e: PointerEvent) => void } | null;
+  } | null>(null);
+
+  const hitFloor = (clientX: number, clientY: number) => {
+    const rect = gl.domElement.getBoundingClientRect();
+    dragNdc.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    dragNdc.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+    dragRaycaster.setFromCamera(dragNdc, camera);
+    const hit = new THREE.Vector3();
+    if (!dragRaycaster.ray.intersectPlane(floorPlane, hit)) return null;
+    return hit;
+  };
+
+  const beginWallDrag = (e: any, wallId: string) => {
+    if (!wallEditMode) return;
+    e.stopPropagation();
+    select(wallId);
+    const hit = hitFloor(e.clientX, e.clientY);
+    if (!hit) return;
+    const drag = {
+      wallId,
+      lastX: hit.x,
+      lastZ: hit.z,
+      moved: false,
+      listeners: null as null | { move: (e: PointerEvent) => void; end: (e: PointerEvent) => void },
+    };
+    const onMove = (ev: PointerEvent) => {
+      const next = hitFloor(ev.clientX, ev.clientY);
+      if (!next) return;
+      const dx = next.x - drag.lastX;
+      const dz = next.z - drag.lastZ;
+      if (!drag.moved) {
+        if (Math.hypot(next.x - hit.x, next.z - hit.z) < 0.04) return;
+        drag.moved = true;
+        document.body.dataset.movingFurniture = '1';
+        window.dispatchEvent(new Event('roomcraft-drag-start'));
+      }
+      const wid = usePlannerStore.getState().selectedWallId ?? drag.wallId;
+      if (nudgeWall(wid, dx, dz, { live: true })) {
+        drag.wallId = usePlannerStore.getState().selectedWallId ?? wid;
+        drag.lastX = next.x;
+        drag.lastZ = next.z;
+        invalidate();
+      }
+    };
+    const onEnd = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onEnd);
+      window.removeEventListener('pointercancel', onEnd);
+      if (drag.moved) {
+        commitWallNudge();
+        delete document.body.dataset.movingFurniture;
+        window.dispatchEvent(new Event('roomcraft-drag-end'));
+        window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-fit-plan')), 40);
+      }
+      wallDragRef.current = null;
+    };
+    drag.listeners = { move: onMove, end: onEnd };
+    wallDragRef.current = drag;
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onEnd);
+    window.addEventListener('pointercancel', onEnd);
+  };
+
+  useEffect(
+    () => () => {
+      const drag = wallDragRef.current;
+      if (drag?.listeners) {
+        window.removeEventListener('pointermove', drag.listeners.move);
+        window.removeEventListener('pointerup', drag.listeners.end);
+        window.removeEventListener('pointercancel', drag.listeners.end);
+      }
+    },
+    [],
+  );
+
   const onWallClick = (id: string) => {
     if (!wallEditMode) return;
+    if (wallDragRef.current?.moved) return;
     select(id);
-    // Properties open from the Edit fab — don't cover the plan on every wall tap.
   };
 
   return (
@@ -798,7 +886,7 @@ function WallMeshes() {
                 e.stopPropagation();
                 onWallClick(w.id);
               }}
-              onPointerDown={(e) => e.stopPropagation()}
+              onPointerDown={(e) => beginWallDrag(e, w.id)}
             >
               <boxGeometry args={[Math.max(origLen, 0.35), 0.1, Math.max(w.thickness * 5, 0.48)]} />
               <meshBasicMaterial transparent opacity={0} depthWrite={false} depthTest={false} side={THREE.DoubleSide} />
@@ -1524,7 +1612,8 @@ function Room() {
   const [floorOpacity, setFloorOpacity] = useState(1);
   // Top / bird’s-eye must see the floor — a solid ceiling makes the room unusable to edit.
   const showCeiling = cameraMode !== 'top' || selectedSurface === 'ceiling';
-  const wallEditMode = studioMode === 'architect' && cameraMode === 'top' && tool === 'select';
+  const planWallTool = usePlannerStore((s) => s.planWallTool);
+  const wallEditMode = studioMode === 'architect' && cameraMode === 'top' && tool === 'select' && planWallTool;
   const roomDragRef = useRef<{
     roomId: string;
     lastX: number;
@@ -1550,6 +1639,7 @@ function Room() {
     if (workflowStage === 'room' || tool !== 'select') return;
     if (usePlannerStore.getState().pendingRoomShape) return;
     if (usePlannerStore.getState().pendingFloorFill) return;
+    if (usePlannerStore.getState().planWallTool) return;
     e.stopPropagation();
     (e.target as any)?.setPointerCapture?.(e.pointerId);
     selectRoom(roomId);

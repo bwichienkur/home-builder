@@ -140,7 +140,9 @@ export function StudioChrome({
   const baseName = furniture.find((f) => f.placementKind === 'perimeter-trim' && f.trimEdge === 'floor')?.name;
   const categories = roomCategories[roomType];
   const isTop = camera === 'top';
-  const wallEditMode = studioMode === 'architect' && isTop && tool === 'select';
+  const planWallTool = usePlannerStore((s) => s.planWallTool);
+  const setPlanWallTool = usePlannerStore((s) => s.setPlanWallTool);
+  const wallEditMode = studioMode === 'architect' && isTop && tool === 'select' && planWallTool;
   const showSelectionFabs = !!selectedItem && !pending;
   const showOpeningFabs = !!selectedOpening && !pending && !selectedWall;
   const showWallFabs = wallEditMode && !!selectedWall && !pending;
@@ -290,7 +292,12 @@ export function StudioChrome({
     setDraftStart(null);
     setView('3d');
     setCamera('top');
-    if (id !== 'select') usePlannerStore.getState().selectWall(null);
+    if (id === 'select') {
+      setPlanWallTool(!planWallTool);
+    } else {
+      setPlanWallTool(false);
+      usePlannerStore.getState().selectWall(null);
+    }
   };
 
   const startAddRoom = () => {
@@ -299,6 +306,7 @@ export function StudioChrome({
     setDraftStart(null);
     setView('3d');
     setCamera('top');
+    setPlanWallTool(false);
     if (!planRooms.length) {
       const id = placePlanRoom(WORLD_ORIGIN, 'rectangle', 'Room 1');
       if (id) {
@@ -457,8 +465,6 @@ export function StudioChrome({
                   {f.name.replace(/\s*floor$/i, '') || f.name}
                 </button>
               ))}
-            </div>
-            <div className="studio-story-bar-actions">
               <button
                 type="button"
                 className="studio-floor-add"
@@ -473,10 +479,11 @@ export function StudioChrome({
                   }, 80);
                 }}
               >
-                <Plus size={16} />
-                <span>Floor</span>
+                <Plus size={14} />
               </button>
-              {floors.length > 1 && (
+            </div>
+            {floors.length > 1 && (
+              <div className="studio-story-bar-actions">
                 <button
                   type="button"
                   className="studio-floor-delete"
@@ -486,36 +493,20 @@ export function StudioChrome({
                 >
                   <Trash2 size={14} />
                 </button>
-              )}
-              {floors.length > 1 && (
                 <button type="button" className="studio-floor-all" onClick={() => setStoriesOpen(true)} title="View all floors">
                   All
                 </button>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         )}
       </div>
 
-      {atPlanLevel && isTop && !pending && (
-        <button
-          type="button"
-          className={`studio-plan-add-room${pendingAttachMode ? ' is-active' : ''}`}
-          onClick={startAddRoom}
-          aria-pressed={pendingAttachMode}
-          aria-label="Add room"
-          title="Add room"
-        >
-          <Plus size={16} />
-          <span>{pendingAttachMode ? 'Cancel add' : 'Add room'}</span>
-        </button>
-      )}
-
-      {!inRoom && planRooms.length >= 1 && !pending && !selectedItem && tool === 'select' && !selectedRoom && !pendingAttachMode && (
+      {!inRoom && planRooms.length >= 1 && !pending && !selectedItem && tool === 'select' && !selectedRoom && !pendingAttachMode && !planWallTool && (
         <div className="studio-selection-hint studio-hint-float">Tap a room to select · drag to move · Furnish on the right rail</div>
       )}
       {!inRoom && planRooms.length >= 1 && !pending && !selectedItem && tool === 'select' && selectedRoom && !pendingAttachMode && (
-        <div className="studio-selection-hint studio-hint-float">Drag to move · Furnish to enter · tap empty space for walls</div>
+        <div className="studio-selection-hint studio-hint-float">Drag to move · Furnish to enter</div>
       )}
       {pendingAttachMode && !selectedRoom && planRooms.length >= 1 && (
         <div className="studio-selection-hint studio-hint-float">Select a room, then pick Left / Right / Above / Below</div>
@@ -525,9 +516,8 @@ export function StudioChrome({
           Add a matching square beside “{selectedRoom.name}” — blocked sides stay grey
         </div>
       )}
-
-      {showPlanTools && tool === 'select' && !selectedWall && !selectedRoom && !pendingAttachMode && (
-        <div className="studio-selection-hint studio-hint-float">Tap a wall · enter length on the plan · add openings from wall actions</div>
+      {planWallTool && !selectedWall && !pendingAttachMode && (
+        <div className="studio-selection-hint studio-hint-float">Drag a wall to resize · tap a wall for openings</div>
       )}
       {pendingFloorFill && (
         <div className="studio-selection-hint studio-hint-float">
@@ -681,13 +671,14 @@ export function StudioChrome({
           {showPlanToolButtons &&
             planTools.map((t) => {
               const Icon = t.icon;
-              const active = !pendingAttachMode && studioMode === 'architect' && tool === t.id;
+              const active = planWallTool && !pendingAttachMode && studioMode === 'architect' && tool === t.id;
               return (
                 <button
                   key={t.id}
                   type="button"
                   className={`studio-rail-walls${active ? ' is-active' : ''}`}
                   onClick={() => choosePlanTool(t.id)}
+                  aria-pressed={planWallTool}
                   aria-label={t.label}
                   title={t.label}
                 >
@@ -735,32 +726,46 @@ export function StudioChrome({
         </div>
       )}
 
-      <div className="studio-dock" role="toolbar" aria-label="Studio controls">
+      <div className={`studio-dock${inRoom ? ' is-room' : ''}`} role="toolbar" aria-label="Studio controls">
         <div className="studio-dock-shell studio-dock-flat">
-          <div className="studio-dock-seg" role="group" aria-label="View mode">
-            <button type="button" className={isTop ? 'is-active' : ''} onClick={chooseTop} title="Plan view">
-              <Grid2X2 size={16} />
-              <span>Plan</span>
+          <div className="studio-dock-row">
+            <div className="studio-dock-seg" role="group" aria-label="View mode">
+              <button type="button" className={isTop ? 'is-active' : ''} onClick={chooseTop} title="Plan view">
+                <Grid2X2 size={16} />
+                <span>Plan</span>
+              </button>
+              <button type="button" className={!isTop && camera === 'orbit' ? 'is-active' : ''} onClick={() => choose3d('orbit')} title="3D view">
+                <Layers3 size={16} />
+                <span>3D</span>
+              </button>
+            </div>
+            {atPlanLevel && isTop && !pending && (
+              <button
+                type="button"
+                className={`studio-dock-action${pendingAttachMode ? ' is-active' : ''}`}
+                onClick={startAddRoom}
+                aria-pressed={pendingAttachMode}
+                title="Add room"
+              >
+                <Plus size={15} />
+                <span>{pendingAttachMode ? 'Cancel' : 'Add'}</span>
+              </button>
+            )}
+            <button type="button" className="studio-dock-action" onClick={refocus} title="Fit in view">
+              <Focus size={15} />
+              <span>Fit</span>
             </button>
-            <button type="button" className={!isTop && camera === 'orbit' ? 'is-active' : ''} onClick={() => choose3d('orbit')} title="3D view">
-              <Layers3 size={16} />
-              <span>3D</span>
+            <button type="button" className="studio-dock-action" onClick={undo} disabled={historyIndex === 0} title="Undo">
+              <Undo2 size={15} />
+              <span>Undo</span>
+            </button>
+            <button type="button" className="studio-dock-action" onClick={redo} disabled={historyIndex === historyLength - 1} title="Redo">
+              <Redo2 size={15} />
+              <span>Redo</span>
             </button>
           </div>
-          <button type="button" className="studio-dock-action" onClick={refocus} title="Fit in view">
-            <Focus size={15} />
-            <span>Fit</span>
-          </button>
-          <button type="button" className="studio-dock-action" onClick={undo} disabled={historyIndex === 0} title="Undo">
-            <Undo2 size={15} />
-            <span>Undo</span>
-          </button>
-          <button type="button" className="studio-dock-action" onClick={redo} disabled={historyIndex === historyLength - 1} title="Redo">
-            <Redo2 size={15} />
-            <span>Redo</span>
-          </button>
           {inRoom && !pending && (
-            <div className="studio-dock-seg studio-dock-clear" role="group" aria-label="Clear finishes">
+            <div className="studio-dock-row studio-dock-clear" role="group" aria-label="Clear finishes">
               <button type="button" className="studio-dock-action" disabled={!hasCrown} onClick={confirmClearCrown} title="Clear crown molding">
                 <span>Crown</span>
               </button>
