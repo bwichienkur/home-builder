@@ -104,6 +104,9 @@
 .app-shell-main:has(.studio-root) {
   overflow: hidden;
 }
+.app-shell:has(.studio-root) .app-shell-top {
+  border-bottom: 0;
+}
 .studio-root {
   height: 100%;
   min-height: 0;

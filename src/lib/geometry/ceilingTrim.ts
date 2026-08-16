@@ -1,4 +1,4 @@
-import type { FurnitureItem, PlanRoomLabel, Wall } from '../../types';
+import type { FurnitureItem, Opening, PlanRoomLabel, Wall } from '../../types';
 import { planToWorld, pointOnWall, wallFrame } from './placement';
 import { wallsBelongingToRoom } from './roomWalls';
 
@@ -77,7 +77,6 @@ function builtinCoversWall(
   const s = Math.abs(Math.sin(item.rotation ?? 0));
   const halfW = (item.width * c + item.depth * s) / 2;
   const halfD = (item.width * s + item.depth * c) / 2;
-  // Distance from item center to wall centerline.
   const vx = item.x - frame.start.x;
   const vz = item.z - frame.start.z;
   const along = vx * frame.dirX + vz * frame.dirZ;
@@ -88,10 +87,67 @@ function builtinCoversWall(
   return span / frame.length >= coverRatio;
 }
 
+/** True when an opening’s vertical band overlaps the trim strip. */
+export function openingIntersectsTrimBand(
+  opening: Pick<Opening, 'sill' | 'height'>,
+  trimY: number,
+  trimHeight: number,
+) {
+  const o0 = opening.sill;
+  const o1 = opening.sill + opening.height;
+  const t0 = trimY;
+  const t1 = trimY + trimHeight;
+  return o0 < t1 - 0.01 && o1 > t0 + 0.01;
+}
+
+/** Subtract holes from a 1D interval; drop remnants shorter than minLen. */
+export function subtractIntervals(
+  span: [number, number],
+  holes: [number, number][],
+  minLen = 0.08,
+): [number, number][] {
+  let parts: [number, number][] = [span];
+  for (const [h0Raw, h1Raw] of holes) {
+    const h0 = Math.min(h0Raw, h1Raw);
+    const h1 = Math.max(h0Raw, h1Raw);
+    const next: [number, number][] = [];
+    for (const [a, b] of parts) {
+      if (h1 <= a || h0 >= b) {
+        next.push([a, b]);
+        continue;
+      }
+      if (h0 > a) next.push([a, Math.min(b, h0)]);
+      if (h1 < b) next.push([Math.max(a, h1), b]);
+    }
+    parts = next.filter(([a, b]) => b - a >= minLen);
+  }
+  return parts;
+}
+
+function openingHolesAlongWall(
+  wall: Wall,
+  openings: Opening[],
+  trimY: number,
+  trimHeight: number,
+  casing = 0.02,
+): [number, number][] {
+  const len = wallFrame(wall).length;
+  const holes: [number, number][] = [];
+  for (const opening of openings) {
+    if (opening.wallId !== wall.id) continue;
+    if (!openingIntersectsTrimBand(opening, trimY, trimHeight)) continue;
+    const center = opening.offset * len;
+    const half = opening.width / 2 + casing;
+    holes.push([Math.max(0, center - half), Math.min(len, center + half)]);
+  }
+  return holes;
+}
+
 /**
  * Build trim strips along the room’s wall–ceiling or wall–floor junctions,
  * inset to the interior face. Ends are shortened for a simple miter meet.
  * Floor trim skips walls dominated by counters / cabinets.
+ * Segments stop at openings that intersect the trim height band.
  */
 export function perimeterTrimSegments(
   room: PlanRoomLabel,
@@ -101,6 +157,7 @@ export function perimeterTrimSegments(
     profileHeight: number;
     edge: PerimeterTrimEdge;
     furniture?: FurnitureItem[];
+    openings?: Opening[];
   },
 ): PerimeterTrimSegment[] {
   const boundary = boundaryWallsForRoom(room, walls);
@@ -112,6 +169,7 @@ export function perimeterTrimSegments(
     opts.edge === 'floor'
       ? (opts.furniture ?? []).filter(isTrimBypassBuiltin)
       : [];
+  const openings = opts.openings ?? [];
 
   const out: PerimeterTrimSegment[] = [];
   for (const wall of boundary) {
@@ -125,21 +183,31 @@ export function perimeterTrimSegments(
     let side = 1;
     if (plusInside && !minusInside) side = 1;
     else if (minusInside && !plusInside) side = -1;
-    const placed = side > 0 ? plus : minus;
     const y = opts.edge === 'ceiling' ? Math.max(0.05, wall.height - height) : 0;
-    // Shorten by 2× profile depth so adjacent strips meet at a miter instead of overlapping past the corner.
-    const width = Math.max(0.15, frame.length - 2 * depth);
-    out.push({
-      wallId: wall.id,
-      x: placed.x,
-      z: placed.z,
-      y,
-      rotation: placed.rotation + (side < 0 ? Math.PI : 0),
-      width,
-      depth,
-      height,
-      wallOffset: 0.5,
-    });
+    const miter = depth;
+    const spanStart = miter;
+    const spanEnd = frame.length - miter;
+    if (spanEnd - spanStart < 0.08) continue;
+
+    const holes = openingHolesAlongWall(wall, openings, y, height);
+    const intervals = subtractIntervals([spanStart, spanEnd], holes, 0.08);
+
+    for (const [a, b] of intervals) {
+      const mid = (a + b) / 2;
+      const wallOffset = mid / frame.length;
+      const placed = pointOnWall(wall, wallOffset, side * inset);
+      out.push({
+        wallId: wall.id,
+        x: placed.x,
+        z: placed.z,
+        y,
+        rotation: placed.rotation + (side < 0 ? Math.PI : 0),
+        width: b - a,
+        depth,
+        height,
+        wallOffset,
+      });
+    }
   }
   return out;
 }

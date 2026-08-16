@@ -723,9 +723,11 @@ function OpeningDragHandle({
   const ndc = useMemo(() => new THREE.Vector2(), []);
   const hit = useMemo(() => new THREE.Vector3(), []);
   const wallLen = wallFrame(wall).length;
-  const handleH = Math.max(0.35, opening.height * 0.55);
-  const handleY = opening.sill + opening.height * 0.45;
-  const idleOpacity = cameraMode === 'top' ? 0.08 : 0.03;
+  const boxW = Math.max(opening.width + 0.04, 0.4);
+  const boxH = Math.max(opening.height + 0.04, 0.4);
+  const boxY = opening.sill + opening.height / 2;
+  const boxD = Math.max(wall.thickness + 0.22, 0.32);
+  const idleOpacity = cameraMode === 'top' ? 0.1 : 0.05;
 
   const project = (clientX: number, clientY: number) => {
     const rect = gl.domElement.getBoundingClientRect();
@@ -786,7 +788,7 @@ function OpeningDragHandle({
 
   return (
     <mesh
-      position={[x, handleY, z]}
+      position={[x, boxY, z]}
       rotation={[0, angle, 0]}
       userData={{ openingPick: true, openingId: opening.id }}
       onPointerDown={onPointerDown}
@@ -796,11 +798,11 @@ function OpeningDragHandle({
       }}
       renderOrder={8}
     >
-      <boxGeometry args={[Math.max(opening.width, 0.45), handleH, Math.max(wall.thickness + 0.2, 0.35)]} />
+      <boxGeometry args={[boxW, boxH, boxD]} />
       <meshBasicMaterial
         color={selected ? '#0058a3' : '#64748b'}
         transparent
-        opacity={selected ? 0.32 : idleOpacity}
+        opacity={selected ? 0.34 : idleOpacity}
         depthWrite={false}
         depthTest={false}
       />

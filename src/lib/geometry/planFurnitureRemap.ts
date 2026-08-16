@@ -1,4 +1,4 @@
-import type { FurnitureItem, PlanRoomLabel, Wall } from '../../types';
+import type { FurnitureItem, Opening, PlanRoomLabel, Wall } from '../../types';
 import { perimeterTrimSegments, type PerimeterTrimEdge } from './ceilingTrim';
 import { WORLD_ORIGIN } from './placement';
 import { pointInPlanRoom } from './roomWalls';
@@ -45,6 +45,7 @@ export function remapFurnitureAfterPlanRebuild(
   nextRooms: PlanRoomLabel[],
   nextWalls: Wall[],
   furniture: FurnitureItem[],
+  openings: Opening[] = [],
 ): FurnitureItem[] {
   const nextById = new Map(nextRooms.map((r) => [r.id, r]));
 
@@ -103,6 +104,7 @@ export function remapFurnitureAfterPlanRebuild(
       profileHeight: sample.height,
       edge,
       furniture: remappedOther,
+      openings,
     });
     const runId = sample.runId ?? crypto.randomUUID();
     for (const seg of segments) {

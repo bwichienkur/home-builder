@@ -105,6 +105,51 @@ describe('ceiling / floor perimeter trim', () => {
     }
   });
 
+  it('cuts baseboard at doors and passages on the same wall', () => {
+    const openings = [
+      {
+        id: 'door1',
+        wallId: 'w1',
+        type: 'door' as const,
+        offset: 0.5,
+        width: 0.9,
+        height: 2.1,
+        sill: 0,
+      },
+    ];
+    const segs = perimeterTrimSegments(room, walls, {
+      profileDepth: 0.015,
+      profileHeight: 0.09,
+      edge: 'floor',
+      openings,
+    });
+    const onW1 = segs.filter((s) => s.wallId === 'w1');
+    expect(onW1.length).toBeGreaterThanOrEqual(2);
+    const total = onW1.reduce((s, seg) => s + seg.width, 0);
+    expect(total).toBeLessThan(6 - 2 * 0.015 - 0.5);
+  });
+
+  it('keeps crown continuous when a door does not reach the ceiling band', () => {
+    const openings = [
+      {
+        id: 'door1',
+        wallId: 'w1',
+        type: 'door' as const,
+        offset: 0.5,
+        width: 0.9,
+        height: 2.1,
+        sill: 0,
+      },
+    ];
+    const segs = perimeterTrimSegments(room, walls, {
+      profileDepth: 0.05,
+      profileHeight: 0.09,
+      edge: 'ceiling',
+      openings,
+    });
+    expect(segs.filter((s) => s.wallId === 'w1')).toHaveLength(1);
+  });
+
   it('ignores interior partitions that are not on the outline', () => {
     const divider: Wall = {
       id: 'div',
