@@ -6,10 +6,13 @@ import { listBuiltinHousePlans } from '../../lib/housePlans/planRegistry';
 
 export function HomePage() {
   const user = useAuthStore((s) => s.user);
-  const clients = useCrmStore((s) => s.clients.filter((c) => !c.archived).length);
-  const vendors = useCrmStore((s) => s.vendors.filter((v) => !v.archived).length);
-  const inventory = useCrmStore((s) => s.inventory.filter((i) => !i.archived).length);
+  const clients = useCrmStore((s) => s.clients);
+  const vendors = useCrmStore((s) => s.vendors);
+  const inventory = useCrmStore((s) => s.inventory);
   const importedPlans = useCrmStore((s) => s.housePlans.length);
+  const clientCount = clients.reduce((n, c) => n + (c.archived ? 0 : 1), 0);
+  const vendorCount = vendors.reduce((n, v) => n + (v.archived ? 0 : 1), 0);
+  const inventoryCount = inventory.reduce((n, i) => n + (i.archived ? 0 : 1), 0);
   const builtin = listBuiltinHousePlans().length;
 
   return (
@@ -30,17 +33,17 @@ export function HomePage() {
         <Link className="home-card" to="/clients">
           <Users size={22} />
           <strong>Clients</strong>
-          <span>{clients} active · CSV import/export</span>
+          <span>{clientCount} active · CSV import/export</span>
         </Link>
         <Link className="home-card" to="/vendors">
           <Package size={22} />
           <strong>Vendors</strong>
-          <span>{vendors} active · CSV import/export</span>
+          <span>{vendorCount} active · CSV import/export</span>
         </Link>
         <Link className="home-card" to="/inventory">
           <Boxes size={22} />
           <strong>Inventory</strong>
-          <span>{inventory} SKUs · CSV import/export</span>
+          <span>{inventoryCount} SKUs · CSV import/export</span>
         </Link>
         <Link className="home-card" to="/plans">
           <LayoutTemplate size={22} />

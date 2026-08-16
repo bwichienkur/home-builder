@@ -60,8 +60,20 @@ export const useCrmStore = create<CrmState>((set, get) => ({
   customFields: [],
   housePlans: [],
   hydrate: async () => {
-    const data = await getCrmProvider().load();
-    set({ ...data, ready: true });
+    try {
+      const data = await getCrmProvider().load();
+      set({
+        clients: Array.isArray(data.clients) ? data.clients : [],
+        vendors: Array.isArray(data.vendors) ? data.vendors : [],
+        inventory: Array.isArray(data.inventory) ? data.inventory : [],
+        customFields: Array.isArray(data.customFields) ? data.customFields : [],
+        housePlans: Array.isArray(data.housePlans) ? data.housePlans : [],
+        ready: true,
+      });
+    } catch (err) {
+      console.warn('CRM hydrate failed', err);
+      set({ ready: true });
+    }
   },
   upsertClient: (input) => {
     const existing = input.id ? get().clients.find((c) => c.id === input.id) : undefined;

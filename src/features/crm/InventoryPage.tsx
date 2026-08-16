@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useMemo, useState } from 'react';
 import type { InventoryRecord } from '../../lib/crm/types';
 import { useCrmStore } from '../../store/crmStore';
 import { CustomFieldsInputs, EntityCrmPage, EntityDrawer } from './EntityCrmPage';
@@ -19,7 +19,8 @@ const empty = (): Partial<InventoryRecord> & { sku: string; name: string; catego
 });
 
 export function InventoryPage() {
-  const inventory = useCrmStore((s) => s.inventory.filter((i) => !i.archived));
+  const allInventory = useCrmStore((s) => s.inventory);
+  const inventory = useMemo(() => (allInventory ?? []).filter((i) => !i.archived), [allInventory]);
   const fields = useCrmStore((s) => s.customFields);
   const upsert = useCrmStore((s) => s.upsertInventory);
   const archive = useCrmStore((s) => s.archiveEntity);

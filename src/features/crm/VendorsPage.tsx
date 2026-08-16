@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useMemo, useState } from 'react';
 import type { Vendor } from '../../lib/crm/types';
 import { useCrmStore } from '../../store/crmStore';
 import { CustomFieldsInputs, EntityCrmPage, EntityDrawer } from './EntityCrmPage';
@@ -14,7 +14,8 @@ const empty = (): Partial<Vendor> & { name: string } => ({
 });
 
 export function VendorsPage() {
-  const vendors = useCrmStore((s) => s.vendors.filter((v) => !v.archived));
+  const allVendors = useCrmStore((s) => s.vendors);
+  const vendors = useMemo(() => (allVendors ?? []).filter((v) => !v.archived), [allVendors]);
   const fields = useCrmStore((s) => s.customFields);
   const upsert = useCrmStore((s) => s.upsertVendor);
   const archive = useCrmStore((s) => s.archiveEntity);
