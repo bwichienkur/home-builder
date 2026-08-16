@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { evaluateBuildingChecks, WALL_ASSEMBLY_PRESETS } from './buildingChecks';
-import { stairsCuttingFloor } from '../geometry/stairCutouts';
-import type { FurnitureItem, Wall } from '../types';
+import { stairsCuttingFloor } from './geometry/stairCutouts';
+import type { FurnitureItem } from '../types';
 
 describe('buildingChecks', () => {
   it('flags tall stair risers', () => {

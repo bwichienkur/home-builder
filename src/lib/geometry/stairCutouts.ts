@@ -1,4 +1,4 @@
-import type { FurnitureItem } from '../types';
+import type { FurnitureItem } from '../../types';
 
 type FloorLike = {
   id: string;
