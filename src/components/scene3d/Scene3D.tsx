@@ -83,14 +83,16 @@ function CameraRig() {
   const selectedWallId = usePlannerStore((s) => s.selectedWallId);
   const studioMode = usePlannerStore((s) => s.studioMode);
   const tool = usePlannerStore((s) => s.tool);
+  const planWallTool = usePlannerStore((s) => s.planWallTool);
   const workflowStage = usePlannerStore((s) => s.workflowStage);
   const placing = usePlannerStore((s) => !!s.pendingPlacement);
   const [moving, setMoving] = useState(false);
   const controls = useRef<any>(null);
   const { invalidate, get, size } = useThree();
   const focusRoom = workflowStage === 'room' ? planRooms.find((r) => r.id === selectedRoomId) : null;
+  // Wall-zoom was for the dim card; during Walls resize keep the full plate centered.
   const focusWall =
-    studioMode === 'architect' && mode === 'top' && tool === 'select'
+    studioMode === 'architect' && mode === 'top' && tool === 'select' && !planWallTool
       ? walls.find((w) => w.id === selectedWallId) ?? null
       : null;
   const coarse = useMemo(() => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches, []);
@@ -323,9 +325,10 @@ function CameraRig() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusRoom?.id, workflowStage, chromeFit.padScale, chromeFit.shiftFraction, inspectorOpen, focusWall?.id]);
 
-  // Keep the selected wall centered as length / width / height change.
+  // Keep the selected wall centered as length / width / height change (not during plan wall resize).
   useEffect(() => {
-    if (!focusWall || inspectorOpen) return;
+    if (!focusWall || inspectorOpen || planWallTool) return;
+    if (document.body.dataset.movingFurniture === '1') return;
     if (performance.now() < modeAnimUntil.current) return;
     if (mode !== 'top') return;
     animateToPose(280);
@@ -340,7 +343,16 @@ function CameraRig() {
     focusWall?.height,
     framing.topHeight,
     shiftX,
+    planWallTool,
   ]);
+
+  // While drag-resizing walls, keep the plate framed and page-centered as geometry rebuilds.
+  useEffect(() => {
+    if (!planWallTool || mode !== 'top' || inspectorOpen) return;
+    if (document.body.dataset.movingFurniture !== '1') return;
+    snapToPose();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [walls, planWallTool, framing.topHeight, framing.span, shiftX, mode]);
 
   // Edit card open/close — ease into free area / restore the pre-panel view.
   useEffect(() => {
