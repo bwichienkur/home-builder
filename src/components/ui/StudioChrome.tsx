@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
+  ArrowUpDown,
   Bath,
   BedDouble,
   Check,
@@ -108,6 +109,7 @@ export function StudioChrome({
   const activeFloorId = usePlannerStore((s) => s.activeFloorId);
   const switchFloor = usePlannerStore((s) => s.switchFloor);
   const addFloor = usePlannerStore((s) => s.addFloor);
+  const addStair = usePlannerStore((s) => s.addStair);
   const deleteFloor = usePlannerStore((s) => s.deleteFloor);
   const exitRoom = usePlannerStore((s) => s.exitRoom);
   const showStart = usePlannerStore((s) => s.showStart);
@@ -442,6 +444,26 @@ export function StudioChrome({
             </div>
             {floors.length > 1 && (
               <div className="studio-story-bar-actions">
+                <button
+                  type="button"
+                  className="studio-floor-stair"
+                  aria-label="Add stair between floors"
+                  title="Add stair"
+                  onClick={() => {
+                    const idx = floors.findIndex((f) => f.id === activeFloorId);
+                    const from = floors[idx] ?? floors[0]!;
+                    const to = floors[idx + 1] ?? floors[idx - 1] ?? floors[0]!;
+                    if (from.id === to.id) return;
+                    setStudioMode('architect');
+                    addStair(from.id, to.id, 0, 0);
+                    window.setTimeout(() => {
+                      window.dispatchEvent(new Event('roomcraft-fit-plan'));
+                      window.dispatchEvent(new Event('roomcraft-refocus'));
+                    }, 80);
+                  }}
+                >
+                  <ArrowUpDown size={14} />
+                </button>
                 <button
                   type="button"
                   className="studio-floor-delete"

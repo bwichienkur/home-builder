@@ -407,6 +407,39 @@ export function resizePlanRoomPoints(points: Point[], widthFt: number, depthFt: 
   ];
 }
 
+const MIN_ROOM_FT = 3;
+
+/** Move one polygon vertex in plan pixels; reject if room collapses below min size. */
+export function movePlanRoomVertexPoints(points: Point[], index: number, next: Point): Point[] | null {
+  if (points.length < 3 || index < 0 || index >= points.length) return null;
+  if (!Number.isFinite(next.x) || !Number.isFinite(next.y)) return null;
+  const moved = points.map((p, i) => (i === index ? { x: next.x, y: next.y } : p));
+  const size = planRoomSizeFeet(moved);
+  if (size.widthFt < MIN_ROOM_FT || size.depthFt < MIN_ROOM_FT) return null;
+  return moved;
+}
+
+/** Insert a vertex midway along edge `edgeIndex` → next (supports angled walls). */
+export function insertPlanRoomVertexPoints(points: Point[], edgeIndex: number): Point[] | null {
+  if (points.length < 3) return null;
+  const i = ((edgeIndex % points.length) + points.length) % points.length;
+  const a = points[i]!;
+  const b = points[(i + 1) % points.length]!;
+  const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  const next = [...points];
+  next.splice(i + 1, 0, mid);
+  return next;
+}
+
+/** Remove a vertex if the room would still have ≥3 corners. */
+export function removePlanRoomVertexPoints(points: Point[], index: number): Point[] | null {
+  if (points.length <= 3 || index < 0 || index >= points.length) return null;
+  const next = points.filter((_, i) => i !== index);
+  const size = planRoomSizeFeet(next);
+  if (size.widthFt < MIN_ROOM_FT || size.depthFt < MIN_ROOM_FT) return null;
+  return next;
+}
+
 /** Axis-aligned square/rect room centered on a plan-pixel point. */
 export function squareRoomPoints(center: Point, widthFt: number, depthFt: number): Point[] {
   const w = Math.max(3, widthFt);

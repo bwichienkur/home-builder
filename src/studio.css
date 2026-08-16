@@ -783,6 +783,11 @@
   gap: 8px;
   margin-bottom: 8px;
 }
+.menu-export-actions {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 8px;
+}
 .menu-primary {
   min-height: 48px;
   border: 1px solid var(--line);
@@ -1636,6 +1641,23 @@
   box-shadow: none;
   cursor: pointer;
   flex-shrink: 0;
+}
+.studio-floor-stair {
+  border: 0;
+  border-radius: 10px;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  color: #0058a3;
+  box-shadow: none;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.studio-floor-stair:hover,
+.studio-floor-stair:active {
+  background: rgba(0, 88, 163, 0.1);
 }
 .studio-floor-delete:hover,
 .studio-floor-delete:active {

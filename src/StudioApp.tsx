@@ -34,6 +34,7 @@ import {
 } from './lib/designShare';
 import { downloadTextFile, shoppingListCsvFromDesign } from './lib/shoppingListCsv';
 import { formatArea } from './lib/measurements';
+import { drawFloorPlanToCanvas, downloadCanvasPdf, downloadCanvasPng, downloadPlanDxf } from './lib/planExport/drawFloorPlan';
 
 const Scene3D = lazy(() => import('./components/scene3d/Scene3D').then((m) => ({ default: m.Scene3D })));
 
@@ -106,8 +107,14 @@ export default function StudioApp() {
   }, [customCatalog]);
   const validation = validatePlan(walls);
   const area = validation.rooms.reduce((sum, r) => sum + roomArea(r), 0);
-  const total = furniture.reduce((sum, item) => sum + (allCatalog.find((c) => c.id === item.catalogId)?.price ?? 0), 0);
-  const missingPrices = furniture.filter((item) => allCatalog.find((c) => c.id === item.catalogId)?.price == null).length;
+  const total = furniture
+    .filter((item) => item.placementKind !== 'perimeter-trim' && item.placementKind !== 'stair')
+    .reduce((sum, item) => sum + (allCatalog.find((c) => c.id === item.catalogId)?.price ?? 0), 0);
+  const missingPrices = furniture.filter((item) => {
+    if (item.placementKind === 'perimeter-trim' || item.placementKind === 'stair') return false;
+    return allCatalog.find((c) => c.id === item.catalogId)?.price == null;
+  }).length;
+  const sellableCount = furniture.filter((i) => i.placementKind !== 'perimeter-trim' && i.placementKind !== 'stair').length;
 
   const notify = (message: string) => {
     setNotice(message);
@@ -192,6 +199,35 @@ export default function StudioApp() {
       notify('Shopping list exported');
     },
     [allCatalog],
+  );
+
+  const exportFloorPlan = useCallback(
+    (format: 'pdf' | 'png' | 'dxf') => {
+      const activeFloor = store.floors.find((f) => f.id === store.activeFloorId);
+      const input = {
+        name: projectName,
+        floorName: activeFloor?.name,
+        walls: store.walls,
+        openings: store.openings,
+        planRooms: store.planRooms,
+        unitSystem: store.unitSystem,
+      };
+      const base = `${projectName.replace(/[^\w\-]+/g, '-').toLowerCase() || 'mahnikka'}-plan`;
+      if (format === 'dxf') {
+        downloadPlanDxf(input, `${base}.dxf`);
+        notify('DXF exported');
+        return;
+      }
+      const canvas = drawFloorPlanToCanvas(input);
+      if (format === 'pdf') {
+        downloadCanvasPdf(canvas, `${base}.pdf`);
+        notify('Floor plan PDF exported');
+      } else {
+        downloadCanvasPng(canvas, `${base}.png`);
+        notify('Floor plan PNG exported');
+      }
+    },
+    [projectName, store],
   );
 
   useEffect(() => {
@@ -381,7 +417,7 @@ export default function StudioApp() {
 
       <StudioChrome
         roomType={roomType}
-        itemCount={furniture.length}
+        itemCount={sellableCount}
         total={total}
         catalogOpen={catalogOpen}
         menuOpen={menuOpen}
@@ -446,6 +482,18 @@ export default function StudioApp() {
             </button>
             <button type="button" className="menu-primary is-accent" onClick={share}>
               <Share2 size={16} /> Share
+            </button>
+          </div>
+
+          <div className="menu-export-actions">
+            <button type="button" className="menu-secondary" onClick={() => exportFloorPlan('pdf')} disabled={walls.length === 0}>
+              <Download size={16} /> Export floor plan PDF
+            </button>
+            <button type="button" className="menu-secondary" onClick={() => exportFloorPlan('png')} disabled={walls.length === 0}>
+              <Download size={16} /> Export plan PNG
+            </button>
+            <button type="button" className="menu-secondary" onClick={() => exportFloorPlan('dxf')} disabled={walls.length === 0}>
+              <FileJson size={16} /> Export DXF
             </button>
           </div>
 

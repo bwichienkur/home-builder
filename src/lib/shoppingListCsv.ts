@@ -49,7 +49,9 @@ export function buildShoppingListRows(payload: DesignPayloadLike, catalog: Catal
   const { items, planRooms } = collectFromPayload(payload);
 
   const productRows = Object.values(
-    items.reduce<Record<string, BomRow>>((all, item) => {
+    items
+      .filter((item) => item.placementKind !== 'stair')
+      .reduce<Record<string, BomRow>>((all, item) => {
       const product = catalog.find((p) => p.id === item.catalogId);
       const add = lineQty(item, product);
       const row = all[item.catalogId];

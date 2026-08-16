@@ -1241,10 +1241,10 @@ function ClearanceVolume({ item }: { item: FurnitureItem }) {
 
 function Guides({ selected, others }: { selected: FurnitureItem; others: FurnitureItem[] }) {
   const guides = useMemo(() => {
-    if (selected.placementKind === 'perimeter-trim') return [];
+    if (selected.placementKind === 'perimeter-trim' || selected.placementKind === 'stair') return [];
     return alignmentGuides(
       selected,
-      others.filter((o) => o.placementKind !== 'perimeter-trim'),
+      others.filter((o) => o.placementKind !== 'perimeter-trim' && o.placementKind !== 'stair'),
     );
   }, [selected, others]);
   return (
@@ -1321,7 +1321,7 @@ function Furniture() {
     if (dragging) return;
     let alive = true;
     const timer = window.setTimeout(() => {
-      collisionsAsync(items.filter((i) => i.placementKind !== 'perimeter-trim')).then((pairs) => {
+      collisionsAsync(items.filter((i) => i.placementKind !== 'perimeter-trim' && i.placementKind !== 'stair')).then((pairs) => {
         if (!alive) return;
         const ids = new Set<string>();
         pairs.forEach(([a, b]) => {
