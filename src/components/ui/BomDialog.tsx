@@ -254,32 +254,35 @@ export function BomDialog({
           <div className="bom-manual-fields">
             <input
               type="text"
+              className="bom-manual-name"
               placeholder="Item name"
               value={manualName}
               onChange={(e) => setManualName(e.target.value)}
               aria-label="Manual item name"
             />
-            <input
-              type="number"
-              min={0.01}
-              step="any"
-              placeholder="Qty"
-              value={manualQty}
-              onChange={(e) => setManualQty(e.target.value)}
-              aria-label="Quantity"
-            />
-            <input
-              type="number"
-              min={0}
-              step="0.01"
-              placeholder="Unit $"
-              value={manualPrice}
-              onChange={(e) => setManualPrice(e.target.value)}
-              aria-label="Unit price"
-            />
-            <button type="submit" aria-label="Add manual item">
-              <Plus size={16} /> Add
-            </button>
+            <div className="bom-manual-row">
+              <input
+                type="number"
+                min={0.01}
+                step="any"
+                placeholder="Qty"
+                value={manualQty}
+                onChange={(e) => setManualQty(e.target.value)}
+                aria-label="Quantity"
+              />
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                placeholder="Unit $"
+                value={manualPrice}
+                onChange={(e) => setManualPrice(e.target.value)}
+                aria-label="Unit price"
+              />
+              <button type="submit" aria-label="Add manual item">
+                <Plus size={16} /> Add
+              </button>
+            </div>
           </div>
         </form>
         <div className="bom-total">

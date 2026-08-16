@@ -67,6 +67,54 @@ export function wouldOverlapFurniture(
   return others.some((o) => furnitureBlocks(candidate, o));
 }
 
+/**
+ * Spiral out from `start` until a footprint clears other furniture (and optional
+ * extra blockers like door swings). Used so new/cloned ghosts don’t land on top
+ * of existing products where they can’t be clicked.
+ */
+export function findClearPlacementSpot(
+  start: { x: number; z: number },
+  size: Pick<Collidable, 'width' | 'depth' | 'height'> &
+    Partial<Pick<Collidable, 'y' | 'rotation' | 'mountingType'>>,
+  others: Collidable[],
+  isBlocked?: (x: number, z: number) => boolean,
+  opts?: { step?: number; maxRings?: number },
+): { x: number; z: number } {
+  const step = opts?.step ?? 0.4;
+  const maxRings = opts?.maxRings ?? 14;
+  const probeAt = (x: number, z: number) => {
+    const candidate: Collidable = {
+      id: '__clear-spot__',
+      x,
+      y: size.y ?? 0,
+      z,
+      width: size.width,
+      depth: size.depth,
+      height: size.height,
+      rotation: size.rotation ?? 0,
+      mountingType: size.mountingType,
+    };
+    if (wouldOverlapFurniture(candidate, others)) return false;
+    if (isBlocked?.(x, z)) return false;
+    return true;
+  };
+  if (probeAt(start.x, start.z)) return start;
+  for (let ring = 1; ring <= maxRings; ring++) {
+    for (let i = -ring; i <= ring; i++) {
+      const candidates = [
+        { x: start.x + i * step, z: start.z - ring * step },
+        { x: start.x + i * step, z: start.z + ring * step },
+        { x: start.x - ring * step, z: start.z + i * step },
+        { x: start.x + ring * step, z: start.z + i * step },
+      ];
+      for (const c of candidates) {
+        if (probeAt(c.x, c.z)) return c;
+      }
+    }
+  }
+  return start;
+}
+
 type WorkerResponse = { type: 'collisions'; collisions: CollisionPair[] };
 
 let worker: Worker | null = null;

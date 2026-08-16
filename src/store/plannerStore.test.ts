@@ -1,4 +1,5 @@
 import {describe,expect,it} from 'vitest';
+import {wouldOverlapFurniture} from '../lib/collisions';
 import {usePlannerStore} from './plannerStore';
 
 describe('mobile planner defaults',()=>{
@@ -40,6 +41,31 @@ describe('mobile planner defaults',()=>{
   usePlannerStore.getState().cancelPendingPlacement();
   expect(usePlannerStore.getState().pendingPlacement).toBeNull();
   expect(usePlannerStore.getState().furniture).toHaveLength(before);
+ });
+
+ it('clone starts a ghost placement instead of stacking immediately',()=>{
+  usePlannerStore.setState({ workflowStage:'room', furniture:[], openings:[], openingNotice:'' });
+  usePlannerStore.getState().addFurniture('clone-me','Chair','Seating',[.5,.5,.8],'#bbb',0,0);
+  const original=usePlannerStore.getState().furniture.at(-1)!;
+  usePlannerStore.setState({ selectedFurnitureId:original.id });
+  const before=usePlannerStore.getState().furniture.length;
+  usePlannerStore.getState().duplicateSelected();
+  const pending=usePlannerStore.getState().pendingPlacement;
+  expect(pending?.catalogId).toBe('clone-me');
+  expect(pending?.name).toBe('Chair');
+  expect(usePlannerStore.getState().furniture).toHaveLength(before);
+  expect(usePlannerStore.getState().selectedFurnitureId).toBeNull();
+ });
+
+ it('ghost placement starts clear of an occupied room center',()=>{
+  usePlannerStore.setState({ workflowStage:'room', furniture:[], openings:[], openingNotice:'' });
+  usePlannerStore.getState().addFurniture('blocker','Table','Tables',[1.4,1.4,.75],'#ccc',0,0);
+  usePlannerStore.getState().beginPlacement('ghost-clear','Stool','Seating',[.4,.4,.45],'#ddd',0,0,{mountingType:'floor'});
+  const pending=usePlannerStore.getState().pendingPlacement!;
+  expect(wouldOverlapFurniture(
+    { id:'p', x:pending.x, y:pending.y??0, z:pending.z, width:pending.width, depth:pending.depth, height:pending.height, rotation:pending.rotation },
+    usePlannerStore.getState().furniture,
+  )).toBe(false);
  });
 
  it('rotates the selected product in place',()=>{
