@@ -48,6 +48,8 @@ type PlannerState = SceneSnapshot & {
   tool: Tool;
   view: View;
   cameraMode: CameraMode;
+  /** Plan / 3D view yaw in degrees — 0, 90, 180, or 270. */
+  viewYawDeg: number;
   roomType: RoomType;
   unitSystem: UnitSystem;
   selectedWallId: string | null;
@@ -72,6 +74,9 @@ type PlannerState = SceneSnapshot & {
   setTool: (tool: Tool) => void;
   setView: (view: View) => void;
   setCameraMode: (mode: CameraMode) => void;
+  /** Rotate plan and 3D framing by 90° (default) or `deltaDeg`. */
+  rotateViewYaw: (deltaDeg?: number) => void;
+  setViewYawDeg: (deg: number) => void;
   setRoomType: (type: RoomType) => void;
   setUnitSystem: (unit: UnitSystem) => void;
   setDraftStart: (p: Point | null) => void;
@@ -380,6 +385,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     tool: 'select',
     view: '3d',
     cameraMode: 'orbit',
+    viewYawDeg: 0,
     roomType: 'Bedroom',
     unitSystem: 'metric',
     selectedWallId: null,
@@ -415,6 +421,15 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     setTool: (tool) => set({ tool: tool === 'wall' ? 'select' : tool, draftStart: null }),
     setView: (view) => set({ view, draftStart: null }),
     setCameraMode: (cameraMode) => set({ cameraMode }),
+    setViewYawDeg: (deg) => {
+      const normalized = ((Math.round(deg / 90) * 90) % 360 + 360) % 360;
+      set({ viewYawDeg: normalized });
+    },
+    rotateViewYaw: (deltaDeg = 90) => {
+      const next = (((get().viewYawDeg + deltaDeg) % 360) + 360) % 360;
+      const snapped = ((Math.round(next / 90) * 90) % 360 + 360) % 360;
+      set({ viewYawDeg: snapped });
+    },
     setRoomType: (roomType) => set({ roomType }),
     setUnitSystem: (unitSystem) => set({ unitSystem }),
     setDraftStart: (draftStart) => set({ draftStart }),

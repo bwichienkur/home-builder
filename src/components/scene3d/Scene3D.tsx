@@ -83,6 +83,7 @@ function wallDragPlane(wall: Wall, item: FurnitureItem) {
 
 function CameraRig() {
   const mode = usePlannerStore((s) => s.cameraMode);
+  const viewYawDeg = usePlannerStore((s) => s.viewYawDeg);
   const walls = usePlannerStore((s) => s.walls);
   const planRooms = usePlannerStore((s) => s.planRooms);
   const selectedRoomId = usePlannerStore((s) => s.selectedRoomId);
@@ -207,6 +208,14 @@ function CameraRig() {
     return framingFromWalls(walls, { pad, orbitPad, minHeight: 15 });
   }, [walls, planRooms, focusRoom, focusWall, coarse, menuOpen, chromeFit.padScale]);
   const center = framing.center;
+  const viewYawRad = ((viewYawDeg % 360) + 360) % 360 * (Math.PI / 180);
+  const yawCos = Math.cos(viewYawRad);
+  const yawSin = Math.sin(viewYawRad);
+  /** Rotate an XZ offset around Y by the current view yaw (90° steps). */
+  const yawOffset = (x: number, z: number): [number, number] => [
+    x * yawCos - z * yawSin,
+    x * yawSin + z * yawCos,
+  ];
   const fovDeg = mode === 'walk' ? 58 : mode === 'top' ? 42 : 48;
   const aspect = Math.max(0.35, canvasW / Math.max(1, canvasH));
 
@@ -223,18 +232,27 @@ function CameraRig() {
             framing.topHeight;
     return menuShiftX + worldShiftForFreeArea(chromeFit.shiftFraction, dist, fovDeg, aspect);
   }, [menuOpen, framing, inspectorOpen, focusWall, chromeFit.shiftFraction, mode, center, fovDeg, aspect]);
+  const [shiftWorldX, shiftWorldZ] = yawOffset(shiftX, 0);
   const targetTuple = useMemo<[number, number, number]>(
-    () => [center[0] + shiftX, 0, center[2]],
-    [center, shiftX],
+    () => [center[0] + shiftWorldX, 0, center[2] + shiftWorldZ],
+    [center, shiftWorldX, shiftWorldZ],
   );
   const poseTuple = useMemo<[number, number, number]>(() => {
-    if (mode === 'top') return [framing.topPose[0] + shiftX, framing.topPose[1], framing.topPose[2]];
+    if (mode === 'top') {
+      const zBias = framing.topPose[2] - center[2];
+      const [ox, oz] = yawOffset(0, zBias);
+      return [center[0] + shiftWorldX + ox, framing.topPose[1], center[2] + shiftWorldZ + oz];
+    }
     if (mode === 'walk') {
       const back = Math.max(4.2, framing.span * 0.55);
-      return [center[0] + shiftX, 1.55, center[2] + back];
+      const [ox, oz] = yawOffset(0, back);
+      return [center[0] + shiftWorldX + ox, 1.55, center[2] + shiftWorldZ + oz];
     }
-    return [framing.orbitPose[0] + shiftX, framing.orbitPose[1], framing.orbitPose[2]];
-  }, [mode, center, framing, shiftX]);
+    const ox0 = framing.orbitPose[0] - center[0];
+    const oz0 = framing.orbitPose[2] - center[2];
+    const [ox, oz] = yawOffset(ox0, oz0);
+    return [center[0] + shiftWorldX + ox, framing.orbitPose[1], center[2] + shiftWorldZ + oz];
+  }, [mode, center, framing, shiftWorldX, shiftWorldZ, viewYawRad]);
 
   // Clear any leftover viewOffset from earlier experiments.
   useEffect(() => {
@@ -265,10 +283,10 @@ function CameraRig() {
       if (controls.current) {
         controls.current.target.copy(target);
         if (mode === 'top') {
-          // Lock north-up plan orientation so floor switches never land crooked.
-          controls.current.minAzimuthAngle = 0;
-          controls.current.maxAzimuthAngle = 0;
-          if (typeof controls.current.setAzimuthalAngle === 'function') controls.current.setAzimuthalAngle(0);
+          // Lock plan orientation to the chosen 90° view yaw.
+          controls.current.minAzimuthAngle = viewYawRad;
+          controls.current.maxAzimuthAngle = viewYawRad;
+          if (typeof controls.current.setAzimuthalAngle === 'function') controls.current.setAzimuthalAngle(viewYawRad);
         } else {
           controls.current.minAzimuthAngle = -Infinity;
           controls.current.maxAzimuthAngle = Infinity;
@@ -311,7 +329,7 @@ function CameraRig() {
     applyPose(new THREE.Vector3(...poseTuple), new THREE.Vector3(...targetTuple), 0);
   };
 
-  // Plan ↔ 3D: ease into orbit/walk; top snaps. Ignore pose churn so we don't restart mid-ease.
+  // Plan ↔ 3D / 90° yaw: ease into orbit/walk; top snaps. Ignore pose churn so we don't restart mid-ease.
   useEffect(() => {
     if (mode === 'top') {
       snapToPose();
@@ -320,7 +338,7 @@ function CameraRig() {
     modeAnimUntil.current = performance.now() + 620;
     animateToPose(560);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, menuOpen]);
+  }, [mode, menuOpen, viewYawDeg]);
 
   // Room enter / chrome pad / wall focus — skip while the edit card owns framing.
   useEffect(() => {
@@ -348,7 +366,8 @@ function CameraRig() {
     focusWall?.thickness,
     focusWall?.height,
     framing.topHeight,
-    shiftX,
+    shiftWorldX,
+    shiftWorldZ,
     planWallTool,
   ]);
 
@@ -440,8 +459,8 @@ function CameraRig() {
         minPolarAngle={mode === 'top' ? 0.04 : mode === 'walk' ? 0.7 : 0}
         // Orbit may go under the plate so you can inspect underside / open dollhouse from below.
         maxPolarAngle={mode === 'top' ? 0.09 : mode === 'walk' ? Math.PI / 2.05 : Math.PI - 0.06}
-        minAzimuthAngle={mode === 'top' ? 0 : -Infinity}
-        maxAzimuthAngle={mode === 'top' ? 0 : Infinity}
+        minAzimuthAngle={mode === 'top' ? viewYawRad : -Infinity}
+        maxAzimuthAngle={mode === 'top' ? viewYawRad : Infinity}
         minDistance={minDistance}
         maxDistance={maxDistance}
         enableZoom
