@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   Boxes,
@@ -10,6 +11,7 @@ import {
   Users,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
+import { useCrmStore } from '../../store/crmStore';
 import './shell.css';
 
 const NAV = [
@@ -25,7 +27,14 @@ const NAV = [
 export function AppShell() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  const restoreSession = useAuthStore((s) => s.restoreSession);
+  const hydrateCrm = useCrmStore((s) => s.hydrate);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    void restoreSession();
+    void hydrateCrm();
+  }, [restoreSession, hydrateCrm]);
 
   return (
     <div className="app-shell">
@@ -48,8 +57,7 @@ export function AppShell() {
             type="button"
             className="app-shell-logout"
             onClick={() => {
-              logout();
-              navigate('/login');
+              void logout().then(() => navigate('/login'));
             }}
             title="Sign out"
           >
