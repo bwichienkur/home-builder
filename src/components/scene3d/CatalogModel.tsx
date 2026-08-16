@@ -235,16 +235,289 @@ export function ProxyFurniture({
   }
 
   if (category === 'bedroom' || name.includes('bed')) {
+    const frame = '#6e5340';
+    const linen = color;
     return (
       <group {...handlers}>
-        <mesh position={[0, item.height * 0.35, 0]} castShadow receiveShadow>
-          <boxGeometry args={[item.width, item.height * 0.45, item.depth]} />
-          <meshStandardMaterial color={color} roughness={0.85} />
+        {/* Platform / box spring */}
+        <mesh position={[0, item.height * 0.22, 0]} castShadow receiveShadow>
+          <boxGeometry args={[item.width * 0.96, item.height * 0.28, item.depth * 0.92]} />
+          <meshStandardMaterial color={frame} roughness={0.75} />
         </mesh>
-        <mesh position={[0, item.height * 0.7, -item.depth * 0.42]} castShadow>
-          <boxGeometry args={[item.width, item.height * 0.55, item.depth * 0.12]} />
+        {/* Mattress */}
+        <mesh position={[0, item.height * 0.42, 0.02]} castShadow receiveShadow>
+          <boxGeometry args={[item.width * 0.9, item.height * 0.22, item.depth * 0.84]} />
+          <meshStandardMaterial color={linen} roughness={0.9} />
+        </mesh>
+        {/* Pillows */}
+        <mesh position={[-item.width * 0.22, item.height * 0.58, -item.depth * 0.28]} castShadow>
+          <boxGeometry args={[item.width * 0.32, item.height * 0.12, item.depth * 0.18]} />
+          <meshStandardMaterial color="#f2ebe3" roughness={0.92} />
+        </mesh>
+        <mesh position={[item.width * 0.22, item.height * 0.58, -item.depth * 0.28]} castShadow>
+          <boxGeometry args={[item.width * 0.32, item.height * 0.12, item.depth * 0.18]} />
+          <meshStandardMaterial color="#f2ebe3" roughness={0.92} />
+        </mesh>
+        {/* Headboard */}
+        <mesh position={[0, item.height * 0.7, -item.depth * 0.44]} castShadow>
+          <boxGeometry args={[item.width, item.height * 0.55, item.depth * 0.08]} />
+          <meshStandardMaterial color={frame} roughness={0.7} />
+        </mesh>
+        {halo}
+      </group>
+    );
+  }
+
+  if (name.includes('sofa') || name.includes('loveseat') || name.includes('sectional') || (category.includes('seating') && name.includes('sofa'))) {
+    const seatH = item.height * 0.42;
+    return (
+      <group {...handlers}>
+        <mesh position={[0, seatH * 0.55, 0]} castShadow receiveShadow>
+          <boxGeometry args={[item.width, seatH, item.depth * 0.9]} />
+          <meshStandardMaterial color={color} roughness={0.88} />
+        </mesh>
+        <mesh position={[0, item.height * 0.72, -item.depth * 0.32]} castShadow>
+          <boxGeometry args={[item.width * 0.98, item.height * 0.5, item.depth * 0.28]} />
+          <meshStandardMaterial color={color} roughness={0.86} />
+        </mesh>
+        <mesh position={[-item.width * 0.46, item.height * 0.55, 0]} castShadow>
+          <boxGeometry args={[item.width * 0.1, item.height * 0.55, item.depth * 0.88]} />
+          <meshStandardMaterial color={color} roughness={0.84} />
+        </mesh>
+        <mesh position={[item.width * 0.46, item.height * 0.55, 0]} castShadow>
+          <boxGeometry args={[item.width * 0.1, item.height * 0.55, item.depth * 0.88]} />
+          <meshStandardMaterial color={color} roughness={0.84} />
+        </mesh>
+        {halo}
+      </group>
+    );
+  }
+
+  if (name.includes('chair') || name.includes('lounge')) {
+    return (
+      <group {...handlers}>
+        <mesh position={[0, item.height * 0.42, 0.02]} castShadow receiveShadow>
+          <boxGeometry args={[item.width * 0.9, item.height * 0.1, item.depth * 0.7]} />
           <meshStandardMaterial color={color} roughness={0.8} />
         </mesh>
+        <mesh position={[0, item.height * 0.7, -item.depth * 0.28]} castShadow>
+          <boxGeometry args={[item.width * 0.88, item.height * 0.45, item.depth * 0.12]} />
+          <meshStandardMaterial color={color} roughness={0.78} />
+        </mesh>
+        {[
+          [-0.35, -0.35],
+          [0.35, -0.35],
+          [-0.35, 0.32],
+          [0.35, 0.32],
+        ].map(([lx, lz], i) => (
+          <mesh key={i} position={[item.width * lx, item.height * 0.2, item.depth * lz]} castShadow>
+            <cylinderGeometry args={[0.02, 0.025, item.height * 0.4, 8]} />
+            <meshStandardMaterial color="#4a3a2c" roughness={0.55} metalness={0.15} />
+          </mesh>
+        ))}
+        {halo}
+      </group>
+    );
+  }
+
+  if (name.includes('stool')) {
+    return (
+      <group {...handlers}>
+        <mesh position={[0, item.height * 0.72, 0]} castShadow>
+          <cylinderGeometry args={[item.width * 0.35, item.width * 0.38, item.height * 0.08, 20]} />
+          <meshStandardMaterial color={color} roughness={0.75} />
+        </mesh>
+        <mesh position={[0, item.height * 0.36, 0]} castShadow>
+          <cylinderGeometry args={[0.03, 0.035, item.height * 0.65, 10]} />
+          <meshStandardMaterial color="#555" metalness={0.45} roughness={0.4} />
+        </mesh>
+        <mesh position={[0, 0.03, 0]} receiveShadow>
+          <cylinderGeometry args={[item.width * 0.32, item.width * 0.32, 0.04, 20]} />
+          <meshStandardMaterial color="#444" metalness={0.35} roughness={0.5} />
+        </mesh>
+        {halo}
+      </group>
+    );
+  }
+
+  if (name.includes('toilet') || (category.includes('plumbing') && name.includes('toilet'))) {
+    return (
+      <group {...handlers}>
+        <mesh position={[0, item.height * 0.72, -item.depth * 0.15]} castShadow>
+          <boxGeometry args={[item.width * 0.7, item.height * 0.45, item.depth * 0.45]} />
+          <meshStandardMaterial color="#f2f2f2" roughness={0.35} />
+        </mesh>
+        <mesh position={[0, item.height * 0.32, item.depth * 0.08]} castShadow receiveShadow>
+          <cylinderGeometry args={[item.width * 0.38, item.width * 0.42, item.height * 0.35, 20]} />
+          <meshStandardMaterial color="#f7f7f7" roughness={0.32} />
+        </mesh>
+        <mesh position={[0, item.height * 0.5, item.depth * 0.08]} castShadow>
+          <cylinderGeometry args={[item.width * 0.34, item.width * 0.34, 0.04, 20]} />
+          <meshStandardMaterial color="#e8e8e8" roughness={0.4} />
+        </mesh>
+        {halo}
+      </group>
+    );
+  }
+
+  if (name.includes('shower')) {
+    return (
+      <group {...handlers}>
+        <mesh position={[0, 0.04, 0]} receiveShadow>
+          <boxGeometry args={[item.width, 0.08, item.depth]} />
+          <meshStandardMaterial color="#d5d8db" roughness={0.55} />
+        </mesh>
+        <mesh position={[0, item.height * 0.5, -item.depth * 0.48]}>
+          <boxGeometry args={[item.width, item.height, 0.02]} />
+          <meshPhysicalMaterial color="#d9eef2" roughness={0.08} transmission={0.65} thickness={0.02} transparent opacity={0.55} />
+        </mesh>
+        <mesh position={[-item.width * 0.48, item.height * 0.5, 0]}>
+          <boxGeometry args={[0.02, item.height, item.depth]} />
+          <meshPhysicalMaterial color="#d9eef2" roughness={0.08} transmission={0.65} thickness={0.02} transparent opacity={0.55} />
+        </mesh>
+        <mesh position={[item.width * 0.35, item.height * 0.75, -item.depth * 0.4]} castShadow>
+          <sphereGeometry args={[0.05, 12, 12]} />
+          <meshStandardMaterial color="#c0c4c6" metalness={0.8} roughness={0.25} />
+        </mesh>
+        {halo}
+      </group>
+    );
+  }
+
+  if (
+    name.includes('counter') ||
+    name.includes('countertop') ||
+    name.includes('island top') ||
+    (category.includes('surface') && item.height < 0.12)
+  ) {
+    return (
+      <group {...handlers}>
+        <mesh position={[0, item.height / 2, 0]} castShadow receiveShadow>
+          <boxGeometry args={[item.width, item.height, item.depth]} />
+          <meshStandardMaterial color={color} roughness={0.28} metalness={0.08} />
+        </mesh>
+        <mesh position={[0, item.height * 0.92, 0]}>
+          <boxGeometry args={[item.width * 0.995, item.height * 0.15, item.depth * 0.995]} />
+          <meshPhysicalMaterial color={color} roughness={0.18} clearcoat={0.45} clearcoatRoughness={0.25} />
+        </mesh>
+        {halo}
+      </group>
+    );
+  }
+
+  if (name.includes('island') || name.includes('base cab') || name.includes('cabinet') || name.includes('vanity') || name.includes('pantry') || category.includes('cabinetry')) {
+    const topH = Math.min(0.04, item.height * 0.06);
+    const bodyH = item.height - topH;
+    return (
+      <group {...handlers}>
+        <mesh position={[0, bodyH / 2, 0]} castShadow receiveShadow>
+          <boxGeometry args={[item.width, bodyH, item.depth]} />
+          <meshStandardMaterial color={color} roughness={0.7} />
+        </mesh>
+        {/* Door reveals */}
+        <mesh position={[-item.width * 0.22, bodyH * 0.55, item.depth / 2 + 0.004]}>
+          <planeGeometry args={[item.width * 0.38, bodyH * 0.7]} />
+          <meshStandardMaterial color={color} roughness={0.62} />
+        </mesh>
+        <mesh position={[item.width * 0.22, bodyH * 0.55, item.depth / 2 + 0.004]}>
+          <planeGeometry args={[item.width * 0.38, bodyH * 0.7]} />
+          <meshStandardMaterial color={color} roughness={0.62} />
+        </mesh>
+        <mesh position={[-item.width * 0.08, bodyH * 0.55, item.depth / 2 + 0.008]} castShadow>
+          <boxGeometry args={[0.015, 0.06, 0.02]} />
+          <meshStandardMaterial color="#b0b0b0" metalness={0.7} roughness={0.3} />
+        </mesh>
+        <mesh position={[item.width * 0.08, bodyH * 0.55, item.depth / 2 + 0.008]} castShadow>
+          <boxGeometry args={[0.015, 0.06, 0.02]} />
+          <meshStandardMaterial color="#b0b0b0" metalness={0.7} roughness={0.3} />
+        </mesh>
+        {name.includes('island') && (
+          <mesh position={[0, bodyH + topH / 2, 0]} castShadow>
+            <boxGeometry args={[item.width * 1.04, topH, item.depth * 1.04]} />
+            <meshStandardMaterial color="#cfd4d5" roughness={0.25} />
+          </mesh>
+        )}
+        {/* Toe kick */}
+        <mesh position={[0, 0.05, item.depth * 0.02]} castShadow>
+          <boxGeometry args={[item.width * 0.98, 0.1, item.depth * 0.9]} />
+          <meshStandardMaterial color="#3a3a3a" roughness={0.85} />
+        </mesh>
+        {halo}
+      </group>
+    );
+  }
+
+  if (name.includes('nightstand') || name.includes('dresser') || name.includes('drawer') || name.includes('filing')) {
+    return (
+      <group {...handlers}>
+        <mesh position={[0, item.height / 2, 0]} castShadow receiveShadow>
+          <boxGeometry args={[item.width, item.height, item.depth]} />
+          <meshStandardMaterial color={color} roughness={0.72} />
+        </mesh>
+        {[0.28, 0.55, 0.78].map((t, i) =>
+          t * item.height < item.height - 0.05 ? (
+            <mesh key={i} position={[0, item.height * t, item.depth / 2 + 0.005]} castShadow>
+              <boxGeometry args={[item.width * 0.82, item.height * 0.16, 0.02]} />
+              <meshStandardMaterial color={color} roughness={0.65} />
+            </mesh>
+          ) : null,
+        )}
+        {halo}
+      </group>
+    );
+  }
+
+  if (name.includes('bookshelf') || name.includes('bookcase')) {
+    const shelves = 4;
+    return (
+      <group {...handlers}>
+        <mesh position={[-item.width / 2 + 0.02, item.height / 2, 0]} castShadow>
+          <boxGeometry args={[0.04, item.height, item.depth]} />
+          <meshStandardMaterial color={color} roughness={0.7} />
+        </mesh>
+        <mesh position={[item.width / 2 - 0.02, item.height / 2, 0]} castShadow>
+          <boxGeometry args={[0.04, item.height, item.depth]} />
+          <meshStandardMaterial color={color} roughness={0.7} />
+        </mesh>
+        {Array.from({ length: shelves + 1 }, (_, i) => (
+          <mesh key={i} position={[0, (i / shelves) * item.height, 0]} castShadow receiveShadow>
+            <boxGeometry args={[item.width, 0.03, item.depth]} />
+            <meshStandardMaterial color={color} roughness={0.68} />
+          </mesh>
+        ))}
+        {/* Book blocks */}
+        <mesh position={[-item.width * 0.2, item.height * 0.2, 0]} castShadow>
+          <boxGeometry args={[0.12, item.height * 0.16, item.depth * 0.7]} />
+          <meshStandardMaterial color="#6b4f36" roughness={0.85} />
+        </mesh>
+        <mesh position={[0.05, item.height * 0.45, 0]} castShadow>
+          <boxGeometry args={[0.1, item.height * 0.14, item.depth * 0.65]} />
+          <meshStandardMaterial color="#8a6548" roughness={0.85} />
+        </mesh>
+        {halo}
+      </group>
+    );
+  }
+
+  if (name.includes('table') || name.includes('desk') || name.includes('console') || category.includes('table')) {
+    const topH = Math.min(0.06, item.height * 0.1);
+    return (
+      <group {...handlers}>
+        <mesh position={[0, item.height - topH / 2, 0]} castShadow receiveShadow>
+          <boxGeometry args={[item.width, topH, item.depth]} />
+          <meshStandardMaterial color={color} roughness={0.55} />
+        </mesh>
+        {[
+          [-0.42, -0.4],
+          [0.42, -0.4],
+          [-0.42, 0.4],
+          [0.42, 0.4],
+        ].map(([lx, lz], i) => (
+          <mesh key={i} position={[item.width * lx, (item.height - topH) / 2, item.depth * lz]} castShadow>
+            <boxGeometry args={[0.05, item.height - topH, 0.05]} />
+            <meshStandardMaterial color="#5a4030" roughness={0.65} />
+          </mesh>
+        ))}
         {halo}
       </group>
     );

@@ -20,6 +20,17 @@ describe('residential furniture pack', () => {
     }
   });
 
+  it('includes floor-fill flooring finishes with visible textures', () => {
+    const floors = catalog.filter((i) => i.category === 'Flooring' && i.placementMode === 'floor-fill');
+    expect(floors.length).toBeGreaterThanOrEqual(8);
+    for (const id of ['floor-oak-hardwood', 'floor-ash-laminate', 'floor-concrete-polished', 'floor-tile-ceramic-white']) {
+      const item = catalog.find((i) => i.id === id);
+      expect(item?.textureUrl).toMatch(/^\/catalog\/floors\//);
+      expect(item?.thumbnailUrl).toBeTruthy();
+      expect(item?.priceUnit).toBe('sq ft');
+    }
+  });
+
   it('uses positive metric dimensions in realistic ranges', () => {
     for (const item of residentialFurniture) {
       const [w, d, h] = item.dims;
@@ -35,12 +46,14 @@ describe('residential furniture pack', () => {
 
   it('is merged into the placeable catalog', () => {
     expect(catalog.some((i) => i.id === 'dining-table-eight')).toBe(true);
+    expect(catalog.some((i) => i.id === 'floor-oak-hardwood')).toBe(true);
     expect(catalog.length).toBeGreaterThan(100);
   });
 
   it('seeds inventory with Roomcraft Home vendor metadata', () => {
     const starter = starterInventoryItems();
-    expect(starter.length).toBe(residentialFurniture.length);
+    expect(starter.length).toBeGreaterThanOrEqual(residentialFurniture.length);
+    expect(starter.some((i) => i.category === 'Flooring')).toBe(true);
     expect(starter.every((i) => i.vendorId === 'roomcraft-home')).toBe(true);
     expect(starter.every((i) => i.sku)).toBe(true);
   });
