@@ -69,7 +69,11 @@ export function PlansPage() {
     }
     if (lower.endsWith('.ifc')) {
       const info = inspectIfc(text);
-      setNotice(info.message);
+      setNotice(
+        info.ok
+          ? `${info.message} Tip: export IFC4 from Build for Mahnikka-native geometry, or import DXF/JSON for editable rooms.`
+          : info.message,
+      );
       return;
     }
     if (lower.endsWith('.json')) {
@@ -154,7 +158,11 @@ export function PlansPage() {
           </label>
         </div>
       </header>
-      {notice && <p className="muted" style={{ marginBottom: 14 }}>{notice}</p>}
+      {notice && (
+        <div className="plan-import-notice" role="status">
+          <p>{notice}</p>
+        </div>
+      )}
 
       <h2 style={{ fontSize: '1rem', margin: '0 0 10px' }}>Built-in samples</h2>
       <div className="data-table-wrap" style={{ marginBottom: 24 }}>

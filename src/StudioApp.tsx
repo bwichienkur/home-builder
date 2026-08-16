@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ChevronDown,
+  Cloud,
   Download,
   FileJson,
   Home,
@@ -14,6 +15,7 @@ import { CatalogPanel } from './components/catalog/CatalogPanel';
 import { catalog as catalogItems } from './components/catalog/catalogData';
 import { BomDialog } from './components/ui/BomDialog';
 import { SelectionInspector } from './components/ui/SelectionInspector';
+import { BuildingChecksBar } from './components/ui/BuildingChecksBar';
 import { StudioChrome } from './components/ui/StudioChrome';
 import { DesignStart } from './components/ui/DesignStart';
 import { useInventoryStore } from './store/inventoryStore';
@@ -36,7 +38,8 @@ import { downloadTextFile, shoppingListCsvFromDesign } from './lib/shoppingListC
 import { formatArea } from './lib/measurements';
 import { drawFloorPlanToCanvas, downloadCanvasPng, downloadPlanDxf, downloadScaledPlanPdf } from './lib/planExport/drawFloorPlan';
 import { downloadPlanIfc } from './lib/planExport/buildIfc';
-import { saveProjectToCloud } from './lib/cloudProjects';
+import { fetchCloudProjects, loadCloudProject, readCloudProjectRef, saveProjectToCloud } from './lib/cloudProjects';
+import type { CloudProjectSummary } from './api/client';
 
 const Scene3D = lazy(() => import('./components/scene3d/Scene3D').then((m) => ({ default: m.Scene3D })));
 
@@ -82,6 +85,9 @@ export default function StudioApp() {
   const [notice, setNotice] = useState('');
   const [recovery, setRecovery] = useState<{ savedAt: string; payload: unknown } | null>(null);
   const [designs, setDesigns] = useState<SharedDesign[]>([]);
+  const [cloudProjects, setCloudProjects] = useState<CloudProjectSummary[]>([]);
+  const [cloudLoading, setCloudLoading] = useState(false);
+  const [cloudRef, setCloudRef] = useState(() => readCloudProjectRef());
   const [activeDesignCode, setActiveDesignCode] = useState<string | null>(() => readActiveDesignCode());
   const openingNotice = usePlannerStore((s) => s.openingNotice);
   const clearOpeningNotice = usePlannerStore((s) => s.clearOpeningNotice);
@@ -146,6 +152,8 @@ export default function StudioApp() {
     const entry = persistToLibrary();
     const cloud = await saveProjectToCloud(projectName, store.projectPayload());
     if (cloud.ok && cloud.mode === 'cloud') {
+      setCloudRef({ id: cloud.id, version: cloud.version });
+      setCloudProjects(await fetchCloudProjects());
       notify(`Saved “${entry.name}” · cloud v${cloud.version}`);
     } else if (cloud.ok) {
       notify(`Saved “${entry.name}” (local · ${cloud.reason})`);
@@ -182,6 +190,28 @@ export default function StudioApp() {
       notify(`Editing ${design.name}`);
       closeProjectMenu();
       window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 0);
+    },
+    [closeProjectMenu, enterHouse, rememberDesign, store],
+  );
+
+  const openCloudBuild = useCallback(
+    async (project: CloudProjectSummary) => {
+      try {
+        const row = await loadCloudProject(project.id);
+        if (!store.importProject(row.scene)) {
+          notify('Could not open that cloud project');
+          return;
+        }
+        setProjectName(row.name || project.name);
+        setCloudRef({ id: row.id, version: row.version });
+        rememberDesign(null);
+        enterHouse();
+        notify(`Opened cloud “${row.name || project.name}” · v${row.version}`);
+        closeProjectMenu();
+        window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 0);
+      } catch (e) {
+        notify(e instanceof Error ? e.message : 'Cloud project could not be loaded');
+      }
     },
     [closeProjectMenu, enterHouse, rememberDesign, store],
   );
@@ -325,7 +355,20 @@ export default function StudioApp() {
   }, [walls, openings, furniture, store.floorColor, store.wallColor, store.ceilingColor, store.roomType, store.unitSystem, store]);
 
   useEffect(() => {
-    if (menuOpen) setDesigns(listSharedDesigns());
+    if (!menuOpen) return;
+    setDesigns(listSharedDesigns());
+    setCloudRef(readCloudProjectRef());
+    let cancelled = false;
+    setCloudLoading(true);
+    void fetchCloudProjects().then((items) => {
+      if (!cancelled) {
+        setCloudProjects(items);
+        setCloudLoading(false);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [menuOpen]);
 
   useEffect(() => {
@@ -472,6 +515,8 @@ export default function StudioApp() {
         }}
       />
 
+      <BuildingChecksBar />
+
       {menuOpen && (
         <>
           <button type="button" className="menu-backdrop" aria-label="Close menu" onClick={closeProjectMenu} />
@@ -489,6 +534,7 @@ export default function StudioApp() {
             {formatArea(area, unitSystem)} · {walls.length} walls · {furniture.length} items
             {missingPrices > 0 ? ` · ${missingPrices} need quote` : ''}
             {activeDesignCode ? ` · ${activeDesignCode}` : ''}
+            {cloudRef ? ` · cloud v${cloudRef.version}` : ''}
           </p>
 
           <div className="menu-primary-actions">
@@ -592,6 +638,39 @@ export default function StudioApp() {
               <FileJson size={15} /> Import build file
               <input type="file" accept="application/json,.json" onChange={importProject} />
             </label>
+          </section>
+
+          <section className="design-library">
+            <div className="design-library-head">
+              <h3>
+                <Cloud size={14} aria-hidden /> Cloud projects
+              </h3>
+              <span>{cloudLoading ? '…' : cloudProjects.length}</span>
+            </div>
+            {cloudLoading ? (
+              <p className="muted design-library-empty cloud-library-empty">Checking cloud library…</p>
+            ) : cloudProjects.length === 0 ? (
+              <p className="muted design-library-empty cloud-library-empty">
+                Save while the API is connected to sync here. Local Saved builds stay on this device.
+              </p>
+            ) : (
+              <ul>
+                {cloudProjects.map((project) => {
+                  const active = cloudRef?.id === project.id;
+                  return (
+                    <li key={project.id} className={active ? 'is-active' : undefined}>
+                      <button type="button" className="design-open" onClick={() => void openCloudBuild(project)}>
+                        <strong>{project.name}</strong>
+                        <span>
+                          v{project.version} · {new Date(project.updatedAt).toLocaleDateString()}
+                          {active ? ' · editing' : ''}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </section>
         </aside>
         </>

@@ -5,7 +5,8 @@ import { formatLength, parseLength } from '../../lib/measurements';
 import { listBuiltinHousePlans } from '../../lib/housePlans/planRegistry';
 import { planRoomSizeFeet } from '../../lib/housePlans/buildPlan';
 import { openingMetersFromOffset, openingOffsetFromMeters, wallLengthM } from '../../lib/planExport/drawFloorPlan';
-import type { Opening, PlanRoomLabel, RoomType, Wall } from '../../types';
+import type { Opening, PlanRoomLabel, RoomType, Wall, WallAssembly } from '../../types';
+import { WALL_ASSEMBLY_PRESETS } from '../../lib/buildingChecks';
 
 const finishes: [string, string][] = [
   ['Oak', '#c9b18f'],
@@ -553,8 +554,30 @@ function WallProperties({ wall }: { wall: Wall }) {
   const offset = usePlannerStore((s) => s.offsetWall);
   const deleteSelected = usePlannerStore((s) => s.deleteSelected);
   const unit = usePlannerStore((s) => s.unitSystem);
+  const assembly = wall.assembly ?? 'interior';
+
+  const applyAssembly = (next: WallAssembly) => {
+    const preset = WALL_ASSEMBLY_PRESETS[next];
+    updateWall(wall.id, { assembly: next, thickness: preset.thicknessM });
+  };
+
   return (
     <>
+      <span className="template-label">Wall type</span>
+      <div className="wall-assembly-pills" role="group" aria-label="Wall assembly">
+        {(Object.keys(WALL_ASSEMBLY_PRESETS) as WallAssembly[]).map((key) => (
+          <button
+            key={key}
+            type="button"
+            className={assembly === key ? 'is-active' : undefined}
+            onClick={() => applyAssembly(key)}
+            title={WALL_ASSEMBLY_PRESETS[key].hint}
+          >
+            {WALL_ASSEMBLY_PRESETS[key].label}
+          </button>
+        ))}
+      </div>
+      <p className="muted">{WALL_ASSEMBLY_PRESETS[assembly].hint}</p>
       <LengthField label="Thickness" value={wall.thickness} min={0.05} onChange={(value) => updateWall(wall.id, { thickness: value })} />
       <LengthField label="Height" value={wall.height} min={2} onChange={(value) => updateWall(wall.id, { height: value })} />
       <div className="wall-actions">

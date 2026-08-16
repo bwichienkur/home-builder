@@ -161,9 +161,9 @@ export function inspectIfc(text: string): { ok: boolean; message: string; spaces
   const walls = (text.match(/IFCWALL/gi) || []).length;
   return {
     ok: true,
-    message: `IFC read: ${walls} wall entities, ${spaces.length} spaces${
-      spaces.length ? ` (${spaces.slice(0, 6).join(', ')})` : ''
-    }. Geometry round-trip uses Mahnikka IFC export or DXF/JSON.`,
+    message: `IFC inspected — ${walls} wall entit${walls === 1 ? 'y' : 'ies'}, ${spaces.length} space${
+      spaces.length === 1 ? '' : 's'
+    }${spaces.length ? ` (${spaces.slice(0, 6).join(', ')})` : ''}. Full geometry import isn’t available yet.`,
     spaces,
     walls,
   };

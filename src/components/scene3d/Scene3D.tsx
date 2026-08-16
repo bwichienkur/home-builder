@@ -1,5 +1,5 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Bvh, Environment, Line, OrbitControls, PerspectiveCamera, PivotControls, Text, useTexture } from '@react-three/drei';
+import { Bvh, Environment, Html, Line, OrbitControls, PerspectiveCamera, PivotControls, Text, useTexture } from '@react-three/drei';
 import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { usePlannerStore } from '../../store/plannerStore';
@@ -11,6 +11,7 @@ import { doorSwingZones, furnitureHitsDoorSwing } from '../../lib/geometry/doorC
 import { wouldOverlapFurniture } from '../../lib/collisions';
 import { framingFromPoints, framingFromWall, framingFromWalls, freeAreaFit, pageCenterFit, worldShiftForFreeArea } from '../../lib/geometry/planFraming';
 import { pointInPlanRoom, enclosureWallsForRoom } from '../../lib/geometry/roomWalls';
+import { stairsCuttingFloor } from '../../lib/geometry/stairCutouts';
 import { wallExteriorSide } from '../../lib/geometry/roomWalls';
 import { clampOpeningOffset, openingCenterOnWall, wallOffsetFromWorldPoint, wallSolidBoxes } from '../../lib/geometry/wallOpenings';
 import { wallCutawayOpacity } from '../../lib/geometry/wallCutaway';
@@ -986,8 +987,12 @@ function WallMeshes() {
         const solids = wallSolidBoxes(w.height, origLen, origLen, 0, planOpenings);
         // Top plan walls never steal room picks; cutaway fades stay non-blocking too.
         const skipRay = fading || cameraMode === 'top' ? () => {} : undefined;
+        const tinted = new THREE.Color(color);
+        const role = w.assembly ?? 'interior';
+        if (role === 'exterior') tinted.lerp(new THREE.Color('#7a746c'), 0.16);
+        else if (role === 'party') tinted.lerp(new THREE.Color('#5c5348'), 0.12);
         const wallMat = {
-          color,
+          color: `#${tinted.getHexString()}`,
           roughness: 0.86,
           transparent: soft,
           opacity: drawOpacity,
@@ -1650,6 +1655,8 @@ function Room() {
   const walls = usePlannerStore((s) => s.walls);
   const planRooms = usePlannerStore((s) => s.planRooms);
   const furniture = usePlannerStore((s) => s.furniture);
+  const floors = usePlannerStore((s) => s.floors);
+  const activeFloorId = usePlannerStore((s) => s.activeFloorId);
   const selectedRoomId = usePlannerStore((s) => s.selectedRoomId);
   const enterRoom = usePlannerStore((s) => s.enterRoom);
   const selectRoom = usePlannerStore((s) => s.selectRoom);
@@ -1662,7 +1669,10 @@ function Room() {
   const detected = useMemo(() => detectRoomPolygons(walls), [walls]);
   const rooms = planRooms.length ? planRooms.map((r) => r.points) : detected;
   const ceilingHeight = walls[0]?.height ?? 2.7;
-  const stairs = useMemo(() => furniture.filter((f) => f.placementKind === 'stair'), [furniture]);
+  const stairs = useMemo(
+    () => stairsCuttingFloor(activeFloorId, floors, activeFloorId, furniture),
+    [activeFloorId, floors, furniture],
+  );
   const { camera, invalidate } = useThree();
   const ceilingSmooth = useRef(0.22);
   const floorSmooth = useRef(1);
@@ -1964,11 +1974,12 @@ function RoofAndSite() {
   );
 }
 
-/** When stackView is on, draw inactive floors as ghosted plates above/below. */
+/** When stackView is on, draw inactive floors as solid plates with stair openings. */
 function StackedInactiveFloors() {
   const stackView = usePlannerStore((s) => s.stackView);
   const floors = usePlannerStore((s) => s.floors);
   const activeFloorId = usePlannerStore((s) => s.activeFloorId);
+  const activeFurniture = usePlannerStore((s) => s.furniture);
   const cameraMode = usePlannerStore((s) => s.cameraMode);
   if (!stackView || cameraMode === 'top' || floors.length < 2) return null;
 
@@ -1982,12 +1993,14 @@ function StackedInactiveFloors() {
         const y = (i - activeIdx) * story;
         const rooms = floor.planRooms ?? floor.scene.planRooms ?? [];
         const walls = floor.scene.walls ?? [];
+        const holes = stairsCuttingFloor(floor.id, floors, activeFloorId, activeFurniture);
+        const storyH = walls[0]?.height ?? 2.7;
         return (
           <group key={floor.id} position={[0, y, 0]}>
             {rooms.map((room) => (
-              <mesh key={room.id} rotation={[Math.PI / 2, 0, 0]} position={[0, -0.02, 0]}>
-                <shapeGeometry args={[roomShape(room.points)]} />
-                <meshStandardMaterial color="#c5d0dc" transparent opacity={0.35} depthWrite={false} />
+              <mesh key={room.id} rotation={[Math.PI / 2, 0, 0]} position={[0, -0.02, 0]} receiveShadow>
+                <shapeGeometry args={[roomShapeWithHoles(room.points, holes)]} />
+                <meshStandardMaterial color="#d7dde5" roughness={0.92} transparent opacity={0.88} />
               </mesh>
             ))}
             {walls.map((wall) => {
@@ -1995,18 +2008,30 @@ function StackedInactiveFloors() {
               const az = (wall.start.y - WORLD_ORIGIN.y) / PIXELS_PER_METER;
               const bx = (wall.end.x - WORLD_ORIGIN.x) / PIXELS_PER_METER;
               const bz = (wall.end.y - WORLD_ORIGIN.y) / PIXELS_PER_METER;
+              const len = Math.hypot(bx - ax, bz - az) || 0.01;
+              const midX = (ax + bx) / 2;
+              const midZ = (az + bz) / 2;
+              const angle = -Math.atan2(bz - az, bx - ax);
+              const exterior = (wall.assembly ?? 'interior') === 'exterior';
               return (
-                <Line
+                <mesh
                   key={wall.id}
-                  points={[
-                    [ax, 0.05, az],
-                    [bx, 0.05, bz],
-                  ]}
-                  color="#7a8794"
-                  lineWidth={1}
-                />
+                  position={[midX, storyH / 2, midZ]}
+                  rotation={[0, angle, 0]}
+                >
+                  <boxGeometry args={[len, storyH, Math.max(wall.thickness, 0.08)]} />
+                  <meshStandardMaterial
+                    color={exterior ? '#c9c4bb' : '#e4e0d8'}
+                    transparent
+                    opacity={0.55}
+                    depthWrite={false}
+                  />
+                </mesh>
               );
             })}
+            <Html position={[0, storyH + 0.2, 0]} center style={{ pointerEvents: 'none' }}>
+              <div className="stack-floor-chip">{floor.name}</div>
+            </Html>
           </group>
         );
       })}
