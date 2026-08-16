@@ -158,28 +158,36 @@ export function ProxyFurniture({
   const halo = <SelectionHalo width={item.width} depth={item.depth} height={item.height} selected={selected} colliding={colliding} />;
 
   if (item.placementKind === 'stair' || name === 'stair' || category.includes('circulation')) {
-    const steps = 10;
-    const rise = Math.max(item.height > 1 ? item.height : 2.7, 2.4);
-    const run = item.depth / steps;
+    const steps = Math.max(3, item.stair?.steps ?? 12);
+    const rise = item.stair?.riseM ?? Math.max(item.height > 1 ? item.height : 2.7, 2.4);
+    const run = item.stair?.runM ?? Math.max(item.depth - (item.stair?.landingM ?? 0), item.depth * 0.75);
+    const landing = item.stair?.landingM ?? Math.max(0, item.depth - run);
+    const tread = run / steps;
     return (
       <group {...handlers}>
         {Array.from({ length: steps }, (_, i) => (
           <mesh
             key={i}
-            position={[0, rise * ((i + 0.5) / steps), -item.depth / 2 + run * (i + 0.5)]}
+            position={[0, rise * ((i + 0.5) / steps), -item.depth / 2 + tread * (i + 0.5)]}
             castShadow
             receiveShadow
           >
-            <boxGeometry args={[item.width, rise / steps, run * 0.92]} />
+            <boxGeometry args={[item.width, rise / steps, tread * 0.92]} />
             <meshStandardMaterial color={color} roughness={0.78} />
           </mesh>
         ))}
-        <mesh position={[-item.width / 2 + 0.03, rise * 0.55, 0]} castShadow>
-          <boxGeometry args={[0.04, rise * 0.9, item.depth]} />
+        {landing > 0.05 && (
+          <mesh position={[0, rise, item.depth / 2 - landing / 2]} castShadow receiveShadow>
+            <boxGeometry args={[item.width, 0.08, landing]} />
+            <meshStandardMaterial color={color} roughness={0.72} />
+          </mesh>
+        )}
+        <mesh position={[-item.width / 2 + 0.03, rise * 0.55, -landing / 2]} castShadow>
+          <boxGeometry args={[0.04, rise * 0.9, item.depth - landing]} />
           <meshStandardMaterial color="#6e5844" roughness={0.7} />
         </mesh>
-        <mesh position={[item.width / 2 - 0.03, rise * 0.55, 0]} castShadow>
-          <boxGeometry args={[0.04, rise * 0.9, item.depth]} />
+        <mesh position={[item.width / 2 - 0.03, rise * 0.55, -landing / 2]} castShadow>
+          <boxGeometry args={[0.04, rise * 0.9, item.depth - landing]} />
           <meshStandardMaterial color="#6e5844" roughness={0.7} />
         </mesh>
         {halo}

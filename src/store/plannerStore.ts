@@ -63,6 +63,13 @@ type PlannerState = SceneSnapshot & {
   draftStart: Point | null;
   floors: FloorRecord[];
   activeFloorId: string;
+  /** Orbit dollhouse: draw every floor stacked by story height. */
+  stackView: boolean;
+  setStackView: (on: boolean) => void;
+  roofStyle: import('../types').RoofStyle;
+  setRoofStyle: (style: import('../types').RoofStyle) => void;
+  siteSetback: import('../types').SiteSetback;
+  setSiteSetback: (setback: import('../types').SiteSetback) => void;
   history: SceneSnapshot[];
   historyIndex: number;
   openingNotice: string;
@@ -408,6 +415,9 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     draftStart: null,
     floors: [{ id: 'ground', name: 'Ground floor', scene: initial }],
     activeFloorId: 'ground',
+    stackView: false,
+    roofStyle: 'gable',
+    siteSetback: { frontM: 6, sideM: 1.5, rearM: 6 },
     history: [initial],
     historyIndex: 0,
     openingNotice: '',
@@ -442,6 +452,9 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     },
     setRoomType: (roomType) => set({ roomType }),
     setUnitSystem: (unitSystem) => set({ unitSystem }),
+    setStackView: (stackView) => set({ stackView }),
+    setRoofStyle: (roofStyle) => set({ roofStyle }),
+    setSiteSetback: (siteSetback) => set({ siteSetback }),
     setDraftStart: (draftStart) => set({ draftStart }),
     addWall: (start, end) => {
       if (Math.hypot(end.x - start.x, end.y - start.y) < 20) return;
@@ -1024,6 +1037,10 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       if (fromFloorId === toFloorId) return;
       // Ensure we're editing the from-floor scene.
       if (get().activeFloorId !== fromFloorId) get().switchFloor(fromFloorId);
+      const riseM = Math.max(get().walls[0]?.height ?? 2.7, 2.4);
+      const runM = 2.8;
+      const steps = 14;
+      const landingM = 0.9;
       mutate({
         furniture: [
           ...get().furniture,
@@ -1038,11 +1055,11 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
             rotation: 0,
             color: '#8b7355',
             width: 1.1,
-            depth: 2.4,
-            height: Math.max(get().walls[0]?.height ?? 2.7, 2.4),
+            depth: runM + landingM,
+            height: riseM,
             mountingType: 'floor',
             placementKind: 'stair',
-            stair: { fromFloorId, toFloorId },
+            stair: { fromFloorId, toFloorId, runM, riseM, steps, landingM },
           },
         ],
       });

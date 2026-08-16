@@ -226,6 +226,7 @@ export function buildFloorFromRooms(floor: HousePlanFloor, opts?: BuildFloorOpti
       end: toPoint(edge.x2, edge.y2),
       thickness: edge.exterior ? 0.18 : 0.12,
       height,
+      assembly: edge.exterior ? 'exterior' : 'interior',
     };
     walls.push(wall);
 
@@ -388,26 +389,30 @@ export function planRoomSizeFeet(points: Point[]) {
   };
 }
 
-/** Resize a room polygon in place, keeping its center fixed. */
+const MIN_ROOM_FT = 3;
+
+/** Resize a room polygon in place, keeping its center fixed.
+ * Scales about the AABB center so L-shapes and angled rooms keep their outline.
+ */
 export function resizePlanRoomPoints(points: Point[], widthFt: number, depthFt: number): Point[] {
+  if (points.length < 3) return points;
   const size = planRoomSizeFeet(points);
   const cx = (size.minX + size.maxX) / 2;
   const cy = (size.minY + size.maxY) / 2;
-  const w = Math.max(3, widthFt);
-  const d = Math.max(3, depthFt);
+  const w = Math.max(MIN_ROOM_FT, widthFt);
+  const d = Math.max(MIN_ROOM_FT, depthFt);
+  const sx = w / Math.max(0.5, size.widthFt);
+  const sy = d / Math.max(0.5, size.depthFt);
   const toPoint = (xFt: number, yFt: number): Point => ({
     x: WORLD_ORIGIN.x + ftToPx(xFt),
     y: WORLD_ORIGIN.y + ftToPx(yFt),
   });
-  return [
-    toPoint(cx - w / 2, cy - d / 2),
-    toPoint(cx + w / 2, cy - d / 2),
-    toPoint(cx + w / 2, cy + d / 2),
-    toPoint(cx - w / 2, cy + d / 2),
-  ];
+  return points.map((p) => {
+    const xFt = (p.x - WORLD_ORIGIN.x) / PIXELS_PER_METER / FT_TO_M;
+    const yFt = (p.y - WORLD_ORIGIN.y) / PIXELS_PER_METER / FT_TO_M;
+    return toPoint(cx + (xFt - cx) * sx, cy + (yFt - cy) * sy);
+  });
 }
-
-const MIN_ROOM_FT = 3;
 
 /** Move one polygon vertex in plan pixels; reject if room collapses below min size. */
 export function movePlanRoomVertexPoints(points: Point[], index: number, next: Point): Point[] | null {

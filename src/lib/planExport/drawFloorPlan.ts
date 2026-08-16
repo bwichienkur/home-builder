@@ -2,6 +2,11 @@ import type { Opening, PlanRoomLabel, Point, UnitSystem, Wall } from '../../type
 import { roomArea } from '../geometry/rooms';
 import { formatArea, formatLength } from '../measurements';
 import { PIXELS_PER_METER } from '../geometry/snapping';
+import {
+  drawElevationToCanvas,
+  drawSectionToCanvas,
+  drawStructureSheetToCanvas,
+} from './drawElevations';
 
 export type PlanExportInput = {
   name?: string;
@@ -10,6 +15,7 @@ export type PlanExportInput = {
   openings: Opening[];
   planRooms: PlanRoomLabel[];
   unitSystem?: UnitSystem;
+  furniture?: import('../../types').FurnitureItem[];
 };
 
 /** Print sheet size in inches (landscape ANSI B / Tabloid). */
@@ -613,9 +619,20 @@ export function downloadCanvasPdf(canvas: HTMLCanvasElement, filename: string) {
 }
 
 export function downloadScaledPlanPdf(input: PlanExportInput, filename: string) {
-  const plan = drawFloorPlanToCanvas(input);
-  const schedule = drawOpeningScheduleToCanvas(input);
-  downloadCanvasesPdf([plan, schedule], filename);
+  downloadCanvasesPdf(buildConstructionSetCanvases(input), filename);
+}
+
+/** Full CD set: plan, schedule, elevations, section, foundation, roof. */
+export function buildConstructionSetCanvases(input: PlanExportInput) {
+  return [
+    drawFloorPlanToCanvas(input),
+    drawOpeningScheduleToCanvas(input),
+    drawElevationToCanvas(input, 'front'),
+    drawElevationToCanvas(input, 'right'),
+    drawSectionToCanvas(input),
+    drawStructureSheetToCanvas({ ...input, kind: 'foundation' }),
+    drawStructureSheetToCanvas({ ...input, kind: 'roof' }),
+  ];
 }
 
 /** Plan-pixel → CAD drawing units (meters or inches), Y-up, origin at plan min corner. */
@@ -708,6 +725,16 @@ export function buildPlanDxf(input: PlanExportInput): string {
     '6',
     'CONTINUOUS',
     '0',
+    'LAYER',
+    '2',
+    'DIMS',
+    '70',
+    '0',
+    '62',
+    '1',
+    '6',
+    'CONTINUOUS',
+    '0',
     'ENDTAB',
     '0',
     'ENDSEC',
@@ -723,7 +750,34 @@ export function buildPlanDxf(input: PlanExportInput): string {
     lines.push('0', 'LINE', '8', layer, '10', String(A.x), '20', String(A.y), '30', '0', '11', String(B.x), '21', String(B.y), '31', '0');
   };
 
-  for (const wall of input.walls) pushLine('WALLS', wall.start, wall.end);
+  for (const wall of input.walls) {
+    pushLine('WALLS', wall.start, wall.end);
+    const len = wallLengthM(wall);
+    if (len < 0.3) continue;
+    const mid = {
+      x: (wall.start.x + wall.end.x) / 2,
+      y: (wall.start.y + wall.end.y) / 2,
+    };
+    const M = scaleCad(mid);
+    const textH = unit === 'metric' ? 120 : 5;
+    const label = unit === 'metric' ? `${len.toFixed(2)} m` : `${(len / 0.3048).toFixed(2)} ft`;
+    lines.push(
+      '0',
+      'TEXT',
+      '8',
+      'DIMS',
+      '10',
+      String(M.x),
+      '20',
+      String(M.y),
+      '30',
+      '0',
+      '40',
+      String(textH),
+      '1',
+      label,
+    );
+  }
 
   for (const room of input.planRooms) {
     if (room.points.length < 3) continue;

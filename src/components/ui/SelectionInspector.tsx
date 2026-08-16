@@ -100,6 +100,7 @@ export function SelectionInspector({ open, onClose }: { open: boolean; onClose: 
 
 function FurnitureProperties({ item }: { item: import('../../types').FurnitureItem }) {
   const remove = usePlannerStore((s) => s.deleteSelected);
+  const update = usePlannerStore((s) => s.updateFurniture);
   const unit = usePlannerStore((s) => s.unitSystem);
   const floors = usePlannerStore((s) => s.floors);
   const fromFloor = item.stair ? floors.find((f) => f.id === item.stair!.fromFloorId) : null;
@@ -109,9 +110,39 @@ function FurnitureProperties({ item }: { item: import('../../types').FurnitureIt
       <p className="muted">{item.category}</p>
       <Property label="Name" value={item.name} />
       {item.placementKind === 'stair' && (
-        <p className="muted">
-          Links {fromFloor?.name ?? 'lower'} → {toFloor?.name ?? 'upper'}. Drag to place on the plan.
-        </p>
+        <>
+          <p className="muted">
+            Links {fromFloor?.name ?? 'lower'} → {toFloor?.name ?? 'upper'}. Floor plates cut out around the run.
+          </p>
+          <LengthField
+            label="Run"
+            value={item.stair?.runM ?? item.depth}
+            min={1}
+            onChange={(runM) => {
+              const landingM = item.stair?.landingM ?? 0.9;
+              update(item.id, {
+                depth: runM + landingM,
+                stair: { ...item.stair!, runM },
+              });
+            }}
+          />
+          <LengthField
+            label="Rise"
+            value={item.stair?.riseM ?? item.height}
+            min={2}
+            onChange={(riseM) => update(item.id, { height: riseM, stair: { ...item.stair!, riseM } })}
+          />
+          <label>
+            Steps
+            <input
+              type="number"
+              min={3}
+              max={30}
+              value={item.stair?.steps ?? 12}
+              onChange={(e) => update(item.id, { stair: { ...item.stair!, steps: Math.max(3, +e.target.value || 12) } })}
+            />
+          </label>
+        </>
       )}
       <Property
         label="Size"
@@ -169,6 +200,10 @@ function TrimProperties({ item }: { item: import('../../types').FurnitureItem })
 }
 
 function RoomPanel({ surface }: { surface: 'floor' | 'wall' | 'ceiling' | null }) {
+  const roofStyle = usePlannerStore((s) => s.roofStyle);
+  const setRoofStyle = usePlannerStore((s) => s.setRoofStyle);
+  const siteSetback = usePlannerStore((s) => s.siteSetback);
+  const setSiteSetback = usePlannerStore((s) => s.setSiteSetback);
   return (
     <>
       <div className="empty-state compact">
@@ -187,6 +222,45 @@ function RoomPanel({ surface }: { surface: 'floor' | 'wall' | 'ceiling' | null }
       {(surface === 'ceiling' || surface === 'floor') && (
         <FinishSwatches highlight={surface === 'ceiling' ? 'ceiling' : 'floor'} />
       )}
+      <label>
+        Roof
+        <select value={roofStyle} onChange={(e) => setRoofStyle(e.target.value as typeof roofStyle)}>
+          <option value="none">None</option>
+          <option value="flat">Flat</option>
+          <option value="gable">Gable</option>
+        </select>
+      </label>
+      <p className="muted">Site setbacks (m) — dashed guide on the plan</p>
+      <label>
+        Front
+        <input
+          type="number"
+          step="0.5"
+          min="0"
+          value={siteSetback.frontM}
+          onChange={(e) => setSiteSetback({ ...siteSetback, frontM: Math.max(0, +e.target.value || 0) })}
+        />
+      </label>
+      <label>
+        Side
+        <input
+          type="number"
+          step="0.5"
+          min="0"
+          value={siteSetback.sideM}
+          onChange={(e) => setSiteSetback({ ...siteSetback, sideM: Math.max(0, +e.target.value || 0) })}
+        />
+      </label>
+      <label>
+        Rear
+        <input
+          type="number"
+          step="0.5"
+          min="0"
+          value={siteSetback.rearM}
+          onChange={(e) => setSiteSetback({ ...siteSetback, rearM: Math.max(0, +e.target.value || 0) })}
+        />
+      </label>
     </>
   );
 }
@@ -238,7 +312,7 @@ function PlanRoomProperties({ room }: { room: PlanRoomLabel }) {
           ? `${formatLength(size.widthFt * 0.3048, unit)} × ${formatLength(size.depthFt * 0.3048, unit)}`
           : `${size.widthFt.toFixed(1)}′ × ${size.depthFt.toFixed(1)}′`}
       </p>
-      <p className="muted">Drag blue corners on the plan to angle walls. Tap a mid-edge square to add a corner.</p>
+      <p className="muted">Drag blue corners on the plan to angle walls. Tap a mid-edge square to add a corner. Width/Depth scale the polygon (shape preserved).</p>
       <LengthField
         label="Width"
         value={size.widthFt * 0.3048}
@@ -253,7 +327,7 @@ function PlanRoomProperties({ room }: { room: PlanRoomLabel }) {
         max={30}
         onChange={(meters) => resize(room.id, size.widthFt, meters / 0.3048)}
       />
-      <p className="muted">Width/Depth reset the footprint to a rectangle.</p>
+      <p className="muted">Width/Depth scale from center — L-shapes and angled rooms keep their outline.</p>
       <LengthField label="Ceiling height" value={ceiling} min={2} max={6} onChange={setCeiling} />
       <div className="wall-actions">
         <button type="button" onClick={() => insertVertex(room.id, 0)}>

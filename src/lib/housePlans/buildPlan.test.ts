@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { buildHouse, livingAreaSqFt, insertPlanRoomVertexPoints, movePlanRoomVertexPoints, removePlanRoomVertexPoints } from './buildPlan';
+import { buildHouse, livingAreaSqFt, insertPlanRoomVertexPoints, movePlanRoomVertexPoints, removePlanRoomVertexPoints, resizePlanRoomPoints, planRoomSizeFeet } from './buildPlan';
 import { assertPlanCatalog, getHousePlan, listBuiltinHousePlans } from './planRegistry';
 import { importDxfHousePlan } from './dxfImport';
 import { usePlannerStore } from '../../store/plannerStore';
+import { WORLD_ORIGIN } from '../geometry/placement';
+import { PIXELS_PER_METER } from '../geometry/snapping';
 
 describe('sample house plans', () => {
   it('ships measured sample plans (no proprietary brochure set)', () => {
@@ -160,5 +162,23 @@ describe('polygon vertex edit', () => {
   it('refuses to remove below three corners', () => {
     const triangle = square.slice(0, 3);
     expect(removePlanRoomVertexPoints(triangle, 0)).toBeNull();
+  });
+
+  it('scales L-shaped rooms without collapsing to a rectangle', () => {
+    const ppm = 80;
+    const ft = (n: number) => n * 0.3048 * ppm;
+    const lShape = [
+      { x: WORLD_ORIGIN.x, y: WORLD_ORIGIN.y },
+      { x: WORLD_ORIGIN.x + ft(16), y: WORLD_ORIGIN.y },
+      { x: WORLD_ORIGIN.x + ft(16), y: WORLD_ORIGIN.y + ft(8) },
+      { x: WORLD_ORIGIN.x + ft(8), y: WORLD_ORIGIN.y + ft(8) },
+      { x: WORLD_ORIGIN.x + ft(8), y: WORLD_ORIGIN.y + ft(14) },
+      { x: WORLD_ORIGIN.x, y: WORLD_ORIGIN.y + ft(14) },
+    ];
+    const next = resizePlanRoomPoints(lShape, 20, 18);
+    expect(next.length).toBe(6);
+    const size = planRoomSizeFeet(next);
+    expect(size.widthFt).toBeCloseTo(20, 1);
+    expect(size.depthFt).toBeCloseTo(18, 1);
   });
 });

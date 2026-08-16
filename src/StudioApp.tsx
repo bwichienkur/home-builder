@@ -35,6 +35,8 @@ import {
 import { downloadTextFile, shoppingListCsvFromDesign } from './lib/shoppingListCsv';
 import { formatArea } from './lib/measurements';
 import { drawFloorPlanToCanvas, downloadCanvasPng, downloadPlanDxf, downloadScaledPlanPdf } from './lib/planExport/drawFloorPlan';
+import { downloadPlanIfc } from './lib/planExport/buildIfc';
+import { saveProjectToCloud } from './lib/cloudProjects';
 
 const Scene3D = lazy(() => import('./components/scene3d/Scene3D').then((m) => ({ default: m.Scene3D })));
 
@@ -139,11 +141,18 @@ export default function StudioApp() {
     return entry;
   }, [activeDesignCode, projectName, rememberDesign, store]);
 
-  const saveBuild = useCallback(() => {
+  const saveBuild = useCallback(async () => {
     store.save();
     const entry = persistToLibrary();
-    notify(`Saved “${entry.name}”`);
-  }, [persistToLibrary, store]);
+    const cloud = await saveProjectToCloud(projectName, store.projectPayload());
+    if (cloud.ok && cloud.mode === 'cloud') {
+      notify(`Saved “${entry.name}” · cloud v${cloud.version}`);
+    } else if (cloud.ok) {
+      notify(`Saved “${entry.name}” (local · ${cloud.reason})`);
+    } else {
+      notify(`Saved locally — cloud: ${cloud.error}`);
+    }
+  }, [persistToLibrary, projectName, store]);
 
   const share = useCallback(async () => {
     try {
@@ -202,7 +211,7 @@ export default function StudioApp() {
   );
 
   const exportFloorPlan = useCallback(
-    (format: 'pdf' | 'png' | 'dxf') => {
+    (format: 'pdf' | 'png' | 'dxf' | 'ifc') => {
       const activeFloor = store.floors.find((f) => f.id === store.activeFloorId);
       const input = {
         name: projectName,
@@ -210,17 +219,23 @@ export default function StudioApp() {
         walls: store.walls,
         openings: store.openings,
         planRooms: store.planRooms,
+        furniture: store.furniture,
         unitSystem: store.unitSystem,
       };
       const base = `${projectName.replace(/[^\w\-]+/g, '-').toLowerCase() || 'mahnikka'}-plan`;
       if (format === 'dxf') {
         downloadPlanDxf(input, `${base}.dxf`);
-        notify('CAD DXF exported (walls, rooms, openings)');
+        notify('CAD DXF exported (walls, rooms, openings, dims)');
+        return;
+      }
+      if (format === 'ifc') {
+        downloadPlanIfc(input, `${base}.ifc`);
+        notify('IFC4 walls/spaces exported');
         return;
       }
       if (format === 'pdf') {
         downloadScaledPlanPdf(input, `${base}.pdf`);
-        notify('Scaled floor plan + schedule PDF exported');
+        notify('Construction set PDF exported');
         return;
       }
       const canvas = drawFloorPlanToCanvas(input);
@@ -487,13 +502,16 @@ export default function StudioApp() {
 
           <div className="menu-export-actions">
             <button type="button" className="menu-secondary" onClick={() => exportFloorPlan('pdf')} disabled={walls.length === 0}>
-              <Download size={16} /> Export scaled plan PDF
+              <Download size={16} /> Export construction set PDF
             </button>
             <button type="button" className="menu-secondary" onClick={() => exportFloorPlan('png')} disabled={walls.length === 0}>
               <Download size={16} /> Export plan sheet PNG
             </button>
             <button type="button" className="menu-secondary" onClick={() => exportFloorPlan('dxf')} disabled={walls.length === 0}>
               <FileJson size={16} /> Export CAD DXF
+            </button>
+            <button type="button" className="menu-secondary" onClick={() => exportFloorPlan('ifc')} disabled={walls.length === 0}>
+              <FileJson size={16} /> Export IFC4
             </button>
           </div>
 

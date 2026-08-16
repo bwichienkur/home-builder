@@ -47,6 +47,43 @@ export function roomShape(points: Point[], origin = WORLD_ORIGIN, scale = PIXELS
   return shape;
 }
 
+/** World-XZ rectangle hole (meters) for stair cutouts — matches roomShape axes. */
+export function stairCutoutPath(
+  item: { x: number; z: number; width: number; depth: number; rotation: number },
+): THREE.Path {
+  const hw = item.width / 2;
+  const hd = item.depth / 2;
+  const cos = Math.cos(item.rotation);
+  const sin = Math.sin(item.rotation);
+  const corners = [
+    [-hw, -hd],
+    [hw, -hd],
+    [hw, hd],
+    [-hw, hd],
+  ].map(([lx, lz]) => ({
+    x: item.x + lx * cos - lz * sin,
+    y: item.z + lx * sin + lz * cos,
+  }));
+  const path = new THREE.Path();
+  corners.forEach((c, i) => {
+    if (i) path.lineTo(c.x, c.y);
+    else path.moveTo(c.x, c.y);
+  });
+  path.closePath();
+  return path;
+}
+
+export function roomShapeWithHoles(
+  points: Point[],
+  holes: Array<{ x: number; z: number; width: number; depth: number; rotation: number }> = [],
+  origin = WORLD_ORIGIN,
+  scale = PIXELS_PER_METER,
+) {
+  const shape = roomShape(points, origin, scale);
+  for (const hole of holes) shape.holes.push(stairCutoutPath(hole));
+  return shape;
+}
+
 /** Convert plan-pixel polygon corners to world XZ (matches wall placement). */
 export function roomPolygonWorld(points: Point[], origin = WORLD_ORIGIN, scale = PIXELS_PER_METER) {
   return points.map((p) => ({

@@ -171,14 +171,6 @@ export function importDxfHousePlan(dxfText: string, name = 'Imported DXF plan'):
   return { plan, warnings: [...w1, ...w2], lineCount: segments.length };
 }
 
-/** Minimal IFC detection — full IFC mapping is server/worker follow-up. */
-export function inspectIfc(text: string): { ok: boolean; message: string } {
-  if (!/ISO-10303-21/i.test(text) && !/FILE_SCHEMA\s*\(\s*\('IFC/i.test(text)) {
-    return { ok: false, message: 'File does not look like an IFC STEP exchange file.' };
-  }
-  return {
-    ok: false,
-    message:
-      'IFC detected. Full IFC→walls mapping is not enabled in this MVP — export DXF spaces or use native JSON. Sample IFC files: buildingSMART documentation.',
-  };
-}
+/** IFC inspect — delegated to planExport/buildIfc (spaces/walls summary). */
+export { inspectIfc } from '../planExport/buildIfc';
+

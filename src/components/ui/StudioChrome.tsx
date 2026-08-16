@@ -110,6 +110,8 @@ export function StudioChrome({
   const switchFloor = usePlannerStore((s) => s.switchFloor);
   const addFloor = usePlannerStore((s) => s.addFloor);
   const addStair = usePlannerStore((s) => s.addStair);
+  const stackView = usePlannerStore((s) => s.stackView);
+  const setStackView = usePlannerStore((s) => s.setStackView);
   const deleteFloor = usePlannerStore((s) => s.deleteFloor);
   const exitRoom = usePlannerStore((s) => s.exitRoom);
   const showStart = usePlannerStore((s) => s.showStart);
@@ -444,6 +446,20 @@ export function StudioChrome({
             </div>
             {floors.length > 1 && (
               <div className="studio-story-bar-actions">
+                <button
+                  type="button"
+                  className={`studio-floor-stair${stackView ? ' is-active' : ''}`}
+                  aria-label="Stack all floors in 3D"
+                  title="Stack floors"
+                  aria-pressed={stackView}
+                  onClick={() => {
+                    setStackView(!stackView);
+                    setCamera('orbit');
+                    window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 40);
+                  }}
+                >
+                  <Layers3 size={14} />
+                </button>
                 <button
                   type="button"
                   className="studio-floor-stair"
