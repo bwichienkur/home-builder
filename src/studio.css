@@ -1515,14 +1515,15 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   min-width: 0;
-  width: auto;
-  max-width: 100%;
-  padding: 0;
+  width: 100%;
+  max-width: none;
+  padding: 6px 10px 8px;
   border-radius: 0;
-  background: transparent;
-  box-shadow: none;
+  background: #f7f8fa;
+  border-bottom: 1px solid var(--line);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
   overflow: visible;
 }
 .studio-story-bar::-webkit-scrollbar {
@@ -1534,8 +1535,9 @@
 .studio-story-bar-actions {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   flex-shrink: 0;
+  margin-left: auto;
 }
 .studio-floor-stack {
   display: flex;
@@ -1550,14 +1552,15 @@
   flex-direction: row;
   align-items: center;
   flex-wrap: nowrap;
-  gap: 2px;
-  padding: 3px;
+  gap: 0;
+  padding: 2px;
   width: max-content;
-  max-width: min(100%, 280px);
+  max-width: min(100%, 320px);
   min-height: 0;
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 4px 14px rgba(17, 24, 32, 0.1), 0 0 0 1px rgba(17, 24, 32, 0.06);
-  border-radius: 999px;
+  background: rgba(17, 24, 32, 0.04);
+  box-shadow: none;
+  border: 1px solid var(--line);
+  border-radius: 12px;
   flex: 0 1 auto;
   overflow-x: auto;
   scrollbar-width: none;
@@ -1582,10 +1585,10 @@
 }
 .studio-floor-stack.studio-floor-stack--bar button {
   text-align: center;
-  min-height: 28px;
-  height: 28px;
+  min-height: 30px;
+  height: 30px;
   padding: 0 12px;
-  border-radius: 999px;
+  border-radius: 10px;
   font-size: 12px;
   font-weight: 700;
   color: #4b5563;
@@ -1597,54 +1600,64 @@
 }
 .studio-floor-stack button.active,
 .studio-floor-stack.studio-floor-stack--bar button.active {
-  background: #111820;
-  color: #fff;
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 1px 0 rgba(17, 24, 32, 0.06);
 }
 .studio-floor-stack.studio-floor-stack--bar .studio-floor-add {
   display: inline-flex !important;
   align-items: center;
   justify-content: center;
-  min-width: 28px !important;
-  width: 28px;
-  height: 28px !important;
-  min-height: 28px !important;
+  min-width: 30px !important;
+  width: 30px;
+  height: 30px !important;
+  min-height: 30px !important;
   padding: 0 !important;
-  border-radius: 999px !important;
-  background: rgba(17, 24, 32, 0.06) !important;
+  border-radius: 10px !important;
+  background: transparent !important;
   color: #111820 !important;
+  box-shadow: none !important;
   flex-shrink: 0;
 }
 .studio-floor-stack.studio-floor-stack--bar .studio-floor-add:hover,
 .studio-floor-stack.studio-floor-stack--bar .studio-floor-add:active {
-  background: #111820 !important;
-  color: #fff !important;
+  background: rgba(17, 24, 32, 0.08) !important;
+  color: #111820 !important;
 }
 .studio-floor-delete {
   border: 0;
-  border-radius: 999px;
-  width: 28px;
-  height: 28px;
+  border-radius: 10px;
+  width: 34px;
+  height: 34px;
   display: grid;
   place-items: center;
-  background: rgba(255, 255, 255, 0.96);
+  background: transparent;
   color: #b42318;
-  box-shadow: 0 2px 8px rgba(17, 24, 32, 0.08);
+  box-shadow: none;
   cursor: pointer;
   flex-shrink: 0;
 }
+.studio-floor-delete:hover,
+.studio-floor-delete:active {
+  background: rgba(180, 35, 24, 0.08);
+}
 .studio-floor-all {
   border: 0;
-  border-radius: 999px;
-  min-height: 28px;
-  height: 28px;
+  border-radius: 10px;
+  min-height: 34px;
+  height: 34px;
   padding: 0 10px;
-  background: rgba(255, 255, 255, 0.96);
+  background: transparent;
   color: #334155;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
-  box-shadow: 0 2px 8px rgba(17, 24, 32, 0.08);
+  box-shadow: none;
   cursor: pointer;
   flex-shrink: 0;
+}
+.studio-floor-all:hover,
+.studio-floor-all:active {
+  background: rgba(17, 24, 32, 0.06);
 }
 
 .studio-plan-add-room {

@@ -39,8 +39,8 @@ describe('plan framing', () => {
   });
 
   it('keeps orbit pad independent from top chrome pad', () => {
-    const looseTop = framingFromWalls(rect, { pad: 3.1, orbitPad: 1.18 });
-    const tightBoth = framingFromWalls(rect, { pad: 1.18, orbitPad: 1.18 });
+    const looseTop = framingFromWalls(rect, { pad: 3.1, orbitPad: 1.4 });
+    const tightBoth = framingFromWalls(rect, { pad: 1.4, orbitPad: 1.4 });
     expect(looseTop.orbitPose[1]).toBeCloseTo(tightBoth.orbitPose[1], 3);
     expect(looseTop.topHeight).toBeGreaterThan(tightBoth.topHeight);
   });
@@ -98,16 +98,31 @@ describe('plan framing', () => {
       width: 390,
       height: 844,
       rightChromePx: 68,
-      gutterPx: 10,
-      topChromePx: 68,
-      bottomChromePx: 130,
+      gutterPx: 20,
+      topChromePx: 104,
+      bottomChromePx: 136,
     });
-    // Page-centered: reserve the rail once with a little mirrored slack (1.45×).
-    expect(fit.rightReserve).toBe(78);
-    expect(fit.maxPlateW).toBeCloseTo(390 - 78 * 1.45, 5);
-    expect(fit.padScale).toBeGreaterThan(1.2);
-    expect(fit.padScale).toBeLessThan(1.8);
+    // Page-centered: reserve the rail on both sides of the plate.
+    expect(fit.rightReserve).toBe(88);
+    expect(fit.maxPlateW).toBeCloseTo(390 - 88 * 2, 5);
+    expect(fit.padScale).toBeGreaterThan(1.35);
+    expect(fit.padScale).toBeLessThan(2.2);
     expect(fit.shiftFraction).toBe(0);
+  });
+
+  it('shifts into the free area left of the mobile rail', () => {
+    const fit = freeAreaFit({
+      width: 390,
+      height: 844,
+      rightChromePx: 68,
+      gutterPx: 20,
+      topChromePx: 104,
+      bottomChromePx: 136,
+    });
+    expect(fit.shiftFraction).toBeGreaterThan(0.1);
+    expect(fit.padScale).toBeGreaterThan(1.15);
+    const shift = worldShiftForFreeArea(fit.shiftFraction, 18, 48, 390 / 844);
+    expect(shift).toBeGreaterThan(0.8);
   });
 
   it('shifts into the free area left of a wide edit inspector', () => {

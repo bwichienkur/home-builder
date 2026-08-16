@@ -149,42 +149,41 @@ function CameraRig() {
   const canvasW = size?.width || (typeof window !== 'undefined' ? window.innerWidth : 390);
   const canvasH = size?.height || (typeof window !== 'undefined' ? window.innerHeight : 844);
 
-  // Rail: page-centered + zoom. Edit inspector / wall focus: shift into the free area left of chrome.
+  // Rail: on touch, shift into the free band left of the rail so the room stays clear.
+  // Desktop keeps a page-centered fit with a full mirrored rail reserve.
   const chromeFit = useMemo(() => {
-    const topChromePx = coarse ? (focusWall ? 100 : 68) : focusWall ? 92 : 58;
-    const bottomChromePx = coarse ? (focusWall ? 160 : 130) : focusWall ? 120 : 96;
-    if (inspectorOpen || focusWall) {
+    const topChromePx = coarse ? (focusWall ? 112 : 104) : focusWall ? 92 : 84;
+    const bottomChromePx = coarse ? (focusWall ? 160 : 136) : focusWall ? 120 : 100;
+    const railPx = showRightRail ? 68 : 0;
+    const gutterPx = railPx ? (coarse ? 20 : 14) : 0;
+    if (inspectorOpen || focusWall || (coarse && showRightRail)) {
       const rightChromePx = inspectorOpen
         ? Math.min(260, Math.round(canvasW * 0.44))
-        : showRightRail
-          ? 68
-          : 0;
+        : railPx;
       return freeAreaFit({
         width: canvasW,
         height: canvasH,
         rightChromePx,
-        gutterPx: coarse ? 10 : 8,
+        gutterPx: inspectorOpen ? (coarse ? 12 : 10) : gutterPx,
         topChromePx,
         bottomChromePx,
       });
     }
-    // Rail is ~64px wide; keep a small gutter so the plate nearly fills the free canvas.
-    const rightChromePx = showRightRail ? 68 : 0;
     return pageCenterFit({
       width: canvasW,
       height: canvasH,
-      rightChromePx,
-      gutterPx: rightChromePx ? (coarse ? 10 : 8) : 0,
+      rightChromePx: railPx,
+      gutterPx,
       topChromePx,
       bottomChromePx,
     });
   }, [canvasW, canvasH, inspectorOpen, showRightRail, coarse, inspectorTick, focusWall]);
 
   const framing = useMemo(() => {
-    const basePad = (coarse ? 2.55 : 2.35) * (menuOpen ? 1.45 : 1);
-    const baseOrbit = (coarse ? 1.32 : 1.18) * (menuOpen ? 1.25 : 1);
+    const basePad = (coarse ? 2.85 : 2.55) * (menuOpen ? 1.45 : 1);
+    const baseOrbit = (coarse ? 1.58 : 1.4) * (menuOpen ? 1.25 : 1);
     const pad = basePad * chromeFit.padScale;
-    const orbitPad = baseOrbit * Math.max(1, chromeFit.padScale * 0.88);
+    const orbitPad = baseOrbit * Math.max(1, chromeFit.padScale * 0.92);
     if (focusWall) {
       const roomsForExterior =
         planRooms.length > 0
@@ -220,10 +219,11 @@ function CameraRig() {
   const fovDeg = mode === 'walk' ? 58 : mode === 'top' ? 42 : 48;
   const aspect = Math.max(0.35, canvasW / Math.max(1, canvasH));
 
-  // Page center by default; when the edit card or a wall is focused, pan into the free left area.
+  // Page center by default; pan into the free left area when chromeFit requests a shift
+  // (edit inspector, wall focus, or mobile rail).
   const shiftX = useMemo(() => {
     const menuShiftX = menuOpen ? framing.span * 0.28 : 0;
-    if ((!inspectorOpen && !focusWall) || chromeFit.shiftFraction <= 0) return menuShiftX;
+    if (chromeFit.shiftFraction <= 0) return menuShiftX;
     const dist =
       mode === 'top'
         ? framing.topHeight
@@ -232,7 +232,7 @@ function CameraRig() {
           : Math.hypot(framing.orbitPose[0] - center[0], framing.orbitPose[1], framing.orbitPose[2] - center[2]) ||
             framing.topHeight;
     return menuShiftX + worldShiftForFreeArea(chromeFit.shiftFraction, dist, fovDeg, aspect);
-  }, [menuOpen, framing, inspectorOpen, focusWall, chromeFit.shiftFraction, mode, center, fovDeg, aspect]);
+  }, [menuOpen, framing, chromeFit.shiftFraction, mode, center, fovDeg, aspect]);
   const [shiftWorldX, shiftWorldZ] = yawOffset(shiftX, 0);
   const targetTuple = useMemo<[number, number, number]>(
     () => [center[0] + shiftWorldX, 0, center[2] + shiftWorldZ],
