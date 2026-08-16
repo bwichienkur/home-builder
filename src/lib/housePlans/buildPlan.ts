@@ -2,17 +2,48 @@ import type { Opening, Point, RoomType, SceneSnapshot, Wall } from '../../types'
 import { WORLD_ORIGIN } from '../geometry/placement';
 import { PIXELS_PER_METER } from '../geometry/snapping';
 
+export type PlanPointFt = { x: number; y: number };
+
 export type PlanRoomRect = {
   id: string;
   name: string;
   roomType: RoomType;
-  /** Feet — plan X grows right, Y grows “down” the page (south). */
+  /** Feet — plan X grows right, Y grows “down” the page (south). AABB of the room. */
   x: number;
   y: number;
   w: number;
   h: number;
+  /**
+   * Optional footprint polygon in plan feet (CCW or CW). When set, walls and
+   * room meshes use these vertices instead of the axis-aligned x/y/w/h box.
+   * x/y/w/h must still be the polygon’s axis-aligned bounds.
+   */
+  pointsFt?: PlanPointFt[];
   ceilingFt?: number;
 };
+
+/** Footprint vertices in feet (polygon when present, otherwise the AABB). */
+export function roomPointsFt(room: PlanRoomRect): PlanPointFt[] {
+  if (room.pointsFt && room.pointsFt.length >= 3) return room.pointsFt;
+  return [
+    { x: room.x, y: room.y },
+    { x: room.x + room.w, y: room.y },
+    { x: room.x + room.w, y: room.y + room.h },
+    { x: room.x, y: room.y + room.h },
+  ];
+}
+
+/** Shoelace area in square feet. */
+export function polygonAreaFt(points: PlanPointFt[]) {
+  if (points.length < 3) return 0;
+  let sum = 0;
+  for (let i = 0; i < points.length; i++) {
+    const a = points[i]!;
+    const b = points[(i + 1) % points.length]!;
+    sum += a.x * b.y - b.x * a.y;
+  }
+  return Math.abs(sum) / 2;
+}
 
 export type HousePlanFloor = {
   id: string;
@@ -94,10 +125,12 @@ function collectEdges(rooms: PlanRoomRect[]) {
     }
   };
   for (const r of rooms) {
-    add(r.x, r.y, r.x + r.w, r.y, r.id);
-    add(r.x + r.w, r.y, r.x + r.w, r.y + r.h, r.id);
-    add(r.x + r.w, r.y + r.h, r.x, r.y + r.h, r.id);
-    add(r.x, r.y + r.h, r.x, r.y, r.id);
+    const pts = roomPointsFt(r);
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[i]!;
+      const b = pts[(i + 1) % pts.length]!;
+      add(a.x, a.y, b.x, b.y, r.id);
+    }
   }
   return [...map.values()];
 }
@@ -144,7 +177,7 @@ export type BuildFloorOptions = {
   centerFt?: { cx: number; cy: number };
 };
 
-/** Convert a floor of room rectangles into walls + openings centered on WORLD_ORIGIN. */
+/** Convert a floor of room rectangles (or polygons) into walls + openings centered on WORLD_ORIGIN. */
 export function buildFloorFromRooms(floor: HousePlanFloor, opts?: BuildFloorOptions): BuiltFloor {
   const openingsMode: FloorOpeningsMode = opts?.openings ?? 'catalog';
   const rooms = floor.rooms;
@@ -158,10 +191,11 @@ export function buildFloorFromRooms(floor: HousePlanFloor, opts?: BuildFloorOpti
     };
   }
 
-  const minX = Math.min(...rooms.map((r) => r.x));
-  const minY = Math.min(...rooms.map((r) => r.y));
-  const maxX = Math.max(...rooms.map((r) => r.x + r.w));
-  const maxY = Math.max(...rooms.map((r) => r.y + r.h));
+  const allPts = rooms.flatMap((r) => roomPointsFt(r));
+  const minX = Math.min(...allPts.map((p) => p.x));
+  const minY = Math.min(...allPts.map((p) => p.y));
+  const maxX = Math.max(...allPts.map((p) => p.x));
+  const maxY = Math.max(...allPts.map((p) => p.y));
   const cx = opts?.centerFt?.cx ?? (minX + maxX) / 2;
   const cy = opts?.centerFt?.cy ?? (minY + maxY) / 2;
 
@@ -174,7 +208,7 @@ export function buildFloorFromRooms(floor: HousePlanFloor, opts?: BuildFloorOpti
     id: r.id,
     name: r.name,
     roomType: r.roomType,
-    points: [toPoint(r.x, r.y), toPoint(r.x + r.w, r.y), toPoint(r.x + r.w, r.y + r.h), toPoint(r.x, r.y + r.h)],
+    points: roomPointsFt(r).map((p) => toPoint(p.x, p.y)),
   }));
 
   const height = ceilingMeters(rooms);
@@ -335,7 +369,7 @@ export function row(
 export function livingAreaSqFt(rooms: PlanRoomRect[]) {
   return rooms
     .filter((r) => r.roomType !== 'Outdoor' && !r.name.toLowerCase().includes('garage') && !r.name.toLowerCase().includes('lanai') && !r.name.toLowerCase().includes('entry') && !r.name.toLowerCase().includes('balcony') && !r.name.toLowerCase().includes('pool'))
-    .reduce((sum, r) => sum + r.w * r.h, 0);
+    .reduce((sum, r) => sum + (r.pointsFt && r.pointsFt.length >= 3 ? polygonAreaFt(r.pointsFt) : r.w * r.h), 0);
 }
 
 /** Axis-aligned size of a plan-room polygon in feet. */
@@ -592,6 +626,10 @@ export function rebuildFromPlanRooms(
   opts?: { centerFt?: { cx: number; cy: number } },
 ) {
   const rooms: PlanRoomRect[] = labels.map((label) => {
+    const pointsFt = label.points.map((p) => ({
+      x: (p.x - WORLD_ORIGIN.x) / PIXELS_PER_METER / FT_TO_M,
+      y: (p.y - WORLD_ORIGIN.y) / PIXELS_PER_METER / FT_TO_M,
+    }));
     const size = planRoomSizeFeet(label.points);
     return {
       id: label.id,
@@ -601,6 +639,7 @@ export function rebuildFromPlanRooms(
       y: size.minY,
       w: size.widthFt,
       h: size.depthFt,
+      pointsFt,
       ceilingFt: ceilingHeightM / FT_TO_M,
     };
   });
