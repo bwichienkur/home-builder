@@ -1,29 +1,70 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useMemo, useState } from 'react';
 import type { CustomFieldDefinition, CustomFieldType, EntityKind } from '../../lib/crm/types';
 import { platformConfig } from '../../lib/platform/config';
 import { useCrmStore } from '../../store/crmStore';
 
 const TYPES: CustomFieldType[] = ['text', 'number', 'bool', 'date', 'select'];
-const ENTITIES: EntityKind[] = ['client', 'vendor', 'inventory'];
+
+const OBJECTS: { id: EntityKind; label: string; blurb: string }[] = [
+  { id: 'client', label: 'Clients', blurb: 'Only appear on client forms and client CSV.' },
+  { id: 'vendor', label: 'Vendors', blurb: 'Only appear on vendor forms and vendor CSV.' },
+  { id: 'inventory', label: 'Inventory', blurb: 'Only appear on inventory forms and inventory CSV.' },
+];
 
 export function SettingsPage() {
   const fields = useCrmStore((s) => s.customFields);
   const upsert = useCrmStore((s) => s.upsertCustomField);
   const archive = useCrmStore((s) => s.archiveCustomField);
+  const [object, setObject] = useState<EntityKind>('client');
   const [draft, setDraft] = useState<CustomFieldDefinition | null>(null);
+  const [error, setError] = useState('');
 
-  const startNew = () =>
+  const activeMeta = OBJECTS.find((o) => o.id === object)!;
+  const objectFields = useMemo(
+    () =>
+      fields
+        .filter((f) => f.entity === object && !f.archived)
+        .sort((a, b) => a.order - b.order || a.label.localeCompare(b.label)),
+    [fields, object],
+  );
+
+  const startNew = () => {
+    setError('');
     setDraft({
       id: crypto.randomUUID(),
-      entity: 'client',
+      entity: object,
       key: '',
       label: '',
       type: 'text',
       required: false,
       options: [],
-      order: fields.length,
+      order: objectFields.length,
       archived: false,
     });
+  };
+
+  const saveDraft = (e: FormEvent) => {
+    e.preventDefault();
+    if (!draft) return;
+    if (!/^[a-z][a-z0-9_]*$/.test(draft.key)) {
+      setError('Key must start with a letter and use only lowercase letters, numbers, and underscores.');
+      return;
+    }
+    const clash = fields.some(
+      (f) =>
+        !f.archived &&
+        f.entity === draft.entity &&
+        f.key === draft.key &&
+        f.id !== draft.id,
+    );
+    if (clash) {
+      setError(`A ${draft.entity} field already uses the key “${draft.key}”.`);
+      return;
+    }
+    upsert({ ...draft, entity: object });
+    setDraft(null);
+    setError('');
+  };
 
   return (
     <div className="data-page">
@@ -32,27 +73,53 @@ export function SettingsPage() {
           <p className="eyebrow">Settings</p>
           <h1>Custom fields</h1>
           <p className="muted">
-            Configure extra fields for clients, vendors, and inventory. They appear on forms and CSV templates.
+            Fields are scoped per object. Client fields never show on vendors or inventory (and vice versa).
           </p>
           <p className="muted" style={{ marginTop: 8 }}>
-            Platform: <strong>{platformConfig.label()}</strong> — see docs/ZERO_COST_TO_PAID.md to switch later.
+            Platform: <strong>{platformConfig.label()}</strong>
           </p>
         </div>
         <div className="data-page-actions">
           <button type="button" className="primary" onClick={startNew}>
-            Add field
+            Add {activeMeta.label.toLowerCase().replace(/s$/, '')} field
           </button>
         </div>
       </header>
 
+      <div className="settings-object-tabs" role="tablist" aria-label="Object type">
+        {OBJECTS.map((o) => {
+          const count = fields.filter((f) => f.entity === o.id && !f.archived).length;
+          return (
+            <button
+              key={o.id}
+              type="button"
+              role="tab"
+              aria-selected={object === o.id}
+              className={object === o.id ? 'is-active' : undefined}
+              onClick={() => {
+                setObject(o.id);
+                setDraft(null);
+                setError('');
+              }}
+            >
+              {o.label}
+              <span className="settings-object-count">{count}</span>
+            </button>
+          );
+        })}
+      </div>
+      <p className="muted settings-object-blurb">{activeMeta.blurb}</p>
+
       <div className="data-table-wrap">
-        {fields.filter((f) => !f.archived).length === 0 ? (
-          <div className="data-empty">No custom fields yet.</div>
+        {objectFields.length === 0 ? (
+          <div className="data-empty">
+            No custom fields for {activeMeta.label.toLowerCase()} yet. Add one to extend forms and CSV for this object
+            only.
+          </div>
         ) : (
           <table className="data-table">
             <thead>
               <tr>
-                <th>Entity</th>
                 <th>Label</th>
                 <th>Key</th>
                 <th>Type</th>
@@ -61,60 +128,52 @@ export function SettingsPage() {
               </tr>
             </thead>
             <tbody>
-              {fields
-                .filter((f) => !f.archived)
-                .sort((a, b) => a.entity.localeCompare(b.entity) || a.order - b.order)
-                .map((f) => (
-                  <tr key={f.id}>
-                    <td>{f.entity}</td>
-                    <td>{f.label}</td>
-                    <td>
-                      <code>{f.key}</code>
-                    </td>
-                    <td>{f.type}</td>
-                    <td>{f.required ? 'Yes' : 'No'}</td>
-                    <td>
-                      <button type="button" className="auth-link" onClick={() => setDraft({ ...f })}>
-                        Edit
-                      </button>
-                      {' · '}
-                      <button type="button" className="auth-link" onClick={() => archive(f.id)}>
-                        Archive
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+              {objectFields.map((f) => (
+                <tr key={f.id}>
+                  <td>{f.label}</td>
+                  <td>
+                    <code>{f.key}</code>
+                  </td>
+                  <td>{f.type}</td>
+                  <td>{f.required ? 'Yes' : 'No'}</td>
+                  <td>
+                    <button
+                      type="button"
+                      className="auth-link"
+                      onClick={() => {
+                        setError('');
+                        setDraft({ ...f });
+                      }}
+                    >
+                      Edit
+                    </button>
+                    {' · '}
+                    <button type="button" className="auth-link" onClick={() => archive(f.id)}>
+                      Archive
+                    </button>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         )}
       </div>
 
       {draft && (
-        <div className="data-drawer" role="presentation" onMouseDown={(e) => e.target === e.currentTarget && setDraft(null)}>
+        <div
+          className="data-drawer"
+          role="presentation"
+          onMouseDown={(e) => e.target === e.currentTarget && setDraft(null)}
+        >
           <div className="data-drawer-panel" role="dialog" aria-modal="true">
-            <h2>{fields.some((f) => f.id === draft.id) ? 'Edit field' : 'Add field'}</h2>
-            <form
-              className="data-form"
-              onSubmit={(e: FormEvent) => {
-                e.preventDefault();
-                if (!/^[a-z][a-z0-9_]*$/.test(draft.key)) return;
-                upsert(draft);
-                setDraft(null);
-              }}
-            >
-              <label>
-                Entity
-                <select
-                  value={draft.entity}
-                  onChange={(e) => setDraft({ ...draft, entity: e.target.value as EntityKind })}
-                >
-                  {ENTITIES.map((en) => (
-                    <option key={en} value={en}>
-                      {en}
-                    </option>
-                  ))}
-                </select>
-              </label>
+            <h2>
+              {fields.some((f) => f.id === draft.id) ? 'Edit' : 'Add'} {activeMeta.label.toLowerCase().replace(/s$/, '')}{' '}
+              field
+            </h2>
+            <p className="muted" style={{ marginTop: -8, marginBottom: 12 }}>
+              Applies only to <strong>{activeMeta.label}</strong> — not other objects.
+            </p>
+            <form className="data-form" onSubmit={saveDraft}>
               <label>
                 Label
                 <input
@@ -171,6 +230,7 @@ export function SettingsPage() {
                   onChange={(e) => setDraft({ ...draft, required: e.target.checked })}
                 />
               </label>
+              {error && <p className="auth-error">{error}</p>}
               <div className="data-form-actions">
                 <button type="submit" className="primary">
                   Save

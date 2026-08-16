@@ -273,3 +273,49 @@
   font-size: 13px;
   line-height: 1.4;
 }
+
+.settings-object-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0 0 10px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--soft);
+  width: fit-content;
+  max-width: 100%;
+}
+.settings-object-tabs button {
+  border: 0;
+  background: transparent;
+  border-radius: 9px;
+  padding: 8px 12px;
+  font-weight: 650;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.settings-object-tabs button.is-active {
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgba(17, 24, 32, 0.06);
+}
+.settings-object-count {
+  min-width: 1.4em;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(17, 24, 32, 0.06);
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+.settings-object-tabs button.is-active .settings-object-count {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+.settings-object-blurb {
+  margin: 0 0 14px;
+}
