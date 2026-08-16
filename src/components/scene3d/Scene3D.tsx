@@ -346,14 +346,6 @@ function CameraRig() {
     planWallTool,
   ]);
 
-  // While drag-resizing walls, keep the plate framed and page-centered as geometry rebuilds.
-  useEffect(() => {
-    if (!planWallTool || mode !== 'top' || inspectorOpen) return;
-    if (document.body.dataset.movingFurniture !== '1') return;
-    snapToPose();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [walls, planWallTool, framing.topHeight, framing.span, shiftX, mode]);
-
   // Edit card open/close — ease into free area / restore the pre-panel view.
   useEffect(() => {
     const open = document.body.dataset.inspectorOpen === '1';
@@ -802,9 +794,8 @@ function WallMeshes() {
         document.body.dataset.movingFurniture = '1';
         window.dispatchEvent(new Event('roomcraft-drag-start'));
       }
-      const wid = usePlannerStore.getState().selectedWallId ?? drag.wallId;
-      if (nudgeWall(wid, dx, dz, { live: true })) {
-        drag.wallId = usePlannerStore.getState().selectedWallId ?? wid;
+      // Keep nudging the wall captured at pointer-down — do not chase remapped ids mid-drag.
+      if (nudgeWall(drag.wallId, dx, dz, { live: true })) {
         drag.lastX = next.x;
         drag.lastZ = next.z;
         invalidate();
