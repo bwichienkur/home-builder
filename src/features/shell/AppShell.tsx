@@ -1,27 +1,18 @@
 import { useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import {
-  Boxes,
-  Building2,
-  Home,
-  LayoutTemplate,
-  LogOut,
-  Package,
-  Settings,
-  Users,
-} from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useCrmStore } from '../../store/crmStore';
 import './shell.css';
 
 const NAV = [
-  { to: '/', label: 'Home', icon: Home, end: true },
-  { to: '/build', label: 'Build', icon: Building2 },
-  { to: '/clients', label: 'Clients', icon: Users },
-  { to: '/vendors', label: 'Vendors', icon: Package },
-  { to: '/inventory', label: 'Inventory', icon: Boxes },
-  { to: '/plans', label: 'House plans', icon: LayoutTemplate },
-  { to: '/settings', label: 'Settings', icon: Settings },
+  { to: '/', label: 'Home', end: true },
+  { to: '/build', label: 'Build' },
+  { to: '/clients', label: 'Clients' },
+  { to: '/vendors', label: 'Vendors' },
+  { to: '/inventory', label: 'Inventory' },
+  { to: '/plans', label: 'Plans' },
+  { to: '/settings', label: 'Settings' },
 ];
 
 export function AppShell() {
@@ -39,20 +30,20 @@ export function AppShell() {
   return (
     <div className="app-shell">
       <header className="app-shell-top">
-        <div className="app-shell-brand">
-          <strong>Mahnikka</strong>
-          <span className="muted">Studio</span>
-        </div>
+        <NavLink to="/" className="app-shell-brand" end>
+          Mahnikka
+        </NavLink>
         <nav className="app-shell-nav" aria-label="Primary">
-          {NAV.map(({ to, label, icon: Icon, end }) => (
-            <NavLink key={to} to={to} end={end} className={({ isActive }) => (isActive ? 'is-active' : '')}>
-              <Icon size={16} />
-              <span>{label}</span>
+          {NAV.map(({ to, label, end }) => (
+            <NavLink key={to} to={to} end={end} className={({ isActive }) => (isActive ? 'is-active' : undefined)}>
+              {label}
             </NavLink>
           ))}
         </nav>
         <div className="app-shell-user">
-          <span className="app-shell-user-name">{user?.name ?? user?.email}</span>
+          <span className="app-shell-user-name" title={user?.email}>
+            {user?.name ?? user?.email}
+          </span>
           <button
             type="button"
             className="app-shell-logout"
@@ -60,9 +51,9 @@ export function AppShell() {
               void logout().then(() => navigate('/login'));
             }}
             title="Sign out"
+            aria-label="Sign out"
           >
-            <LogOut size={16} />
-            <span>Sign out</span>
+            <LogOut size={16} strokeWidth={1.75} />
           </button>
         </div>
       </header>

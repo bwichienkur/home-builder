@@ -22,7 +22,7 @@ export type CustomFieldDefinition = z.infer<typeof customFieldDefinitionSchema>;
 export const clientSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
-  email: z.string().email().or(z.literal('')).default(''),
+  email: z.union([z.literal(''), z.string().email()]).default(''),
   phone: z.string().default(''),
   company: z.string().default(''),
   address: z.string().default(''),
@@ -37,7 +37,7 @@ export type Client = z.infer<typeof clientSchema>;
 export const vendorSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
-  email: z.string().email().or(z.literal('')).default(''),
+  email: z.union([z.literal(''), z.string().email()]).default(''),
   phone: z.string().default(''),
   website: z.string().default(''),
   contactName: z.string().default(''),

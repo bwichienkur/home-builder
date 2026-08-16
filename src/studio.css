@@ -467,7 +467,7 @@
   gap: 0;
   pointer-events: none;
   width: max-content;
-  max-width: min(360px, calc(100vw - 96px));
+  max-width: min(560px, calc(100vw - 24px));
 }
 
 .studio-dock-shell {
@@ -495,17 +495,21 @@
   max-width: 100%;
   padding: 5px;
   border-radius: 20px;
-  overflow: visible;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
 
 .studio-dock-row {
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 2px;
   width: max-content;
-  max-width: 100%;
+  max-width: none;
+  min-width: 0;
 }
 
 .studio-dock-flat::-webkit-scrollbar {
@@ -1882,6 +1886,13 @@
   display: none;
 }
 
+@media (max-width: 900px) {
+  .studio-dock-action span,
+  .studio-dock-seg button span {
+    display: none;
+  }
+}
+
 @media (max-width: 720px) {
   .studio-bag strong {
     display: none;
@@ -1890,21 +1901,21 @@
     min-width: 0;
     padding: 0 6px 0 10px;
   }
-  .studio-dock-action span {
-    display: block;
+  .studio-dock {
+    max-width: calc(100vw - 16px);
+  }
+  .studio-dock-action span,
+  .studio-dock-seg button span,
+  .studio-dock-plan-tools button span {
+    display: none;
   }
   .studio-dock-action {
-    min-width: 44px;
-  }
-  .studio-dock-seg button span {
-    display: block;
+    min-width: 40px;
+    padding: 6px 8px;
   }
   .studio-dock-seg button {
-    min-width: 44px;
+    min-width: 40px;
     padding: 4px 8px;
-  }
-  .studio-dock-plan-tools button span {
-    display: block;
   }
   .studio-breadcrumb {
     font-size: 11px;
