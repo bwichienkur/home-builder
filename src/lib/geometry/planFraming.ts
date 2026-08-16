@@ -50,14 +50,14 @@ export function orbitViewPose(
   const fov = ((opts?.fovDeg ?? 50) * Math.PI) / 180;
   const elev = ((opts?.elevDeg ?? 38) * Math.PI) / 180;
   // Keep the plate large in frame — do not inherit top-view chrome padding.
-  const pad = opts?.pad ?? 1.18;
+  const pad = opts?.pad ?? 1.4;
   const half = (Math.max(span, 2) * 0.5) * pad;
   const dist = Math.max(5.5, half / Math.tan(fov / 2) / Math.max(0.48, Math.sin(elev)));
   return [center[0], dist * Math.sin(elev), center[2] + dist * Math.cos(elev)];
 }
 
 export function framingFromPoints(points: Point[], opts?: FramingOpts): PlanFraming {
-  const orbitPad = opts?.orbitPad ?? 1.18;
+  const orbitPad = opts?.orbitPad ?? 1.4;
   if (!points.length) {
     const height = topViewHeight(8, { pad: opts?.pad, min: opts?.minHeight ?? 12 });
     const center: [number, number, number] = [0, 0, 0];
@@ -181,9 +181,9 @@ export function pageCenterFit(chrome: ChromeFit) {
   const right = Math.max(0, chrome.rightChromePx) + gutter;
   const top = Math.max(0, chrome.topChromePx ?? 0);
   const bottom = Math.max(0, chrome.bottomChromePx ?? 0);
-  // Nearly fill the canvas: reserve the rail once, plus a little mirrored slack
-  // so the plate stays visually centered without large empty gutters.
-  const maxPlateW = Math.max(140, W - right * 1.45);
+  // Nearly fill the free band left of the rail. Reserve the rail on both sides of a
+  // page-centered plate so the room does not sit under the overlay.
+  const maxPlateW = Math.max(140, W - right * 2);
   const freeH = Math.max(160, H - top - bottom);
   const widthScale = W / maxPlateW;
   const heightScale = H / freeH;
