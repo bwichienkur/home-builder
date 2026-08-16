@@ -50,7 +50,9 @@ export function EntityCrmPage({
     const dataRows = rows.map((r) =>
       headers.map((h) => {
         if (h.startsWith('custom.')) return r.customFields?.[h.slice(7)] ?? '';
-        return r[h] ?? '';
+        const value = r[h];
+        if (Array.isArray(value)) return value.join('|');
+        return value ?? '';
       }),
     );
     downloadCsv(`${entity}-export.csv`, [headers, ...dataRows]);
@@ -164,16 +166,23 @@ export function EntityDrawer({
   open,
   onClose,
   children,
+  wide,
 }: {
   title: string;
   open: boolean;
   onClose: () => void;
   children: React.ReactNode;
+  wide?: boolean;
 }) {
   if (!open) return null;
   return (
     <div className="data-drawer" role="presentation" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="data-drawer-panel" role="dialog" aria-modal="true" aria-label={title}>
+      <div
+        className={`data-drawer-panel${wide ? ' data-drawer-panel-wide' : ''}`}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+      >
         <h2>{title}</h2>
         {children}
       </div>

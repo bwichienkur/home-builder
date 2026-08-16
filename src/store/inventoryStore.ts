@@ -6,6 +6,7 @@ type InventoryState = {
   items: CatalogItem[];
   lastImportAt: string | null;
   upsert: (items: CatalogItem[], mode: ImportMode) => { created: number; updated: number; skipped: number };
+  removeIds: (ids: string[]) => void;
   removeVendor: (vendorId: string) => void;
   clear: () => void;
 };
@@ -79,6 +80,13 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
     localStorage.setItem(`${STORAGE}-date`, lastImportAt);
     set({ items, lastImportAt });
     return { created, updated, skipped };
+  },
+  removeIds: (ids) => {
+    if (!ids.length) return;
+    const drop = new Set(ids);
+    const items = get().items.filter((i) => !drop.has(i.id));
+    persist(items);
+    set({ items });
   },
   removeVendor: (vendorId) => {
     const items = get().items.filter((i) => i.vendorId !== vendorId);
