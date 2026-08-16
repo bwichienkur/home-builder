@@ -166,25 +166,35 @@ export function EntityDrawer({
   open,
   onClose,
   children,
-  wide,
+  fullscreen = true,
 }: {
   title: string;
   open: boolean;
   onClose: () => void;
   children: React.ReactNode;
-  wide?: boolean;
+  /** Full-viewport editor (default). Pass false for a side drawer. */
+  fullscreen?: boolean;
 }) {
   if (!open) return null;
   return (
-    <div className="data-drawer" role="presentation" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+    <div
+      className={`data-drawer${fullscreen ? ' data-drawer-fullscreen' : ''}`}
+      role="presentation"
+      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
+    >
       <div
-        className={`data-drawer-panel${wide ? ' data-drawer-panel-wide' : ''}`}
+        className={`data-drawer-panel${fullscreen ? ' data-drawer-panel-full' : ''}`}
         role="dialog"
         aria-modal="true"
         aria-label={title}
       >
-        <h2>{title}</h2>
-        {children}
+        <div className="data-drawer-header">
+          <h2>{title}</h2>
+          <button type="button" className="data-drawer-close" onClick={onClose} aria-label="Close">
+            Close
+          </button>
+        </div>
+        <div className="data-drawer-body">{children}</div>
       </div>
     </div>
   );

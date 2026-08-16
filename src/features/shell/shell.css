@@ -8,12 +8,13 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
   padding: 0 20px;
   height: 52px;
   border-bottom: 1px solid var(--line);
   background: #fff;
-  z-index: 20;
+  position: relative;
+  z-index: 50;
 }
 .app-shell-brand {
   font-size: 1rem;
@@ -22,6 +23,9 @@
   text-decoration: none;
   color: var(--ink);
   white-space: nowrap;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
 }
 .app-shell-brand:hover {
   color: var(--accent-ink);
@@ -29,15 +33,14 @@
 .app-shell-nav {
   display: flex;
   align-items: stretch;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 2px;
   min-width: 0;
   height: 100%;
   overflow-x: auto;
-  scrollbar-width: none;
-}
-.app-shell-nav::-webkit-scrollbar {
-  display: none;
+  overscroll-behavior-x: contain;
+  scroll-padding-inline: 8px;
+  scrollbar-width: thin;
 }
 .app-shell-nav a {
   display: inline-flex;
@@ -66,6 +69,7 @@
   align-items: center;
   gap: 8px;
   min-width: 0;
+  flex-shrink: 0;
 }
 .app-shell-user-name {
   font-size: 12px;
@@ -202,9 +206,13 @@
   position: fixed;
   inset: 0;
   background: rgba(17, 24, 32, 0.35);
-  z-index: 40;
+  z-index: 60;
   display: grid;
   justify-content: end;
+}
+.data-drawer-fullscreen {
+  justify-content: stretch;
+  background: #f4f6f8;
 }
 .data-drawer-panel {
   width: min(420px, 100%);
@@ -213,13 +221,63 @@
   padding: 20px;
   overflow: auto;
   box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
-.data-drawer-panel-wide {
-  width: min(560px, 100%);
+.data-drawer-panel-full {
+  width: 100%;
+  max-width: none;
+  box-shadow: none;
+  padding: 0;
 }
-.data-drawer-panel h2 {
-  margin: 0 0 14px;
+.data-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--line);
+  background: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.data-drawer-header h2 {
+  margin: 0;
   font-size: 1.2rem;
+}
+.data-drawer-close {
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--ink);
+}
+.data-drawer-close:hover {
+  background: var(--soft);
+}
+.data-drawer-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 20px 24px 40px;
+}
+.data-drawer-panel-full .data-drawer-body {
+  display: flex;
+  justify-content: center;
+}
+.data-drawer-panel-full .data-form {
+  width: min(760px, 100%);
+}
+.data-drawer-panel:not(.data-drawer-panel-full) {
+  padding: 0;
+}
+.data-drawer-panel:not(.data-drawer-panel-full) .data-drawer-body {
+  padding: 16px 20px 28px;
 }
 .data-form {
   display: grid;
@@ -374,4 +432,94 @@
 }
 .settings-object-blurb {
   margin: 0 0 14px;
+}
+.settings-section-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.settings-all-objects {
+  margin: 0 0 28px;
+  display: grid;
+  gap: 12px;
+}
+.settings-object-overview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+.settings-object-card {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+  padding: 14px 16px;
+  display: grid;
+  gap: 10px;
+}
+.settings-object-card > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.settings-object-card h3 {
+  margin: 0;
+  font-size: 0.98rem;
+}
+.settings-object-card > .muted {
+  margin: 0;
+  font-size: 12px;
+}
+.settings-field-group {
+  display: grid;
+  gap: 6px;
+}
+.settings-field-group-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.settings-field-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.settings-field-chip {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.settings-field-chip.is-builtin {
+  background: var(--soft);
+  color: var(--ink);
+}
+.settings-field-chip.is-custom {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+.settings-field-empty {
+  margin: 0;
+  font-size: 12px;
+}
+.settings-field-block {
+  margin: 0 0 22px;
+  display: grid;
+  gap: 10px;
+}
+.settings-field-block-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
 }
