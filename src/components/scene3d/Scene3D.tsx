@@ -149,14 +149,15 @@ function CameraRig() {
   const canvasW = size?.width || (typeof window !== 'undefined' ? window.innerWidth : 390);
   const canvasH = size?.height || (typeof window !== 'undefined' ? window.innerHeight : 844);
 
-  // Rail: on touch, shift into the free band left of the rail so the room stays clear.
-  // Desktop keeps a page-centered fit with a full mirrored rail reserve.
+  // Rail: stay page-centered and zoom so the plate clears the rail with a small margin.
+  // Wide overlays (inspector / wall dim card) still use free-area shift.
   const chromeFit = useMemo(() => {
     const topChromePx = coarse ? (focusWall ? 112 : 104) : focusWall ? 92 : 84;
     const bottomChromePx = coarse ? (focusWall ? 160 : 136) : focusWall ? 120 : 100;
     const railPx = showRightRail ? 68 : 0;
-    const gutterPx = railPx ? (coarse ? 20 : 14) : 0;
-    if (inspectorOpen || focusWall || (coarse && showRightRail)) {
+    // Small clear gap between the plate edge and the rail face.
+    const gutterPx = railPx ? (coarse ? 14 : 12) : 0;
+    if (inspectorOpen || focusWall) {
       const rightChromePx = inspectorOpen
         ? Math.min(260, Math.round(canvasW * 0.44))
         : railPx;
@@ -180,10 +181,11 @@ function CameraRig() {
   }, [canvasW, canvasH, inspectorOpen, showRightRail, coarse, inspectorTick, focusWall]);
 
   const framing = useMemo(() => {
-    const basePad = (coarse ? 2.85 : 2.55) * (menuOpen ? 1.45 : 1);
-    const baseOrbit = (coarse ? 1.58 : 1.4) * (menuOpen ? 1.25 : 1);
+    // Keep orbit as tight as chromeFit allows — padScale already clears the rail.
+    const basePad = (coarse ? 2.65 : 2.4) * (menuOpen ? 1.45 : 1);
+    const baseOrbit = (coarse ? 1.38 : 1.24) * (menuOpen ? 1.25 : 1);
     const pad = basePad * chromeFit.padScale;
-    const orbitPad = baseOrbit * Math.max(1, chromeFit.padScale * 0.92);
+    const orbitPad = baseOrbit * Math.max(1, chromeFit.padScale * 0.9);
     if (focusWall) {
       const roomsForExterior =
         planRooms.length > 0
@@ -219,8 +221,8 @@ function CameraRig() {
   const fovDeg = mode === 'walk' ? 58 : mode === 'top' ? 42 : 48;
   const aspect = Math.max(0.35, canvasW / Math.max(1, canvasH));
 
-  // Page center by default; pan into the free left area when chromeFit requests a shift
-  // (edit inspector, wall focus, or mobile rail).
+  // Page center by default; pan into the free left area only for wide overlays
+  // (edit inspector / wall focus) — never for the narrow side rail.
   const shiftX = useMemo(() => {
     const menuShiftX = menuOpen ? framing.span * 0.28 : 0;
     if (chromeFit.shiftFraction <= 0) return menuShiftX;
