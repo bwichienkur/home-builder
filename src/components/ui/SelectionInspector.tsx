@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { ChevronRight, Grid2X2, X } from 'lucide-react';
+import { ChevronDown, Grid2X2, X } from 'lucide-react';
 import { usePlannerStore } from '../../store/plannerStore';
 import { formatLength, parseLength } from '../../lib/measurements';
 import { listBuiltinHousePlans } from '../../lib/housePlans/planRegistry';
@@ -77,7 +77,7 @@ export function SelectionInspector({ open, onClose }: { open: boolean; onClose: 
   return (
     <aside className="selection-inspector" aria-label="Selection properties">
       <button type="button" className="selection-inspector-collapse" onClick={onClose} aria-label="Collapse editor">
-        <ChevronRight size={18} />
+        <ChevronDown size={18} aria-hidden />
       </button>
       <header>
         <strong>{title}</strong>

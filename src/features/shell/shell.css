@@ -131,8 +131,9 @@
     padding: 0 9px;
     font-size: 12px;
   }
-  .app-shell-nav a[href='/inventory'],
   .app-shell-nav a[href='/plans'],
+  .app-shell-nav a[href='/clients'],
+  .app-shell-nav a[href='/vendors'],
   .app-shell-nav a[href='/settings'],
   .app-shell-nav a[href='/users'] {
     display: none;

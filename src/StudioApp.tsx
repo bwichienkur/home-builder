@@ -1,6 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ChevronDown,
   Cloud,
   Download,
   FileJson,
@@ -139,11 +138,6 @@ export default function StudioApp() {
   const notify = (message: string) => {
     setNotice(message);
     window.setTimeout(() => setNotice(''), 2200);
-  };
-
-  const rename = () => {
-    const name = window.prompt('Project name', projectName)?.trim();
-    if (name) setProjectName(name);
   };
 
   const rememberDesign = useCallback((code: string | null) => {
@@ -623,9 +617,15 @@ export default function StudioApp() {
           <button type="button" className="menu-backdrop" aria-label="Close menu" onClick={closeProjectMenu} />
           <aside className="studio-menu-sheet studio-menu-drawer" role="dialog" aria-label="Project menu">
           <header>
-            <button className="project-name" onClick={rename} title="Rename project">
-              {projectName} <ChevronDown size={15} />
-            </button>
+            <label className="project-name-edit">
+              <span className="eyebrow">Project</span>
+              <input
+                type="text"
+                value={projectName}
+                onChange={(e) => setProjectName(e.target.value)}
+                aria-label="Project name"
+              />
+            </label>
             <button type="button" className="menu-close" onClick={closeProjectMenu} aria-label="Close menu">
               <X size={18} />
             </button>
