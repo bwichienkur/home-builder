@@ -285,9 +285,18 @@ describe('house plan builder', () => {
 
     const driftwood = getHousePlan('driftwood')!;
     const dw = driftwood.floors[0]!.rooms;
-    expect(dw.find((r) => r.name === 'Garage')!.x).toBeGreaterThan(35); // front-right
+    const dwGarage = dw.find((r) => r.name === 'Garage')!;
+    const dwEntry = dw.find((r) => r.name === 'Entry')!;
+    const dwStudy = dw.find((r) => r.name === 'Study')!;
+    const dwDining = dw.find((r) => r.name === 'Dining')!;
+    expect(dwGarage.x).toBeGreaterThan(35); // front-right
+    expect(dwGarage.y).toBeLessThan(dwEntry.y); // garage projects past recessed entry
+    expect(dwGarage.y).toBeLessThan(dwStudy.y);
+    expect(dwGarage.y).toBeLessThan(dwDining.y);
     expect(dw.find((r) => r.name === "Owner's Suite")!.x).toBeLessThan(5); // left wing
-    expect(dw.find((r) => r.name === 'Study')!.x).toBeLessThan(dw.find((r) => r.name === 'Dining')!.x);
+    expect(dwStudy.x).toBeLessThan(dwDining.x);
+    expect(dwDining.y).toBeCloseTo(dwStudy.y, 0); // dining at recessed front with study
+    expect(dw.find((r) => r.name === 'Bedroom 3')!.y).toBeGreaterThan(dwGarage.y + dwGarage.h - 1); // behind garage
     expect(dw.find((r) => r.name === 'Great Room')!.pointsFt!.length).toBeGreaterThan(4);
     expect(dw.find((r) => r.name === 'Nook')!.pointsFt!.length).toBeGreaterThan(4);
     expect(dw.find((r) => r.name === 'Lanai')!.pointsFt!.length).toBeGreaterThan(4);

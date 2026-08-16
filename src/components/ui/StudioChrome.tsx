@@ -78,6 +78,7 @@ export function StudioChrome({
   const [storiesOpen, setStoriesOpen] = useState(false);
   const [fabsOpen, setFabsOpen] = useState(true);
   const camera = usePlannerStore((s) => s.cameraMode);
+  const rotateViewYaw = usePlannerStore((s) => s.rotateViewYaw);
   const setView = usePlannerStore((s) => s.setView);
   const setCamera = usePlannerStore((s) => s.setCameraMode);
   const undo = usePlannerStore((s) => s.undo);
@@ -159,6 +160,14 @@ export function StudioChrome({
   const refocus = () => {
     window.dispatchEvent(new Event('roomcraft-fit-plan'));
     window.dispatchEvent(new Event('roomcraft-refocus'));
+  };
+
+  const rotateView = () => {
+    rotateViewYaw(90);
+    window.setTimeout(() => {
+      window.dispatchEvent(new Event('roomcraft-fit-plan'));
+      window.dispatchEvent(new Event('roomcraft-refocus'));
+    }, 0);
   };
 
   const selectedRoom = planRooms.find((r) => r.id === selectedRoomId);
@@ -571,6 +580,10 @@ export function StudioChrome({
             <button type="button" className="studio-dock-action" onClick={refocus} title="Fit in view">
               <Focus size={15} />
               <span>Fit</span>
+            </button>
+            <button type="button" className="studio-dock-action" onClick={rotateView} title="Rotate view 90°">
+              <RotateCw size={15} />
+              <span>Rotate</span>
             </button>
             <button type="button" className="studio-dock-action" onClick={undo} disabled={historyIndex === 0} title="Undo">
               <Undo2 size={15} />

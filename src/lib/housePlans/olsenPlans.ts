@@ -487,30 +487,87 @@ function tradewinds(): HousePlan {
 
 function driftwood(): HousePlan {
   // Coastal Collection flyer: 65'w × 86'4"d, 3 bed / 3.5 bath / study / 3-car.
-  // Front y=0: garage front-right, study|foyer|dining recess, owner bath bay left;
-  // owner suite rear-left with lanai chamfer; kitchen/nook center; beds stacked behind garage;
-  // faceted great room + nook bay into concave lanai.
+  // Front y=0: 3-car garage projects past recessed study|entry|dining; owner bath bay left;
+  // WICs + owner's suite left wing; kitchen/nook + beds behind garage; faceted GR/nook into lanai.
+  // Contiguous footprint — no interior voids inside the exterior plate.
   const rooms: PlanRoomRect[] = [
-    poly('Garage', 'Storage /wardrobe', [{ x: 41, y: 0 }, { x: 65, y: 0 }, { x: 65, y: 31.875 }, { x: 41, y: 31.875 }], 10),
-    poly('Entry', 'Outdoor', [{ x: 28, y: 0 }, { x: 41, y: 0 }, { x: 41, y: 6.23 }, { x: 28, y: 6.23 }], 10),
-    poly('Foyer', 'Hallway', [{ x: 28, y: 6.23 }, { x: 41, y: 6.23 }, { x: 41, y: 18 }, { x: 28, y: 18 }], 13),
-    poly('Study', 'Office', [{ x: 14, y: 0 }, { x: 28, y: 0 }, { x: 28, y: 12 }, { x: 14, y: 12 }], 12),
-    poly("Owner's Bath", 'Bathroom', [{ x: 0, y: 4 }, { x: 3, y: 0 }, { x: 11, y: 0 }, { x: 14, y: 4 }, { x: 14, y: 16 }, { x: 0, y: 16 }], 10),
-    poly('WIC A', 'Storage /wardrobe', [{ x: 0, y: 16 }, { x: 8, y: 16 }, { x: 8, y: 28 }, { x: 0, y: 28 }], 10),
-    poly('WIC B', 'Storage /wardrobe', [{ x: 8, y: 16 }, { x: 16, y: 16 }, { x: 16, y: 28 }, { x: 8, y: 28 }], 10),
-    poly("Owner's Suite", 'Bedroom', [{ x: 0, y: 28 }, { x: 16, y: 28 }, { x: 16, y: 54 }, { x: 12, y: 60 }, { x: 0, y: 60 }], 10),
-    poly('Dining', 'Dining room', [{ x: 28, y: 18 }, { x: 41, y: 18 }, { x: 41, y: 30 }, { x: 28, y: 30 }], 12),
-    poly('Powder', 'Bathroom', [{ x: 24, y: 18 }, { x: 28, y: 18 }, { x: 28, y: 23.5 }, { x: 24, y: 23.5 }], 10),
-    poly('Great Room', 'Living room', [{ x: 16, y: 30 }, { x: 38, y: 30 }, { x: 38, y: 50 }, { x: 34, y: 54 }, { x: 27, y: 56 }, { x: 20, y: 54 }, { x: 16, y: 50 }], 12),
-    poly('Kitchen', 'Kitchen', [{ x: 38, y: 31.875 }, { x: 49, y: 31.875 }, { x: 49, y: 45 }, { x: 38, y: 45 }], 12),
-    poly('Nook', 'Dining room', [{ x: 38, y: 45 }, { x: 49, y: 45 }, { x: 49, y: 52 }, { x: 46, y: 56 }, { x: 41, y: 58 }, { x: 38, y: 55 }], 12),
-    poly('Laundry', 'Laundry', [{ x: 49, y: 31.875 }, { x: 61, y: 31.875 }, { x: 61, y: 39.875 }, { x: 49, y: 39.875 }], 10),
-    poly('Bed Hall', 'Hallway', [{ x: 49, y: 39.875 }, { x: 53, y: 39.875 }, { x: 53, y: 72 }, { x: 49, y: 72 }], 10),
-    poly('Bedroom 2', 'Bedroom', [{ x: 53, y: 39.875 }, { x: 65, y: 39.875 }, { x: 65, y: 52.875 }, { x: 53, y: 52.875 }], 10),
-    poly('Bath 2', 'Bathroom', [{ x: 53, y: 52.875 }, { x: 65, y: 52.875 }, { x: 65, y: 60.875 }, { x: 53, y: 60.875 }], 10),
-    poly('Bedroom 3', 'Bedroom', [{ x: 53, y: 60.875 }, { x: 65, y: 60.875 }, { x: 65, y: 72 }, { x: 53, y: 72 }], 10),
-    poly('Bath 3', 'Bathroom', [{ x: 53, y: 72 }, { x: 65, y: 72 }, { x: 65, y: 80 }, { x: 53, y: 80 }], 10),
-    poly('Lanai', 'Outdoor', [{ x: 0, y: 60 }, { x: 12, y: 60 }, { x: 16, y: 54 }, { x: 20, y: 54 }, { x: 27, y: 56 }, { x: 34, y: 54 }, { x: 38, y: 50 }, { x: 38, y: 58 }, { x: 46, y: 58 }, { x: 49, y: 55 }, { x: 49, y: 64 }, { x: 14, y: 64 }, { x: 14, y: 70 }, { x: 8, y: 70 }, { x: 8, y: 86.333 }, { x: 0, y: 86.333 }], 10),
+    poly('Garage', 'Storage /wardrobe', [
+      { x: 41, y: 0 }, { x: 65, y: 0 }, { x: 65, y: 31.875 }, { x: 41, y: 31.875 },
+    ], 10),
+    poly("Owner's Bath", 'Bathroom', [
+      { x: 0, y: 13 }, { x: 2.5, y: 8 }, { x: 12, y: 8 }, { x: 14.5, y: 13 }, { x: 14.5, y: 26 }, { x: 0, y: 26 },
+    ], 10),
+    poly('WIC A', 'Storage /wardrobe', [
+      { x: 0, y: 26 }, { x: 7.25, y: 26 }, { x: 7.25, y: 36 }, { x: 0, y: 36 },
+    ], 10),
+    poly('WIC B', 'Storage /wardrobe', [
+      { x: 7.25, y: 26 }, { x: 14.5, y: 26 }, { x: 14.5, y: 36 }, { x: 7.25, y: 36 },
+    ], 10),
+    poly("Owner's Suite", 'Bedroom', [
+      { x: 0, y: 36 }, { x: 16, y: 36 }, { x: 16, y: 58 }, { x: 11, y: 63 }, { x: 0, y: 63 },
+    ], 10),
+    poly('Study', 'Office', [
+      { x: 14.5, y: 10 }, { x: 26, y: 10 }, { x: 26, y: 26 }, { x: 14.5, y: 26 },
+    ], 12),
+    poly('Entry', 'Outdoor', [
+      { x: 26, y: 10 }, { x: 36, y: 10 }, { x: 36, y: 16.75 }, { x: 26, y: 16.75 },
+    ], 10),
+    poly('Dining', 'Dining room', [
+      { x: 36, y: 10 }, { x: 41, y: 10 }, { x: 41, y: 30 }, { x: 31, y: 30 }, { x: 31, y: 16.75 }, { x: 36, y: 16.75 },
+    ], 12),
+    poly('Foyer', 'Hallway', [
+      { x: 26, y: 16.75 }, { x: 31, y: 16.75 }, { x: 31, y: 30 }, { x: 26, y: 30 },
+    ], 13),
+    poly('Gallery', 'Hallway', [
+      { x: 16, y: 26 }, { x: 26, y: 26 }, { x: 26, y: 30 }, { x: 31, y: 30 }, { x: 31, y: 31.875 }, { x: 16, y: 31.875 },
+    ], 12),
+    poly('Butler', 'Hallway', [
+      { x: 31, y: 30 }, { x: 41, y: 30 }, { x: 41, y: 31.875 }, { x: 31, y: 31.875 },
+    ], 10),
+    poly('Powder', 'Bathroom', [
+      { x: 16, y: 31.875 }, { x: 20, y: 31.875 }, { x: 20, y: 36 }, { x: 16, y: 36 },
+    ], 10),
+    poly('Owner Hall', 'Hallway', [
+      { x: 14.5, y: 26 }, { x: 16, y: 26 }, { x: 16, y: 36 }, { x: 14.5, y: 36 },
+    ], 10),
+    poly('Passage', 'Hallway', [
+      { x: 16, y: 36 }, { x: 20, y: 36 }, { x: 20, y: 58 }, { x: 16, y: 58 },
+    ], 10),
+    poly('Great Room', 'Living room', [
+      { x: 20, y: 31.875 }, { x: 38, y: 31.875 }, { x: 38, y: 54 }, { x: 33, y: 58 }, { x: 26, y: 60 }, { x: 20, y: 58 },
+    ], 12),
+    poly('Kitchen', 'Kitchen', [
+      { x: 38, y: 31.875 }, { x: 49, y: 31.875 }, { x: 49, y: 46 }, { x: 38, y: 46 },
+    ], 12),
+    poly('Nook', 'Dining room', [
+      { x: 38, y: 46 }, { x: 49, y: 46 }, { x: 49, y: 54 }, { x: 45, y: 58 }, { x: 40, y: 60 }, { x: 38, y: 54 },
+    ], 12),
+    poly('Laundry', 'Laundry', [
+      { x: 49, y: 31.875 }, { x: 61, y: 31.875 }, { x: 61, y: 39 }, { x: 49, y: 39 },
+    ], 10),
+    poly('Attic', 'Storage /wardrobe', [
+      { x: 61, y: 31.875 }, { x: 65, y: 31.875 }, { x: 65, y: 39 }, { x: 61, y: 39 },
+    ], 10),
+    poly('Bed Hall', 'Hallway', [
+      { x: 49, y: 39 }, { x: 53, y: 39 }, { x: 53, y: 72 }, { x: 49, y: 72 },
+    ], 10),
+    poly('Bedroom 3', 'Bedroom', [
+      { x: 53, y: 39 }, { x: 65, y: 39 }, { x: 65, y: 52 }, { x: 53, y: 52 },
+    ], 10),
+    poly('Bath 3', 'Bathroom', [
+      { x: 53, y: 52 }, { x: 65, y: 52 }, { x: 65, y: 60 }, { x: 53, y: 60 },
+    ], 10),
+    poly('Bedroom 2', 'Bedroom', [
+      { x: 53, y: 60 }, { x: 65, y: 60 }, { x: 65, y: 72 }, { x: 53, y: 72 },
+    ], 10),
+    poly('Bath 2', 'Bathroom', [
+      { x: 49, y: 72 }, { x: 65, y: 72 }, { x: 65, y: 80 }, { x: 49, y: 80 },
+    ], 10),
+    poly('Lanai', 'Outdoor', [
+      { x: 0, y: 63 }, { x: 11, y: 63 }, { x: 16, y: 58 }, { x: 20, y: 58 }, { x: 26, y: 60 }, { x: 33, y: 58 },
+      { x: 38, y: 54 }, { x: 40, y: 60 }, { x: 45, y: 58 }, { x: 49, y: 54 }, { x: 49, y: 72 },
+      { x: 28, y: 72 }, { x: 28, y: 86.333 }, { x: 0, y: 86.333 },
+    ], 10),
   ];
   return plan({
     id: 'driftwood',
