@@ -139,6 +139,40 @@ describe('perimeter trim',()=>{
   expect(openings.some(o=>o.type==='window')).toBe(false);
   expect(usePlannerStore.getState().attachPlanRoom(a!,'right')).toBeNull();
  });
+
+ it('live wall nudge keeps neighboring rooms still and preserves wall id',()=>{
+  usePlannerStore.setState({
+    workflowStage:'house',
+    furniture:[],
+    openings:[],
+    planRooms:[],
+    walls:[],
+    openingNotice:'',
+    selectedRoomId:null,
+    pendingAttachMode:false,
+  });
+  const a=usePlannerStore.getState().placePlanRoom({x:400,y:300},'rectangle','A');
+  const b=usePlannerStore.getState().attachPlanRoom(a!,'right','B');
+  expect(a&&b).toBeTruthy();
+  const before=usePlannerStore.getState();
+  const roomA=before.planRooms.find(r=>r.id===a!)!;
+  const leftX=Math.min(...roomA.points.map(p=>p.x));
+  const rightWall=before.walls
+    .filter(w=>Math.abs(w.start.x-w.end.x)<2)
+    .sort((w1,w2)=>((w2.start.x+w2.end.x)/2)-((w1.start.x+w1.end.x)/2))[0]!;
+  expect(rightWall).toBeTruthy();
+  const midBefore=(rightWall.start.x+rightWall.end.x)/2;
+  expect(usePlannerStore.getState().nudgeWall(rightWall.id,0.5,0,{live:true})).toBe(true);
+  const mid=usePlannerStore.getState();
+  expect(mid.selectedWallId).toBe(rightWall.id);
+  expect(mid.walls.some(w=>w.id===rightWall.id)).toBe(true);
+  const roomAMid=mid.planRooms.find(r=>r.id===a!)!;
+  expect(Math.min(...roomAMid.points.map(p=>p.x))).toBeCloseTo(leftX,0);
+  const midAfter=((mid.walls.find(w=>w.id===rightWall.id)!.start.x+mid.walls.find(w=>w.id===rightWall.id)!.end.x)/2);
+  expect(midAfter).toBeGreaterThan(midBefore+20);
+  usePlannerStore.getState().commitWallNudge();
+  expect(usePlannerStore.getState().walls.length).toBeGreaterThan(4);
+ });
 });
 
 describe('floor fill and undo',()=>{

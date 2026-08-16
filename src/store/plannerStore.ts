@@ -6,7 +6,7 @@ import { clampWallMountY, constrainPlacement, openingConflicts, resolveMountingT
 import { detectRoomPolygons } from '../lib/geometry/rooms';
 import { perimeterTrimSegments, type PerimeterTrimEdge } from '../lib/geometry/ceilingTrim';
 import { writeRecoverySnapshot } from '../lib/designShare';
-import { buildHouse, rebuildFromPlanRooms, resizePlanRoomPoints, shapedRoomPoints, snapRoomCenterToNeighbors, splitPlanRoomPoints, proposedRoomOverlaps, planRoomLabelOverlaps, attachSquareRoomPoints, attachSideBlocked, nudgePlanRoomsByWall, type PlanRoomShape, type AttachSide } from '../lib/housePlans/buildPlan';
+import { buildHouse, rebuildFromPlanRooms, resizePlanRoomPoints, shapedRoomPoints, snapRoomCenterToNeighbors, splitPlanRoomPoints, proposedRoomOverlaps, planRoomLabelOverlaps, attachSquareRoomPoints, attachSideBlocked, nudgePlanRoomsByWall, planRoomsCenterFt, type PlanRoomShape, type AttachSide } from '../lib/housePlans/buildPlan';
 import { getHousePlan } from '../lib/housePlans/olsenPlans';
 import { remapFurnitureAfterPlanRebuild } from '../lib/geometry/planFurnitureRemap';
 import { pointInPlanRoom, wallEndpointForGrowSide, type WallGrowSide } from '../lib/geometry/roomWalls';
@@ -291,12 +291,14 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
   /** Rebuild walls from plan labels and remap furniture/trim so recenter doesn’t orphan strips. */
   const applyPlanRoomRebuild = (
     nextLabels: PlanRoomLabel[],
-    opts?: { live?: boolean; selectedRoomId?: string | null },
+    opts?: { live?: boolean; selectedRoomId?: string | null; centerFt?: { cx: number; cy: number } },
   ) => {
     const prevRooms = get().planRooms;
     const prevFurniture = get().furniture;
     const height = get().walls[0]?.height ?? 2.74;
-    const rebuilt = rebuildFromPlanRooms(nextLabels, get().activeFloorId, height);
+    const rebuilt = rebuildFromPlanRooms(nextLabels, get().activeFloorId, height, {
+      centerFt: opts?.centerFt,
+    });
     const planRooms = rebuilt.roomPolygons.map((p) => ({
       ...p,
       floorColor: nextLabels.find((l) => l.id === p.id)?.floorColor,
@@ -356,6 +358,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     }
     return planRooms;
   };
+  /** Frozen plate center (feet) for the active live wall-drag gesture. */
+  let liveWallNudgeCenter: { cx: number; cy: number } | null = null;
   const projectPayload = () => {
     const s = get();
     return {
@@ -923,32 +927,34 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         set({ openingNotice: 'Rooms can’t get smaller than 3 ft on a side.' });
         return false;
       }
-      const expectMid = {
-        x: (wall.start.x + wall.end.x) / 2 + (Math.abs(wall.end.x - wall.start.x) <= Math.abs(wall.end.y - wall.start.y) ? dxPx : 0),
-        y: (wall.start.y + wall.end.y) / 2 + (Math.abs(wall.end.x - wall.start.x) <= Math.abs(wall.end.y - wall.start.y) ? 0 : dyPx),
-      };
-      applyPlanRoomRebuild(nextLabels, { live: opts?.live, selectedRoomId: get().selectedRoomId });
-      let bestId: string | null = null;
-      let bestD = Infinity;
-      for (const w of get().walls) {
-        const mx = (w.start.x + w.end.x) / 2;
-        const my = (w.start.y + w.end.y) / 2;
-        const d = Math.hypot(mx - expectMid.x, my - expectMid.y);
-        if (d < bestD) {
-          bestD = d;
-          bestId = w.id;
+      for (const room of nextLabels) {
+        if (planRoomLabelOverlaps(room.id, nextLabels)) {
+          set({ openingNotice: 'Rooms can’t overlap — resize stops at the neighbor.' });
+          return false;
         }
       }
-      set({ selectedWallId: bestId, openingNotice: '' });
+      // Freeze plate center for the whole live gesture so geometry moves 1:1 with the pointer.
+      if (opts?.live && !liveWallNudgeCenter) {
+        liveWallNudgeCenter = planRoomsCenterFt(labels);
+      }
+      const centerFt = opts?.live ? liveWallNudgeCenter ?? undefined : undefined;
+      applyPlanRoomRebuild(nextLabels, {
+        live: opts?.live,
+        selectedRoomId: get().selectedRoomId,
+        centerFt,
+      });
+      // Prefer the same wall id when edge topology is stable (typical AABB rebuild).
+      const stillThere = get().walls.some((w) => w.id === id);
+      set({ selectedWallId: stillThere ? id : get().selectedWallId, openingNotice: '' });
       return true;
     },
     commitWallNudge: () => {
-      mutate({
-        walls: get().walls,
-        openings: get().openings,
-        furniture: get().furniture,
-        planRooms: get().planRooms,
-      });
+      liveWallNudgeCenter = null;
+      const labels = get().planRooms;
+      if (!labels.length) return;
+      // One final rebuild recenters the plate now that the gesture is done.
+      applyPlanRoomRebuild(labels, { selectedRoomId: get().selectedRoomId });
+      set({ selectedWallId: get().selectedWallId });
     },
     splitPlanRoom: (id, axis) => {
       const current = get().planRooms;

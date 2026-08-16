@@ -64,6 +64,25 @@ describe('house plan builder', () => {
     expect(after.depthFt).toBeCloseTo(before.depthFt, 1);
   });
 
+  it('keeps plate origin fixed when centerFt is locked during rebuild', () => {
+    const rooms = row(0, 12, [
+      { name: 'A', roomType: 'Bedroom', w: 12 },
+      { name: 'B', roomType: 'Bedroom', w: 12 },
+    ]);
+    const locked = { cx: 12, cy: 6 };
+    const a = buildFloorFromRooms({ id: 'lock', name: 'Lock', rooms }, { openings: 'shared-only', centerFt: locked });
+    const rightWall = a.scene.walls.find((w) => Math.abs(w.start.x - w.end.x) < 1 && (w.start.x + w.end.x) / 2 > 0);
+    expect(rightWall).toBeTruthy();
+    const midBefore = ((rightWall!.start.x + rightWall!.end.x) / 2 + (rightWall!.start.y + rightWall!.end.y) / 2) / 2;
+    void midBefore;
+    const wider = rooms.map((r, i) => (i === rooms.length - 1 ? { ...r, w: r.w + 4 } : r));
+    const b = buildFloorFromRooms({ id: 'lock', name: 'Lock', rooms: wider }, { openings: 'shared-only', centerFt: locked });
+    const leftA = Math.min(...a.roomPolygons[0]!.points.map((p) => p.x));
+    const leftB = Math.min(...b.roomPolygons[0]!.points.map((p) => p.x));
+    // Left room should not slide when the right room grows under a locked center.
+    expect(leftB).toBeCloseTo(leftA, 0);
+  });
+
   it('covers every Olsen-named plan from the New Smyrna floor-plans page', () => {
     const expected = [
       'Coral Sands',

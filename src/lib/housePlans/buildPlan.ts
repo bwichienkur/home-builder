@@ -137,6 +137,11 @@ export type BuildFloorOptions = {
    * `none` — walls only.
    */
   openings?: FloorOpeningsMode;
+  /**
+   * Freeze the plate origin in feet during live edits (e.g. wall drag).
+   * When omitted, the rooms' bbox center is used so the plate recenters on WORLD_ORIGIN.
+   */
+  centerFt?: { cx: number; cy: number };
 };
 
 /** Convert a floor of room rectangles into walls + openings centered on WORLD_ORIGIN. */
@@ -157,8 +162,8 @@ export function buildFloorFromRooms(floor: HousePlanFloor, opts?: BuildFloorOpti
   const minY = Math.min(...rooms.map((r) => r.y));
   const maxX = Math.max(...rooms.map((r) => r.x + r.w));
   const maxY = Math.max(...rooms.map((r) => r.y + r.h));
-  const cx = (minX + maxX) / 2;
-  const cy = (minY + maxY) / 2;
+  const cx = opts?.centerFt?.cx ?? (minX + maxX) / 2;
+  const cy = opts?.centerFt?.cy ?? (minY + maxY) / 2;
 
   const toPoint = (xFt: number, yFt: number): Point => ({
     x: WORLD_ORIGIN.x + ftToPx(xFt - cx),
@@ -580,7 +585,12 @@ export function splitPlanRoomPoints(points: Point[], axis?: 'x' | 'y'): [Point[]
  * Preserves per-room floor colors when ids match.
  * Interactive edits use shared-only openings (no starter windows/doors).
  */
-export function rebuildFromPlanRooms(labels: { id: string; name: string; roomType: RoomType; points: Point[]; floorColor?: string }[], floorId = 'edited', ceilingHeightM = 2.74) {
+export function rebuildFromPlanRooms(
+  labels: { id: string; name: string; roomType: RoomType; points: Point[]; floorColor?: string }[],
+  floorId = 'edited',
+  ceilingHeightM = 2.74,
+  opts?: { centerFt?: { cx: number; cy: number } },
+) {
   const rooms: PlanRoomRect[] = labels.map((label) => {
     const size = planRoomSizeFeet(label.points);
     return {
@@ -594,13 +604,35 @@ export function rebuildFromPlanRooms(labels: { id: string; name: string; roomTyp
       ceilingFt: ceilingHeightM / FT_TO_M,
     };
   });
-  const built = buildFloorFromRooms({ id: floorId, name: 'Edited floor', rooms }, { openings: 'shared-only' });
+  const built = buildFloorFromRooms(
+    { id: floorId, name: 'Edited floor', rooms },
+    { openings: 'shared-only', centerFt: opts?.centerFt },
+  );
   built.roomPolygons = built.roomPolygons.map((poly) => ({
     ...poly,
     floorColor: labels.find((l) => l.id === poly.id)?.floorColor,
   }));
   // Keep existing furniture out of the rebuilt empty scene — caller merges.
   return built;
+}
+
+/** Axis-aligned plate center in feet from plan-room polygons. */
+export function planRoomsCenterFt(labels: { points: Point[] }[]) {
+  if (!labels.length) return { cx: 0, cy: 0 };
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const room of labels) {
+    if (room.points.length < 3) continue;
+    const size = planRoomSizeFeet(room.points);
+    minX = Math.min(minX, size.minX);
+    minY = Math.min(minY, size.minY);
+    maxX = Math.max(maxX, size.maxX);
+    maxY = Math.max(maxY, size.maxY);
+  }
+  if (!Number.isFinite(minX)) return { cx: 0, cy: 0 };
+  return { cx: (minX + maxX) / 2, cy: (minY + maxY) / 2 };
 }
 
 export type AttachSide = 'left' | 'right' | 'top' | 'bottom';
