@@ -18,25 +18,21 @@ React + TypeScript + React Three Fiber home planning studio with an authenticate
 
 ## Auth (MVP)
 
-Local session auth (SHA-256 password hashes in `localStorage` via Zustand persist).
+**Default = $0 local auth** (browser). Demo: `admin@mahnikka.local` / `admin123`.
 
-Demo account:
+Platform switches (see [docs/ZERO_COST_TO_PAID.md](docs/ZERO_COST_TO_PAID.md)):
 
-- Email: `admin@mahnikka.local`
-- Password: `admin123`
-
-Replace with your identity provider before a public deploy. The API still accepts `x-user-id` / `DEV_USER_ID` for catalog/project routes.
+| Env | Default | Later |
+|-----|---------|-------|
+| `VITE_AUTH_PROVIDER` | `local` | `remote` (+ IdP behind `/api/auth`) |
+| `VITE_CRM_PROVIDER` | `local` | `http` (+ Postgres behind `/api/crm`) |
+| `VITE_API_URL` | empty | `http://localhost:4000` or your host |
 
 ## CRM + CSV
 
-Clients, vendors, and inventory support:
+Clients, vendors, and inventory support template/import/export CSV and manual entry. Custom fields come from Settings.
 
-1. **Template CSV** — core columns + active custom fields (`custom.<key>`)
-2. **Import CSV** — row validation with partial import
-3. **Export CSV** — current records
-4. **Manual add/edit** drawers
-
-Data persists in the browser (`mahnikka-crm-v1`). Optional API mirror: `GET/PUT /api/crm/:collection` (file store under `data/crm-store.json`).
+Persistence goes through a **CrmProvider** (`local` browser or `http` API) so you can move to Postgres later without rewriting pages.
 
 ## House plans
 

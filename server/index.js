@@ -1,7 +1,9 @@
 import 'dotenv/config'; import express from 'express'; import cors from 'cors'; import pg from 'pg'; import { z } from 'zod';
 import { mountCrmRoutes } from './crmRoutes.js';
+import { mountAuthRoutes } from './authRoutes.js';
 const app=express(),pool=process.env.DATABASE_URL?new pg.Pool({connectionString:process.env.DATABASE_URL}):null;app.use(cors({origin:process.env.CLIENT_ORIGIN??'http://localhost:5173'}));app.use(express.json({limit:'2mb'}));
 app.get('/api/health',(_req,res)=>res.json({ok:true}));
+mountAuthRoutes(app);
 mountCrmRoutes(app);
 app.use((req,res,next)=>{req.userId=req.header('x-user-id')??process.env.DEV_USER_ID;if(!req.userId)return res.status(401).json({error:'Authentication required'});next()});
 const scene=z.object({version:z.number().optional(),activeFloorId:z.string(),floors:z.array(z.object({id:z.string(),name:z.string(),scene:z.any()}))});

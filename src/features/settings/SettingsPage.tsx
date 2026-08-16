@@ -1,5 +1,6 @@
 import { FormEvent, useState } from 'react';
 import type { CustomFieldDefinition, CustomFieldType, EntityKind } from '../../lib/crm/types';
+import { platformConfig } from '../../lib/platform/config';
 import { useCrmStore } from '../../store/crmStore';
 
 const TYPES: CustomFieldType[] = ['text', 'number', 'bool', 'date', 'select'];
@@ -32,6 +33,9 @@ export function SettingsPage() {
           <h1>Custom fields</h1>
           <p className="muted">
             Configure extra fields for clients, vendors, and inventory. They appear on forms and CSV templates.
+          </p>
+          <p className="muted" style={{ marginTop: 8 }}>
+            Platform: <strong>{platformConfig.label()}</strong> — see docs/ZERO_COST_TO_PAID.md to switch later.
           </p>
         </div>
         <div className="data-page-actions">

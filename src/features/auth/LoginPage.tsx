@@ -1,5 +1,5 @@
 import { FormEvent, useMemo, useState } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { DEMO_LOGIN, useAuthStore } from '../../store/authStore';
 import './auth.css';
 
@@ -92,7 +92,7 @@ export function LoginPage() {
           Demo: {DEMO_LOGIN.email} / {DEMO_LOGIN.password}
         </p>
         <p className="muted">
-          <Link to="/login">Local session auth</Link> — replace with your IdP before public deploy.
+          $0 local auth by default. Swap to hosted IdP later — see docs/ZERO_COST_TO_PAID.md.
         </p>
       </div>
     </div>

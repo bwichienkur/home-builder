@@ -1,0 +1,41 @@
+/**
+ * Platform configuration — $0 local defaults, paid/hosted via env later.
+ *
+ * Switch without rewriting UI:
+ *   VITE_AUTH_PROVIDER=local|remote
+ *   VITE_CRM_PROVIDER=local|http
+ *   VITE_API_URL=http://localhost:4000
+ */
+export type AuthProviderId = 'local' | 'remote';
+export type CrmProviderId = 'local' | 'http';
+
+function env(name: string, fallback = '') {
+  const value = (import.meta.env as Record<string, string | undefined>)[name];
+  return (value ?? fallback).trim();
+}
+
+export const platformConfig = {
+  /** local = browser accounts; remote = call API / IdP adapter. */
+  authProvider: (env('VITE_AUTH_PROVIDER', 'local') === 'remote' ? 'remote' : 'local') as AuthProviderId,
+  /** local = localStorage CRM; http = sync via VITE_API_URL /api/crm. */
+  crmProvider: (env('VITE_CRM_PROVIDER', 'local') === 'http' ? 'http' : 'local') as CrmProviderId,
+  apiUrl: env('VITE_API_URL', '').replace(/\/$/, ''),
+  /** Shown in Settings so operators know which path is active. */
+  label() {
+    const auth = this.authProvider === 'local' ? 'Local auth ($0)' : 'Remote auth (API/IdP)';
+    const crm = this.crmProvider === 'local' ? 'Browser CRM ($0)' : 'HTTP CRM (API/DB)';
+    return `${auth} · ${crm}`;
+  },
+};
+
+export function apiHeaders(extra?: Record<string, string>): HeadersInit {
+  const headers: Record<string, string> = {
+    'content-type': 'application/json',
+    ...extra,
+  };
+  const devUser = env('VITE_DEV_USER_ID');
+  if (devUser) headers['x-user-id'] = devUser;
+  const token = typeof localStorage !== 'undefined' ? localStorage.getItem('mahnikka-auth-token') : null;
+  if (token) headers.authorization = `Bearer ${token}`;
+  return headers;
+}
