@@ -52,7 +52,7 @@ describe('plan framing', () => {
       { id: 'c', start: { x: 1400, y: 1000 }, end: { x: 100, y: 1000 }, thickness: 0.15, height: 2.7 },
       { id: 'd', start: { x: 100, y: 1000 }, end: { x: 100, y: 100 }, thickness: 0.15, height: 2.7 },
     ];
-    const plate = framingFromWalls(large);
+    const plate = framingFromWalls(large, { pad: 2.85, minHeight: 12 });
     const one = framingFromWall(large[0]!, { pad: 2.05, minHeight: 6.2, exteriorSide: -1 });
     expect(one.topHeight).toBeLessThan(plate.topHeight);
   });
@@ -97,15 +97,16 @@ describe('plan framing', () => {
     const fit = pageCenterFit({
       width: 390,
       height: 844,
-      rightChromePx: 72,
-      gutterPx: 24,
-      topChromePx: 72,
-      bottomChromePx: 150,
+      rightChromePx: 68,
+      gutterPx: 10,
+      topChromePx: 68,
+      bottomChromePx: 130,
     });
-    // Page-centered: usable width is W - 2*rightReserve, so zoom out more than free-area centering.
-    expect(fit.rightReserve).toBe(96);
-    expect(fit.maxPlateW).toBe(390 - 2 * 96);
-    expect(fit.padScale).toBeGreaterThan(1.8);
+    // Page-centered: reserve the rail once with a little mirrored slack (1.45×).
+    expect(fit.rightReserve).toBe(78);
+    expect(fit.maxPlateW).toBeCloseTo(390 - 78 * 1.45, 5);
+    expect(fit.padScale).toBeGreaterThan(1.2);
+    expect(fit.padScale).toBeLessThan(1.8);
     expect(fit.shiftFraction).toBe(0);
   });
 

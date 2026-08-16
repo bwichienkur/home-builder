@@ -35,8 +35,8 @@ function world(x: number, y: number): [number, number] {
 /** Camera height so a plan of `span` meters fits in a top-down FOV with UI padding. */
 export function topViewHeight(span: number, opts?: { fovDeg?: number; pad?: number; min?: number }) {
   const fov = ((opts?.fovDeg ?? 42) * Math.PI) / 180;
-  const pad = opts?.pad ?? 2.8;
-  const min = opts?.min ?? 10;
+  const pad = opts?.pad ?? 2.45;
+  const min = opts?.min ?? 9;
   const half = (Math.max(span, 2) * 0.5) * pad;
   return Math.max(min, half / Math.tan(fov / 2));
 }
@@ -181,8 +181,9 @@ export function pageCenterFit(chrome: ChromeFit) {
   const right = Math.max(0, chrome.rightChromePx) + gutter;
   const top = Math.max(0, chrome.topChromePx ?? 0);
   const bottom = Math.max(0, chrome.bottomChromePx ?? 0);
-  // Symmetric about page center: right half must end before the rail.
-  const maxPlateW = Math.max(140, W - 2 * right);
+  // Nearly fill the canvas: reserve the rail once, plus a little mirrored slack
+  // so the plate stays visually centered without large empty gutters.
+  const maxPlateW = Math.max(140, W - right * 1.45);
   const freeH = Math.max(160, H - top - bottom);
   const widthScale = W / maxPlateW;
   const heightScale = H / freeH;
