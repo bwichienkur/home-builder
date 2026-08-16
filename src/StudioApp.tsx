@@ -16,6 +16,7 @@ import { catalog as catalogItems } from './components/catalog/catalogData';
 import { BomDialog } from './components/ui/BomDialog';
 import { SelectionInspector } from './components/ui/SelectionInspector';
 import { BuildingChecksBar } from './components/ui/BuildingChecksBar';
+import { ElevationPreview } from './components/ui/ElevationPreview';
 import { StudioChrome } from './components/ui/StudioChrome';
 import { DesignStart } from './components/ui/DesignStart';
 import { useInventoryStore } from './store/inventoryStore';
@@ -88,6 +89,7 @@ export default function StudioApp() {
   const [cloudProjects, setCloudProjects] = useState<CloudProjectSummary[]>([]);
   const [cloudLoading, setCloudLoading] = useState(false);
   const [cloudRef, setCloudRef] = useState(() => readCloudProjectRef());
+  const [elevationOpen, setElevationOpen] = useState(false);
   const [activeDesignCode, setActiveDesignCode] = useState<string | null>(() => readActiveDesignCode());
   const openingNotice = usePlannerStore((s) => s.openingNotice);
   const clearOpeningNotice = usePlannerStore((s) => s.clearOpeningNotice);
@@ -99,8 +101,8 @@ export default function StudioApp() {
   const startGhostPlacement = useCallback(() => {
     store.setView('3d');
     const coarse = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
-    // Phones: place from Top (floor-first). Desktop: stay in orbit unless already Top.
-    if (coarse) store.setCameraMode('top');
+    // Keep Plan (top) when placing; only leave walk → orbit. Never yank Plan into orbit.
+    if (coarse || store.cameraMode === 'top') store.setCameraMode('top');
     else if (store.cameraMode === 'walk') store.setCameraMode('orbit');
     setCatalogOpen(false);
     setMenuOpen(false);
@@ -328,16 +330,17 @@ export default function StudioApp() {
 
   const pendingPlacement = usePlannerStore((s) => s.pendingPlacement);
   useEffect(() => {
-    // Opening a new selection closes the inspector; Info FAB re-opens it on demand.
+    // Opening a new selection closes the inspector; Info FAB / wall pick re-opens it.
     if (pendingPlacement) {
       setInspectorOpen(false);
       return;
     }
     if (selectedOpeningId) {
+      // Opening FABs handle edit — keep sheet closed until Info is pressed.
       setInspectorOpen(false);
       return;
     }
-    if (selectedWallId) setInspectorOpen(false);
+    // Wall select opens properties via roomcraft-open-properties; do not force-close here.
   }, [selectedWallId, selectedOpeningId, pendingPlacement]);
 
   useEffect(() => {
@@ -496,7 +499,15 @@ export default function StudioApp() {
         }}
         onSave={saveBuild}
         onShare={share}
+        onOpenElevations={() => {
+          setElevationOpen(true);
+          setCatalogOpen(false);
+          setInspectorOpen(false);
+          closeProjectMenu();
+        }}
       />
+
+      <ElevationPreview open={elevationOpen} onClose={() => setElevationOpen(false)} />
 
       {catalogOpen && <CatalogPanel close={closeCatalog} onAdd={startGhostPlacement} roomType={roomType} />}
 

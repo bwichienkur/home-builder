@@ -116,6 +116,12 @@ function FurnitureProperties({ item }: { item: import('../../types').FurnitureIt
             Links {fromFloor?.name ?? 'lower'} → {toFloor?.name ?? 'upper'}. Floor plates cut out around the run.
           </p>
           <LengthField
+            label="Width"
+            value={item.width}
+            min={0.7}
+            onChange={(width) => update(item.id, { width })}
+          />
+          <LengthField
             label="Run"
             value={item.stair?.runM ?? item.depth}
             min={1}
@@ -133,6 +139,18 @@ function FurnitureProperties({ item }: { item: import('../../types').FurnitureIt
             min={2}
             onChange={(riseM) => update(item.id, { height: riseM, stair: { ...item.stair!, riseM } })}
           />
+          <LengthField
+            label="Landing"
+            value={item.stair?.landingM ?? 0.9}
+            min={0}
+            onChange={(landingM) => {
+              const runM = item.stair?.runM ?? Math.max(0.5, item.depth - landingM);
+              update(item.id, {
+                depth: runM + landingM,
+                stair: { ...item.stair!, landingM },
+              });
+            }}
+          />
           <label>
             Steps
             <input
@@ -143,6 +161,20 @@ function FurnitureProperties({ item }: { item: import('../../types').FurnitureIt
               onChange={(e) => update(item.id, { stair: { ...item.stair!, steps: Math.max(3, +e.target.value || 12) } })}
             />
           </label>
+          {(() => {
+            const steps = Math.max(1, item.stair?.steps ?? 12);
+            const rise = item.stair?.riseM ?? item.height;
+            const run = item.stair?.runM ?? Math.max(0.5, item.depth - (item.stair?.landingM ?? 0));
+            const riserIn = (rise / steps) / 0.0254;
+            const treadIn = (run / steps) / 0.0254;
+            return (
+              <p className="muted">
+                Avg riser {riserIn.toFixed(1)}″ · tread {treadIn.toFixed(1)}″
+                {riserIn > 7.75 ? ' · riser tall vs common caps' : ''}
+                {treadIn < 10 ? ' · tread short vs common mins' : ''}
+              </p>
+            );
+          })()}
         </>
       )}
       <Property
@@ -550,11 +582,13 @@ function WallProperties({ wall }: { wall: Wall }) {
   const remove = usePlannerStore((s) => s.deleteOpening);
   const selectOpening = usePlannerStore((s) => s.selectOpening);
   const updateWall = usePlannerStore((s) => s.updateWall);
+  const setWallLength = usePlannerStore((s) => s.setWallLength);
   const split = usePlannerStore((s) => s.splitWall);
   const offset = usePlannerStore((s) => s.offsetWall);
   const deleteSelected = usePlannerStore((s) => s.deleteSelected);
   const unit = usePlannerStore((s) => s.unitSystem);
   const assembly = wall.assembly ?? 'interior';
+  const lengthM = wallLengthM(wall);
 
   const applyAssembly = (next: WallAssembly) => {
     const preset = WALL_ASSEMBLY_PRESETS[next];
@@ -578,6 +612,7 @@ function WallProperties({ wall }: { wall: Wall }) {
         ))}
       </div>
       <p className="muted">{WALL_ASSEMBLY_PRESETS[assembly].hint}</p>
+      <LengthField label="Length" value={lengthM} min={0.5} onChange={(value) => setWallLength(wall.id, value)} />
       <LengthField label="Thickness" value={wall.thickness} min={0.05} onChange={(value) => updateWall(wall.id, { thickness: value })} />
       <LengthField label="Height" value={wall.height} min={2} onChange={(value) => updateWall(wall.id, { height: value })} />
       <div className="wall-actions">
@@ -585,7 +620,7 @@ function WallProperties({ wall }: { wall: Wall }) {
         <button type="button" onClick={() => split(wall.id)}>Split wall</button>
         <button type="button" onClick={() => offset(wall.id, 0.25)}>Move +{unit === 'metric' ? '25 cm' : '10 in'}</button>
       </div>
-      <p className="muted">Drag a wall on the plan to resize the room. Exact length editing is off for now.</p>
+      <p className="muted">Drag a wall on the plan to reshape the room, or type an exact length above.</p>
       <span className="template-label">Connect rooms</span>
       <div className="wall-actions">
         <button type="button" onClick={() => addOpening(wall.id, 'door')}>

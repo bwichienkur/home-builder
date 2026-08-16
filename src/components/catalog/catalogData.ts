@@ -18,8 +18,9 @@ const legacyCatalog: CatalogItem[] = [
  {id:'side-table',name:'Pebble Side Table',category:'Tables',dims:[.48,.48,.5],color:'#6e746e',price:189,emoji:'●',mountingType:'floor',placementSurfaces:['floor']},
  {id:'bookcase',name:'Arch Bookcase',category:'Storage',dims:[1.1,.34,2],color:'#7e5f45',price:549,emoji:'▥',mountingType:'floor',placementSurfaces:['floor'],roomTypes:['Bedroom','Living room','Office','Storage / wardrobe']},
  {id:'queen-bed',name:'Cloud Platform Bed',category:'Bedroom',dims:[1.7,2.1,.55],color:'#d2c5b4',price:899,emoji:'▭',mountingType:'floor',placementSurfaces:['floor'],roomTypes:['Bedroom','Children’s room']},
- {id:'floor-lamp',name:'Arc Floor Lamp',category:'Lighting',dims:[.45,.45,1.75],color:'#333a36',price:219,emoji:'◉',mountingType:'floor',placementSurfaces:['floor'],modelUrl:SAMPLE.lamp,lowPolyModelUrl:SAMPLE.lamp,roomTypes:['Bedroom','Living room','Office']},
- {id:'wall-sconce',name:'Halo Wall Sconce',category:'Lighting',dims:[.18,.12,.28],color:'#d9dde2',price:79,emoji:'☼',mountingType:'wall',placementSurfaces:['wall'],modelUrl:SAMPLE.box,lowPolyModelUrl:SAMPLE.box,roomTypes:['Bedroom','Hallway','Bathroom','Living room']},
+ // Proxy only — Khronos Lantern GLB is street-scale and previously blew up when fit re-ran.
+ {id:'floor-lamp',name:'Arc Floor Lamp',category:'Lighting',dims:[.45,.45,1.75],color:'#333a36',price:219,emoji:'◉',mountingType:'floor',placementSurfaces:['floor'],roomTypes:['Bedroom','Living room','Office']},
+ {id:'wall-sconce',name:'Halo Wall Sconce',category:'Lighting',dims:[.18,.12,.28],color:'#d9dde2',price:79,emoji:'☼',mountingType:'wall',placementSurfaces:['wall'],roomTypes:['Bedroom','Hallway','Bathroom','Living room']},
  {id:'wall-art',name:'Canvas Print Set',category:'Decor',dims:[1.2,.04,.8],color:'#e7e2d8',price:149,emoji:'▦',mountingType:'wall',placementSurfaces:['wall'],roomTypes:['Bedroom','Living room','Hallway']},
  // Generic test products — local SVG “pictures” + simple proxies (no proprietary assets).
  {id:'test-mirror',name:'Oval Wall Mirror',category:'Decor',dims:[.7,.04,1.1],color:'#c5ccd2',price:79,emoji:'◯',mountingType:'wall',placementSurfaces:['wall'],thumbnailUrl:'/catalog/mirror-oval.svg',tags:['mirror','wall','test'],roomTypes:['Bedroom','Bathroom','Hallway','Living room']},

@@ -7,17 +7,38 @@ import type { FurnitureItem } from '../../types';
 function useFittedClone(scene: Group, width: number, depth: number, height: number) {
   const clone = useMemo(() => scene.clone(true) as Group, [scene]);
   const group = useRef<Group>(null);
+  const fitOk = useRef(true);
   useLayoutEffect(() => {
+    // Reset before measuring — re-running the effect on an already-scaled clone
+    // would treat fitted size as native and blow the model back up (Lantern bug).
+    clone.position.set(0, 0, 0);
+    clone.rotation.set(0, 0, 0);
+    clone.scale.set(1, 1, 1);
+    clone.updateMatrixWorld(true);
     const box = new THREE.Box3().setFromObject(clone);
     const size = box.getSize(new THREE.Vector3());
-    if (size.x < 1e-4 || size.y < 1e-4 || size.z < 1e-4) return;
-    const scale = Math.min(width / size.x, height / size.y, depth / size.z);
+    if (size.x < 1e-4 || size.y < 1e-4 || size.z < 1e-4 || !Number.isFinite(size.x)) {
+      fitOk.current = false;
+      return;
+    }
+    const targetW = Math.max(0.05, width);
+    const targetD = Math.max(0.05, depth);
+    const targetH = Math.max(0.05, height);
+    let scale = Math.min(targetW / size.x, targetH / size.y, targetD / size.z);
+    // Cap runaway scales from tiny/corrupt bounds.
+    if (!Number.isFinite(scale) || scale <= 0) {
+      fitOk.current = false;
+      return;
+    }
+    scale = Math.min(scale, 50);
     const center = box.getCenter(new THREE.Vector3());
     clone.scale.setScalar(scale);
     clone.position.set(-center.x * scale, -box.min.y * scale, -center.z * scale);
+    clone.updateMatrixWorld(true);
+    fitOk.current = true;
     if (group.current) group.current.updateMatrixWorld(true);
   }, [clone, width, depth, height]);
-  return { clone, group };
+  return { clone, group, fitOk };
 }
 
 export function CatalogModel({
@@ -156,6 +177,30 @@ export function ProxyFurniture({
   const category = item.category.toLowerCase();
   const name = item.name.toLowerCase();
   const halo = <SelectionHalo width={item.width} depth={item.depth} height={item.height} selected={selected} colliding={colliding} />;
+
+  // Floor / table lamps — simple stand + shade (no oversized sample GLBs).
+  if (category.includes('lighting') && item.mountingType !== 'wall' && item.mountingType !== 'ceiling') {
+    const poleH = item.height * 0.72;
+    const shadeH = item.height * 0.22;
+    const shadeW = Math.max(item.width, item.depth) * 0.95;
+    return (
+      <group {...handlers}>
+        <mesh position={[0, 0.02, 0]} castShadow receiveShadow>
+          <cylinderGeometry args={[item.width * 0.28, item.width * 0.35, 0.04, 16]} />
+          <meshStandardMaterial color={color} roughness={0.55} metalness={0.35} />
+        </mesh>
+        <mesh position={[0, poleH / 2, 0]} castShadow>
+          <cylinderGeometry args={[0.02, 0.025, poleH, 8]} />
+          <meshStandardMaterial color="#2a2e2c" roughness={0.4} metalness={0.5} />
+        </mesh>
+        <mesh position={[0, poleH + shadeH / 2, 0]} castShadow>
+          <cylinderGeometry args={[shadeW * 0.22, shadeW * 0.48, shadeH, 16, 1, true]} />
+          <meshStandardMaterial color="#f2eee6" roughness={0.9} side={THREE.DoubleSide} />
+        </mesh>
+        {halo}
+      </group>
+    );
+  }
 
   if (item.placementKind === 'stair' || name === 'stair' || category.includes('circulation')) {
     const steps = Math.max(3, item.stair?.steps ?? 12);
