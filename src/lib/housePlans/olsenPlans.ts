@@ -522,29 +522,87 @@ function driftwood(): HousePlan {
 }
 
 function oyster_bay(): HousePlan {
-  // Flyer: 89'w × 90'd, 3 bed / 3.5 bath / study / 3-car. Angled garage + breakfast bay.
+  // Coastal Collection flyer: 89'w × 90'd, 3 bed / 3.5 bath / study / 3-car.
+  // Brochure topology (front y=0): garage front-left + 45° garage hall, dining octagon
+  // + study bay at front, secondary beds on the left, kitchen + octagon nook center,
+  // owner's suite/bath on the right, L-lanai wrapping the nook at the rear.
   const rooms: PlanRoomRect[] = [
-    poly('Garage', 'Storage /wardrobe', [{ x: 0, y: 16 }, { x: 38, y: 0 }, { x: 38, y: 28 }, { x: 0, y: 44 }], 10),
-    poly('Entry', 'Outdoor', [{ x: 38, y: 0 }, { x: 48, y: 0 }, { x: 48, y: 5.5 }, { x: 38, y: 5.5 }], 10),
-    poly('Foyer', 'Hallway', [{ x: 38, y: 5.5 }, { x: 48, y: 5.5 }, { x: 48, y: 18 }, { x: 38, y: 18 }], 13),
-    poly('Dining', 'Dining room', [{ x: 48, y: 0 }, { x: 89, y: 0 }, { x: 89, y: 18 }, { x: 48, y: 18 }], 12),
-    poly('Powder', 'Bathroom', [{ x: 38, y: 18 }, { x: 46, y: 18 }, { x: 46, y: 26 }, { x: 38, y: 26 }], 10),
-    poly('Study', 'Office', [{ x: 0, y: 44 }, { x: 14, y: 44 }, { x: 14, y: 56 }, { x: 0, y: 56 }], 12),
-    poly('Laundry', 'Laundry', [{ x: 14, y: 44 }, { x: 24, y: 44 }, { x: 24, y: 52 }, { x: 14, y: 52 }], 10),
-    poly('Kitchen', 'Kitchen', [{ x: 38, y: 28 }, { x: 56, y: 28 }, { x: 56, y: 44 }, { x: 38, y: 44 }], 12),
-    poly('Breakfast', 'Dining room', [
-      { x: 56, y: 28 }, { x: 74, y: 28 }, { x: 80, y: 34 }, { x: 80, y: 44 }, { x: 74, y: 50 }, { x: 56, y: 44 },
+    poly('Garage', 'Storage /wardrobe', [
+      { x: 0, y: 0 }, { x: 36, y: 0 }, { x: 36, y: 29.833 }, { x: 0, y: 29.833 },
+    ], 10),
+    poly('Storage', 'Storage /wardrobe', [
+      { x: 0, y: 29.833 }, { x: 6.5, y: 29.833 }, { x: 6.5, y: 36.14 }, { x: 0, y: 36.14 },
+    ], 10),
+    poly('Garage Hall', 'Hallway', [
+      { x: 36, y: 18 }, { x: 36, y: 26 }, { x: 46, y: 36 }, { x: 46, y: 28 },
+    ], 10),
+    poly('Laundry', 'Laundry', [
+      { x: 36, y: 10 }, { x: 46, y: 10 }, { x: 46, y: 18 }, { x: 36, y: 18 },
+    ], 10),
+    poly('Dining', 'Dining room', [
+      { x: 48.8, y: 1 }, { x: 55.2, y: 1 }, { x: 58, y: 3.8 }, { x: 58, y: 13.2 },
+      { x: 55.2, y: 16 }, { x: 48.8, y: 16 }, { x: 46, y: 13.2 }, { x: 46, y: 3.8 },
     ], 12),
-    poly('Great Room', 'Living room', [{ x: 24, y: 50 }, { x: 80, y: 50 }, { x: 80, y: 68 }, { x: 24, y: 68 }], 12),
-    poly('Hall', 'Hallway', [{ x: 18, y: 56 }, { x: 24, y: 56 }, { x: 24, y: 68 }, { x: 18, y: 68 }], 10),
-    poly("Owner's Suite", 'Bedroom', [{ x: 0, y: 56 }, { x: 18, y: 56 }, { x: 18, y: 72 }, { x: 0, y: 72 }], 10),
-    poly("Owner's Bath", 'Bathroom', [{ x: 0, y: 72 }, { x: 11, y: 72 }, { x: 11, y: 82 }, { x: 0, y: 78 }], 10),
-    poly('WIC', 'Storage /wardrobe', [{ x: 11, y: 72 }, { x: 22, y: 72 }, { x: 22, y: 82 }, { x: 11, y: 82 }], 10),
-    poly('Bedroom 2', 'Bedroom', [{ x: 24, y: 68 }, { x: 38, y: 68 }, { x: 38, y: 78 }, { x: 24, y: 78 }], 10),
-    poly('Bath 2', 'Bathroom', [{ x: 38, y: 68 }, { x: 46, y: 68 }, { x: 46, y: 78 }, { x: 38, y: 78 }], 10),
-    poly('Bedroom 3', 'Bedroom', [{ x: 46, y: 68 }, { x: 60, y: 68 }, { x: 60, y: 78 }, { x: 46, y: 78 }], 10),
-    poly('Bath 3', 'Bathroom', [{ x: 60, y: 68 }, { x: 68, y: 68 }, { x: 68, y: 78 }, { x: 60, y: 78 }], 10),
-    poly('Lanai', 'Outdoor', [{ x: 30, y: 78 }, { x: 81, y: 78 }, { x: 81, y: 90 }, { x: 30, y: 90 }], 10),
+    poly('Entry', 'Outdoor', [
+      { x: 58, y: 0 }, { x: 70, y: 0 }, { x: 70, y: 7.333 }, { x: 58, y: 7.333 },
+    ], 10),
+    poly('Foyer', 'Hallway', [
+      { x: 58, y: 7.333 }, { x: 70, y: 7.333 }, { x: 70, y: 20 }, { x: 58, y: 20 },
+    ], 13),
+    poly('Study', 'Office', [
+      { x: 70, y: 0 }, { x: 80, y: 0 }, { x: 83, y: 3 }, { x: 83, y: 20 }, { x: 70, y: 20 },
+    ], 12),
+    poly("Owner's Bath", 'Bathroom', [
+      { x: 83, y: 0 }, { x: 85.5, y: 0 }, { x: 89, y: 3.5 }, { x: 89, y: 20 }, { x: 83, y: 20 },
+    ], 10),
+    poly('Powder', 'Bathroom', [
+      { x: 50, y: 16 }, { x: 58, y: 16 }, { x: 58, y: 22 }, { x: 50, y: 22 },
+    ], 10),
+    poly('WIC', 'Storage /wardrobe', [
+      { x: 76.5, y: 20 }, { x: 89, y: 20 }, { x: 89, y: 32 }, { x: 76.5, y: 32 },
+    ], 10),
+    poly('Owner Hall', 'Hallway', [
+      { x: 74.667, y: 32 }, { x: 89, y: 32 }, { x: 89, y: 48 }, { x: 74.667, y: 48 },
+    ], 10),
+    poly('Pantry', 'Storage /wardrobe', [
+      { x: 38, y: 36 }, { x: 46, y: 36 }, { x: 46, y: 48 }, { x: 38, y: 48 },
+    ], 10),
+    poly('Kitchen', 'Kitchen', [
+      { x: 49, y: 48 }, { x: 57, y: 48 }, { x: 60, y: 51 }, { x: 60, y: 63 },
+      { x: 57, y: 66 }, { x: 49, y: 66 }, { x: 46, y: 63 }, { x: 46, y: 51 },
+    ], 12),
+    poly('Breakfast', 'Dining room', [
+      { x: 49.1, y: 66 }, { x: 56.9, y: 66 }, { x: 59.5, y: 68.6 }, { x: 59.5, y: 77.4 },
+      { x: 56.9, y: 80 }, { x: 49.1, y: 80 }, { x: 46.5, y: 77.4 }, { x: 46.5, y: 68.6 },
+    ], 12),
+    poly('Great Room', 'Living room', [
+      { x: 60, y: 48 }, { x: 74.667, y: 48 }, { x: 74.667, y: 83.5 }, { x: 60, y: 83.5 },
+    ], 12),
+    poly("Owner's Suite", 'Bedroom', [
+      { x: 74.667, y: 48 }, { x: 89, y: 48 }, { x: 89, y: 83.5 }, { x: 74.667, y: 83.5 },
+    ], 10),
+    poly('Bedroom 3', 'Bedroom', [
+      { x: 0, y: 40 }, { x: 13.5, y: 40 }, { x: 13.5, y: 56 }, { x: 0, y: 56 },
+    ], 10),
+    poly('Bath 3', 'Bathroom', [
+      { x: 13.5, y: 40 }, { x: 22, y: 40 }, { x: 22, y: 52 }, { x: 13.5, y: 52 },
+    ], 10),
+    poly('Bedroom 2', 'Bedroom', [
+      { x: 0, y: 56 }, { x: 13.5, y: 56 }, { x: 13.5, y: 83.5 }, { x: 0, y: 83.5 },
+    ], 10),
+    poly('Bath 2', 'Bathroom', [
+      { x: 13.5, y: 56 }, { x: 22, y: 56 }, { x: 22, y: 68 }, { x: 13.5, y: 68 },
+    ], 10),
+    poly('Bed Hall', 'Hallway', [
+      { x: 22, y: 40 }, { x: 34, y: 40 }, { x: 34, y: 68 }, { x: 22, y: 68 },
+    ], 10),
+    poly('Gallery', 'Hallway', [
+      { x: 34, y: 48 }, { x: 46, y: 48 }, { x: 46, y: 64 }, { x: 34, y: 64 },
+    ], 12),
+    poly('Lanai', 'Outdoor', [
+      { x: 0, y: 83.5 }, { x: 46.5, y: 83.5 }, { x: 46.5, y: 80 }, { x: 59.5, y: 80 },
+      { x: 59.5, y: 83.5 }, { x: 89, y: 83.5 }, { x: 89, y: 90 }, { x: 0, y: 90 },
+    ], 10),
   ];
   return plan({
     id: 'oyster-bay',

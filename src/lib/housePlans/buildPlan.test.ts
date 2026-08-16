@@ -265,12 +265,21 @@ describe('house plan builder', () => {
     };
 
     const oyster = getHousePlan('oyster-bay')!;
-    const garage = oyster.floors[0]!.rooms.find((r) => r.name === 'Garage')!;
+    const oysterRooms = oyster.floors[0]!.rooms;
+    const garage = oysterRooms.find((r) => r.name === 'Garage')!;
+    const owner = oysterRooms.find((r) => r.name === "Owner's Suite")!;
+    const breakfast = oysterRooms.find((r) => r.name === 'Breakfast')!;
+    const dining = oysterRooms.find((r) => r.name === 'Dining')!;
+    const garageHall = oysterRooms.find((r) => r.name === 'Garage Hall')!;
     expect(garage.pointsFt).toBeTruthy();
-    expect(isAxisAlignedRect(garage.pointsFt!)).toBe(false);
-    expect(oyster.floors[0]!.rooms.find((r) => r.name === 'Breakfast')!.pointsFt!.length).toBeGreaterThan(4);
-    const maxX = Math.max(...oyster.floors[0]!.rooms.map((r) => r.x + r.w));
-    const maxY = Math.max(...oyster.floors[0]!.rooms.map((r) => r.y + r.h));
+    expect(garage.x).toBeLessThan(5); // front-left, not mirrored
+    expect(owner.x + owner.w).toBeGreaterThan(80); // owner wing on the right
+    expect(oysterRooms.find((r) => r.name === 'Bedroom 2')!.x).toBeLessThan(5); // beds on the left
+    expect(isAxisAlignedRect(garageHall.pointsFt!)).toBe(false); // 45° connector
+    expect(breakfast.pointsFt!.length).toBe(8); // octagon nook
+    expect(dining.pointsFt!.length).toBe(8);
+    const maxX = Math.max(...oysterRooms.map((r) => r.x + r.w));
+    const maxY = Math.max(...oysterRooms.map((r) => r.y + r.h));
     expect(maxX).toBeCloseTo(89, 0);
     expect(maxY).toBeCloseTo(90, 0);
 
