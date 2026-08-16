@@ -17,16 +17,61 @@ export function planToWorld(point: Point): { x: number; z: number } {
   return { x: (point.x - WORLD_ORIGIN.x) / PIXELS_PER_METER, z: (point.y - WORLD_ORIGIN.y) / PIXELS_PER_METER };
 }
 
-/** Floor centroid for ghost placement so new products appear on-screen immediately. */
+/** Floor point suitable for ghost placement — always inside a detected room when possible. */
 export function roomFloorCenter(walls: Wall[]): { x: number; z: number } {
+  return roomInteriorPoint(walls);
+}
+
+/** True when the world XZ point lies inside any closed wall polygon. */
+export function pointInWorldRooms(x: number, z: number, walls: Wall[]): boolean {
+  if (!walls.length) return true;
+  const rooms = detectRoomPolygons(walls).map((poly) => poly.map((p) => planToWorld(p)));
+  if (!rooms.length) return true;
+  return rooms.some((room) => pointInPolygon(x, z, room));
+}
+
+/**
+ * Guaranteed-inside seed for placement. AABB/vertex averages can sit outside L-shaped
+ * rooms, so we fall through to a coarse grid sample of the largest polygon.
+ */
+export function roomInteriorPoint(walls: Wall[]): { x: number; z: number } {
   if (!walls.length) return { x: 0, z: 0 };
-  const points = walls.flatMap((w) => [planToWorld(w.start), planToWorld(w.end)]);
-  const xs = points.map((p) => p.x);
-  const zs = points.map((p) => p.z);
-  return {
-    x: (Math.min(...xs) + Math.max(...xs)) / 2,
-    z: (Math.min(...zs) + Math.max(...zs)) / 2,
+  const rooms = detectRoomPolygons(walls).map((poly) => poly.map((p) => planToWorld(p)));
+  if (!rooms.length) {
+    const points = walls.flatMap((w) => [planToWorld(w.start), planToWorld(w.end)]);
+    const xs = points.map((p) => p.x);
+    const zs = points.map((p) => p.z);
+    return {
+      x: (Math.min(...xs) + Math.max(...xs)) / 2,
+      z: (Math.min(...zs) + Math.max(...zs)) / 2,
+    };
+  }
+  const room = [...rooms].sort((a, b) => Math.abs(polygonSignedArea(b)) - Math.abs(polygonSignedArea(a)))[0]!;
+  const xs = room.map((p) => p.x);
+  const zs = room.map((p) => p.z);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minZ = Math.min(...zs);
+  const maxZ = Math.max(...zs);
+  const avg = {
+    x: xs.reduce((sum, v) => sum + v, 0) / xs.length,
+    z: zs.reduce((sum, v) => sum + v, 0) / zs.length,
   };
+  const candidates = [
+    { x: (minX + maxX) / 2, z: (minZ + maxZ) / 2 },
+    avg,
+  ];
+  for (const c of candidates) {
+    if (pointInPolygon(c.x, c.z, room)) return c;
+  }
+  for (let gy = 1; gy <= 10; gy++) {
+    for (let gx = 1; gx <= 10; gx++) {
+      const x = minX + ((maxX - minX) * gx) / 11;
+      const z = minZ + ((maxZ - minZ) * gy) / 11;
+      if (pointInPolygon(x, z, room)) return { x, z };
+    }
+  }
+  return avg;
 }
 
 export function worldToPlan(x: number, z: number): Point {

@@ -8,7 +8,9 @@ import {
   openingConflicts,
   placementConstraint,
   planToWorld,
+  pointInWorldRooms,
   roomFloorCenter,
+  roomInteriorPoint,
   snapToWallSurface,
   worldToPlan,
 } from './placement';
@@ -113,6 +115,26 @@ describe('placement helpers', () => {
     const expected = planToWorld({ x: 420, y: 330 });
     expect(center.x).toBeCloseTo(expected.x, 1);
     expect(center.z).toBeCloseTo(expected.z, 1);
+    expect(pointInWorldRooms(center.x, center.z, rect)).toBe(true);
+  });
+
+  it('keeps L-shaped room seed points inside the polygon', () => {
+    // Classic L: AABB center sits in the missing quadrant.
+    const lShape: Wall[] = [
+      { id: 'a', start: { x: 180, y: 150 }, end: { x: 660, y: 150 }, thickness: 0.15, height: 2.7 },
+      { id: 'b', start: { x: 660, y: 150 }, end: { x: 660, y: 330 }, thickness: 0.15, height: 2.7 },
+      { id: 'c', start: { x: 660, y: 330 }, end: { x: 420, y: 330 }, thickness: 0.15, height: 2.7 },
+      { id: 'd', start: { x: 420, y: 330 }, end: { x: 420, y: 510 }, thickness: 0.15, height: 2.7 },
+      { id: 'e', start: { x: 420, y: 510 }, end: { x: 180, y: 510 }, thickness: 0.15, height: 2.7 },
+      { id: 'f', start: { x: 180, y: 510 }, end: { x: 180, y: 150 }, thickness: 0.15, height: 2.7 },
+    ];
+    const aabb = planToWorld({ x: 420, y: 330 });
+    // AABB mid of the bounding box is on the inner corner / missing bay for this L.
+    const interior = roomInteriorPoint(lShape);
+    expect(pointInWorldRooms(interior.x, interior.z, lShape)).toBe(true);
+    expect(pointInWorldRooms(roomFloorCenter(lShape).x, roomFloorCenter(lShape).z, lShape)).toBe(true);
+    // Sanity: the naive AABB center of the overall bounds is not required to match interior.
+    void aabb;
   });
 
   it('keeps free furniture from protruding through walls', () => {

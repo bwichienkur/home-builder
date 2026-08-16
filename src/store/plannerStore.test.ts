@@ -1,5 +1,6 @@
 import {describe,expect,it} from 'vitest';
 import {wouldOverlapFurniture} from '../lib/collisions';
+import {pointInWorldRooms} from '../lib/geometry/placement';
 import {usePlannerStore} from './plannerStore';
 
 describe('mobile planner defaults',()=>{
@@ -66,6 +67,15 @@ describe('mobile planner defaults',()=>{
     { id:'p', x:pending.x, y:pending.y??0, z:pending.z, width:pending.width, depth:pending.depth, height:pending.height, rotation:pending.rotation },
     usePlannerStore.getState().furniture,
   )).toBe(false);
+  expect(pointInWorldRooms(pending.x, pending.z, usePlannerStore.getState().walls)).toBe(true);
+ });
+
+ it('ghost placement stays inside the room even when seeded outside',()=>{
+  usePlannerStore.setState({ workflowStage:'room', furniture:[], openings:[], openingNotice:'' });
+  usePlannerStore.getState().beginPlacement('ghost-out','Lamp','Lighting',[.3,.3,.8],'#eee',20,20,{mountingType:'floor'});
+  const pending=usePlannerStore.getState().pendingPlacement!;
+  expect(pointInWorldRooms(pending.x, pending.z, usePlannerStore.getState().walls)).toBe(true);
+  expect(Math.hypot(pending.x, pending.z)).toBeLessThan(8);
  });
 
  it('rotates the selected product in place',()=>{

@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import type { CameraMode, FurnitureItem, ManualBomLine, MountingType, Opening, OpeningShape, PendingFloorFill, PlanRoomLabel, Point, RoomType, SceneSnapshot, StudioMode, SurfaceTarget, Tool, UnitSystem, Wall, WorkflowStage } from '../types';
 import { doorSwingZones, furnitureHitsDoorSwing } from '../lib/geometry/doorClearance';
-import { findClearPlacementSpot, wouldOverlapFurniture } from '../lib/collisions';
-import { clampWallMountY, constrainPlacement, openingConflicts, resolveMountingType, roomFloorCenter, WORLD_ORIGIN } from '../lib/geometry/placement';
+import { wouldOverlapFurniture } from '../lib/collisions';
+import { clampWallMountY, constrainPlacement, openingConflicts, pointInWorldRooms, resolveMountingType, roomFloorCenter, WORLD_ORIGIN } from '../lib/geometry/placement';
 import { detectRoomPolygons } from '../lib/geometry/rooms';
 import { perimeterTrimSegments, type PerimeterTrimEdge } from '../lib/geometry/ceilingTrim';
 import { writeRecoverySnapshot } from '../lib/designShare';
@@ -1067,40 +1067,65 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       const center = roomFloorCenter(walls);
       const preferredX = x ?? center.x;
       const preferredZ = z ?? center.z;
-      const mounting = resolveMountingType(meta?.mountingType);
-      const rotation = meta?.rotation ?? 0;
+      // Never seed from a point outside the room (AABB/clone offsets can sit past walls).
+      const start = pointInWorldRooms(preferredX, preferredZ, walls)
+        ? { x: preferredX, z: preferredZ }
+        : center;
       const zones = doorSwingZones(openings, walls);
-      const clear = findClearPlacementSpot(
-        { x: preferredX, z: preferredZ },
-        { width, depth, height, y: meta?.y ?? 0, rotation, mountingType: mounting },
-        [],
-        (cx, cz) => {
-          const trial = placeFurniture(walls, width, depth, height, cx, cz, {
-            ...meta,
-            category,
-            name,
-            live: true,
-          });
-          const probe = {
-            id: '__pending__',
-            x: trial.x,
-            y: trial.y ?? 0,
-            z: trial.z,
-            width,
-            depth,
-            height,
-            rotation: trial.rotation,
-            mountingType: trial.mountingType,
-          };
-          return furnitureHitsDoorSwing(probe, zones) || wouldOverlapFurniture(probe, furniture);
-        },
-      );
-      const placed = placeFurniture(walls, width, depth, height, clear.x, clear.z, {
-        ...meta,
-        category,
-        name,
-        live: true,
-      });
+      const placeAt = (cx: number, cz: number) =>
+        placeFurniture(walls, width, depth, height, cx, cz, {
+          ...meta,
+          category,
+          name,
+          live: true,
+        });
+      const isClearInside = (trial: ReturnType<typeof placeFurniture>) => {
+        if (!pointInWorldRooms(trial.x, trial.z, walls)) return false;
+        const probe = {
+          id: '__pending__',
+          x: trial.x,
+          y: trial.y ?? 0,
+          z: trial.z,
+          width,
+          depth,
+          height,
+          rotation: trial.rotation,
+          mountingType: trial.mountingType,
+        };
+        if (furnitureHitsDoorSwing(probe, zones)) return false;
+        if (wouldOverlapFurniture(probe, furniture)) return false;
+        return true;
+      };
+      // Search returns the constrained in-room pose — never the raw spiral probe.
+      let placed: ReturnType<typeof placeFurniture> | null = null;
+      const seed = placeAt(start.x, start.z);
+      if (isClearInside(seed)) {
+        placed = seed;
+      } else {
+        const step = 0.4;
+        outer: for (let ring = 1; ring <= 14; ring++) {
+          for (let i = -ring; i <= ring; i++) {
+            const probes = [
+              { x: start.x + i * step, z: start.z - ring * step },
+              { x: start.x + i * step, z: start.z + ring * step },
+              { x: start.x - ring * step, z: start.z + i * step },
+              { x: start.x + ring * step, z: start.z + i * step },
+            ];
+            for (const p of probes) {
+              // Skip probes that aren't even in the room — avoids docking to the exterior face.
+              if (!pointInWorldRooms(p.x, p.z, walls)) continue;
+              const trial = placeAt(p.x, p.z);
+              if (isClearInside(trial)) {
+                placed = trial;
+                break outer;
+              }
+            }
+          }
+        }
+      }
+      if (!placed || !pointInWorldRooms(placed.x, placed.z, walls)) {
+        placed = placeAt(center.x, center.z);
+      }
       set({
         pendingFloorFill: null,
         pendingPlacement: {
