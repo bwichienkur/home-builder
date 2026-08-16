@@ -1,9 +1,12 @@
 /**
  * Dimensionally realistic residential furnishings for room planning.
  * dims = [width, depth, height] in meters (US common sizes converted from inches).
- * Colored proxies — no proprietary brand models.
+ * CC0 Poly Haven glTF + ambientCG materials via enrichCatalogSurfaces — no proprietary brand models.
  */
-export const residentialFurniture = [
+import { enrichCatalogSurfaces } from './materialPacks';
+import type { CatalogItem } from './catalogData';
+
+const residentialFurnitureBase = [
   // ── Bedroom ──────────────────────────────────────────────────────────
   {
     id: 'twin-platform-bed',
@@ -1157,3 +1160,7 @@ export const residentialFurniture = [
     note: '≈ 27×32×39 in',
   },
 ];
+
+export const residentialFurniture = enrichCatalogSurfaces(
+  residentialFurnitureBase as CatalogItem[],
+);

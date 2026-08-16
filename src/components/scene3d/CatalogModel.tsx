@@ -3,6 +3,7 @@ import { Suspense, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import type { Group } from 'three';
 import type { FurnitureItem } from '../../types';
+import { CatalogSurfaceMaterial, type CatalogSurfaceMaps } from './CatalogSurfaceMaterial';
 
 function useFittedClone(scene: Group, width: number, depth: number, height: number) {
   const clone = useMemo(() => scene.clone(true) as Group, [scene]);
@@ -156,6 +157,7 @@ export function ProxyFurniture({
   colliding,
   selected,
   textureUrl,
+  surfaceMaps,
   onSelect,
   onPointerDown,
   onPointerMove,
@@ -166,6 +168,7 @@ export function ProxyFurniture({
   colliding?: boolean;
   selected?: boolean;
   textureUrl?: string;
+  surfaceMaps?: CatalogSurfaceMaps;
   onSelect?: (e: any) => void;
   onPointerDown?: (e: any) => void;
   onPointerMove?: (e: any) => void;
@@ -177,6 +180,20 @@ export function ProxyFurniture({
   const category = item.category.toLowerCase();
   const name = item.name.toLowerCase();
   const halo = <SelectionHalo width={item.width} depth={item.depth} height={item.height} selected={selected} colliding={colliding} />;
+  const span = Math.max(item.width, item.depth, 0.4);
+  const Surface = ({
+    worldSpan = span,
+    roughness,
+    metalness,
+    c = color,
+  }: {
+    worldSpan?: number;
+    roughness?: number;
+    metalness?: number;
+    c?: string;
+  }) => (
+    <CatalogSurfaceMaterial color={c} maps={surfaceMaps} worldSpan={worldSpan} roughness={roughness} metalness={metalness} />
+  );
 
   // Floor / table lamps — simple stand + shade (no oversized sample GLBs).
   if (category.includes('lighting') && item.mountingType !== 'wall' && item.mountingType !== 'ceiling') {
@@ -325,7 +342,7 @@ export function ProxyFurniture({
         {/* Platform / box spring */}
         <mesh position={[0, item.height * 0.22, 0]} castShadow receiveShadow>
           <boxGeometry args={[item.width * 0.96, item.height * 0.28, item.depth * 0.92]} />
-          <meshStandardMaterial color={frame} roughness={0.75} />
+          <Surface c={frame} worldSpan={span} roughness={0.75} />
         </mesh>
         {/* Mattress */}
         <mesh position={[0, item.height * 0.42, 0.02]} castShadow receiveShadow>
@@ -344,7 +361,7 @@ export function ProxyFurniture({
         {/* Headboard */}
         <mesh position={[0, item.height * 0.7, -item.depth * 0.44]} castShadow>
           <boxGeometry args={[item.width, item.height * 0.55, item.depth * 0.08]} />
-          <meshStandardMaterial color={frame} roughness={0.7} />
+          <Surface c={frame} worldSpan={item.width} roughness={0.7} />
         </mesh>
         {halo}
       </group>
@@ -357,19 +374,19 @@ export function ProxyFurniture({
       <group {...handlers}>
         <mesh position={[0, seatH * 0.55, 0]} castShadow receiveShadow>
           <boxGeometry args={[item.width, seatH, item.depth * 0.9]} />
-          <meshStandardMaterial color={color} roughness={0.88} />
+          <Surface worldSpan={span} roughness={0.88} />
         </mesh>
         <mesh position={[0, item.height * 0.72, -item.depth * 0.32]} castShadow>
           <boxGeometry args={[item.width * 0.98, item.height * 0.5, item.depth * 0.28]} />
-          <meshStandardMaterial color={color} roughness={0.86} />
+          <Surface worldSpan={item.width} roughness={0.86} />
         </mesh>
         <mesh position={[-item.width * 0.46, item.height * 0.55, 0]} castShadow>
           <boxGeometry args={[item.width * 0.1, item.height * 0.55, item.depth * 0.88]} />
-          <meshStandardMaterial color={color} roughness={0.84} />
+          <Surface worldSpan={item.depth} roughness={0.84} />
         </mesh>
         <mesh position={[item.width * 0.46, item.height * 0.55, 0]} castShadow>
           <boxGeometry args={[item.width * 0.1, item.height * 0.55, item.depth * 0.88]} />
-          <meshStandardMaterial color={color} roughness={0.84} />
+          <Surface worldSpan={item.depth} roughness={0.84} />
         </mesh>
         {halo}
       </group>
@@ -477,11 +494,11 @@ export function ProxyFurniture({
       <group {...handlers}>
         <mesh position={[0, item.height / 2, 0]} castShadow receiveShadow>
           <boxGeometry args={[item.width, item.height, item.depth]} />
-          <meshStandardMaterial color={color} roughness={0.28} metalness={0.08} />
+          <Surface worldSpan={span} roughness={0.28} metalness={0.08} />
         </mesh>
         <mesh position={[0, item.height * 0.92, 0]}>
           <boxGeometry args={[item.width * 0.995, item.height * 0.15, item.depth * 0.995]} />
-          <meshPhysicalMaterial color={color} roughness={0.18} clearcoat={0.45} clearcoatRoughness={0.25} />
+          <Surface worldSpan={span} roughness={0.18} />
         </mesh>
         {halo}
       </group>
@@ -495,16 +512,16 @@ export function ProxyFurniture({
       <group {...handlers}>
         <mesh position={[0, bodyH / 2, 0]} castShadow receiveShadow>
           <boxGeometry args={[item.width, bodyH, item.depth]} />
-          <meshStandardMaterial color={color} roughness={0.7} />
+          <Surface worldSpan={span} roughness={0.7} />
         </mesh>
         {/* Door reveals */}
         <mesh position={[-item.width * 0.22, bodyH * 0.55, item.depth / 2 + 0.004]}>
           <planeGeometry args={[item.width * 0.38, bodyH * 0.7]} />
-          <meshStandardMaterial color={color} roughness={0.62} />
+          <Surface worldSpan={item.width * 0.5} roughness={0.62} />
         </mesh>
         <mesh position={[item.width * 0.22, bodyH * 0.55, item.depth / 2 + 0.004]}>
           <planeGeometry args={[item.width * 0.38, bodyH * 0.7]} />
-          <meshStandardMaterial color={color} roughness={0.62} />
+          <Surface worldSpan={item.width * 0.5} roughness={0.62} />
         </mesh>
         <mesh position={[-item.width * 0.08, bodyH * 0.55, item.depth / 2 + 0.008]} castShadow>
           <boxGeometry args={[0.015, 0.06, 0.02]} />
@@ -517,7 +534,12 @@ export function ProxyFurniture({
         {name.includes('island') && (
           <mesh position={[0, bodyH + topH / 2, 0]} castShadow>
             <boxGeometry args={[item.width * 1.04, topH, item.depth * 1.04]} />
-            <meshStandardMaterial color="#cfd4d5" roughness={0.25} />
+            <CatalogSurfaceMaterial
+              color="#cfd4d5"
+              maps={surfaceMaps}
+              worldSpan={span}
+              roughness={0.25}
+            />
           </mesh>
         )}
         {/* Toe kick */}
@@ -535,13 +557,13 @@ export function ProxyFurniture({
       <group {...handlers}>
         <mesh position={[0, item.height / 2, 0]} castShadow receiveShadow>
           <boxGeometry args={[item.width, item.height, item.depth]} />
-          <meshStandardMaterial color={color} roughness={0.72} />
+          <Surface worldSpan={span} roughness={0.72} />
         </mesh>
         {[0.28, 0.55, 0.78].map((t, i) =>
           t * item.height < item.height - 0.05 ? (
             <mesh key={i} position={[0, item.height * t, item.depth / 2 + 0.005]} castShadow>
               <boxGeometry args={[item.width * 0.82, item.height * 0.16, 0.02]} />
-              <meshStandardMaterial color={color} roughness={0.65} />
+              <Surface worldSpan={item.width} roughness={0.65} />
             </mesh>
           ) : null,
         )}
@@ -556,16 +578,16 @@ export function ProxyFurniture({
       <group {...handlers}>
         <mesh position={[-item.width / 2 + 0.02, item.height / 2, 0]} castShadow>
           <boxGeometry args={[0.04, item.height, item.depth]} />
-          <meshStandardMaterial color={color} roughness={0.7} />
+          <Surface worldSpan={item.height} roughness={0.7} />
         </mesh>
         <mesh position={[item.width / 2 - 0.02, item.height / 2, 0]} castShadow>
           <boxGeometry args={[0.04, item.height, item.depth]} />
-          <meshStandardMaterial color={color} roughness={0.7} />
+          <Surface worldSpan={item.height} roughness={0.7} />
         </mesh>
         {Array.from({ length: shelves + 1 }, (_, i) => (
           <mesh key={i} position={[0, (i / shelves) * item.height, 0]} castShadow receiveShadow>
             <boxGeometry args={[item.width, 0.03, item.depth]} />
-            <meshStandardMaterial color={color} roughness={0.68} />
+            <Surface worldSpan={item.width} roughness={0.68} />
           </mesh>
         ))}
         {/* Book blocks */}
@@ -588,7 +610,7 @@ export function ProxyFurniture({
       <group {...handlers}>
         <mesh position={[0, item.height - topH / 2, 0]} castShadow receiveShadow>
           <boxGeometry args={[item.width, topH, item.depth]} />
-          <meshStandardMaterial color={color} roughness={0.55} />
+          <Surface worldSpan={span} roughness={0.55} />
         </mesh>
         {[
           [-0.42, -0.4],
@@ -598,7 +620,7 @@ export function ProxyFurniture({
         ].map(([lx, lz], i) => (
           <mesh key={i} position={[item.width * lx, (item.height - topH) / 2, item.depth * lz]} castShadow>
             <boxGeometry args={[0.05, item.height - topH, 0.05]} />
-            <meshStandardMaterial color="#5a4030" roughness={0.65} />
+            <Surface c="#5a4030" worldSpan={0.4} roughness={0.65} />
           </mesh>
         ))}
         {halo}
@@ -630,7 +652,7 @@ export function ProxyFurniture({
     <group {...handlers}>
       <mesh position={[0, item.height / 2, 0]} castShadow receiveShadow>
         <boxGeometry args={[item.width, item.height, item.depth]} />
-        <meshStandardMaterial color={color} roughness={0.78} metalness={0.04} />
+        <Surface worldSpan={span} roughness={0.78} metalness={0.04} />
       </mesh>
       {halo}
     </group>
@@ -642,6 +664,7 @@ export function FurnitureVisual({
   lowUrl,
   fullUrl,
   textureUrl,
+  surfaceMaps,
   colliding,
   selected,
   onSelect,
@@ -654,6 +677,7 @@ export function FurnitureVisual({
   lowUrl?: string;
   fullUrl?: string;
   textureUrl?: string;
+  surfaceMaps?: CatalogSurfaceMaps;
   colliding?: boolean;
   selected?: boolean;
   onSelect?: (e: any) => void;
@@ -669,6 +693,7 @@ export function FurnitureVisual({
         colliding={colliding}
         selected={selected}
         textureUrl={textureUrl}
+        surfaceMaps={surfaceMaps}
         onSelect={onSelect}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -683,7 +708,7 @@ export function FurnitureVisual({
 
   return (
     <group onClick={onSelect} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerCancel}>
-      <Suspense fallback={<ProxyFurniture item={item} colliding={colliding} selected={selected} textureUrl={textureUrl} />}>
+      <Suspense fallback={<ProxyFurniture item={item} colliding={colliding} selected={selected} textureUrl={textureUrl} surfaceMaps={surfaceMaps} />}>
         <CatalogModel lowUrl={low} fullUrl={full} width={item.width} depth={item.depth} height={item.height} />
       </Suspense>
       <SelectionHalo width={item.width} depth={item.depth} height={item.height} selected={selected} colliding={colliding} />
