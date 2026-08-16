@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { ChevronRight, Grid2X2, X } from 'lucide-react';
 import { usePlannerStore } from '../../store/plannerStore';
-import { wallLengthMeters } from '../../lib/geometry/snapping';
 import { formatLength, parseLength } from '../../lib/measurements';
 import { olsenHousePlans } from '../../lib/housePlans/olsenPlans';
 import { planRoomSizeFeet } from '../../lib/housePlans/buildPlan';
@@ -409,14 +408,12 @@ function WallProperties({ wall }: { wall: Wall }) {
   const remove = usePlannerStore((s) => s.deleteOpening);
   const selectOpening = usePlannerStore((s) => s.selectOpening);
   const updateWall = usePlannerStore((s) => s.updateWall);
-  const setLength = usePlannerStore((s) => s.setWallLength);
   const split = usePlannerStore((s) => s.splitWall);
   const offset = usePlannerStore((s) => s.offsetWall);
   const deleteSelected = usePlannerStore((s) => s.deleteSelected);
   const unit = usePlannerStore((s) => s.unitSystem);
   return (
     <>
-      <LengthField label="Exact length" value={wallLengthMeters(wall.start, wall.end)} min={0.25} onChange={(value) => setLength(wall.id, value)} autoFocus />
       <LengthField label="Thickness" value={wall.thickness} min={0.05} onChange={(value) => updateWall(wall.id, { thickness: value })} />
       <LengthField label="Height" value={wall.height} min={2} onChange={(value) => updateWall(wall.id, { height: value })} />
       <div className="wall-actions">
@@ -424,7 +421,7 @@ function WallProperties({ wall }: { wall: Wall }) {
         <button type="button" onClick={() => split(wall.id)}>Split wall</button>
         <button type="button" onClick={() => offset(wall.id, 0.25)}>Move +{unit === 'metric' ? '25 cm' : '10 in'}</button>
       </div>
-      <p className="muted">Edit L / W / H in the fields around the wall on the plan.</p>
+      <p className="muted">Drag a wall on the plan to resize the room. Exact length editing is off for now.</p>
       <span className="template-label">Connect rooms</span>
       <div className="wall-actions">
         <button type="button" onClick={() => addOpening(wall.id, 'door')}>
