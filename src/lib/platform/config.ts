@@ -20,11 +20,16 @@ export const platformConfig = {
   /** local = localStorage CRM; http = sync via VITE_API_URL /api/crm. */
   crmProvider: (env('VITE_CRM_PROVIDER', 'local') === 'http' ? 'http' : 'local') as CrmProviderId,
   apiUrl: env('VITE_API_URL', '').replace(/\/$/, ''),
+  /** True when a remote API base URL is configured (cloud-capable). */
+  cloudConfigured(): boolean {
+    return Boolean(this.apiUrl);
+  },
   /** Shown in Settings so operators know which path is active. */
   label() {
     const auth = this.authProvider === 'local' ? 'Local auth ($0)' : 'Remote auth (API/IdP)';
     const crm = this.crmProvider === 'local' ? 'Browser CRM ($0)' : 'HTTP CRM (API/DB)';
-    return `${auth} · ${crm}`;
+    const cloud = this.cloudConfigured() ? 'Cloud API' : 'Browser save only';
+    return `${auth} · ${crm} · ${cloud}`;
   },
 };
 

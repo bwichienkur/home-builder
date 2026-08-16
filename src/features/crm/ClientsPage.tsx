@@ -1,5 +1,6 @@
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import type { Client } from '../../lib/crm/types';
+import { listSharedDesigns, type SharedDesign } from '../../lib/designShare';
 import { useCrmStore } from '../../store/crmStore';
 import { CustomFieldsInputs, EntityCrmPage, EntityDrawer } from './EntityCrmPage';
 
@@ -20,13 +21,28 @@ export function ClientsPage() {
   const upsert = useCrmStore((s) => s.upsertClient);
   const archive = useCrmStore((s) => s.archiveEntity);
   const [draft, setDraft] = useState<Partial<Client> & { name: string } | null>(null);
+  const [designs, setDesigns] = useState<SharedDesign[]>(() => listSharedDesigns());
+
+  useEffect(() => {
+    const refresh = () => setDesigns(listSharedDesigns());
+    refresh();
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', refresh);
+    };
+  }, [draft, clients]);
+
+  const buildsFor = (clientId: string) =>
+    designs.filter((d) => (d.payload as { clientId?: string | null }).clientId === clientId);
 
   return (
     <>
       <EntityCrmPage
         entity="client"
         title="Clients"
-        lede="Manage homeowners and project contacts. Export a template, import CSV, or add manually."
+        lede="Homeowners and job contacts. Link a build from the studio project menu, then open it here."
         fields={fields}
         rows={clients}
         templateExample={['Jane Doe', 'jane@example.com', '555-0100', 'Doe Homes', '12 Oak St', 'Lead from showroom']}
@@ -35,6 +51,24 @@ export function ClientsPage() {
           { key: 'email', label: 'Email', render: (r) => r.email || '—' },
           { key: 'phone', label: 'Phone', render: (r) => r.phone || '—' },
           { key: 'company', label: 'Company', render: (r) => r.company || '—' },
+          {
+            key: 'builds',
+            label: 'Builds',
+            render: (r) => {
+              const linked = buildsFor(r.id);
+              if (!linked.length) return '—';
+              return (
+                <span className="client-builds">
+                  {linked.slice(0, 3).map((d) => (
+                    <a key={d.code} href={`/build?design=${d.code}`} className="client-build-link">
+                      {d.name || d.code}
+                    </a>
+                  ))}
+                  {linked.length > 3 ? ` +${linked.length - 3}` : ''}
+                </span>
+              );
+            },
+          },
         ]}
         onAdd={() => setDraft(empty())}
         onEdit={(row) => setDraft({ ...row })}
@@ -99,6 +133,22 @@ export function ClientsPage() {
               Notes
               <textarea value={draft.notes ?? ''} onChange={(e) => setDraft({ ...draft, notes: e.target.value })} />
             </label>
+            {draft.id && (
+              <div className="client-linked-builds">
+                <strong>Linked builds</strong>
+                {buildsFor(draft.id).length === 0 ? (
+                  <p className="muted">None yet — open Build, then choose this client in the project menu and Save.</p>
+                ) : (
+                  <ul>
+                    {buildsFor(draft.id).map((d) => (
+                      <li key={d.code}>
+                        <a href={`/build?design=${d.code}`}>{d.name || d.code}</a>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
             <CustomFieldsInputs
               entity="client"
               fields={fields}

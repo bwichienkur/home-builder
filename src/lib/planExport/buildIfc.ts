@@ -9,6 +9,14 @@ export type IfcExportInput = {
   openings: Opening[];
   planRooms: PlanRoomLabel[];
   unitSystem?: UnitSystem;
+  /** When set, emit one IFCBUILDINGSTOREY per entry (multi-floor). */
+  floors?: Array<{
+    floorName: string;
+    walls: Wall[];
+    openings: Opening[];
+    planRooms: PlanRoomLabel[];
+    elevationM?: number;
+  }>;
 };
 
 function boundsOf(points: Point[]) {
@@ -70,64 +78,91 @@ export function buildPlanIfc(input: IfcExportInput): string {
   const sitePlace = add(`IFCLOCALPLACEMENT($,#${worldAxis})`);
   const site = add(`IFCSITE('${gid()}',#${owner},'Site',$,$,#${sitePlace},$,$,.ELEMENT.,$,$,$,$,$)`);
   const building = add(`IFCBUILDING('${gid()}',#${owner},'Building',$,$,#${sitePlace},$,$,.ELEMENT.,$,$,$)`);
-  const storey = add(
-    `IFCBUILDINGSTOREY('${gid()}',#${owner},'${esc(input.floorName || 'Level 1')}',$,$,#${sitePlace},$,$,.ELEMENT.,0.)`,
-  );
   add(`IFCRELAGGREGATES('${gid()}',#${owner},$,$,#${project},(#${site}))`);
   add(`IFCRELAGGREGATES('${gid()}',#${owner},$,$,#${site},(#${building}))`);
-  add(`IFCRELAGGREGATES('${gid()}',#${owner},$,$,#${building},(#${storey}))`);
 
-  const contained: number[] = [];
+  const levels =
+    input.floors && input.floors.length
+      ? input.floors
+      : [
+          {
+            floorName: input.floorName || 'Level 1',
+            walls: input.walls,
+            openings: input.openings,
+            planRooms: input.planRooms,
+            elevationM: 0,
+          },
+        ];
 
-  for (const wall of input.walls) {
-    const a = toM(wall.start);
-    const bPt = toM(wall.end);
-    const len = Math.max(0.05, wallLengthM(wall));
-    const ang = Math.atan2(bPt.y - a.y, bPt.x - a.x);
-    const wallPt = add(`IFCCARTESIANPOINT((${a.x.toFixed(4)},${a.y.toFixed(4)},0.))`);
-    const wallDir = add(`IFCDIRECTION((${Math.cos(ang).toFixed(6)},${Math.sin(ang).toFixed(6)},0.))`);
-    const wallAxis = add(`IFCAXIS2PLACEMENT3D(#${wallPt},#${dirZ},#${wallDir})`);
-    const wallPlace = add(`IFCLOCALPLACEMENT(#${sitePlace},#${wallAxis})`);
-    const profile = add(`IFCRECTANGLEPROFILEDEF(.AREA.,$,$,${len.toFixed(4)},${(wall.thickness || 0.15).toFixed(4)})`);
-    const solid = add(`IFCEXTRUDEDAREASOLID(#${profile},#${worldAxis},#${dirZ},${wall.height.toFixed(4)})`);
-    const shape = add(`IFCSHAPEREPRESENTATION(#${bodyCtx},'Body','SweptSolid',(#${solid}))`);
-    const rep = add(`IFCPRODUCTDEFINITIONSHAPE($,$,(#${shape}))`);
-    const wallId = add(
-      `IFCWALLSTANDARDCASE('${gid()}',#${owner},'${esc(wall.id)}',$,$,#${wallPlace},#${rep},$)`,
+  const storeyIds: number[] = [];
+  for (let li = 0; li < levels.length; li++) {
+    const level = levels[li]!;
+    const elev = level.elevationM ?? li * 3;
+    const elevPt = add(`IFCCARTESIANPOINT((0.,0.,${elev.toFixed(4)}))`);
+    const elevAxis = add(`IFCAXIS2PLACEMENT3D(#${elevPt},#${dirZ},#${dirX})`);
+    const elevPlace = add(`IFCLOCALPLACEMENT(#${sitePlace},#${elevAxis})`);
+    const storey = add(
+      `IFCBUILDINGSTOREY('${gid()}',#${owner},'${esc(level.floorName)}',$,$,#${elevPlace},$,$,.ELEMENT.,${elev.toFixed(4)})`,
     );
-    contained.push(wallId);
+    storeyIds.push(storey);
+    const contained: number[] = [];
 
-    for (const opening of input.openings.filter((o) => o.wallId === wall.id)) {
-      const ox = (opening.offset - 0.5) * len;
-      const openPt = add(`IFCCARTESIANPOINT((${ox.toFixed(4)},0.,${opening.sill.toFixed(4)}))`);
-      const openAxis = add(`IFCAXIS2PLACEMENT3D(#${openPt},#${dirZ},#${dirX})`);
-      const openPlace = add(`IFCLOCALPLACEMENT(#${wallPlace},#${openAxis})`);
-      const openProf = add(
-        `IFCRECTANGLEPROFILEDEF(.AREA.,$,$,${opening.width.toFixed(4)},${(wall.thickness || 0.15).toFixed(4)})`,
+    for (const wall of level.walls) {
+      const a = toM(wall.start);
+      const bPt = toM(wall.end);
+      const len = Math.max(0.05, wallLengthM(wall));
+      const ang = Math.atan2(bPt.y - a.y, bPt.x - a.x);
+      const wallPt = add(`IFCCARTESIANPOINT((${a.x.toFixed(4)},${a.y.toFixed(4)},0.))`);
+      const wallDir = add(`IFCDIRECTION((${Math.cos(ang).toFixed(6)},${Math.sin(ang).toFixed(6)},0.))`);
+      const wallAxis = add(`IFCAXIS2PLACEMENT3D(#${wallPt},#${dirZ},#${wallDir})`);
+      const wallPlace = add(`IFCLOCALPLACEMENT(#${elevPlace},#${wallAxis})`);
+      const profile = add(
+        `IFCRECTANGLEPROFILEDEF(.AREA.,$,$,${len.toFixed(4)},${(wall.thickness || 0.15).toFixed(4)})`,
       );
-      const openSolid = add(`IFCEXTRUDEDAREASOLID(#${openProf},#${worldAxis},#${dirZ},${opening.height.toFixed(4)})`);
-      const openShape = add(`IFCSHAPEREPRESENTATION(#${bodyCtx},'Body','SweptSolid',(#${openSolid}))`);
-      const openRep = add(`IFCPRODUCTDEFINITIONSHAPE($,$,(#${openShape}))`);
-      const openId = add(
-        `IFCOPENINGELEMENT('${gid()}',#${owner},'${esc(opening.id)}',$,$,#${openPlace},#${openRep},$)`,
+      const solid = add(`IFCEXTRUDEDAREASOLID(#${profile},#${worldAxis},#${dirZ},${wall.height.toFixed(4)})`);
+      const shape = add(`IFCSHAPEREPRESENTATION(#${bodyCtx},'Body','SweptSolid',(#${solid}))`);
+      const rep = add(`IFCPRODUCTDEFINITIONSHAPE($,$,(#${shape}))`);
+      const wallId = add(
+        `IFCWALLSTANDARDCASE('${gid()}',#${owner},'${esc(wall.id)}',$,$,#${wallPlace},#${rep},$)`,
       );
-      add(`IFCRELVOIDSELEMENT('${gid()}',#${owner},$,$,#${wallId},#${openId})`);
+      contained.push(wallId);
+
+      for (const opening of level.openings.filter((o) => o.wallId === wall.id)) {
+        const ox = (opening.offset - 0.5) * len;
+        const openPt = add(`IFCCARTESIANPOINT((${ox.toFixed(4)},0.,${opening.sill.toFixed(4)}))`);
+        const openAxis = add(`IFCAXIS2PLACEMENT3D(#${openPt},#${dirZ},#${dirX})`);
+        const openPlace = add(`IFCLOCALPLACEMENT(#${wallPlace},#${openAxis})`);
+        const openProf = add(
+          `IFCRECTANGLEPROFILEDEF(.AREA.,$,$,${opening.width.toFixed(4)},${(wall.thickness || 0.15).toFixed(4)})`,
+        );
+        const openSolid = add(
+          `IFCEXTRUDEDAREASOLID(#${openProf},#${worldAxis},#${dirZ},${opening.height.toFixed(4)})`,
+        );
+        const openShape = add(`IFCSHAPEREPRESENTATION(#${bodyCtx},'Body','SweptSolid',(#${openSolid}))`);
+        const openRep = add(`IFCPRODUCTDEFINITIONSHAPE($,$,(#${openShape}))`);
+        const openId = add(
+          `IFCOPENINGELEMENT('${gid()}',#${owner},'${esc(opening.id)}',$,$,#${openPlace},#${openRep},$)`,
+        );
+        add(`IFCRELVOIDSELEMENT('${gid()}',#${owner},$,$,#${wallId},#${openId})`);
+      }
+    }
+
+    for (const room of level.planRooms) {
+      if (room.points.length < 3) continue;
+      const spaceId = add(
+        `IFCSPACE('${gid()}',#${owner},'${esc(room.name)}',$,$,#${elevPlace},$,$,.ELEMENT.,.INTERNAL.,$)`,
+      );
+      contained.push(spaceId);
+    }
+
+    if (contained.length) {
+      add(
+        `IFCRELCONTAINEDINSPATIALSTRUCTURE('${gid()}',#${owner},$,$,(${contained.map((c) => `#${c}`).join(',')}),#${storey})`,
+      );
     }
   }
 
-  for (const room of input.planRooms) {
-    if (room.points.length < 3) continue;
-    const spaceId = add(
-      `IFCSPACE('${gid()}',#${owner},'${esc(room.name)}',$,$,#${sitePlace},$,$,.ELEMENT.,.INTERNAL.,$)`,
-    );
-    contained.push(spaceId);
-  }
-
-  if (contained.length) {
-    add(
-      `IFCRELCONTAINEDINSPATIALSTRUCTURE('${gid()}',#${owner},$,$,(${contained.map((c) => `#${c}`).join(',')}),#${storey})`,
-    );
-  }
+  add(`IFCRELAGGREGATES('${gid()}',#${owner},$,$,#${building},(${storeyIds.map((s) => `#${s}`).join(',')}))`);
 
   return [
     'ISO-10303-21;',

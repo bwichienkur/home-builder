@@ -24,7 +24,7 @@ describe('residential furniture pack', () => {
     const sofa = residentialFurniture.find((i) => i.id === 'sofa-three-seat');
     const cab = residentialFurniture.find((i) => i.id === 'base-cab-36');
     expect(sofa?.modelUrl).toMatch(/\/catalog\/models\//);
-    expect(cab?.textureUrl).toMatch(/\/catalog\/materials\/pbr\//);
+    expect(cab?.modelUrl).toMatch(/\/catalog\/models\/quaternius\//);
   });
 
   it('includes floor-fill flooring finishes with visible textures', () => {

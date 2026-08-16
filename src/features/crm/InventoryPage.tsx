@@ -86,8 +86,8 @@ export function InventoryPage() {
     <>
       <EntityCrmPage
         entity="inventory"
-        title="Inventory"
-        lede="Products for quoting and the Build shop. Fields match plan/room builder placement, pricing, materials, and assets."
+        title="Materials"
+        lede="FF&E and finish SKUs for quoting and the Build shop. Fields match placement, pricing, takeoff units, and assets."
         fields={fields}
         rows={inventory}
         templateExample={[

@@ -131,6 +131,30 @@ export const MODEL_PACKS = {
     modelUrl: '/catalog/models/bathroom/towel.glb',
     lowPolyModelUrl: '/catalog/models/bathroom/towel.glb',
   },
+  bedKing: {
+    modelUrl: '/catalog/models/quaternius/bed-king.glb',
+    lowPolyModelUrl: '/catalog/models/quaternius/bed-king.glb',
+  },
+  bedSingle: {
+    modelUrl: '/catalog/models/quaternius/bed-single.glb',
+    lowPolyModelUrl: '/catalog/models/quaternius/bed-single.glb',
+  },
+  cabinetBase: {
+    modelUrl: '/catalog/models/quaternius/cabinet-base.glb',
+    lowPolyModelUrl: '/catalog/models/quaternius/cabinet-base.glb',
+  },
+  cabinetTall: {
+    modelUrl: '/catalog/models/quaternius/cabinet-tall.glb',
+    lowPolyModelUrl: '/catalog/models/quaternius/cabinet-tall.glb',
+  },
+  washer: {
+    modelUrl: '/catalog/models/quaternius/washer.glb',
+    lowPolyModelUrl: '/catalog/models/quaternius/washer.glb',
+  },
+  bookshelf: {
+    modelUrl: '/catalog/models/quaternius/bookshelf.glb',
+    lowPolyModelUrl: '/catalog/models/quaternius/bookshelf.glb',
+  },
 } as const;
 
 type Enrichable = {
@@ -199,6 +223,22 @@ export function enrichCatalogSurfaces<T extends Enrichable>(items: T[]): T[] {
     if (id.startsWith('shower-enclosure')) return withModel(item, MODEL_PACKS.shower);
     if (id === 'bathroom-mirror') return withModel(item, MODEL_PACKS.bathMirror);
     if (id === 'bath-towel') return withModel(item, MODEL_PACKS.towel);
+
+    // Beds / cabinets / appliances — Quaternius CC0
+    if (id === 'king-platform-bed' || id === 'cal-king-platform-bed' || id === 'queen-bed') {
+      return withModel(item, MODEL_PACKS.bedKing);
+    }
+    if (id === 'twin-platform-bed' || id === 'full-platform-bed') {
+      return withModel(item, MODEL_PACKS.bedSingle);
+    }
+    if (id.startsWith('base-cab-') || (id.startsWith('vanity-') && !id.includes('top')) || id === 'island-base-60') {
+      return withModel(item, MODEL_PACKS.cabinetBase);
+    }
+    if (id.startsWith('wall-cab-') || id.includes('pantry')) {
+      return withModel(item, MODEL_PACKS.cabinetTall);
+    }
+    if (id === 'washer-27' || id === 'dryer-27') return withModel(item, MODEL_PACKS.washer);
+    if (id.includes('bookshelf') || id.includes('bookcase')) return withModel(item, MODEL_PACKS.bookshelf);
 
     // Millwork / soft-goods proxies — ambientCG PBR
     if (cat === 'trim' || name.includes('crown') || name.includes('baseboard') || name.includes('chair rail')) {

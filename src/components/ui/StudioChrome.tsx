@@ -244,11 +244,6 @@ export function StudioChrome({
   }, [atPlanLevel, isTop, pendingRoomShape, pendingAttachMode, setPendingRoomShape, setPendingAttachMode]);
 
   useEffect(() => {
-    // Walls tool removed from the rail — keep planWallTool off.
-    if (planWallTool) setPlanWallTool(false);
-  }, [planWallTool, setPlanWallTool]);
-
-  useEffect(() => {
     const hasRail = showPlanRail || showCatalogRail;
     if (hasRail) document.body.dataset.rightRail = '1';
     else delete document.body.dataset.rightRail;
@@ -425,7 +420,8 @@ export function StudioChrome({
           <button
             className="studio-bag"
             onClick={openBom}
-            aria-label={`${itemCount} products, estimated total $${total.toFixed(2)}`}
+            aria-label={`${itemCount} FF&E items, sell total $${total.toFixed(2)} — open list and estimate`}
+            title="FF&E list & builder estimate"
           >
             <span>
               <ShoppingBag size={18} />
@@ -445,6 +441,10 @@ export function StudioChrome({
             {takeoff.exteriorWallLengthM > 0 && (
               <span title="Exterior wall length">{formatLength(takeoff.exteriorWallLengthM, unitSystem)} ext</span>
             )}
+            <span title="Drywall both faces (net)">
+              {formatArea(takeoff.drywallAreaM2, unitSystem)} drywall
+            </span>
+            <span title="Studs at 16 in OC">{takeoff.studCount} studs</span>
             <span title="Doors / windows / openings">
               {takeoff.doorCount} dr · {takeoff.windowCount} win
               {takeoff.passageCount ? ` · ${takeoff.passageCount} open` : ''}
@@ -622,6 +622,17 @@ export function StudioChrome({
           >
             <SlidersHorizontal />
             <span>Edit</span>
+          </button>
+          <button
+            type="button"
+            className={planWallTool ? 'is-active' : ''}
+            onClick={() => setPlanWallTool(!planWallTool)}
+            aria-label="Wall dims — select a room wall to edit length"
+            title="Wall dims — select a room wall to edit length"
+            aria-pressed={planWallTool}
+          >
+            <Square />
+            <span>Walls</span>
           </button>
           <button
             type="button"
