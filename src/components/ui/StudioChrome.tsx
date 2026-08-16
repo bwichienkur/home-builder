@@ -19,6 +19,8 @@ import {
   Plus,
   Redo2,
   RotateCw,
+  Save,
+  Share2,
   ShoppingBag,
   SlidersHorizontal,
   Sofa,
@@ -61,6 +63,9 @@ type Props = {
   openBom: () => void;
   openCategory: (category: string) => void;
   onOpenInspector: () => void;
+  /** Quick-access project actions — keep Save/Share usable without opening the menu. */
+  onSave?: () => void;
+  onShare?: () => void;
 };
 
 export function StudioChrome({
@@ -74,6 +79,8 @@ export function StudioChrome({
   openBom,
   openCategory,
   onOpenInspector,
+  onSave,
+  onShare,
 }: Props) {
   const [storiesOpen, setStoriesOpen] = useState(false);
   const [fabsOpen, setFabsOpen] = useState(true);
@@ -367,6 +374,21 @@ export function StudioChrome({
                 </>
               )}
             </nav>
+          )}
+
+          {(onSave || onShare) && (
+            <div className="studio-topbar-actions" role="group" aria-label="Project actions">
+              {onSave && (
+                <button type="button" className="studio-fab studio-save" onClick={onSave} aria-label="Save build" title="Save">
+                  <Save />
+                </button>
+              )}
+              {onShare && (
+                <button type="button" className="studio-fab studio-share" onClick={onShare} aria-label="Share build" title="Share">
+                  <Share2 />
+                </button>
+              )}
+            </div>
           )}
 
           <button

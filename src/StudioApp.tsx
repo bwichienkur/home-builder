@@ -4,11 +4,10 @@ import {
   Download,
   FileJson,
   Home,
-  LogIn,
   ReceiptText,
   Save,
   Share2,
-  Upload,
+  Trash2,
   X,
 } from 'lucide-react';
 import { CatalogPanel } from './components/catalog/CatalogPanel';
@@ -26,11 +25,14 @@ import {
   designShareUrl,
   listSharedDesigns,
   loadSharedDesign,
+  readActiveDesignCode,
   readDesignCodeFromLocation,
   readRecoverySnapshot,
-  saveSharedDesign,
+  upsertSharedDesign,
+  writeActiveDesignCode,
   type SharedDesign,
 } from './lib/designShare';
+import { downloadTextFile, shoppingListCsvFromDesign } from './lib/shoppingListCsv';
 import { formatArea } from './lib/measurements';
 
 const Scene3D = lazy(() => import('./components/scene3d/Scene3D').then((m) => ({ default: m.Scene3D })));
@@ -77,6 +79,7 @@ export default function StudioApp() {
   const [notice, setNotice] = useState('');
   const [recovery, setRecovery] = useState<{ savedAt: string; payload: unknown } | null>(null);
   const [designs, setDesigns] = useState<SharedDesign[]>([]);
+  const [activeDesignCode, setActiveDesignCode] = useState<string | null>(() => readActiveDesignCode());
   const openingNotice = usePlannerStore((s) => s.openingNotice);
   const clearOpeningNotice = usePlannerStore((s) => s.clearOpeningNotice);
   const unitSystem = usePlannerStore((s) => s.unitSystem);
@@ -116,21 +119,80 @@ export default function StudioApp() {
     if (name) setProjectName(name);
   };
 
-  const share = async () => {
+  const rememberDesign = useCallback((code: string | null) => {
+    setActiveDesignCode(code);
+    writeActiveDesignCode(code);
+  }, []);
+
+  const persistToLibrary = useCallback(() => {
+    const entry = upsertSharedDesign(projectName, store.projectPayload(), activeDesignCode ?? undefined);
+    rememberDesign(entry.code);
+    history.replaceState(null, '', designShareUrl(entry.code));
+    setDesigns(listSharedDesigns());
+    return entry;
+  }, [activeDesignCode, projectName, rememberDesign, store]);
+
+  const saveBuild = useCallback(() => {
+    store.save();
+    const entry = persistToLibrary();
+    notify(`Saved “${entry.name}”`);
+  }, [persistToLibrary, store]);
+
+  const share = useCallback(async () => {
     try {
-      const entry = saveSharedDesign(projectName, store.projectPayload());
+      store.save();
+      const entry = persistToLibrary();
       const url = designShareUrl(entry.code);
-      history.replaceState(null, '', url);
-      setDesigns(listSharedDesigns());
       if (navigator.share) await navigator.share({ title: projectName, text: `Mahnikka design ${entry.code}`, url });
       else {
         await navigator.clipboard.writeText(url);
-        notify(`Design code ${entry.code} copied`);
+        notify(`Link copied · ${entry.code}`);
       }
     } catch (error) {
       if ((error as DOMException).name !== 'AbortError') notify('Sharing is unavailable in this browser');
     }
-  };
+  }, [persistToLibrary, projectName, store]);
+
+  const openSavedBuild = useCallback(
+    (design: SharedDesign) => {
+      if (!store.importProject(design.payload)) {
+        notify('Could not open that build');
+        return;
+      }
+      setProjectName(design.name);
+      rememberDesign(design.code);
+      history.replaceState(null, '', designShareUrl(design.code));
+      enterHouse();
+      notify(`Editing ${design.name}`);
+      closeProjectMenu();
+      window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 0);
+    },
+    [closeProjectMenu, enterHouse, rememberDesign, store],
+  );
+
+  const exportSavedBuild = useCallback((design: SharedDesign) => {
+    const blob = new Blob([JSON.stringify({ ...design.payload, exportedAt: new Date().toISOString() }, null, 2)], {
+      type: 'application/json',
+    });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${design.name.replace(/[^\w\-]+/g, '-').toLowerCase() || 'mahnikka'}-build.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    notify('Build exported');
+  }, []);
+
+  const exportSavedShoppingList = useCallback(
+    (design: SharedDesign) => {
+      const csv = shoppingListCsvFromDesign(design.payload, allCatalog);
+      downloadTextFile(
+        `${design.name.replace(/[^\w\-]+/g, '-').toLowerCase() || 'mahnikka'}-shopping-list.csv`,
+        csv,
+      );
+      notify('Shopping list exported');
+    },
+    [allCatalog],
+  );
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -142,6 +204,9 @@ export default function StudioApp() {
       } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'd') {
         e.preventDefault();
         store.duplicateSelected();
+      } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        saveBuild();
       } else if (e.key === 'Delete' || e.key === 'Backspace') {
         if (!store.pendingPlacement) store.deleteSelected();
       } else if (e.key === 'Escape') {
@@ -160,7 +225,7 @@ export default function StudioApp() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [store, closeProjectMenu]);
+  }, [store, closeProjectMenu, saveBuild]);
 
   useEffect(() => {
     const open = () => {
@@ -218,6 +283,7 @@ export default function StudioApp() {
       const shared = loadSharedDesign(code);
       if (shared && store.importProject(shared.payload)) {
         setProjectName(shared.name);
+        rememberDesign(shared.code);
         enterHouse();
         notify(`Opened design ${code}`);
         window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 0);
@@ -250,7 +316,13 @@ export default function StudioApp() {
     if (!file) return;
     try {
       const ok = store.importProject(JSON.parse(await file.text()));
-      notify(ok ? 'Project imported' : 'This is not a valid Mahnikka project');
+      if (ok) {
+        rememberDesign(null);
+        const url = new URL(location.href);
+        url.searchParams.delete('design');
+        history.replaceState(null, '', url.toString());
+        notify('Project imported — save to add it to Saved builds');
+      } else notify('This is not a valid Mahnikka project');
     } catch {
       notify('Could not read that project file');
     }
@@ -302,6 +374,7 @@ export default function StudioApp() {
             setCatalogOpen(false);
             setInspectorOpen(false);
             setProjectName(usePlannerStore.getState().housePlanName || 'Untitled design');
+            rememberDesign(null);
           }}
         />
       )}
@@ -327,6 +400,8 @@ export default function StudioApp() {
           setCatalogOpen(false);
           setMenuOpen(false);
         }}
+        onSave={saveBuild}
+        onShare={share}
       />
 
       {catalogOpen && <CatalogPanel close={closeCatalog} onAdd={startGhostPlacement} roomType={roomType} />}
@@ -362,87 +437,96 @@ export default function StudioApp() {
           <p className="menu-meta">
             {formatArea(area, unitSystem)} · {walls.length} walls · {furniture.length} items
             {missingPrices > 0 ? ` · ${missingPrices} need quote` : ''}
+            {activeDesignCode ? ` · ${activeDesignCode}` : ''}
           </p>
-          <div className="menu-actions">
-            <button type="button" onClick={() => notify('Sign-in is coming soon')}>
-              <LogIn size={16} /> Log in
-            </button>
-            <button
-              onClick={() => {
-                store.showStart();
-                setMenuOpen(false);
-                setCatalogOpen(false);
-                setInspectorOpen(false);
-              }}
-            >
-              <Home size={16} /> New design
-            </button>
-            <button
-              onClick={() => {
-                store.save();
-                notify('Project saved on this device');
-              }}
-            >
+
+          <div className="menu-primary-actions">
+            <button type="button" className="menu-primary" onClick={saveBuild}>
               <Save size={16} /> Save
             </button>
-            <button
-              onClick={() => {
-                store.load();
-                notify('Saved project loaded');
-              }}
-            >
-              <Upload size={16} /> Load
-            </button>
-            <button onClick={store.exportProject}>
-              <Download size={16} /> Export
-            </button>
-            <label className="project-import">
-              <FileJson size={16} /> Import
-              <input type="file" accept="application/json,.json" onChange={importProject} />
-            </label>
-            <button onClick={share}>
+            <button type="button" className="menu-primary is-accent" onClick={share}>
               <Share2 size={16} /> Share
             </button>
-            <button onClick={() => setBom(true)}>
-              <ReceiptText size={16} /> Shopping list
-            </button>
           </div>
-          {designs.length > 0 && (
-            <section className="design-library">
-              <p className="eyebrow">Design library</p>
+
+          <button
+            type="button"
+            className="menu-secondary"
+            onClick={() => {
+              rememberDesign(null);
+              const url = new URL(location.href);
+              url.searchParams.delete('design');
+              history.replaceState(null, '', url.toString());
+              store.showStart();
+              setMenuOpen(false);
+              setCatalogOpen(false);
+              setInspectorOpen(false);
+            }}
+          >
+            <Home size={16} /> New design
+          </button>
+
+          <section className="design-library">
+            <div className="design-library-head">
+              <h3>Saved builds</h3>
+              <span>{designs.length}</span>
+            </div>
+            {designs.length === 0 ? (
+              <p className="muted design-library-empty">Save this design to see it here. Open a build to edit, or export the file / shopping list from each row.</p>
+            ) : (
               <ul>
-                {designs.map((design) => (
-                  <li key={design.code}>
-                    <button
-                      onClick={() => {
-                        if (store.importProject(design.payload)) {
-                          setProjectName(design.name);
-                          history.replaceState(null, '', designShareUrl(design.code));
-                          notify(`Opened ${design.code}`);
-                          setMenuOpen(false);
-                        }
-                      }}
-                    >
-                      <strong>{design.name}</strong>
-                      <span>
-                        {design.code} · {new Date(design.createdAt).toLocaleDateString()}
-                      </span>
-                    </button>
-                    <button
-                      className="design-delete"
-                      aria-label={`Delete ${design.code}`}
-                      onClick={() => {
-                        deleteSharedDesign(design.code);
-                        setDesigns(listSharedDesigns());
-                      }}
-                    >
-                      ×
-                    </button>
-                  </li>
-                ))}
+                {designs.map((design) => {
+                  const stamp = design.updatedAt ?? design.createdAt;
+                  return (
+                    <li key={design.code} className={activeDesignCode === design.code ? 'is-active' : undefined}>
+                      <button type="button" className="design-open" onClick={() => openSavedBuild(design)}>
+                        <strong>{design.name}</strong>
+                        <span>
+                          {design.code} · {new Date(stamp).toLocaleDateString()}
+                          {activeDesignCode === design.code ? ' · editing' : ''}
+                        </span>
+                      </button>
+                      <div className="design-item-actions">
+                        <button
+                          type="button"
+                          aria-label={`Export ${design.name}`}
+                          title="Export build"
+                          onClick={() => exportSavedBuild(design)}
+                        >
+                          <Download size={15} />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label={`Export shopping list for ${design.name}`}
+                          title="Export shopping list"
+                          onClick={() => exportSavedShoppingList(design)}
+                        >
+                          <ReceiptText size={15} />
+                        </button>
+                        <button
+                          type="button"
+                          className="is-danger"
+                          aria-label={`Delete ${design.name}`}
+                          title="Delete"
+                          onClick={() => {
+                            deleteSharedDesign(design.code);
+                            if (activeDesignCode === design.code) rememberDesign(null);
+                            setDesigns(listSharedDesigns());
+                          }}
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
-            </section>
-          )}
+            )}
+            <label className="project-import design-library-import">
+              <FileJson size={15} /> Import build file
+              <input type="file" accept="application/json,.json" onChange={importProject} />
+            </label>
+          </section>
         </aside>
         </>
       )}
