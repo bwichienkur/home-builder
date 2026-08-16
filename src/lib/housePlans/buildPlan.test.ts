@@ -163,6 +163,33 @@ describe('house plan builder', () => {
     expect(getHousePlan('st-croix')?.livingSqFt).toBe(2781);
   });
 
+  it('matches Sandbridge flyer envelope and C-courtyard topology', () => {
+    const plan = getHousePlan('sandbridge')!;
+    expect(plan.beds).toBe(4);
+    expect(plan.baths).toBe(4);
+    expect(plan.livingSqFt).toBe(4874);
+    expect(plan.totalUnderRoofSqFt).toBe(6773);
+    const rooms = plan.floors[0]!.rooms;
+    const names = rooms.map((r) => r.name);
+    expect(names).toEqual(expect.arrayContaining(['Den', 'Garage', 'Great Room', 'Lanai', 'Club Room', "Owner's Suite"]));
+    expect(names.filter((n) => /^Bedroom \d/.test(n) || n === "Owner's Suite")).toHaveLength(4);
+
+    const maxX = Math.max(...rooms.map((r) => r.x + r.w));
+    const maxY = Math.max(...rooms.map((r) => r.y + r.h));
+    expect(maxX).toBeCloseTo(70, 0);
+    expect(maxY).toBeCloseTo(115, 0);
+
+    const garage = rooms.find((r) => r.name === 'Garage')!;
+    expect(garage.x).toBeGreaterThan(30); // front-right, not left strip
+    expect(garage.w * garage.h).toBeCloseTo(1033, -1);
+
+    const lanai = rooms.find((r) => r.name === 'Lanai')!;
+    expect(lanai.w * lanai.h).toBeCloseTo(785, -1);
+    // Lanai sits in the crook (not a rear strip across the full width)
+    expect(lanai.w).toBeLessThan(40);
+    expect(lanai.x).toBeGreaterThan(10);
+  });
+
   it('applies a house plan into the planner store with floors', () => {
     usePlannerStore.setState({
       walls: [],
