@@ -284,15 +284,44 @@ describe('house plan builder', () => {
     expect(maxY).toBeCloseTo(90, 0);
 
     const driftwood = getHousePlan('driftwood')!;
-    expect(driftwood.floors[0]!.rooms.find((r) => r.name === 'Great Room')!.pointsFt!.length).toBeGreaterThan(4);
-    expect(driftwood.floors[0]!.rooms.find((r) => r.name === 'Lanai')!.pointsFt!.length).toBeGreaterThan(4);
+    const dw = driftwood.floors[0]!.rooms;
+    expect(dw.find((r) => r.name === 'Garage')!.x).toBeGreaterThan(35); // front-right
+    expect(dw.find((r) => r.name === "Owner's Suite")!.x).toBeLessThan(5); // left wing
+    expect(dw.find((r) => r.name === 'Study')!.x).toBeLessThan(dw.find((r) => r.name === 'Dining')!.x);
+    expect(dw.find((r) => r.name === 'Great Room')!.pointsFt!.length).toBeGreaterThan(4);
+    expect(dw.find((r) => r.name === 'Nook')!.pointsFt!.length).toBeGreaterThan(4);
+    expect(dw.find((r) => r.name === 'Lanai')!.pointsFt!.length).toBeGreaterThan(4);
+    expect(Math.max(...dw.map((r) => r.x + r.w))).toBeCloseTo(65, 0);
+    expect(Math.max(...dw.map((r) => r.y + r.h))).toBeCloseTo(86.333, 0);
 
     const tidelands = getHousePlan('tidelands')!;
-    expect(tidelands.floors[0]!.rooms.find((r) => r.name === 'Lanai')!.pointsFt!.length).toBeGreaterThan(4);
+    const td = tidelands.floors[0]!.rooms;
+    expect(td.find((r) => r.name === 'Garage')!.x).toBeLessThan(1);
+    expect(td.find((r) => r.name === 'Bath 2')!.y).toBeGreaterThan(td.find((r) => r.name === 'Bedroom 2')!.y + 10);
+    expect(td.find((r) => r.name === 'Bedroom 4')!.x).toBeLessThan(30);
+    expect(td.find((r) => r.name === "Owner's Suite")!.x).toBeGreaterThan(70);
+    expect(td.find((r) => r.name === 'Lanai')!.pointsFt!.length).toBeGreaterThan(4);
+
+    const tradewinds = getHousePlan('tradewinds')!;
+    const tw = tradewinds.floors[0]!.rooms;
+    expect(tw.find((r) => r.name === 'Garage')!.x).toBeLessThan(1);
+    expect(tw.find((r) => r.name === "Owner's Suite")!.x).toBeGreaterThan(70);
+    expect(tw.find((r) => r.name === 'Lanai')!.pointsFt!.length).toBeGreaterThan(4);
 
     const santorini = getHousePlan('santorini')!;
-    expect(santorini.floors[0]!.rooms.find((r) => r.name === 'Family Room')!.pointsFt).toHaveLength(8);
-    expect(santorini.floors[0]!.rooms.find((r) => r.name === 'Dinette')!.pointsFt!.length).toBeGreaterThan(4);
+    const sn = santorini.floors[0]!.rooms;
+    expect(sn.find((r) => r.name === 'Family Room')!.pointsFt).toHaveLength(8);
+    expect(sn.find((r) => r.name === 'Dinette')!.pointsFt!.length).toBeGreaterThan(4);
+    expect(sn.find((r) => r.name === "Owner's Suite")!.y).toBeLessThan(5);
+    expect(sn.find((r) => r.name === 'Garage')!.x).toBeGreaterThan(80);
+    expect(sn.find((r) => r.name === 'Garage')!.y).toBeGreaterThan(40);
+    expect(Math.max(...sn.map((r) => r.x + r.w))).toBeGreaterThan(110);
+
+    const capri = getHousePlan('capri')!;
+    const cp = capri.floors[0]!.rooms;
+    expect(cp.find((r) => r.name === "Owner's Suite")!.x).toBeLessThan(5);
+    expect(cp.find((r) => r.name === 'Garage')!.x).toBeGreaterThan(60);
+    expect(cp.find((r) => r.name === 'Great Room')!).toBeTruthy();
 
     for (const id of ['oyster-bay', 'driftwood', 'santorini', 'sandbridge']) {
       const built = buildHouse(getHousePlan(id)!);
