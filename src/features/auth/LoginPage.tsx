@@ -1,13 +1,25 @@
-import { FormEvent, useMemo, useState } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { FormEvent, useEffect, useState } from 'react';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { DEMO_LOGIN, useAuthStore } from '../../store/authStore';
 import './auth.css';
 
+function postLoginPath(state: unknown): string {
+  if (state && typeof state === 'object' && 'from' in state) {
+    const from = (state as { from?: { pathname?: string; search?: string; hash?: string } }).from;
+    if (from?.pathname && from.pathname !== '/login') {
+      return `${from.pathname}${from.search ?? ''}${from.hash ?? ''}`;
+    }
+  }
+  return '/';
+}
+
 export function LoginPage() {
   const user = useAuthStore((s) => s.user);
+  const sessionReady = useAuthStore((s) => s.sessionReady);
   const login = useAuthStore((s) => s.login);
   const register = useAuthStore((s) => s.register);
   const navigate = useNavigate();
+  const location = useLocation();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState(DEMO_LOGIN.email);
   const [password, setPassword] = useState(DEMO_LOGIN.password);
@@ -15,7 +27,11 @@ export function LoginPage() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
-  if (user) return <Navigate to="/" replace />;
+  if (!sessionReady) {
+    return <div className="loading-3d">Loading…</div>;
+  }
+
+  if (user) return <Navigate to={postLoginPath(location.state)} replace />;
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -28,7 +44,7 @@ export function LoginPage() {
       setError(result.error);
       return;
     }
-    navigate('/', { replace: true });
+    navigate(postLoginPath(location.state), { replace: true });
   };
 
   return (
@@ -99,10 +115,51 @@ export function LoginPage() {
   );
 }
 
+/** Blocks app pages until session is known; sends guests to /login. */
 export function RequireAuth({ children }: { children: React.ReactNode }) {
   const user = useAuthStore((s) => s.user);
-  const ready = useMemo(() => true, []);
-  if (!ready) return null;
-  if (!user) return <Navigate to="/login" replace />;
+  const sessionReady = useAuthStore((s) => s.sessionReady);
+  const restoreSession = useAuthStore((s) => s.restoreSession);
+  const markSessionReady = useAuthStore((s) => s.markSessionReady);
+  const location = useLocation();
+
+  useEffect(() => {
+    if (sessionReady) return;
+    // Persist may already be done (e.g. tests / fast path).
+    const api = useAuthStore.persist;
+    if (api.hasHydrated()) {
+      void restoreSession();
+      return;
+    }
+    const unsub = api.onFinishHydration(() => {
+      void restoreSession();
+    });
+    // Safety: never leave the app stuck on Loading…
+    const t = window.setTimeout(() => {
+      if (!useAuthStore.getState().sessionReady) markSessionReady();
+    }, 2500);
+    return () => {
+      unsub();
+      window.clearTimeout(t);
+    };
+  }, [sessionReady, restoreSession, markSessionReady]);
+
+  if (!sessionReady) {
+    return <div className="loading-3d">Loading…</div>;
+  }
+  if (!user) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
   return <>{children}</>;
+}
+
+/** Unknown URLs: home when signed in, login when not. */
+export function AuthCatchAll() {
+  const user = useAuthStore((s) => s.user);
+  const sessionReady = useAuthStore((s) => s.sessionReady);
+
+  if (!sessionReady) {
+    return <div className="loading-3d">Loading…</div>;
+  }
+  return <Navigate to={user ? '/' : '/login'} replace />;
 }
