@@ -1,8 +1,20 @@
 .api-docs {
-  max-width: 880px;
-  margin: 0 auto;
+  height: 100%;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  max-width: none;
+  margin: 0;
   padding: 28px 20px 64px;
   color: var(--ink, #16181c);
+  background:
+    radial-gradient(1100px 520px at 8% -12%, #d7e6f5 0%, transparent 55%),
+    linear-gradient(180deg, #f3f5f7 0%, #e8eaed 100%);
+}
+.api-docs > * {
+  max-width: 880px;
+  margin-left: auto;
+  margin-right: auto;
 }
 .api-docs-hero {
   margin-bottom: 28px;
