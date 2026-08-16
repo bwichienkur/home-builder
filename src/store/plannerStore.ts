@@ -1,5 +1,7 @@
 import { create } from 'zustand';
-import type { CameraMode, FurnitureItem, ManualBomLine, MountingType, Opening, OpeningShape, PendingFloorFill, PlanRoomLabel, Point, RoomType, SceneSnapshot, StudioMode, SurfaceTarget, Tool, UnitSystem, Wall, WorkflowStage } from '../types';
+import type { CameraMode, FurnitureItem, LayerVisibility, ManualBomLine, MountingType, Opening, OpeningShape, PendingFloorFill, PlanAnnotation, PlanRoomLabel, Point, RoomType, SceneSnapshot, StudioMode, SurfaceTarget, Tool, UnitSystem, Wall, WorkflowStage } from '../types';
+import { DEFAULT_LAYER_VISIBILITY } from '../types';
+import { clampOpeningOffset, wallOffsetFromWorldPoint } from '../lib/geometry/wallOpenings';
 import { doorSwingZones, furnitureHitsDoorSwing } from '../lib/geometry/doorClearance';
 import { wouldOverlapFurniture } from '../lib/collisions';
 import { clampWallMountY, constrainPlacement, openingConflicts, pointInWorldRooms, resolveMountingType, roomFloorCenter, WORLD_ORIGIN } from '../lib/geometry/placement';
@@ -70,6 +72,17 @@ type PlannerState = SceneSnapshot & {
   setRoofStyle: (style: import('../types').RoofStyle) => void;
   siteSetback: import('../types').SiteSetback;
   setSiteSetback: (setback: import('../types').SiteSetback) => void;
+  layerVisibility: LayerVisibility;
+  setLayerVisibility: (patch: Partial<LayerVisibility>) => void;
+  annotations: PlanAnnotation[];
+  selectedAnnotationId: string | null;
+  addAnnotation: (kind: PlanAnnotation['kind'], x: number, z: number, text?: string) => string;
+  updateAnnotation: (id: string, patch: Partial<PlanAnnotation>) => void;
+  deleteAnnotation: (id: string) => void;
+  selectAnnotation: (id: string | null) => void;
+  /** Linked CRM client for this design (optional). */
+  clientId: string | null;
+  setClientId: (id: string | null) => void;
   history: SceneSnapshot[];
   historyIndex: number;
   openingNotice: string;
@@ -161,6 +174,8 @@ type PlannerState = SceneSnapshot & {
   selectOpening: (id: string | null) => void;
   selectSurface: (surface: SurfaceTarget | null) => void;
   addOpening: (wallId: string, type: 'door' | 'window' | 'passage', shape?: OpeningShape) => boolean;
+  /** Place opening on a wall at a world XZ point (plan click). */
+  placeOpeningAtWorld: (wallId: string, type: 'door' | 'window' | 'passage', worldX: number, worldZ: number) => boolean;
   updateOpening: (id: string, patch: Partial<Opening>) => boolean;
   updateOpeningLive: (id: string, patch: Partial<Opening>) => void;
   deleteOpening: (id: string) => void;
@@ -208,7 +223,16 @@ type PlannerState = SceneSnapshot & {
   load: () => void;
   importProject: (data: unknown) => boolean;
   exportProject: () => void;
-  projectPayload: () => { version: number; roomType: RoomType; unitSystem: UnitSystem; activeFloorId: string; floors: FloorRecord[] };
+  projectPayload: () => {
+    version: number;
+    roomType: RoomType;
+    unitSystem: UnitSystem;
+    activeFloorId: string;
+    floors: FloorRecord[];
+    clientId?: string | null;
+    annotations?: PlanAnnotation[];
+    layerVisibility?: LayerVisibility;
+  };
 };
 
 const initialWalls: Wall[] = [
@@ -389,11 +413,14 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
   const projectPayload = () => {
     const s = get();
     return {
-      version: 4,
+      version: 5,
       roomType: s.roomType,
       unitSystem: s.unitSystem,
       activeFloorId: s.activeFloorId,
       floors: s.floors.map((f) => (f.id === s.activeFloorId ? { ...f, scene: snap() } : f)),
+      clientId: s.clientId,
+      annotations: s.annotations,
+      layerVisibility: s.layerVisibility,
     };
   };
 
@@ -418,6 +445,10 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     stackView: false,
     roofStyle: 'none',
     siteSetback: { frontM: 6, sideM: 1.5, rearM: 6 },
+    layerVisibility: { ...DEFAULT_LAYER_VISIBILITY },
+    annotations: [],
+    selectedAnnotationId: null,
+    clientId: null,
     history: [initial],
     historyIndex: 0,
     openingNotice: '',
@@ -437,6 +468,33 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     removeManualBomLine: (id) =>
       set((s) => ({
         manualBomLines: s.manualBomLines.filter((row) => row.id !== id),
+      })),
+    setLayerVisibility: (patch) =>
+      set((s) => ({ layerVisibility: { ...s.layerVisibility, ...patch } })),
+    setClientId: (clientId) => set({ clientId }),
+    selectAnnotation: (selectedAnnotationId) => set({ selectedAnnotationId }),
+    addAnnotation: (kind, x, z, text = '') => {
+      const id = crypto.randomUUID();
+      const row: PlanAnnotation = {
+        id,
+        floorId: get().activeFloorId,
+        x,
+        z,
+        kind,
+        text: text || (kind === 'note' ? 'Note' : kind === 'cloud' ? 'Review' : 'Look'),
+        rotation: kind === 'arrow' ? 0 : undefined,
+      };
+      set((s) => ({ annotations: [...s.annotations, row], selectedAnnotationId: id, tool: 'select' }));
+      return id;
+    },
+    updateAnnotation: (id, patch) =>
+      set((s) => ({
+        annotations: s.annotations.map((a) => (a.id === id ? { ...a, ...patch } : a)),
+      })),
+    deleteAnnotation: (id) =>
+      set((s) => ({
+        annotations: s.annotations.filter((a) => a.id !== id),
+        selectedAnnotationId: s.selectedAnnotationId === id ? null : s.selectedAnnotationId,
       })),
     setTool: (tool) => set({ tool: tool === 'wall' ? 'select' : tool, draftStart: null }),
     setView: (view) => set({ view, draftStart: null }),
@@ -1031,7 +1089,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       set({ openingNotice: '' });
       return true;
     },
-    addStair: (fromFloorId, toFloorId, x = 0, z = 0) => {
+    addStair: (fromFloorId, toFloorId, x?: number, z?: number) => {
       const floors = get().floors;
       if (!floors.some((f) => f.id === fromFloorId) || !floors.some((f) => f.id === toFloorId)) return;
       if (fromFloorId === toFloorId) return;
@@ -1041,6 +1099,9 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       const runM = 2.8;
       const steps = 14;
       const landingM = 0.9;
+      const center = roomFloorCenter(get().walls);
+      const sx = Number.isFinite(x) ? (x as number) : center.x;
+      const sz = Number.isFinite(z) ? (z as number) : center.z;
       mutate({
         furniture: [
           ...get().furniture,
@@ -1049,9 +1110,9 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
             catalogId: 'stair',
             name: 'Stair',
             category: 'Circulation',
-            x,
+            x: sx,
             y: 0,
-            z,
+            z: sz,
             rotation: 0,
             color: '#8b7355',
             width: 1.1,
@@ -1141,6 +1202,40 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         face: 'in',
         shape,
       };
+      if (openingConflicts(candidate, get().openings, get().walls).length) {
+        set({ openingNotice: 'That opening overlaps another on this wall. Move or resize it first.' });
+        return false;
+      }
+      mutate({ openings: [...get().openings, candidate] });
+      set({ selectedOpeningId: id, selectedWallId: wallId, tool: 'select', openingNotice: '' });
+      return true;
+    },
+    placeOpeningAtWorld: (wallId, type, worldX, worldZ) => {
+      const wall = get().walls.find((w) => w.id === wallId);
+      if (!wall) return false;
+      const id = crypto.randomUUID();
+      const candidate: Opening = {
+        id,
+        wallId,
+        type,
+        offset: 0.5,
+        width: type === 'window' ? 1.2 : 0.9,
+        height: type === 'window' ? 1.1 : 2.1,
+        sill: type === 'window' ? 0.9 : 0,
+        swing: type === 'door' ? 'left' : 'none',
+        face: 'in',
+        shape: 'rect',
+      };
+      const len =
+        Math.hypot(wall.end.x - wall.start.x, wall.end.y - wall.start.y) / PIXELS_PER_METER || 0.01;
+      const raw = wallOffsetFromWorldPoint(wall, worldX, worldZ, WORLD_ORIGIN, PIXELS_PER_METER);
+      candidate.offset = clampOpeningOffset(candidate, get().openings, len);
+      // Prefer the click position when it doesn't collide after clamp.
+      const clicked = Math.max(0.05, Math.min(0.95, raw));
+      const tryOffset = { ...candidate, offset: clicked };
+      candidate.offset = openingConflicts(tryOffset, get().openings, get().walls).length
+        ? candidate.offset
+        : clampOpeningOffset(tryOffset, get().openings, len);
       if (openingConflicts(candidate, get().openings, get().walls).length) {
         set({ openingNotice: 'That opening overlaps another on this wall. Move or resize it first.' });
         return false;
@@ -1811,6 +1906,11 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
           planRooms: target.planRooms ?? [],
           housePlanId: data.housePlanId ?? null,
           housePlanName: data.housePlanName ?? null,
+          clientId: data.clientId ?? null,
+          annotations: Array.isArray(data.annotations) ? data.annotations : [],
+          layerVisibility: data.layerVisibility
+            ? { ...DEFAULT_LAYER_VISIBILITY, ...data.layerVisibility }
+            : { ...DEFAULT_LAYER_VISIBILITY },
           workflowStage: target.scene.walls?.length ? 'house' : 'start',
           studioMode: 'architect',
         });

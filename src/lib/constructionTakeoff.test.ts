@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeConstructionTakeoff } from './constructionTakeoff';
+import { computeConstructionTakeoff, constructionTakeoffCsv } from './constructionTakeoff';
 import type { Wall } from '../types';
 
 describe('computeConstructionTakeoff', () => {
@@ -18,10 +18,11 @@ describe('computeConstructionTakeoff', () => {
       ],
       furniture: [],
     });
-    expect(takeoff.wallLengthM).toBeCloseTo(35, 0); // 10+7.5+10+7.5
+    expect(takeoff.wallLengthM).toBeCloseTo(35, 0);
     expect(takeoff.exteriorWallLengthM).toBeCloseTo(35, 0);
-    expect(takeoff.floorAreaM2).toBeCloseTo(75, 0); // 10×7.5
+    expect(takeoff.floorAreaM2).toBeCloseTo(75, 0);
     expect(takeoff.doorCount).toBe(1);
     expect(takeoff.windowCount).toBe(1);
+    expect(constructionTakeoffCsv(takeoff, { name: 'Test', unitSystem: 'metric' })).toContain('Floor area');
   });
 });

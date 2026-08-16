@@ -139,6 +139,16 @@ export function drawElevationToCanvas(
   ctx.fillText(formatLength(storyH, unit), leftX + along * scale + 16, groundY - (storyH * scale) / 2);
   ctx.fillText(formatLength(along, unit), leftX + (along * scale) / 2 - 20, groundY + 24);
 
+  // Simple gable / flat roof silhouette over the elevation run.
+  const roofTop = groundY - storyH * scale;
+  ctx.strokeStyle = '#5c6770';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(leftX - 8, roofTop);
+  ctx.lineTo(leftX + along * scale * 0.5, roofTop - Math.min(36, storyH * scale * 0.22));
+  ctx.lineTo(leftX + along * scale + 8, roofTop);
+  ctx.stroke();
+
   return canvas;
 }
 

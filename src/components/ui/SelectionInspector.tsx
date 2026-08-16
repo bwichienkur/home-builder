@@ -48,6 +48,9 @@ export function SelectionInspector({ open, onClose }: { open: boolean; onClose: 
   const selectedRoom = planRooms.find((r) => r.id === selectedRoomId);
   const selectedTrim = furniture.find((f) => f.id === selectedFurnitureId && f.placementKind === 'perimeter-trim');
   const selectedFurniture = furniture.find((f) => f.id === selectedFurnitureId && f.placementKind !== 'perimeter-trim');
+  const selectedAnnotationId = usePlannerStore((s) => s.selectedAnnotationId);
+  const annotations = usePlannerStore((s) => s.annotations);
+  const selectedAnnotation = annotations.find((a) => a.id === selectedAnnotationId);
 
   if (!open) return null;
 
@@ -57,17 +60,19 @@ export function SelectionInspector({ open, onClose }: { open: boolean; onClose: 
       : 'Baseboard'
     : selectedFurniture
       ? selectedFurniture.name
-      : selectedOpening
-        ? 'Opening'
-        : selectedWall
-          ? 'Wall'
-          : selectedRoom
-            ? selectedRoom.name
-            : selectedSurface === 'ceiling'
-              ? 'Ceiling'
-              : selectedSurface === 'floor'
-                ? 'Floor'
-                : 'Room';
+      : selectedAnnotation
+        ? 'Annotation'
+        : selectedOpening
+          ? 'Opening'
+          : selectedWall
+            ? 'Wall'
+            : selectedRoom
+              ? selectedRoom.name
+              : selectedSurface === 'ceiling'
+                ? 'Ceiling'
+                : selectedSurface === 'floor'
+                  ? 'Floor'
+                  : 'Room';
 
   return (
     <aside className="selection-inspector" aria-label="Selection properties">
@@ -85,6 +90,8 @@ export function SelectionInspector({ open, onClose }: { open: boolean; onClose: 
           <TrimProperties item={selectedTrim} />
         ) : selectedFurniture ? (
           <FurnitureProperties item={selectedFurniture} />
+        ) : selectedAnnotation ? (
+          <AnnotationProperties annotation={selectedAnnotation} />
         ) : selectedOpening ? (
           <OpeningProperties opening={selectedOpening} />
         ) : selectedWall ? (
@@ -96,6 +103,47 @@ export function SelectionInspector({ open, onClose }: { open: boolean; onClose: 
         )}
       </div>
     </aside>
+  );
+}
+
+function AnnotationProperties({ annotation }: { annotation: import('../../types').PlanAnnotation }) {
+  const update = usePlannerStore((s) => s.updateAnnotation);
+  const remove = usePlannerStore((s) => s.deleteAnnotation);
+  return (
+    <>
+      <label>
+        Type
+        <select
+          value={annotation.kind}
+          onChange={(e) => update(annotation.id, { kind: e.target.value as typeof annotation.kind })}
+        >
+          <option value="note">Note</option>
+          <option value="cloud">Cloud</option>
+          <option value="arrow">Arrow</option>
+        </select>
+      </label>
+      <label>
+        Text
+        <input
+          type="text"
+          value={annotation.text}
+          onChange={(e) => update(annotation.id, { text: e.target.value })}
+        />
+      </label>
+      {annotation.kind === 'arrow' && (
+        <label>
+          Rotation
+          <input
+            type="number"
+            value={annotation.rotation ?? 0}
+            onChange={(e) => update(annotation.id, { rotation: +e.target.value || 0 })}
+          />
+        </label>
+      )}
+      <button className="delete-item" type="button" onClick={() => remove(annotation.id)}>
+        Remove annotation
+      </button>
+    </>
   );
 }
 

@@ -154,16 +154,23 @@ export function downloadPlanIfc(input: IfcExportInput, filename: string) {
 
 /** Lightweight IFC inspection / partial read for import UX. */
 export function inspectIfc(text: string): { ok: boolean; message: string; spaces?: string[]; walls?: number } {
+  if (text.length > 40_000_000) {
+    return { ok: false, message: 'IFC file is too large to inspect in the browser (>40 MB).' };
+  }
   if (!/ISO-10303-21/i.test(text) && !/FILE_SCHEMA\s*\(\s*\('IFC/i.test(text)) {
     return { ok: false, message: 'File does not look like an IFC STEP exchange file.' };
   }
   const spaces = [...text.matchAll(/IFCSPACE\([^,]*,[^,]*,'([^']*)'/gi)].map((m) => m[1]!).filter(Boolean);
   const walls = (text.match(/IFCWALL/gi) || []).length;
+  const doors = (text.match(/IFCDOOR/gi) || []).length;
+  const windows = (text.match(/IFCWINDOW/gi) || []).length;
   return {
     ok: true,
-    message: `IFC inspected — ${walls} wall entit${walls === 1 ? 'y' : 'ies'}, ${spaces.length} space${
-      spaces.length === 1 ? '' : 's'
-    }${spaces.length ? ` (${spaces.slice(0, 6).join(', ')})` : ''}. Full geometry import isn’t available yet.`,
+    message: `IFC inspected — ${walls} wall${walls === 1 ? '' : 's'}, ${doors} door${doors === 1 ? '' : 's'}, ${windows} window${
+      windows === 1 ? '' : 's'
+    }, ${spaces.length} space${spaces.length === 1 ? '' : 's'}${
+      spaces.length ? ` (${spaces.slice(0, 6).join(', ')})` : ''
+    }. Geometry import isn’t available yet — use DXF/JSON for editable rooms, or export IFC4 from Build.`,
     spaces,
     walls,
   };

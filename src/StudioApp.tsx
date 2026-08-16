@@ -37,10 +37,12 @@ import {
 } from './lib/designShare';
 import { downloadTextFile, shoppingListCsvFromDesign } from './lib/shoppingListCsv';
 import { formatArea } from './lib/measurements';
+import { computeConstructionTakeoff, constructionTakeoffCsv } from './lib/constructionTakeoff';
 import { drawFloorPlanToCanvas, downloadCanvasPng, downloadPlanDxf, downloadScaledPlanPdf } from './lib/planExport/drawFloorPlan';
 import { downloadPlanIfc } from './lib/planExport/buildIfc';
 import { fetchCloudProjects, loadCloudProject, readCloudProjectRef, saveProjectToCloud } from './lib/cloudProjects';
 import type { CloudProjectSummary } from './api/client';
+import { useCrmStore } from './store/crmStore';
 
 const Scene3D = lazy(() => import('./components/scene3d/Scene3D').then((m) => ({ default: m.Scene3D })));
 
@@ -96,6 +98,9 @@ export default function StudioApp() {
   const unitSystem = usePlannerStore((s) => s.unitSystem);
   const workflowStage = usePlannerStore((s) => s.workflowStage);
   const enterHouse = usePlannerStore((s) => s.enterHouse);
+  const clientId = usePlannerStore((s) => s.clientId);
+  const setClientId = usePlannerStore((s) => s.setClientId);
+  const crmClients = useCrmStore((s) => s.clients);
 
   const closeCatalog = useCallback(() => setCatalogOpen(false), []);
   const startGhostPlacement = useCallback(() => {
@@ -581,7 +586,42 @@ export default function StudioApp() {
             >
               <FileJson size={16} /> Preview elevations
             </button>
+            <button
+              type="button"
+              className="menu-secondary"
+              disabled={walls.length === 0}
+              onClick={() => {
+                const takeoff = computeConstructionTakeoff({
+                  walls: store.walls,
+                  openings: store.openings,
+                  furniture: store.furniture,
+                });
+                const csv = constructionTakeoffCsv(takeoff, { name: projectName, unitSystem });
+                downloadTextFile(
+                  `${projectName.replace(/[^\w\-]+/g, '-').toLowerCase() || 'mahnikka'}-takeoff.csv`,
+                  csv,
+                );
+                notify('Construction takeoff CSV exported');
+              }}
+            >
+              <ReceiptText size={16} /> Export takeoff CSV
+            </button>
           </div>
+
+          <label className="menu-client-link">
+            Linked client
+            <select
+              value={clientId ?? ''}
+              onChange={(e) => setClientId(e.target.value || null)}
+            >
+              <option value="">None</option>
+              {crmClients.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </label>
 
           <button
             type="button"

@@ -2489,3 +2489,122 @@
   background: #f7f8fa;
 }
 
+.opening-place-hint {
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(17, 24, 32, 0.88);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 8px 20px rgba(17, 24, 32, 0.18);
+}
+
+.layers-menu-root {
+  position: relative;
+  display: inline-flex;
+}
+.layers-menu-panel {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 220px;
+  padding: 10px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid rgba(17, 24, 32, 0.1);
+  box-shadow: 0 12px 28px rgba(17, 24, 32, 0.16);
+  z-index: 40;
+}
+.layers-menu-panel header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+.layers-menu-panel header button {
+  border: 0;
+  background: transparent;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.layers-menu-panel ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.layers-menu-panel label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #243039;
+  cursor: pointer;
+}
+
+.plan-annotation {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 160px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(17, 24, 32, 0.14);
+  background: rgba(255, 255, 255, 0.96);
+  font-size: 11px;
+  font-weight: 700;
+  color: #111820;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 4px 12px rgba(17, 24, 32, 0.1);
+}
+.plan-annotation.is-cloud {
+  border-style: dashed;
+  border-color: #b45309;
+  color: #9a3412;
+}
+.plan-annotation.is-arrow {
+  border-color: #0058a3;
+  color: #0058a3;
+}
+.plan-annotation.is-selected {
+  outline: 2px solid #0058a3;
+}
+
+.menu-client-link {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #5c6770;
+}
+.menu-client-link select {
+  min-height: 38px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  padding: 0 10px;
+  font: inherit;
+  color: #111820;
+}
+
+@media (max-width: 820px) {
+  .studio-dock-row {
+    gap: 4px;
+  }
+  .studio-dock-action span,
+  .studio-dock-seg span {
+    display: none;
+  }
+}
+

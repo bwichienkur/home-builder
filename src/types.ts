@@ -89,6 +89,38 @@ export type WorkflowStage = 'start' | 'house' | 'room';
 export type StudioMode = 'architect' | 'furnish';
 export type RoofStyle = 'none' | 'flat' | 'gable';
 export type SiteSetback = { frontM: number; sideM: number; rearM: number };
+/** Plan markup for trades / clients — soft notes, not CAD dimensions. */
+export type PlanAnnotation = {
+  id: string;
+  floorId: string;
+  x: number;
+  z: number;
+  kind: 'note' | 'cloud' | 'arrow';
+  text: string;
+  /** Arrow heading in degrees (Yaw). */
+  rotation?: number;
+};
+/** Toggleable plan/3D layers for trade views. */
+export type LayerVisibility = {
+  furniture: boolean;
+  openings: boolean;
+  labels: boolean;
+  dims: boolean;
+  annotations: boolean;
+  roof: boolean;
+  framing: boolean;
+  setbacks: boolean;
+};
+export const DEFAULT_LAYER_VISIBILITY: LayerVisibility = {
+  furniture: true,
+  openings: true,
+  labels: true,
+  dims: true,
+  annotations: true,
+  roof: true,
+  framing: false,
+  setbacks: true,
+};
 export type PlanRoomLabel = {
   id: string;
   name: string;
