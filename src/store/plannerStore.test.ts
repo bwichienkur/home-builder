@@ -141,6 +141,28 @@ describe('perimeter trim',()=>{
   // Overlap into neighbor should fail.
   expect(usePlannerStore.getState().movePlanRoom(a!,3,0)).toBe(false);
  });
+ it('attaches a square room with a shared mid-wall passage and no starter windows',()=>{
+  usePlannerStore.setState({
+    workflowStage:'house',
+    furniture:[],
+    openings:[],
+    planRooms:[],
+    walls:[],
+    openingNotice:'',
+    selectedRoomId:null,
+    pendingAttachMode:false,
+  });
+  const a=usePlannerStore.getState().placePlanRoom({x:400,y:300},'rectangle','A');
+  expect(a).toBeTruthy();
+  expect(usePlannerStore.getState().openings).toHaveLength(0);
+  const b=usePlannerStore.getState().attachPlanRoom(a!,'right');
+  expect(b).toBeTruthy();
+  const openings=usePlannerStore.getState().openings;
+  expect(openings.length).toBeGreaterThanOrEqual(1);
+  expect(openings.every(o=>o.type==='passage')).toBe(true);
+  expect(openings.some(o=>o.type==='window')).toBe(false);
+  expect(usePlannerStore.getState().attachPlanRoom(a!,'right')).toBeNull();
+ });
 });
 
 describe('floor fill and undo',()=>{

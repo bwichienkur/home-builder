@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildFloorFromRooms, buildHouse, livingAreaSqFt, planRoomSizeFeet, proposedRoomOverlaps, row, shapedRoomPoints, splitPlanRoomPoints, squareRoomPoints } from './buildPlan';
+import { buildFloorFromRooms, buildHouse, livingAreaSqFt, planRoomSizeFeet, proposedRoomOverlaps, row, shapedRoomPoints, splitPlanRoomPoints, squareRoomPoints, attachSquareRoomPoints, attachSideBlocked } from './buildPlan';
 import { WORLD_ORIGIN } from '../geometry/placement';
 import { assertPlanCatalog, listHousePlanNames, olsenHousePlans } from './olsenPlans';
 import { usePlannerStore } from '../../store/plannerStore';
@@ -23,6 +23,34 @@ describe('house plan builder', () => {
     expect(built.scene.openings.some((o) => o.type === 'door' || o.type === 'passage')).toBe(true);
     expect(built.scene.openings.some((o) => o.type === 'window')).toBe(true);
     expect(built.roomPolygons).toHaveLength(rooms.length);
+  });
+
+  it('interactive rebuilds start with no exterior openings and only shared passages', () => {
+    const rooms = [
+      ...row(0, 12, [
+        { name: 'A', roomType: 'Bedroom', w: 12 },
+        { name: 'B', roomType: 'Bedroom', w: 12 },
+      ]),
+    ];
+    const catalog = buildFloorFromRooms({ id: 'c1', name: 'Catalog', rooms });
+    expect(catalog.scene.openings.some((o) => o.type === 'window')).toBe(true);
+    const shared = buildFloorFromRooms({ id: 's1', name: 'Shared', rooms }, { openings: 'shared-only' });
+    expect(shared.scene.openings.every((o) => o.type === 'passage')).toBe(true);
+    expect(shared.scene.openings.some((o) => o.type === 'window')).toBe(false);
+    const alone = buildFloorFromRooms(
+      { id: 'a1', name: 'Alone', rooms: row(0, 12, [{ name: 'Solo', roomType: 'Bedroom', w: 12 }]) },
+      { openings: 'shared-only' },
+    );
+    expect(alone.scene.openings).toHaveLength(0);
+  });
+
+  it('attaches a square room flush to a host side', () => {
+    const host = squareRoomPoints(WORLD_ORIGIN, 12, 10);
+    const right = attachSquareRoomPoints(host, 'right');
+    const size = planRoomSizeFeet(right);
+    expect(size.widthFt).toBeCloseTo(10, 1);
+    expect(size.depthFt).toBeCloseTo(10, 1);
+    expect(attachSideBlocked('h', 'right', [{ id: 'h', points: host }])).toBe(false);
   });
 
   it('covers every Olsen-named plan from the New Smyrna floor-plans page', () => {

@@ -7,6 +7,7 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
+  Columns2,
   FileSpreadsheet,
   Focus,
   Grid2X2,
@@ -14,14 +15,14 @@ import {
   Info,
   Lamp,
   Layers3,
-  LayoutTemplate,
   Menu,
   PencilRuler,
   Plus,
   Redo2,
   RotateCw,
   ShoppingBag,
-  Square,
+  SlidersHorizontal,
+  Sofa,
   Trash2,
   Undo2,
   Wallpaper,
@@ -32,6 +33,7 @@ import {
 import { roomCategories } from '../catalog/CatalogPanel';
 import { usePlannerStore } from '../../store/plannerStore';
 import type { RoomType, Tool } from '../../types';
+import { WORLD_ORIGIN } from '../../lib/geometry/placement';
 import { StoryOverview } from './StoryOverview';
 
 function useCoarsePointer() {
@@ -91,7 +93,6 @@ export function StudioChrome({
 }: Props) {
   const [storiesOpen, setStoriesOpen] = useState(false);
   const [fabsOpen, setFabsOpen] = useState(true);
-  const [roomShapesOpen, setRoomShapesOpen] = useState(false);
   const camera = usePlannerStore((s) => s.cameraMode);
   const setView = usePlannerStore((s) => s.setView);
   const setCamera = usePlannerStore((s) => s.setCameraMode);
@@ -203,6 +204,7 @@ export function StudioChrome({
   const hasSelection = !!(selectedItem || selectedWall || selectedOpening || selectedRoomId);
   const selectedRoom = planRooms.find((r) => r.id === selectedRoomId);
   const roomFloorColor = selectedRoom?.floorColor ?? floorColor;
+  const hasCustomFloor = !!selectedRoom?.floorColor || floorColor !== '#c9b18f';
   const activeFloor = floors.find((f) => f.id === activeFloorId);
   const houseLabel = housePlanName || (planRooms.length > 1 ? 'House plan' : 'Room');
   const atStart = workflowStage === 'start';
@@ -214,10 +216,12 @@ export function StudioChrome({
   const showFloorChrome = atPlanLevel && !pending;
   const pendingRoomShape = usePlannerStore((s) => s.pendingRoomShape);
   const setPendingRoomShape = usePlannerStore((s) => s.setPendingRoomShape);
+  const pendingAttachMode = usePlannerStore((s) => s.pendingAttachMode);
+  const setPendingAttachMode = usePlannerStore((s) => s.setPendingAttachMode);
+  const placePlanRoom = usePlannerStore((s) => s.placePlanRoom);
   const deletePlanRoom = usePlannerStore((s) => s.deletePlanRoom);
   const enterRoom = usePlannerStore((s) => s.enterRoom);
   const showPlanToolButtons = showPlanTools;
-  const showRoomShapeMenu = atPlanLevel && !pending && isTop && (roomShapesOpen || !!pendingRoomShape);
   const showPlanRoomActions = atPlanLevel && !pending && !!selectedRoom;
   /** Never render an empty black rail strip (e.g. 3D plan with nothing selected). */
   const showPlanRail =
@@ -233,10 +237,10 @@ export function StudioChrome({
 
   useEffect(() => {
     if (!atPlanLevel || !isTop) {
-      setRoomShapesOpen(false);
       if (pendingRoomShape) setPendingRoomShape(null);
+      if (pendingAttachMode) setPendingAttachMode(false);
     }
-  }, [atPlanLevel, isTop, pendingRoomShape, setPendingRoomShape]);
+  }, [atPlanLevel, isTop, pendingRoomShape, pendingAttachMode, setPendingRoomShape, setPendingAttachMode]);
 
   useEffect(() => {
     const hasRail = showPlanRail || showCatalogRail;
@@ -275,20 +279,13 @@ export function StudioChrome({
   }, [pending]);
 
   const planTools: { id: Tool; label: string; icon: typeof PencilRuler }[] = [
-    { id: 'select', label: 'Walls', icon: PencilRuler },
-  ];
-
-  const roomShapes: { id: 'rectangle' | 'wide' | 'l-shape'; label: string; icon: typeof Square }[] = [
-    { id: 'rectangle', label: 'Square', icon: Square },
-    { id: 'wide', label: 'Wide', icon: LayoutTemplate },
-    { id: 'l-shape', label: 'L-shape', icon: Home },
+    { id: 'select', label: 'Walls', icon: Columns2 },
   ];
 
   const choosePlanTool = (id: Tool) => {
     setPendingRoomShape(null);
-    setRoomShapesOpen(false);
+    setPendingAttachMode(false);
     setStudioMode('architect');
-    // Freehand wall drawing is removed — rooms come from Add room shapes.
     setTool(id === 'wall' ? 'select' : id);
     setDraftStart(null);
     setView('3d');
@@ -296,27 +293,23 @@ export function StudioChrome({
     if (id !== 'select') usePlannerStore.getState().selectWall(null);
   };
 
-  const toggleRoomShapes = () => {
+  const startAddRoom = () => {
     setStudioMode('architect');
-    setView('3d');
-    setCamera('top');
     setTool('select');
     setDraftStart(null);
-    if (roomShapesOpen || pendingRoomShape) {
-      setRoomShapesOpen(false);
-      setPendingRoomShape(null);
-      return;
-    }
-    setRoomShapesOpen(true);
-  };
-
-  const chooseRoomShape = (shape: 'rectangle' | 'wide' | 'l-shape') => {
-    setStudioMode('architect');
     setView('3d');
     setCamera('top');
-    setTool('select');
-    setRoomShapesOpen(true);
-    setPendingRoomShape(pendingRoomShape === shape ? null : shape);
+    if (!planRooms.length) {
+      const id = placePlanRoom(WORLD_ORIGIN, 'rectangle', 'Room 1');
+      if (id) {
+        window.setTimeout(() => {
+          window.dispatchEvent(new Event('roomcraft-fit-plan'));
+          window.dispatchEvent(new Event('roomcraft-refocus'));
+        }, 40);
+      }
+      return;
+    }
+    setPendingAttachMode(!pendingAttachMode);
   };
 
   /** Enter the room for furnishing — do not auto-open the properties panel. */
@@ -324,7 +317,7 @@ export function StudioChrome({
     if (!selectedRoomId) return;
     enterRoom(selectedRoomId);
     setPendingRoomShape(null);
-    setRoomShapesOpen(false);
+    setPendingAttachMode(false);
     window.setTimeout(() => {
       window.dispatchEvent(new Event('roomcraft-fit-plan'));
       window.dispatchEvent(new Event('roomcraft-refocus'));
@@ -341,6 +334,19 @@ export function StudioChrome({
       window.dispatchEvent(new Event('roomcraft-fit-plan'));
       window.dispatchEvent(new Event('roomcraft-refocus'));
     }, 40);
+  };
+
+  const confirmClearCrown = () => {
+    if (!window.confirm('Remove crown molding from this room?')) return;
+    removePerimeterTrim('ceiling');
+  };
+  const confirmClearBaseboard = () => {
+    if (!window.confirm('Remove baseboard from this room?')) return;
+    removePerimeterTrim('floor');
+  };
+  const confirmClearFlooring = () => {
+    if (!window.confirm('Clear the floor finish from this room?')) return;
+    clearFloorFinish();
   };
 
   useEffect(() => {
@@ -436,8 +442,7 @@ export function StudioChrome({
         </div>
 
         {showFloorChrome && (
-          <div className="studio-story-bar" aria-label="Stories">
-            <div className="studio-story-bar-label">Stories</div>
+          <div className="studio-story-bar" aria-label="Floors">
             <div className="studio-floor-stack studio-floor-stack--bar" role="tablist" aria-label="Floor levels">
               {floors.map((f) => (
                 <button
@@ -457,8 +462,8 @@ export function StudioChrome({
               <button
                 type="button"
                 className="studio-floor-add"
-                aria-label="Add story"
-                title="Add story"
+                aria-label="Add floor"
+                title="Add floor"
                 onClick={() => {
                   setStudioMode('architect');
                   addFloor();
@@ -468,21 +473,22 @@ export function StudioChrome({
                   }, 80);
                 }}
               >
-                <Plus size={15} />
+                <Plus size={16} />
+                <span>Floor</span>
               </button>
               {floors.length > 1 && (
                 <button
                   type="button"
                   className="studio-floor-delete"
-                  aria-label="Delete current story"
-                  title="Delete current story"
+                  aria-label="Delete current floor"
+                  title="Delete current floor"
                   onClick={() => removeFloor(activeFloorId)}
                 >
                   <Trash2 size={14} />
                 </button>
               )}
               {floors.length > 1 && (
-                <button type="button" className="studio-floor-all" onClick={() => setStoriesOpen(true)} title="View all stories">
+                <button type="button" className="studio-floor-all" onClick={() => setStoriesOpen(true)} title="View all floors">
                   All
                 </button>
               )}
@@ -491,14 +497,36 @@ export function StudioChrome({
         )}
       </div>
 
-      {!inRoom && planRooms.length >= 1 && !pending && !selectedItem && tool === 'select' && !selectedRoom && (
-        <div className="studio-selection-hint studio-hint-float">Tap a room to select · drag to move · Edit on the right rail</div>
-      )}
-      {!inRoom && planRooms.length >= 1 && !pending && !selectedItem && tool === 'select' && selectedRoom && (
-        <div className="studio-selection-hint studio-hint-float">Drag to move this room · Edit to furnish · tap empty space for walls</div>
+      {atPlanLevel && isTop && !pending && (
+        <button
+          type="button"
+          className={`studio-plan-add-room${pendingAttachMode ? ' is-active' : ''}`}
+          onClick={startAddRoom}
+          aria-pressed={pendingAttachMode}
+          aria-label="Add room"
+          title="Add room"
+        >
+          <Plus size={16} />
+          <span>{pendingAttachMode ? 'Cancel add' : 'Add room'}</span>
+        </button>
       )}
 
-      {showPlanTools && tool === 'select' && !selectedWall && !selectedRoom && (
+      {!inRoom && planRooms.length >= 1 && !pending && !selectedItem && tool === 'select' && !selectedRoom && !pendingAttachMode && (
+        <div className="studio-selection-hint studio-hint-float">Tap a room to select · drag to move · Furnish on the right rail</div>
+      )}
+      {!inRoom && planRooms.length >= 1 && !pending && !selectedItem && tool === 'select' && selectedRoom && !pendingAttachMode && (
+        <div className="studio-selection-hint studio-hint-float">Drag to move · Furnish to enter · tap empty space for walls</div>
+      )}
+      {pendingAttachMode && !selectedRoom && planRooms.length >= 1 && (
+        <div className="studio-selection-hint studio-hint-float">Select a room, then pick Left / Right / Above / Below</div>
+      )}
+      {pendingAttachMode && selectedRoom && (
+        <div className="studio-selection-hint studio-hint-float">
+          Add a matching square beside “{selectedRoom.name}” — blocked sides stay grey
+        </div>
+      )}
+
+      {showPlanTools && tool === 'select' && !selectedWall && !selectedRoom && !pendingAttachMode && (
         <div className="studio-selection-hint studio-hint-float">Tap a wall · enter length on the plan · add openings from wall actions</div>
       )}
       {pendingFloorFill && (
@@ -508,9 +536,6 @@ export function StudioChrome({
             Cancel
           </button>
         </div>
-      )}
-      {pendingRoomShape && (
-        <div className="studio-selection-hint studio-hint-float">Drag on the plan to place a {pendingRoomShape === 'l-shape' ? 'L-shaped' : pendingRoomShape} room</div>
       )}
 
       {pending && <div className="studio-selection-hint studio-hint-float">Placing {pending.name} · move then tap to confirm</div>}
@@ -534,25 +559,16 @@ export function StudioChrome({
           {hasCrown && (
             <span className="studio-finish-chip">
               Crown: {crownName ?? 'on'}
-              <button type="button" onClick={() => removePerimeterTrim('ceiling')} aria-label="Remove crown molding">
-                Remove
-              </button>
             </span>
           )}
           {hasBaseboard && (
             <span className="studio-finish-chip">
               Base: {baseName ?? 'on'}
-              <button type="button" onClick={() => removePerimeterTrim('floor')} aria-label="Remove baseboard">
-                Remove
-              </button>
             </span>
           )}
           <span className="studio-finish-chip studio-finish-floor">
             Floor
             <span className="studio-finish-swatch" style={{ background: roomFloorColor }} aria-hidden />
-            <button type="button" onClick={() => clearFloorFinish()} aria-label="Clear floor finish">
-              Clear
-            </button>
           </span>
         </div>
       )}
@@ -665,50 +681,32 @@ export function StudioChrome({
           {showPlanToolButtons &&
             planTools.map((t) => {
               const Icon = t.icon;
-              const active = !pendingRoomShape && !roomShapesOpen && studioMode === 'architect' && tool === t.id;
+              const active = !pendingAttachMode && studioMode === 'architect' && tool === t.id;
               return (
-                <button key={t.id} type="button" className={active ? 'is-active' : ''} onClick={() => choosePlanTool(t.id)} aria-label={t.label} title={t.label}>
+                <button
+                  key={t.id}
+                  type="button"
+                  className={`studio-rail-walls${active ? ' is-active' : ''}`}
+                  onClick={() => choosePlanTool(t.id)}
+                  aria-label={t.label}
+                  title={t.label}
+                >
                   <Icon />
                   <span>{t.label}</span>
                 </button>
               );
             })}
-          {isTop && atPlanLevel && !pending && (
-            <button
-              type="button"
-              className={roomShapesOpen || pendingRoomShape ? 'is-active' : ''}
-              onClick={toggleRoomShapes}
-              aria-expanded={showRoomShapeMenu}
-              aria-label="Add room"
-              title="Add room"
-            >
-              <Plus />
-              <span>Add room</span>
-            </button>
-          )}
-          {showRoomShapeMenu &&
-            roomShapes.map((s) => {
-              const Icon = s.icon;
-              const active = pendingRoomShape === s.id;
-              return (
-                <button
-                  key={s.id}
-                  type="button"
-                  className={`studio-rail-sub${active ? ' is-active' : ''}`}
-                  onClick={() => chooseRoomShape(s.id)}
-                  aria-label={`Place ${s.label} room`}
-                  title={`Place ${s.label} room`}
-                >
-                  <Icon />
-                  <span>{s.label}</span>
-                </button>
-              );
-            })}
           {showPlanRoomActions && (
             <>
-              <button type="button" onClick={editSelectedPlanRoom} aria-label="Enter room" title="Enter room">
-                <PencilRuler />
-                <span>Edit</span>
+              <button
+                type="button"
+                className="studio-rail-furnish"
+                onClick={editSelectedPlanRoom}
+                aria-label="Furnish room"
+                title="Furnish room"
+              >
+                <Sofa />
+                <span>Furnish</span>
               </button>
               <button type="button" className="is-danger" onClick={removeSelectedPlanRoom} aria-label="Remove room" title="Remove room">
                 <Trash2 />
@@ -721,9 +719,9 @@ export function StudioChrome({
 
       {showCatalogRail && (
         <div className={`studio-category-rail${catalogOpen ? ' is-active' : ''}`} aria-label={`${roomType} product categories`}>
-          <button type="button" onClick={onOpenInspector} aria-label="Edit room" title="Edit room">
-            <PencilRuler />
-            <span>Edit</span>
+          <button type="button" className="studio-rail-room-edit" onClick={onOpenInspector} aria-label="Room properties" title="Room properties">
+            <SlidersHorizontal />
+            <span>Room</span>
           </button>
           {categories.map((category) => {
             const Icon = icons[category] ?? ShoppingBag;
@@ -761,6 +759,19 @@ export function StudioChrome({
             <Redo2 size={15} />
             <span>Redo</span>
           </button>
+          {inRoom && !pending && (
+            <div className="studio-dock-seg studio-dock-clear" role="group" aria-label="Clear finishes">
+              <button type="button" className="studio-dock-action" disabled={!hasCrown} onClick={confirmClearCrown} title="Clear crown molding">
+                <span>Crown</span>
+              </button>
+              <button type="button" className="studio-dock-action" disabled={!hasBaseboard} onClick={confirmClearBaseboard} title="Clear baseboard">
+                <span>Base</span>
+              </button>
+              <button type="button" className="studio-dock-action" disabled={!hasCustomFloor} onClick={confirmClearFlooring} title="Clear flooring">
+                <span>Floor</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

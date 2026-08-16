@@ -11,7 +11,14 @@ import {
   wallExteriorSide,
   type WallGrowSide,
 } from '../../lib/geometry/roomWalls';
-import { proposedRoomOverlaps, shapedRoomPoints, snapRoomCenterToNeighbors } from '../../lib/housePlans/buildPlan';
+import {
+  attachSideBlocked,
+  attachSquareRoomPoints,
+  proposedRoomOverlaps,
+  shapedRoomPoints,
+  snapRoomCenterToNeighbors,
+  type AttachSide,
+} from '../../lib/housePlans/buildPlan';
 import { PIXELS_PER_METER, wallLengthMeters } from '../../lib/geometry/snapping';
 import { formatLength, parseLength } from '../../lib/measurements';
 import { usePlannerStore } from '../../store/plannerStore';
@@ -27,9 +34,15 @@ const planFromWorld = (x: number, z: number) => ({
   y: z * PIXELS_PER_METER + WORLD_ORIGIN.y,
 });
 
+const ATTACH_SIDES: { side: AttachSide; label: string; Icon: typeof ArrowLeft }[] = [
+  { side: 'left', label: 'Left', Icon: ArrowLeft },
+  { side: 'right', label: 'Right', Icon: ArrowRight },
+  { side: 'top', label: 'Above', Icon: ArrowUp },
+  { side: 'bottom', label: 'Below', Icon: ArrowDown },
+];
+
 /**
- * Top-view plan tools: place rooms and edit wall length via an on-plan input.
- * Freehand wall drawing is disabled — rooms come from Add room shapes.
+ * Top-view plan tools: attach rooms beside a host and edit wall length via an on-plan input.
  */
 export function PlanEditLayer() {
   const tool = usePlannerStore((s) => s.tool);
@@ -37,26 +50,30 @@ export function PlanEditLayer() {
   const cameraMode = usePlannerStore((s) => s.cameraMode);
   const walls = usePlannerStore((s) => s.walls);
   const planRooms = usePlannerStore((s) => s.planRooms);
+  const selectedRoomId = usePlannerStore((s) => s.selectedRoomId);
   const setDraftStart = usePlannerStore((s) => s.setDraftStart);
   const placePlanRoom = usePlannerStore((s) => s.placePlanRoom);
+  const attachPlanRoom = usePlannerStore((s) => s.attachPlanRoom);
   const pendingRoomShape = usePlannerStore((s) => s.pendingRoomShape);
+  const pendingAttachMode = usePlannerStore((s) => s.pendingAttachMode);
   const setPendingRoomShape = usePlannerStore((s) => s.setPendingRoomShape);
   const selectedWallId = usePlannerStore((s) => s.selectedWallId);
   const setWallLength = usePlannerStore((s) => s.setWallLength);
   const updateWall = usePlannerStore((s) => s.updateWall);
   const unit = usePlannerStore((s) => s.unitSystem);
-  const { invalidate, gl } = useThree();
+  const { invalidate } = useThree();
   const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
   const [growSide, setGrowSide] = useState<WallGrowSide>('right');
   const roomPlace = useRef<{ pointerId: number; active: boolean } | null>(null);
   const floorPlane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), []);
 
   const active = studioMode === 'architect' && cameraMode === 'top';
-  const wallEdit = active && tool === 'select';
+  const wallEdit = active && tool === 'select' && !pendingAttachMode;
   const placingRoom = active && (!!pendingRoomShape || tool === 'room');
+  const hostRoom = planRooms.find((r) => r.id === selectedRoomId) ?? null;
+  const showAttachSides = active && pendingAttachMode && !!hostRoom;
 
   useEffect(() => {
-    // Freehand wall drawing removed — clear any leftover draft.
     setDraftStart(null);
   }, [active, tool, setDraftStart]);
 
@@ -79,6 +96,22 @@ export function PlanEditLayer() {
     const loop = [...pts, pts[0]!];
     return loop.map((p) => [world(p.x, p.y)[0], 0.1, world(p.x, p.y)[1]] as [number, number, number]);
   }, [placingRoom, cursor, shapeKind, planRooms]);
+
+  const attachPreviews = useMemo(() => {
+    if (!hostRoom) return [];
+    return ATTACH_SIDES.map(({ side, label, Icon }) => {
+      const blocked = attachSideBlocked(hostRoom.id, side, planRooms);
+      const pts = attachSquareRoomPoints(hostRoom.points, side);
+      const loop = [...pts, pts[0]!];
+      const line = loop.map((p) => [world(p.x, p.y)[0], 0.12, world(p.x, p.y)[1]] as [number, number, number]);
+      const xs = pts.map((p) => world(p.x, p.y)[0]);
+      const zs = pts.map((p) => world(p.x, p.y)[1]);
+      const midX = (Math.min(...xs) + Math.max(...xs)) / 2;
+      const midZ = (Math.min(...zs) + Math.max(...zs)) / 2;
+      return { side, label, Icon, blocked, line, midX, midZ };
+    });
+  }, [hostRoom, planRooms]);
+
   const roomsForExterior = useMemo((): PlanRoomLabel[] => {
     if (planRooms.length) return planRooms;
     return detectRoomPolygons(walls).map((points, i) => ({
@@ -118,34 +151,24 @@ export function PlanEditLayer() {
     document.body.dataset.movingFurniture = 'true';
     window.dispatchEvent(new Event('roomcraft-drag-start'));
     try {
-      gl.domElement.setPointerCapture?.(e.pointerId);
+      (e.target as any).setPointerCapture?.(e.pointerId);
     } catch {
       /* ignore */
     }
   };
 
   const onFloorPointerUp = (e: any) => {
-    if (!roomPlace.current || roomPlace.current.pointerId !== e.pointerId) return;
+    if (!placingRoom || !roomPlace.current?.active) return;
     e.stopPropagation();
     const raw = hitPlan(e) ?? cursor;
     roomPlace.current = null;
     delete document.body.dataset.movingFurniture;
     window.dispatchEvent(new Event('roomcraft-drag-end'));
-    try {
-      gl.domElement.releasePointerCapture?.(e.pointerId);
-    } catch {
-      /* ignore */
-    }
-    if (!raw) {
-      setPendingRoomShape(null);
-      return;
-    }
+    if (!raw) return;
     const snapped = snapRoomCenterToNeighbors(raw, shapeKind, planRooms);
-    if (proposedRoomOverlaps(snapped, shapeKind, planRooms)) {
-      setCursor(snapped);
-      return;
-    }
+    if (proposedRoomOverlaps(snapped, shapeKind, planRooms)) return;
     placePlanRoom(snapped, shapeKind);
+    setPendingRoomShape(null);
     setCursor(null);
     window.setTimeout(() => {
       window.dispatchEvent(new Event('roomcraft-fit-plan'));
@@ -167,8 +190,6 @@ export function PlanEditLayer() {
         const layout = wallDimFieldLayout(selected, side);
         const { nx, ny: nz, cardOffsetM, placement, verticalOnPlan } = layout;
         const s = layout.side;
-        // Card *center* in world meters fully past the exterior face (Html `center`).
-        // CSS translate is a backup nudge in the same exterior direction.
         return {
           len,
           midX,
@@ -207,6 +228,38 @@ export function PlanEditLayer() {
           gapSize={0.12}
         />
       )}
+
+      {showAttachSides &&
+        attachPreviews.map(({ side, label, Icon, blocked, line, midX, midZ }) => (
+          <group key={side}>
+            <Line
+              points={line}
+              color={blocked ? '#9aa3ad' : '#0058a3'}
+              lineWidth={2}
+              dashed
+              dashSize={0.16}
+              gapSize={0.1}
+            />
+            <Html position={[midX, 0.2, midZ]} center zIndexRange={[130, 80]} style={{ pointerEvents: 'auto' }}>
+              <button
+                type="button"
+                className={`plan-attach-side${blocked ? ' is-blocked' : ''}`}
+                disabled={blocked}
+                aria-label={`Add room ${label.toLowerCase()}`}
+                title={blocked ? 'Blocked' : `Add square room ${label.toLowerCase()}`}
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (blocked || !hostRoom) return;
+                  attachPlanRoom(hostRoom.id, side);
+                }}
+              >
+                <Icon size={16} />
+                <span>{label}</span>
+              </button>
+            </Html>
+          </group>
+        ))}
 
       {wallEdit && selected && selectedFrame && (
         <group>
