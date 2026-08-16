@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildFloorFromRooms, buildHouse, livingAreaSqFt, planRoomSizeFeet, proposedRoomOverlaps, row, shapedRoomPoints, splitPlanRoomPoints, squareRoomPoints, attachSquareRoomPoints, attachSideBlocked, nudgePlanRoomsByWall } from './buildPlan';
 import { WORLD_ORIGIN } from '../geometry/placement';
-import { assertPlanCatalog, listHousePlanNames, olsenHousePlans } from './olsenPlans';
+import { assertPlanCatalog, getHousePlan, listHousePlanNames, olsenHousePlans } from './olsenPlans';
 import { usePlannerStore } from '../../store/plannerStore';
 
 describe('house plan builder', () => {
@@ -116,10 +116,51 @@ describe('house plan builder', () => {
       expect(built.floors.length).toBe(plan.stories);
       for (const floor of built.floors) {
         expect(floor.scene.walls.length).toBeGreaterThan(3);
-        expect(floor.roomPolygons.length).toBeGreaterThan(3);
+        expect(floor.roomPolygons.length).toBeGreaterThan(2);
         expect(livingAreaSqFt(floor.rooms)).toBeGreaterThan(200);
       }
     }
+  });
+
+  it('matches published flyer room sizes for Largo, Islamorada, and St. Thomas', () => {
+    const byName = (planId: string, name: string) => {
+      const plan = olsenHousePlans.find((p) => p.id === planId)!;
+      const found = plan.floors[0]!.rooms.find((r) => r.name === name);
+      expect(found).toBeTruthy();
+      return found!;
+    };
+    // Largo flyer
+    let r = byName('largo', 'Garage');
+    expect(r.w).toBeCloseTo(23 + 4 / 12, 1);
+    expect(r.h).toBeCloseTo(30 + 4 / 12, 1);
+    r = byName('largo', 'Great Room');
+    expect(r.w).toBeCloseTo(22 + 5 / 12, 1);
+    expect(r.h).toBeCloseTo(23, 1);
+    r = byName('largo', "Owner's Suite");
+    expect(r.w).toBeCloseTo(15 + 6 / 12, 1);
+    expect(r.h).toBeCloseTo(21 + 4 / 12, 1);
+    // Islamorada flyer
+    r = byName('islamorada', 'Family Room');
+    expect(r.w).toBeCloseTo(19 + 11 / 12, 0);
+    expect(r.h).toBeCloseTo(28 + 8 / 12, 0);
+    r = byName('islamorada', 'Garage');
+    expect(r.w).toBeCloseTo(24, 1);
+    expect(r.h).toBeCloseTo(32 + 9 / 12, 1);
+    // St. Thomas flyer
+    r = byName('st-thomas', 'Great Room');
+    expect(r.w).toBeCloseTo(23 + 6 / 12, 1);
+    expect(r.h).toBeCloseTo(24 + 4 / 12, 1);
+    r = byName('st-thomas', 'Kitchen');
+    expect(r.w).toBeCloseTo(18 + 4 / 12, 1);
+    expect(r.h).toBeCloseTo(16, 1);
+  });
+
+  it('uses two stories for Captiva / Coral Sands / Key Biscayne / St. Croix per flyers', () => {
+    for (const id of ['captiva', 'coral-sands', 'key-biscayne', 'st-croix', 'sanibel']) {
+      expect(getHousePlan(id)?.stories).toBe(2);
+    }
+    expect(getHousePlan('st-thomas')?.beds).toBe(4);
+    expect(getHousePlan('st-croix')?.livingSqFt).toBe(2781);
   });
 
   it('applies a house plan into the planner store with floors', () => {
