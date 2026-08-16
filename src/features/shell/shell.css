@@ -105,7 +105,9 @@
   overflow: hidden;
 }
 .app-shell:has(.studio-root) .app-shell-top {
-  border-bottom: 0;
+  /* Keep a clear divider between app nav and Build chrome. */
+  border-bottom: 1px solid var(--line);
+  box-shadow: 0 1px 0 rgba(17, 24, 32, 0.04);
 }
 .studio-root {
   height: 100%;
