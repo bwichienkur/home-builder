@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#c9a57a"/><stop offset="50%" stop-color="#b89168"/><stop offset="100%" stop-color="#c4a074"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#g)"/>
+  <rect x="0" y="0" width="512" height="64" fill="none" stroke="#8a6b45" stroke-width="2" opacity="0.45"/><rect x="0" y="64" width="512" height="64" fill="none" stroke="#8a6b45" stroke-width="2" opacity="0.45"/><rect x="0" y="128" width="512" height="64" fill="none" stroke="#8a6b45" stroke-width="2" opacity="0.45"/><rect x="0" y="192" width="512" height="64" fill="none" stroke="#8a6b45" stroke-width="2" opacity="0.45"/><rect x="0" y="256" width="512" height="64" fill="none" stroke="#8a6b45" stroke-width="2" opacity="0.45"/><rect x="0" y="320" width="512" height="64" fill="none" stroke="#8a6b45" stroke-width="2" opacity="0.45"/><rect x="0" y="384" width="512" height="64" fill="none" stroke="#8a6b45" stroke-width="2" opacity="0.45"/><rect x="0" y="448" width="512" height="64" fill="none" stroke="#8a6b45" stroke-width="2" opacity="0.45"/>
+  <path d="M0 20 Q128 8 256 22 T512 18" fill="none" stroke="#a07a52" stroke-width="1.2" opacity="0.35"/><path d="M0 84 Q128 72 256 86 T512 82" fill="none" stroke="#a07a52" stroke-width="1.2" opacity="0.35"/><path d="M0 148 Q128 136 256 150 T512 146" fill="none" stroke="#a07a52" stroke-width="1.2" opacity="0.35"/><path d="M0 212 Q128 200 256 214 T512 210" fill="none" stroke="#a07a52" stroke-width="1.2" opacity="0.35"/><path d="M0 276 Q128 264 256 278 T512 274" fill="none" stroke="#a07a52" stroke-width="1.2" opacity="0.35"/><path d="M0 340 Q128 328 256 342 T512 338" fill="none" stroke="#a07a52" stroke-width="1.2" opacity="0.35"/><path d="M0 404 Q128 392 256 406 T512 402" fill="none" stroke="#a07a52" stroke-width="1.2" opacity="0.35"/><path d="M0 468 Q128 456 256 470 T512 466" fill="none" stroke="#a07a52" stroke-width="1.2" opacity="0.35"/>
+</svg>

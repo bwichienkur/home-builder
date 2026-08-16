@@ -1,8 +1,9 @@
+import { residentialFlooring } from './residentialFlooring';
 import { residentialFurniture } from './residentialFurniture';
 
 export type PriceUnit='each'|'set'|'box'|'sq ft'|'linear ft'|'allowance';
 export type CatalogPlacementMode = 'wall-art' | 'ceiling-perimeter' | 'floor-perimeter' | 'floor-fill';
-export type CatalogItem={id:string;sku?:string;vendorId?:string;name:string;brand?:string;model?:string;category:string;subcategory?:string;roomTypes?:string[];tags?:string[];dims:[number,number,number];color:string;price?:number;msrp?:number;cost?:number;laborCost?:number;currency?:string;priceUnit?:PriceUnit;priceVerifiedAt?:string;sellable?:boolean;placeholderOnly?:boolean;mountingType?:string;placementSurfaces?:string[];placementMode?:CatalogPlacementMode;finish?:string;material?:string;variantGroup?:string;variantName?:string;availability?:string;leadTimeDays?:number;thumbnailUrl?:string;modelUrl?:string;lowPolyModelUrl?:string;emoji:string;sourceUrl?:string;sourceLabel?:string;note?:string};
+export type CatalogItem={id:string;sku?:string;vendorId?:string;name:string;brand?:string;model?:string;category:string;subcategory?:string;roomTypes?:string[];tags?:string[];dims:[number,number,number];color:string;price?:number;msrp?:number;cost?:number;laborCost?:number;currency?:string;priceUnit?:PriceUnit;priceVerifiedAt?:string;sellable?:boolean;placeholderOnly?:boolean;mountingType?:string;placementSurfaces?:string[];placementMode?:CatalogPlacementMode;finish?:string;material?:string;variantGroup?:string;variantName?:string;availability?:string;leadTimeDays?:number;thumbnailUrl?:string;/** Albedo / pattern map shown on room floors (floor-fill) or product faces. */textureUrl?:string;/** World meters covered by one texture repeat (smaller = denser pattern). */textureRepeat?:number;roughness?:number;modelUrl?:string;lowPolyModelUrl?:string;emoji:string;sourceUrl?:string;sourceLabel?:string;note?:string};
 
 const SAMPLE={
  chair:'https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/SheenChair/glTF-Binary/SheenChair.glb',
@@ -62,12 +63,12 @@ const legacyCatalog: CatalogItem[] = [
 
  // International Tile & Stone's public product page lists collections and
  // formats, but no retail prices. Dimensions below match the named formats.
- {id:'its-afyon-gold-18',name:'Afyon Gold Filled & Honed Travertine',brand:'International Tile & Stone',model:'18×18 Classic Collection',category:'Tile',dims:[.4572,.012,.4572],color:'#cdb58d',emoji:'▦',price:12.5,priceUnit:'sq ft',placementMode:'floor-fill',mountingType:'floor',placementSurfaces:['floor'],sourceUrl:'https://internationaltileandstone.com/products/',sourceLabel:'Official ITS products',note:'18×18 in tile · tap tile then tap a room to fill the floor'},
- {id:'its-afyon-gold-french',name:'Afyon Gold Travertine French Pattern',brand:'International Tile & Stone',model:'Four-size French Pattern',category:'Tile',dims:[.4572,.012,.4572],color:'#c4aa7e',emoji:'▦',price:14,priceUnit:'sq ft',placementMode:'floor-fill',mountingType:'floor',placementSurfaces:['floor'],sourceUrl:'https://internationaltileandstone.com/products/',sourceLabel:'Official ITS products',note:'Tap tile then tap a room to fill the floor'},
+ {id:'its-afyon-gold-18',name:'Afyon Gold Filled & Honed Travertine',brand:'International Tile & Stone',model:'18×18 Classic Collection',category:'Tile',dims:[.4572,.012,.4572],color:'#cdb58d',emoji:'▦',price:12.5,priceUnit:'sq ft',placementMode:'floor-fill',mountingType:'floor',placementSurfaces:['floor'],textureUrl:'/catalog/floors/tile-hex-stone.svg',textureRepeat:0.45,thumbnailUrl:'/catalog/thumbs/floor-tile.svg',sourceUrl:'https://internationaltileandstone.com/products/',sourceLabel:'Official ITS products',note:'18×18 in tile · tap tile then tap a room to fill the floor'},
+ {id:'its-afyon-gold-french',name:'Afyon Gold Travertine French Pattern',brand:'International Tile & Stone',model:'Four-size French Pattern',category:'Tile',dims:[.4572,.012,.4572],color:'#c4aa7e',emoji:'▦',price:14,priceUnit:'sq ft',placementMode:'floor-fill',mountingType:'floor',placementSurfaces:['floor'],textureUrl:'/catalog/floors/tile-hex-stone.svg',textureRepeat:0.5,thumbnailUrl:'/catalog/thumbs/floor-tile.svg',sourceUrl:'https://internationaltileandstone.com/products/',sourceLabel:'Official ITS products',note:'Tap tile then tap a room to fill the floor'},
  {id:'its-rope-molding-noce',name:'Rope Molding Noce',brand:'International Tile & Stone',model:'Noce molding',category:'Tile',dims:[.305,.025,.05],color:'#9a7655',emoji:'▬',sourceUrl:'https://internationaltileandstone.com/products/',sourceLabel:'Official ITS products',note:'Decorative stone molding · dealer quote'},
- {id:'its-light-travertine-mosaic',name:'Light Travertine Mosaic',brand:'International Tile & Stone',model:'2×4 straight-edge mosaic',category:'Tile',dims:[.305,.012,.305],color:'#d8c5a5',emoji:'▦',price:11,priceUnit:'sq ft',placementMode:'floor-fill',mountingType:'floor',placementSurfaces:['floor'],sourceUrl:'https://internationaltileandstone.com/products/',sourceLabel:'Official ITS products',note:'Tap tile then tap a room to fill the floor'},
- {id:'its-crema-beige-marble',name:'Crema Beige Polished Marble',brand:'International Tile & Stone',model:'18×18 marble tile',category:'Tile',dims:[.4572,.012,.4572],color:'#d8c3a2',emoji:'▦',price:16,priceUnit:'sq ft',placementMode:'floor-fill',mountingType:'floor',placementSurfaces:['floor'],sourceUrl:'https://internationaltileandstone.com/products/',sourceLabel:'Official ITS products',note:'Tap tile then tap a room to fill the floor'},
- {id:'its-bianco-carrera-12x24',name:'Bianco Carrera Porcelain Tile',brand:'International Tile & Stone',model:'12×24 porcelain',category:'Tile',dims:[.3048,.01,.6096],color:'#dedede',emoji:'▦',price:9.5,priceUnit:'sq ft',placementMode:'floor-fill',mountingType:'floor',placementSurfaces:['floor'],sourceUrl:'https://internationaltileandstone.com/products/',sourceLabel:'Official ITS products',note:'Tap tile then tap a room to fill the floor'},
+ {id:'its-light-travertine-mosaic',name:'Light Travertine Mosaic',brand:'International Tile & Stone',model:'2×4 straight-edge mosaic',category:'Tile',dims:[.305,.012,.305],color:'#d8c5a5',emoji:'▦',price:11,priceUnit:'sq ft',placementMode:'floor-fill',mountingType:'floor',placementSurfaces:['floor'],textureUrl:'/catalog/floors/tile-subway-white.svg',textureRepeat:0.25,thumbnailUrl:'/catalog/thumbs/floor-tile.svg',sourceUrl:'https://internationaltileandstone.com/products/',sourceLabel:'Official ITS products',note:'Tap tile then tap a room to fill the floor'},
+ {id:'its-crema-beige-marble',name:'Crema Beige Polished Marble',brand:'International Tile & Stone',model:'18×18 marble tile',category:'Tile',dims:[.4572,.012,.4572],color:'#d8c3a2',emoji:'▦',price:16,priceUnit:'sq ft',placementMode:'floor-fill',mountingType:'floor',placementSurfaces:['floor'],textureUrl:'/catalog/floors/tile-ceramic-white.svg',textureRepeat:0.45,thumbnailUrl:'/catalog/thumbs/floor-tile.svg',sourceUrl:'https://internationaltileandstone.com/products/',sourceLabel:'Official ITS products',note:'Tap tile then tap a room to fill the floor'},
+ {id:'its-bianco-carrera-12x24',name:'Bianco Carrera Porcelain Tile',brand:'International Tile & Stone',model:'12×24 porcelain',category:'Tile',dims:[.3048,.01,.6096],color:'#dedede',emoji:'▦',price:9.5,priceUnit:'sq ft',placementMode:'floor-fill',mountingType:'floor',placementSurfaces:['floor'],textureUrl:'/catalog/floors/tile-porcelain-gray.svg',textureRepeat:0.5,thumbnailUrl:'/catalog/thumbs/floor-tile.svg',sourceUrl:'https://internationaltileandstone.com/products/',sourceLabel:'Official ITS products',note:'Tap tile then tap a room to fill the floor'},
  // Wall finish — BOM uses net wall area after openings are subtracted.
  {id:'interior-paint',name:'Interior Wall Paint',brand:'Roomcraft',model:'Eggshell',category:'Surfaces',dims:[1,.001,1],color:'#f4f6f8',price:0.85,priceUnit:'sq ft',emoji:'▦',placeholderOnly:true,note:'Reference coverage price · quantity is net wall area after openings'},
 
@@ -93,15 +94,17 @@ const legacyCatalog: CatalogItem[] = [
  {id:'moen-cia-ut4362ep',name:'Cia M-CORE 4-Series Shower Trim',brand:'Moen',model:'UT4362EP · Brushed Nickel',category:'Plumbing',dims:[.22,.12,.26],color:'#aaa9a3',price:653.12,emoji:'◉',sourceUrl:'https://shop.moen.com/collections/cia-collection',sourceLabel:'Official Moen shop',note:'Starting public price · required valve/installation may be separate'}
 ];
 
-/** Built-in catalog: legacy brand samples + realistic residential furnishings. */
+/** Built-in catalog: legacy brand samples + residential furnishings + flooring. */
 export const catalog: CatalogItem[] = [
   ...legacyCatalog,
   ...(residentialFurniture as CatalogItem[]),
+  ...(residentialFlooring as CatalogItem[]),
 ];
 
 /** Starter pack mirrored into local vendor inventory (Advanced inventory). */
 export function starterInventoryItems(): CatalogItem[] {
-  return (residentialFurniture as CatalogItem[]).map((item, index) => ({
+  const pack = [...residentialFurniture, ...residentialFlooring] as CatalogItem[];
+  return pack.map((item, index) => ({
     ...item,
     vendorId: 'roomcraft-home',
     brand: item.brand ?? 'Roomcraft Home',

@@ -5,19 +5,19 @@ import { catalog } from './catalogData';
 import type { RoomType } from '../../types';
 import { useInventoryStore } from '../../store/inventoryStore';
 
-const categories = ['All', 'Appliances', 'Cabinetry', 'Surfaces', 'Tile', 'Plumbing', 'Paneling', 'Trim', 'Seating', 'Tables', 'Storage', 'Bedroom', 'Lighting', 'Decor', 'Textiles'];
+const categories = ['All', 'Flooring', 'Appliances', 'Cabinetry', 'Surfaces', 'Tile', 'Plumbing', 'Paneling', 'Trim', 'Seating', 'Tables', 'Storage', 'Bedroom', 'Lighting', 'Decor', 'Textiles'];
 export const roomCategories: Record<RoomType, string[]> = {
-  Bedroom: ['Bedroom', 'Storage', 'Lighting', 'Decor', 'Textiles', 'Trim'],
-  'Living room': ['Seating', 'Tables', 'Storage', 'Lighting', 'Decor', 'Textiles', 'Paneling', 'Trim'],
-  Bathroom: ['Plumbing', 'Cabinetry', 'Tile', 'Surfaces', 'Lighting', 'Trim'],
-  Kitchen: ['Appliances', 'Cabinetry', 'Surfaces', 'Plumbing', 'Tile', 'Seating', 'Lighting', 'Trim'],
-  'Dining room': ['Seating', 'Tables', 'Storage', 'Lighting', 'Decor', 'Textiles', 'Trim'],
-  Office: ['Tables', 'Seating', 'Storage', 'Lighting', 'Decor', 'Textiles', 'Trim'],
-  'Children’s room': ['Bedroom', 'Storage', 'Lighting', 'Decor', 'Textiles', 'Trim'],
-  Laundry: ['Appliances', 'Cabinetry', 'Storage', 'Surfaces', 'Plumbing', 'Lighting', 'Trim'],
-  Hallway: ['Storage', 'Tables', 'Lighting', 'Decor', 'Textiles', 'Trim'],
-  'Storage / wardrobe': ['Storage', 'Cabinetry', 'Lighting', 'Decor', 'Trim'],
-  Outdoor: ['Seating', 'Tables', 'Lighting', 'Decor', 'Surfaces', 'Trim'],
+  Bedroom: ['Flooring', 'Bedroom', 'Storage', 'Lighting', 'Decor', 'Textiles', 'Trim'],
+  'Living room': ['Flooring', 'Seating', 'Tables', 'Storage', 'Lighting', 'Decor', 'Textiles', 'Paneling', 'Trim'],
+  Bathroom: ['Flooring', 'Plumbing', 'Cabinetry', 'Tile', 'Surfaces', 'Lighting', 'Trim'],
+  Kitchen: ['Flooring', 'Appliances', 'Cabinetry', 'Surfaces', 'Plumbing', 'Tile', 'Seating', 'Lighting', 'Trim'],
+  'Dining room': ['Flooring', 'Seating', 'Tables', 'Storage', 'Lighting', 'Decor', 'Textiles', 'Trim'],
+  Office: ['Flooring', 'Tables', 'Seating', 'Storage', 'Lighting', 'Decor', 'Textiles', 'Trim'],
+  'Children’s room': ['Flooring', 'Bedroom', 'Storage', 'Lighting', 'Decor', 'Textiles', 'Trim'],
+  Laundry: ['Flooring', 'Appliances', 'Cabinetry', 'Storage', 'Surfaces', 'Plumbing', 'Lighting', 'Trim'],
+  Hallway: ['Flooring', 'Storage', 'Tables', 'Lighting', 'Decor', 'Textiles', 'Trim'],
+  'Storage / wardrobe': ['Flooring', 'Storage', 'Cabinetry', 'Lighting', 'Decor', 'Trim'],
+  Outdoor: ['Flooring', 'Seating', 'Tables', 'Lighting', 'Decor', 'Surfaces', 'Trim'],
 };
 const money = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
 const PAGE = 36;

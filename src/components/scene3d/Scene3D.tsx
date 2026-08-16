@@ -1,6 +1,6 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Bvh, Environment, Line, OrbitControls, PerspectiveCamera, PivotControls, Text } from '@react-three/drei';
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { Bvh, Environment, Line, OrbitControls, PerspectiveCamera, PivotControls, Text, useTexture } from '@react-three/drei';
+import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { usePlannerStore } from '../../store/plannerStore';
 import { catalog } from '../catalog/catalogData';
@@ -481,6 +481,118 @@ function SceneAtmosphere() {
   );
 }
 
+function FloorMaterial({
+  color,
+  catalogId,
+  opacity,
+  transparent,
+  depthWrite,
+  worldSpan = 4,
+}: {
+  color: string;
+  catalogId?: string;
+  opacity: number;
+  transparent: boolean;
+  depthWrite: boolean;
+  worldSpan?: number;
+}) {
+  const inventory = useInventoryStore((s) => s.items);
+  const product = useMemo(() => {
+    if (!catalogId) return undefined;
+    return inventory.find((i) => i.id === catalogId) || catalog.find((i) => i.id === catalogId);
+  }, [catalogId, inventory]);
+  const textureUrl = product?.textureUrl;
+  if (!textureUrl) {
+    return (
+      <meshStandardMaterial
+        color={color}
+        roughness={product?.roughness ?? 0.95}
+        side={THREE.DoubleSide}
+        transparent={transparent}
+        opacity={opacity}
+        depthWrite={depthWrite}
+        polygonOffset
+        polygonOffsetFactor={4}
+        polygonOffsetUnits={4}
+      />
+    );
+  }
+  return (
+    <Suspense
+      fallback={
+        <meshStandardMaterial
+          color={color}
+          roughness={0.95}
+          side={THREE.DoubleSide}
+          transparent={transparent}
+          opacity={opacity}
+          depthWrite={depthWrite}
+          polygonOffset
+          polygonOffsetFactor={4}
+          polygonOffsetUnits={4}
+        />
+      }
+    >
+      <TexturedFloorMaterial
+        url={textureUrl}
+        color={color}
+        repeatM={product?.textureRepeat ?? 0.4}
+        worldSpan={worldSpan}
+        roughness={product?.roughness ?? 0.88}
+        opacity={opacity}
+        transparent={transparent}
+        depthWrite={depthWrite}
+      />
+    </Suspense>
+  );
+}
+
+function TexturedFloorMaterial({
+  url,
+  color,
+  repeatM,
+  worldSpan,
+  roughness,
+  opacity,
+  transparent,
+  depthWrite,
+}: {
+  url: string;
+  color: string;
+  repeatM: number;
+  worldSpan: number;
+  roughness: number;
+  opacity: number;
+  transparent: boolean;
+  depthWrite: boolean;
+}) {
+  const texture = useTexture(url);
+  useLayoutEffect(() => {
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    // ShapeGeometry UVs are 0–1 over the room bbox — tile by world size / pattern scale.
+    const tiles = Math.max(1, worldSpan / Math.max(0.08, repeatM));
+    texture.repeat.set(tiles, tiles);
+    texture.anisotropy = 8;
+    texture.needsUpdate = true;
+  }, [texture, repeatM, worldSpan]);
+  return (
+    <meshStandardMaterial
+      map={texture}
+      color={color}
+      roughness={roughness}
+      side={THREE.DoubleSide}
+      transparent={transparent}
+      opacity={opacity}
+      depthWrite={depthWrite}
+      polygonOffset
+      polygonOffsetFactor={4}
+      polygonOffsetUnits={4}
+    />
+  );
+}
+
 function DoorLeaf({
   x,
   z,
@@ -510,6 +622,7 @@ function DoorLeaf({
   const swingStart = swing === 'left' ? 0 : Math.PI / 2;
   const clearDepth = leafW;
   const clearZ = face === 'out' ? -clearDepth / 2 : clearDepth / 2;
+  const handleX = swing === 'left' ? leafW * 0.38 : -leafW * 0.38;
   return (
     <group position={[x, 0, z]} rotation={[0, angle, 0]}>
       {/* Plan silhouette — thin 3D leaf is nearly invisible from above; this fills the hole. */}
@@ -517,9 +630,28 @@ function DoorLeaf({
         <planeGeometry args={[leafW, 0.22]} />
         <meshBasicMaterial color="#b8956a" transparent opacity={0.92} depthWrite={false} />
       </mesh>
+      {/* Door slab */}
       <mesh position={[0, leafH / 2, 0]} castShadow>
-        <boxGeometry args={[leafW, leafH, 0.045]} />
-        <meshStandardMaterial color="#c4a574" roughness={0.7} />
+        <boxGeometry args={[leafW, leafH, 0.04]} />
+        <meshStandardMaterial color="#c4a574" roughness={0.72} />
+      </mesh>
+      {/* Raised panel */}
+      <mesh position={[0, leafH * 0.55, 0.022]} castShadow>
+        <boxGeometry args={[leafW * 0.62, leafH * 0.42, 0.012]} />
+        <meshStandardMaterial color="#d2b48a" roughness={0.65} />
+      </mesh>
+      <mesh position={[0, leafH * 0.22, 0.022]} castShadow>
+        <boxGeometry args={[leafW * 0.62, leafH * 0.22, 0.012]} />
+        <meshStandardMaterial color="#d2b48a" roughness={0.65} />
+      </mesh>
+      {/* Handle */}
+      <mesh position={[handleX, leafH * 0.45, 0.03]} castShadow>
+        <cylinderGeometry args={[0.012, 0.012, 0.09, 12]} />
+        <meshStandardMaterial color="#c0c4c6" metalness={0.75} roughness={0.28} />
+      </mesh>
+      <mesh position={[handleX, leafH * 0.45, 0.055]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+        <cylinderGeometry args={[0.01, 0.01, 0.07, 12]} />
+        <meshStandardMaterial color="#c0c4c6" metalness={0.75} roughness={0.28} />
       </mesh>
       {shape === 'arch' && (
         <mesh position={[0, leafH * 0.92, 0]} rotation={[0, 0, Math.PI / 2]}>
@@ -1607,16 +1739,13 @@ function Room() {
                 onClick={(e) => chooseFloor(e, label?.id)}
               >
                 <shapeGeometry args={[roomShape(points)]} />
-                <meshStandardMaterial
+                <FloorMaterial
                   color={floorColor}
-                  roughness={0.95}
-                  side={THREE.DoubleSide}
-                  transparent={cameraMode === 'orbit' || floorOpacity < 0.999}
+                  catalogId={label?.floorCatalogId}
                   opacity={floorOpacity}
+                  transparent={cameraMode === 'orbit' || floorOpacity < 0.999}
                   depthWrite={floorOpacity > 0.85}
-                  polygonOffset
-                  polygonOffsetFactor={4}
-                  polygonOffsetUnits={4}
+                  worldSpan={span}
                 />
               </mesh>
               {selected && (
