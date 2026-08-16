@@ -857,7 +857,7 @@ export function BomDialog({
             </>
           ) : (
             <>
-              <span>
+              <span className="bom-total-detail">
                 {floorCount} fl · mat ${estimateTotals.material.toLocaleString(undefined, { maximumFractionDigits: 0 })} ·
                 labor ${estimateTotals.labor.toLocaleString(undefined, { maximumFractionDigits: 0 })} · cont $
                 {estimateTotals.contingency.toLocaleString(undefined, { maximumFractionDigits: 0 })} · esc $
@@ -865,6 +865,9 @@ export function BomDialog({
                 {estimateTotals.markup.toLocaleString(undefined, { maximumFractionDigits: 0 })} · tax $
                 {estimateTotals.tax.toLocaleString(undefined, { maximumFractionDigits: 0 })} · bond $
                 {estimateTotals.bond.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              </span>
+              <span className="bom-total-compact">
+                {floorCount} fl · bid total
               </span>
               <strong>
                 ${estimateTotals.grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}

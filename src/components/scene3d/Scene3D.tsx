@@ -1377,7 +1377,7 @@ function WallMeshes() {
       })}
       {placingOpening && cameraMode === 'top' && (
         <Html position={[0, 0.35, 0]} center style={{ pointerEvents: 'none' }} zIndexRange={[55, 35]}>
-          <div className="opening-place-hint">Click a wall to place {tool}</div>
+          <div className="opening-place-hint">Tap a wall to place {tool}</div>
         </Html>
       )}
       {layers.framing &&
