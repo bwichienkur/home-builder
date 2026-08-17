@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { LogOut, Menu, PanelLeftClose, X } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useCrmStore } from '../../store/crmStore';
+import { useInventoryStore } from '../../store/inventoryStore';
 import { canManageUsers } from '../../lib/platform/roles';
 import { AppNavProvider } from './AppNavContext';
 import { NAV_GROUPS, pageTitleForPath } from './navConfig';
@@ -56,6 +57,13 @@ export function AppShell() {
   useEffect(() => {
     void hydrateCrm();
   }, [hydrateCrm]);
+
+  useEffect(() => {
+    const unsub = useInventoryStore.subscribe((state) => {
+      useCrmStore.getState().seedMissingCatalogItems(state.items);
+    });
+    return unsub;
+  }, []);
 
   useEffect(() => {
     setOverlay(false);

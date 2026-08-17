@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { catalog, type CatalogItem } from '../components/catalog/catalogData';
 import type {
   Client,
   CustomFieldDefinition,
@@ -8,6 +9,7 @@ import type {
   Vendor,
 } from '../lib/crm/types';
 import {
+  mergeMissingCatalogIntoInventory,
   removeInventoryFromCatalog,
   syncAllInventoryToCatalog,
   syncInventoryToCatalog,
@@ -15,6 +17,7 @@ import {
 import { clientSchema, inventoryRecordSchema, vendorSchema } from '../lib/crm/types';
 import type { CrmSnapshot } from '../lib/platform/crmProvider';
 import { getCrmProvider } from '../lib/platform/getCrmProvider';
+import { useInventoryStore } from './inventoryStore';
 
 function now() {
   return new Date().toISOString();
@@ -23,6 +26,7 @@ function now() {
 type CrmState = CrmSnapshot & {
   ready: boolean;
   hydrate: () => Promise<void>;
+  seedMissingCatalogItems: (items: CatalogItem[]) => void;
   upsertClient: (input: Partial<Client> & { name: string }) => Client;
   upsertVendor: (input: Partial<Vendor> & { name: string }) => Vendor;
   upsertInventory: (input: Partial<InventoryRecord> & { sku: string; name: string; category: string }) => InventoryRecord;
@@ -76,19 +80,33 @@ export const useCrmStore = create<CrmState>((set, get) => ({
           }
         })
         .filter((row): row is NonNullable<typeof row> => row != null);
+      const catalogItems = [...catalog, ...useInventoryStore.getState().items];
+      const merged = mergeMissingCatalogIntoInventory(inventory, catalogItems);
       set({
         clients: Array.isArray(data.clients) ? data.clients : [],
         vendors: Array.isArray(data.vendors) ? data.vendors : [],
-        inventory,
+        inventory: merged,
         customFields: Array.isArray(data.customFields) ? data.customFields : [],
         housePlans: Array.isArray(data.housePlans) ? data.housePlans : [],
         ready: true,
       });
+      // Push existing CRM rows into Build shop only — seeded catalog copies stay in Materials.
       syncAllInventoryToCatalog(inventory);
+      if (merged.length !== inventory.length) schedulePersist(get);
     } catch (err) {
       console.warn('CRM hydrate failed', err);
-      set({ ready: true });
+      const seeded = mergeMissingCatalogIntoInventory([], [...catalog, ...useInventoryStore.getState().items]);
+      set({ ready: true, inventory: seeded });
+      if (seeded.length) schedulePersist(get);
     }
+  },
+  seedMissingCatalogItems: (items) => {
+    if (!items.length) return;
+    const current = get().inventory;
+    const merged = mergeMissingCatalogIntoInventory(current, items);
+    if (merged === current) return;
+    set({ inventory: merged });
+    schedulePersist(get);
   },
   upsertClient: (input) => {
     const existing = input.id ? get().clients.find((c) => c.id === input.id) : undefined;
