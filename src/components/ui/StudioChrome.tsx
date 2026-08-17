@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
-  ArrowUpDown,
   Bath,
   BedDouble,
   Box,
@@ -12,12 +11,12 @@ import {
   Copy,
   DoorOpen,
   FileSpreadsheet,
+  FolderKanban,
   Focus,
   Grid2X2,
   Home,
   Info,
   Lamp,
-  Layers3,
   PanelTop,
   Plus,
   Redo2,
@@ -44,6 +43,8 @@ import { pickTradeRates, useTradeRatesStore } from '../../store/tradeRatesStore'
 import { formatArea, formatLength } from '../../lib/measurements';
 import { LayersMenu } from './LayersMenu';
 import { StoryOverview } from './StoryOverview';
+import { BuildingChecksBar } from './BuildingChecksBar';
+import { RoomDimTray } from './RoomDimTray';
 
 const icons: Record<string, typeof ShoppingBag> = {
   Bedroom: BedDouble,
@@ -68,6 +69,8 @@ type Props = {
   catalogOpen: boolean;
   menuOpen: boolean;
   openCatalog: () => void;
+  openMenu: () => void;
+  closeMenu: () => void;
   openBom: () => void;
   openCategory: (category: string) => void;
   onOpenInspector: () => void;
@@ -84,6 +87,8 @@ export function StudioChrome({
   catalogOpen,
   menuOpen,
   openCatalog,
+  openMenu,
+  closeMenu,
   openBom,
   openCategory,
   onOpenInspector,
@@ -118,10 +123,6 @@ export function StudioChrome({
   const activeFloorId = usePlannerStore((s) => s.activeFloorId);
   const switchFloor = usePlannerStore((s) => s.switchFloor);
   const addFloor = usePlannerStore((s) => s.addFloor);
-  const addStair = usePlannerStore((s) => s.addStair);
-  const stackView = usePlannerStore((s) => s.stackView);
-  const setStackView = usePlannerStore((s) => s.setStackView);
-  const deleteFloor = usePlannerStore((s) => s.deleteFloor);
   const exitRoom = usePlannerStore((s) => s.exitRoom);
   const showStart = usePlannerStore((s) => s.showStart);
   const tool = usePlannerStore((s) => s.tool);
@@ -278,18 +279,6 @@ export function StudioChrome({
     }, 0);
   };
 
-  const removeFloor = (id: string) => {
-    if (floors.length <= 1) return;
-    const floor = floors.find((f) => f.id === id);
-    if (!floor) return;
-    if (!window.confirm(`Delete “${floor.name}”? This cannot be undone.`)) return;
-    if (!deleteFloor(id)) return;
-    window.setTimeout(() => {
-      window.dispatchEvent(new Event('roomcraft-fit-plan'));
-      window.dispatchEvent(new Event('roomcraft-refocus'));
-    }, 80);
-  };
-
   useEffect(() => {
     if (pending) setFabsOpen(true);
   }, [pending]);
@@ -352,7 +341,23 @@ export function StudioChrome({
   };
 
   if (atStart) {
-    return null;
+    return (
+      <div className="studio-chrome is-start">
+        <div className="studio-topbar">
+          <div className="studio-topbar-row">
+            <button
+              type="button"
+              className="studio-fab studio-project"
+              onClick={menuOpen ? closeMenu : openMenu}
+              aria-label={menuOpen ? 'Close project menu' : 'Open project menu'}
+              aria-expanded={menuOpen}
+            >
+              {menuOpen ? <X /> : <FolderKanban />}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -364,6 +369,17 @@ export function StudioChrome({
               <ArrowLeft />
             </button>
           )}
+          <button
+            type="button"
+            className="studio-fab studio-project"
+            onClick={menuOpen ? closeMenu : openMenu}
+            aria-label={menuOpen ? 'Close project menu' : 'Open project menu'}
+            aria-expanded={menuOpen}
+            title="Project"
+          >
+            {menuOpen ? <X /> : <FolderKanban />}
+          </button>
+
           <div className="studio-context">
             <p className="studio-context-title" title={contextTitle}>
               {contextTitle}
@@ -422,6 +438,8 @@ export function StudioChrome({
               )}
             </div>
           )}
+
+          <BuildingChecksBar />
 
           <button
             className="studio-bag"
@@ -491,7 +509,7 @@ export function StudioChrome({
                       onClick={() => goToFloor(f.id)}
                       title={f.name}
                     >
-                      {f.name.replace(/\s*floor$/i, '') || f.name}
+                      {f.name.replace(/\s*(floor|story)$/i, '') || f.name}
                     </button>
                   ))}
                   {showFloorManage && (
@@ -514,54 +532,9 @@ export function StudioChrome({
                   )}
                 </div>
                 {showFloorManage && floors.length > 1 && (
-                  <div className="studio-story-bar-actions">
-                    <button
-                      type="button"
-                      className={`studio-floor-stair${stackView ? ' is-active' : ''}`}
-                      aria-label="Stack all floors in 3D"
-                      title="Stack floors"
-                      aria-pressed={stackView}
-                      onClick={() => {
-                        setStackView(!stackView);
-                        setCamera('orbit');
-                        window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 40);
-                      }}
-                    >
-                      <Layers3 size={16} />
-                    </button>
-                    <button
-                      type="button"
-                      className="studio-floor-stair"
-                      aria-label="Add stair between floors"
-                      title="Add stair"
-                      onClick={() => {
-                        const idx = floors.findIndex((f) => f.id === activeFloorId);
-                        const from = floors[idx] ?? floors[0]!;
-                        const to = floors[idx + 1] ?? floors[idx - 1] ?? floors[0]!;
-                        if (from.id === to.id) return;
-                        setStudioMode('architect');
-                        addStair(from.id, to.id);
-                        window.setTimeout(() => {
-                          window.dispatchEvent(new Event('roomcraft-fit-plan'));
-                          window.dispatchEvent(new Event('roomcraft-refocus'));
-                        }, 80);
-                      }}
-                    >
-                      <ArrowUpDown size={16} />
-                    </button>
-                    <button
-                      type="button"
-                      className="studio-floor-delete"
-                      aria-label="Delete current floor"
-                      title="Delete current floor"
-                      onClick={() => removeFloor(activeFloorId)}
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                    <button type="button" className="studio-floor-all" onClick={() => setStoriesOpen(true)} title="View all floors">
-                      All
-                    </button>
-                  </div>
+                  <button type="button" className="studio-floor-all" onClick={() => setStoriesOpen(true)} title="View all floors">
+                    All
+                  </button>
                 )}
               </div>
             )}
@@ -639,6 +612,8 @@ export function StudioChrome({
           </div>
         </div>
       )}
+
+      <RoomDimTray />
 
       {showPlanRail && (
         <div className="studio-category-rail studio-plan-rail" aria-label="Plan tools">

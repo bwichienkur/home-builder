@@ -1,5 +1,4 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
-import { createPortal } from 'react-dom';
 import {
   Cloud,
   Download,
@@ -9,13 +8,13 @@ import {
   Save,
   Share2,
   Trash2,
+  X,
 } from 'lucide-react';
 import { useAppNav } from './features/shell/AppNavContext';
 import { CatalogPanel } from './components/catalog/CatalogPanel';
 import { catalog as catalogItems } from './components/catalog/catalogData';
 import { BomDialog } from './components/ui/BomDialog';
 import { SelectionInspector } from './components/ui/SelectionInspector';
-import { BuildingChecksBar } from './components/ui/BuildingChecksBar';
 import { ElevationPreview } from './components/ui/ElevationPreview';
 import { StudioChrome } from './components/ui/StudioChrome';
 import { DesignStart } from './components/ui/DesignStart';
@@ -53,7 +52,7 @@ const Scene3D = lazy(() => import('./components/scene3d/Scene3D').then((m) => ({
 
 export default function StudioApp() {
   const store = usePlannerStore();
-  const { navOpen, extrasTarget, closeNav } = useAppNav();
+  const { closeNav } = useAppNav();
   const customCatalog = useInventoryStore((s) => s.items);
   const {
     walls,
@@ -67,6 +66,16 @@ export default function StudioApp() {
   } = store;
 
   const [catalogOpen, setCatalogOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const closeProjectMenu = useCallback(() => {
+    setMenuOpen(false);
+  }, []);
+  const openProjectMenu = useCallback(() => {
+    setMenuOpen(true);
+    setCatalogOpen(false);
+    setInspectorOpen(false);
+    closeNav();
+  }, [closeNav]);
   const [inspectorOpen, setInspectorOpen] = useState(false);
   const [bom, setBom] = useState(false);
   const [projectName, setProjectName] = useState('Bedroom study');
@@ -95,10 +104,10 @@ export default function StudioApp() {
     if (coarse || store.cameraMode === 'top') store.setCameraMode('top');
     else if (store.cameraMode === 'walk') store.setCameraMode('orbit');
     setCatalogOpen(false);
-    closeNav();
+    closeProjectMenu();
     setInspectorOpen(false);
     window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 0);
-  }, [store, closeNav]);
+  }, [store, closeProjectMenu]);
 
   const allCatalog = useMemo(() => {
     const byId = new Map(catalogItems.map((i) => [i.id, i]));
@@ -191,10 +200,10 @@ export default function StudioApp() {
       history.replaceState(null, '', designShareUrl(design.code));
       enterHouse();
       notify(`Editing ${design.name}`);
-      closeNav();
+      closeProjectMenu();
       window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 0);
     },
-    [closeNav, enterHouse, rememberDesign, store],
+    [closeProjectMenu, enterHouse, rememberDesign, store],
   );
 
   const openCloudBuild = useCallback(
@@ -210,13 +219,13 @@ export default function StudioApp() {
         rememberDesign(null);
         enterHouse();
         notify(`Opened cloud “${row.name || project.name}” · v${row.version}`);
-        closeNav();
+        closeProjectMenu();
         window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 0);
       } catch (e) {
         notify(e instanceof Error ? e.message : 'Cloud project could not be loaded');
       }
     },
-    [closeNav, enterHouse, rememberDesign, store],
+    [closeProjectMenu, enterHouse, rememberDesign, store],
   );
 
   const exportSavedBuild = useCallback((design: SharedDesign) => {
@@ -352,6 +361,7 @@ export default function StudioApp() {
         store.setDraftStart(null);
         setCatalogOpen(false);
         closeNav();
+        closeProjectMenu();
         setInspectorOpen(false);
       } else if (e.key === 'Enter' && store.pendingPlacement) {
         e.preventDefault();
@@ -363,7 +373,7 @@ export default function StudioApp() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [store, closeNav, saveBuild]);
+  }, [store, closeNav, closeProjectMenu, saveBuild]);
 
   useEffect(() => {
     const open = () => {
@@ -375,13 +385,13 @@ export default function StudioApp() {
       }
       setInspectorOpen(true);
       setCatalogOpen(false);
-      closeNav();
+      closeProjectMenu();
     };
     window.addEventListener('roomcraft-open-properties', open);
     return () => {
       window.removeEventListener('roomcraft-open-properties', open);
     };
-  }, [closeNav]);
+  }, [closeProjectMenu]);
 
   const pendingPlacement = usePlannerStore((s) => s.pendingPlacement);
   useEffect(() => {
@@ -413,7 +423,7 @@ export default function StudioApp() {
   }, [walls, openings, furniture, store.floorColor, store.wallColor, store.ceilingColor, store.roomType, store.unitSystem, store]);
 
   useEffect(() => {
-    if (!navOpen) return;
+    if (!menuOpen) return;
     setDesigns(listSharedDesigns());
     setCloudRef(readCloudProjectRef());
     let cancelled = false;
@@ -427,7 +437,7 @@ export default function StudioApp() {
     return () => {
       cancelled = true;
     };
-  }, [navOpen]);
+  }, [menuOpen]);
 
   useEffect(() => {
     const code = readDesignCodeFromLocation();
@@ -487,7 +497,7 @@ export default function StudioApp() {
     }
     store.setStudioMode('furnish');
     setCatalogOpen(true);
-    closeNav();
+    closeProjectMenu();
     setInspectorOpen(false);
     window.setTimeout(() => window.dispatchEvent(new CustomEvent('roomcraft-catalog-category', { detail: category })), 0);
   };
@@ -532,7 +542,7 @@ export default function StudioApp() {
       {workflowStage === 'start' && (
         <DesignStart
           onBegan={() => {
-            closeNav();
+            closeProjectMenu();
             setCatalogOpen(false);
             setInspectorOpen(false);
             setProjectName(usePlannerStore.getState().housePlanName || 'Untitled design');
@@ -546,19 +556,21 @@ export default function StudioApp() {
         itemCount={sellableCount}
         total={total}
         catalogOpen={catalogOpen}
-        menuOpen={navOpen}
+        menuOpen={menuOpen}
         openCatalog={() => {
           store.setStudioMode('furnish');
           setCatalogOpen(true);
-          closeNav();
+          closeProjectMenu();
           setInspectorOpen(false);
         }}
+        openMenu={openProjectMenu}
+        closeMenu={closeProjectMenu}
         openBom={() => setBom(true)}
         openCategory={openCategory}
         onOpenInspector={() => {
           setInspectorOpen(true);
           setCatalogOpen(false);
-          closeNav();
+          closeProjectMenu();
         }}
         onSave={saveBuild}
         onShare={share}
@@ -566,7 +578,7 @@ export default function StudioApp() {
           setElevationOpen(true);
           setCatalogOpen(false);
           setInspectorOpen(false);
-          closeNav();
+          closeProjectMenu();
         }}
       />
 
@@ -589,20 +601,24 @@ export default function StudioApp() {
         }}
       />
 
-      <BuildingChecksBar />
-
-      {extrasTarget &&
-        createPortal(
-          <div className="build-nav-slot">
-          <label className="project-name-edit">
-            <span className="eyebrow">Project</span>
-            <input
-              type="text"
-              value={projectName}
-              onChange={(e) => setProjectName(e.target.value)}
-              aria-label="Project name"
-            />
-          </label>
+      {menuOpen && (
+        <>
+          <button type="button" className="menu-backdrop" aria-label="Close menu" onClick={closeProjectMenu} />
+          <aside className="studio-menu-sheet studio-menu-drawer" role="dialog" aria-label="Project menu">
+          <header>
+            <label className="project-name-edit">
+              <span className="eyebrow">Project</span>
+              <input
+                type="text"
+                value={projectName}
+                onChange={(e) => setProjectName(e.target.value)}
+                aria-label="Project name"
+              />
+            </label>
+            <button type="button" className="menu-close" onClick={closeProjectMenu} aria-label="Close menu">
+              <X size={18} />
+            </button>
+          </header>
           {!validation.valid && walls.length > 0 && <div className="plan-warning">Connect the highlighted endpoints to close the room.</div>}
           <p className="menu-meta">
             <span>{formatArea(area, unitSystem)}</span>
@@ -665,7 +681,7 @@ export default function StudioApp() {
                   url.searchParams.delete('design');
                   history.replaceState(null, '', url.toString());
                   store.showStart();
-                  closeNav();
+                  closeProjectMenu();
                   setCatalogOpen(false);
                   setInspectorOpen(false);
                 }}
@@ -699,7 +715,7 @@ export default function StudioApp() {
                   disabled={walls.length === 0}
                   onClick={() => {
                     setElevationOpen(true);
-                    closeNav();
+                    closeProjectMenu();
                   }}
                 >
                   Elevations
@@ -899,9 +915,9 @@ export default function StudioApp() {
               </section>
             </div>
           </details>
-          </div>,
-          extrasTarget,
-        )}
+          </aside>
+        </>
+      )}
 
       {notice && (
         <div className="app-notice" role="status">

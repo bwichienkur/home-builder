@@ -50,13 +50,8 @@ export function AppShell() {
   const canDock = wide && !isBuild;
   const [collapsed, setCollapsed] = useState(readCollapsed);
   const [overlay, setOverlay] = useState(false);
-  const [extrasTarget, setExtrasTarget] = useState<HTMLElement | null>(null);
   const docked = canDock && !collapsed;
   const navOpen = docked || overlay;
-
-  const extrasRef = useCallback((node: HTMLDivElement | null) => {
-    setExtrasTarget(node);
-  }, []);
 
   useEffect(() => {
     void hydrateCrm();
@@ -106,8 +101,8 @@ export function AppShell() {
   );
 
   const navValue = useMemo(
-    () => ({ navOpen, docked, extrasTarget, setNavOpen, closeNav, toggleNav }),
-    [navOpen, docked, extrasTarget, setNavOpen, closeNav, toggleNav],
+    () => ({ navOpen, docked, setNavOpen, closeNav, toggleNav }),
+    [navOpen, docked, setNavOpen, closeNav, toggleNav],
   );
 
   return (
@@ -180,7 +175,6 @@ export function AppShell() {
               </button>
             )}
           </div>
-          <div ref={extrasRef} className="app-nav-build-slot" />
           <nav className="app-nav-groups" aria-label="Primary">
             {NAV_GROUPS.map((group) => {
               const items = group.items.filter((item) => !item.adminOnly || showUsers);

@@ -3,7 +3,6 @@ import { createContext, useContext, type ReactNode } from 'react';
 export type AppNavContextValue = {
   navOpen: boolean;
   docked: boolean;
-  extrasTarget: HTMLElement | null;
   setNavOpen: (open: boolean) => void;
   closeNav: () => void;
   toggleNav: () => void;
