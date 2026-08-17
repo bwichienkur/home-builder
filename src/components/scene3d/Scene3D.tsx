@@ -2004,10 +2004,9 @@ function Room() {
         selectSurface('floor');
         return;
       }
-      // Plan level: select the room and open the room editor (name, type, dims).
+      // Plan level: select the room — Edit / Furnish / Remove live on the plan rail.
       if (workflowStage !== 'room') {
         selectRoom(roomId);
-        window.dispatchEvent(new Event('roomcraft-open-properties'));
         return;
       }
       // Switching rooms while already in room focus.
