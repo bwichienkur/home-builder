@@ -5,6 +5,7 @@
   background: var(--void);
 }
 .app-shell-top {
+  grid-row: 1;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
@@ -99,6 +100,7 @@
   color: var(--ink);
 }
 .app-shell-main {
+  grid-row: 2;
   min-height: 0;
   overflow: auto;
 }
@@ -137,8 +139,15 @@
   .app-shell-nav a[href='/users'] {
     display: none;
   }
+  /* Phone Build hides the app bar (display:none). Main is pinned to grid
+     row 2 (the 1fr track) so an empty auto row does not steal the canvas.
+     Explicit height lets .studio-root { height: 100% } resolve. */
   .app-shell.is-build .app-shell-top {
     display: none;
+  }
+  .app-shell.is-build .app-shell-main {
+    min-height: 0;
+    height: 100%;
   }
 }
 
