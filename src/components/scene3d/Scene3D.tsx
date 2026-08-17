@@ -1375,11 +1375,6 @@ function WallMeshes() {
             : []),
         ];
       })}
-      {placingOpening && cameraMode === 'top' && (
-        <Html position={[0, 0.35, 0]} center style={{ pointerEvents: 'none' }} zIndexRange={[55, 35]}>
-          <div className="opening-place-hint">Tap a wall to place {tool}</div>
-        </Html>
-      )}
       {layers.framing &&
         walls.map((w) => {
           const [sx, sz] = world(w.start.x, w.start.y);
@@ -2470,11 +2465,14 @@ function GhostPlacement() {
 export function Scene3D() {
   const begin = usePlannerStore((s) => s.beginPlacement);
   const pending = usePlannerStore((s) => s.pendingPlacement);
+  const tool = usePlannerStore((s) => s.tool);
+  const cameraMode = usePlannerStore((s) => s.cameraMode);
   const select = usePlannerStore((s) => s.selectFurniture);
   const selectWall = usePlannerStore((s) => s.selectWall);
   const selectSurface = usePlannerStore((s) => s.selectSurface);
   const selectRoom = usePlannerStore((s) => s.selectRoom);
   const custom = useInventoryStore((s) => s.items);
+  const placingOpening = tool === 'door' || tool === 'window' || tool === 'passage';
   const drop = (e: React.DragEvent) => {
     e.preventDefault();
     const id = e.dataTransfer.getData('catalogId');
@@ -2559,9 +2557,14 @@ export function Scene3D() {
         <CameraRig />
       </Canvas>
       {pending ? (
-        <div className="scene-help">Move to place · Tap floor or Confirm to drop · Esc cancels</div>
+        <div className="scene-help">Move to place · Tap floor or Confirm to drop · Cancel to abort</div>
       ) : (
         <div className="scene-help">Drag furniture to move · Tap through open walls · Empty space pans/orbits</div>
+      )}
+      {placingOpening && cameraMode === 'top' && (
+        <div className="opening-place-hint opening-place-hint--chrome" role="status">
+          Tap a wall to place {tool}
+        </div>
       )}
     </div>
   );
