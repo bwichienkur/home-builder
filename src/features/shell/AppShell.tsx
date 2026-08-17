@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { LogOut } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useCrmStore } from '../../store/crmStore';
@@ -21,14 +21,16 @@ export function AppShell() {
   const logout = useAuthStore((s) => s.logout);
   const hydrateCrm = useCrmStore((s) => s.hydrate);
   const navigate = useNavigate();
+  const location = useLocation();
   const showUsers = canManageUsers(user?.role);
+  const isBuild = location.pathname.startsWith('/build');
 
   useEffect(() => {
     void hydrateCrm();
   }, [hydrateCrm]);
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell${isBuild ? ' is-build' : ''}`}>
       <header className="app-shell-top">
         <NavLink to="/" className="app-shell-brand" end>
           Mahnikka
