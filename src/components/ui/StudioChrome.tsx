@@ -225,7 +225,9 @@ export function StudioChrome({
   const showCatalogRail = inRoom && !pending;
   /** Plan-level wall tools (house/floor plate) — not while inside a room. */
   const atPlanLevel = !atStart && !inRoom;
-  const showFloorChrome = atPlanLevel && !pending;
+  /** Floor tabs stay available in-room so multi-story GCs can jump floors without hunting the exit. */
+  const showFloorChrome = (atPlanLevel || inRoom) && !pending;
+  const showFloorManage = atPlanLevel;
   const pendingRoomShape = usePlannerStore((s) => s.pendingRoomShape);
   const setPendingRoomShape = usePlannerStore((s) => s.setPendingRoomShape);
   const pendingAttachMode = usePlannerStore((s) => s.pendingAttachMode);
@@ -495,24 +497,26 @@ export function StudioChrome({
                   {f.name.replace(/\s*floor$/i, '') || f.name}
                 </button>
               ))}
-              <button
-                type="button"
-                className="studio-floor-add"
-                aria-label="Add floor"
-                title="Add floor"
-                onClick={() => {
-                  setStudioMode('architect');
-                  addFloor();
-                  window.setTimeout(() => {
-                    window.dispatchEvent(new Event('roomcraft-fit-plan'));
-                    window.dispatchEvent(new Event('roomcraft-refocus'));
-                  }, 80);
-                }}
-              >
-                <Plus size={14} />
-              </button>
+              {showFloorManage && (
+                <button
+                  type="button"
+                  className="studio-floor-add"
+                  aria-label="Add floor"
+                  title="Add floor"
+                  onClick={() => {
+                    setStudioMode('architect');
+                    addFloor();
+                    window.setTimeout(() => {
+                      window.dispatchEvent(new Event('roomcraft-fit-plan'));
+                      window.dispatchEvent(new Event('roomcraft-refocus'));
+                    }, 80);
+                  }}
+                >
+                  <Plus size={14} />
+                </button>
+              )}
             </div>
-            {floors.length > 1 && (
+            {showFloorManage && floors.length > 1 && (
               <div className="studio-story-bar-actions">
                 <button
                   type="button"

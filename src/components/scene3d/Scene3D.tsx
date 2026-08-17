@@ -2561,7 +2561,7 @@ export function Scene3D() {
       {pending ? (
         <div className="scene-help">Move to place · Tap floor or Confirm to drop · Esc cancels</div>
       ) : (
-        <div className="scene-help">Drag furniture to move · Click through open walls · Empty space pans/orbits</div>
+        <div className="scene-help">Drag furniture to move · Tap through open walls · Empty space pans/orbits</div>
       )}
     </div>
   );

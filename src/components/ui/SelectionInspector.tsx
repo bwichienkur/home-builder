@@ -697,7 +697,7 @@ function WallProperties({ wall }: { wall: Wall }) {
             <input type="range" min=".05" max=".95" step=".05" value={o.offset} onChange={(e) => updateOpening(o.id, { offset: +e.target.value })} />
           </label>
           <LengthField label="Width" value={o.width} min={0.3} onChange={(width) => updateOpening(o.id, { width })} />
-          <button type="button" onClick={() => remove(o.id)}>Remove</button>
+          <button type="button" className="is-danger" onClick={() => remove(o.id)}>Remove</button>
         </div>
       ))}
       <button

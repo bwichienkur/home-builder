@@ -240,6 +240,28 @@
   text-transform: capitalize;
   margin-bottom: 6px;
 }
+.selection-inspector .opening-editor button,
+.opening-editor button {
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  border-radius: 10px;
+  min-height: 44px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.selection-inspector .opening-editor button:hover,
+.opening-editor button:hover {
+  background: var(--soft);
+}
+.selection-inspector .opening-editor button.is-danger,
+.opening-editor button.is-danger {
+  background: #fde8e8;
+  border-color: #f5c2c0;
+  color: #b42318;
+}
 .opening-quick-editor {
   display: flex;
   align-items: center;
@@ -251,4 +273,6 @@
   padding: 8px;
   border-radius: 8px;
   border: 1px solid var(--line);
+  min-height: 44px;
+  font-size: 16px;
 }
