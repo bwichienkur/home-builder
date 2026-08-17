@@ -879,7 +879,7 @@
 }
 .menu-secondary {
   width: 100%;
-  min-height: 42px;
+  min-height: 44px;
   border: 0;
   border-radius: 10px;
   background: transparent;
@@ -1284,22 +1284,82 @@
     min-width: 44px;
     min-height: 44px;
   }
+  .building-checks-panel .building-check {
+    grid-template-columns: auto 1fr 44px;
+    align-items: center;
+  }
+  .building-checks-panel .linkish {
+    min-height: 44px;
+    padding: 8px 0;
+    display: inline-flex;
+    align-items: center;
+  }
   .wall-length-field {
     min-height: 44px;
     padding: 6px 10px;
   }
   .wall-length-field input {
-    min-height: 40px;
+    min-height: 44px;
     font-size: 16px;
   }
   .wall-length-chip {
-    min-height: 36px;
-    padding: 8px 12px;
+    min-height: 44px;
+    min-width: 44px;
+    padding: 10px 12px;
     font-size: 12px;
     border-radius: 10px;
   }
   .wall-assembly-pills button {
     min-height: 44px;
+  }
+  .layers-menu-panel label {
+    min-height: 44px;
+    padding: 8px 4px;
+  }
+  .layers-menu-panel input[type='checkbox'] {
+    width: 20px;
+    height: 20px;
+  }
+  .studio-topbar-actions {
+    display: none;
+  }
+  .studio-topbar-row .studio-bag {
+    margin-left: auto;
+  }
+  .studio-local-save-full {
+    display: none;
+  }
+  .studio-local-save-short {
+    display: inline;
+  }
+  .studio-bag strong {
+    display: inline;
+    font-size: 12px;
+  }
+  .studio-takeoff-strip {
+    padding: 2px 10px 6px;
+    pointer-events: auto;
+  }
+  .studio-takeoff-toggle {
+    display: inline-flex;
+  }
+  .studio-takeoff-details {
+    display: none;
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+  }
+  .studio-takeoff-strip.is-open .studio-takeoff-details {
+    display: flex;
+  }
+  .studio-dock-action span,
+  .studio-dock-seg button span,
+  .studio-dock-plan-tools button span {
+    display: none;
+  }
+  .swatches button {
+    width: 44px;
+    height: 44px;
   }
   .studio-category-rail {
     top: 50%;
@@ -2012,7 +2072,8 @@
 .studio-breadcrumb-static {
   border: 0;
   background: transparent;
-  padding: 0;
+  min-height: 44px;
+  padding: 8px 10px;
   font-size: 12px;
   font-weight: 800;
   color: #6b7280;
@@ -2074,8 +2135,8 @@
   border: 0;
   background: #fff;
   border-radius: 999px;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   display: grid;
   place-items: center;
   box-shadow: var(--shadow);
@@ -2231,22 +2292,6 @@
 }
 
 @media (max-width: 720px) {
-  .studio-local-save-full {
-    display: none;
-  }
-  .studio-local-save-short {
-    display: inline;
-  }
-  .studio-topbar-actions {
-    display: none;
-  }
-  .studio-topbar-row .studio-bag {
-    margin-left: auto;
-  }
-  .studio-bag strong {
-    display: inline;
-    font-size: 12px;
-  }
   .studio-bag {
     min-width: 0;
     padding: 0 6px 0 10px;
@@ -2254,47 +2299,6 @@
   .studio-dock {
     width: min(440px, calc(100vw - 20px));
     max-width: calc(100vw - 20px);
-  }
-  .studio-dock-flat {
-    width: 100%;
-    overflow-x: visible;
-    overflow-y: visible;
-  }
-  .studio-dock-row {
-    flex-wrap: wrap;
-    width: 100%;
-    max-width: 100%;
-    justify-content: center;
-    row-gap: 4px;
-  }
-  .studio-dock-action span,
-  .studio-dock-seg button span,
-  .studio-dock-plan-tools button span {
-    display: none;
-  }
-  .studio-dock-action {
-    min-width: 44px;
-    min-height: 44px;
-    padding: 6px 8px;
-  }
-  .studio-dock-seg button {
-    min-width: 44px;
-    min-height: 44px;
-    padding: 4px 8px;
-  }
-  .studio-menu-sheet.studio-menu-drawer {
-    top: auto;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: 100%;
-    max-height: min(85dvh, 720px);
-    border-radius: 18px 18px 0 0;
-    padding: 12px 14px max(20px, calc(env(safe-area-inset-bottom) + 16px));
-    animation: sheet-up 220ms ease-out;
-  }
-  .studio-menu-sheet:not(.studio-menu-drawer) {
-    padding-top: 12px;
   }
   .design-item-actions {
     grid-template-columns: repeat(3, minmax(44px, 1fr));
@@ -2308,26 +2312,8 @@
     width: auto;
     transform: none;
   }
-  .building-checks-root {
-    bottom: calc(148px + env(safe-area-inset-bottom, 0px));
-    right: 12px;
-  }
-  .building-checks {
-    display: none;
-  }
-  .layers-menu-panel label {
-    min-height: 44px;
-    padding: 8px 4px;
-  }
   .wall-dim-card {
     min-width: min(200px, calc(100vw - 24px));
-  }
-  .wall-length-field {
-    min-height: 44px;
-  }
-  .wall-length-field input {
-    min-height: 40px;
-    font-size: 16px;
   }
   .studio-breadcrumb {
     font-size: 11px;
@@ -2366,30 +2352,6 @@
 }
 .wall-dim-card--right {
   margin-left: 48px;
-}
-.wall-dim-card-grow {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px;
-}
-.wall-dim-card-grow button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  min-height: 32px;
-  padding: 0 8px;
-  border: 0;
-  border-radius: 9px;
-  background: #eef2f6;
-  color: #334155;
-  font-size: 11px;
-  font-weight: 750;
-  cursor: pointer;
-}
-.wall-dim-card-grow button.is-active {
-  background: #0058a3;
-  color: #fff;
 }
 .wall-dim-card-fields {
   display: flex;
@@ -2473,7 +2435,7 @@
 .building-check {
   pointer-events: auto;
   display: grid;
-  grid-template-columns: 18px 1fr 28px;
+  grid-template-columns: auto 1fr 44px;
   gap: 8px;
   align-items: start;
   padding: 10px 10px 10px 12px;
@@ -2508,8 +2470,8 @@
   border: 0;
   background: transparent;
   color: #9aa3ad;
-  width: 28px;
-  height: 28px;
+  width: 44px;
+  height: 44px;
   display: grid;
   place-items: center;
   cursor: pointer;
@@ -2599,24 +2561,6 @@
 .studio-takeoff-details {
   display: contents;
 }
-@media (max-width: 720px) {
-  .studio-takeoff-strip {
-    padding: 2px 10px 6px;
-    pointer-events: auto;
-  }
-  .studio-takeoff-toggle {
-    display: inline-flex;
-  }
-  .studio-takeoff-details {
-    display: none;
-    width: 100%;
-    flex-wrap: wrap;
-    gap: 4px 10px;
-  }
-  .studio-takeoff-strip.is-open .studio-takeoff-details {
-    display: flex;
-  }
-}
 
 .building-checks-root {
   position: absolute;
@@ -2680,8 +2624,10 @@
   border: 0;
   background: transparent;
   color: #9aa3ad;
-  width: 28px;
-  height: 28px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
   display: grid;
   place-items: center;
   cursor: pointer;
@@ -2697,13 +2643,17 @@
 .building-checks-panel .building-check {
   margin: 0;
   box-shadow: none;
+  grid-template-columns: auto 1fr 44px;
+  align-items: center;
 }
 .building-checks-panel .linkish {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   margin-top: 4px;
+  min-height: 44px;
   width: auto;
   height: auto;
-  padding: 0;
+  padding: 8px 0;
   color: #0058a3;
   font-size: 11px;
   font-weight: 700;
@@ -2749,8 +2699,8 @@
 .elevation-preview-sheet header button {
   border: 0;
   background: transparent;
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   display: grid;
   place-items: center;
   cursor: pointer;
@@ -2763,7 +2713,7 @@
 }
 .elevation-face-pills button {
   flex: 1;
-  min-height: 36px;
+  min-height: 44px;
   border: 1px solid var(--line);
   border-radius: 10px;
   background: #fff;

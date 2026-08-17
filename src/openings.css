@@ -1,1 +1,2 @@
-.opening-editor{border:1px solid #dfe4df;border-radius:9px;padding:8px;margin:8px 0}.opening-editor strong{text-transform:capitalize;font-size:11px}.opening-editor label{margin:7px 0}.opening-editor input{width:100%}.opening-editor button{border:0;background:#fff0e9;color:#934b32;border-radius:6px;padding:5px 8px;font-size:10px}
+/* Opening editor chrome lives in advanced.css / studio.css (Mahnikka tokens).
+   This file kept so existing imports stay stable without terracotta leftovers. */
