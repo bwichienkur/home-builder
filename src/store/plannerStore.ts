@@ -62,6 +62,8 @@ type PlannerState = SceneSnapshot & {
   cameraMode: CameraMode;
   /** Plan / 3D view yaw in degrees — 0, 90, 180, or 270. */
   viewYawDeg: number;
+  /** Which facade the elevation (side) ortho view faces. */
+  elevationFace: import('../types').ElevationFace;
   roomType: RoomType;
   unitSystem: UnitSystem;
   selectedWallId: string | null;
@@ -124,6 +126,7 @@ type PlannerState = SceneSnapshot & {
   setTool: (tool: Tool) => void;
   setView: (view: View) => void;
   setCameraMode: (mode: CameraMode) => void;
+  setElevationFace: (face: import('../types').ElevationFace) => void;
   /** Rotate plan and 3D framing by 90° (default) or `deltaDeg`. */
   rotateViewYaw: (deltaDeg?: number) => void;
   setViewYawDeg: (deg: number) => void;
@@ -477,6 +480,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     view: '3d',
     cameraMode: 'orbit',
     viewYawDeg: 0,
+    elevationFace: 'front',
     roomType: 'Bedroom',
     unitSystem: 'metric',
     selectedWallId: null,
@@ -597,6 +601,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     setTool: (tool) => set({ tool: tool === 'wall' ? 'select' : tool, draftStart: null }),
     setView: (view) => set({ view, draftStart: null }),
     setCameraMode: (cameraMode) => set({ cameraMode }),
+    setElevationFace: (elevationFace) => set({ elevationFace }),
     setViewYawDeg: (deg) => {
       const normalized = ((Math.round(deg / 90) * 90) % 360 + 360) % 360;
       set({ viewYawDeg: normalized });

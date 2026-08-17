@@ -573,16 +573,12 @@ export default function StudioApp() {
       )}
     <main className={shellClass}>
       <section className="studio-canvas" aria-label={isElevation ? 'Elevation view' : isTop ? 'Top-down room view' : '3D room view'}>
-        <div className={`scene-layer${isElevation ? ' is-parked' : ''}`}>
+        <div className="scene-layer">
           <Suspense fallback={<div className="loading-3d">Preparing your room…</div>}>
             <Scene3D />
           </Suspense>
         </div>
-        {isElevation && (
-          <div className="elevation-layer">
-            <ElevationView />
-          </div>
-        )}
+        {isElevation && <ElevationView />}
       </section>
 
       {workflowStage === 'start' && (

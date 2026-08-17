@@ -89,6 +89,7 @@ function wallDragPlane(wall: Wall, item: FurnitureItem) {
 
 function CameraRig() {
   const mode = usePlannerStore((s) => s.cameraMode);
+  const elevationFace = usePlannerStore((s) => s.elevationFace);
   const viewYawDeg = usePlannerStore((s) => s.viewYawDeg);
   const walls = usePlannerStore((s) => s.walls);
   const planRooms = usePlannerStore((s) => s.planRooms);
@@ -217,7 +218,7 @@ function CameraRig() {
     x * yawCos - z * yawSin,
     x * yawSin + z * yawCos,
   ];
-  const fovDeg = mode === 'walk' ? 58 : mode === 'top' ? 42 : 48;
+  const fovDeg = mode === 'walk' ? 58 : mode === 'top' || mode === 'elevation' ? 42 : 48;
   const aspect = Math.max(0.35, canvasW / Math.max(1, canvasH));
 
   // Page center by default; pan into the free left area only for wide overlays
@@ -235,11 +236,48 @@ function CameraRig() {
     return menuShiftX + worldShiftForFreeArea(chromeFit.shiftFraction, dist, fovDeg, aspect);
   }, [menuOpen, framing, chromeFit.shiftFraction, mode, center, fovDeg, aspect]);
   const [shiftWorldX, shiftWorldZ] = yawOffset(shiftX, 0);
-  const targetTuple = useMemo<[number, number, number]>(
-    () => [center[0] + shiftWorldX, 0, center[2] + shiftWorldZ],
-    [center, shiftWorldX, shiftWorldZ],
-  );
+  const targetTuple = useMemo<[number, number, number]>(() => {
+    if (mode === 'elevation') {
+      const wallH = walls[0]?.height ?? 2.7;
+      return [center[0] + shiftWorldX, wallH * 0.5, center[2] + shiftWorldZ];
+    }
+    return [center[0] + shiftWorldX, 0, center[2] + shiftWorldZ];
+  }, [mode, center, shiftWorldX, shiftWorldZ, walls]);
+  const elevationAzimuth = useMemo(() => {
+    switch (elevationFace) {
+      case 'front':
+        return Math.PI;
+      case 'back':
+        return 0;
+      case 'left':
+        return Math.PI / 2;
+      case 'right':
+        return -Math.PI / 2;
+      default:
+        return Math.PI;
+    }
+  }, [elevationFace]);
+
   const poseTuple = useMemo<[number, number, number]>(() => {
+    if (mode === 'elevation') {
+      const wallH = walls[0]?.height ?? 2.7;
+      const cy = wallH * 0.5;
+      const dist = Math.max(framing.span * 1.35, 10);
+      const cx = center[0];
+      const cz = center[2];
+      switch (elevationFace) {
+        case 'front':
+          return [cx, cy, cz + dist];
+        case 'back':
+          return [cx, cy, cz - dist];
+        case 'left':
+          return [cx - dist, cy, cz];
+        case 'right':
+          return [cx + dist, cy, cz];
+        default:
+          return [cx, cy, cz + dist];
+      }
+    }
     if (mode === 'top') {
       const zBias = framing.topPose[2] - center[2];
       const [ox, oz] = yawOffset(0, zBias);
@@ -254,7 +292,7 @@ function CameraRig() {
     const oz0 = framing.orbitPose[2] - center[2];
     const [ox, oz] = yawOffset(ox0, oz0);
     return [center[0] + shiftWorldX + ox, framing.orbitPose[1], center[2] + shiftWorldZ + oz];
-  }, [mode, center, framing, shiftWorldX, shiftWorldZ, viewYawRad]);
+  }, [mode, center, framing, shiftWorldX, shiftWorldZ, viewYawRad, elevationFace, walls]);
 
   // Clear any leftover viewOffset from earlier experiments.
   useEffect(() => {
@@ -278,8 +316,21 @@ function CameraRig() {
   const orthoZoom = useMemo(() => {
     const half = Math.max(framing.span * 0.62, 5);
     const px = Math.min(size.width, size.height) || 800;
+    if (mode === 'elevation') {
+      const wallH = walls[0]?.height ?? 2.7;
+      const pts = walls.flatMap((w) => [world(w.start.x, w.start.y), world(w.end.x, w.end.y)]);
+      const xs = pts.map((p) => p[0]);
+      const zs = pts.map((p) => p[1]);
+      const widthM = xs.length ? Math.max(...xs) - Math.min(...xs) : framing.span;
+      const depthM = zs.length ? Math.max(...zs) - Math.min(...zs) : framing.span;
+      const faceSpan = elevationFace === 'front' || elevationFace === 'back' ? widthM : depthM;
+      const pad = 0.56;
+      const zoomW = (size.width || px) / (2 * Math.max(faceSpan, 2) * pad);
+      const zoomH = (size.height || px) / (2 * (wallH + 0.5) * pad);
+      return Math.max(8, Math.min(zoomW, zoomH));
+    }
     return Math.max(8, px / (2 * half));
-  }, [framing.span, size.width, size.height]);
+  }, [framing.span, size.width, size.height, mode, elevationFace, walls]);
 
   const animating = useRef(false);
   const modeAnimUntil = useRef(0);
@@ -296,6 +347,15 @@ function CameraRig() {
           controls.current.minAzimuthAngle = viewYawRad;
           controls.current.maxAzimuthAngle = viewYawRad;
           if (typeof controls.current.setAzimuthalAngle === 'function') controls.current.setAzimuthalAngle(viewYawRad);
+        } else if (mode === 'elevation') {
+          controls.current.minAzimuthAngle = elevationAzimuth;
+          controls.current.maxAzimuthAngle = elevationAzimuth;
+          if (typeof controls.current.setAzimuthalAngle === 'function') {
+            controls.current.setAzimuthalAngle(elevationAzimuth);
+          }
+          if (typeof controls.current.setPolarAngle === 'function') {
+            controls.current.setPolarAngle(Math.PI / 2);
+          }
         } else {
           controls.current.minAzimuthAngle = -Infinity;
           controls.current.maxAzimuthAngle = Infinity;
@@ -340,14 +400,14 @@ function CameraRig() {
 
   // Plan ↔ 3D / 90° yaw: ease into orbit/walk; top snaps. Ignore pose churn so we don't restart mid-ease.
   useEffect(() => {
-    if (mode === 'top') {
+    if (mode === 'top' || mode === 'elevation') {
       snapToPose();
       return;
     }
     modeAnimUntil.current = performance.now() + 620;
     animateToPose(560);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, menuOpen, viewYawDeg]);
+  }, [mode, menuOpen, viewYawDeg, elevationFace]);
 
   // Room enter / chrome pad / wall focus — skip while the edit card owns framing.
   useEffect(() => {
@@ -408,7 +468,7 @@ function CameraRig() {
       if (performance.now() < inspectorAnimUntil.current) return;
       if (document.body.dataset.inspectorOpen === '1') return;
       if (document.body.dataset.movingFurniture === 'true') return;
-      if (mode === 'top') snapToPose();
+      if (mode === 'top' || mode === 'elevation') snapToPose();
       else animateToPose(420);
     };
     const refocus = () => {
@@ -416,7 +476,7 @@ function CameraRig() {
       if (performance.now() < inspectorAnimUntil.current) return;
       if (document.body.dataset.inspectorOpen === '1') return;
       if (document.body.dataset.movingFurniture === 'true') return;
-      if (mode === 'top') snapToPose();
+      if (mode === 'top' || mode === 'elevation') snapToPose();
       else animateToPose(420);
     };
     const start = () => {
@@ -460,7 +520,7 @@ function CameraRig() {
 
   // Sync ortho zoom when framing changes — avoid fighting pinch-zoom every frame.
   useEffect(() => {
-    if (mode !== 'top') return;
+    if (mode !== 'top' && mode !== 'elevation') return;
     const cam = get().camera as THREE.OrthographicCamera;
     if (cam?.isOrthographicCamera) {
       cam.zoom = orthoZoom;
@@ -471,9 +531,9 @@ function CameraRig() {
 
   return (
     <>
-      {mode === 'top' ? (
+      {mode === 'top' || mode === 'elevation' ? (
         <OrthographicCamera
-          key="plan-ortho"
+          key={mode === 'elevation' ? 'elev-ortho' : 'plan-ortho'}
           makeDefault
           position={poseTuple}
           near={0.1}
@@ -491,24 +551,22 @@ function CameraRig() {
         ref={controls}
         enabled={!moving && !placing}
         target={[targetTuple[0], mode === 'walk' ? 1.1 : targetTuple[1], targetTuple[2]]}
-        // Strict plan: lock polar near zero (epsilon avoids lookAt singularity).
-        minPolarAngle={mode === 'top' ? 1e-4 : mode === 'walk' ? 0.7 : 0}
-        maxPolarAngle={mode === 'top' ? 1e-3 : mode === 'walk' ? Math.PI / 2.05 : Math.PI - 0.06}
-        minAzimuthAngle={mode === 'top' ? viewYawRad : -Infinity}
-        maxAzimuthAngle={mode === 'top' ? viewYawRad : Infinity}
+        minPolarAngle={mode === 'top' ? 1e-4 : mode === 'elevation' ? Math.PI / 2 - 1e-4 : mode === 'walk' ? 0.7 : 0}
+        maxPolarAngle={mode === 'top' ? 1e-3 : mode === 'elevation' ? Math.PI / 2 + 1e-4 : mode === 'walk' ? Math.PI / 2.05 : Math.PI - 0.06}
+        minAzimuthAngle={mode === 'top' ? viewYawRad : mode === 'elevation' ? elevationAzimuth : -Infinity}
+        maxAzimuthAngle={mode === 'top' ? viewYawRad : mode === 'elevation' ? elevationAzimuth : Infinity}
         minDistance={minDistance}
         maxDistance={maxDistance}
         enableZoom
         enablePan={!moving}
-        enableRotate={mode !== 'top' && !moving}
-        // Top: one-finger / left-drag pans the plate. Orbit keeps rotate on one finger.
+        enableRotate={mode !== 'top' && mode !== 'elevation' && !moving}
         mouseButtons={{
-          LEFT: mode === 'top' ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE,
+          LEFT: mode === 'top' || mode === 'elevation' ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE,
           MIDDLE: THREE.MOUSE.DOLLY,
           RIGHT: THREE.MOUSE.PAN,
         }}
         touches={{
-          ONE: mode === 'top' ? THREE.TOUCH.PAN : THREE.TOUCH.ROTATE,
+          ONE: mode === 'top' || mode === 'elevation' ? THREE.TOUCH.PAN : THREE.TOUCH.ROTATE,
           TWO: THREE.TOUCH.DOLLY_PAN,
         }}
         onChange={() => invalidate()}
@@ -522,7 +580,7 @@ function SceneAtmosphere() {
   const walls = usePlannerStore((s) => s.walls);
   const framing = useMemo(() => framingFromWalls(walls), [walls]);
   // Top: no fog (overhead plates sat past the old far plane).
-  if (mode === 'top') return <color attach="background" args={['#e8eaed']} />;
+  if (mode === 'top' || mode === 'elevation') return <color attach="background" args={['#e8eaed']} />;
   // Orbit/walk: keep a soft depth cue, but start fog well beyond normal dollhouse distances
   // so zooming out never dissolves the room (old near ≈ 18m blanked the plate).
   const near = Math.max(85, framing.span * 6.5);
@@ -1098,6 +1156,7 @@ function WallMeshes() {
     [openings, wallIds, layers.openings],
   );
   const orbiting = cameraMode === 'orbit';
+  const elevating = cameraMode === 'elevation';
   // Openings can be dragged in top plan and 3D orbit (not walk).
   const openingDragEnabled = tool === 'select' && (cameraMode === 'top' || cameraMode === 'orbit');
   const placingOpening = tool === 'door' || tool === 'window' || tool === 'passage';
@@ -1117,11 +1176,11 @@ function WallMeshes() {
   return (
     <>
       {walls.flatMap((w) => {
-        const opacity = opacityByWall[w.id] ?? 1;
+        const opacity = elevating ? 1 : (opacityByWall[w.id] ?? 1);
         const selected = selectedId === w.id;
         const drawOpacity = opacity;
         // Never unmount while orbiting — remounting at ~0 opacity popped the dissolve.
-        const hidden = !orbiting && drawOpacity < 0.02;
+        const hidden = !orbiting && !elevating && drawOpacity < 0.02;
         const [sx0, sz0] = world(w.start.x, w.start.y);
         const [ex0, ez0] = world(w.end.x, w.end.y);
         const origLen = Math.hypot(ex0 - sx0, ez0 - sz0) || 0.01;
@@ -1358,7 +1417,8 @@ function WallMeshes() {
                   key={w.id + 'len'}
                   position={[midX, 0.12, midZ]}
                   center
-                  style={{ pointerEvents: 'auto' }}
+                  wrapperClass="wall-length-html"
+                  style={{ background: 'transparent', border: 'none', padding: 0, margin: 0 }}
                   zIndexRange={[40, 20]}
                 >
                   <button
@@ -1966,7 +2026,7 @@ function Room() {
   const [ceilingOpacity, setCeilingOpacity] = useState(0.22);
   const [floorOpacity, setFloorOpacity] = useState(1);
   // Top / bird’s-eye must see the floor — a solid ceiling makes the room unusable to edit.
-  const showCeiling = cameraMode !== 'top' || selectedSurface === 'ceiling';
+  const showCeiling = (cameraMode !== 'top' && cameraMode !== 'elevation') || selectedSurface === 'ceiling';
 
   useFrame((_, delta) => {
     const targetCeiling = orbitCeilingOpacity(camera.position.y, ceilingHeight, {
