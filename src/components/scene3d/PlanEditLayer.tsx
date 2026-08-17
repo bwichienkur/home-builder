@@ -38,39 +38,70 @@ function cameraZoom(camera: THREE.Camera): number {
     : 40;
 }
 
-function ScreenSizedHandle({
+function PlanCornerHandle({
   position,
-  targetPx,
-  base,
-  color,
-  kind,
   ...events
 }: {
   position: [number, number, number];
-  targetPx: number;
-  base: number;
-  color: string;
-  kind: 'sphere' | 'box';
   onPointerDown?: (e: any) => void;
   onPointerMove?: (e: any) => void;
   onPointerUp?: (e: any) => void;
   onPointerCancel?: (e: any) => void;
-  onClick?: (e: any) => void;
   onDoubleClick?: (e: any) => void;
 }) {
-  const ref = useRef<THREE.Mesh>(null);
+  const ref = useRef<THREE.Group>(null);
   const { camera } = useThree();
   useFrame(() => {
-    const mesh = ref.current;
-    if (!mesh) return;
-    const world = screenHandleMeters(cameraZoom(camera), targetPx);
-    mesh.scale.setScalar(world / base);
+    const group = ref.current;
+    if (!group) return;
+    const world = screenHandleMeters(cameraZoom(camera), 22);
+    group.scale.setScalar(world / 0.1);
   });
   return (
-    <mesh ref={ref} position={position} {...events}>
-      {kind === 'sphere' ? <sphereGeometry args={[base, 16, 16]} /> : <boxGeometry args={[base, base * 0.28, base]} />}
-      <meshBasicMaterial color={color} />
-    </mesh>
+    <group ref={ref} position={position}>
+      <mesh {...events} renderOrder={12}>
+        <ringGeometry args={[0.46, 0.56, 32]} />
+        <meshBasicMaterial color="#ffffff" transparent opacity={0.98} depthTest={false} toneMapped={false} />
+      </mesh>
+      <mesh {...events} renderOrder={13}>
+        <circleGeometry args={[0.36, 32]} />
+        <meshBasicMaterial color="#111820" depthTest={false} toneMapped={false} />
+      </mesh>
+      <mesh {...events} renderOrder={14}>
+        <ringGeometry args={[0.3, 0.36, 32]} />
+        <meshBasicMaterial color="#0058a3" depthTest={false} toneMapped={false} />
+      </mesh>
+    </group>
+  );
+}
+
+function PlanEdgeHandle({
+  position,
+  ...events
+}: {
+  position: [number, number, number];
+  onPointerDown?: (e: any) => void;
+  onClick?: (e: any) => void;
+}) {
+  const ref = useRef<THREE.Group>(null);
+  const { camera } = useThree();
+  useFrame(() => {
+    const group = ref.current;
+    if (!group) return;
+    const world = screenHandleMeters(cameraZoom(camera), 14);
+    group.scale.setScalar(world / 0.1);
+  });
+  return (
+    <group ref={ref} position={position}>
+      <mesh {...events} renderOrder={11}>
+        <boxGeometry args={[0.52, 0.14, 0.52]} />
+        <meshBasicMaterial color="#ffffff" transparent opacity={0.96} depthTest={false} toneMapped={false} />
+      </mesh>
+      <mesh {...events} renderOrder={12}>
+        <boxGeometry args={[0.38, 0.16, 0.38]} />
+        <meshBasicMaterial color="#0058a3" transparent opacity={0.88} depthTest={false} toneMapped={false} />
+      </mesh>
+    </group>
   );
 }
 
@@ -112,7 +143,8 @@ export function PlanEditLayer() {
     roomId: string;
     index: number;
     pointerId: number;
-    start: { x: number; y: number };
+    anchor: { x: number; y: number };
+    startPointer: { x: number; y: number };
     armed: boolean;
   } | null>(null);
   const wallDrag = useRef<{ wallId: string; pointerId: number; lastX: number; lastZ: number } | null>(null);
@@ -294,13 +326,14 @@ export function PlanEditLayer() {
     commitPlanRoomVertex();
     delete document.body.dataset.movingFurniture;
     window.dispatchEvent(new Event('roomcraft-drag-end'));
-    window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-fit-plan')), 40);
   };
 
   const onVertexPointerDown = (e: any, roomId: string, index: number) => {
     e.stopPropagation();
-    const start = hitPlan(e) ?? hostRoom?.points[index] ?? { x: 0, y: 0 };
-    vertexDrag.current = { roomId, index, pointerId: e.pointerId, start, armed: false };
+    const room = planRooms.find((r) => r.id === roomId);
+    const anchor = room?.points[index] ?? { x: 0, y: 0 };
+    const startPointer = hitPlan(e) ?? anchor;
+    vertexDrag.current = { roomId, index, pointerId: e.pointerId, anchor, startPointer, armed: false };
     setVertexDragging(true);
     document.body.dataset.movingFurniture = 'true';
     window.dispatchEvent(new Event('roomcraft-drag-start'));
@@ -319,12 +352,19 @@ export function PlanEditLayer() {
     if (!raw) return;
     const zoom = cameraZoom(camera);
     if (!drag.armed) {
-      if (!vertexDragArmed(drag.start, raw, zoom)) return;
+      if (!vertexDragArmed(drag.startPointer, raw, zoom)) return;
       drag.armed = true;
     }
     const room = planRooms.find((r) => r.id === drag.roomId);
     const others = room?.points.filter((_, i) => i !== drag.index) ?? [];
-    const pt = snapVertexDrag(raw, others, zoom);
+    const pt = snapVertexDrag(
+      {
+        x: drag.anchor.x + (raw.x - drag.startPointer.x),
+        y: drag.anchor.y + (raw.y - drag.startPointer.y),
+      },
+      others,
+      zoom,
+    );
     const current = room?.points[drag.index];
     if (current && samePlanPoint(current, pt)) return;
     movePlanRoomVertex(drag.roomId, drag.index, pt, { live: true });
@@ -340,7 +380,15 @@ export function PlanEditLayer() {
       if (raw) {
         const room = planRooms.find((r) => r.id === drag.roomId);
         const others = room?.points.filter((_, i) => i !== drag.index) ?? [];
-        movePlanRoomVertex(drag.roomId, drag.index, snapVertexDrag(raw, others, cameraZoom(camera)), { live: false });
+        const pt = snapVertexDrag(
+          {
+            x: drag.anchor.x + (raw.x - drag.startPointer.x),
+            y: drag.anchor.y + (raw.y - drag.startPointer.y),
+          },
+          others,
+          cameraZoom(camera),
+        );
+        movePlanRoomVertex(drag.roomId, drag.index, pt, { live: false });
       }
     }
     endVertexDrag();
@@ -415,13 +463,9 @@ export function PlanEditLayer() {
         hostRoom!.points.map((p, i) => {
           const pos = world(p.x, p.y);
           return (
-            <ScreenSizedHandle
+            <PlanCornerHandle
               key={`v-${hostRoom!.id}-${i}`}
               position={[pos[0], 0.16, pos[1]]}
-              targetPx={18}
-              base={0.12}
-              color="#0058a3"
-              kind="sphere"
               onPointerDown={(e: any) => onVertexPointerDown(e, hostRoom!.id, i)}
               onPointerMove={onVertexPointerMove}
               onPointerUp={onVertexPointerUp}
@@ -440,13 +484,9 @@ export function PlanEditLayer() {
           const mid = { x: (p.x + next.x) / 2, y: (p.y + next.y) / 2 };
           const pos = world(mid.x, mid.y);
           return (
-            <ScreenSizedHandle
+            <PlanEdgeHandle
               key={`e-${hostRoom!.id}-${i}`}
               position={[pos[0], 0.14, pos[1]]}
-              targetPx={14}
-              base={0.14}
-              color="#7eb6e8"
-              kind="box"
               onPointerDown={(e: any) => e.stopPropagation()}
               onClick={(e: any) => {
                 e.stopPropagation();
@@ -458,17 +498,10 @@ export function PlanEditLayer() {
 
       {showWallHandles &&
         wallHandles.map(({ wallId, edgeIndex, pos }) => (
-          <ScreenSizedHandle
+          <PlanEdgeHandle
             key={`wh-${wallId}-${edgeIndex}`}
             position={[pos[0], 0.15, pos[1]]}
-            targetPx={16}
-            base={0.22}
-            color={wallDragging && wallDrag.current?.wallId === wallId ? '#003d70' : '#0058a3'}
-            kind="box"
             onPointerDown={(e: any) => onWallPointerDown(e, wallId)}
-            onPointerMove={onWallPointerMove}
-            onPointerUp={onWallPointerUp}
-            onPointerCancel={onWallPointerUp}
           />
         ))}
     </group>

@@ -407,6 +407,7 @@ function CameraRig() {
       if (performance.now() < modeAnimUntil.current) return;
       if (performance.now() < inspectorAnimUntil.current) return;
       if (document.body.dataset.inspectorOpen === '1') return;
+      if (document.body.dataset.movingFurniture === 'true') return;
       if (mode === 'top') snapToPose();
       else animateToPose(420);
     };
@@ -414,6 +415,7 @@ function CameraRig() {
       if (performance.now() < modeAnimUntil.current) return;
       if (performance.now() < inspectorAnimUntil.current) return;
       if (document.body.dataset.inspectorOpen === '1') return;
+      if (document.body.dataset.movingFurniture === 'true') return;
       if (mode === 'top') snapToPose();
       else animateToPose(420);
     };
@@ -2068,13 +2070,13 @@ function Room() {
                   worldSpan={span}
                 />
               </mesh>
-              {selected && (
+              {selected && cameraMode !== 'top' && (
                 <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, -0.018, 0]} raycast={() => {}} renderOrder={2}>
                   <shapeGeometry args={[roomShapeWithHoles(points, stairs)]} />
                   <meshBasicMaterial
-                    color="#0058a3"
+                    color="#111820"
                     transparent
-                    opacity={0.22}
+                    opacity={0.08}
                     depthWrite={false}
                     toneMapped={false}
                     side={THREE.DoubleSide}

@@ -137,6 +137,23 @@ export function InventoryPage() {
           '',
         ]}
         columns={[
+          {
+            key: 'thumb',
+            label: '',
+            render: (r) =>
+              r.thumbnailUrl ? (
+                <img
+                  src={r.thumbnailUrl}
+                  alt=""
+                  className="inventory-list-thumb"
+                  loading="lazy"
+                />
+              ) : (
+                <span className="inventory-list-thumb-fallback" aria-hidden>
+                  {r.emoji || '▧'}
+                </span>
+              ),
+          },
           { key: 'sku', label: 'SKU', render: (r) => r.sku },
           { key: 'name', label: 'Name', render: (r) => r.name },
           { key: 'vendorName', label: 'Vendor', render: (r) => r.vendorName || r.brand || '—' },

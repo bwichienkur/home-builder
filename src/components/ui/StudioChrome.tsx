@@ -22,6 +22,7 @@ import {
   Redo2,
   RotateCw,
   Save,
+  Scan,
   Share2,
   ShoppingBag,
   SlidersHorizontal,
@@ -164,6 +165,7 @@ export function StudioChrome({
   }, [walls]);
   const categories = roomCategories[roomType];
   const isTop = camera === 'top';
+  const isElevation = camera === 'elevation';
   const planWallTool = usePlannerStore((s) => s.planWallTool);
   const setPlanWallTool = usePlannerStore((s) => s.setPlanWallTool);
   const showSelectionFabs = !!selectedItem && !pending;
@@ -182,6 +184,11 @@ export function StudioChrome({
       window.dispatchEvent(new Event('roomcraft-fit-plan'));
       window.dispatchEvent(new Event('roomcraft-refocus'));
     }, 80);
+  };
+
+  const chooseElevation = () => {
+    setView('3d');
+    setCamera('elevation');
   };
 
   /** Flat top-down stay in WebGL — never leave the 3D scene. */
@@ -680,7 +687,16 @@ export function StudioChrome({
                 <Grid2X2 size={16} />
                 <span>Plan</span>
               </button>
-              <button type="button" className={!isTop && camera === 'orbit' ? 'is-active' : ''} onClick={() => choose3d('orbit')} title="3D view">
+              <button
+                type="button"
+                className={isElevation ? 'is-active' : ''}
+                onClick={chooseElevation}
+                title="Front elevation — wall heights and openings"
+              >
+                <Scan size={16} />
+                <span>Front</span>
+              </button>
+              <button type="button" className={!isTop && !isElevation && camera === 'orbit' ? 'is-active' : ''} onClick={() => choose3d('orbit')} title="3D view">
                 <Box size={16} />
                 <span>3D</span>
               </button>
