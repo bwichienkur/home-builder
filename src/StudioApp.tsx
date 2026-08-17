@@ -647,6 +647,17 @@ export default function StudioApp() {
             </button>
           </div>
 
+          <button
+            type="button"
+            className="menu-secondary"
+            onClick={() => {
+              closeProjectMenu();
+              window.location.assign('/plans');
+            }}
+          >
+            <FileJson size={16} /> House plans library
+          </button>
+
           <details className="menu-export-fold">
             <summary>Export drawings & estimate</summary>
             <div className="menu-export-actions">

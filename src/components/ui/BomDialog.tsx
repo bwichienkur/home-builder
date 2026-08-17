@@ -513,26 +513,27 @@ export function BomDialog({
             {changeOrders.length > 0 && (
               <div style={{ marginTop: 10 }}>
                 <strong style={{ fontSize: 12 }}>Change orders</strong>
-                <ul className="muted" style={{ margin: '4px 0 0', paddingLeft: 18, fontSize: 12 }}>
+                <ul className="muted bom-co-list">
                   {changeOrders.map((co) => (
                     <li key={co.id}>
-                      {co.label} · {co.status ?? 'draft'} · {co.delta >= 0 ? '+' : ''}$
-                      {co.delta.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                      <div className="bom-co-meta">
+                        {co.label} · {co.status ?? 'draft'} · {co.delta >= 0 ? '+' : ''}$
+                        {co.delta.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                      </div>
                       {canEstimate && (
-                        <span style={{ marginLeft: 8 }}>
+                        <div className="bom-co-status" role="group" aria-label={`Status for ${co.label}`}>
                           {(['draft', 'submitted', 'approved', 'rejected'] as const).map((st) => (
                             <button
                               key={st}
                               type="button"
-                              className="bom-rate-reset"
-                              style={{ marginRight: 4, fontSize: 11 }}
+                              className={`bom-co-status-btn${(co.status ?? 'draft') === st ? ' is-active' : ''}`}
                               disabled={(co.status ?? 'draft') === st}
                               onClick={() => setChangeOrderStatus(co.id, st)}
                             >
                               {st}
                             </button>
                           ))}
-                        </span>
+                        </div>
                       )}
                     </li>
                   ))}

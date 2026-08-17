@@ -541,7 +541,7 @@
 .studio-dock-seg button {
   border: 0;
   border-radius: 12px;
-  min-height: 36px;
+  min-height: 44px;
   min-width: 44px;
   padding: 3px 6px;
   display: inline-flex;
@@ -566,8 +566,8 @@
 .studio-dock-action {
   border: 0;
   border-radius: 12px;
-  min-height: 36px;
-  min-width: 40px;
+  min-height: 44px;
+  min-width: 44px;
   padding: 3px 6px;
   background: transparent;
   color: #111820;
@@ -590,6 +590,16 @@
 
 .studio-dock-action:disabled {
   opacity: 0.35;
+}
+
+@media (min-width: 821px) and (hover: hover) and (pointer: fine) {
+  .studio-dock-seg button {
+    min-height: 36px;
+  }
+  .studio-dock-action {
+    min-height: 36px;
+    min-width: 40px;
+  }
 }
 
 /* Legacy dock groups kept for any residual markup */
@@ -683,11 +693,17 @@
 .studio-view-menu svg { width: 22px; }
 
 .studio-shell.has-inspector .studio-dock,
+.studio-shell.has-catalog .studio-dock,
 .studio-shell.has-inspector .studio-category-rail,
+.studio-shell.has-catalog .studio-category-rail,
 .studio-shell.has-inspector .studio-top-tools,
+.studio-shell.has-catalog .studio-top-tools,
 .studio-shell.has-inspector .studio-story-bar,
+.studio-shell.has-catalog .studio-story-bar,
 .studio-shell.has-inspector .studio-selection-fabs,
-.studio-shell.has-inspector .studio-selection-hint {
+.studio-shell.has-catalog .studio-selection-fabs,
+.studio-shell.has-inspector .studio-selection-hint,
+.studio-shell.has-catalog .studio-selection-hint {
   display: none !important;
 }
 .studio-shell.has-inspector .studio-breadcrumb,
@@ -866,16 +882,16 @@
   box-shadow: 0 1px 0 rgba(17, 24, 32, 0.04);
 }
 .menu-primary.is-accent {
-  background: #111820;
-  border-color: #111820;
+  background: var(--accent, #0058a3);
+  border-color: var(--accent, #0058a3);
   color: #fff;
 }
 .menu-primary:hover {
   border-color: #0058a3;
 }
 .menu-primary.is-accent:hover {
-  background: #0058a3;
-  border-color: #0058a3;
+  background: #004680;
+  border-color: #004680;
 }
 .menu-secondary {
   width: 100%;
@@ -1184,7 +1200,7 @@
 .admin-card h2 { margin: 0 0 8px; }
 .admin-card p { margin: 0 0 18px; color: var(--muted); line-height: 1.5; }
 
-@media (max-width: 820px) {
+@media (max-width: 820px), (hover: none) and (pointer: coarse) and (max-width: 1100px) {
   .scene-help { display: none; }
   .selection-inspector {
     left: 0;
@@ -1275,7 +1291,7 @@
     display: none;
   }
   .building-checks-root {
-    bottom: calc(148px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(168px + env(safe-area-inset-bottom, 0px));
     right: 12px;
   }
   .building-checks-badge,
@@ -1390,8 +1406,18 @@
     display: none;
   }
   /* Keep story bar usable; leave dock hidden under the sheet (unreachable anyway). */
-  .studio-shell.has-inspector .studio-story-bar {
+  .studio-shell.has-inspector .studio-story-bar,
+  .studio-shell.has-catalog .studio-story-bar {
     display: flex !important;
+  }
+  .plan-annotation {
+    min-height: 44px;
+    padding: 10px 12px;
+    font-size: 13px;
+    max-width: min(200px, 46vw);
+  }
+  .wall-dim-card--bottom {
+    margin-top: 72px;
   }
 }
 
@@ -2744,6 +2770,17 @@
   white-space: nowrap;
   box-shadow: 0 8px 20px rgba(17, 24, 32, 0.18);
 }
+.opening-place-hint--chrome {
+  position: absolute;
+  left: 50%;
+  top: max(72px, calc(env(safe-area-inset-top) + 56px));
+  transform: translateX(-50%);
+  z-index: 45;
+  pointer-events: none;
+  max-width: calc(100vw - 24px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 .layers-menu-root {
   position: relative;
@@ -2762,12 +2799,12 @@
   box-shadow: 0 12px 28px rgba(17, 24, 32, 0.16);
   z-index: 40;
 }
-@media (max-width: 820px) {
+@media (max-width: 820px), (hover: none) and (pointer: coarse) and (max-width: 1100px) {
   .layers-menu-panel {
     position: fixed;
     left: 12px;
     right: 12px;
-    bottom: calc(148px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(168px + env(safe-area-inset-bottom, 0px));
     width: auto;
     transform: none;
     z-index: 90;
@@ -2846,11 +2883,12 @@
   color: #5c6770;
 }
 .menu-client-link select {
-  min-height: 38px;
+  min-height: 44px;
   border-radius: 10px;
   border: 1px solid var(--line);
   padding: 0 10px;
   font: inherit;
+  font-size: 16px;
   color: #111820;
 }
 
@@ -2894,7 +2932,7 @@
   font-weight: 700;
 }
 
-@media (max-width: 820px) {
+@media (max-width: 820px), (hover: none) and (pointer: coarse) and (max-width: 1100px) {
   .studio-dock-row {
     gap: 4px;
   }
