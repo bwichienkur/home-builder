@@ -632,11 +632,29 @@ export default function StudioApp() {
           </header>
           {!validation.valid && walls.length > 0 && <div className="plan-warning">Connect the highlighted endpoints to close the room.</div>}
           <p className="menu-meta">
-            {formatArea(area, unitSystem)} · {walls.length} walls · {furniture.length} items
-            {missingPrices > 0 ? ` · ${missingPrices} need quote` : ''}
-            {activeDesignCode ? ` · ${activeDesignCode}` : ''}
-            {cloudRef ? ` · cloud v${cloudRef.version}` : ''}
+            <span>{formatArea(area, unitSystem)}</span>
+            <span aria-hidden>·</span>
+            <span>{walls.length} walls</span>
+            {furniture.length > 0 && (
+              <>
+                <span aria-hidden>·</span>
+                <span>{furniture.length} items</span>
+              </>
+            )}
+            {missingPrices > 0 && (
+              <>
+                <span aria-hidden>·</span>
+                <span>{missingPrices} need quote</span>
+              </>
+            )}
           </p>
+          {(activeDesignCode || cloudRef) && (
+            <p className="menu-meta-secondary">
+              {activeDesignCode ? `Code ${activeDesignCode}` : ''}
+              {activeDesignCode && cloudRef ? ' · ' : ''}
+              {cloudRef ? `Cloud v${cloudRef.version}` : ''}
+            </p>
+          )}
 
           <div className="menu-primary-actions">
             <button type="button" className="menu-primary" onClick={saveBuild}>
@@ -647,256 +665,278 @@ export default function StudioApp() {
             </button>
           </div>
 
-          <button
-            type="button"
-            className="menu-secondary"
-            onClick={() => {
-              closeProjectMenu();
-              window.location.assign('/plans');
-            }}
-          >
-            <FileJson size={16} /> House plans library
-          </button>
+          <section className="menu-section" aria-label="Job">
+            <h3 className="menu-section-title">Job</h3>
+            <div className="menu-list">
+              <button
+                type="button"
+                className="menu-row"
+                onClick={() => {
+                  closeProjectMenu();
+                  window.location.assign('/plans');
+                }}
+              >
+                <FileJson size={16} aria-hidden />
+                <span>House plans</span>
+              </button>
+              <label className="menu-row menu-row-field">
+                <span className="menu-row-label">Client</span>
+                <select
+                  value={clientId ?? ''}
+                  onChange={(e) => setClientId(e.target.value || null)}
+                  aria-label="Linked client"
+                >
+                  <option value="">None</option>
+                  {crmClients.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button
+                type="button"
+                className="menu-row"
+                onClick={() => {
+                  rememberDesign(null);
+                  const url = new URL(location.href);
+                  url.searchParams.delete('design');
+                  history.replaceState(null, '', url.toString());
+                  store.showStart();
+                  setMenuOpen(false);
+                  setCatalogOpen(false);
+                  setInspectorOpen(false);
+                }}
+              >
+                <Home size={16} aria-hidden />
+                <span>New design</span>
+              </button>
+            </div>
+          </section>
 
-          <details className="menu-export-fold">
-            <summary>Export drawings & estimate</summary>
-            <div className="menu-export-actions">
-            <button type="button" className="menu-secondary" onClick={() => exportFloorPlan('pdf')} disabled={walls.length === 0}>
-              <Download size={16} /> Construction set PDF
-            </button>
-            <button type="button" className="menu-secondary" onClick={() => exportFloorPlan('png')} disabled={walls.length === 0}>
-              <Download size={16} /> Plan sheet PNG
-            </button>
-            <button type="button" className="menu-secondary" onClick={() => exportFloorPlan('dxf')} disabled={walls.length === 0}>
-              <FileJson size={16} /> CAD DXF
-            </button>
-            <button type="button" className="menu-secondary" onClick={() => exportFloorPlan('ifc')} disabled={walls.length === 0}>
-              <FileJson size={16} /> IFC4
-            </button>
-            <button
-              type="button"
-              className="menu-secondary"
-              disabled={walls.length === 0}
-              onClick={() => {
-                setElevationOpen(true);
-                closeProjectMenu();
-              }}
-            >
-              <FileJson size={16} /> Preview elevations
-            </button>
-            <button
-              type="button"
-              className="menu-secondary"
-              disabled={walls.length === 0}
-              onClick={() => {
-                const rates = pickTradeRates(useTradeRatesStore.getState());
-                const snap = buildHouseEstimateSnapshot({
-                  floors: store.floors,
-                  activeFloorId: store.activeFloorId,
-                  live: {
-                    walls: store.walls,
-                    openings: store.openings,
-                    furniture: store.furniture,
-                    planRooms: store.planRooms,
-                  },
-                  rates,
-                  quotes: store.vendorQuotes,
-                  previousVersion: store.estimateSnapshot?.version ?? 0,
-                  label: 'Bid proposal',
-                });
-                store.setEstimateSnapshot(snap);
-                downloadBidProposalPdf(
-                  snap,
-                  {
-                    projectName,
-                    jurisdiction: store.bidSettings.jurisdiction,
-                    validityDays: store.bidSettings.validityDays,
-                    paymentTerms: store.bidSettings.paymentTerms,
-                    inclusions: store.bidSettings.inclusions,
-                    exclusions: store.bidSettings.exclusions,
-                    alternateNotes: store.bidSettings.alternateNotes,
-                  },
-                  `${projectName.replace(/[^\w\-]+/g, '-').toLowerCase() || 'mahnikka'}-bid.pdf`,
-                );
-                notify('Bid proposal PDF exported');
-              }}
-            >
-              <ReceiptText size={16} /> Bid proposal PDF
-            </button>
-            <button
-              type="button"
-              className="menu-secondary"
-              disabled={walls.length === 0}
-              onClick={() => {
-                const rates = pickTradeRates(useTradeRatesStore.getState());
-                const takeoff = computeHouseTakeoff({
-                  floors: store.floors,
-                  activeFloorId: store.activeFloorId,
-                  live: {
-                    walls: store.walls,
-                    openings: store.openings,
-                    furniture: store.furniture,
-                    planRooms: store.planRooms,
-                  },
-                  wasteFactor: rates.wasteFactor,
-                });
-                const csv = constructionTakeoffCsv(takeoff, {
-                  name: projectName,
-                  unitSystem,
-                  floorName: store.floors.length > 1 ? 'All floors' : store.floors[0]?.name,
-                  disclaimer: ESTIMATE_DISCLAIMER,
-                });
-                downloadTextFile(
-                  `${projectName.replace(/[^\w\-]+/g, '-').toLowerCase() || 'mahnikka'}-takeoff.csv`,
-                  csv,
-                );
-                notify(store.floors.length > 1 ? 'Whole-house takeoff CSV exported' : 'Construction takeoff CSV exported');
-              }}
-            >
-              <ReceiptText size={16} /> Takeoff CSV
-            </button>
+          <details className="menu-fold">
+            <summary>Export</summary>
+            <div className="menu-fold-body">
+              <p className="menu-fold-label">Drawings</p>
+              <div className="menu-export-grid">
+                <button type="button" className="menu-chip" onClick={() => exportFloorPlan('pdf')} disabled={walls.length === 0}>
+                  PDF set
+                </button>
+                <button type="button" className="menu-chip" onClick={() => exportFloorPlan('png')} disabled={walls.length === 0}>
+                  Plan PNG
+                </button>
+                <button type="button" className="menu-chip" onClick={() => exportFloorPlan('dxf')} disabled={walls.length === 0}>
+                  DXF
+                </button>
+                <button type="button" className="menu-chip" onClick={() => exportFloorPlan('ifc')} disabled={walls.length === 0}>
+                  IFC4
+                </button>
+                <button
+                  type="button"
+                  className="menu-chip"
+                  disabled={walls.length === 0}
+                  onClick={() => {
+                    setElevationOpen(true);
+                    closeProjectMenu();
+                  }}
+                >
+                  Elevations
+                </button>
+              </div>
+              <p className="menu-fold-label">Estimate</p>
+              <div className="menu-export-grid">
+                <button
+                  type="button"
+                  className="menu-chip"
+                  disabled={walls.length === 0}
+                  onClick={() => {
+                    const rates = pickTradeRates(useTradeRatesStore.getState());
+                    const snap = buildHouseEstimateSnapshot({
+                      floors: store.floors,
+                      activeFloorId: store.activeFloorId,
+                      live: {
+                        walls: store.walls,
+                        openings: store.openings,
+                        furniture: store.furniture,
+                        planRooms: store.planRooms,
+                      },
+                      rates,
+                      quotes: store.vendorQuotes,
+                      previousVersion: store.estimateSnapshot?.version ?? 0,
+                      label: 'Bid proposal',
+                    });
+                    store.setEstimateSnapshot(snap);
+                    downloadBidProposalPdf(
+                      snap,
+                      {
+                        projectName,
+                        jurisdiction: store.bidSettings.jurisdiction,
+                        validityDays: store.bidSettings.validityDays,
+                        paymentTerms: store.bidSettings.paymentTerms,
+                        inclusions: store.bidSettings.inclusions,
+                        exclusions: store.bidSettings.exclusions,
+                        alternateNotes: store.bidSettings.alternateNotes,
+                      },
+                      `${projectName.replace(/[^\w\-]+/g, '-').toLowerCase() || 'mahnikka'}-bid.pdf`,
+                    );
+                    notify('Bid proposal PDF exported');
+                  }}
+                >
+                  Bid PDF
+                </button>
+                <button
+                  type="button"
+                  className="menu-chip"
+                  disabled={walls.length === 0}
+                  onClick={() => {
+                    const rates = pickTradeRates(useTradeRatesStore.getState());
+                    const takeoff = computeHouseTakeoff({
+                      floors: store.floors,
+                      activeFloorId: store.activeFloorId,
+                      live: {
+                        walls: store.walls,
+                        openings: store.openings,
+                        furniture: store.furniture,
+                        planRooms: store.planRooms,
+                      },
+                      wasteFactor: rates.wasteFactor,
+                    });
+                    const csv = constructionTakeoffCsv(takeoff, {
+                      name: projectName,
+                      unitSystem,
+                      floorName: store.floors.length > 1 ? 'All floors' : store.floors[0]?.name,
+                      disclaimer: ESTIMATE_DISCLAIMER,
+                    });
+                    downloadTextFile(
+                      `${projectName.replace(/[^\w\-]+/g, '-').toLowerCase() || 'mahnikka'}-takeoff.csv`,
+                      csv,
+                    );
+                    notify(store.floors.length > 1 ? 'Whole-house takeoff CSV exported' : 'Construction takeoff CSV exported');
+                  }}
+                >
+                  Takeoff CSV
+                </button>
+              </div>
             </div>
           </details>
 
-          <label className="menu-client-link">
-            Linked client
-            <select
-              value={clientId ?? ''}
-              onChange={(e) => setClientId(e.target.value || null)}
-            >
-              <option value="">None</option>
-              {crmClients.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          <details className="menu-fold">
+            <summary>
+              Projects
+              <span className="menu-fold-count">
+                {(platformConfig.cloudConfigured() ? cloudProjects.length : 0) + designs.length}
+              </span>
+            </summary>
+            <div className="menu-fold-body">
+              <section className="design-library design-library--nested">
+                <div className="design-library-head">
+                  <h3>
+                    <Cloud size={14} aria-hidden /> Cloud
+                  </h3>
+                  <span>{cloudLoading ? '…' : cloudProjects.length}</span>
+                </div>
+                {cloudLoading ? (
+                  <p className="muted design-library-empty cloud-library-empty">Checking cloud library…</p>
+                ) : !platformConfig.cloudConfigured() ? (
+                  <p className="muted design-library-empty cloud-library-empty">
+                    Connect <code>VITE_API_URL</code> to sync jobs to cloud.
+                  </p>
+                ) : cloudProjects.length === 0 ? (
+                  <p className="muted design-library-empty cloud-library-empty">
+                    No cloud jobs yet — Save syncs the estimate here.
+                  </p>
+                ) : (
+                  <ul>
+                    {cloudProjects.map((project) => {
+                      const active = cloudRef?.id === project.id;
+                      return (
+                        <li key={project.id} className={active ? 'is-active' : undefined}>
+                          <button type="button" className="design-open" onClick={() => void openCloudBuild(project)}>
+                            <strong>{project.name}</strong>
+                            <span>
+                              v{project.version} · {new Date(project.updatedAt).toLocaleDateString()}
+                              {active ? ' · editing' : ''}
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </section>
 
-          <button
-            type="button"
-            className="menu-secondary"
-            onClick={() => {
-              rememberDesign(null);
-              const url = new URL(location.href);
-              url.searchParams.delete('design');
-              history.replaceState(null, '', url.toString());
-              store.showStart();
-              setMenuOpen(false);
-              setCatalogOpen(false);
-              setInspectorOpen(false);
-            }}
-          >
-            <Home size={16} /> New design
-          </button>
-
-          <section className="design-library">
-            <div className="design-library-head">
-              <h3>
-                <Cloud size={14} aria-hidden /> Cloud projects
-              </h3>
-              <span>{cloudLoading ? '…' : cloudProjects.length}</span>
+              <section className="design-library design-library--nested">
+                <div className="design-library-head">
+                  <h3>{platformConfig.cloudConfigured() ? 'On this device' : 'Saved builds'}</h3>
+                  <span>{designs.length}</span>
+                </div>
+                {designs.length === 0 ? (
+                  <p className="muted design-library-empty">
+                    {platformConfig.cloudConfigured()
+                      ? 'Local cache of recent saves.'
+                      : 'Save a design to list it here.'}
+                  </p>
+                ) : (
+                  <ul>
+                    {designs.map((design) => {
+                      const stamp = design.updatedAt ?? design.createdAt;
+                      const cos = design.payload.changeOrders?.length ?? 0;
+                      return (
+                        <li key={design.code} className={activeDesignCode === design.code ? 'is-active' : undefined}>
+                          <button type="button" className="design-open" onClick={() => openSavedBuild(design)}>
+                            <strong>{design.name}</strong>
+                            <span>
+                              {design.code} · {new Date(stamp).toLocaleDateString()}
+                              {design.payload.estimateSnapshot
+                                ? ` · est v${design.payload.estimateSnapshot.version}`
+                                : ''}
+                              {cos > 0 ? ` · ${cos} CO` : ''}
+                              {activeDesignCode === design.code ? ' · editing' : ''}
+                            </span>
+                          </button>
+                          <div className="design-item-actions">
+                            <button
+                              type="button"
+                              aria-label={`Export ${design.name}`}
+                              title="Export build"
+                              onClick={() => exportSavedBuild(design)}
+                            >
+                              <Download size={15} />
+                            </button>
+                            <button
+                              type="button"
+                              aria-label={`Export FF&E list for ${design.name}`}
+                              title="Export FF&E list"
+                              onClick={() => exportSavedShoppingList(design)}
+                            >
+                              <ReceiptText size={15} />
+                            </button>
+                            <button
+                              type="button"
+                              className="is-danger"
+                              aria-label={`Delete ${design.name}`}
+                              title="Delete"
+                              onClick={() => {
+                                deleteSharedDesign(design.code);
+                                if (activeDesignCode === design.code) rememberDesign(null);
+                                setDesigns(listSharedDesigns());
+                              }}
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+                <label className="project-import design-library-import">
+                  <FileJson size={15} /> Import build file
+                  <input type="file" accept="application/json,.json" onChange={importProject} />
+                </label>
+              </section>
             </div>
-            {cloudLoading ? (
-              <p className="muted design-library-empty cloud-library-empty">Checking cloud library…</p>
-            ) : !platformConfig.cloudConfigured() ? (
-              <p className="muted design-library-empty cloud-library-empty">
-                Set <code>VITE_API_URL</code> to make cloud the primary job library (estimates sync with the payload).
-              </p>
-            ) : cloudProjects.length === 0 ? (
-              <p className="muted design-library-empty cloud-library-empty">
-                No cloud jobs yet — Save embeds the estimate snapshot and syncs here first.
-              </p>
-            ) : (
-              <ul>
-                {cloudProjects.map((project) => {
-                  const active = cloudRef?.id === project.id;
-                  return (
-                    <li key={project.id} className={active ? 'is-active' : undefined}>
-                      <button type="button" className="design-open" onClick={() => void openCloudBuild(project)}>
-                        <strong>{project.name}</strong>
-                        <span>
-                          v{project.version} · {new Date(project.updatedAt).toLocaleDateString()}
-                          {active ? ' · editing' : ''}
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </section>
-
-          <section className="design-library">
-            <div className="design-library-head">
-              <h3>{platformConfig.cloudConfigured() ? 'Local cache' : 'Saved builds'}</h3>
-              <span>{designs.length}</span>
-            </div>
-            {designs.length === 0 ? (
-              <p className="muted design-library-empty">
-                {platformConfig.cloudConfigured()
-                  ? 'Browser cache of recent saves — cloud is the source of truth when the API is up.'
-                  : 'Save this design to see it here. Open a build to edit, or export the file / FF&E list from each row.'}
-              </p>
-            ) : (
-              <ul>
-                {designs.map((design) => {
-                  const stamp = design.updatedAt ?? design.createdAt;
-                  const cos = design.payload.changeOrders?.length ?? 0;
-                  return (
-                    <li key={design.code} className={activeDesignCode === design.code ? 'is-active' : undefined}>
-                      <button type="button" className="design-open" onClick={() => openSavedBuild(design)}>
-                        <strong>{design.name}</strong>
-                        <span>
-                          {design.code} · {new Date(stamp).toLocaleDateString()}
-                          {design.payload.estimateSnapshot
-                            ? ` · est v${design.payload.estimateSnapshot.version}`
-                            : ''}
-                          {cos > 0 ? ` · ${cos} CO` : ''}
-                          {activeDesignCode === design.code ? ' · editing' : ''}
-                        </span>
-                      </button>
-                      <div className="design-item-actions">
-                        <button
-                          type="button"
-                          aria-label={`Export ${design.name}`}
-                          title="Export build"
-                          onClick={() => exportSavedBuild(design)}
-                        >
-                          <Download size={15} />
-                        </button>
-                        <button
-                          type="button"
-                          aria-label={`Export FF&E list for ${design.name}`}
-                          title="Export FF&E list"
-                          onClick={() => exportSavedShoppingList(design)}
-                        >
-                          <ReceiptText size={15} />
-                        </button>
-                        <button
-                          type="button"
-                          className="is-danger"
-                          aria-label={`Delete ${design.name}`}
-                          title="Delete"
-                          onClick={() => {
-                            deleteSharedDesign(design.code);
-                            if (activeDesignCode === design.code) rememberDesign(null);
-                            setDesigns(listSharedDesigns());
-                          }}
-                        >
-                          <Trash2 size={15} />
-                        </button>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-            <label className="project-import design-library-import">
-              <FileJson size={15} /> Import build file
-              <input type="file" accept="application/json,.json" onChange={importProject} />
-            </label>
-          </section>
+          </details>
         </aside>
         </>
       )}

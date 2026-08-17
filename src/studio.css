@@ -825,17 +825,187 @@
   box-shadow: 0 0 0 2px rgba(0, 88, 163, 0.18);
 }
 .menu-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
   font-size: 12px;
   color: var(--muted);
   font-weight: 700;
-  margin: 8px 0 14px;
+  margin: 4px 0 6px;
+}
+.menu-meta-secondary {
+  margin: 0 0 12px;
+  font-size: 11px;
+  font-weight: 650;
+  color: #8b949e;
 }
 .menu-primary-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
-  margin-bottom: 8px;
+  margin-bottom: 14px;
 }
+.menu-section {
+  margin: 0 0 12px;
+}
+.menu-section-title {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.menu-list {
+  display: grid;
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+}
+.menu-row {
+  min-height: 44px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+}
+.menu-row:hover {
+  background: var(--soft);
+}
+.menu-row svg {
+  flex-shrink: 0;
+  color: #5c6770;
+}
+.menu-row-field {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 10px;
+  cursor: default;
+}
+.menu-row-field:hover {
+  background: transparent;
+}
+.menu-row-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.menu-row-field select {
+  min-height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 10px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--ink);
+  background: var(--soft);
+}
+.menu-fold {
+  margin: 0 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+  overflow: hidden;
+}
+.menu-fold > summary {
+  list-style: none;
+  cursor: pointer;
+  font-weight: 750;
+  font-size: 14px;
+  min-height: 44px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.menu-fold > summary::-webkit-details-marker {
+  display: none;
+}
+.menu-fold > summary::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid #8b949e;
+  border-bottom: 2px solid #8b949e;
+  transform: rotate(45deg);
+  transition: transform 160ms ease;
+  flex-shrink: 0;
+}
+.menu-fold[open] > summary::after {
+  transform: rotate(-135deg);
+  margin-top: 4px;
+}
+.menu-fold[open] > summary {
+  border-bottom: 1px solid var(--line);
+}
+.menu-fold-count {
+  margin-left: auto;
+  margin-right: 8px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--soft);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  display: inline-grid;
+  place-items: center;
+}
+.menu-fold-body {
+  padding: 10px 12px 12px;
+}
+.menu-fold-label {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.menu-fold-body > .menu-fold-label + .menu-export-grid + .menu-fold-label {
+  margin-top: 12px;
+}
+.menu-export-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+.menu-chip {
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--soft);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 750;
+  cursor: pointer;
+  padding: 0 10px;
+}
+.menu-chip:hover:not(:disabled) {
+  border-color: var(--accent, #0058a3);
+  color: var(--accent, #0058a3);
+  background: #fff;
+}
+.menu-chip:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+/* Legacy export fold kept for any residual markup */
 .menu-export-actions {
   display: grid;
   gap: 6px;
@@ -1468,6 +1638,16 @@
   margin-top: 14px;
   border-top: 1px solid var(--line);
   padding-top: 14px;
+}
+.design-library--nested {
+  margin-top: 0;
+  border-top: 0;
+  padding-top: 0;
+}
+.design-library--nested + .design-library--nested {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
 }
 .design-library-head {
   display: flex;
