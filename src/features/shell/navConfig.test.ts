@@ -18,9 +18,13 @@ describe('app nav', () => {
   });
 
   it('titles the current page for the shared top bar', () => {
-    expect(pageTitleForPath('/')).toBe('Home');
+    expect(pageTitleForPath('/')).toBe('Projects');
     expect(pageTitleForPath('/build')).toBe('Build');
     expect(pageTitleForPath('/inventory')).toBe('Materials');
     expect(pageTitleForPath('/unknown')).toBe('Mahnikka');
+  });
+
+  it('gives every destination an icon', () => {
+    expect(NAV_GROUPS.flatMap((g) => g.items).every((item) => item.icon)).toBe(true);
   });
 });
