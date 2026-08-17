@@ -1413,26 +1413,25 @@ function WallMeshes() {
           ...fixtures,
           ...(cameraMode === 'top' && layers.dims
             ? [
-                <Html
+                <Text
                   key={w.id + 'len'}
-                  position={[midX, 0.12, midZ]}
-                  center
-                  wrapperClass="wall-length-html"
-                  style={{ background: 'transparent', border: 'none', padding: 0, margin: 0 }}
-                  zIndexRange={[40, 20]}
+                  position={[midX, 0.13, midZ]}
+                  rotation={[-Math.PI / 2, 0, 0]}
+                  fontSize={Math.min(0.22, Math.max(0.13, origLen * 0.042))}
+                  color={selected ? '#ffffff' : '#1a2330'}
+                  anchorX="center"
+                  anchorY="middle"
+                  outlineWidth={0.018}
+                  outlineColor={selected ? '#0058a3' : '#ffffff'}
+                  maxWidth={origLen * 0.95}
+                  textAlign="center"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onWallClick(w.id);
+                  }}
                 >
-                  <button
-                    type="button"
-                    className={`wall-length-chip${selected ? ' is-selected' : ''}${ (w.assembly ?? 'interior') === 'exterior' ? ' is-exterior' : ''}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onWallClick(w.id);
-                    }}
-                    title="Edit wall"
-                  >
-                    {formatLength(origLen, unitSystem)}
-                  </button>
-                </Html>,
+                  {formatLength(origLen, unitSystem)}
+                </Text>,
               ]
             : []),
         ];

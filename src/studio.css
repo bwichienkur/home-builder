@@ -1511,13 +1511,6 @@
     min-height: 44px;
     font-size: 16px;
   }
-  .wall-length-chip {
-    min-height: unset;
-    min-width: unset;
-    padding: 3px 9px;
-    font-size: 11px;
-    border-radius: 999px;
-  }
   .wall-assembly-pills button {
     min-height: 44px;
   }
@@ -2884,37 +2877,9 @@
   border-top: 1px solid var(--line);
 }
 
-.wall-length-html {
-  background: transparent !important;
-  border: none !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  line-height: 1;
-  pointer-events: auto;
-}
+.wall-length-html,
 .wall-length-chip {
-  padding: 2px 8px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  background: rgba(17, 24, 32, 0.78);
-  color: #fff;
-  font-size: 10px;
-  font-weight: 700;
-  white-space: nowrap;
-  box-shadow: 0 1px 4px rgba(17, 24, 32, 0.18);
-  cursor: pointer;
-  font-family: inherit;
-  line-height: 1.35;
-}
-.wall-length-chip.is-selected {
-  border-color: #7eb6e8;
-  background: rgba(0, 88, 163, 0.92);
-  color: #fff;
-}
-.wall-length-chip.is-exterior {
-  background: rgba(17, 24, 32, 0.88);
-  border-color: rgba(255, 255, 255, 0.28);
-  color: #fff;
+  display: none !important;
 }
 
 .studio-takeoff-strip {
