@@ -222,6 +222,14 @@ export function StudioChrome({
   const houseLabel = housePlanName || (planRooms.length > 1 ? 'House plan' : 'Room');
   const atStart = workflowStage === 'start';
   const inRoom = workflowStage === 'room';
+  const contextTitle =
+    inRoom && selectedRoom
+      ? selectedRoom.name
+      : selectedRoom
+        ? selectedRoom.name
+        : activeFloor
+          ? activeFloor.name.replace(/\s*floor$/i, '') || activeFloor.name
+          : houseLabel;
   const showCatalogRail = inRoom && !pending;
   /** Plan-level wall tools (house/floor plate) — not while inside a room. */
   const atPlanLevel = !atStart && !inRoom;
@@ -374,44 +382,49 @@ export function StudioChrome({
             {menuOpen ? <X /> : <Menu />}
           </button>
 
-          {inRoom && selectedRoom ? (
-            <div className="studio-breadcrumb studio-room-title" aria-label="Current room">
-              <span className="studio-breadcrumb-static is-current" title={selectedRoom.name}>
-                {selectedRoom.name}
-              </span>
-            </div>
-          ) : (
-            <nav className="studio-breadcrumb" aria-label="Design location">
-              <button type="button" onClick={showStart} title="Start over">
-                Start
-              </button>
-              <span aria-hidden="true">/</span>
-              <button type="button" className={!selectedRoom ? 'is-current' : ''} title={houseLabel}>
-                {houseLabel}
-              </button>
-              {activeFloor && (
-                <>
-                  <span aria-hidden="true">/</span>
-                  <button
-                    type="button"
-                    className={!selectedRoom ? 'is-current' : ''}
-                    onClick={() => (floors.length > 1 ? setStoriesOpen(true) : undefined)}
-                    title={activeFloor.name}
-                  >
-                    {activeFloor.name}
-                  </button>
-                </>
-              )}
-              {selectedRoom && (
-                <>
-                  <span aria-hidden="true">/</span>
-                  <span className="studio-breadcrumb-static is-current" title={selectedRoom.name}>
-                    {selectedRoom.name}
-                  </span>
-                </>
-              )}
-            </nav>
-          )}
+          <div className="studio-context">
+            <p className="studio-context-title" title={contextTitle}>
+              {contextTitle}
+            </p>
+            {inRoom && selectedRoom ? (
+              <div className="studio-breadcrumb studio-room-title" aria-label="Current room">
+                <span className="studio-breadcrumb-static is-current" title={selectedRoom.name}>
+                  {selectedRoom.name}
+                </span>
+              </div>
+            ) : (
+              <nav className="studio-breadcrumb" aria-label="Design location">
+                <button type="button" onClick={showStart} title="Start over">
+                  Start
+                </button>
+                <span aria-hidden="true">/</span>
+                <button type="button" className={!selectedRoom ? 'is-current' : ''} title={houseLabel}>
+                  {houseLabel}
+                </button>
+                {activeFloor && (
+                  <>
+                    <span aria-hidden="true">/</span>
+                    <button
+                      type="button"
+                      className={!selectedRoom ? 'is-current' : ''}
+                      onClick={() => (floors.length > 1 ? setStoriesOpen(true) : undefined)}
+                      title={activeFloor.name}
+                    >
+                      {activeFloor.name}
+                    </button>
+                  </>
+                )}
+                {selectedRoom && (
+                  <>
+                    <span aria-hidden="true">/</span>
+                    <span className="studio-breadcrumb-static is-current" title={selectedRoom.name}>
+                      {selectedRoom.name}
+                    </span>
+                  </>
+                )}
+              </nav>
+            )}
+          </div>
 
           {(onSave || onShare) && (
             <div className="studio-topbar-actions" role="group" aria-label="Project actions">
@@ -448,122 +461,126 @@ export function StudioChrome({
           </button>
         </div>
 
-        {!atStart && walls.length > 0 && (
-          <div className={`studio-takeoff-strip${takeoffOpen ? ' is-open' : ''}`} aria-label="Construction takeoff">
-            <button
-              type="button"
-              className="studio-takeoff-toggle"
-              aria-expanded={takeoffOpen}
-              onClick={() => setTakeoffOpen((v) => !v)}
-              title="Construction takeoff"
-            >
-              {formatArea(takeoff.floorAreaM2, unitSystem)}
-              <span aria-hidden>·</span>
-              {takeoff.doorCount}d/{takeoff.windowCount}w
-              <ChevronDown size={14} />
-            </button>
-            <div className="studio-takeoff-details">
-              <span title="Floor area">{formatArea(takeoff.floorAreaM2, unitSystem)}</span>
-              <span title="Wall length">{formatLength(takeoff.wallLengthM, unitSystem)} walls</span>
-              {takeoff.exteriorWallLengthM > 0 && (
-                <span title="Exterior wall length">{formatLength(takeoff.exteriorWallLengthM, unitSystem)} ext</span>
-              )}
-              <span title="Drywall both faces (net)">
-                {formatArea(takeoff.drywallAreaM2, unitSystem)} drywall
-              </span>
-              <span title="Studs at 16 in OC">{takeoff.studCount} studs</span>
-              <span title="Doors / windows / openings">
-                {takeoff.doorCount} dr · {takeoff.windowCount} win
-                {takeoff.passageCount ? ` · ${takeoff.passageCount} open` : ''}
-              </span>
-              {takeoff.stairCount > 0 && <span>{takeoff.stairCount} stair</span>}
-            </div>
-          </div>
-        )}
+        {(!atStart && (walls.length > 0 || showFloorChrome)) && (
+          <div className="studio-subbar">
+            {!atStart && walls.length > 0 && (
+              <div className={`studio-takeoff-strip${takeoffOpen ? ' is-open' : ''}`} aria-label="Construction takeoff">
+                <button
+                  type="button"
+                  className="studio-takeoff-toggle"
+                  aria-expanded={takeoffOpen}
+                  onClick={() => setTakeoffOpen((v) => !v)}
+                  title="Construction takeoff"
+                >
+                  {formatArea(takeoff.floorAreaM2, unitSystem)}
+                  <span aria-hidden>·</span>
+                  {takeoff.doorCount}d/{takeoff.windowCount}w
+                  <ChevronDown size={14} />
+                </button>
+                <div className="studio-takeoff-details">
+                  <span title="Floor area">{formatArea(takeoff.floorAreaM2, unitSystem)}</span>
+                  <span title="Wall length">{formatLength(takeoff.wallLengthM, unitSystem)} walls</span>
+                  {takeoff.exteriorWallLengthM > 0 && (
+                    <span title="Exterior wall length">{formatLength(takeoff.exteriorWallLengthM, unitSystem)} ext</span>
+                  )}
+                  <span title="Drywall both faces (net)">
+                    {formatArea(takeoff.drywallAreaM2, unitSystem)} drywall
+                  </span>
+                  <span title="Studs at 16 in OC">{takeoff.studCount} studs</span>
+                  <span title="Doors / windows / openings">
+                    {takeoff.doorCount} dr · {takeoff.windowCount} win
+                    {takeoff.passageCount ? ` · ${takeoff.passageCount} open` : ''}
+                  </span>
+                  {takeoff.stairCount > 0 && <span>{takeoff.stairCount} stair</span>}
+                </div>
+              </div>
+            )}
 
-        {showFloorChrome && (
-          <div className="studio-story-bar" aria-label="Floors">
-            <div className="studio-floor-stack studio-floor-stack--bar" role="tablist" aria-label="Floor levels">
-              {floors.map((f) => (
-                <button
-                  key={f.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={f.id === activeFloorId}
-                  className={f.id === activeFloorId ? 'active' : ''}
-                  onClick={() => goToFloor(f.id)}
-                  title={f.name}
-                >
-                  {f.name.replace(/\s*floor$/i, '') || f.name}
-                </button>
-              ))}
-              {showFloorManage && (
-                <button
-                  type="button"
-                  className="studio-floor-add"
-                  aria-label="Add floor"
-                  title="Add floor"
-                  onClick={() => {
-                    setStudioMode('architect');
-                    addFloor();
-                    window.setTimeout(() => {
-                      window.dispatchEvent(new Event('roomcraft-fit-plan'));
-                      window.dispatchEvent(new Event('roomcraft-refocus'));
-                    }, 80);
-                  }}
-                >
-                  <Plus size={14} />
-                </button>
-              )}
-            </div>
-            {showFloorManage && floors.length > 1 && (
-              <div className="studio-story-bar-actions">
-                <button
-                  type="button"
-                  className={`studio-floor-stair${stackView ? ' is-active' : ''}`}
-                  aria-label="Stack all floors in 3D"
-                  title="Stack floors"
-                  aria-pressed={stackView}
-                  onClick={() => {
-                    setStackView(!stackView);
-                    setCamera('orbit');
-                    window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 40);
-                  }}
-                >
-                  <Layers3 size={16} />
-                </button>
-                <button
-                  type="button"
-                  className="studio-floor-stair"
-                  aria-label="Add stair between floors"
-                  title="Add stair"
-                  onClick={() => {
-                    const idx = floors.findIndex((f) => f.id === activeFloorId);
-                    const from = floors[idx] ?? floors[0]!;
-                    const to = floors[idx + 1] ?? floors[idx - 1] ?? floors[0]!;
-                    if (from.id === to.id) return;
-                    setStudioMode('architect');
-                    addStair(from.id, to.id);
-                    window.setTimeout(() => {
-                      window.dispatchEvent(new Event('roomcraft-fit-plan'));
-                      window.dispatchEvent(new Event('roomcraft-refocus'));
-                    }, 80);
-                  }}
-                >
-                  <ArrowUpDown size={16} />
-                </button>
-                <button
-                  type="button"
-                  className="studio-floor-delete"
-                  aria-label="Delete current floor"
-                  title="Delete current floor"
-                  onClick={() => removeFloor(activeFloorId)}
-                >
-                  <Trash2 size={16} />
-                </button>
-                <button type="button" className="studio-floor-all" onClick={() => setStoriesOpen(true)} title="View all floors">
-                  All
-                </button>
+            {showFloorChrome && (
+              <div className="studio-story-bar" aria-label="Floors">
+                <div className="studio-floor-stack studio-floor-stack--bar" role="tablist" aria-label="Floor levels">
+                  {floors.map((f) => (
+                    <button
+                      key={f.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={f.id === activeFloorId}
+                      className={f.id === activeFloorId ? 'active' : ''}
+                      onClick={() => goToFloor(f.id)}
+                      title={f.name}
+                    >
+                      {f.name.replace(/\s*floor$/i, '') || f.name}
+                    </button>
+                  ))}
+                  {showFloorManage && (
+                    <button
+                      type="button"
+                      className="studio-floor-add"
+                      aria-label="Add floor"
+                      title="Add floor"
+                      onClick={() => {
+                        setStudioMode('architect');
+                        addFloor();
+                        window.setTimeout(() => {
+                          window.dispatchEvent(new Event('roomcraft-fit-plan'));
+                          window.dispatchEvent(new Event('roomcraft-refocus'));
+                        }, 80);
+                      }}
+                    >
+                      <Plus size={14} />
+                    </button>
+                  )}
+                </div>
+                {showFloorManage && floors.length > 1 && (
+                  <div className="studio-story-bar-actions">
+                    <button
+                      type="button"
+                      className={`studio-floor-stair${stackView ? ' is-active' : ''}`}
+                      aria-label="Stack all floors in 3D"
+                      title="Stack floors"
+                      aria-pressed={stackView}
+                      onClick={() => {
+                        setStackView(!stackView);
+                        setCamera('orbit');
+                        window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 40);
+                      }}
+                    >
+                      <Layers3 size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      className="studio-floor-stair"
+                      aria-label="Add stair between floors"
+                      title="Add stair"
+                      onClick={() => {
+                        const idx = floors.findIndex((f) => f.id === activeFloorId);
+                        const from = floors[idx] ?? floors[0]!;
+                        const to = floors[idx + 1] ?? floors[idx - 1] ?? floors[0]!;
+                        if (from.id === to.id) return;
+                        setStudioMode('architect');
+                        addStair(from.id, to.id);
+                        window.setTimeout(() => {
+                          window.dispatchEvent(new Event('roomcraft-fit-plan'));
+                          window.dispatchEvent(new Event('roomcraft-refocus'));
+                        }, 80);
+                      }}
+                    >
+                      <ArrowUpDown size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      className="studio-floor-delete"
+                      aria-label="Delete current floor"
+                      title="Delete current floor"
+                      onClick={() => removeFloor(activeFloorId)}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                    <button type="button" className="studio-floor-all" onClick={() => setStoriesOpen(true)} title="View all floors">
+                      All
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -710,6 +727,7 @@ export function StudioChrome({
             </div>
             {atPlanLevel && !pending && (
               <>
+                <span className="studio-dock-rule" aria-hidden="true" />
                 <button
                   type="button"
                   className={`studio-dock-action studio-dock-priority${tool === 'door' ? ' is-active' : ''}`}
@@ -748,12 +766,13 @@ export function StudioChrome({
                 </button>
               </>
             )}
+            <span className="studio-dock-rule" aria-hidden="true" />
             <button type="button" className="studio-dock-action studio-dock-priority" onClick={refocus} title="Fit in view">
               <Focus size={15} />
               <span>Fit</span>
             </button>
             {onOpenElevations && !atStart && (
-              <button type="button" className="studio-dock-action" onClick={onOpenElevations} title="Elevation preview" disabled={walls.length === 0}>
+              <button type="button" className="studio-dock-action studio-dock-secondary" onClick={onOpenElevations} title="Elevation preview" disabled={walls.length === 0}>
                 <FileSpreadsheet size={15} />
                 <span>Elev</span>
               </button>
@@ -761,7 +780,7 @@ export function StudioChrome({
             {atPlanLevel && !pending && (
               <button
                 type="button"
-                className="studio-dock-action"
+                className="studio-dock-action studio-dock-secondary"
                 title="Add plan note"
                 onClick={() => {
                   setCamera('top');
@@ -778,6 +797,7 @@ export function StudioChrome({
               <RotateCw size={15} />
               <span>Rotate</span>
             </button>
+            <span className="studio-dock-rule" aria-hidden="true" />
             <button type="button" className="studio-dock-action" onClick={undo} disabled={historyIndex === 0} title="Undo">
               <Undo2 size={15} />
               <span>Undo</span>
