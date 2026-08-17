@@ -77,9 +77,11 @@ function PlanCornerHandle({
 
 function PlanEdgeHandle({
   position,
+  compact = false,
   ...events
 }: {
   position: [number, number, number];
+  compact?: boolean;
   onPointerDown?: (e: any) => void;
   onClick?: (e: any) => void;
 }) {
@@ -88,19 +90,29 @@ function PlanEdgeHandle({
   useFrame(() => {
     const group = ref.current;
     if (!group) return;
-    const world = screenHandleMeters(cameraZoom(camera), 14);
+    const targetPx = compact ? 10 : 14;
+    const world = screenHandleMeters(cameraZoom(camera), targetPx);
     group.scale.setScalar(world / 0.1);
   });
   return (
     <group ref={ref} position={position}>
-      <mesh {...events} renderOrder={11}>
-        <boxGeometry args={[0.52, 0.14, 0.52]} />
-        <meshBasicMaterial color="#ffffff" transparent opacity={0.96} depthTest={false} toneMapped={false} />
-      </mesh>
-      <mesh {...events} renderOrder={12}>
-        <boxGeometry args={[0.38, 0.16, 0.38]} />
-        <meshBasicMaterial color="#0058a3" transparent opacity={0.88} depthTest={false} toneMapped={false} />
-      </mesh>
+      {compact ? (
+        <mesh {...events} renderOrder={12}>
+          <boxGeometry args={[0.72, 0.1, 0.16]} />
+          <meshBasicMaterial color="#0058a3" transparent opacity={0.92} depthTest={false} toneMapped={false} />
+        </mesh>
+      ) : (
+        <>
+          <mesh {...events} renderOrder={11}>
+            <boxGeometry args={[0.52, 0.14, 0.52]} />
+            <meshBasicMaterial color="#ffffff" transparent opacity={0.96} depthTest={false} toneMapped={false} />
+          </mesh>
+          <mesh {...events} renderOrder={12}>
+            <boxGeometry args={[0.38, 0.16, 0.38]} />
+            <meshBasicMaterial color="#0058a3" transparent opacity={0.88} depthTest={false} toneMapped={false} />
+          </mesh>
+        </>
+      )}
     </group>
   );
 }
@@ -157,7 +169,7 @@ export function PlanEditLayer() {
   const hostRoom = planRooms.find((r) => r.id === selectedRoomId) ?? null;
   const showAttachSides = active && pendingAttachMode && !!hostRoom;
   const showVertices = active && !!hostRoom && !placingRoom && !pendingAttachMode && !planWallTool;
-  const showWallHandles = active && !!hostRoom && !placingRoom && !pendingAttachMode;
+  const showWallHandles = active && !!hostRoom && !placingRoom && !pendingAttachMode && planWallTool;
   const ceiling = walls[0]?.height ?? 2.7;
 
   const wallHandles = useMemo(() => {
@@ -501,6 +513,7 @@ export function PlanEditLayer() {
           <PlanEdgeHandle
             key={`wh-${wallId}-${edgeIndex}`}
             position={[pos[0], 0.15, pos[1]]}
+            compact
             onPointerDown={(e: any) => onWallPointerDown(e, wallId)}
           />
         ))}

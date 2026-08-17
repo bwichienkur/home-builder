@@ -33,6 +33,31 @@ const world = (x: number, y: number): [number, number] => [
   (y - WORLD_ORIGIN.y) / PIXELS_PER_METER,
 ];
 
+/** Place a wall length label just outside the room so handles never cover it. */
+function exteriorWallLabelPosition(
+  midX: number,
+  midZ: number,
+  sx: number,
+  sz: number,
+  ex: number,
+  ez: number,
+  roomPoints?: { x: number; y: number }[],
+  offsetM = 0.46,
+): [number, number] {
+  const length = Math.hypot(ex - sx, ez - sz) || 1;
+  let nx = -(ez - sz) / length;
+  let nz = (ex - sx) / length;
+  if (roomPoints && roomPoints.length >= 3) {
+    const cx = roomPoints.reduce((s, p) => s + (p.x - WORLD_ORIGIN.x) / PIXELS_PER_METER, 0) / roomPoints.length;
+    const cz = roomPoints.reduce((s, p) => s + (p.y - WORLD_ORIGIN.y) / PIXELS_PER_METER, 0) / roomPoints.length;
+    if (nx * (cx - midX) + nz * (cz - midZ) > 0) {
+      nx = -nx;
+      nz = -nz;
+    }
+  }
+  return [midX + nx * offsetM, midZ + nz * offsetM];
+}
+
 function hasUserDataFlag(object: THREE.Object3D, key: string) {
   let o: THREE.Object3D | null = object;
   while (o) {
@@ -1142,6 +1167,7 @@ function WallMeshes() {
   const selectedId = usePlannerStore((s) => s.selectedWallId);
   const selectedOpeningId = usePlannerStore((s) => s.selectedOpeningId);
   const selectedRoomId = usePlannerStore((s) => s.selectedRoomId);
+  const planRooms = usePlannerStore((s) => s.planRooms);
   const workflowStage = usePlannerStore((s) => s.workflowStage);
   const unitSystem = usePlannerStore((s) => s.unitSystem);
   const select = usePlannerStore((s) => s.selectWall);
@@ -1157,6 +1183,7 @@ function WallMeshes() {
   );
   const orbiting = cameraMode === 'orbit';
   const elevating = cameraMode === 'elevation';
+  const dimRoom = workflowStage === 'house' ? planRooms.find((r) => r.id === selectedRoomId) : null;
   // Openings can be dragged in top plan and 3D orbit (not walk).
   const openingDragEnabled = tool === 'select' && (cameraMode === 'top' || cameraMode === 'orbit');
   const placingOpening = tool === 'door' || tool === 'window' || tool === 'passage';
@@ -1412,27 +1439,46 @@ function WallMeshes() {
           ...selectionHalo,
           ...fixtures,
           ...(cameraMode === 'top' && layers.dims
-            ? [
-                <Text
-                  key={w.id + 'len'}
-                  position={[midX, 0.13, midZ]}
-                  rotation={[-Math.PI / 2, 0, 0]}
-                  fontSize={Math.min(0.22, Math.max(0.13, origLen * 0.042))}
-                  color={selected ? '#ffffff' : '#1a2330'}
-                  anchorX="center"
-                  anchorY="middle"
-                  outlineWidth={0.018}
-                  outlineColor={selected ? '#0058a3' : '#ffffff'}
-                  maxWidth={origLen * 0.95}
-                  textAlign="center"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onWallClick(w.id);
-                  }}
-                >
-                  {formatLength(origLen, unitSystem)}
-                </Text>,
-              ]
+            ? (() => {
+                const [labelX, labelZ] = exteriorWallLabelPosition(
+                  midX,
+                  midZ,
+                  sx,
+                  sz,
+                  ex,
+                  ez,
+                  dimRoom?.points,
+                );
+                return [
+                  <Html
+                    key={w.id + 'len'}
+                    position={[labelX, 0.18, labelZ]}
+                    center
+                    transform={false}
+                    distanceFactor={14}
+                    zIndexRange={[55, 35]}
+                    wrapperClass="wall-dim-html"
+                  >
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      className={`wall-dim-label${selected ? ' is-selected' : ''}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onWallClick(w.id);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          onWallClick(w.id);
+                        }
+                      }}
+                    >
+                      {formatLength(origLen, unitSystem)}
+                    </span>
+                  </Html>,
+                ];
+              })()
             : []),
         ];
       })}
