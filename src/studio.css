@@ -3130,6 +3130,7 @@
   box-shadow: var(--shadow);
 }
 
+.elevation-preview-root {
   position: fixed;
   inset: 0;
   z-index: 80;
