@@ -920,6 +920,20 @@
   background: #fff;
   overflow: hidden;
 }
+.menu-fold--app {
+  display: none;
+}
+.menu-row--app-nav {
+  display: none;
+}
+@media (max-width: 820px), (hover: none) and (pointer: coarse) and (max-width: 1100px) {
+  .menu-fold--app {
+    display: block;
+  }
+  .menu-row--app-nav {
+    display: flex;
+  }
+}
 .menu-fold > summary {
   list-style: none;
   cursor: pointer;
@@ -1504,6 +1518,16 @@
   .layers-menu-panel input[type='checkbox'] {
     width: 20px;
     height: 20px;
+  }
+  .studio-topbar {
+    padding-top: env(safe-area-inset-top, 0px);
+    background: #f7f8fa;
+  }
+  .studio-local-save-banner {
+    padding-top: max(8px, env(safe-area-inset-top, 0px));
+  }
+  .studio-root:has(.studio-local-save-banner) .studio-topbar {
+    padding-top: 0;
   }
   .studio-topbar-actions {
     display: none;

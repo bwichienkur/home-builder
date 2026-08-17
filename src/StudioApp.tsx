@@ -4,12 +4,16 @@ import {
   Download,
   FileJson,
   Home,
+  LogOut,
+  Package,
   ReceiptText,
   Save,
+  Settings,
   Share2,
   Trash2,
   X,
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { CatalogPanel } from './components/catalog/CatalogPanel';
 import { catalog as catalogItems } from './components/catalog/catalogData';
 import { BomDialog } from './components/ui/BomDialog';
@@ -47,11 +51,14 @@ import { fetchCloudProjects, loadCloudProject, readCloudProjectRef, saveProjectT
 import type { CloudProjectSummary } from './api/client';
 import { useCrmStore } from './store/crmStore';
 import { platformConfig } from './lib/platform/config';
+import { useAuthStore } from './store/authStore';
 
 const Scene3D = lazy(() => import('./components/scene3d/Scene3D').then((m) => ({ default: m.Scene3D })));
 
 export default function StudioApp() {
   const store = usePlannerStore();
+  const navigate = useNavigate();
+  const logout = useAuthStore((s) => s.logout);
   const customCatalog = useInventoryStore((s) => s.items);
   const {
     walls,
@@ -673,11 +680,22 @@ export default function StudioApp() {
                 className="menu-row"
                 onClick={() => {
                   closeProjectMenu();
-                  window.location.assign('/plans');
+                  navigate('/plans');
                 }}
               >
                 <FileJson size={16} aria-hidden />
                 <span>House plans</span>
+              </button>
+              <button
+                type="button"
+                className="menu-row menu-row--app-nav"
+                onClick={() => {
+                  closeProjectMenu();
+                  navigate('/inventory');
+                }}
+              >
+                <Package size={16} aria-hidden />
+                <span>Materials</span>
               </button>
               <label className="menu-row menu-row-field">
                 <span className="menu-row-label">Client</span>
@@ -713,6 +731,47 @@ export default function StudioApp() {
               </button>
             </div>
           </section>
+
+          <details className="menu-fold menu-fold--app">
+            <summary>App</summary>
+            <div className="menu-fold-body">
+              <div className="menu-list">
+                <button
+                  type="button"
+                  className="menu-row"
+                  onClick={() => {
+                    closeProjectMenu();
+                    navigate('/');
+                  }}
+                >
+                  <Home size={16} aria-hidden />
+                  <span>Home</span>
+                </button>
+                <button
+                  type="button"
+                  className="menu-row"
+                  onClick={() => {
+                    closeProjectMenu();
+                    navigate('/settings');
+                  }}
+                >
+                  <Settings size={16} aria-hidden />
+                  <span>Settings</span>
+                </button>
+                <button
+                  type="button"
+                  className="menu-row"
+                  onClick={() => {
+                    closeProjectMenu();
+                    void logout().then(() => navigate('/login'));
+                  }}
+                >
+                  <LogOut size={16} aria-hidden />
+                  <span>Sign out</span>
+                </button>
+              </div>
+            </div>
+          </details>
 
           <details className="menu-fold">
             <summary>Export</summary>
