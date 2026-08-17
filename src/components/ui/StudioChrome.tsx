@@ -74,6 +74,7 @@ type Props = {
   openBom: () => void;
   openCategory: (category: string) => void;
   onOpenInspector: () => void;
+  onCloseInspector?: () => void;
   /** Quick-access project actions — keep Save/Share usable without opening the menu. */
   onSave?: () => void;
   onShare?: () => void;
@@ -92,6 +93,7 @@ export function StudioChrome({
   openBom,
   openCategory,
   onOpenInspector,
+  onCloseInspector,
   onSave,
   onShare,
   onOpenElevations,
@@ -306,6 +308,7 @@ export function StudioChrome({
   /** Enter the room for furnishing — do not auto-open the properties panel. */
   const editSelectedPlanRoom = () => {
     if (!selectedRoomId) return;
+    onCloseInspector?.();
     enterRoom(selectedRoomId);
     setPendingRoomShape(null);
     setPendingAttachMode(false);

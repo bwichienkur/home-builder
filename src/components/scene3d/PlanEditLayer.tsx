@@ -1,10 +1,16 @@
 import { Html, Line } from '@react-three/drei';
-import { useThree } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp } from 'lucide-react';
 import { WORLD_ORIGIN } from '../../lib/geometry/placement';
 import { enclosureWallsForRoom } from '../../lib/geometry/roomWalls';
+import {
+  samePlanPoint,
+  screenHandleMeters,
+  snapVertexDrag,
+  vertexDragArmed,
+} from '../../lib/geometry/planVertexDrag';
 import {
   attachSideBlocked,
   attachSquareRoomPoints,
@@ -25,6 +31,48 @@ const planFromWorld = (x: number, z: number) => ({
   x: x * PIXELS_PER_METER + WORLD_ORIGIN.x,
   y: z * PIXELS_PER_METER + WORLD_ORIGIN.y,
 });
+
+function cameraZoom(camera: THREE.Camera): number {
+  return 'zoom' in camera && typeof (camera as THREE.OrthographicCamera).zoom === 'number'
+    ? Math.max((camera as THREE.OrthographicCamera).zoom, 1)
+    : 40;
+}
+
+function ScreenSizedHandle({
+  position,
+  targetPx,
+  base,
+  color,
+  kind,
+  ...events
+}: {
+  position: [number, number, number];
+  targetPx: number;
+  base: number;
+  color: string;
+  kind: 'sphere' | 'box';
+  onPointerDown?: (e: any) => void;
+  onPointerMove?: (e: any) => void;
+  onPointerUp?: (e: any) => void;
+  onPointerCancel?: (e: any) => void;
+  onClick?: (e: any) => void;
+  onDoubleClick?: (e: any) => void;
+}) {
+  const ref = useRef<THREE.Mesh>(null);
+  const { camera } = useThree();
+  useFrame(() => {
+    const mesh = ref.current;
+    if (!mesh) return;
+    const world = screenHandleMeters(cameraZoom(camera), targetPx);
+    mesh.scale.setScalar(world / base);
+  });
+  return (
+    <mesh ref={ref} position={position} {...events}>
+      {kind === 'sphere' ? <sphereGeometry args={[base, 16, 16]} /> : <boxGeometry args={[base, base * 0.28, base]} />}
+      <meshBasicMaterial color={color} />
+    </mesh>
+  );
+}
 
 const ATTACH_SIDES: { side: AttachSide; label: string; Icon: typeof ArrowLeft }[] = [
   { side: 'left', label: 'Left', Icon: ArrowLeft },
@@ -57,10 +105,16 @@ export function PlanEditLayer() {
   const planWallTool = usePlannerStore((s) => s.planWallTool);
   const setPendingRoomShape = usePlannerStore((s) => s.setPendingRoomShape);
   const walls = usePlannerStore((s) => s.walls);
-  const { invalidate } = useThree();
+  const { camera, invalidate } = useThree();
   const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
   const roomPlace = useRef<{ pointerId: number; active: boolean } | null>(null);
-  const vertexDrag = useRef<{ roomId: string; index: number; pointerId: number } | null>(null);
+  const vertexDrag = useRef<{
+    roomId: string;
+    index: number;
+    pointerId: number;
+    start: { x: number; y: number };
+    armed: boolean;
+  } | null>(null);
   const wallDrag = useRef<{ wallId: string; pointerId: number; lastX: number; lastZ: number } | null>(null);
   const [vertexDragging, setVertexDragging] = useState(false);
   const [wallDragging, setWallDragging] = useState(false);
@@ -245,7 +299,8 @@ export function PlanEditLayer() {
 
   const onVertexPointerDown = (e: any, roomId: string, index: number) => {
     e.stopPropagation();
-    vertexDrag.current = { roomId, index, pointerId: e.pointerId };
+    const start = hitPlan(e) ?? hostRoom?.points[index] ?? { x: 0, y: 0 };
+    vertexDrag.current = { roomId, index, pointerId: e.pointerId, start, armed: false };
     setVertexDragging(true);
     document.body.dataset.movingFurniture = 'true';
     window.dispatchEvent(new Event('roomcraft-drag-start'));
@@ -260,8 +315,18 @@ export function PlanEditLayer() {
     const drag = vertexDrag.current;
     if (!drag || drag.pointerId !== e.pointerId) return;
     e.stopPropagation();
-    const pt = hitPlan(e);
-    if (!pt) return;
+    const raw = hitPlan(e);
+    if (!raw) return;
+    const zoom = cameraZoom(camera);
+    if (!drag.armed) {
+      if (!vertexDragArmed(drag.start, raw, zoom)) return;
+      drag.armed = true;
+    }
+    const room = planRooms.find((r) => r.id === drag.roomId);
+    const others = room?.points.filter((_, i) => i !== drag.index) ?? [];
+    const pt = snapVertexDrag(raw, others, zoom);
+    const current = room?.points[drag.index];
+    if (current && samePlanPoint(current, pt)) return;
     movePlanRoomVertex(drag.roomId, drag.index, pt, { live: true });
     invalidate();
   };
@@ -270,8 +335,14 @@ export function PlanEditLayer() {
     const drag = vertexDrag.current;
     if (!drag || drag.pointerId !== e.pointerId) return;
     e.stopPropagation();
-    const pt = hitPlan(e);
-    if (pt) movePlanRoomVertex(drag.roomId, drag.index, pt, { live: false });
+    if (drag.armed) {
+      const raw = hitPlan(e);
+      if (raw) {
+        const room = planRooms.find((r) => r.id === drag.roomId);
+        const others = room?.points.filter((_, i) => i !== drag.index) ?? [];
+        movePlanRoomVertex(drag.roomId, drag.index, snapVertexDrag(raw, others, cameraZoom(camera)), { live: false });
+      }
+    }
     endVertexDrag();
   };
 
@@ -344,21 +415,22 @@ export function PlanEditLayer() {
         hostRoom!.points.map((p, i) => {
           const pos = world(p.x, p.y);
           return (
-            <mesh
+            <ScreenSizedHandle
               key={`v-${hostRoom!.id}-${i}`}
               position={[pos[0], 0.16, pos[1]]}
-              onPointerDown={(e) => onVertexPointerDown(e, hostRoom!.id, i)}
+              targetPx={18}
+              base={0.12}
+              color="#0058a3"
+              kind="sphere"
+              onPointerDown={(e: any) => onVertexPointerDown(e, hostRoom!.id, i)}
               onPointerMove={onVertexPointerMove}
               onPointerUp={onVertexPointerUp}
               onPointerCancel={onVertexPointerUp}
-              onDoubleClick={(e) => {
+              onDoubleClick={(e: any) => {
                 e.stopPropagation();
                 usePlannerStore.getState().removePlanRoomVertex(hostRoom!.id, i);
               }}
-            >
-              <sphereGeometry args={[0.12, 16, 16]} />
-              <meshBasicMaterial color="#0058a3" />
-            </mesh>
+            />
           );
         })}
 
@@ -368,34 +440,36 @@ export function PlanEditLayer() {
           const mid = { x: (p.x + next.x) / 2, y: (p.y + next.y) / 2 };
           const pos = world(mid.x, mid.y);
           return (
-            <mesh
+            <ScreenSizedHandle
               key={`e-${hostRoom!.id}-${i}`}
               position={[pos[0], 0.14, pos[1]]}
-              onPointerDown={(e) => e.stopPropagation()}
-              onClick={(e) => {
+              targetPx={14}
+              base={0.14}
+              color="#7eb6e8"
+              kind="box"
+              onPointerDown={(e: any) => e.stopPropagation()}
+              onClick={(e: any) => {
                 e.stopPropagation();
                 insertPlanRoomVertex(hostRoom!.id, i);
               }}
-            >
-              <boxGeometry args={[0.14, 0.04, 0.14]} />
-              <meshBasicMaterial color="#7eb6e8" />
-            </mesh>
+            />
           );
         })}
 
       {showWallHandles &&
         wallHandles.map(({ wallId, edgeIndex, pos }) => (
-          <mesh
+          <ScreenSizedHandle
             key={`wh-${wallId}-${edgeIndex}`}
             position={[pos[0], 0.15, pos[1]]}
-            onPointerDown={(e) => onWallPointerDown(e, wallId)}
+            targetPx={16}
+            base={0.22}
+            color={wallDragging && wallDrag.current?.wallId === wallId ? '#003d70' : '#0058a3'}
+            kind="box"
+            onPointerDown={(e: any) => onWallPointerDown(e, wallId)}
             onPointerMove={onWallPointerMove}
             onPointerUp={onWallPointerUp}
             onPointerCancel={onWallPointerUp}
-          >
-            <boxGeometry args={[0.22, 0.05, 0.22]} />
-            <meshBasicMaterial color={wallDragging && wallDrag.current?.wallId === wallId ? '#003d70' : '#0058a3'} />
-          </mesh>
+          />
         ))}
     </group>
   );

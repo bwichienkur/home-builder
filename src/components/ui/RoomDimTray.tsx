@@ -47,7 +47,16 @@ function DimField({
   );
 }
 
-/** Screen-space W/D/H tray so plan dims stay above chrome instead of under the rail/dock. */
+/** Quick W/D/H while the Walls tool is armed — not on every room click (that covers Edit). */
+export function shouldShowRoomDimTray(opts: {
+  workflowStage: string;
+  cameraMode: string;
+  planWallTool: boolean;
+  hasRoom: boolean;
+}) {
+  return opts.workflowStage === 'house' && opts.cameraMode === 'top' && opts.planWallTool && opts.hasRoom;
+}
+
 export function RoomDimTray() {
   const selectedRoomId = usePlannerStore((s) => s.selectedRoomId);
   const planRooms = usePlannerStore((s) => s.planRooms);
@@ -55,10 +64,21 @@ export function RoomDimTray() {
   const unit = usePlannerStore((s) => s.unitSystem);
   const workflowStage = usePlannerStore((s) => s.workflowStage);
   const cameraMode = usePlannerStore((s) => s.cameraMode);
+  const planWallTool = usePlannerStore((s) => s.planWallTool);
   const resizePlanRoom = usePlannerStore((s) => s.resizePlanRoom);
   const setCeilingHeight = usePlannerStore((s) => s.setCeilingHeight);
   const room = planRooms.find((r) => r.id === selectedRoomId);
-  if (workflowStage !== 'house' || cameraMode !== 'top' || !room || room.points.length < 3) return null;
+  if (
+    !shouldShowRoomDimTray({
+      workflowStage,
+      cameraMode,
+      planWallTool,
+      hasRoom: !!room && room.points.length >= 3,
+    })
+  ) {
+    return null;
+  }
+  if (!room) return null;
   const size = planRoomSizeFeet(room.points);
   const widthM = size.widthFt * 0.3048;
   const depthM = size.depthFt * 0.3048;
