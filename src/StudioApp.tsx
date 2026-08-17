@@ -1,19 +1,16 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Cloud,
   Download,
   FileJson,
   Home,
-  LogOut,
-  Package,
   ReceiptText,
   Save,
-  Settings,
   Share2,
   Trash2,
-  X,
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useAppNav } from './features/shell/AppNavContext';
 import { CatalogPanel } from './components/catalog/CatalogPanel';
 import { catalog as catalogItems } from './components/catalog/catalogData';
 import { BomDialog } from './components/ui/BomDialog';
@@ -51,14 +48,12 @@ import { fetchCloudProjects, loadCloudProject, readCloudProjectRef, saveProjectT
 import type { CloudProjectSummary } from './api/client';
 import { useCrmStore } from './store/crmStore';
 import { platformConfig } from './lib/platform/config';
-import { useAuthStore } from './store/authStore';
 
 const Scene3D = lazy(() => import('./components/scene3d/Scene3D').then((m) => ({ default: m.Scene3D })));
 
 export default function StudioApp() {
   const store = usePlannerStore();
-  const navigate = useNavigate();
-  const logout = useAuthStore((s) => s.logout);
+  const { navOpen, extrasTarget, closeNav } = useAppNav();
   const customCatalog = useInventoryStore((s) => s.items);
   const {
     walls,
@@ -72,27 +67,6 @@ export default function StudioApp() {
   } = store;
 
   const [catalogOpen, setCatalogOpen] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const closeProjectMenu = useCallback(() => {
-    setMenuOpen(false);
-    delete document.body.dataset.menuOpen;
-    window.dispatchEvent(new Event('roomcraft-menu-changed'));
-    window.setTimeout(() => {
-      window.dispatchEvent(new Event('roomcraft-fit-plan'));
-      window.dispatchEvent(new Event('roomcraft-refocus'));
-    }, 40);
-  }, []);
-  const openProjectMenu = useCallback(() => {
-    setMenuOpen(true);
-    setCatalogOpen(false);
-    setInspectorOpen(false);
-    document.body.dataset.menuOpen = '1';
-    window.dispatchEvent(new Event('roomcraft-menu-changed'));
-    window.setTimeout(() => {
-      window.dispatchEvent(new Event('roomcraft-fit-plan'));
-      window.dispatchEvent(new Event('roomcraft-refocus'));
-    }, 40);
-  }, []);
   const [inspectorOpen, setInspectorOpen] = useState(false);
   const [bom, setBom] = useState(false);
   const [projectName, setProjectName] = useState('Bedroom study');
@@ -121,10 +95,10 @@ export default function StudioApp() {
     if (coarse || store.cameraMode === 'top') store.setCameraMode('top');
     else if (store.cameraMode === 'walk') store.setCameraMode('orbit');
     setCatalogOpen(false);
-    setMenuOpen(false);
+    closeNav();
     setInspectorOpen(false);
     window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 0);
-  }, [store]);
+  }, [store, closeNav]);
 
   const allCatalog = useMemo(() => {
     const byId = new Map(catalogItems.map((i) => [i.id, i]));
@@ -217,10 +191,10 @@ export default function StudioApp() {
       history.replaceState(null, '', designShareUrl(design.code));
       enterHouse();
       notify(`Editing ${design.name}`);
-      closeProjectMenu();
+      closeNav();
       window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 0);
     },
-    [closeProjectMenu, enterHouse, rememberDesign, store],
+    [closeNav, enterHouse, rememberDesign, store],
   );
 
   const openCloudBuild = useCallback(
@@ -236,13 +210,13 @@ export default function StudioApp() {
         rememberDesign(null);
         enterHouse();
         notify(`Opened cloud “${row.name || project.name}” · v${row.version}`);
-        closeProjectMenu();
+        closeNav();
         window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 0);
       } catch (e) {
         notify(e instanceof Error ? e.message : 'Cloud project could not be loaded');
       }
     },
-    [closeProjectMenu, enterHouse, rememberDesign, store],
+    [closeNav, enterHouse, rememberDesign, store],
   );
 
   const exportSavedBuild = useCallback((design: SharedDesign) => {
@@ -377,7 +351,7 @@ export default function StudioApp() {
         if (store.pendingPlacement) store.cancelPendingPlacement();
         store.setDraftStart(null);
         setCatalogOpen(false);
-        closeProjectMenu();
+        closeNav();
         setInspectorOpen(false);
       } else if (e.key === 'Enter' && store.pendingPlacement) {
         e.preventDefault();
@@ -389,7 +363,7 @@ export default function StudioApp() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [store, closeProjectMenu, saveBuild]);
+  }, [store, closeNav, saveBuild]);
 
   useEffect(() => {
     const open = () => {
@@ -401,13 +375,13 @@ export default function StudioApp() {
       }
       setInspectorOpen(true);
       setCatalogOpen(false);
-      closeProjectMenu();
+      closeNav();
     };
     window.addEventListener('roomcraft-open-properties', open);
     return () => {
       window.removeEventListener('roomcraft-open-properties', open);
     };
-  }, [closeProjectMenu]);
+  }, [closeNav]);
 
   const pendingPlacement = usePlannerStore((s) => s.pendingPlacement);
   useEffect(() => {
@@ -439,7 +413,7 @@ export default function StudioApp() {
   }, [walls, openings, furniture, store.floorColor, store.wallColor, store.ceilingColor, store.roomType, store.unitSystem, store]);
 
   useEffect(() => {
-    if (!menuOpen) return;
+    if (!navOpen) return;
     setDesigns(listSharedDesigns());
     setCloudRef(readCloudProjectRef());
     let cancelled = false;
@@ -453,7 +427,7 @@ export default function StudioApp() {
     return () => {
       cancelled = true;
     };
-  }, [menuOpen]);
+  }, [navOpen]);
 
   useEffect(() => {
     const code = readDesignCodeFromLocation();
@@ -513,7 +487,7 @@ export default function StudioApp() {
     }
     store.setStudioMode('furnish');
     setCatalogOpen(true);
-    setMenuOpen(false);
+    closeNav();
     setInspectorOpen(false);
     window.setTimeout(() => window.dispatchEvent(new CustomEvent('roomcraft-catalog-category', { detail: category })), 0);
   };
@@ -558,7 +532,7 @@ export default function StudioApp() {
       {workflowStage === 'start' && (
         <DesignStart
           onBegan={() => {
-            setMenuOpen(false);
+            closeNav();
             setCatalogOpen(false);
             setInspectorOpen(false);
             setProjectName(usePlannerStore.getState().housePlanName || 'Untitled design');
@@ -572,21 +546,19 @@ export default function StudioApp() {
         itemCount={sellableCount}
         total={total}
         catalogOpen={catalogOpen}
-        menuOpen={menuOpen}
+        menuOpen={navOpen}
         openCatalog={() => {
           store.setStudioMode('furnish');
           setCatalogOpen(true);
-          setMenuOpen(false);
+          closeNav();
           setInspectorOpen(false);
         }}
-        openMenu={openProjectMenu}
-        closeMenu={closeProjectMenu}
         openBom={() => setBom(true)}
         openCategory={openCategory}
         onOpenInspector={() => {
           setInspectorOpen(true);
           setCatalogOpen(false);
-          setMenuOpen(false);
+          closeNav();
         }}
         onSave={saveBuild}
         onShare={share}
@@ -594,7 +566,7 @@ export default function StudioApp() {
           setElevationOpen(true);
           setCatalogOpen(false);
           setInspectorOpen(false);
-          closeProjectMenu();
+          closeNav();
         }}
       />
 
@@ -619,24 +591,18 @@ export default function StudioApp() {
 
       <BuildingChecksBar />
 
-      {menuOpen && (
-        <>
-          <button type="button" className="menu-backdrop" aria-label="Close menu" onClick={closeProjectMenu} />
-          <aside className="studio-menu-sheet studio-menu-drawer" role="dialog" aria-label="Project menu">
-          <header>
-            <label className="project-name-edit">
-              <span className="eyebrow">Project</span>
-              <input
-                type="text"
-                value={projectName}
-                onChange={(e) => setProjectName(e.target.value)}
-                aria-label="Project name"
-              />
-            </label>
-            <button type="button" className="menu-close" onClick={closeProjectMenu} aria-label="Close menu">
-              <X size={18} />
-            </button>
-          </header>
+      {extrasTarget &&
+        createPortal(
+          <div className="build-nav-slot">
+          <label className="project-name-edit">
+            <span className="eyebrow">Project</span>
+            <input
+              type="text"
+              value={projectName}
+              onChange={(e) => setProjectName(e.target.value)}
+              aria-label="Project name"
+            />
+          </label>
           {!validation.valid && walls.length > 0 && <div className="plan-warning">Connect the highlighted endpoints to close the room.</div>}
           <p className="menu-meta">
             <span>{formatArea(area, unitSystem)}</span>
@@ -673,30 +639,8 @@ export default function StudioApp() {
           </div>
 
           <section className="menu-section" aria-label="Job">
-            <h3 className="menu-section-title">Job</h3>
+            <h3 className="menu-section-title">This job</h3>
             <div className="menu-list">
-              <button
-                type="button"
-                className="menu-row"
-                onClick={() => {
-                  closeProjectMenu();
-                  navigate('/plans');
-                }}
-              >
-                <FileJson size={16} aria-hidden />
-                <span>House plans</span>
-              </button>
-              <button
-                type="button"
-                className="menu-row menu-row--app-nav"
-                onClick={() => {
-                  closeProjectMenu();
-                  navigate('/inventory');
-                }}
-              >
-                <Package size={16} aria-hidden />
-                <span>Materials</span>
-              </button>
               <label className="menu-row menu-row-field">
                 <span className="menu-row-label">Client</span>
                 <select
@@ -721,7 +665,7 @@ export default function StudioApp() {
                   url.searchParams.delete('design');
                   history.replaceState(null, '', url.toString());
                   store.showStart();
-                  setMenuOpen(false);
+                  closeNav();
                   setCatalogOpen(false);
                   setInspectorOpen(false);
                 }}
@@ -731,47 +675,6 @@ export default function StudioApp() {
               </button>
             </div>
           </section>
-
-          <details className="menu-fold menu-fold--app">
-            <summary>App</summary>
-            <div className="menu-fold-body">
-              <div className="menu-list">
-                <button
-                  type="button"
-                  className="menu-row"
-                  onClick={() => {
-                    closeProjectMenu();
-                    navigate('/');
-                  }}
-                >
-                  <Home size={16} aria-hidden />
-                  <span>Home</span>
-                </button>
-                <button
-                  type="button"
-                  className="menu-row"
-                  onClick={() => {
-                    closeProjectMenu();
-                    navigate('/settings');
-                  }}
-                >
-                  <Settings size={16} aria-hidden />
-                  <span>Settings</span>
-                </button>
-                <button
-                  type="button"
-                  className="menu-row"
-                  onClick={() => {
-                    closeProjectMenu();
-                    void logout().then(() => navigate('/login'));
-                  }}
-                >
-                  <LogOut size={16} aria-hidden />
-                  <span>Sign out</span>
-                </button>
-              </div>
-            </div>
-          </details>
 
           <details className="menu-fold">
             <summary>Export</summary>
@@ -796,7 +699,7 @@ export default function StudioApp() {
                   disabled={walls.length === 0}
                   onClick={() => {
                     setElevationOpen(true);
-                    closeProjectMenu();
+                    closeNav();
                   }}
                 >
                   Elevations
@@ -996,9 +899,9 @@ export default function StudioApp() {
               </section>
             </div>
           </details>
-        </aside>
-        </>
-      )}
+          </div>,
+          extrasTarget,
+        )}
 
       {notice && (
         <div className="app-notice" role="status">

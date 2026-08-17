@@ -18,7 +18,6 @@ import {
   Info,
   Lamp,
   Layers3,
-  Menu,
   PanelTop,
   Plus,
   Redo2,
@@ -69,8 +68,6 @@ type Props = {
   catalogOpen: boolean;
   menuOpen: boolean;
   openCatalog: () => void;
-  openMenu: () => void;
-  closeMenu: () => void;
   openBom: () => void;
   openCategory: (category: string) => void;
   onOpenInspector: () => void;
@@ -86,8 +83,7 @@ export function StudioChrome({
   total,
   catalogOpen,
   menuOpen,
-  openMenu,
-  closeMenu,
+  openCatalog,
   openBom,
   openCategory,
   onOpenInspector,
@@ -356,17 +352,7 @@ export function StudioChrome({
   };
 
   if (atStart) {
-    return (
-      <div className="studio-chrome is-start">
-        <div className="studio-topbar">
-          <div className="studio-topbar-row">
-            <button className="studio-fab studio-menu" onClick={menuOpen ? closeMenu : openMenu} aria-label={menuOpen ? 'Close menu' : 'Open project menu'} aria-expanded={menuOpen}>
-              {menuOpen ? <X /> : <Menu />}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (
@@ -378,10 +364,6 @@ export function StudioChrome({
               <ArrowLeft />
             </button>
           )}
-          <button className="studio-fab studio-menu" onClick={menuOpen ? closeMenu : openMenu} aria-label={menuOpen ? 'Close menu' : 'Open project menu'} aria-expanded={menuOpen}>
-            {menuOpen ? <X /> : <Menu />}
-          </button>
-
           <div className="studio-context">
             <p className="studio-context-title" title={contextTitle}>
               {contextTitle}
