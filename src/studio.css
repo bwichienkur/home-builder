@@ -1658,31 +1658,13 @@
   .studio-category-rail {
     top: 50%;
     bottom: auto;
+    right: max(8px, env(safe-area-inset-right));
+    left: auto;
     transform: translateY(-50%);
     max-height: min(62vh, calc(100% - 150px));
   }
-  .studio-plan-rail {
-    top: auto;
-    bottom: max(64px, calc(env(safe-area-inset-bottom) + 52px));
-    left: 50%;
-    right: auto;
-    transform: translateX(-50%);
-    width: auto;
-    max-height: none;
-    flex-direction: row;
-    height: 52px;
-  }
-  .studio-plan-rail button {
-    width: 52px;
-    min-height: 44px;
-    height: 44px;
-    padding: 4px !important;
-  }
-  .studio-plan-rail span {
-    display: none;
-  }
   .studio-dim-tray {
-    bottom: max(124px, calc(env(safe-area-inset-bottom) + 112px));
+    bottom: max(72px, calc(env(safe-area-inset-bottom) + 60px));
   }
   .studio-selection-fabs {
     left: max(12px, env(safe-area-inset-left));
