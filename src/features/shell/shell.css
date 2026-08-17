@@ -138,15 +138,7 @@
     display: none;
   }
   .app-shell.is-build .app-shell-top {
-    height: calc(44px + env(safe-area-inset-top, 0px));
-    gap: 8px;
-    padding: 0 10px;
-  }
-  .app-shell.is-build .app-shell-brand {
-    font-size: 0.92rem;
-  }
-  .app-shell.is-build .app-shell-nav a {
-    padding: 0 8px;
+    display: none;
   }
 }
 
