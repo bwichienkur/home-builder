@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { drawElevationToCanvas, type ElevationFace } from '../../lib/planExport/drawElevations';
 import { usePlannerStore } from '../../store/plannerStore';
+import type { ElevationFace } from '../../types';
 
 const FACES: { id: ElevationFace; label: string }[] = [
   { id: 'front', label: 'Front' },
@@ -9,43 +8,13 @@ const FACES: { id: ElevationFace; label: string }[] = [
   { id: 'right', label: 'Right' },
 ];
 
-/** In-canvas elevation view — wall heights, doors, windows, and openings per face. */
+/** Face picker while the live 3D elevation camera is active. */
 export function ElevationView() {
-  const walls = usePlannerStore((s) => s.walls);
-  const openings = usePlannerStore((s) => s.openings);
-  const planRooms = usePlannerStore((s) => s.planRooms);
-  const unitSystem = usePlannerStore((s) => s.unitSystem);
-  const floors = usePlannerStore((s) => s.floors);
-  const activeFloorId = usePlannerStore((s) => s.activeFloorId);
-  const housePlanName = usePlannerStore((s) => s.housePlanName);
-  const [face, setFace] = useState<ElevationFace>('front');
-  const [url, setUrl] = useState('');
-
-  const floorName = floors.find((f) => f.id === activeFloorId)?.name;
-
-  const input = useMemo(
-    () => ({
-      name: housePlanName || 'Design',
-      floorName,
-      walls,
-      openings,
-      planRooms,
-      unitSystem,
-    }),
-    [housePlanName, floorName, walls, openings, planRooms, unitSystem],
-  );
-
-  useEffect(() => {
-    if (walls.length === 0) {
-      setUrl('');
-      return;
-    }
-    const canvas = drawElevationToCanvas(input, face, { widthPx: 1400, heightPx: 900 });
-    setUrl(canvas.toDataURL('image/png'));
-  }, [face, input, walls.length]);
+  const face = usePlannerStore((s) => s.elevationFace);
+  const setFace = usePlannerStore((s) => s.setElevationFace);
 
   return (
-    <div className="elevation-view" aria-label="Front elevation view">
+    <div className="elevation-view-overlay" aria-label="Elevation face">
       <div className="elevation-view-toolbar" role="tablist" aria-label="Elevation face">
         {FACES.map((f) => (
           <button
@@ -59,15 +28,6 @@ export function ElevationView() {
             {f.label}
           </button>
         ))}
-      </div>
-      <div className="elevation-view-stage">
-        {walls.length === 0 ? (
-          <p className="muted">Add walls to preview elevations.</p>
-        ) : url ? (
-          <img src={url} alt={`${face} elevation`} className="elevation-view-img" />
-        ) : (
-          <p className="muted">Drawing…</p>
-        )}
       </div>
     </div>
   );
