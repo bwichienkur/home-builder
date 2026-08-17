@@ -43,7 +43,15 @@ import { downloadBidProposalPdf } from './lib/bidPackage';
 import { pickTradeRates, useTradeRatesStore } from './store/tradeRatesStore';
 import { drawFloorPlanToCanvas, downloadCanvasPng, downloadMultiFloorScaledPlanPdf, downloadPlanDxf } from './lib/planExport/drawFloorPlan';
 import { downloadPlanIfc } from './lib/planExport/buildIfc';
-import { fetchCloudProjects, loadCloudProject, readCloudProjectRef, saveProjectToCloud } from './lib/cloudProjects';
+import {
+  fetchCloudProjects,
+  loadCloudProject,
+  readCloudProjectIdFromLocation,
+  readCloudProjectRef,
+  readNewProjectFromLocation,
+  saveProjectToCloud,
+  clearCloudProjectRef,
+} from './lib/cloudProjects';
 import type { CloudProjectSummary } from './api/client';
 import { useCrmStore } from './store/crmStore';
 import { platformConfig } from './lib/platform/config';
@@ -440,6 +448,36 @@ export default function StudioApp() {
   }, [menuOpen]);
 
   useEffect(() => {
+    const startNew = readNewProjectFromLocation();
+    if (startNew) {
+      rememberDesign(null);
+      clearCloudProjectRef();
+      setCloudRef(null);
+      setProjectName('Untitled design');
+      store.showStart();
+      history.replaceState(null, '', '/build');
+      return;
+    }
+    const cloudId = readCloudProjectIdFromLocation();
+    if (cloudId) {
+      void loadCloudProject(cloudId)
+        .then((row) => {
+          if (!store.importProject(row.scene)) {
+            notify('Could not open that cloud project');
+            return;
+          }
+          setProjectName(row.name || 'Untitled design');
+          setCloudRef({ id: row.id, version: row.version });
+          rememberDesign(null);
+          enterHouse();
+          notify(`Opened cloud “${row.name || 'Untitled design'}” · v${row.version}`);
+          window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 0);
+        })
+        .catch((e) => {
+          notify(e instanceof Error ? e.message : 'Cloud project could not be loaded');
+        });
+      return;
+    }
     const code = readDesignCodeFromLocation();
     if (code) {
       const shared = loadSharedDesign(code);

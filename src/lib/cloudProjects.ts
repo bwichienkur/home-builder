@@ -71,3 +71,19 @@ export async function fetchCloudProjects(): Promise<CloudProjectSummary[]> {
     return [];
   }
 }
+
+export function readCloudProjectIdFromLocation() {
+  try {
+    return new URLSearchParams(location.search).get('cloud')?.trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+export function readNewProjectFromLocation() {
+  try {
+    return new URLSearchParams(location.search).get('new') === '1';
+  } catch {
+    return false;
+  }
+}

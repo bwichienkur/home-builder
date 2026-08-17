@@ -1,6 +1,20 @@
+import type { LucideIcon } from 'lucide-react';
+import {
+  BookOpen,
+  Box,
+  Boxes,
+  House,
+  LayoutTemplate,
+  Settings,
+  Shield,
+  Store,
+  Users,
+} from 'lucide-react';
+
 export type NavItem = {
   to: string;
   label: string;
+  icon: LucideIcon;
   end?: boolean;
   adminOnly?: boolean;
 };
@@ -16,33 +30,33 @@ export const NAV_GROUPS: NavGroup[] = [
     id: 'studio',
     label: 'Studio',
     items: [
-      { to: '/', label: 'Home', end: true },
-      { to: '/build', label: 'Build' },
-      { to: '/plans', label: 'Plans' },
+      { to: '/', label: 'Home', icon: House, end: true },
+      { to: '/build', label: 'Build', icon: Box },
+      { to: '/plans', label: 'Plans', icon: LayoutTemplate },
     ],
   },
   {
     id: 'office',
     label: 'Office',
     items: [
-      { to: '/clients', label: 'Clients' },
-      { to: '/vendors', label: 'Vendors' },
-      { to: '/inventory', label: 'Materials' },
+      { to: '/clients', label: 'Clients', icon: Users },
+      { to: '/vendors', label: 'Vendors', icon: Store },
+      { to: '/inventory', label: 'Materials', icon: Boxes },
     ],
   },
   {
     id: 'account',
     label: 'Account',
     items: [
-      { to: '/settings', label: 'Settings' },
-      { to: '/users', label: 'Users', adminOnly: true },
-      { to: '/docs/api', label: 'API docs' },
+      { to: '/settings', label: 'Settings', icon: Settings },
+      { to: '/users', label: 'Users', icon: Shield, adminOnly: true },
+      { to: '/docs/api', label: 'API docs', icon: BookOpen },
     ],
   },
 ];
 
 export const PAGE_TITLES: { path: string; end?: boolean; title: string }[] = [
-  { path: '/', end: true, title: 'Home' },
+  { path: '/', end: true, title: 'Projects' },
   { path: '/build', title: 'Build' },
   { path: '/clients', title: 'Clients' },
   { path: '/vendors', title: 'Vendors' },

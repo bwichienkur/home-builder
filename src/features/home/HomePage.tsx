@@ -1,76 +1,94 @@
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, Boxes, Building2, LayoutTemplate, Package, Settings, Shield, Users } from 'lucide-react';
-import { useAuthStore } from '../../store/authStore';
-import { useCrmStore } from '../../store/crmStore';
-import { listBuiltinHousePlans } from '../../lib/housePlans/planRegistry';
-import { canManageUsers } from '../../lib/platform/roles';
+import { Cloud, FolderOpen, Plus } from 'lucide-react';
+import { fetchCloudProjects } from '../../lib/cloudProjects';
+import { listSharedDesigns } from '../../lib/designShare';
+import { platformConfig } from '../../lib/platform/config';
+import { listHomeProjects, type HomeProject } from './homeProjects';
+
+function formatUpdated(iso: string) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function ProjectRow({ project }: { project: HomeProject }) {
+  return (
+    <li>
+      <Link className="home-project" to={project.href}>
+        <span className="home-project-icon" aria-hidden>
+          {project.origin === 'cloud' ? <Cloud size={18} strokeWidth={1.75} /> : <FolderOpen size={18} strokeWidth={1.75} />}
+        </span>
+        <span className="home-project-copy">
+          <strong>{project.name}</strong>
+          <span>
+            {project.detail}
+            {project.updatedAt ? ` · ${formatUpdated(project.updatedAt)}` : ''}
+          </span>
+        </span>
+      </Link>
+    </li>
+  );
+}
 
 export function HomePage() {
-  const user = useAuthStore((s) => s.user);
-  const clients = useCrmStore((s) => s.clients);
-  const vendors = useCrmStore((s) => s.vendors);
-  const inventory = useCrmStore((s) => s.inventory);
-  const importedPlans = useCrmStore((s) => s.housePlans.length);
-  const clientCount = clients.reduce((n, c) => n + (c.archived ? 0 : 1), 0);
-  const vendorCount = vendors.reduce((n, v) => n + (v.archived ? 0 : 1), 0);
-  const inventoryCount = inventory.reduce((n, i) => n + (i.archived ? 0 : 1), 0);
-  const builtin = listBuiltinHousePlans().length;
+  const [localDesigns, setLocalDesigns] = useState(() => listSharedDesigns());
+  const [cloudProjects, setCloudProjects] = useState<Awaited<ReturnType<typeof fetchCloudProjects>>>([]);
+  const [cloudLoading, setCloudLoading] = useState(platformConfig.cloudConfigured());
+
+  useEffect(() => {
+    setLocalDesigns(listSharedDesigns());
+    if (!platformConfig.cloudConfigured()) {
+      setCloudLoading(false);
+      return;
+    }
+    let cancelled = false;
+    void fetchCloudProjects().then((items) => {
+      if (cancelled) return;
+      setCloudProjects(items);
+      setCloudLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const projects = useMemo(
+    () => listHomeProjects(localDesigns, cloudProjects),
+    [localDesigns, cloudProjects],
+  );
 
   return (
-    <div className="data-page">
+    <div className="data-page home-page">
       <header className="data-page-header">
         <div>
-          <p className="eyebrow">Welcome</p>
-          <h1>{user?.name ? `Hi, ${user.name}` : 'Home'}</h1>
-          <p className="muted">Choose where to work — Build keeps the full plan studio.</p>
+          <p className="eyebrow">Studio</p>
+          <h1>Projects</h1>
+          <p className="muted">Open a current job or start a new one in Build.</p>
+        </div>
+        <div className="data-page-actions">
+          <Link className="home-new-project" to="/build?new=1">
+            <Plus size={16} strokeWidth={2.2} />
+            New project
+          </Link>
         </div>
       </header>
-      <div className="home-grid">
-        <Link className="home-card" to="/build">
-          <Building2 size={22} />
-          <strong>Build</strong>
-          <span>Plan and furnish rooms in 2D/3D.</span>
-        </Link>
-        <Link className="home-card" to="/clients">
-          <Users size={22} />
-          <strong>Clients</strong>
-          <span>{clientCount} active · CSV import/export</span>
-        </Link>
-        <Link className="home-card" to="/vendors">
-          <Package size={22} />
-          <strong>Vendors</strong>
-          <span>{vendorCount} active · CSV import/export</span>
-        </Link>
-        <Link className="home-card" to="/inventory">
-          <Boxes size={22} />
-          <strong>Inventory</strong>
-          <span>{inventoryCount} SKUs · CSV import/export</span>
-        </Link>
-        <Link className="home-card" to="/plans">
-          <LayoutTemplate size={22} />
-          <strong>House plans</strong>
-          <span>
-            {builtin} samples · {importedPlans} imported (DXF / JSON)
-          </span>
-        </Link>
-        <Link className="home-card" to="/settings">
-          <Settings size={22} />
-          <strong>Settings</strong>
-          <span>Custom fields for clients, vendors, inventory</span>
-        </Link>
-        <Link className="home-card" to="/docs/api">
-          <BookOpen size={22} />
-          <strong>API docs</strong>
-          <span>Public endpoints for vendors and external apps</span>
-        </Link>
-        {canManageUsers(user?.role) && (
-          <Link className="home-card" to="/users">
-            <Shield size={22} />
-            <strong>Users</strong>
-            <span>Search accounts, roles, and API keys</span>
-          </Link>
-        )}
-      </div>
+
+      {projects.length === 0 && !cloudLoading ? (
+        <div className="home-empty">
+          <p>No projects yet.</p>
+          <Link to="/build?new=1">Start a new project</Link>
+        </div>
+      ) : (
+        <ul className="home-project-list">
+          {cloudLoading && (
+            <li className="home-project-status">Loading cloud projects…</li>
+          )}
+          {projects.map((project) => (
+            <ProjectRow key={project.id} project={project} />
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

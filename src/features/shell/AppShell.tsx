@@ -166,7 +166,7 @@ export function AppShell() {
           hidden={!navOpen}
         >
           <div className="app-nav-pane-head">
-            <p className="eyebrow">Navigate</p>
+            <p className="eyebrow">Menu</p>
             {docked ? (
               <button
                 type="button"
@@ -190,7 +190,7 @@ export function AppShell() {
               return (
                 <section key={group.id} className="app-nav-group" aria-label={group.label}>
                   <h2 className="app-nav-group-title">{group.label}</h2>
-                  {items.map(({ to, label, end }) => (
+                  {items.map(({ to, label, end, icon: Icon }) => (
                     <NavLink
                       key={to}
                       to={to}
@@ -200,6 +200,9 @@ export function AppShell() {
                         if (!docked) closeNav();
                       }}
                     >
+                      <span className="app-nav-icon" aria-hidden>
+                        <Icon size={16} strokeWidth={1.85} />
+                      </span>
                       {label}
                     </NavLink>
                   ))}
@@ -211,6 +214,9 @@ export function AppShell() {
                         void logout().then(() => navigate('/login'));
                       }}
                     >
+                      <span className="app-nav-icon" aria-hidden>
+                        <LogOut size={16} strokeWidth={1.85} />
+                      </span>
                       Sign out
                     </button>
                   )}
