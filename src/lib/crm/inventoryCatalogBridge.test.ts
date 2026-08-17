@@ -1,9 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useInventoryStore } from '../../store/inventoryStore';
+import { catalog, type CatalogItem } from '../../components/catalog/catalogData';
 import {
   catalogIdForInventory,
+  catalogItemToInventoryRecord,
   dimensionToMeters,
   inventoryRecordToCatalogItem,
+  mergeMissingCatalogIntoInventory,
   syncInventoryToCatalog,
 } from './inventoryCatalogBridge';
 import type { InventoryRecord } from './types';
@@ -111,5 +114,73 @@ describe('inventoryCatalogBridge', () => {
     syncInventoryToCatalog(sample());
     syncInventoryToCatalog(sample({ archived: true }));
     expect(useInventoryStore.getState().items.some((i) => i.sku === 'TILE-01')).toBe(false);
+  });
+
+  it('maps a Build catalog item into a Materials inventory row', () => {
+    const item: CatalogItem = {
+      id: 'nord-chair',
+      name: 'Nord Dining Chair',
+      category: 'Seating',
+      dims: [0.52, 0.56, 0.82],
+      color: '#b26c45',
+      price: 129,
+      emoji: '🪑',
+      mountingType: 'floor',
+      placementSurfaces: ['floor'],
+    };
+    const row = catalogItemToInventoryRecord(item);
+    expect(row.sku).toBe('nord-chair');
+    expect(row.width).toBeCloseTo(0.52, 4);
+    expect(row.unit).toBe('m');
+    expect(row.customFields.catalogId).toBe('nord-chair');
+    expect(catalogIdForInventory(row)).toBe('nord-chair');
+  });
+
+  it('seeds missing Build shop items into Materials without overwriting CRM edits', () => {
+    const chair: CatalogItem = {
+      id: 'nord-chair',
+      sku: 'NORD-CHAIR',
+      name: 'Nord Dining Chair',
+      category: 'Seating',
+      dims: [0.52, 0.56, 0.82],
+      color: '#b26c45',
+      emoji: '🪑',
+    };
+    const lamp: CatalogItem = {
+      id: 'floor-lamp',
+      name: 'Arc Floor Lamp',
+      category: 'Lighting',
+      dims: [0.45, 0.45, 1.75],
+      color: '#333a36',
+      emoji: '◉',
+    };
+    const existing = sample({ sku: 'NORD-CHAIR', name: 'Client chair — do not overwrite' });
+    const merged = mergeMissingCatalogIntoInventory([existing], [chair, lamp]);
+    expect(merged).toHaveLength(2);
+    expect(merged[0].name).toBe('Client chair — do not overwrite');
+    expect(merged[1].sku).toBe('floor-lamp');
+    expect(merged[1].name).toBe('Arc Floor Lamp');
+    expect(mergeMissingCatalogIntoInventory(merged, [chair, lamp])).toHaveLength(2);
+  });
+
+  it('does not re-seed an archived catalog SKU', () => {
+    const chair: CatalogItem = {
+      id: 'nord-chair',
+      name: 'Nord Dining Chair',
+      category: 'Seating',
+      dims: [0.52, 0.56, 0.82],
+      color: '#b26c45',
+      emoji: '🪑',
+    };
+    const archived = sample({ sku: 'nord-chair', archived: true, name: 'Hidden chair' });
+    const merged = mergeMissingCatalogIntoInventory([archived], [chair]);
+    expect(merged).toHaveLength(1);
+    expect(merged[0].archived).toBe(true);
+  });
+
+  it('seeds the built-in Build catalog into Materials', () => {
+    const merged = mergeMissingCatalogIntoInventory([], catalog);
+    expect(merged.length).toBe(catalog.length);
+    expect(merged.some((row) => row.name === 'Nord Dining Chair')).toBe(true);
   });
 });
