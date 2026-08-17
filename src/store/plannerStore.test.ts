@@ -296,4 +296,36 @@ describe('IKEA-style wall editing',()=>{
   const lenLeft=Math.hypot(afterLeft.end.x-afterLeft.start.x,afterLeft.end.y-afterLeft.start.y)/80;
   expect(lenLeft).toBeCloseTo(3,1);
  });
+
+ it('adds a new floor without wiping the previous story', () => {
+  const groundId = 'floor-ground';
+  usePlannerStore.setState({
+    workflowStage: 'house',
+    activeFloorId: groundId,
+    floors: [{
+      id: groundId,
+      name: 'Ground',
+      scene: { walls: [], openings: [], furniture: [], floorColor: '#c9b18f', wallColor: '#f4f1ea', ceilingColor: '#ffffff' },
+      planRooms: [],
+      storyHeightM: 2.74,
+    }],
+    walls: [],
+    openings: [],
+    furniture: [],
+    planRooms: [],
+  });
+  const firstId = usePlannerStore.getState().placePlanRoom({ x: 400, y: 300 }, 'rectangle', 'Room 1');
+  expect(firstId).toBeTruthy();
+  const beforeWalls = usePlannerStore.getState().walls.length;
+  expect(beforeWalls).toBeGreaterThan(0);
+  usePlannerStore.getState().addFloor();
+  const next = usePlannerStore.getState();
+  expect(next.floors).toHaveLength(2);
+  expect(next.floors[1]?.name).toBe('L2');
+  expect(next.planRooms.length).toBeGreaterThan(0);
+  expect(next.walls.length).toBeGreaterThan(0);
+  expect(next.activeFloorId).toBe(next.floors[1]?.id);
+  next.switchFloor(groundId);
+  expect(usePlannerStore.getState().walls.length).toBe(beforeWalls);
+ });
 });

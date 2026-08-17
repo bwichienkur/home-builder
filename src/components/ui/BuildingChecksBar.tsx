@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { AlertTriangle, ClipboardCheck, Info, X } from 'lucide-react';
+import { ClipboardCheck, X } from 'lucide-react';
 import { evaluateBuildingChecks, type BuildingCheck } from '../../lib/buildingChecks';
 import { usePlannerStore } from '../../store/plannerStore';
 
@@ -23,7 +23,7 @@ function jumpToCheck(check: BuildingCheck) {
   }
 }
 
-/** Badge + panel for soft building checks — never blocks editing. */
+/** Compact checks control for the studio topbar — no canvas banners. */
 export function BuildingChecksBar() {
   const walls = usePlannerStore((s) => s.walls);
   const furniture = usePlannerStore((s) => s.furniture);
@@ -65,10 +65,10 @@ export function BuildingChecksBar() {
           className={`building-checks-badge${warnCount ? ' has-warn' : ''}`}
           aria-expanded={open}
           aria-controls="building-checks-panel"
+          title="Building checks"
           onClick={() => setOpen((v) => !v)}
         >
-          <ClipboardCheck size={15} />
-          Checks
+          <ClipboardCheck size={16} />
           <span>{checks.length}</span>
         </button>
       )}
@@ -81,14 +81,13 @@ export function BuildingChecksBar() {
               <X size={16} />
             </button>
           </header>
-          <p className="muted">Advisory only — adjust geometry when your jurisdiction requires it.</p>
+          <p className="muted">Advisory — does not block editing.</p>
           {checks.length === 0 ? (
             <p className="muted">No open checks.</p>
           ) : (
             <ul>
               {checks.map((check) => (
                 <li key={check.id} className={`building-check is-${check.severity}`}>
-                  {check.severity === 'warn' ? <AlertTriangle size={14} /> : <Info size={14} />}
                   <div>
                     <strong>{check.title}</strong>
                     <span>{check.detail}</span>
@@ -107,27 +106,6 @@ export function BuildingChecksBar() {
               ))}
             </ul>
           )}
-        </div>
-      )}
-
-      {!open && checks.length > 0 && (
-        <div className="building-checks" role="status" aria-label="Building checks">
-          {checks.slice(0, 2).map((check) => (
-            <div key={check.id} className={`building-check is-${check.severity}`}>
-              {check.severity === 'warn' ? <AlertTriangle size={14} /> : <Info size={14} />}
-              <div>
-                <strong>{check.title}</strong>
-                <span>{check.detail}</span>
-              </div>
-              <button
-                type="button"
-                aria-label={`Dismiss ${check.title}`}
-                onClick={() => setDismissed((ids) => [...ids, check.id])}
-              >
-                <X size={14} />
-              </button>
-            </div>
-          ))}
         </div>
       )}
     </div>

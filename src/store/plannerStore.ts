@@ -1806,7 +1806,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     addFloor: (opts) => {
       const id = crypto.randomUUID();
       const n = get().floors.length + 1;
-      const name = n === 1 ? 'First story' : n === 2 ? 'Second story' : `Story ${n}`;
+      const name = `L${n}`;
       const copy = !!opts?.copyActive;
       const source = get();
       // Persist current floor before switching.
@@ -1877,6 +1877,9 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         tool: 'select',
         draftStart: null,
       });
+      if (!copy && get().planRooms.length === 0) {
+        get().placePlanRoom(WORLD_ORIGIN, 'rectangle', 'Room');
+      }
     },
     switchFloor: (id) =>
       set((s) => {

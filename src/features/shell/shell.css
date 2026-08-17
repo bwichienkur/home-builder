@@ -199,16 +199,6 @@
   background: #111820;
   color: #fff;
 }
-.app-nav-build-slot:empty {
-  display: none;
-}
-.app-nav-build-slot:not(:empty) + .app-nav-groups {
-  border-top: 1px solid var(--line);
-  padding-top: 14px;
-}
-.app-nav-build-slot {
-  padding: 0 12px 8px;
-}
 .app-nav-groups {
   display: grid;
   gap: 16px;
