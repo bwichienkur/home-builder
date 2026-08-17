@@ -696,8 +696,8 @@
 
 .studio-shell.has-inspector .studio-dock,
 .studio-shell.has-catalog .studio-dock,
-.studio-shell.has-inspector .studio-category-rail,
-.studio-shell.has-catalog .studio-category-rail,
+.studio-shell.has-inspector .studio-category-rail:not(.studio-plan-rail),
+.studio-shell.has-catalog .studio-category-rail:not(.studio-plan-rail),
 .studio-shell.has-inspector .studio-dim-tray,
 .studio-shell.has-catalog .studio-dim-tray,
 .studio-shell.has-inspector .studio-top-tools,
