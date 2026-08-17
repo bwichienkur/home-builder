@@ -610,6 +610,7 @@ export default function StudioApp() {
           setCatalogOpen(false);
           closeProjectMenu();
         }}
+        onCloseInspector={() => setInspectorOpen(false)}
         onSave={saveBuild}
         onShare={share}
         onOpenElevations={() => {

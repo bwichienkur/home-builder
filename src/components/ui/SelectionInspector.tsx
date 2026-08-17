@@ -97,7 +97,7 @@ export function SelectionInspector({ open, onClose }: { open: boolean; onClose: 
         ) : selectedWall ? (
           <WallProperties wall={selectedWall} />
         ) : selectedRoom ? (
-          <PlanRoomProperties room={selectedRoom} />
+          <PlanRoomProperties room={selectedRoom} onClose={onClose} />
         ) : (
           <RoomPanel surface={selectedSurface} />
         )}
@@ -346,10 +346,11 @@ function RoomPanel({ surface }: { surface: 'floor' | 'wall' | 'ceiling' | null }
   );
 }
 
-function PlanRoomProperties({ room }: { room: PlanRoomLabel }) {
+function PlanRoomProperties({ room, onClose }: { room: PlanRoomLabel; onClose: () => void }) {
   const update = usePlannerStore((s) => s.updatePlanRoom);
   const resize = usePlannerStore((s) => s.resizePlanRoom);
   const remove = usePlannerStore((s) => s.deletePlanRoom);
+  const enterRoom = usePlannerStore((s) => s.enterRoom);
   const split = usePlannerStore((s) => s.splitPlanRoom);
   const insertVertex = usePlannerStore((s) => s.insertPlanRoomVertex);
   const removeVertex = usePlannerStore((s) => s.removePlanRoomVertex);
@@ -364,6 +365,22 @@ function PlanRoomProperties({ room }: { room: PlanRoomLabel }) {
   return (
     <>
       <p className="muted">Editing this room only</p>
+      <div className="wall-actions">
+        <button
+          type="button"
+          className="primary"
+          onClick={() => {
+            onClose();
+            enterRoom(room.id);
+            window.setTimeout(() => {
+              window.dispatchEvent(new Event('roomcraft-fit-plan'));
+              window.dispatchEvent(new Event('roomcraft-refocus'));
+            }, 60);
+          }}
+        >
+          Furnish room
+        </button>
+      </div>
       <label>
         Room name
         <input className="property-input" value={room.name} onChange={(e) => update(room.id, { name: e.target.value })} />
