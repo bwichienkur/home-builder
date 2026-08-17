@@ -69,7 +69,7 @@ export type FurnitureItem = {
   /** Stair connects two floor ids when placementKind is stair. */
   stair?: StairSpec;
 };
-export type CameraMode = 'top' | 'orbit' | 'walk';
+export type CameraMode = 'top' | 'orbit' | 'walk' | 'elevation';
 export type UnitSystem = 'metric' | 'imperial';
 export type Tool = 'select' | 'wall' | 'door' | 'window' | 'passage' | 'room';
 export type RoomType =

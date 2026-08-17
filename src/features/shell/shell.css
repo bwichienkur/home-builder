@@ -375,6 +375,27 @@
 .data-table tr:last-child td {
   border-bottom: 0;
 }
+.inventory-list-thumb {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--soft);
+  display: block;
+}
+.inventory-list-thumb-fallback {
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--soft);
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+  line-height: 1;
+}
 .data-empty {
   padding: 36px 20px;
   text-align: center;

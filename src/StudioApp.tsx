@@ -16,6 +16,7 @@ import { catalog as catalogItems } from './components/catalog/catalogData';
 import { BomDialog } from './components/ui/BomDialog';
 import { SelectionInspector } from './components/ui/SelectionInspector';
 import { ElevationPreview } from './components/ui/ElevationPreview';
+import { ElevationView } from './components/ui/ElevationView';
 import { StudioChrome } from './components/ui/StudioChrome';
 import { DesignStart } from './components/ui/DesignStart';
 import { useInventoryStore } from './store/inventoryStore';
@@ -109,7 +110,7 @@ export default function StudioApp() {
     store.setView('3d');
     const coarse = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
     // Keep Plan (top) when placing; only leave walk → orbit. Never yank Plan into orbit.
-    if (coarse || store.cameraMode === 'top') store.setCameraMode('top');
+    if (coarse || store.cameraMode === 'top' || store.cameraMode === 'elevation') store.setCameraMode('top');
     else if (store.cameraMode === 'walk') store.setCameraMode('orbit');
     setCatalogOpen(false);
     closeProjectMenu();
@@ -541,10 +542,12 @@ export default function StudioApp() {
   };
 
   const isTop = cameraMode === 'top';
+  const isElevation = cameraMode === 'elevation';
   const shellClass = [
     'studio-shell',
     'view-3d',
     isTop ? 'camera-top' : '',
+    isElevation ? 'camera-elevation' : '',
     cameraMode === 'walk' ? 'camera-walk' : '',
     pendingPlacement ? 'is-placing' : '',
     workflowStage === 'start' ? 'is-start' : '',
@@ -569,12 +572,17 @@ export default function StudioApp() {
         </div>
       )}
     <main className={shellClass}>
-      <section className="studio-canvas" aria-label={isTop ? 'Top-down room view' : '3D room view'}>
-        <div className="scene-layer">
+      <section className="studio-canvas" aria-label={isElevation ? 'Elevation view' : isTop ? 'Top-down room view' : '3D room view'}>
+        <div className={`scene-layer${isElevation ? ' is-parked' : ''}`}>
           <Suspense fallback={<div className="loading-3d">Preparing your room…</div>}>
             <Scene3D />
           </Suspense>
         </div>
+        {isElevation && (
+          <div className="elevation-layer">
+            <ElevationView />
+          </div>
+        )}
       </section>
 
       {workflowStage === 'start' && (
