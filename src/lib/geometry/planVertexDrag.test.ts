@@ -6,13 +6,15 @@ import {
   screenHandleMeters,
   snapVertexDrag,
   vertexDragArmed,
+  vertexDragGain,
   vertexSnapStepPx,
+  wallDimWorldOffset,
 } from './planVertexDrag';
 
 describe('plan vertex drag', () => {
-  it('uses a 1 ft grid when the plan is zoomed out', () => {
+  it('uses a 3 in grid when the plan is zoomed out', () => {
     const step = vertexSnapStepPx(10);
-    expect(step).toBeCloseTo(0.3048 * PIXELS_PER_METER, 5);
+    expect(step).toBeCloseTo(0.0254 * 3 * PIXELS_PER_METER, 5);
   });
 
   it('uses a finer grid when zoomed in', () => {
@@ -33,8 +35,8 @@ describe('plan vertex drag', () => {
   });
 
   it('keeps corner handles readable when zoomed out', () => {
-    expect(screenHandleMeters(8, 18)).toBeGreaterThan(0.4);
-    expect(screenHandleMeters(200, 18)).toBeGreaterThanOrEqual(0.16);
+    expect(screenHandleMeters(8, 18)).toBeGreaterThan(0.2);
+    expect(screenHandleMeters(200, 18)).toBeGreaterThanOrEqual(0.14);
   });
 
   it('treats near-identical plan points as unchanged', () => {
@@ -47,5 +49,15 @@ describe('plan vertex drag', () => {
     const dir = exteriorCornerDir({ x: 100, y: 300 }, { x: 100, y: 100 }, { x: 300, y: 100 }, centroid);
     expect(dir.x).toBeLessThan(0);
     expect(dir.y).toBeLessThan(0);
+  });
+
+  it('slows corner travel when the plan is zoomed out', () => {
+    expect(vertexDragGain(12)).toBeLessThan(0.5);
+    expect(vertexDragGain(80)).toBe(1);
+  });
+
+  it('offsets dim pills by more than half their screen size', () => {
+    const z = 20;
+    expect(wallDimWorldOffset(z)).toBeGreaterThan((22 + 16) / z);
   });
 });

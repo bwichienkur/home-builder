@@ -507,8 +507,8 @@
   min-width: 0;
   width: max-content;
   max-width: 100%;
-  padding: 5px;
-  border-radius: 20px;
+  padding: 3px;
+  border-radius: 16px;
   overflow-x: auto;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
@@ -532,20 +532,21 @@
 
 .studio-dock-seg {
   flex: 0 0 auto;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
   gap: 2px;
   padding: 2px;
-  border-radius: 14px;
+  border-radius: 12px;
   background: rgba(17, 24, 32, 0.06);
 }
 
 .studio-dock-seg button {
   border: 0;
-  border-radius: 12px;
-  min-height: 44px;
-  min-width: 44px;
-  padding: 3px 6px;
+  border-radius: 10px;
+  min-height: 40px;
+  min-width: 40px;
+  padding: 2px 8px;
   display: inline-flex;
   flex-direction: column;
   align-items: center;
@@ -567,10 +568,10 @@
 
 .studio-dock-action {
   border: 0;
-  border-radius: 12px;
-  min-height: 44px;
-  min-width: 44px;
-  padding: 3px 6px;
+  border-radius: 10px;
+  min-height: 40px;
+  min-width: 40px;
+  padding: 2px 6px;
   background: transparent;
   color: #111820;
   display: inline-flex;
@@ -1460,14 +1461,14 @@
     justify-content: flex-start;
   }
   .studio-dock-action {
-    min-width: 44px;
-    min-height: 44px;
-    padding: 6px 8px;
+    min-width: 36px;
+    min-height: 36px;
+    padding: 4px 6px;
   }
   .studio-dock-seg button {
-    min-width: 44px;
-    min-height: 44px;
-    padding: 4px 8px;
+    min-width: 36px;
+    min-height: 36px;
+    padding: 4px 6px;
   }
   .studio-menu-sheet.studio-menu-drawer {
     top: auto;
@@ -1637,14 +1638,14 @@
     display: none;
   }
   .studio-dock-action {
-    min-width: 44px;
-    min-height: 44px;
-    padding: 6px 8px;
+    min-width: 36px;
+    min-height: 36px;
+    padding: 4px 6px;
   }
   .studio-dock-seg button {
-    min-width: 44px;
-    min-height: 44px;
-    padding: 4px 8px;
+    min-width: 36px;
+    min-height: 36px;
+    padding: 4px 6px;
   }
   .studio-dock-action span,
   .studio-dock-seg button span {
@@ -1670,7 +1671,7 @@
     max-height: min(62vh, calc(100% - 150px));
   }
   .studio-dim-tray {
-    bottom: max(118px, calc(env(safe-area-inset-bottom) + 104px));
+    bottom: max(88px, calc(env(safe-area-inset-bottom) + 76px));
     padding: 4px;
     gap: 4px;
   }
@@ -2743,10 +2744,10 @@
   color: #fff;
   box-shadow: 0 1px 3px rgba(0, 88, 163, 0.28);
 }
-.wall-dim-html--top .wall-dim-pill { transform: translateY(-10px); }
-.wall-dim-html--bottom .wall-dim-pill { transform: translateY(10px); }
-.wall-dim-html--left .wall-dim-pill { transform: translateX(-10px); }
-.wall-dim-html--right .wall-dim-pill { transform: translateX(10px); }
+.wall-dim-html--top .wall-dim-pill { transform: none; }
+.wall-dim-html--bottom .wall-dim-pill { transform: none; }
+.wall-dim-html--left .wall-dim-pill { transform: none; }
+.wall-dim-html--right .wall-dim-pill { transform: none; }
 
 /* Wall dimension card — L/W/H grouped outside the room (interaction panel). */
 .wall-dim-card {
