@@ -4,6 +4,7 @@ import { usePlannerStore } from '../../store/plannerStore';
 import { catalog } from './catalogData';
 import type { RoomType } from '../../types';
 import { useInventoryStore } from '../../store/inventoryStore';
+import { catalogCardImage } from '../../lib/catalog/catalogCardImage';
 
 const categories = ['All', 'Flooring', 'Appliances', 'Cabinetry', 'Surfaces', 'Tile', 'Plumbing', 'Paneling', 'Trim', 'Seating', 'Tables', 'Storage', 'Bedroom', 'Lighting', 'Decor', 'Textiles'];
 export const roomCategories: Record<RoomType, string[]> = {
@@ -191,10 +192,12 @@ export const CatalogPanel = memo(function CatalogPanel({
           ))}
         </div>
         <div className="catalog-grid">
-          {shown.map((i) => (
+          {shown.map((i) => {
+            const img = catalogCardImage(i);
+            return (
             <article key={i.id} draggable onDragStart={(e) => e.dataTransfer.setData('catalogId', i.id)}>
               <div className="thumb" style={{ '--product-color': i.color } as CSSProperties}>
-                {i.thumbnailUrl ? <img src={i.thumbnailUrl} loading="lazy" alt="" /> : <span className="thumb-fallback">{i.emoji}</span>}
+                {img ? <img src={img} loading="lazy" alt="" /> : <span className="thumb-fallback">{i.emoji}</span>}
               </div>
               {i.brand && <span className="catalog-brand">{i.brand}</span>}
               <strong>{i.name}</strong>
@@ -221,7 +224,8 @@ export const CatalogPanel = memo(function CatalogPanel({
                   : 'Place in room'}
               </button>
             </article>
-          ))}
+            );
+          })}
         </div>
         {shown.length < items.length && (
           <button className="catalog-load-more" onClick={() => setVisibleCount((count) => Math.min(items.length, count + PAGE))}>

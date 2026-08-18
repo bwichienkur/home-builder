@@ -56,4 +56,10 @@ describe('materialPacks / realistic inventory', () => {
     ])[0];
     expect(item.textureUrl).toBe('/custom/keep.jpg');
   });
+
+  it('keeps a photo thumbnail that matches the Khronos chair GLB', () => {
+    const chair = catalog.find((i) => i.id === 'nord-chair');
+    expect(chair?.modelUrl).toMatch(/SheenChair/);
+    expect(chair?.thumbnailUrl).toMatch(/screenshot/);
+  });
 });

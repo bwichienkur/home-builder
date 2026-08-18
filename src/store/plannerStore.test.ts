@@ -327,5 +327,8 @@ describe('IKEA-style wall editing',()=>{
   expect(next.activeFloorId).toBe(next.floors[1]?.id);
   next.switchFloor(groundId);
   expect(usePlannerStore.getState().walls.length).toBe(beforeWalls);
+  expect(usePlannerStore.getState().deleteFloor(groundId)).toBe(true);
+  expect(usePlannerStore.getState().floors).toHaveLength(1);
+  expect(usePlannerStore.getState().deleteFloor(usePlannerStore.getState().activeFloorId)).toBe(false);
  });
 });

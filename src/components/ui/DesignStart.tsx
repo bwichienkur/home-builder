@@ -1,8 +1,9 @@
 import { useMemo } from 'react';
-import { Home, LayoutTemplate, Ruler } from 'lucide-react';
+import { Home, Ruler } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { listBuiltinHousePlans } from '../../lib/housePlans/planRegistry';
 import { usePlannerStore } from '../../store/plannerStore';
+import { HousePlanCard } from './HousePlanThumb';
 
 /**
  * Build entry when no project is loaded yet.
@@ -72,13 +73,7 @@ export function DesignStart({ onBegan }: { onBegan?: () => void }) {
         </p>
         <div className="design-start-gallery">
           {plans.map((plan) => (
-            <button key={plan.id} type="button" className="design-start-plan" onClick={() => loadPlan(plan.id)}>
-              <LayoutTemplate size={18} />
-              <strong>{plan.name}</strong>
-              <span>
-                {plan.beds} bed · {plan.baths} bath · {plan.livingSqFt.toLocaleString()} sq ft
-              </span>
-            </button>
+            <HousePlanCard key={plan.id} plan={plan} onSelect={() => loadPlan(plan.id)} />
           ))}
         </div>
       </div>

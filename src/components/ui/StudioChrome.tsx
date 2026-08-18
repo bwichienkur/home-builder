@@ -129,6 +129,7 @@ export function StudioChrome({
   const activeFloorId = usePlannerStore((s) => s.activeFloorId);
   const switchFloor = usePlannerStore((s) => s.switchFloor);
   const addFloor = usePlannerStore((s) => s.addFloor);
+  const deleteFloor = usePlannerStore((s) => s.deleteFloor);
   const exitRoom = usePlannerStore((s) => s.exitRoom);
   const showStart = usePlannerStore((s) => s.showStart);
   const tool = usePlannerStore((s) => s.tool);
@@ -553,6 +554,26 @@ export function StudioChrome({
                       }}
                     >
                       <Plus size={14} />
+                    </button>
+                  )}
+                  {showFloorManage && floors.length > 1 && (
+                    <button
+                      type="button"
+                      className="studio-floor-add studio-floor-remove"
+                      aria-label="Delete floor"
+                      title="Delete this floor"
+                      onClick={() => {
+                        const floor = floors.find((f) => f.id === activeFloorId);
+                        if (!floor) return;
+                        if (!window.confirm(`Delete “${floor.name}”? This cannot be undone.`)) return;
+                        if (!deleteFloor(floor.id)) return;
+                        window.setTimeout(() => {
+                          window.dispatchEvent(new Event('roomcraft-fit-plan'));
+                          window.dispatchEvent(new Event('roomcraft-refocus'));
+                        }, 80);
+                      }}
+                    >
+                      <Trash2 size={14} />
                     </button>
                   )}
                 </div>

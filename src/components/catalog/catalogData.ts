@@ -9,11 +9,12 @@ export type CatalogItem={id:string;sku?:string;vendorId?:string;name:string;bran
 const SAMPLE={
  chair:'https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/SheenChair/glTF-Binary/SheenChair.glb',
  lamp:'https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/Lantern/glTF-Binary/Lantern.glb',
- box:'https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/Box/glTF-Binary/Box.glb'
+ box:'https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/Box/glTF-Binary/Box.glb',
+ chairShot:'https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/SheenChair/screenshot/screenshot.jpg',
 };
 
 const legacyCatalog: CatalogItem[] = [
- {id:'nord-chair',name:'Nord Dining Chair',category:'Seating',dims:[.52,.56,.82],color:'#b26c45',price:129,emoji:'🪑',mountingType:'floor',placementSurfaces:['floor'],modelUrl:SAMPLE.chair,lowPolyModelUrl:SAMPLE.chair,roomTypes:['Dining room','Living room','Office']},
+ {id:'nord-chair',name:'Nord Dining Chair',category:'Seating',dims:[.52,.56,.82],color:'#b26c45',price:129,emoji:'🪑',mountingType:'floor',placementSurfaces:['floor'],modelUrl:SAMPLE.chair,lowPolyModelUrl:SAMPLE.chair,thumbnailUrl:SAMPLE.chairShot,roomTypes:['Dining room','Living room','Office']},
  {id:'linen-sofa',name:'Linen Modular Sofa',category:'Seating',dims:[2.2,.88,.78],color:'#b8b1a3',price:1299,emoji:'🛋️',mountingType:'floor',placementSurfaces:['floor'],roomTypes:['Living room']},
  {id:'oak-table',name:'Solid Oak Table',category:'Tables',dims:[1.8,.9,.76],color:'#9a7048',price:699,emoji:'▰',mountingType:'floor',placementSurfaces:['floor']},
  {id:'side-table',name:'Pebble Side Table',category:'Tables',dims:[.48,.48,.5],color:'#6e746e',price:189,emoji:'●',mountingType:'floor',placementSurfaces:['floor']},

@@ -170,6 +170,7 @@ type Enrichable = {
   roughness?: number;
   modelUrl?: string;
   lowPolyModelUrl?: string;
+  thumbnailUrl?: string;
   placeholderOnly?: boolean;
   placementMode?: string;
 };
@@ -189,9 +190,16 @@ function withSurface<T extends Enrichable>(item: T, pack: SurfacePack): T {
   return { ...item, ...pack };
 }
 
-function withModel<T extends Enrichable>(item: T, pack: { modelUrl: string; lowPolyModelUrl: string }): T {
+function withModel<T extends Enrichable>(item: T, pack: { modelUrl: string; lowPolyModelUrl: string; previewUrl?: string }): T {
   if (item.modelUrl) return item;
-  return { ...item, ...pack, placeholderOnly: false };
+  const photo = pack.previewUrl;
+  const genericThumb = !item.thumbnailUrl || /\.svg(\?|$)/i.test(item.thumbnailUrl);
+  return {
+    ...item,
+    ...pack,
+    placeholderOnly: false,
+    ...(photo && genericThumb ? { thumbnailUrl: photo } : {}),
+  };
 }
 
 /**

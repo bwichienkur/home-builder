@@ -58,7 +58,7 @@ describe('elevation face', () => {
     const a = elevationDimAnchors(wall, 'front');
     const midX = 3;
     expect(a.width.y).toBeLessThanOrEqual(0);
-    expect(a.height.x).toBeGreaterThan(midX + 3);
+    expect(a.height.x).toBeLessThan(midX - 3);
     expect(a.height.y).toBeCloseTo(1.35, 5);
   });
 
