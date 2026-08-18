@@ -352,7 +352,6 @@ function PlanRoomProperties({ room, onClose }: { room: PlanRoomLabel; onClose: (
   const resize = usePlannerStore((s) => s.resizePlanRoom);
   const remove = usePlannerStore((s) => s.deletePlanRoom);
   const enterRoom = usePlannerStore((s) => s.enterRoom);
-  const insertVertex = usePlannerStore((s) => s.insertPlanRoomVertex);
   const removeVertex = usePlannerStore((s) => s.removePlanRoomVertex);
   const setCeiling = usePlannerStore((s) => s.setCeilingHeight);
   const unit = usePlannerStore((s) => s.unitSystem);
@@ -410,7 +409,7 @@ function PlanRoomProperties({ room, onClose }: { room: PlanRoomLabel; onClose: (
           ? `${formatLength(size.widthFt * 0.3048, unit)} × ${formatLength(size.depthFt * 0.3048, unit)}`
           : `${size.widthFt.toFixed(1)}′ × ${size.depthFt.toFixed(1)}′`}
       </p>
-      <p className="muted">Drag corner handles on the plan to angle walls. Use Add corner below to insert a vertex. Width/Depth scale the polygon (shape preserved).</p>
+      <p className="muted">Drag corner handles on the plan to angle walls. Use Corner on the dock, then tap a wall to insert a vertex. Width/Depth scale the polygon (shape preserved).</p>
       <LengthField
         label="Width"
         value={size.widthFt * 0.3048}
@@ -428,9 +427,6 @@ function PlanRoomProperties({ room, onClose }: { room: PlanRoomLabel; onClose: (
       <p className="muted">Width/Depth scale from center — L-shapes and angled rooms keep their outline.</p>
       <LengthField label="Ceiling height" value={ceiling} min={2} max={6} onChange={setCeiling} />
       <div className="wall-actions">
-        <button type="button" className="btn-secondary" onClick={() => insertVertex(room.id, 0)}>
-          Add corner
-        </button>
         <button
           type="button"
           className="btn-secondary"

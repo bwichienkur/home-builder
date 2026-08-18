@@ -72,7 +72,7 @@ export type FurnitureItem = {
 export type CameraMode = 'top' | 'orbit' | 'walk' | 'elevation';
 export type ElevationFace = 'front' | 'back' | 'left' | 'right';
 export type UnitSystem = 'metric' | 'imperial';
-export type Tool = 'select' | 'wall' | 'door' | 'window' | 'passage' | 'room';
+export type Tool = 'select' | 'wall' | 'door' | 'window' | 'passage' | 'room' | 'corner';
 export type RoomType =
   | 'Bedroom'
   | 'Living room'

@@ -31,6 +31,27 @@ export function wallBelongsToRoom(wall: Wall, room: PlanRoomLabel, tol = 28) {
   return (startIn && endIn) || (midIn && (startIn || endIn));
 }
 
+/** Polygon edge index (a→b) that this wall sits on, or null if it is not an outline edge. */
+export function planRoomEdgeIndexForWall(room: PlanRoomLabel, wall: Wall, tol = 28): number | null {
+  const pts = room.points;
+  if (pts.length < 3) return null;
+  let best = -1;
+  let bestScore = Infinity;
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[i]!;
+    const b = pts[(i + 1) % pts.length]!;
+    if (!pointNearSegment(wall.start, a, b, tol) || !pointNearSegment(wall.end, a, b, tol)) continue;
+    const midWall = { x: (wall.start.x + wall.end.x) / 2, y: (wall.start.y + wall.end.y) / 2 };
+    const midEdge = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    const score = dist(midWall, midEdge);
+    if (score < bestScore) {
+      bestScore = score;
+      best = i;
+    }
+  }
+  return best >= 0 ? best : null;
+}
+
 function pointNearRoomEdge(p: Point, room: PlanRoomLabel, tol: number) {
   const pts = room.points;
   for (let i = 0; i < pts.length; i++) {

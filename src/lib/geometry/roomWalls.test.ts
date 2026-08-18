@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { PlanRoomLabel, Wall } from '../../types';
-import { pointInPlanRoom, wallBelongsToRoom, wallDimFieldLayout, wallEndpointForGrowSide, wallExteriorSide, wallsBelongingToRoom, defaultWallGrowSide, enclosureWallsForRoom } from './roomWalls';
+import { pointInPlanRoom, wallBelongsToRoom, wallDimFieldLayout, wallEndpointForGrowSide, wallExteriorSide, wallsBelongingToRoom, defaultWallGrowSide, enclosureWallsForRoom, planRoomEdgeIndexForWall } from './roomWalls';
 
 const room: PlanRoomLabel = {
   id: 'r1',
@@ -23,6 +23,14 @@ const walls: Wall[] = [
 ];
 
 describe('room wall membership', () => {
+  it('maps a boundary wall to the room polygon edge index', () => {
+    expect(planRoomEdgeIndexForWall(room, walls[0]!)).toBe(0);
+    expect(planRoomEdgeIndexForWall(room, walls[1]!)).toBe(1);
+    expect(planRoomEdgeIndexForWall(room, walls[2]!)).toBe(2);
+    expect(planRoomEdgeIndexForWall(room, walls[3]!)).toBe(3);
+    expect(planRoomEdgeIndexForWall(room, walls[4]!)).toBeNull();
+  });
+
   it('keeps only walls on the room boundary', () => {
     expect(wallsBelongingToRoom(room, walls)).toHaveLength(4);
     expect(wallBelongsToRoom(walls[4], room)).toBe(false);

@@ -7,7 +7,6 @@ import {
   samePlanPoint,
   screenHandleMeters,
   snapVertexDrag,
-  VERTEX_DRAG_MAX_M,
   vertexDragArmed,
   vertexDragGain,
   vertexSnapStepPx,
@@ -31,11 +30,11 @@ describe('plan vertex drag', () => {
     expect(snapped.x).toBe(400);
   });
 
-  it('waits for a screen-pixel threshold before arming the drag', () => {
+  it('waits for a short screen-pixel threshold before arming the drag', () => {
     const start = { x: 0, y: 0 };
     const tiny = { x: 2, y: 0 };
     expect(vertexDragArmed(start, tiny, 40)).toBe(false);
-    expect(vertexDragArmed(start, { x: 40, y: 0 }, 40)).toBe(true);
+    expect(vertexDragArmed(start, { x: 20, y: 0 }, 40)).toBe(true);
   });
 
   it('keeps corner handles readable when zoomed out', () => {
@@ -55,24 +54,20 @@ describe('plan vertex drag', () => {
     expect(dir.y).toBeLessThan(0);
   });
 
-  it('slows corner travel far below 1:1 even when zoomed in', () => {
-    expect(vertexDragGain(12)).toBeLessThan(0.08);
-    expect(vertexDragGain(80)).toBeLessThan(0.18);
-    expect(vertexDragGain(80)).toBeGreaterThan(vertexDragGain(12));
-  });
-
-  it('caps a single corner gesture so a flick cannot throw the room', () => {
+  it('moves the corner 1:1 with the pointer', () => {
+    expect(vertexDragGain(12)).toBe(1);
+    expect(vertexDragGain(80)).toBe(1);
     const start = { x: 0, y: 0 };
     const far = { x: 20 * PIXELS_PER_METER, y: 0 };
     const clamped = clampVertexDragTravel(start, far);
-    expect(Math.abs(clamped.x - start.x) / PIXELS_PER_METER).toBeCloseTo(VERTEX_DRAG_MAX_M, 5);
+    expect(clamped.x).toBe(far.x);
   });
 
-  it('applies low gain, axis lock, and a travel cap together', () => {
+  it('follows the pointer freely unless Shift locks an axis', () => {
     const anchor = { x: 200, y: 200 };
     const startPointer = { x: 200, y: 200 };
-    const pointer = { x: 200 + 8 * PIXELS_PER_METER, y: 200 + 0.4 * PIXELS_PER_METER };
-    const { point, axis } = applyVertexDrag({
+    const pointer = { x: 200 + 8 * PIXELS_PER_METER, y: 200 + 2 * PIXELS_PER_METER };
+    const free = applyVertexDrag({
       anchor,
       startPointer,
       pointer,
@@ -80,11 +75,20 @@ describe('plan vertex drag', () => {
       zoom: 40,
       axis: null,
     });
-    expect(axis).toBe('x');
-    expect(Math.abs(point.y - anchor.y)).toBeLessThan(PIXELS_PER_METER * 0.05);
-    const movedM = Math.abs(point.x - anchor.x) / PIXELS_PER_METER;
-    expect(movedM).toBeLessThan(1.4);
-    expect(movedM).toBeGreaterThan(0.2);
+    expect(free.axis).toBeNull();
+    expect(Math.abs(free.point.x - pointer.x)).toBeLessThan(PIXELS_PER_METER * 0.05);
+    expect(Math.abs(free.point.y - pointer.y)).toBeLessThan(PIXELS_PER_METER * 0.05);
+    const locked = applyVertexDrag({
+      anchor,
+      startPointer,
+      pointer,
+      others: [],
+      zoom: 40,
+      axis: null,
+      lockAxis: true,
+    });
+    expect(locked.axis).toBe('x');
+    expect(Math.abs(locked.point.y - anchor.y)).toBeLessThan(PIXELS_PER_METER * 0.05);
   });
 
   it('parks dim origins on the wall face independent of zoom', () => {

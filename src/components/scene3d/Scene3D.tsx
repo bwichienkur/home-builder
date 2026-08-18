@@ -10,9 +10,10 @@ import { alignmentGuides, clampWallMountY, constrainPlacement, pointOnWall, room
 import { doorSwingZones, furnitureHitsDoorSwing } from '../../lib/geometry/doorClearance';
 import { wouldOverlapFurniture } from '../../lib/collisions';
 import { framingFromPoints, framingFromWall, framingFromWalls, planChromeFit, worldShiftForFreeArea } from '../../lib/geometry/planFraming';
-import { pointInPlanRoom, enclosureWallsForRoom } from '../../lib/geometry/roomWalls';
+import { pointInPlanRoom, enclosureWallsForRoom, planRoomEdgeIndexForWall } from '../../lib/geometry/roomWalls';
 import { pickFacingWall, elevationFaceBasis, wallWorldFrame, elevationOrthoZoom } from '../../lib/geometry/elevationFace';
 import { planWallDimAnchor, elevationDimPillAnchors, DIM_FONT_M } from '../../lib/geometry/wallDimPills';
+import { preferInteriorPicks as filterInteriorPicks } from '../../lib/geometry/scenePicks';
 import { stairsCuttingFloor } from '../../lib/geometry/stairCutouts';
 import { wallExteriorSide } from '../../lib/geometry/roomWalls';
 import { clampOpeningOffset, openingCenterOnWall, wallOffsetFromWorldPoint, wallSolidBoxes } from '../../lib/geometry/wallOpenings';
@@ -36,44 +37,15 @@ const world = (x: number, y: number): [number, number] => [
   (y - WORLD_ORIGIN.y) / PIXELS_PER_METER,
 ];
 
-function hasUserDataFlag(object: THREE.Object3D, key: string) {
-  let o: THREE.Object3D | null = object;
-  while (o) {
-    if (o.userData?.[key]) return true;
-    o = o.parent;
-  }
-  return false;
-}
-
 /** Prefer furniture inside the room over cutaway wall pick proxies that sit in front of the camera. */
 function preferInteriorPicks(hits: THREE.Intersection[]) {
-  if (!hits.length) return hits;
-  // While ghost-placing, keep furniture from stealing floor/wall placement hits.
-  if (usePlannerStore.getState().pendingPlacement) {
-    const plane = hits.filter((h) => hasUserDataFlag(h.object, 'placementPlane'));
-    if (plane.length) return plane;
-    return hits.filter((h) => !hasUserDataFlag(h.object, 'furniturePick'));
-  }
-  // Plan: wall strips win only while tagging openings or dragging walls.
-  if (usePlannerStore.getState().cameraMode === 'top') {
-    const st = usePlannerStore.getState();
-    const wallPriority =
-      st.planWallTool || st.tool === 'door' || st.tool === 'window' || st.tool === 'passage';
-    if (wallPriority) {
-      const wallPlan = hits.filter((h) => hasUserDataFlag(h.object, 'wallPlanPick'));
-      if (wallPlan.length) return wallPlan;
-    }
-  }
-  const furniture = hits.filter((h) => hasUserDataFlag(h.object, 'furniturePick'));
-  if (!furniture.length) return hits;
-  // If any cutaway proxy/soft wall is closer than furniture, keep the furniture hits so
-  // you can click and drag pieces through the open section facing the camera.
-  const firstFurniture = hits.findIndex((h) => hasUserDataFlag(h.object, 'furniturePick'));
-  const firstCutaway = hits.findIndex((h) => hasUserDataFlag(h.object, 'wallCutawayPick'));
-  if (firstCutaway >= 0 && (firstFurniture < 0 || firstCutaway < firstFurniture)) {
-    return furniture;
-  }
-  return hits;
+  const st = usePlannerStore.getState();
+  return filterInteriorPicks(hits, {
+    pendingPlacement: st.pendingPlacement,
+    cameraMode: st.cameraMode,
+    planWallTool: st.planWallTool,
+    tool: st.tool,
+  });
 }
 
 function wallDragPlane(wall: Wall, item: FurnitureItem) {
@@ -1188,10 +1160,10 @@ function WallDimWorld({
   return (
     <group position={position} rotation={[0, yaw, 0]} raycast={() => {}}>
       <group rotation={faceUp ? [-Math.PI / 2, 0, 0] : [0, 0, 0]}>
-        <RoundedBox args={[size.w + 0.02, size.h + 0.02, 0.008]} radius={radius} smoothness={4} position={[0, 0, 0]}>
+        <RoundedBox args={[size.w + 0.02, size.h + 0.02, 0.008]} radius={radius} smoothness={4} position={[0, 0, 0]} raycast={() => {}}>
           <meshBasicMaterial color={stroke} depthTest={false} toneMapped={false} />
         </RoundedBox>
-        <RoundedBox args={[size.w, size.h, 0.01]} radius={Math.max(0.01, radius - 0.008)} smoothness={4} position={[0, 0, 0.004]}>
+        <RoundedBox args={[size.w, size.h, 0.01]} radius={Math.max(0.01, radius - 0.008)} smoothness={4} position={[0, 0, 0.004]} raycast={() => {}}>
           <meshBasicMaterial color={bg} depthTest={false} toneMapped={false} />
         </RoundedBox>
         <Suspense fallback={null}>
@@ -1206,6 +1178,7 @@ function WallDimWorld({
             outlineColor={bg}
             letterSpacing={-0.02}
             depthOffset={-2}
+            raycast={() => {}}
           >
             {text}
           </Text>
@@ -1311,12 +1284,37 @@ function WallMeshes() {
   // Openings can be dragged in top plan and 3D orbit (not walk).
   const openingDragEnabled = tool === 'select' && (cameraMode === 'top' || cameraMode === 'orbit');
   const placingOpening = tool === 'door' || tool === 'window' || tool === 'passage';
+  const placingCorner = tool === 'corner';
   const { invalidate } = useThree();
 
   const onWallClick = (id: string, point?: { x: number; z: number }) => {
     if (placingOpening && point && (tool === 'door' || tool === 'window' || tool === 'passage')) {
       placeOpeningAtWorld(id, tool, point.x, point.z);
-      window.dispatchEvent(new Event('roomcraft-open-properties'));
+      return;
+    }
+    if (placingCorner) {
+      const st = usePlannerStore.getState();
+      const wall = st.walls.find((w) => w.id === id);
+      if (!wall) return;
+      let room = st.planRooms.find((r) => r.id === st.selectedRoomId) ?? null;
+      let edge = room ? planRoomEdgeIndexForWall(room, wall) : null;
+      if (edge == null) {
+        const owner = st.planRooms.find((r) => planRoomEdgeIndexForWall(r, wall) != null) ?? null;
+        if (owner) {
+          room = owner;
+          st.selectRoom(owner.id);
+          edge = planRoomEdgeIndexForWall(owner, wall);
+        }
+      }
+      if (!room || edge == null) {
+        usePlannerStore.setState({
+          openingNotice: room ? 'Tap a wall of the selected room.' : 'Tap a room, then tap a wall to add a corner.',
+        });
+        return;
+      }
+      st.insertPlanRoomVertex(room.id, edge);
+      st.setTool('select');
+      usePlannerStore.setState({ openingNotice: 'Drag the new corner.' });
       return;
     }
     select(id);
@@ -1346,12 +1344,14 @@ function WallMeshes() {
         const midZ = (sz0 + ez0) / 2;
 
         // Invisible pick target so cut-away walls remain selectable in 3D (clicks won't fall through to the floor).
+        // Plan view uses the floor (and topPick while Walls/openings are armed) — tall proxies steal room clicks.
         const pickProxy = (
           <mesh
             key={w.id + 'pick'}
             userData={{ wallCutawayPick: true }}
             position={[midX, w.height / 2, midZ]}
             rotation={[0, angle, 0]}
+            raycast={cameraMode === 'top' ? () => {} : undefined}
             onClick={(e) => {
               e.stopPropagation();
               onWallClick(w.id, { x: e.point.x, z: e.point.z });
@@ -1364,7 +1364,7 @@ function WallMeshes() {
 
         // Plan: thin pick strip while tagging openings or dragging walls.
         const topPick =
-          cameraMode === 'top' && (placingOpening || planWallTool) ? (
+          cameraMode === 'top' && (placingOpening || placingCorner || planWallTool) ? (
             <mesh
               key={w.id + 'toppick'}
               userData={{ wallPlanPick: true }}
@@ -2267,9 +2267,17 @@ function Room() {
         selectSurface('floor');
         return;
       }
-      // Plan level: select the room — Edit / Furnish / Remove live on the plan rail.
+      // Plan level: select the room and open the editor (name, type, dims, furnish).
       if (workflowStage !== 'room') {
         selectRoom(roomId);
+        const st = usePlannerStore.getState();
+        const placing =
+          st.pendingAttachMode ||
+          st.tool === 'door' ||
+          st.tool === 'window' ||
+          st.tool === 'passage' ||
+          st.tool === 'corner';
+        if (!placing) window.dispatchEvent(new Event('roomcraft-open-properties'));
         window.setTimeout(() => {
           window.dispatchEvent(new Event('roomcraft-fit-plan'));
           window.dispatchEvent(new Event('roomcraft-refocus'));
@@ -2306,7 +2314,7 @@ function Room() {
     return rooms.map((points, i) => ({ points, label: undefined as PlanRoomLabel | undefined, i }));
   }, [planRooms, rooms, isolating, selectedRoomId]);
   return (
-    <Bvh>
+    <Bvh enabled={cameraMode !== 'top'}>
       {roomEntries.length ? (
         roomEntries.map(({ points, label }, i) => {
           const selected = !!label && label.id === selectedRoomId;
@@ -2328,6 +2336,7 @@ function Room() {
                   opacity={floorOpacity}
                   transparent={cameraMode === 'orbit' || floorOpacity < 0.999}
                   depthWrite={floorOpacity > 0.85}
+                  userData={{ roomPick: true }}
                   onClick={(e) => chooseFloor(e, label?.id)}
                 />
               ) : (
@@ -2335,6 +2344,7 @@ function Room() {
                 rotation={[Math.PI / 2, 0, 0]}
                 receiveShadow
                 position={[0, -0.035, 0]}
+                userData={{ roomPick: true }}
                 onClick={(e) => chooseFloor(e, label?.id)}
               >
                 <shapeGeometry args={[roomShapeWithHoles(points, stairs)]} />
@@ -2423,6 +2433,7 @@ function Room() {
                   anchorY="middle"
                   outlineWidth={0.02}
                   outlineColor={selected ? '#003d70' : '#ffffff'}
+                  userData={{ roomPick: true }}
                   onClick={(e) => chooseFloor(e, label.id)}
                 >
                   {label.name}
@@ -2433,7 +2444,7 @@ function Room() {
         })
       ) : (
         <>
-          <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow position={[0, -0.035, 0]} onClick={chooseFloor}>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow position={[0, -0.035, 0]} userData={{ roomPick: true }} onClick={chooseFloor}>
             <planeGeometry args={[14, 12]} />
             <meshStandardMaterial color={floor} roughness={0.95} />
           </mesh>
@@ -2776,14 +2787,11 @@ function GhostPlacement() {
 export function Scene3D() {
   const begin = usePlannerStore((s) => s.beginPlacement);
   const pending = usePlannerStore((s) => s.pendingPlacement);
-  const tool = usePlannerStore((s) => s.tool);
-  const cameraMode = usePlannerStore((s) => s.cameraMode);
   const select = usePlannerStore((s) => s.selectFurniture);
   const selectWall = usePlannerStore((s) => s.selectWall);
   const selectSurface = usePlannerStore((s) => s.selectSurface);
   const selectRoom = usePlannerStore((s) => s.selectRoom);
   const custom = useInventoryStore((s) => s.items);
-  const placingOpening = tool === 'door' || tool === 'window' || tool === 'passage';
   const drop = (e: React.DragEvent) => {
     e.preventDefault();
     const id = e.dataTransfer.getData('catalogId');
@@ -2875,11 +2883,6 @@ export function Scene3D() {
         <div className="scene-help">Move to place · Tap floor or Confirm to drop · Cancel to abort</div>
       ) : (
         <div className="scene-help">Drag furniture to move · Tap through open walls · Empty space pans/orbits</div>
-      )}
-      {placingOpening && cameraMode === 'top' && (
-        <div className="opening-place-hint opening-place-hint--chrome" role="status">
-          Tap a wall to place {tool}
-        </div>
       )}
     </div>
   );

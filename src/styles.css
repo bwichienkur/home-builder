@@ -51,7 +51,7 @@ a { color: inherit; }
 .app-notice {
   position: fixed;
   z-index: 120;
-  top: calc(56px + env(safe-area-inset-top, 0px) + 8px);
+  top: calc(52px + env(safe-area-inset-top, 0px) + var(--studio-top-chrome, 100px) + 10px);
   left: 50%;
   transform: translateX(-50%);
   border-radius: 999px;
