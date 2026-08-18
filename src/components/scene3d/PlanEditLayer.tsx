@@ -13,6 +13,7 @@ import {
   vertexDragArmed,
   type VertexDragAxis,
 } from '../../lib/geometry/planVertexDrag';
+import { splitEdgeEndpoints } from '../../lib/geometry/planCornerGhost';
 import {
   attachSideBlocked,
   attachSquareRoomPoints,
@@ -44,11 +45,15 @@ function PlanCornerHandle({
   position,
   outward,
   dragging = false,
+  selected = false,
+  ghost = false,
   ...events
 }: {
   position: [number, number, number];
   outward: [number, number];
   dragging?: boolean;
+  selected?: boolean;
+  ghost?: boolean;
   onPointerDown?: (e: any) => void;
   onPointerMove?: (e: any) => void;
   onPointerUp?: (e: any) => void;
@@ -72,19 +77,22 @@ function PlanCornerHandle({
     group.position.set(position[0] + outward[0] * push, position[1], position[2] + outward[1] * push);
     group.scale.setScalar(radius / 0.5);
   });
+  const fill = ghost ? '#e8f3fb' : '#ffffff';
+  const ring = selected || ghost ? '#0058a3' : '#1a2330';
+  const dot = ghost ? '#0058a3' : selected ? '#004e91' : '#0058a3';
   return (
     <group ref={ref} position={position} rotation={[-Math.PI / 2, 0, 0]}>
       <mesh {...events} renderOrder={12}>
         <circleGeometry args={[0.5, 48]} />
-        <meshBasicMaterial color="#ffffff" depthTest={false} toneMapped={false} />
+        <meshBasicMaterial color={fill} depthTest={false} toneMapped={false} />
       </mesh>
       <mesh {...events} renderOrder={13} raycast={() => {}}>
         <ringGeometry args={[0.4, 0.5, 48]} />
-        <meshBasicMaterial color="#1a2330" depthTest={false} toneMapped={false} />
+        <meshBasicMaterial color={ring} depthTest={false} toneMapped={false} />
       </mesh>
       <mesh {...events} renderOrder={14} raycast={() => {}}>
-        <circleGeometry args={[0.14, 32]} />
-        <meshBasicMaterial color="#0058a3" depthTest={false} toneMapped={false} />
+        <circleGeometry args={[selected || ghost ? 0.18 : 0.14, 32]} />
+        <meshBasicMaterial color={dot} depthTest={false} toneMapped={false} />
       </mesh>
     </group>
   );
@@ -118,6 +126,10 @@ export function PlanEditLayer() {
   const pendingRoomShape = usePlannerStore((s) => s.pendingRoomShape);
   const pendingAttachMode = usePlannerStore((s) => s.pendingAttachMode);
   const planWallTool = usePlannerStore((s) => s.planWallTool);
+  const pendingCorner = usePlannerStore((s) => s.pendingCorner);
+  const selectedVertexIndex = usePlannerStore((s) => s.selectedVertexIndex);
+  const beginPendingCorner = usePlannerStore((s) => s.beginPendingCorner);
+  const movePendingCorner = usePlannerStore((s) => s.movePendingCorner);
   const setPendingRoomShape = usePlannerStore((s) => s.setPendingRoomShape);
   const walls = usePlannerStore((s) => s.walls);
   const { camera, invalidate } = useThree();
@@ -134,16 +146,20 @@ export function PlanEditLayer() {
     lockAxis: boolean;
   } | null>(null);
   const wallDrag = useRef<{ wallId: string; pointerId: number; lastX: number; lastZ: number } | null>(null);
+  const cornerDrag = useRef<{ roomId: string; pointerId: number } | null>(null);
   const [vertexDragging, setVertexDragging] = useState(false);
   const [wallDragging, setWallDragging] = useState(false);
+  const [cornerDragging, setCornerDragging] = useState(false);
   const floorPlane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), []);
 
   const active = studioMode === 'architect' && cameraMode === 'top';
   const placingRoom = active && (!!pendingRoomShape || tool === 'room');
+  const placingCorner = active && tool === 'corner';
   const hostRoom = planRooms.find((r) => r.id === selectedRoomId) ?? null;
   const showAttachSides = active && pendingAttachMode && !!hostRoom;
-  const showVertices = active && !!hostRoom && !placingRoom && !pendingAttachMode;
+  const showVertices = active && !!hostRoom && !placingRoom && !pendingAttachMode && !placingCorner && !pendingCorner;
   const showWallHandles = active && !!hostRoom && !placingRoom && !pendingAttachMode && planWallTool;
+  const cornerRooms = placingCorner ? (hostRoom ? [hostRoom] : planRooms) : [];
   const ceiling = walls[0]?.height ?? 2.7;
 
   const wallHandles = useMemo(() => {
@@ -195,6 +211,22 @@ export function PlanEditLayer() {
       return { side, label, Icon, blocked, line, midX, midZ };
     });
   }, [hostRoom, planRooms]);
+
+  const ghostSplit = useMemo(() => {
+    if (!pendingCorner) return null;
+    const room = planRooms.find((r) => r.id === pendingCorner.roomId);
+    if (!room) return null;
+    const split = splitEdgeEndpoints(room.points, pendingCorner.edgeIndex, pendingCorner.t);
+    if (!split) return null;
+    const centroid = {
+      x: room.points.reduce((s, q) => s + q.x, 0) / room.points.length,
+      y: room.points.reduce((s, q) => s + q.y, 0) / room.points.length,
+    };
+    const prev = room.points[pendingCorner.edgeIndex]!;
+    const next = room.points[(pendingCorner.edgeIndex + 1) % room.points.length]!;
+    const dir = exteriorCornerDir(prev, split.ghost, next, centroid);
+    return { room, split, dir };
+  }, [pendingCorner, planRooms]);
 
   if (!active) return null;
 
@@ -395,21 +427,95 @@ export function PlanEditLayer() {
     endVertexDrag();
   };
 
+  const endCornerDrag = () => {
+    if (!cornerDrag.current) return;
+    cornerDrag.current = null;
+    setCornerDragging(false);
+    delete document.body.dataset.movingFurniture;
+    window.dispatchEvent(new Event('roomcraft-drag-end'));
+  };
+
+  const onGhostHandleDown = (e: any, roomId: string) => {
+    e.stopPropagation();
+    if (!usePlannerStore.getState().pendingCorner) return;
+    cornerDrag.current = { roomId, pointerId: e.pointerId };
+    setCornerDragging(true);
+    document.body.dataset.movingFurniture = 'true';
+    window.dispatchEvent(new Event('roomcraft-drag-start'));
+    try {
+      (e.target as any).setPointerCapture?.(e.pointerId);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const onCornerPointerDown = (e: any, roomId: string) => {
+    e.stopPropagation();
+    const raw = hitPlan(e);
+    if (!raw) return;
+    if (!beginPendingCorner(roomId, raw)) return;
+    cornerDrag.current = { roomId, pointerId: e.pointerId };
+    setCornerDragging(true);
+    document.body.dataset.movingFurniture = 'true';
+    window.dispatchEvent(new Event('roomcraft-drag-start'));
+    try {
+      (e.target as any).setPointerCapture?.(e.pointerId);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const onCornerPointerMove = (e: any) => {
+    const drag = cornerDrag.current;
+    if (!drag || drag.pointerId !== e.pointerId) return;
+    e.stopPropagation();
+    const raw = hitPlan(e);
+    if (!raw) return;
+    movePendingCorner(raw);
+    invalidate();
+  };
+
+  const onCornerPointerUp = (e: any) => {
+    const drag = cornerDrag.current;
+    if (!drag || drag.pointerId !== e.pointerId) return;
+    e.stopPropagation();
+    onCornerPointerMove(e);
+    endCornerDrag();
+  };
+
   return (
     <group>
-      {(placingRoom || vertexDragging || wallDragging) && (
+      {(placingRoom || vertexDragging || wallDragging || cornerDragging) && (
         <mesh
           rotation={[-Math.PI / 2, 0, 0]}
           position={[0, 0.01, 0]}
           onPointerMove={
-            placingRoom ? onFloorPointerMove : wallDragging ? onWallPointerMove : onVertexPointerMove
+            placingRoom
+              ? onFloorPointerMove
+              : wallDragging
+                ? onWallPointerMove
+                : cornerDragging
+                  ? onCornerPointerMove
+                  : onVertexPointerMove
           }
           onPointerDown={placingRoom ? onFloorPointerDown : undefined}
           onPointerUp={
-            placingRoom ? onFloorPointerUp : wallDragging ? onWallPointerUp : onVertexPointerUp
+            placingRoom
+              ? onFloorPointerUp
+              : wallDragging
+                ? onWallPointerUp
+                : cornerDragging
+                  ? onCornerPointerUp
+                  : onVertexPointerUp
           }
           onPointerCancel={
-            placingRoom ? onFloorPointerUp : wallDragging ? onWallPointerUp : onVertexPointerUp
+            placingRoom
+              ? onFloorPointerUp
+              : wallDragging
+                ? onWallPointerUp
+                : cornerDragging
+                  ? onCornerPointerUp
+                  : onVertexPointerUp
           }
         >
           <planeGeometry args={[120, 120]} />
@@ -477,6 +583,7 @@ export function PlanEditLayer() {
               position={[pos[0], 0.16, pos[1]]}
               outward={[dir.x, dir.y]}
               dragging={vertexDragging}
+              selected={selectedVertexIndex === i}
               onPointerDown={(e: any) => onVertexPointerDown(e, hostRoom!.id, i)}
               onPointerMove={onVertexPointerMove}
               onPointerUp={onVertexPointerUp}
@@ -501,6 +608,62 @@ export function PlanEditLayer() {
             <meshBasicMaterial transparent opacity={0} depthWrite={false} side={THREE.DoubleSide} />
           </mesh>
         ))}
+
+      {cornerRooms.map((room) =>
+        room.points.map((p, i) => {
+          const q = room.points[(i + 1) % room.points.length]!;
+          const [sx, sz] = world(p.x, p.y);
+          const [ex, ez] = world(q.x, q.y);
+          const pos: [number, number] = [(sx + ex) / 2, (sz + ez) / 2];
+          const angle = -Math.atan2(ez - sz, ex - sx);
+          const length = Math.hypot(ex - sx, ez - sz) || 0.8;
+          return (
+            <mesh
+              key={`corner-pick-${room.id}-${i}`}
+              position={[pos[0], 0.05, pos[1]]}
+              rotation={[-Math.PI / 2, 0, angle]}
+              onPointerDown={(e: any) => onCornerPointerDown(e, room.id)}
+              onPointerMove={onCornerPointerMove}
+              onPointerUp={onCornerPointerUp}
+              onPointerCancel={onCornerPointerUp}
+            >
+              <planeGeometry args={[Math.max(length, 0.4), 0.5]} />
+              <meshBasicMaterial transparent opacity={0} depthWrite={false} side={THREE.DoubleSide} />
+            </mesh>
+          );
+        }),
+      )}
+
+      {ghostSplit && (
+        <group>
+          <Line
+            points={[
+              [world(ghostSplit.split.a.x, ghostSplit.split.a.y)[0], 0.14, world(ghostSplit.split.a.x, ghostSplit.split.a.y)[1]],
+              [world(ghostSplit.split.ghost.x, ghostSplit.split.ghost.y)[0], 0.14, world(ghostSplit.split.ghost.x, ghostSplit.split.ghost.y)[1]],
+              [world(ghostSplit.split.b.x, ghostSplit.split.b.y)[0], 0.14, world(ghostSplit.split.b.x, ghostSplit.split.b.y)[1]],
+            ]}
+            color="#0058a3"
+            lineWidth={3}
+            dashed
+            dashSize={0.18}
+            gapSize={0.1}
+          />
+          <PlanCornerHandle
+            position={[
+              world(ghostSplit.split.ghost.x, ghostSplit.split.ghost.y)[0],
+              0.18,
+              world(ghostSplit.split.ghost.x, ghostSplit.split.ghost.y)[1],
+            ]}
+            outward={[ghostSplit.dir.x, ghostSplit.dir.y]}
+            dragging={cornerDragging}
+            ghost
+            onPointerDown={(e: any) => onGhostHandleDown(e, ghostSplit.room.id)}
+            onPointerMove={onCornerPointerMove}
+            onPointerUp={onCornerPointerUp}
+            onPointerCancel={onCornerPointerUp}
+          />
+        </group>
+      )}
     </group>
   );
 }

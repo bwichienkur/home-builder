@@ -152,6 +152,14 @@ describe('polygon vertex edit', () => {
     expect(next![1]!.x).toBeCloseTo(origin.x + ft(6));
   });
 
+  it('inserts a vertex at a given t along the edge', () => {
+    const next = insertPlanRoomVertexPoints(square, 0, 0.25);
+    expect(next).not.toBeNull();
+    expect(next!.length).toBe(5);
+    expect(next![1]!.x).toBeCloseTo(origin.x + ft(3));
+    expect(next![1]!.y).toBeCloseTo(origin.y);
+  });
+
   it('removes a vertex when four or more remain', () => {
     const five = insertPlanRoomVertexPoints(square, 0)!;
     const next = removePlanRoomVertexPoints(five, 1);

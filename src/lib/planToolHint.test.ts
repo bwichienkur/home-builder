@@ -14,12 +14,27 @@ describe('planToolHint', () => {
     );
   });
 
-  it('prompts to tap a wall while adding a corner', () => {
+  it('prompts to drag along a wall while adding a corner', () => {
     expect(planToolHint({ tool: 'corner', pendingAttachMode: false, selectedRoomId: 'r1' })).toBe(
-      'Tap a wall to add a corner',
+      'Drag along a wall to place a corner.',
     );
     expect(planToolHint({ tool: 'corner', pendingAttachMode: false, selectedRoomId: null })).toBe(
       'Tap a room, then Corner',
+    );
+    expect(
+      planToolHint({ tool: 'select', pendingAttachMode: false, selectedRoomId: 'r1', pendingCorner: true }),
+    ).toBe('Drag along a wall to place a corner.');
+  });
+
+  it('prompts to drag the new corner after confirm', () => {
+    expect(
+      planToolHint({ tool: 'select', pendingAttachMode: false, selectedRoomId: 'r1', selectedVertexIndex: 1 }),
+    ).toBe('Drag the new corner.');
+  });
+
+  it('prompts to tap a wall while the Walls tool is armed', () => {
+    expect(planToolHint({ tool: 'select', pendingAttachMode: false, selectedRoomId: 'r1', planWallTool: true })).toBe(
+      'Tap a wall to edit its length.',
     );
   });
 

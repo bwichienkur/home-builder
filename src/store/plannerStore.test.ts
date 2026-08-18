@@ -331,4 +331,112 @@ describe('IKEA-style wall editing',()=>{
   expect(usePlannerStore.getState().floors).toHaveLength(1);
   expect(usePlannerStore.getState().deleteFloor(usePlannerStore.getState().activeFloorId)).toBe(false);
  });
+
+ it('ghosts a corner until confirm and leaves rooms unchanged on cancel', () => {
+  const points = [
+    { x: 180, y: 150 },
+    { x: 660, y: 150 },
+    { x: 660, y: 510 },
+    { x: 180, y: 510 },
+  ];
+  usePlannerStore.setState({
+    planRooms: [{ id: 'r1', name: 'Room', roomType: 'Bedroom', points }],
+    selectedRoomId: 'r1',
+    pendingCorner: null,
+    tool: 'corner',
+    walls: [],
+    openings: [],
+    furniture: [],
+    floors: [{
+      id: 'ground',
+      name: 'Ground',
+      scene: { walls: [], openings: [], furniture: [], floorColor: '#c9b18f', wallColor: '#f4f1ea', ceilingColor: '#ffffff' },
+      planRooms: [{ id: 'r1', name: 'Room', roomType: 'Bedroom', points }],
+    }],
+    activeFloorId: 'ground',
+  });
+  const before = JSON.stringify(usePlannerStore.getState().planRooms[0]!.points);
+  const started = usePlannerStore.getState().beginPendingCorner('r1', { x: 300, y: 150 });
+  expect(started).toBe(true);
+  expect(JSON.stringify(usePlannerStore.getState().planRooms[0]!.points)).toBe(before);
+  expect(usePlannerStore.getState().pendingCorner).toMatchObject({ roomId: 'r1', edgeIndex: 0 });
+  usePlannerStore.getState().movePendingCorner({ x: 500, y: 140 });
+  expect(usePlannerStore.getState().pendingCorner?.t).toBeGreaterThan(0.4);
+  expect(JSON.stringify(usePlannerStore.getState().planRooms[0]!.points)).toBe(before);
+  usePlannerStore.getState().cancelPendingCorner();
+  expect(usePlannerStore.getState().pendingCorner).toBeNull();
+  expect(JSON.stringify(usePlannerStore.getState().planRooms[0]!.points)).toBe(before);
+ });
+
+ it('confirms a ghost corner at t and selects the new vertex', () => {
+  const points = [
+    { x: 180, y: 150 },
+    { x: 660, y: 150 },
+    { x: 660, y: 510 },
+    { x: 180, y: 510 },
+  ];
+  usePlannerStore.setState({
+    planRooms: [{ id: 'r1', name: 'Room', roomType: 'Bedroom', points }],
+    selectedRoomId: 'r1',
+    pendingCorner: null,
+    tool: 'corner',
+    walls: [
+      { id: 'w1', start: points[0]!, end: points[1]!, thickness: 0.15, height: 2.7 },
+      { id: 'w2', start: points[1]!, end: points[2]!, thickness: 0.15, height: 2.7 },
+      { id: 'w3', start: points[2]!, end: points[3]!, thickness: 0.15, height: 2.7 },
+      { id: 'w4', start: points[3]!, end: points[0]!, thickness: 0.15, height: 2.7 },
+    ],
+    openings: [],
+    furniture: [],
+    floors: [{
+      id: 'ground',
+      name: 'Ground',
+      scene: { walls: [], openings: [], furniture: [], floorColor: '#c9b18f', wallColor: '#f4f1ea', ceilingColor: '#ffffff' },
+      planRooms: [{ id: 'r1', name: 'Room', roomType: 'Bedroom', points }],
+    }],
+    activeFloorId: 'ground',
+  });
+  usePlannerStore.getState().beginPendingCorner('r1', { x: 300, y: 150 });
+  expect(usePlannerStore.getState().commitPendingCorner()).toBe(true);
+  const next = usePlannerStore.getState();
+  expect(next.pendingCorner).toBeNull();
+  expect(next.tool).toBe('select');
+  expect(next.planRooms[0]!.points.length).toBe(5);
+  expect(next.selectedVertexIndex).toBe(1);
+ });
+
+ it('cancels a ghost corner when switching to Door', () => {
+  usePlannerStore.setState({
+    pendingCorner: { roomId: 'r1', edgeIndex: 0, t: 0.5 },
+    tool: 'corner',
+  });
+  usePlannerStore.getState().setTool('door');
+  expect(usePlannerStore.getState().pendingCorner).toBeNull();
+  expect(usePlannerStore.getState().tool).toBe('door');
+ });
+
+ it('keeps the selected room when tapping a wall in Walls mode', () => {
+  const points = [
+    { x: 180, y: 150 },
+    { x: 660, y: 150 },
+    { x: 660, y: 510 },
+    { x: 180, y: 510 },
+  ];
+  usePlannerStore.setState({
+    workflowStage: 'house',
+    planWallTool: true,
+    selectedRoomId: 'r1',
+    planRooms: [{ id: 'r1', name: 'Room', roomType: 'Bedroom', points }],
+    walls: [
+      { id: 'w1', start: points[0]!, end: points[1]!, thickness: 0.15, height: 2.7 },
+      { id: 'w2', start: points[1]!, end: points[2]!, thickness: 0.15, height: 2.7 },
+      { id: 'w3', start: points[2]!, end: points[3]!, thickness: 0.15, height: 2.7 },
+      { id: 'w4', start: points[3]!, end: points[0]!, thickness: 0.15, height: 2.7 },
+    ],
+  });
+  usePlannerStore.getState().selectWall('w1');
+  expect(usePlannerStore.getState().selectedWallId).toBe('w1');
+  expect(usePlannerStore.getState().selectedRoomId).toBe('r1');
+  expect(usePlannerStore.getState().planWallTool).toBe(true);
+ });
 });

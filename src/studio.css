@@ -1805,6 +1805,20 @@
   font-size: 13px;
   width: 4em;
 }
+.studio-dim-tray-hint {
+  font-size: 11px;
+  line-height: 1.2;
+  color: #5b6570;
+  align-self: center;
+  padding: 0 4px;
+  white-space: nowrap;
+}
+.studio-dim-tray--dock .wall-length-field.is-secondary {
+  opacity: 0.68;
+}
+.studio-dim-tray--dock .wall-length-field.is-secondary input {
+  width: 3.4em;
+}
 .studio-dim-tray .wall-length-field {
   width: auto;
   min-width: 92px;

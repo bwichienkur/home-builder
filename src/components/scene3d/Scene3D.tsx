@@ -13,6 +13,7 @@ import { framingFromPoints, framingFromWall, framingFromWalls, planChromeFit, wo
 import { pointInPlanRoom, enclosureWallsForRoom, planRoomEdgeIndexForWall } from '../../lib/geometry/roomWalls';
 import { pickFacingWall, elevationFaceBasis, wallWorldFrame, elevationOrthoZoom } from '../../lib/geometry/elevationFace';
 import { planWallDimAnchor, elevationDimPillAnchors, DIM_FONT_M } from '../../lib/geometry/wallDimPills';
+import { splitEdgeEndpoints } from '../../lib/geometry/planCornerGhost';
 import { preferInteriorPicks as filterInteriorPicks } from '../../lib/geometry/scenePicks';
 import { stairsCuttingFloor } from '../../lib/geometry/stairCutouts';
 import { wallExteriorSide } from '../../lib/geometry/roomWalls';
@@ -1280,11 +1281,16 @@ function WallMeshes() {
     const height = walls[0]?.height ?? 2.7;
     return new Set(enclosureWallsForRoom(dimRoom, walls, height).map((w) => w.id));
   }, [dimRoom, walls]);
+  const pendingCorner = usePlannerStore((s) => s.pendingCorner);
+  const ghostSplit =
+    pendingCorner && dimRoom?.id === pendingCorner.roomId
+      ? splitEdgeEndpoints(dimRoom.points, pendingCorner.edgeIndex, pendingCorner.t)
+      : null;
+  const ghostEdgeIndex = ghostSplit && pendingCorner ? pendingCorner.edgeIndex : null;
   const planWallTool = usePlannerStore((s) => s.planWallTool);
   // Openings can be dragged in top plan and 3D orbit (not walk).
   const openingDragEnabled = tool === 'select' && (cameraMode === 'top' || cameraMode === 'orbit');
   const placingOpening = tool === 'door' || tool === 'window' || tool === 'passage';
-  const placingCorner = tool === 'corner';
   const { invalidate } = useThree();
 
   const onWallClick = (id: string, point?: { x: number; z: number }) => {
@@ -1292,29 +1298,9 @@ function WallMeshes() {
       placeOpeningAtWorld(id, tool, point.x, point.z);
       return;
     }
-    if (placingCorner) {
-      const st = usePlannerStore.getState();
-      const wall = st.walls.find((w) => w.id === id);
-      if (!wall) return;
-      let room = st.planRooms.find((r) => r.id === st.selectedRoomId) ?? null;
-      let edge = room ? planRoomEdgeIndexForWall(room, wall) : null;
-      if (edge == null) {
-        const owner = st.planRooms.find((r) => planRoomEdgeIndexForWall(r, wall) != null) ?? null;
-        if (owner) {
-          room = owner;
-          st.selectRoom(owner.id);
-          edge = planRoomEdgeIndexForWall(owner, wall);
-        }
-      }
-      if (!room || edge == null) {
-        usePlannerStore.setState({
-          openingNotice: room ? 'Tap a wall of the selected room.' : 'Tap a room, then tap a wall to add a corner.',
-        });
-        return;
-      }
-      st.insertPlanRoomVertex(room.id, edge);
-      st.setTool('select');
-      usePlannerStore.setState({ openingNotice: 'Drag the new corner.' });
+    if (planWallTool) {
+      select(id);
+      window.dispatchEvent(new Event('roomcraft-close-properties'));
       return;
     }
     select(id);
@@ -1364,7 +1350,7 @@ function WallMeshes() {
 
         // Plan: thin pick strip while tagging openings or dragging walls.
         const topPick =
-          cameraMode === 'top' && (placingOpening || placingCorner || planWallTool) ? (
+          cameraMode === 'top' && (placingOpening || planWallTool) ? (
             <mesh
               key={w.id + 'toppick'}
               userData={{ wallPlanPick: true }}
@@ -1612,7 +1598,10 @@ function WallMeshes() {
           ...base,
           ...selectionHalo,
           ...fixtures,
-          ...(cameraMode === 'top' && layers.dims && dimWallIds?.has(w.id)
+          ...(cameraMode === 'top' &&
+          layers.dims &&
+          dimWallIds?.has(w.id) &&
+          !(ghostEdgeIndex != null && dimRoom && planRoomEdgeIndexForWall(dimRoom, w) === ghostEdgeIndex)
             ? [
                 <PlanWallDim
                   key={w.id + 'len'}
@@ -1637,6 +1626,36 @@ function WallMeshes() {
             : []),
         ];
       })}
+      {cameraMode === 'top' && layers.dims && ghostSplit && dimRoom
+        ? (() => {
+            const thickness = walls[0]?.thickness ?? 0.15;
+            const segs = [
+              { id: 'ghost-a', a: ghostSplit.a, b: ghostSplit.ghost },
+              { id: 'ghost-b', a: ghostSplit.ghost, b: ghostSplit.b },
+            ];
+            return segs.map(({ id, a, b }) => {
+              const [sx, sz] = world(a.x, a.y);
+              const [ex, ez] = world(b.x, b.y);
+              const len = Math.hypot(ex - sx, ez - sz);
+              return (
+                <PlanWallDim
+                  key={id}
+                  wallId={id}
+                  midX={(sx + ex) / 2}
+                  midZ={(sz + ez) / 2}
+                  sx={sx}
+                  sz={sz}
+                  ex={ex}
+                  ez={ez}
+                  roomPoints={dimRoom.points}
+                  text={formatLength(len, unitSystem)}
+                  selected
+                  thickness={thickness}
+                />
+              );
+            });
+          })()
+        : null}
       {layers.framing &&
         walls.map((w) => {
           const [sx, sz] = world(w.start.x, w.start.y);
@@ -2269,6 +2288,12 @@ function Room() {
       }
       // Plan level: select the room so the black rail (Edit / Walls / Furnish) appears.
       if (workflowStage !== 'room') {
+        const st = usePlannerStore.getState();
+        if (st.planWallTool && st.selectedRoomId === roomId) {
+          if (st.selectedWallId) st.selectWall(null);
+          window.dispatchEvent(new Event('roomcraft-close-properties'));
+          return;
+        }
         selectRoom(roomId);
         window.dispatchEvent(new Event('roomcraft-close-properties'));
         window.setTimeout(() => {
@@ -2780,6 +2805,7 @@ function GhostPlacement() {
 export function Scene3D() {
   const begin = usePlannerStore((s) => s.beginPlacement);
   const pending = usePlannerStore((s) => s.pendingPlacement);
+  const pendingCorner = usePlannerStore((s) => s.pendingCorner);
   const select = usePlannerStore((s) => s.selectFurniture);
   const selectWall = usePlannerStore((s) => s.selectWall);
   const selectSurface = usePlannerStore((s) => s.selectSurface);
@@ -2846,7 +2872,7 @@ export function Scene3D() {
           state.events.filter = preferInteriorPicks;
         }}
         onPointerMissed={() => {
-          if (pending) return;
+          if (pending || pendingCorner) return;
           select(null);
           selectWall(null);
           selectSurface(null);

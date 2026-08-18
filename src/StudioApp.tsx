@@ -366,6 +366,7 @@ export default function StudioApp() {
         if (!store.pendingPlacement) store.deleteSelected();
       } else if (e.key === 'Escape') {
         if (store.pendingPlacement) store.cancelPendingPlacement();
+        if (store.pendingCorner) store.cancelPendingCorner();
         store.setDraftStart(null);
         store.setTool('select');
         store.setPendingAttachMode(false);
@@ -373,6 +374,9 @@ export default function StudioApp() {
         closeNav();
         closeProjectMenu();
         setInspectorOpen(false);
+      } else if (e.key === 'Enter' && store.pendingCorner) {
+        e.preventDefault();
+        store.commitPendingCorner();
       } else if (e.key === 'Enter' && store.pendingPlacement) {
         e.preventDefault();
         store.commitPendingPlacement();
@@ -407,9 +411,10 @@ export default function StudioApp() {
   }, [closeProjectMenu]);
 
   const pendingPlacement = usePlannerStore((s) => s.pendingPlacement);
+  const pendingCorner = usePlannerStore((s) => s.pendingCorner);
   useEffect(() => {
     // Opening a new selection closes the inspector; Info FAB / wall pick re-opens it.
-    if (pendingPlacement) {
+    if (pendingPlacement || pendingCorner) {
       setInspectorOpen(false);
       return;
     }
@@ -419,7 +424,7 @@ export default function StudioApp() {
       return;
     }
     // Wall select opens properties via roomcraft-open-properties; do not force-close here.
-  }, [selectedWallId, selectedOpeningId, pendingPlacement]);
+  }, [selectedWallId, selectedOpeningId, pendingPlacement, pendingCorner]);
 
   useEffect(() => {
     if (inspectorOpen) document.body.dataset.inspectorOpen = '1';
@@ -556,7 +561,7 @@ export default function StudioApp() {
     pendingPlacement ? 'is-placing' : '',
     workflowStage === 'start' ? 'is-start' : '',
     workflowStage === 'room' ? 'is-room-focus' : '',
-    selectedFurnitureId || pendingPlacement ? 'has-action-fabs' : '',
+    selectedFurnitureId || pendingPlacement || pendingCorner ? 'has-action-fabs' : '',
     inspectorOpen ? 'has-inspector' : '',
     catalogOpen ? 'has-catalog' : '',
   ]

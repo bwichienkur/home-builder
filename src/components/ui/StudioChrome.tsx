@@ -119,6 +119,8 @@ export function StudioChrome({
   const selectedWall = usePlannerStore((s) => s.selectedWallId);
   const selectedOpening = usePlannerStore((s) => s.selectedOpeningId);
   const pending = usePlannerStore((s) => s.pendingPlacement);
+  const pendingCorner = usePlannerStore((s) => s.pendingCorner);
+  const selectedVertexIndex = usePlannerStore((s) => s.selectedVertexIndex);
   const pendingFloorFill = usePlannerStore((s) => s.pendingFloorFill);
   const cancelFloorFill = usePlannerStore((s) => s.cancelFloorFill);
   const workflowStage = usePlannerStore((s) => s.workflowStage);
@@ -139,6 +141,8 @@ export function StudioChrome({
   const setDraftStart = usePlannerStore((s) => s.setDraftStart);
   const commitPending = usePlannerStore((s) => s.commitPendingPlacement);
   const cancelPending = usePlannerStore((s) => s.cancelPendingPlacement);
+  const commitPendingCorner = usePlannerStore((s) => s.commitPendingCorner);
+  const cancelPendingCorner = usePlannerStore((s) => s.cancelPendingCorner);
   const rotatePending = usePlannerStore((s) => s.rotatePendingPlacement);
   const rotateSelected = usePlannerStore((s) => s.rotateSelected);
   const duplicateSelected = usePlannerStore((s) => s.duplicateSelected);
@@ -176,7 +180,7 @@ export function StudioChrome({
   const setPlanWallTool = usePlannerStore((s) => s.setPlanWallTool);
   const showSelectionFabs = !!selectedItem && !pending;
   const showOpeningFabs = !!selectedOpening && !pending && !selectedWall;
-  const showActionFabs = showSelectionFabs || !!pending || showOpeningFabs || !!pendingFloorFill;
+  const showActionFabs = showSelectionFabs || !!pending || !!pendingCorner || showOpeningFabs || !!pendingFloorFill;
 
   useEffect(() => {
     if (catalogOpen || menuOpen) setStoriesOpen(false);
@@ -341,7 +345,14 @@ export function StudioChrome({
     }
   };
 
-  const planHint = planToolHint({ tool, pendingAttachMode, selectedRoomId });
+  const planHint = planToolHint({
+    tool,
+    pendingAttachMode,
+    selectedRoomId,
+    planWallTool,
+    pendingCorner: !!pendingCorner,
+    selectedVertexIndex,
+  });
 
   /** Enter the room for furnishing — do not auto-open the properties panel. */
   const editSelectedPlanRoom = () => {
@@ -630,9 +641,20 @@ export function StudioChrome({
         </div>
       )}
 
-      {pendingFloorFill && !pending && (
+      {pendingFloorFill && !pending && !pendingCorner && (
         <div className="studio-selection-fabs" role="toolbar" aria-label="Floor fill">
           <button type="button" className="is-danger" onClick={() => cancelFloorFill()} aria-label="Cancel floor fill" title="Cancel">
+            <X />
+          </button>
+        </div>
+      )}
+
+      {pendingCorner && !pending && (
+        <div className="studio-selection-fabs" role="toolbar" aria-label="Place corner">
+          <button className="is-primary" onClick={() => commitPendingCorner()} aria-label="Confirm corner">
+            <Check />
+          </button>
+          <button className="is-danger" onClick={() => cancelPendingCorner()} aria-label="Cancel corner">
             <X />
           </button>
         </div>
@@ -717,8 +739,8 @@ export function StudioChrome({
             type="button"
             className={planWallTool ? 'is-active' : ''}
             onClick={() => setPlanWallTool(!planWallTool)}
-            aria-label="Wall dims — drag edge handles or edit W/D/H"
-            title="Wall dims — drag edge handles or edit W/D/H"
+            aria-label="Tap a wall to edit its length"
+            title="Tap a wall to edit its length"
             aria-pressed={planWallTool}
           >
             <Square />
@@ -828,7 +850,7 @@ export function StudioChrome({
                 <button
                   type="button"
                   className={`studio-dock-action studio-dock-priority${tool === 'corner' ? ' is-active' : ''}`}
-                  title="Add a corner — tap a wall of the selected room"
+                  title="Add a corner — drag along a wall, then Confirm"
                   aria-pressed={tool === 'corner'}
                   onClick={() => {
                     onCloseInspector?.();
@@ -836,13 +858,14 @@ export function StudioChrome({
                     setPlanWallTool(false);
                     setCamera('top');
                     if (tool === 'corner') {
+                      cancelPendingCorner();
                       setTool('select');
                       return;
                     }
                     if (!selectedRoomId && planRooms.length === 1) selectRoom(planRooms[0]!.id);
                     if (!selectedRoomId && planRooms.length !== 1) {
                       setTool('corner');
-                      usePlannerStore.setState({ openingNotice: 'Tap a room, then tap a wall to add a corner.' });
+                      usePlannerStore.setState({ openingNotice: 'Tap a room, then drag along a wall to add a corner.' });
                       return;
                     }
                     setTool('corner');
