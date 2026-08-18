@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { catalog } from '../../components/catalog/catalogData';
 import {
+  clipCellToRoom,
   floorPieceSpec,
   layoutFloorPieces,
+  pieceWorldAabb,
   pointInFloorHole,
   pointInWorldPoly,
+  polyBounds,
 } from './floorFillLayout';
 
 const rect = [
@@ -13,6 +16,41 @@ const rect = [
   { x: 3, z: 2 },
   { x: 0, z: 2 },
 ];
+
+function aabbInsidePoly(
+  box: { minX: number; maxX: number; minZ: number; maxZ: number },
+  poly: { x: number; z: number }[],
+  slop = 1e-3,
+) {
+  const b = polyBounds(poly);
+  return (
+    box.minX >= b.minX - slop &&
+    box.maxX <= b.maxX + slop &&
+    box.minZ >= b.minZ - slop &&
+    box.maxZ <= b.maxZ + slop
+  );
+}
+
+function interiorCovered(
+  poly: { x: number; z: number }[],
+  poses: ReturnType<typeof layoutFloorPieces>,
+  spec: ReturnType<typeof floorPieceSpec>,
+) {
+  const b = polyBounds(poly);
+  const grout = spec.grout + 0.01;
+  for (let x = b.minX + 0.04; x < b.maxX - 0.04; x += 0.18) {
+    for (let z = b.minZ + 0.04; z < b.maxZ - 0.04; z += 0.18) {
+      if (!pointInWorldPoly(x, z, poly)) continue;
+      const hit = poses.some((p) => {
+        const hw = (spec.width * p.sx) / 2 + grout;
+        const hl = (spec.length * p.sz) / 2 + grout;
+        return Math.abs(x - p.x) <= hw && Math.abs(z - p.z) <= hl;
+      });
+      if (!hit) return false;
+    }
+  }
+  return true;
+}
 
 describe('floor fill layout', () => {
   it('treats oak hardwood as staggered 3D planks', () => {
@@ -29,6 +67,22 @@ describe('floor fill layout', () => {
     expect(rows.size).toBeGreaterThan(1);
   });
 
+  it('clips walnut planks to the room — no overflow, no interior gaps', () => {
+    const walnut = catalog.find((i) => i.id === 'floor-walnut-hardwood')!;
+    const spec = floorPieceSpec(walnut);
+    const poses = layoutFloorPieces({ polygon: rect, spec });
+    expect(poses.length).toBeGreaterThan(8);
+    expect(poses.every((p) => aabbInsidePoly(pieceWorldAabb(p, spec), rect))).toBe(true);
+    expect(poses.some((p) => p.sx < 0.99 || p.sz < 0.99)).toBe(true);
+    expect(interiorCovered(rect, poses, spec)).toBe(true);
+  });
+
+  it('clips a board that straddles the wall to the interior AABB', () => {
+    const cell = { minX: -0.2, maxX: 0.4, minZ: -0.1, maxZ: 0.5 };
+    const clipped = clipCellToRoom(cell, rect);
+    expect(clipped).toEqual({ minX: 0, maxX: 0.4, minZ: 0, maxZ: 0.5 });
+  });
+
   it('lays subway as running-bond 3×6 tiles', () => {
     const subway = catalog.find((i) => i.id === 'floor-subway-tile')!;
     const spec = floorPieceSpec(subway);
@@ -40,18 +94,20 @@ describe('floor fill layout', () => {
   it('treats ceramic as a grouted grid of tiles', () => {
     const tile = catalog.find((i) => i.id === 'floor-tile-ceramic-white')!;
     const spec = floorPieceSpec(tile);
-    expect(spec.kind).toBe('grid');
-    expect(spec.grout).toBeGreaterThan(0.002);
     const poses = layoutFloorPieces({ polygon: rect, spec });
+    expect(spec.grout).toBeGreaterThan(0.002);
     expect(poses.length).toBeGreaterThan(20);
+    expect(poses.every((p) => aabbInsidePoly(pieceWorldAabb(p, spec), rect))).toBe(true);
+    expect(interiorCovered(rect, poses, spec)).toBe(true);
   });
 
-  it('packs hex mosaic as hex pieces', () => {
+  it('packs hex mosaic as hex pieces inside the room', () => {
     const hex = catalog.find((i) => i.id === 'floor-tile-hex-stone')!;
-    expect(floorPieceSpec(hex).kind).toBe('hex');
-    const poses = layoutFloorPieces({ polygon: rect, spec: floorPieceSpec(hex) });
+    const spec = floorPieceSpec(hex);
+    expect(spec.kind).toBe('hex');
+    const poses = layoutFloorPieces({ polygon: rect, spec });
     expect(poses.length).toBeGreaterThan(10);
-    expect(poses[0]!.yaw).toBeCloseTo(Math.PI / 6);
+    expect(poses.every((p) => aabbInsidePoly(pieceWorldAabb(p, spec), rect, 0.02))).toBe(true);
   });
 
   it('keeps carpet and concrete as a single slab', () => {
@@ -68,6 +124,7 @@ describe('floor fill layout', () => {
     const poses = layoutFloorPieces({ polygon: rect, spec, holes: [hole] });
     expect(poses.some((p) => pointInFloorHole(p.x, p.z, hole))).toBe(false);
     expect(poses.length).toBeGreaterThan(5);
+    expect(poses.every((p) => aabbInsidePoly(pieceWorldAabb(p, spec), rect))).toBe(true);
   });
 
   it('caps huge rooms so instance count stays bounded', () => {

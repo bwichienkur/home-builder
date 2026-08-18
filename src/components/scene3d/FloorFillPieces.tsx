@@ -125,7 +125,7 @@ export function FloorFillPieces({
     poses.forEach((p, i) => {
       dummy.position.set(p.x, p.y, p.z);
       dummy.rotation.set(0, p.yaw, 0);
-      dummy.scale.set(1, 1, 1);
+      dummy.scale.set(p.sx, 1, p.sz);
       dummy.updateMatrix();
       inst.setMatrixAt(i, dummy.matrix);
     });
