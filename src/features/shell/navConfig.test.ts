@@ -18,7 +18,7 @@ describe('app nav', () => {
   });
 
   it('titles the current page for the shared top bar', () => {
-    expect(pageTitleForPath('/')).toBe('Projects');
+    expect(pageTitleForPath('/')).toBe('Overview');
     expect(pageTitleForPath('/build')).toBe('Build');
     expect(pageTitleForPath('/inventory')).toBe('Materials');
     expect(pageTitleForPath('/unknown')).toBe('Mahnikka');

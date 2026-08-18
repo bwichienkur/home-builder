@@ -1,0 +1,272 @@
+import { useEffect, useMemo, useState } from 'react';
+import { formatCloseDate, formatCompactUsd, formatDays, formatDelta, formatPct, formatRefreshedAt, formatUsd, getOwnerDashboardProvider, mockOwnerDashboardProvider, phaseLabel } from '../../lib/buildertrend';
+import type { DateRangeId, JobStatus, OwnerDashboard, ProjectSnapshot } from '../../lib/buildertrend/types';
+import { PerformanceBars, PipelineFunnel, Sparkline, StatusDonut } from './dashboardCharts';
+import './dashboard.css';
+
+const STATUS: { id: JobStatus; label: string }[] = [
+  { id: 'open', label: 'Open' },
+  { id: 'closed', label: 'Closed' },
+  { id: 'warranty', label: 'Warranty' },
+];
+
+const RANGES: { id: DateRangeId; label: string }[] = [
+  { id: 'all', label: 'All dates' },
+  { id: '30d', label: 'Last 30 days' },
+  { id: 'ytd', label: 'Year to date' },
+  { id: '12mo', label: 'Last 12 months' },
+];
+
+type SortKey = keyof Pick<
+  ProjectSnapshot,
+  'name' | 'pm' | 'pendingSelections' | 'pastDueTasks' | 'contractPrice' | 'revenueToDate' | 'pctComplete' | 'estCloseDate' | 'phase' | 'totalSlip'
+>;
+
+function deltaClass(delta: number, invert = false) {
+  const good = invert ? delta <= 0 : delta >= 0;
+  if (delta === 0) return 'is-flat';
+  return good ? 'is-up' : 'is-down';
+}
+
+export function OwnerDashboard() {
+  const [status, setStatus] = useState<JobStatus>('open');
+  const [dateRange, setDateRange] = useState<DateRangeId>('all');
+  const [dash, setDash] = useState<OwnerDashboard | null>(null);
+  const [error, setError] = useState('');
+  const [sort, setSort] = useState<{ key: SortKey; dir: 'asc' | 'desc' }>({ key: 'name', dir: 'asc' });
+
+  useEffect(() => {
+    let cancelled = false;
+    const provider = getOwnerDashboardProvider();
+    void provider.getDashboard({ status, dateRange }).then(
+      (next) => {
+        if (!cancelled) {
+          setDash(next);
+          setError('');
+        }
+      },
+      async (reason: unknown) => {
+        if (cancelled) return;
+        setError(reason instanceof Error ? reason.message : 'Dashboard could not load.');
+        const fallback = await mockOwnerDashboardProvider.getDashboard({ status, dateRange });
+        if (!cancelled) setDash(fallback);
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [status, dateRange]);
+
+  const rows = useMemo(() => {
+    const list = dash?.projects ?? [];
+    const dir = sort.dir === 'asc' ? 1 : -1;
+    return [...list].sort((a, b) => {
+      const av = a[sort.key];
+      const bv = b[sort.key];
+      if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * dir;
+      return String(av).localeCompare(String(bv)) * dir;
+    });
+  }, [dash, sort]);
+
+  const toggleSort = (key: SortKey) => {
+    setSort((prev) => (prev.key === key ? { key, dir: prev.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' }));
+  };
+
+  if (!dash) {
+    return <p className="dash-status">Loading overview…</p>;
+  }
+
+  const now = new Date();
+
+  return (
+    <section className="owner-dash" aria-label="Owner dashboard">
+      <header className="dash-head">
+        <div>
+          <p className="eyebrow">Olsen Custom Homes</p>
+          <h1>Overview</h1>
+        </div>
+        <div className="dash-toolbar">
+          <div className="dash-chips" role="tablist" aria-label="Job status">
+            {STATUS.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                role="tab"
+                aria-selected={status === item.id}
+                className={`dash-chip${status === item.id ? ' is-active' : ''}`}
+                onClick={() => setStatus(item.id)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+          <label className="dash-range">
+            <span className="visually-hidden">Date range</span>
+            <select value={dateRange} onChange={(event) => setDateRange(event.target.value as DateRangeId)}>
+              {RANGES.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <p className="dash-refreshed">{formatRefreshedAt(dash.refreshedAt, now)}</p>
+        </div>
+      </header>
+
+      <p className="dash-source">
+        {dash.source === 'mock'
+          ? 'Demo data · Buildertrend API not connected'
+          : 'Live Buildertrend'}
+        {error ? ` · ${error}` : ''}
+      </p>
+
+      <div className="dash-kpis">
+        {dash.kpis.map((card) => (
+          <article key={card.id} className="dash-kpi">
+            <p className="dash-kpi-title">{card.title}</p>
+            <p className="dash-kpi-value">{card.display}</p>
+            {card.detail ? <p className="dash-kpi-detail">{card.detail}</p> : null}
+            <div className="dash-kpi-foot">
+              <span className={`dash-delta ${deltaClass(card.delta)}`}>
+                {formatDelta(card.delta, card.deltaUnit)}
+              </span>
+              <span className="dash-kpi-vs">{card.deltaLabel}</span>
+              <Sparkline values={card.sparkline} label={`${card.title} trend`} />
+            </div>
+          </article>
+        ))}
+      </div>
+
+      <div className="dash-widgets">
+        <article className="dash-card">
+          <h2>Project status overview</h2>
+          <StatusDonut slices={dash.phases} />
+        </article>
+        <article className="dash-card">
+          <h2>Average time metrics</h2>
+          <ul className="dash-metrics">
+            {dash.timeMetrics.map((metric) => (
+              <li key={metric.id}>
+                <span>{metric.label}</span>
+                <strong>{metric.days} days</strong>
+                <em className={`dash-delta ${deltaClass(metric.deltaDays, true)}`}>
+                  {metric.deltaDays <= 0 ? '↓' : '↑'} {Math.abs(metric.deltaDays)} days
+                </em>
+              </li>
+            ))}
+          </ul>
+        </article>
+        <article className="dash-card dash-card-wide">
+          <h2>Project manager scorecard</h2>
+          <div className="dash-table-scroll">
+            <table className="dash-table">
+              <thead>
+                <tr>
+                  <th>PM</th>
+                  <th>Projects</th>
+                  <th>Total WIP</th>
+                  <th>Daily log %</th>
+                  <th>Past due</th>
+                </tr>
+              </thead>
+              <tbody>
+                {dash.pmScorecard.map((row) => (
+                  <tr key={row.pm}>
+                    <td>{row.pm}</td>
+                    <td>{row.projects}</td>
+                    <td>{formatCompactUsd(row.wip)}</td>
+                    <td>{formatPct(row.dailyLogPct, 0)}</td>
+                    <td className={row.pastDueTasks ? 'is-alert' : undefined}>{row.pastDueTasks}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </article>
+        <article className="dash-card">
+          <h2>Sales pipeline</h2>
+          <PipelineFunnel stages={dash.pipeline} />
+        </article>
+        <article className="dash-card">
+          <h2>Sales performance</h2>
+          <PerformanceBars bars={dash.salesPerformance} />
+        </article>
+      </div>
+
+      <article className="dash-card dash-snapshot">
+        <h2>Active projects snapshot</h2>
+        <div className="dash-table-scroll">
+          <table className="dash-table dash-table-dense">
+            <thead>
+              <tr>
+                {(
+                  [
+                    ['name', 'Project'],
+                    ['pm', 'PM'],
+                    ['pendingSelections', 'Pending sel.'],
+                    ['pastDueTasks', 'Past due'],
+                    ['contractPrice', 'Contract'],
+                    ['revenueToDate', 'Revenue'],
+                    ['pctComplete', '% complete'],
+                    ['estCloseDate', 'Est. close'],
+                    ['phase', 'Phase'],
+                    ['totalSlip', 'Total slip'],
+                  ] as [SortKey, string][]
+                ).map(([key, label]) => (
+                  <th key={key}>
+                    <button type="button" className="dash-sort" onClick={() => toggleSort(key)}>
+                      {label}
+                      {sort.key === key ? (sort.dir === 'asc' ? ' ↑' : ' ↓') : ''}
+                    </button>
+                  </th>
+                ))}
+                <th>Logs</th>
+                <th>Permit</th>
+                <th>Sel.</th>
+                <th>Purch.</th>
+                <th>Const.</th>
+                <th>Notes / risks</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.id}>
+                  <td className="is-name">{row.name}</td>
+                  <td>{row.pm}</td>
+                  <td>{row.pendingSelections}</td>
+                  <td className={row.pastDueTasks ? 'is-alert' : undefined}>{row.pastDueTasks}</td>
+                  <td>{formatUsd(row.contractPrice)}</td>
+                  <td>{formatUsd(row.revenueToDate)}</td>
+                  <td>{formatPct(row.pctComplete, 0)}</td>
+                  <td>{formatCloseDate(row.estCloseDate)}</td>
+                  <td>{phaseLabel(row.phase)}</td>
+                  <td className={row.totalSlip > 0 ? 'is-alert' : 'is-ok'}>{formatDays(row.totalSlip)}</td>
+                  <td>
+                    {row.dailyLogsThisMonth}/{row.dailyLogsExpected}
+                  </td>
+                  <td>{row.slip.permit}</td>
+                  <td>{row.slip.selections}</td>
+                  <td>{row.slip.purchasing}</td>
+                  <td>{row.slip.construction}</td>
+                  <td className="is-notes">{row.notes || '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <footer className="dash-totals">
+          <strong>Project breakout totals &amp; averages</strong>
+          <span>{dash.totals.jobCount} jobs</span>
+          <span>Avg. total slip {formatDays(dash.totals.avgTotalSlipDays)}</span>
+          <span>Revenue to date {formatCompactUsd(dash.totals.totalRevenueToDate)}</span>
+          <span>Contract {formatCompactUsd(dash.totals.totalContract)}</span>
+          <span>WIP {formatCompactUsd(dash.totals.totalWip)}</span>
+          <span>Pending selections {dash.totals.pendingSelections}</span>
+          <span>Past due {dash.totals.pastDueTasks}</span>
+          <span>Avg. daily logs {formatPct(dash.totals.avgDailyLogPct, 0)}</span>
+        </footer>
+      </article>
+    </section>
+  );
+}

@@ -56,7 +56,7 @@ export const NAV_GROUPS: NavGroup[] = [
 ];
 
 export const PAGE_TITLES: { path: string; end?: boolean; title: string }[] = [
-  { path: '/', end: true, title: 'Projects' },
+  { path: '/', end: true, title: 'Overview' },
   { path: '/build', title: 'Build' },
   { path: '/clients', title: 'Clients' },
   { path: '/vendors', title: 'Vendors' },
