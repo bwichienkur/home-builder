@@ -77,11 +77,9 @@ function PlanCornerHandle({
 
 function PlanEdgeHandle({
   position,
-  compact = false,
   ...events
 }: {
   position: [number, number, number];
-  compact?: boolean;
   onPointerDown?: (e: any) => void;
   onClick?: (e: any) => void;
 }) {
@@ -90,29 +88,15 @@ function PlanEdgeHandle({
   useFrame(() => {
     const group = ref.current;
     if (!group) return;
-    const targetPx = compact ? 10 : 14;
-    const world = screenHandleMeters(cameraZoom(camera), targetPx);
+    const world = screenHandleMeters(cameraZoom(camera), 10);
     group.scale.setScalar(world / 0.1);
   });
   return (
     <group ref={ref} position={position}>
-      {compact ? (
-        <mesh {...events} renderOrder={12}>
-          <boxGeometry args={[0.72, 0.1, 0.16]} />
-          <meshBasicMaterial color="#0058a3" transparent opacity={0.92} depthTest={false} toneMapped={false} />
-        </mesh>
-      ) : (
-        <>
-          <mesh {...events} renderOrder={11}>
-            <boxGeometry args={[0.52, 0.14, 0.52]} />
-            <meshBasicMaterial color="#ffffff" transparent opacity={0.96} depthTest={false} toneMapped={false} />
-          </mesh>
-          <mesh {...events} renderOrder={12}>
-            <boxGeometry args={[0.38, 0.16, 0.38]} />
-            <meshBasicMaterial color="#0058a3" transparent opacity={0.88} depthTest={false} toneMapped={false} />
-          </mesh>
-        </>
-      )}
+      <mesh {...events} renderOrder={12}>
+        <boxGeometry args={[0.72, 0.1, 0.16]} />
+        <meshBasicMaterial color="#0058a3" transparent opacity={0.92} depthTest={false} toneMapped={false} />
+      </mesh>
     </group>
   );
 }
@@ -139,7 +123,6 @@ export function PlanEditLayer() {
   const attachPlanRoom = usePlannerStore((s) => s.attachPlanRoom);
   const movePlanRoomVertex = usePlannerStore((s) => s.movePlanRoomVertex);
   const commitPlanRoomVertex = usePlannerStore((s) => s.commitPlanRoomVertex);
-  const insertPlanRoomVertex = usePlannerStore((s) => s.insertPlanRoomVertex);
   const nudgeWall = usePlannerStore((s) => s.nudgeWall);
   const commitWallNudge = usePlannerStore((s) => s.commitWallNudge);
   const selectWall = usePlannerStore((s) => s.selectWall);
@@ -490,30 +473,11 @@ export function PlanEditLayer() {
           );
         })}
 
-      {showVertices &&
-        hostRoom!.points.map((p, i) => {
-          const next = hostRoom!.points[(i + 1) % hostRoom!.points.length]!;
-          const mid = { x: (p.x + next.x) / 2, y: (p.y + next.y) / 2 };
-          const pos = world(mid.x, mid.y);
-          return (
-            <PlanEdgeHandle
-              key={`e-${hostRoom!.id}-${i}`}
-              position={[pos[0], 0.14, pos[1]]}
-              onPointerDown={(e: any) => e.stopPropagation()}
-              onClick={(e: any) => {
-                e.stopPropagation();
-                insertPlanRoomVertex(hostRoom!.id, i);
-              }}
-            />
-          );
-        })}
-
       {showWallHandles &&
         wallHandles.map(({ wallId, edgeIndex, pos }) => (
           <PlanEdgeHandle
             key={`wh-${wallId}-${edgeIndex}`}
             position={[pos[0], 0.15, pos[1]]}
-            compact
             onPointerDown={(e: any) => onWallPointerDown(e, wallId)}
           />
         ))}
