@@ -142,9 +142,9 @@ export function elevationOrthoZoom(opts: {
   padScale?: number;
 }): number {
   const pad = Math.max(opts.padScale ?? 1, 1);
-  const sideM = 1.35;
-  const belowM = 1.15;
-  const aboveM = 0.42;
+  const sideM = 0.4;
+  const belowM = 0.34;
+  const aboveM = 0.16;
   const visW = pad * (Math.max(opts.wallLen, 1.5) + sideM * 2);
   const visH = pad * (Math.max(opts.wallH, 1.5) + belowM + aboveM);
   const zoomW = Math.max(1, opts.canvasW) / visW;

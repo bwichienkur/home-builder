@@ -1,6 +1,6 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Bvh, Environment, Html, Line, OrbitControls, OrthographicCamera, PerspectiveCamera, PivotControls, Text, useTexture } from '@react-three/drei';
-import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { usePlannerStore } from '../../store/plannerStore';
 import { catalog } from '../catalog/catalogData';
@@ -11,8 +11,8 @@ import { doorSwingZones, furnitureHitsDoorSwing } from '../../lib/geometry/doorC
 import { wouldOverlapFurniture } from '../../lib/collisions';
 import { framingFromPoints, framingFromWall, framingFromWalls, freeAreaFit, pageCenterFit, worldShiftForFreeArea } from '../../lib/geometry/planFraming';
 import { pointInPlanRoom, enclosureWallsForRoom } from '../../lib/geometry/roomWalls';
-import { pickFacingWall, elevationFaceBasis, wallWorldFrame, elevationOrthoZoom, elevationDimAnchors } from '../../lib/geometry/elevationFace';
-import { wallDimFaceOffset } from '../../lib/geometry/planVertexDrag';
+import { pickFacingWall, elevationFaceBasis, wallWorldFrame, elevationOrthoZoom } from '../../lib/geometry/elevationFace';
+import { planWallDimAnchor, elevationDimPillAnchors, DIM_FONT_M } from '../../lib/geometry/wallDimPills';
 import { stairsCuttingFloor } from '../../lib/geometry/stairCutouts';
 import { wallExteriorSide } from '../../lib/geometry/roomWalls';
 import { clampOpeningOffset, openingCenterOnWall, wallOffsetFromWorldPoint, wallSolidBoxes } from '../../lib/geometry/wallOpenings';
@@ -35,35 +35,6 @@ const world = (x: number, y: number): [number, number] => [
   (x - WORLD_ORIGIN.x) / PIXELS_PER_METER,
   (y - WORLD_ORIGIN.y) / PIXELS_PER_METER,
 ];
-
-/** Place a wall length label just outside the room so handles never cover it. */
-function exteriorWallLabelPosition(
-  midX: number,
-  midZ: number,
-  sx: number,
-  sz: number,
-  ex: number,
-  ez: number,
-  roomPoints?: { x: number; y: number }[],
-  offsetM = 0.38,
-): { x: number; z: number; placement: 'top' | 'bottom' | 'left' | 'right' } {
-  const length = Math.hypot(ex - sx, ez - sz) || 1;
-  let nx = -(ez - sz) / length;
-  let nz = (ex - sx) / length;
-  if (roomPoints && roomPoints.length >= 3) {
-    const cx = roomPoints.reduce((s, p) => s + (p.x - WORLD_ORIGIN.x) / PIXELS_PER_METER, 0) / roomPoints.length;
-    const cz = roomPoints.reduce((s, p) => s + (p.y - WORLD_ORIGIN.y) / PIXELS_PER_METER, 0) / roomPoints.length;
-    if (nx * (cx - midX) + nz * (cz - midZ) > 0) {
-      nx = -nx;
-      nz = -nz;
-    }
-  }
-  const x = midX + nx * offsetM;
-  const z = midZ + nz * offsetM;
-  const placement: 'top' | 'bottom' | 'left' | 'right' =
-    Math.abs(nx) >= Math.abs(nz) ? (nx >= 0 ? 'right' : 'left') : nz >= 0 ? 'bottom' : 'top';
-  return { x, z, placement };
-}
 
 function hasUserDataFlag(object: THREE.Object3D, key: string) {
   let o: THREE.Object3D | null = object;
@@ -201,15 +172,13 @@ function CameraRig() {
   const chromeFit = useMemo(() => {
     const showElevDims = mode === 'elevation' && !inspectorOpen && !focusWall;
     const showPlanDims = (!!frameRoom && mode !== 'elevation') || showElevDims;
-    // Dim pills sit fully outside the wall in CSS — reserve screen space so they
-    // never tuck under the black rail or the two-row dock.
-    const dimReservePx = showPlanDims && showRightRail ? (coarse ? 108 : 80) : 0;
-    const dimVertPx = showPlanDims ? (mode === 'elevation' ? 88 : 56) : 0;
+    // World-space pills only need a small chrome gutter — not a second rail-width pad.
+    const dimVertPx = showPlanDims ? (mode === 'elevation' ? 28 : 20) : 0;
     const topChromePx = (coarse ? 112 : 88) + dimVertPx;
     const bottomChromePx = (coarse ? 118 : 96) + dimVertPx;
     const railPx = showRightRail ? 86 : 0;
-    const gutterPx = (railPx ? (coarse ? 28 : 18) : 0) + dimReservePx;
-    if (inspectorOpen || focusWall) {
+    const gutterPx = railPx ? (coarse ? 14 : 10) : 0;
+    if (inspectorOpen || focusWall || (showPlanDims && showRightRail && (mode === 'top' || mode === 'elevation'))) {
       const rightChromePx = inspectorOpen
         ? Math.min(260, Math.round(canvasW * 0.44))
         : railPx;
@@ -258,7 +227,7 @@ function CameraRig() {
     }
     if (frameRoom?.points.length) {
       // Extra pad so exterior dim pills + handles stay in the free plate.
-      const roomPad = pad * (frameRoom ? 1.22 : 1);
+      const roomPad = pad * (frameRoom ? 1.06 : 1);
       return framingFromPoints(frameRoom.points, { pad: roomPad, orbitPad, minSpan: 2.5, minHeight: 9 });
     }
     return framingFromWalls(walls, { pad, orbitPad, minHeight: 12 });
@@ -278,8 +247,8 @@ function CameraRig() {
   const fovDeg = mode === 'walk' ? 58 : mode === 'top' || mode === 'elevation' ? 42 : 48;
   const aspect = Math.max(0.35, canvasW / Math.max(1, canvasH));
 
-  // Page center by default; pan into the free left area only for wide overlays
-  // (edit inspector / wall focus) — never for the narrow side rail.
+  // Page center by default; shift into the free band left of the rail when
+  // Plan/Front dims are up so the house stays large and the right pill is visible.
   const shiftX = useMemo(() => {
     const menuShiftX = menuOpen ? viewFraming.span * 0.28 : 0;
     if (chromeFit.shiftFraction <= 0) return menuShiftX;
@@ -373,7 +342,7 @@ function CameraRig() {
 
   // Orthographic plan zoom — true top-down (no perspective tilt).
   const orthoZoom = useMemo(() => {
-    const spanPad = 0.86 * chromeFit.padScale * (frameRoom ? 1.32 : 1);
+    const spanPad = 0.54 * chromeFit.padScale * (frameRoom ? 1.08 : 1);
     const half = Math.max(viewFraming.span * spanPad, 5);
     const px = Math.min(size.width, size.height) || 800;
     if (mode === 'elevation') {
@@ -1211,45 +1180,45 @@ function elevationPlaneYaw(face: import('../../types').ElevationFace): number {
   }
 }
 
-const DIM_GAP_PX = 44;
-
-/** Shift drei's Html inner node so the whole pill sits outside the 3D origin. */
-function dimHtmlShift(placement: 'top' | 'bottom' | 'left' | 'right'): CSSProperties {
-  switch (placement) {
-    case 'top':
-      return { pointerEvents: 'none', transform: `translate(-50%, calc(-100% - ${DIM_GAP_PX}px))` };
-    case 'bottom':
-      return { pointerEvents: 'none', transform: `translate(-50%, ${DIM_GAP_PX}px)` };
-    case 'left':
-      return { pointerEvents: 'none', transform: `translate(calc(-100% - ${DIM_GAP_PX}px), -50%)` };
-    case 'right':
-      return { pointerEvents: 'none', transform: `translate(${DIM_GAP_PX}px, -50%)` };
-  }
-}
-
-function WallDimPill({
+function WallDimWorld({
   position,
-  placement,
+  yaw,
+  faceUp,
   text,
   selected,
-  zIndexRange = [24, 8],
+  size,
 }: {
   position: [number, number, number];
-  placement: 'top' | 'bottom' | 'left' | 'right';
+  yaw: number;
+  faceUp?: boolean;
   text: string;
   selected?: boolean;
-  zIndexRange?: [number, number];
+  size: { w: number; h: number };
 }) {
+  const bg = selected ? '#0058a3' : '#ffffff';
+  const fg = selected ? '#ffffff' : '#111820';
   return (
-    <Html
-      position={position}
-      center={false}
-      zIndexRange={zIndexRange}
-      style={dimHtmlShift(placement)}
-      wrapperClass={`wall-dim-html wall-dim-html--${placement}`}
-    >
-      <div className={`wall-dim-pill${selected ? ' is-selected' : ''}`}>{text}</div>
-    </Html>
+    <group position={position} rotation={[0, yaw, 0]} raycast={() => {}}>
+      <group rotation={faceUp ? [-Math.PI / 2, 0, 0] : [0, 0, 0]}>
+        <mesh renderOrder={24} position={[0, 0, 0.001]}>
+          <planeGeometry args={[size.w, size.h]} />
+          <meshBasicMaterial color={bg} depthTest={false} toneMapped={false} />
+        </mesh>
+        <Text
+          renderOrder={25}
+          position={[0, 0, 0.002]}
+          fontSize={DIM_FONT_M}
+          color={fg}
+          anchorX="center"
+          anchorY="middle"
+          outlineWidth={0.006}
+          outlineColor={bg}
+          depthOffset={-2}
+        >
+          {text}
+        </Text>
+      </group>
+    </group>
   );
 }
 
@@ -1278,15 +1247,16 @@ function PlanWallDim({
   selected: boolean;
   thickness: number;
 }) {
-  const offset = wallDimFaceOffset(thickness);
-  const label = exteriorWallLabelPosition(midX, midZ, sx, sz, ex, ez, roomPoints, offset);
+  const a = planWallDimAnchor({ midX, midZ, sx, sz, ex, ez, thickness, text, roomPoints });
   return (
-    <WallDimPill
+    <WallDimWorld
       key={wallId + 'len'}
-      position={[label.x, 0.22, label.z]}
-      placement={label.placement}
+      position={[a.x, a.y, a.z]}
+      yaw={a.yaw}
+      faceUp
       text={text}
       selected={selected}
+      size={{ w: a.w, h: a.h }}
     />
   );
 }
@@ -1301,21 +1271,13 @@ function ElevationWallDims({
   unit: 'metric' | 'imperial';
 }) {
   const frame = wallWorldFrame(wall);
-  const a = elevationDimAnchors(wall, face);
+  const widthText = formatLength(frame.len, unit);
+  const heightText = formatLength(wall.height, unit);
+  const a = elevationDimPillAnchors(wall, face, { widthText, heightText });
   return (
     <>
-      <WallDimPill
-        position={[a.width.x, a.width.y, a.width.z]}
-        placement="bottom"
-        text={formatLength(frame.len, unit)}
-        zIndexRange={[26, 8]}
-      />
-      <WallDimPill
-        position={[a.height.x, a.height.y, a.height.z]}
-        placement="left"
-        text={formatLength(wall.height, unit)}
-        zIndexRange={[26, 8]}
-      />
+      <WallDimWorld position={[a.width.x, a.width.y, a.width.z]} yaw={a.width.yaw} text={widthText} size={{ w: a.width.w, h: a.width.h }} />
+      <WallDimWorld position={[a.height.x, a.height.y, a.height.z]} yaw={a.height.yaw} text={heightText} size={{ w: a.height.w, h: a.height.h }} />
     </>
   );
 }
