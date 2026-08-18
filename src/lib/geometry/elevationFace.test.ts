@@ -58,6 +58,7 @@ describe('elevation face', () => {
     const a = elevationDimAnchors(wall, 'front');
     const midX = 3;
     expect(a.width.y).toBeLessThanOrEqual(0);
+    expect(a.height.x).toBeLessThan(0);
     expect(a.height.x).toBeLessThan(midX - 3);
     expect(a.height.y).toBeCloseTo(1.35, 5);
   });
@@ -67,6 +68,6 @@ describe('elevation face', () => {
     const rail = elevationOrthoZoom({ canvasW: 1280, canvasH: 800, wallLen: 6, wallH: 2.7, padScale: 1.45 });
     expect(rail).toBeLessThan(tight);
     const visW = 1280 / rail;
-    expect(visW).toBeGreaterThan(1.45 * (6 + 1.2));
+    expect(visW).toBeGreaterThan(1.45 * (6 + 2.2));
   });
 });
