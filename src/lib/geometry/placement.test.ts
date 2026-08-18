@@ -5,6 +5,7 @@ import {
   constrainPlacement,
   containFurnitureInRoom,
   furnitureBounds,
+  furnitureFootprintInsideRoom,
   openingConflicts,
   placementConstraint,
   planToWorld,
@@ -208,5 +209,35 @@ describe('L-shaped room placement', () => {
     const kept = containFurnitureInRoom(inArm.x, inArm.z, 1, 1, 0, lShape);
     expect(kept.x).toBeCloseTo(inArm.x, 1);
     expect(kept.z).toBeCloseTo(inArm.z, 1);
+    expect(furnitureFootprintInsideRoom(kept.x, kept.z, 1, 1, 0, lShape)).toBe(true);
+  });
+
+  it('keeps a free item from hanging into the missing L bay', () => {
+    // Inner corner is (420, 350). A 1 m square just inside the top arm still
+    // overlaps the empty quadrant unless the AABB is clamped.
+    const atInner = planToWorld({ x: 400, y: 340 });
+    expect(pointInWorldRooms(atInner.x, atInner.z, lShape)).toBe(true);
+    expect(furnitureFootprintInsideRoom(atInner.x, atInner.z, 1, 1, 0, lShape)).toBe(false);
+
+    const contained = containFurnitureInRoom(atInner.x, atInner.z, 1, 1, 0, lShape);
+    expect(furnitureFootprintInsideRoom(contained.x, contained.z, 1, 1, 0, lShape)).toBe(true);
+    expect(pointInWorldRooms(contained.x, contained.z, lShape)).toBe(true);
+
+    const dragged = constrainPlacement(atInner.x, atInner.z, lShape, 1, {
+      mountingType: 'floor',
+      category: 'Bedroom',
+      name: 'Cloud Platform Bed',
+      width: 1,
+      live: true,
+    });
+    expect(furnitureFootprintInsideRoom(dragged.x, dragged.z, 1, 1, dragged.rotation ?? 0, lShape)).toBe(true);
+  });
+
+  it('pulls a free item that was dragged fully into the missing bay back inside', () => {
+    const missing = planToWorld({ x: 250, y: 430 });
+    expect(pointInWorldRooms(missing.x, missing.z, lShape)).toBe(false);
+    const contained = containFurnitureInRoom(missing.x, missing.z, 1, 1, 0, lShape);
+    expect(pointInWorldRooms(contained.x, contained.z, lShape)).toBe(true);
+    expect(furnitureFootprintInsideRoom(contained.x, contained.z, 1, 1, 0, lShape)).toBe(true);
   });
 });
