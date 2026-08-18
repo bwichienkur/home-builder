@@ -21,16 +21,35 @@ function configureMap(texture: THREE.Texture, tiles: number, srgb: boolean) {
   texture.needsUpdate = true;
 }
 
+type SurfaceLook = {
+  opacity?: number;
+  transparent?: boolean;
+  depthWrite?: boolean;
+  side?: THREE.Side;
+};
+
 function SolidFallback({
   color,
   roughness,
   metalness,
+  look,
 }: {
   color: string;
   roughness: number;
   metalness: number;
+  look?: SurfaceLook;
 }) {
-  return <meshStandardMaterial color={color} roughness={roughness} metalness={metalness} />;
+  return (
+    <meshStandardMaterial
+      color={color}
+      roughness={roughness}
+      metalness={metalness}
+      opacity={look?.opacity}
+      transparent={look?.transparent}
+      depthWrite={look?.depthWrite}
+      side={look?.side}
+    />
+  );
 }
 
 function PbrMaps({
@@ -41,6 +60,7 @@ function PbrMaps({
   tiles,
   roughness,
   metalness,
+  look,
 }: {
   colorUrl: string;
   roughUrl?: string;
@@ -49,6 +69,7 @@ function PbrMaps({
   tiles: number;
   roughness: number;
   metalness: number;
+  look?: SurfaceLook;
 }) {
   // Fixed arity branches so hooks stay unconditional within each leaf.
   if (roughUrl && normalUrl && metalUrl) {
@@ -61,6 +82,7 @@ function PbrMaps({
         tiles={tiles}
         roughness={roughness}
         metalness={metalness}
+        look={look}
       />
     );
   }
@@ -73,13 +95,33 @@ function PbrMaps({
         tiles={tiles}
         roughness={roughness}
         metalness={metalness}
+        look={look}
       />
     );
   }
   if (roughUrl) {
-    return <PbrColorRough colorUrl={colorUrl} roughUrl={roughUrl} tiles={tiles} roughness={roughness} metalness={metalness} />;
+    return (
+      <PbrColorRough
+        colorUrl={colorUrl}
+        roughUrl={roughUrl}
+        tiles={tiles}
+        roughness={roughness}
+        metalness={metalness}
+        look={look}
+      />
+    );
   }
-  return <PbrColorOnly colorUrl={colorUrl} tiles={tiles} roughness={roughness} metalness={metalness} />;
+  return <PbrColorOnly colorUrl={colorUrl} tiles={tiles} roughness={roughness} metalness={metalness} look={look} />;
+}
+
+function lookProps(look?: SurfaceLook) {
+  if (!look) return {};
+  return {
+    opacity: look.opacity,
+    transparent: look.transparent,
+    depthWrite: look.depthWrite,
+    side: look.side,
+  };
 }
 
 function PbrColorOnly({
@@ -87,17 +129,19 @@ function PbrColorOnly({
   tiles,
   roughness,
   metalness,
+  look,
 }: {
   colorUrl: string;
   tiles: number;
   roughness: number;
   metalness: number;
+  look?: SurfaceLook;
 }) {
   const map = useTexture(colorUrl);
   useLayoutEffect(() => {
     configureMap(map, tiles, true);
   }, [map, tiles]);
-  return <meshStandardMaterial map={map} color="#ffffff" roughness={roughness} metalness={metalness} />;
+  return <meshStandardMaterial map={map} color="#ffffff" roughness={roughness} metalness={metalness} {...lookProps(look)} />;
 }
 
 function PbrColorRough({
@@ -106,12 +150,14 @@ function PbrColorRough({
   tiles,
   roughness,
   metalness,
+  look,
 }: {
   colorUrl: string;
   roughUrl: string;
   tiles: number;
   roughness: number;
   metalness: number;
+  look?: SurfaceLook;
 }) {
   const [map, roughnessMap] = useTexture([colorUrl, roughUrl]);
   useLayoutEffect(() => {
@@ -125,6 +171,7 @@ function PbrColorRough({
       color="#ffffff"
       roughness={roughness}
       metalness={metalness}
+      {...lookProps(look)}
     />
   );
 }
@@ -136,6 +183,7 @@ function PbrColorRoughNormal({
   tiles,
   roughness,
   metalness,
+  look,
 }: {
   colorUrl: string;
   roughUrl: string;
@@ -143,6 +191,7 @@ function PbrColorRoughNormal({
   tiles: number;
   roughness: number;
   metalness: number;
+  look?: SurfaceLook;
 }) {
   const [map, roughnessMap, normalMap] = useTexture([colorUrl, roughUrl, normalUrl]);
   useLayoutEffect(() => {
@@ -159,6 +208,7 @@ function PbrColorRoughNormal({
       color="#ffffff"
       roughness={roughness}
       metalness={metalness}
+      {...lookProps(look)}
     />
   );
 }
@@ -171,6 +221,7 @@ function PbrColorRoughNormalMetal({
   tiles,
   roughness,
   metalness,
+  look,
 }: {
   colorUrl: string;
   roughUrl: string;
@@ -179,6 +230,7 @@ function PbrColorRoughNormalMetal({
   tiles: number;
   roughness: number;
   metalness: number;
+  look?: SurfaceLook;
 }) {
   const [map, roughnessMap, normalMap, metalnessMap] = useTexture([colorUrl, roughUrl, normalUrl, metalUrl]);
   useLayoutEffect(() => {
@@ -197,6 +249,7 @@ function PbrColorRoughNormalMetal({
       color="#ffffff"
       roughness={roughness}
       metalness={metalness}
+      {...lookProps(look)}
     />
   );
 }
@@ -211,6 +264,10 @@ export function CatalogSurfaceMaterial({
   worldSpan = 1,
   roughness: roughnessOverride,
   metalness: metalnessOverride,
+  opacity,
+  transparent,
+  depthWrite,
+  side,
 }: {
   color: string;
   maps?: CatalogSurfaceMaps;
@@ -218,17 +275,25 @@ export function CatalogSurfaceMaterial({
   worldSpan?: number;
   roughness?: number;
   metalness?: number;
+  opacity?: number;
+  transparent?: boolean;
+  depthWrite?: boolean;
+  side?: THREE.Side;
 }) {
   const roughness = roughnessOverride ?? maps?.roughness ?? 0.75;
   const metalness = metalnessOverride ?? maps?.metalness ?? 0.04;
+  const look: SurfaceLook | undefined =
+    opacity !== undefined || transparent !== undefined || depthWrite !== undefined || side !== undefined
+      ? { opacity, transparent, depthWrite, side }
+      : undefined;
   const textureUrl = maps?.textureUrl;
   if (!textureUrl) {
-    return <SolidFallback color={color} roughness={roughness} metalness={metalness} />;
+    return <SolidFallback color={color} roughness={roughness} metalness={metalness} look={look} />;
   }
   const repeatM = maps?.textureRepeat ?? 0.5;
   const tiles = Math.max(1, worldSpan / Math.max(0.08, repeatM));
   return (
-    <Suspense fallback={<SolidFallback color={color} roughness={roughness} metalness={metalness} />}>
+    <Suspense fallback={<SolidFallback color={color} roughness={roughness} metalness={metalness} look={look} />}>
       <PbrMaps
         colorUrl={textureUrl}
         roughUrl={maps?.roughnessMapUrl}
@@ -237,6 +302,7 @@ export function CatalogSurfaceMaterial({
         tiles={tiles}
         roughness={roughness}
         metalness={metalness}
+        look={look}
       />
     </Suspense>
   );

@@ -206,7 +206,7 @@ export const CatalogPanel = memo(function CatalogPanel({
                 <small className="mount-badge">{i.placementMode === 'ceiling-perimeter' ? 'Ceiling corners' : 'Floor corners'}</small>
               )}
               {i.placementMode === 'floor-fill' && (
-                <small className="mount-badge">Fill room floor</small>
+                <small className="mount-badge">3D floor fill</small>
               )}
               {i.modelUrl && <small className="mount-badge model">3D model</small>}
               {i.sku && <small>SKU {i.sku}</small>}

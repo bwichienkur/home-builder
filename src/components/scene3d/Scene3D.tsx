@@ -24,6 +24,7 @@ import { formatLength } from '../../lib/measurements';
 import { rafThrottle } from '../../lib/rafThrottle';
 import { useInventoryStore } from '../../store/inventoryStore';
 import { FurnitureVisual } from './CatalogModel';
+import { FloorFillPieces } from './FloorFillPieces';
 import { PlanEditLayer } from './PlanEditLayer';
 import type { ReactElement } from 'react';
 import type { PlanRoomLabel, Wall } from '../../types';
@@ -2361,6 +2362,18 @@ function Room() {
           const labelSize = Math.min(0.55, Math.max(0.22, span * 0.08));
           return (
             <group key={label?.id ?? i}>
+              {label?.floorCatalogId ? (
+                <FloorFillPieces
+                  points={points}
+                  holes={stairs}
+                  catalogId={label.floorCatalogId}
+                  color={floorColor}
+                  opacity={floorOpacity}
+                  transparent={cameraMode === 'orbit' || floorOpacity < 0.999}
+                  depthWrite={floorOpacity > 0.85}
+                  onClick={(e) => chooseFloor(e, label?.id)}
+                />
+              ) : (
               <mesh
                 rotation={[Math.PI / 2, 0, 0]}
                 receiveShadow
@@ -2377,6 +2390,7 @@ function Room() {
                   worldSpan={span}
                 />
               </mesh>
+              )}
               {selected && cameraMode === 'top' && (
                 <>
                   <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, -0.016, 0]} raycast={() => {}} renderOrder={2}>
