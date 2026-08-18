@@ -717,7 +717,7 @@ export function StudioChrome({
 
       <div className={`studio-dock${inRoom ? ' is-room' : ''}`} role="toolbar" aria-label="Studio controls">
         <div className="studio-dock-shell studio-dock-flat">
-          <div className="studio-dock-row">
+          <div className="studio-dock-row studio-dock-row--views">
             <div className="studio-dock-seg" role="group" aria-label="View mode">
               <button type="button" className={isTop ? 'is-active' : ''} onClick={chooseTop} title="Plan view — orthographic">
                 <Grid2X2 size={16} />
@@ -737,9 +737,23 @@ export function StudioChrome({
                 <span>3D</span>
               </button>
             </div>
+            <span className="studio-dock-rule" aria-hidden="true" />
+            <button type="button" className="studio-dock-action studio-dock-priority" onClick={refocus} title="Fit in view">
+              <Focus size={15} />
+              <span>Fit</span>
+            </button>
+            <button type="button" className="studio-dock-action" onClick={undo} disabled={historyIndex === 0} title="Undo">
+              <Undo2 size={15} />
+              <span>Undo</span>
+            </button>
+            <button type="button" className="studio-dock-action" onClick={redo} disabled={historyIndex === historyLength - 1} title="Redo">
+              <Redo2 size={15} />
+              <span>Redo</span>
+            </button>
+          </div>
+          <div className="studio-dock-row studio-dock-row--tools">
             {atPlanLevel && !pending && (
               <>
-                <span className="studio-dock-rule" aria-hidden="true" />
                 <button
                   type="button"
                   className={`studio-dock-action studio-dock-priority${tool === 'door' ? ' is-active' : ''}`}
@@ -778,11 +792,6 @@ export function StudioChrome({
                 </button>
               </>
             )}
-            <span className="studio-dock-rule" aria-hidden="true" />
-            <button type="button" className="studio-dock-action studio-dock-priority" onClick={refocus} title="Fit in view">
-              <Focus size={15} />
-              <span>Fit</span>
-            </button>
             {onOpenElevations && !atStart && (
               <button type="button" className="studio-dock-action studio-dock-secondary" onClick={onOpenElevations} title="Elevation preview" disabled={walls.length === 0}>
                 <FileSpreadsheet size={15} />
@@ -808,15 +817,6 @@ export function StudioChrome({
             <button type="button" className="studio-dock-action" onClick={rotateView} title={isElevation ? 'Next wall' : 'Rotate view 90°'}>
               <RotateCw size={15} />
               <span>Rotate</span>
-            </button>
-            <span className="studio-dock-rule" aria-hidden="true" />
-            <button type="button" className="studio-dock-action" onClick={undo} disabled={historyIndex === 0} title="Undo">
-              <Undo2 size={15} />
-              <span>Undo</span>
-            </button>
-            <button type="button" className="studio-dock-action" onClick={redo} disabled={historyIndex === historyLength - 1} title="Redo">
-              <Redo2 size={15} />
-              <span>Redo</span>
             </button>
           </div>
         </div>

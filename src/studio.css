@@ -478,7 +478,7 @@
   gap: 0;
   pointer-events: none;
   width: max-content;
-  max-width: min(560px, calc(100vw - 24px));
+  max-width: min(520px, calc(100vw - 16px));
 }
 
 .studio-dock-shell {
@@ -503,31 +503,31 @@
 .studio-dock-flat {
   flex-direction: column;
   align-items: stretch;
-  gap: 2px;
+  gap: 0;
   min-width: 0;
   width: max-content;
   max-width: 100%;
   padding: 3px;
   border-radius: 16px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
+  overflow: hidden;
 }
 
 .studio-dock-row {
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   gap: 2px;
-  width: max-content;
-  max-width: none;
+  width: 100%;
   min-width: 0;
 }
-
-.studio-dock-flat::-webkit-scrollbar {
-  display: none;
+.studio-dock-row--views {
+  padding-bottom: 1px;
+}
+.studio-dock-row--tools {
+  border-top: 1px solid rgba(17, 24, 32, 0.08);
+  padding-top: 2px;
+  margin-top: 1px;
 }
 
 .studio-dock-seg {
@@ -1445,20 +1445,21 @@
     left: 50%;
     right: auto;
     transform: translateX(-50%);
-    width: min(520px, calc(100vw - 16px));
-    max-width: calc(100vw - 16px);
+    width: min(392px, calc(100vw - 12px));
+    max-width: calc(100vw - 12px);
     bottom: max(8px, calc(env(safe-area-inset-bottom) + 4px));
   }
   .studio-dock-flat {
     width: 100%;
-    overflow-x: auto;
-    overflow-y: visible;
+    overflow: hidden;
   }
   .studio-dock-row {
     flex-wrap: nowrap;
-    width: max-content;
-    min-width: 100%;
-    justify-content: flex-start;
+    width: 100%;
+    min-width: 0;
+    justify-content: center;
+    gap: 4px;
+    padding: 2px 4px;
   }
   .studio-dock-action {
     min-width: 36px;
@@ -1619,20 +1620,21 @@
     left: 50%;
     right: auto;
     transform: translateX(-50%);
-    width: min(520px, calc(100vw - 16px));
-    max-width: calc(100vw - 16px);
+    width: min(392px, calc(100vw - 12px));
+    max-width: calc(100vw - 12px);
     bottom: max(8px, calc(env(safe-area-inset-bottom) + 4px));
   }
   .studio-dock-flat {
     width: 100%;
-    overflow-x: auto;
-    overflow-y: visible;
+    overflow: hidden;
   }
   .studio-dock-row {
     flex-wrap: nowrap;
-    width: max-content;
-    min-width: 100%;
-    justify-content: flex-start;
+    width: 100%;
+    min-width: 0;
+    justify-content: center;
+    gap: 4px;
+    padding: 2px 4px;
   }
   .studio-dock-secondary {
     display: none;
@@ -2691,8 +2693,8 @@
     padding: 0 6px 0 10px;
   }
   .studio-dock {
-    width: min(440px, calc(100vw - 20px));
-    max-width: calc(100vw - 20px);
+    width: min(392px, calc(100vw - 12px));
+    max-width: calc(100vw - 12px);
   }
   .design-item-actions {
     grid-template-columns: repeat(3, minmax(44px, 1fr));
@@ -2723,30 +2725,18 @@
 
 .wall-dim-html {
   pointer-events: none !important;
-}
-.wall-dim-html__anchor {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 0;
-  height: 0;
-  overflow: visible;
-  pointer-events: none;
-}
-/* 0-size origin on the exterior face; the pill is then parked fully outside in CSS. */
-.wall-dim-html--top > div,
-.wall-dim-html--bottom > div,
-.wall-dim-html--left > div,
-.wall-dim-html--right > div {
-  width: 0 !important;
-  height: 0 !important;
   overflow: visible !important;
-  transform: none !important;
+}
+.wall-dim-html > div {
+  pointer-events: none;
+  width: max-content;
+  height: max-content;
 }
 .wall-dim-pill {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  position: static;
   padding: 4px 8px;
   border-radius: 8px;
   background: #fff;
@@ -2762,32 +2752,6 @@
   background: #0058a3;
   color: #fff;
   box-shadow: 0 1px 3px rgba(0, 88, 163, 0.28);
-}
-.wall-dim-html--top .wall-dim-pill,
-.wall-dim-html--bottom .wall-dim-pill,
-.wall-dim-html--left .wall-dim-pill,
-.wall-dim-html--right .wall-dim-pill {
-  position: absolute;
-}
-.wall-dim-html--top .wall-dim-pill {
-  left: 0;
-  bottom: 18px;
-  transform: translateX(-50%);
-}
-.wall-dim-html--bottom .wall-dim-pill {
-  left: 0;
-  top: 18px;
-  transform: translateX(-50%);
-}
-.wall-dim-html--left .wall-dim-pill {
-  right: 18px;
-  top: 0;
-  transform: translateY(-50%);
-}
-.wall-dim-html--right .wall-dim-pill {
-  left: 18px;
-  top: 0;
-  transform: translateY(-50%);
 }
 
 /* Wall dimension card — L/W/H grouped outside the room (interaction panel). */
@@ -3417,7 +3381,11 @@
     gap: 4px;
   }
   .studio-dock-action span,
-  .studio-dock-seg span {
+  .studio-dock-seg span,
+  .studio-dock-seg button span {
+    display: none;
+  }
+  .studio-dock-secondary {
     display: none;
   }
 }

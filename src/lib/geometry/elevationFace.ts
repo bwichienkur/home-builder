@@ -112,16 +112,16 @@ export function wallWorldFrame(wall: Wall) {
 export function elevationDimAnchors(wall: Wall, face: ElevationFace) {
   const frame = wallWorldFrame(wall);
   const b = elevationFaceBasis(face);
-  const towardCam = 0.12;
-  const pastEnd = 0.08;
+  const towardCam = 0.16;
+  const pastEnd = 0.28;
   return {
-    /** Midpoint of the wall base (floor line). CSS parks the pill below. */
+    /** Midpoint of the wall base (floor line). CSS parks the pill fully below. */
     width: {
       x: frame.x + b.camX * towardCam,
       y: 0,
       z: frame.z + b.camZ * towardCam,
     },
-    /** Mid-height on the LEFT end. CSS parks the pill further left. */
+    /** Mid-height on the LEFT end. CSS parks the pill further left, clear of the wall. */
     height: {
       x: frame.x - b.rightX * (frame.len / 2 + pastEnd) + b.camX * towardCam,
       y: wall.height / 2,
@@ -142,9 +142,9 @@ export function elevationOrthoZoom(opts: {
   padScale?: number;
 }): number {
   const pad = Math.max(opts.padScale ?? 1, 1);
-  const sideM = 0.85;
-  const belowM = 0.7;
-  const aboveM = 0.36;
+  const sideM = 1.35;
+  const belowM = 1.15;
+  const aboveM = 0.42;
   const visW = pad * (Math.max(opts.wallLen, 1.5) + sideM * 2);
   const visH = pad * (Math.max(opts.wallH, 1.5) + belowM + aboveM);
   const zoomW = Math.max(1, opts.canvasW) / visW;

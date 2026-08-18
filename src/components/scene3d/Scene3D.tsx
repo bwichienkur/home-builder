@@ -199,13 +199,13 @@ function CameraRig() {
   // Wide overlays (inspector / wall dim card) still use free-area shift.
   const chromeFit = useMemo(() => {
     const showElevDims = mode === 'elevation' && !inspectorOpen && !focusWall;
-    const showPlanDims = (!!planSelectedRoom && mode !== 'elevation') || showElevDims;
+    const showPlanDims = (!!frameRoom && mode !== 'elevation') || showElevDims;
     // Dim pills sit fully outside the wall in CSS — reserve screen space so they
-    // never tuck under the black rail or the top/bottom chrome.
-    const dimReservePx = showPlanDims && showRightRail ? (coarse ? 40 : 52) : 0;
-    const dimVertPx = showPlanDims ? (mode === 'elevation' ? 52 : 36) : 0;
+    // never tuck under the black rail or the two-row dock.
+    const dimReservePx = showPlanDims && showRightRail ? (coarse ? 108 : 80) : 0;
+    const dimVertPx = showPlanDims ? (mode === 'elevation' ? 88 : 56) : 0;
     const topChromePx = (coarse ? 112 : 88) + dimVertPx;
-    const bottomChromePx = (coarse ? 96 : 84) + dimVertPx;
+    const bottomChromePx = (coarse ? 118 : 96) + dimVertPx;
     const railPx = showRightRail ? 86 : 0;
     const gutterPx = (railPx ? (coarse ? 28 : 18) : 0) + dimReservePx;
     if (inspectorOpen || focusWall) {
@@ -229,7 +229,7 @@ function CameraRig() {
       topChromePx,
       bottomChromePx,
     });
-  }, [canvasW, canvasH, inspectorOpen, showRightRail, coarse, inspectorTick, focusWall, planSelectedRoom, mode]);
+  }, [canvasW, canvasH, inspectorOpen, showRightRail, coarse, inspectorTick, focusWall, frameRoom, mode]);
 
   const framing = useMemo(() => {
     // Keep orbit as tight as chromeFit allows — padScale already clears the rail.
@@ -257,11 +257,11 @@ function CameraRig() {
     }
     if (frameRoom?.points.length) {
       // Extra pad so exterior dim pills + handles stay in the free plate.
-      const roomPad = pad * (planSelectedRoom ? 1.18 : 1);
+      const roomPad = pad * (frameRoom ? 1.22 : 1);
       return framingFromPoints(frameRoom.points, { pad: roomPad, orbitPad, minSpan: 2.5, minHeight: 9 });
     }
     return framingFromWalls(walls, { pad, orbitPad, minHeight: 12 });
-  }, [walls, planRooms, frameRoom, planSelectedRoom, focusWall, coarse, menuOpen, chromeFit.padScale]);
+  }, [walls, planRooms, frameRoom, focusWall, coarse, menuOpen, chromeFit.padScale]);
   const framingRef = useRef(framing);
   if (!moving) framingRef.current = framing;
   const viewFraming = moving ? framingRef.current : framing;
@@ -372,7 +372,7 @@ function CameraRig() {
 
   // Orthographic plan zoom — true top-down (no perspective tilt).
   const orthoZoom = useMemo(() => {
-    const spanPad = 0.62 * chromeFit.padScale * (planSelectedRoom ? 1.14 : 1);
+    const spanPad = 0.86 * chromeFit.padScale * (frameRoom ? 1.32 : 1);
     const half = Math.max(viewFraming.span * spanPad, 5);
     const px = Math.min(size.width, size.height) || 800;
     if (mode === 'elevation') {
@@ -387,7 +387,7 @@ function CameraRig() {
       });
     }
     return Math.max(8, px / (2 * half));
-  }, [viewFraming.span, size.width, size.height, mode, elevationFace, walls, facingWall, chromeFit.padScale, planSelectedRoom]);
+  }, [viewFraming.span, size.width, size.height, mode, elevationFace, walls, facingWall, chromeFit.padScale, frameRoom]);
 
   const animating = useRef(false);
   const modeAnimUntil = useRef(0);
@@ -1210,18 +1210,19 @@ function elevationPlaneYaw(face: import('../../types').ElevationFace): number {
   }
 }
 
-const DIM_GAP_PX = 24;
+const DIM_GAP_PX = 44;
 
-function dimPillOffset(placement: 'top' | 'bottom' | 'left' | 'right'): CSSProperties {
+/** Shift drei's Html inner node so the whole pill sits outside the 3D origin. */
+function dimHtmlShift(placement: 'top' | 'bottom' | 'left' | 'right'): CSSProperties {
   switch (placement) {
     case 'top':
-      return { position: 'absolute', left: 0, bottom: DIM_GAP_PX, transform: 'translateX(-50%)' };
+      return { pointerEvents: 'none', transform: `translate(-50%, calc(-100% - ${DIM_GAP_PX}px))` };
     case 'bottom':
-      return { position: 'absolute', left: 0, top: DIM_GAP_PX, transform: 'translateX(-50%)' };
+      return { pointerEvents: 'none', transform: `translate(-50%, ${DIM_GAP_PX}px)` };
     case 'left':
-      return { position: 'absolute', right: DIM_GAP_PX, top: 0, transform: 'translateY(-50%)' };
+      return { pointerEvents: 'none', transform: `translate(calc(-100% - ${DIM_GAP_PX}px), -50%)` };
     case 'right':
-      return { position: 'absolute', left: DIM_GAP_PX, top: 0, transform: 'translateY(-50%)' };
+      return { pointerEvents: 'none', transform: `translate(${DIM_GAP_PX}px, -50%)` };
   }
 }
 
@@ -1243,14 +1244,10 @@ function WallDimPill({
       position={position}
       center={false}
       zIndexRange={zIndexRange}
-      style={{ pointerEvents: 'none' }}
-      wrapperClass="wall-dim-html"
+      style={dimHtmlShift(placement)}
+      wrapperClass={`wall-dim-html wall-dim-html--${placement}`}
     >
-      <div className="wall-dim-html__anchor">
-        <div className={`wall-dim-pill${selected ? ' is-selected' : ''}`} style={dimPillOffset(placement)}>
-          {text}
-        </div>
-      </div>
+      <div className={`wall-dim-pill${selected ? ' is-selected' : ''}`}>{text}</div>
     </Html>
   );
 }
@@ -1330,7 +1327,6 @@ function WallMeshes() {
   const selectedOpeningId = usePlannerStore((s) => s.selectedOpeningId);
   const selectedRoomId = usePlannerStore((s) => s.selectedRoomId);
   const planRooms = usePlannerStore((s) => s.planRooms);
-  const workflowStage = usePlannerStore((s) => s.workflowStage);
   const unitSystem = usePlannerStore((s) => s.unitSystem);
   const select = usePlannerStore((s) => s.selectWall);
   const placeOpeningAtWorld = usePlannerStore((s) => s.placeOpeningAtWorld);
@@ -1346,7 +1342,8 @@ function WallMeshes() {
   );
   const orbiting = cameraMode === 'orbit';
   const elevating = cameraMode === 'elevation';
-  const dimRoom = workflowStage === 'house' ? planRooms.find((r) => r.id === selectedRoomId) : null;
+  const dimRoom =
+    planRooms.find((r) => r.id === selectedRoomId) ?? (planRooms.length === 1 ? planRooms[0] : null);
   const dimWallIds = useMemo(() => {
     if (!dimRoom) return null;
     const height = walls[0]?.height ?? 2.7;
