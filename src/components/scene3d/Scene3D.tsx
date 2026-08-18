@@ -1,6 +1,6 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Bvh, Environment, Html, Line, OrbitControls, OrthographicCamera, PerspectiveCamera, PivotControls, Text, useTexture } from '@react-three/drei';
-import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import * as THREE from 'three';
 import { usePlannerStore } from '../../store/plannerStore';
 import { catalog } from '../catalog/catalogData';
@@ -203,7 +203,7 @@ function CameraRig() {
     // Dim pills sit fully outside the wall in CSS — reserve screen space so they
     // never tuck under the black rail or the top/bottom chrome.
     const dimReservePx = showPlanDims && showRightRail ? (coarse ? 40 : 52) : 0;
-    const dimVertPx = showPlanDims ? (mode === 'elevation' ? 44 : 36) : 0;
+    const dimVertPx = showPlanDims ? (mode === 'elevation' ? 52 : 36) : 0;
     const topChromePx = (coarse ? 112 : 88) + dimVertPx;
     const bottomChromePx = (coarse ? 96 : 84) + dimVertPx;
     const railPx = showRightRail ? 86 : 0;
@@ -1210,6 +1210,51 @@ function elevationPlaneYaw(face: import('../../types').ElevationFace): number {
   }
 }
 
+const DIM_GAP_PX = 24;
+
+function dimPillOffset(placement: 'top' | 'bottom' | 'left' | 'right'): CSSProperties {
+  switch (placement) {
+    case 'top':
+      return { position: 'absolute', left: 0, bottom: DIM_GAP_PX, transform: 'translateX(-50%)' };
+    case 'bottom':
+      return { position: 'absolute', left: 0, top: DIM_GAP_PX, transform: 'translateX(-50%)' };
+    case 'left':
+      return { position: 'absolute', right: DIM_GAP_PX, top: 0, transform: 'translateY(-50%)' };
+    case 'right':
+      return { position: 'absolute', left: DIM_GAP_PX, top: 0, transform: 'translateY(-50%)' };
+  }
+}
+
+function WallDimPill({
+  position,
+  placement,
+  text,
+  selected,
+  zIndexRange = [24, 8],
+}: {
+  position: [number, number, number];
+  placement: 'top' | 'bottom' | 'left' | 'right';
+  text: string;
+  selected?: boolean;
+  zIndexRange?: [number, number];
+}) {
+  return (
+    <Html
+      position={position}
+      center={false}
+      zIndexRange={zIndexRange}
+      style={{ pointerEvents: 'none' }}
+      wrapperClass="wall-dim-html"
+    >
+      <div className="wall-dim-html__anchor">
+        <div className={`wall-dim-pill${selected ? ' is-selected' : ''}`} style={dimPillOffset(placement)}>
+          {text}
+        </div>
+      </div>
+    </Html>
+  );
+}
+
 function PlanWallDim({
   wallId,
   midX,
@@ -1238,16 +1283,13 @@ function PlanWallDim({
   const offset = wallDimFaceOffset(thickness);
   const label = exteriorWallLabelPosition(midX, midZ, sx, sz, ex, ez, roomPoints, offset);
   return (
-    <Html
+    <WallDimPill
       key={wallId + 'len'}
       position={[label.x, 0.22, label.z]}
-      center={false}
-      zIndexRange={[24, 8]}
-      style={{ pointerEvents: 'none' }}
-      wrapperClass={`wall-dim-html wall-dim-html--${label.placement}`}
-    >
-      <div className={`wall-dim-pill${selected ? ' is-selected' : ''}`}>{text}</div>
-    </Html>
+      placement={label.placement}
+      text={text}
+      selected={selected}
+    />
   );
 }
 
@@ -1264,24 +1306,18 @@ function ElevationWallDims({
   const a = elevationDimAnchors(wall, face);
   return (
     <>
-      <Html
+      <WallDimPill
         position={[a.width.x, a.width.y, a.width.z]}
-        center={false}
+        placement="bottom"
+        text={formatLength(frame.len, unit)}
         zIndexRange={[26, 8]}
-        style={{ pointerEvents: 'none' }}
-        wrapperClass="wall-dim-html wall-dim-html--bottom"
-      >
-        <div className="wall-dim-pill">{formatLength(frame.len, unit)}</div>
-      </Html>
-      <Html
+      />
+      <WallDimPill
         position={[a.height.x, a.height.y, a.height.z]}
-        center={false}
+        placement="left"
+        text={formatLength(wall.height, unit)}
         zIndexRange={[26, 8]}
-        style={{ pointerEvents: 'none' }}
-        wrapperClass="wall-dim-html wall-dim-html--right"
-      >
-        <div className="wall-dim-pill">{formatLength(wall.height, unit)}</div>
-      </Html>
+      />
     </>
   );
 }

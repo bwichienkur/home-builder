@@ -2261,6 +2261,14 @@
   background: rgba(17, 24, 32, 0.08) !important;
   color: #111820 !important;
 }
+.studio-floor-stack.studio-floor-stack--bar .studio-floor-remove {
+  color: #b42318 !important;
+}
+.studio-floor-stack.studio-floor-stack--bar .studio-floor-remove:hover,
+.studio-floor-stack.studio-floor-stack--bar .studio-floor-remove:active {
+  background: rgba(180, 35, 24, 0.1) !important;
+  color: #b42318 !important;
+}
 .studio-floor-delete {
   border: 0;
   border-radius: 10px;
@@ -2721,6 +2729,15 @@
 
 .wall-dim-html {
   pointer-events: none !important;
+}
+.wall-dim-html__anchor {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  overflow: visible;
+  pointer-events: none;
 }
 /* 0-size origin on the exterior face; the pill is then parked fully outside in CSS. */
 .wall-dim-html--top > div,
