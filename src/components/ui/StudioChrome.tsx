@@ -192,6 +192,10 @@ export function StudioChrome({
   const chooseElevation = () => {
     setView('3d');
     setCamera('elevation');
+    window.setTimeout(() => {
+      window.dispatchEvent(new Event('roomcraft-fit-plan'));
+      window.dispatchEvent(new Event('roomcraft-refocus'));
+    }, 0);
   };
 
   /** Flat top-down stay in WebGL — never leave the 3D scene. */

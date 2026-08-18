@@ -11,7 +11,7 @@ import { doorSwingZones, furnitureHitsDoorSwing } from '../../lib/geometry/doorC
 import { wouldOverlapFurniture } from '../../lib/collisions';
 import { framingFromPoints, framingFromWall, framingFromWalls, freeAreaFit, pageCenterFit, worldShiftForFreeArea } from '../../lib/geometry/planFraming';
 import { pointInPlanRoom, enclosureWallsForRoom } from '../../lib/geometry/roomWalls';
-import { pickFacingWall, elevationFaceBasis, wallWorldFrame } from '../../lib/geometry/elevationFace';
+import { pickFacingWall, elevationFaceBasis, wallWorldFrame, elevationOrthoZoom, elevationDimAnchors } from '../../lib/geometry/elevationFace';
 import { wallDimFaceOffset } from '../../lib/geometry/planVertexDrag';
 import { stairsCuttingFloor } from '../../lib/geometry/stairCutouts';
 import { wallExteriorSide } from '../../lib/geometry/roomWalls';
@@ -198,11 +198,12 @@ function CameraRig() {
   // Rail: stay page-centered and zoom so the plate clears the rail with a small margin.
   // Wide overlays (inspector / wall dim card) still use free-area shift.
   const chromeFit = useMemo(() => {
-    const showPlanDims = !!planSelectedRoom && !inspectorOpen && !focusWall;
-    // Dim pills sit fully outside the room in CSS — reserve screen space so they
+    const showElevDims = mode === 'elevation' && !inspectorOpen && !focusWall;
+    const showPlanDims = (!!planSelectedRoom && mode !== 'elevation') || showElevDims;
+    // Dim pills sit fully outside the wall in CSS — reserve screen space so they
     // never tuck under the black rail or the top/bottom chrome.
-    const dimReservePx = showPlanDims ? (coarse ? 40 : 48) : 0;
-    const dimVertPx = showPlanDims ? 36 : 0;
+    const dimReservePx = showPlanDims && showRightRail ? (coarse ? 40 : 52) : 0;
+    const dimVertPx = showPlanDims ? (mode === 'elevation' ? 44 : 36) : 0;
     const topChromePx = (coarse ? 112 : 88) + dimVertPx;
     const bottomChromePx = (coarse ? 96 : 84) + dimVertPx;
     const railPx = showRightRail ? 86 : 0;
@@ -228,7 +229,7 @@ function CameraRig() {
       topChromePx,
       bottomChromePx,
     });
-  }, [canvasW, canvasH, inspectorOpen, showRightRail, coarse, inspectorTick, focusWall, planSelectedRoom]);
+  }, [canvasW, canvasH, inspectorOpen, showRightRail, coarse, inspectorTick, focusWall, planSelectedRoom, mode]);
 
   const framing = useMemo(() => {
     // Keep orbit as tight as chromeFit allows — padScale already clears the rail.
@@ -377,10 +378,13 @@ function CameraRig() {
     if (mode === 'elevation') {
       const wallH = facingWall?.height ?? walls[0]?.height ?? 2.7;
       const wallLen = facingWall ? wallWorldFrame(facingWall).len : viewFraming.span;
-      const pad = 0.62;
-      const zoomW = (size.width || px) / (2 * Math.max(wallLen, 2) * pad + 1.6);
-      const zoomH = (size.height || px) / (2 * (wallH + 0.55) * pad + 0.8);
-      return Math.max(10, Math.min(zoomW, zoomH));
+      return elevationOrthoZoom({
+        canvasW: size.width || px,
+        canvasH: size.height || px,
+        wallLen,
+        wallH,
+        padScale: chromeFit.padScale,
+      });
     }
     return Math.max(8, px / (2 * half));
   }, [viewFraming.span, size.width, size.height, mode, elevationFace, walls, facingWall, chromeFit.padScale, planSelectedRoom]);
@@ -1257,29 +1261,24 @@ function ElevationWallDims({
   unit: 'metric' | 'imperial';
 }) {
   const frame = wallWorldFrame(wall);
-  const b = elevationFaceBasis(face);
-  const gap = 0.38;
+  const a = elevationDimAnchors(wall, face);
   return (
     <>
       <Html
-        position={[frame.x + b.camX * 0.15, -0.28, frame.z + b.camZ * 0.15]}
-        center
+        position={[a.width.x, a.width.y, a.width.z]}
+        center={false}
         zIndexRange={[26, 8]}
         style={{ pointerEvents: 'none' }}
-        wrapperClass="wall-dim-html"
+        wrapperClass="wall-dim-html wall-dim-html--bottom"
       >
         <div className="wall-dim-pill">{formatLength(frame.len, unit)}</div>
       </Html>
       <Html
-        position={[
-          frame.x + b.rightX * (frame.len / 2 + gap),
-          wall.height / 2,
-          frame.z + b.rightZ * (frame.len / 2 + gap),
-        ]}
-        center
+        position={[a.height.x, a.height.y, a.height.z]}
+        center={false}
         zIndexRange={[26, 8]}
         style={{ pointerEvents: 'none' }}
-        wrapperClass="wall-dim-html"
+        wrapperClass="wall-dim-html wall-dim-html--right"
       >
         <div className="wall-dim-pill">{formatLength(wall.height, unit)}</div>
       </Html>
@@ -1614,7 +1613,7 @@ function WallMeshes() {
                   rotation={[0, elevationPlaneYaw(elevationFace), 0]}
                   raycast={() => {}}
                 >
-                  <planeGeometry args={[origLen + 0.3, w.height + 0.3]} />
+                  <planeGeometry args={[origLen, w.height]} />
                   <meshBasicMaterial color="#d2c0aa" />
                 </mesh>,
               ]

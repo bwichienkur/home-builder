@@ -2760,21 +2760,21 @@
 }
 .wall-dim-html--top .wall-dim-pill {
   left: 0;
-  bottom: 16px;
+  bottom: 18px;
   transform: translateX(-50%);
 }
 .wall-dim-html--bottom .wall-dim-pill {
   left: 0;
-  top: 16px;
+  top: 18px;
   transform: translateX(-50%);
 }
 .wall-dim-html--left .wall-dim-pill {
-  right: 16px;
+  right: 18px;
   top: 0;
   transform: translateY(-50%);
 }
 .wall-dim-html--right .wall-dim-pill {
-  left: 16px;
+  left: 18px;
   top: 0;
   transform: translateY(-50%);
 }
