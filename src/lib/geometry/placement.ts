@@ -264,9 +264,152 @@ function polygonIsConvex(pts: { x: number; z: number }[]) {
   return true;
 }
 
+function aabbCorners(cx: number, cz: number, halfW: number, halfD: number) {
+  return [
+    { x: cx - halfW, z: cz - halfD },
+    { x: cx + halfW, z: cz - halfD },
+    { x: cx + halfW, z: cz + halfD },
+    { x: cx - halfW, z: cz + halfD },
+  ];
+}
+
+function closestPointOnPolygon(x: number, z: number, poly: { x: number; z: number }[]) {
+  let best = poly[0]!;
+  let bestD = Infinity;
+  for (let i = 0; i < poly.length; i++) {
+    const a = poly[i]!;
+    const b = poly[(i + 1) % poly.length]!;
+    const dx = b.x - a.x;
+    const dz = b.z - a.z;
+    const len2 = dx * dx + dz * dz;
+    const t = len2 < 1e-12 ? 0 : Math.max(0, Math.min(1, ((x - a.x) * dx + (z - a.z) * dz) / len2));
+    const px = a.x + dx * t;
+    const pz = a.z + dz * t;
+    const d = (px - x) ** 2 + (pz - z) ** 2;
+    if (d < bestD) {
+      bestD = d;
+      best = { x: px, z: pz };
+    }
+  }
+  return best;
+}
+
+function snapPointInsidePolygon(x: number, z: number, poly: { x: number; z: number }[]) {
+  if (pointInPolygon(x, z, poly)) return { x, z };
+  const p = closestPointOnPolygon(x, z, poly);
+  const eps = 0.05;
+  const tries = [
+    { x: p.x + eps, z: p.z },
+    { x: p.x - eps, z: p.z },
+    { x: p.x, z: p.z + eps },
+    { x: p.x, z: p.z - eps },
+    { x: p.x + eps, z: p.z + eps },
+    { x: p.x - eps, z: p.z - eps },
+  ];
+  for (const c of tries) {
+    if (pointInPolygon(c.x, c.z, poly)) return c;
+  }
+  return p;
+}
+
+/** True when the axis-aligned footprint sits fully inside a room polygon. */
+export function furnitureFootprintInsideRoom(
+  x: number,
+  z: number,
+  width: number,
+  depth: number,
+  rotation: number,
+  walls: Wall[],
+  slop = 0.02,
+) {
+  if (!walls.length) return true;
+  const rooms = detectRoomPolygons(walls).map((poly) => poly.map((p) => planToWorld(p)));
+  if (!rooms.length) return true;
+  const c = Math.abs(Math.cos(rotation));
+  const s = Math.abs(Math.sin(rotation));
+  const halfW = Math.max(0, (width * c + depth * s) / 2 - slop);
+  const halfD = Math.max(0, (width * s + depth * c) / 2 - slop);
+  return aabbCorners(x, z, halfW, halfD).every((p) => rooms.some((room) => pointInPolygon(p.x, p.z, room)));
+}
+
+/**
+ * Push an AABB off polygon edges. Convex rooms use infinite half-planes.
+ * Concave rooms only use edges the AABB actually overlaps so L-arms stay valid.
+ */
+function pushAabbInsidePolygon(
+  x: number,
+  z: number,
+  halfW: number,
+  halfD: number,
+  poly: { x: number; z: number }[],
+  margin: number,
+  finiteEdges: boolean,
+) {
+  const ccw = polygonSignedArea(poly) > 0;
+  let cx = x;
+  let cz = z;
+  const passes = finiteEdges ? 8 : 4;
+  for (let iter = 0; iter < passes; iter++) {
+    let moved = false;
+    for (let i = 0; i < poly.length; i++) {
+      const a = poly[i]!;
+      const b = poly[(i + 1) % poly.length]!;
+      const dx = b.x - a.x;
+      const dz = b.z - a.z;
+      const len = Math.hypot(dx, dz) || 1;
+      const dirx = dx / len;
+      const dirz = dz / len;
+      if (finiteEdges) {
+        const along = (cx - a.x) * dirx + (cz - a.z) * dirz;
+        const alongExt = halfW * Math.abs(dirx) + halfD * Math.abs(dirz);
+        if (along + alongExt < -1e-4 || along - alongExt > len + 1e-4) continue;
+      }
+      const nx = ccw ? -dz / len : dz / len;
+      const nz = ccw ? dx / len : -dx / len;
+      const signed = (cx - a.x) * nx + (cz - a.z) * nz;
+      const extent = halfW * Math.abs(nx) + halfD * Math.abs(nz);
+      const need = extent + margin;
+      if (signed < need) {
+        const push = need - signed;
+        cx += nx * push;
+        cz += nz * push;
+        moved = true;
+      }
+    }
+    if (!moved) break;
+  }
+  return { x: cx, z: cz };
+}
+
+function pullAabbCornersInside(
+  x: number,
+  z: number,
+  halfW: number,
+  halfD: number,
+  poly: { x: number; z: number }[],
+) {
+  let cx = x;
+  let cz = z;
+  for (let iter = 0; iter < 6; iter++) {
+    const outside = aabbCorners(cx, cz, halfW, halfD).filter((p) => !pointInPolygon(p.x, p.z, poly));
+    if (!outside.length) break;
+    let dx = 0;
+    let dz = 0;
+    for (const p of outside) {
+      const q = closestPointOnPolygon(p.x, p.z, poly);
+      dx += q.x - p.x;
+      dz += q.z - p.z;
+    }
+    cx += dx / outside.length;
+    cz += dz / outside.length;
+  }
+  return { x: cx, z: cz };
+}
+
 /**
  * Keep a furniture footprint inside the room so it cannot protrude through walls.
- * Convex rooms use edge half-planes; concave (L) rooms only pull centers that are outside.
+ * Convex rooms use edge half-planes. Concave (L) rooms clamp the AABB against
+ * the finite outline so a center-inside piece cannot hang into the missing bay.
  */
 export function containFurnitureInRoom(
   x: number,
@@ -299,44 +442,25 @@ export function containFurnitureInRoom(
   const s = Math.abs(Math.sin(rotation));
   const halfW = (width * c + depth * s) / 2;
   const halfD = (width * s + depth * c) / 2;
+  const concave = !polygonIsConvex(poly);
 
-  // Half-plane pushes assume a convex set — they destroy valid L-arm placements.
-  if (!polygonIsConvex(poly)) {
-    if (pointInPolygon(x, z, poly)) return { x, z };
-    const cx = poly.reduce((sum, p) => sum + p.x, 0) / poly.length;
-    const cz = poly.reduce((sum, p) => sum + p.z, 0) / poly.length;
-    let px = x;
-    let pz = z;
-    for (let i = 0; i < 12; i++) {
-      px = px + (cx - px) * 0.35;
-      pz = pz + (cz - pz) * 0.35;
-      if (pointInPolygon(px, pz, poly)) return { x: px, z: pz };
-    }
-    return { x: cx, z: cz };
-  }
-
-  const ccw = polygonSignedArea(poly) > 0;
   let cx = x;
   let cz = z;
-  // Corner cases need a few passes so adjacent edges both clear the AABB.
-  for (let iter = 0; iter < 4; iter++) {
-    for (let i = 0; i < poly.length; i++) {
-      const a = poly[i];
-      const b = poly[(i + 1) % poly.length];
-      const dx = b.x - a.x;
-      const dz = b.z - a.z;
-      const len = Math.hypot(dx, dz) || 1;
-      const nx = ccw ? -dz / len : dz / len;
-      const nz = ccw ? dx / len : -dx / len;
-      const signed = (cx - a.x) * nx + (cz - a.z) * nz;
-      const extent = halfW * Math.abs(nx) + halfD * Math.abs(nz);
-      const need = extent + margin;
-      if (signed < need) {
-        const push = need - signed;
-        cx += nx * push;
-        cz += nz * push;
-      }
-    }
+  if (concave && !pointInPolygon(cx, cz, poly)) {
+    const snapped = snapPointInsidePolygon(cx, cz, poly);
+    cx = snapped.x;
+    cz = snapped.z;
+  }
+
+  const pushed = pushAabbInsidePolygon(cx, cz, halfW, halfD, poly, margin, concave);
+  cx = pushed.x;
+  cz = pushed.z;
+
+  if (concave) {
+    const pulled = pullAabbCornersInside(cx, cz, halfW, halfD, poly);
+    const again = pushAabbInsidePolygon(pulled.x, pulled.z, halfW, halfD, poly, margin, true);
+    cx = again.x;
+    cz = again.z;
   }
 
   return { x: cx, z: cz };
