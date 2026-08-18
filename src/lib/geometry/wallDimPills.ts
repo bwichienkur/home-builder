@@ -3,17 +3,22 @@ import { PIXELS_PER_METER } from './snapping';
 import type { ElevationFace, Wall } from '../../types';
 import { elevationFaceBasis, wallWorldFrame } from './elevationFace';
 
-/** World-space dim pill type size — scales with the room, not the screen. */
-export const DIM_FONT_M = 0.13;
+/** World-space dim type size — scales with the room, not the screen. */
+export const DIM_FONT_M = 0.155;
 /** Air gap from the wall face to the near edge of the pill. */
-export const DIM_GAP_M = 0.055;
+export const DIM_GAP_M = 0.14;
 
 export type DimPlacement = 'top' | 'bottom' | 'left' | 'right';
 
 export function dimPillSize(text: string, fontM = DIM_FONT_M): { w: number; h: number } {
-  const w = Math.max(0.36, text.length * fontM * 0.56 + 0.09);
-  const h = fontM * 1.5;
+  const w = Math.max(0.4, text.length * fontM * 0.52 + 0.14);
+  const h = fontM * 1.72;
   return { w, h };
+}
+
+/** Half-extent along the outward normal for an axis-aligned (screen-upright) pill. */
+export function planDimOutwardHalf(placement: DimPlacement, size: { w: number; h: number }): number {
+  return placement === 'left' || placement === 'right' ? size.w / 2 : size.h / 2;
 }
 
 function roomCentroidWorld(roomPoints: { x: number; y: number }[]) {
@@ -28,8 +33,8 @@ function roomCentroidWorld(roomPoints: { x: number; y: number }[]) {
 }
 
 /**
- * Plan-view length pill: center sits just outside the wall, width along the run.
- * Rotation lays the plane in XZ facing +Y (top camera).
+ * Plan-view length pill: center sits clearly outside the wall.
+ * Yaw is 0 (world +X) so type stays screen-upright; the renderer adds view yaw.
  */
 export function planWallDimAnchor(opts: {
   midX: number;
@@ -54,8 +59,6 @@ export function planWallDimAnchor(opts: {
   const length = Math.hypot(opts.ex - opts.sx, opts.ez - opts.sz) || 1;
   let nx = -(opts.ez - opts.sz) / length;
   let nz = (opts.ex - opts.sx) / length;
-  const alongX = (opts.ex - opts.sx) / length;
-  const alongZ = (opts.ez - opts.sz) / length;
   if (opts.roomPoints && opts.roomPoints.length >= 3) {
     const { cx, cz } = roomCentroidWorld(opts.roomPoints);
     if (nx * (cx - opts.midX) + nz * (cz - opts.midZ) > 0) {
@@ -63,17 +66,17 @@ export function planWallDimAnchor(opts: {
       nz = -nz;
     }
   }
-  const { w, h } = dimPillSize(opts.text);
-  const offsetM = Math.max(opts.thickness, 0.1) * 0.5 + DIM_GAP_M + h / 2;
-  const x = opts.midX + nx * offsetM;
-  const z = opts.midZ + nz * offsetM;
   const placement: DimPlacement =
     Math.abs(nx) >= Math.abs(nz) ? (nx >= 0 ? 'right' : 'left') : nz >= 0 ? 'bottom' : 'top';
+  const { w, h } = dimPillSize(opts.text);
+  const offsetM = Math.max(opts.thickness, 0.1) * 0.5 + DIM_GAP_M + planDimOutwardHalf(placement, { w, h });
+  const x = opts.midX + nx * offsetM;
+  const z = opts.midZ + nz * offsetM;
   return {
     x,
-    y: 0.04,
+    y: 0.05,
     z,
-    yaw: Math.atan2(alongX, alongZ),
+    yaw: 0,
     faceUp: true,
     w,
     h,

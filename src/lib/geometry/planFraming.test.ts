@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Wall } from '../../types';
-import { framingFromWall, framingFromWalls, freeAreaFit, orbitViewPose, pageCenterFit, topViewHeight, worldShiftForFreeArea } from './planFraming';
+import { framingFromWall, framingFromWalls, freeAreaFit, orbitViewPose, pageCenterFit, planChromeFit, topViewHeight, worldShiftForFreeArea } from './planFraming';
 
 const rect: Wall[] = [
   { id: 'w1', start: { x: 180, y: 150 }, end: { x: 660, y: 150 }, thickness: 0.15, height: 2.7 },
@@ -137,5 +137,42 @@ describe('plan framing', () => {
     expect(fit.padScale).toBeGreaterThan(1.5);
     const shift = worldShiftForFreeArea(fit.shiftFraction, 28, 42, 390 / 844);
     expect(shift).toBeGreaterThan(2);
+  });
+
+  it('keeps a selected room page-centered when the slim plan rail is open', () => {
+    const fit = planChromeFit({
+      width: 390,
+      height: 844,
+      coarse: true,
+      showRightRail: true,
+      mode: 'top',
+      frameRoom: true,
+    });
+    expect(fit.shiftFraction).toBe(0);
+    expect(fit.rightReserve).toBe(86 + 18);
+    expect(fit.padScale).toBeGreaterThan(1.3);
+    expect(fit.maxPlateW).toBeCloseTo(390 - fit.rightReserve * 2, 5);
+  });
+
+  it('shifts only for a wide inspector, not the slim rail', () => {
+    const rail = planChromeFit({
+      width: 390,
+      height: 844,
+      coarse: true,
+      showRightRail: true,
+      mode: 'top',
+      frameRoom: true,
+    });
+    const inspector = planChromeFit({
+      width: 390,
+      height: 844,
+      coarse: true,
+      inspectorOpen: true,
+      showRightRail: true,
+      mode: 'top',
+      frameRoom: true,
+    });
+    expect(rail.shiftFraction).toBe(0);
+    expect(inspector.shiftFraction).toBeGreaterThan(0.2);
   });
 });

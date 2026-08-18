@@ -1,4 +1,4 @@
-import type { Point, Wall } from '../../types';
+import type { CameraMode, Point, Wall } from '../../types';
 import { WORLD_ORIGIN } from './placement';
 import { wallDimFieldLayout } from './roomWalls';
 import { PIXELS_PER_METER } from './snapping';
@@ -232,4 +232,48 @@ export function worldShiftForFreeArea(shiftFraction: number, cameraDist: number,
   const fov = (fovDeg * Math.PI) / 180;
   const visibleW = 2 * Math.tan(fov / 2) * Math.max(cameraDist, 0.01) * Math.max(aspect, 0.35);
   return shiftFraction * visibleW;
+}
+
+/**
+ * Plan/Front chrome: stay page-centered for the slim black rail (zoom out so
+ * dims clear it). Only pan into the free band for a wide inspector or wall card.
+ */
+export function planChromeFit(opts: {
+  width: number;
+  height: number;
+  coarse?: boolean;
+  inspectorOpen?: boolean;
+  showRightRail?: boolean;
+  mode: CameraMode;
+  frameRoom?: boolean;
+  focusWall?: boolean;
+}) {
+  const coarse = !!opts.coarse;
+  const inspectorOpen = !!opts.inspectorOpen;
+  const showElevDims = opts.mode === 'elevation' && !inspectorOpen && !opts.focusWall;
+  const showPlanDims = (!!opts.frameRoom && opts.mode !== 'elevation') || showElevDims;
+  const dimVertPx = showPlanDims ? (opts.mode === 'elevation' ? 36 : 34) : 0;
+  const topChromePx = (coarse ? 112 : 88) + dimVertPx;
+  const bottomChromePx = (coarse ? 118 : 96) + dimVertPx;
+  const railPx = opts.showRightRail ? 86 : 0;
+  const gutterPx = railPx ? (coarse ? 18 : 12) : 0;
+  if (inspectorOpen || opts.focusWall) {
+    const rightChromePx = inspectorOpen ? Math.min(260, Math.round(opts.width * 0.44)) : railPx;
+    return freeAreaFit({
+      width: opts.width,
+      height: opts.height,
+      rightChromePx,
+      gutterPx: inspectorOpen ? (coarse ? 12 : 10) : gutterPx,
+      topChromePx,
+      bottomChromePx,
+    });
+  }
+  return pageCenterFit({
+    width: opts.width,
+    height: opts.height,
+    rightChromePx: railPx,
+    gutterPx,
+    topChromePx,
+    bottomChromePx,
+  });
 }

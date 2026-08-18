@@ -1,5 +1,5 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Bvh, Environment, Html, Line, OrbitControls, OrthographicCamera, PerspectiveCamera, PivotControls, Text, useTexture } from '@react-three/drei';
+import { Bvh, Environment, Html, Line, OrbitControls, OrthographicCamera, PerspectiveCamera, PivotControls, RoundedBox, Text, useTexture } from '@react-three/drei';
 import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { usePlannerStore } from '../../store/plannerStore';
@@ -9,7 +9,7 @@ import { detectRoomPolygons, roomShape, roomShapeWithHoles } from '../../lib/geo
 import { alignmentGuides, clampWallMountY, constrainPlacement, pointOnWall, roomFloorCenter, wallFrame, WORLD_ORIGIN } from '../../lib/geometry/placement';
 import { doorSwingZones, furnitureHitsDoorSwing } from '../../lib/geometry/doorClearance';
 import { wouldOverlapFurniture } from '../../lib/collisions';
-import { framingFromPoints, framingFromWall, framingFromWalls, freeAreaFit, pageCenterFit, worldShiftForFreeArea } from '../../lib/geometry/planFraming';
+import { framingFromPoints, framingFromWall, framingFromWalls, planChromeFit, worldShiftForFreeArea } from '../../lib/geometry/planFraming';
 import { pointInPlanRoom, enclosureWallsForRoom } from '../../lib/geometry/roomWalls';
 import { pickFacingWall, elevationFaceBasis, wallWorldFrame, elevationOrthoZoom } from '../../lib/geometry/elevationFace';
 import { planWallDimAnchor, elevationDimPillAnchors, DIM_FONT_M } from '../../lib/geometry/wallDimPills';
@@ -167,39 +167,22 @@ function CameraRig() {
   const canvasW = size?.width || (typeof window !== 'undefined' ? window.innerWidth : 390);
   const canvasH = size?.height || (typeof window !== 'undefined' ? window.innerHeight : 844);
 
-  // Rail: stay page-centered and zoom so the plate clears the rail with a small margin.
+  // Rail: stay page-centered and zoom so the plate + dims clear the slim rail.
   // Wide overlays (inspector / wall dim card) still use free-area shift.
-  const chromeFit = useMemo(() => {
-    const showElevDims = mode === 'elevation' && !inspectorOpen && !focusWall;
-    const showPlanDims = (!!frameRoom && mode !== 'elevation') || showElevDims;
-    // World-space pills only need a small chrome gutter — not a second rail-width pad.
-    const dimVertPx = showPlanDims ? (mode === 'elevation' ? 28 : 20) : 0;
-    const topChromePx = (coarse ? 112 : 88) + dimVertPx;
-    const bottomChromePx = (coarse ? 118 : 96) + dimVertPx;
-    const railPx = showRightRail ? 86 : 0;
-    const gutterPx = railPx ? (coarse ? 14 : 10) : 0;
-    if (inspectorOpen || focusWall || (showPlanDims && showRightRail && (mode === 'top' || mode === 'elevation'))) {
-      const rightChromePx = inspectorOpen
-        ? Math.min(260, Math.round(canvasW * 0.44))
-        : railPx;
-      return freeAreaFit({
+  const chromeFit = useMemo(
+    () =>
+      planChromeFit({
         width: canvasW,
         height: canvasH,
-        rightChromePx,
-        gutterPx: inspectorOpen ? (coarse ? 12 : 10) : gutterPx,
-        topChromePx,
-        bottomChromePx,
-      });
-    }
-    return pageCenterFit({
-      width: canvasW,
-      height: canvasH,
-      rightChromePx: railPx,
-      gutterPx,
-      topChromePx,
-      bottomChromePx,
-    });
-  }, [canvasW, canvasH, inspectorOpen, showRightRail, coarse, inspectorTick, focusWall, frameRoom, mode]);
+        coarse,
+        inspectorOpen,
+        showRightRail,
+        mode,
+        frameRoom: !!frameRoom,
+        focusWall: !!focusWall,
+      }),
+    [canvasW, canvasH, inspectorOpen, showRightRail, coarse, inspectorTick, focusWall, frameRoom, mode],
+  );
 
   const framing = useMemo(() => {
     // Keep orbit as tight as chromeFit allows — padScale already clears the rail.
@@ -227,7 +210,7 @@ function CameraRig() {
     }
     if (frameRoom?.points.length) {
       // Extra pad so exterior dim pills + handles stay in the free plate.
-      const roomPad = pad * (frameRoom ? 1.06 : 1);
+      const roomPad = pad * (frameRoom ? 1.12 : 1);
       return framingFromPoints(frameRoom.points, { pad: roomPad, orbitPad, minSpan: 2.5, minHeight: 9 });
     }
     return framingFromWalls(walls, { pad, orbitPad, minHeight: 12 });
@@ -247,8 +230,7 @@ function CameraRig() {
   const fovDeg = mode === 'walk' ? 58 : mode === 'top' || mode === 'elevation' ? 42 : 48;
   const aspect = Math.max(0.35, canvasW / Math.max(1, canvasH));
 
-  // Page center by default; shift into the free band left of the rail when
-  // Plan/Front dims are up so the house stays large and the right pill is visible.
+  // Page center by default; shift into the free band left of a wide inspector only.
   const shiftX = useMemo(() => {
     const menuShiftX = menuOpen ? viewFraming.span * 0.28 : 0;
     if (chromeFit.shiftFraction <= 0) return menuShiftX;
@@ -342,7 +324,7 @@ function CameraRig() {
 
   // Orthographic plan zoom — true top-down (no perspective tilt).
   const orthoZoom = useMemo(() => {
-    const spanPad = 0.54 * chromeFit.padScale * (frameRoom ? 1.08 : 1);
+    const spanPad = 0.54 * chromeFit.padScale * (frameRoom ? 1.14 : 1);
     const half = Math.max(viewFraming.span * spanPad, 5);
     const px = Math.min(size.width, size.height) || 800;
     if (mode === 'elevation') {
@@ -1195,25 +1177,30 @@ function WallDimWorld({
   selected?: boolean;
   size: { w: number; h: number };
 }) {
-  const bg = selected ? '#0058a3' : '#ffffff';
+  const bg = selected ? '#0058a3' : '#f7f9fb';
   const fg = selected ? '#ffffff' : '#111820';
+  const stroke = selected ? '#004e91' : '#c5ccd3';
+  const radius = Math.min(size.w, size.h) * 0.48;
   return (
     <group position={position} rotation={[0, yaw, 0]} raycast={() => {}}>
       <group rotation={faceUp ? [-Math.PI / 2, 0, 0] : [0, 0, 0]}>
-        <mesh renderOrder={24} position={[0, 0, 0.001]}>
-          <planeGeometry args={[size.w, size.h]} />
+        <RoundedBox args={[size.w + 0.02, size.h + 0.02, 0.008]} radius={radius} smoothness={4} position={[0, 0, 0]}>
+          <meshBasicMaterial color={stroke} depthTest={false} toneMapped={false} />
+        </RoundedBox>
+        <RoundedBox args={[size.w, size.h, 0.01]} radius={Math.max(0.01, radius - 0.008)} smoothness={4} position={[0, 0, 0.004]}>
           <meshBasicMaterial color={bg} depthTest={false} toneMapped={false} />
-        </mesh>
+        </RoundedBox>
         <Suspense fallback={null}>
           <Text
             renderOrder={25}
-            position={[0, 0, 0.002]}
+            position={[0, 0, 0.012]}
             fontSize={DIM_FONT_M}
             color={fg}
             anchorX="center"
             anchorY="middle"
-            outlineWidth={0.006}
+            outlineWidth={selected ? 0.004 : 0.01}
             outlineColor={bg}
+            letterSpacing={-0.02}
             depthOffset={-2}
           >
             {text}
@@ -1249,12 +1236,14 @@ function PlanWallDim({
   selected: boolean;
   thickness: number;
 }) {
+  const viewYawDeg = usePlannerStore((s) => s.viewYawDeg);
   const a = planWallDimAnchor({ midX, midZ, sx, sz, ex, ez, thickness, text, roomPoints });
+  const yaw = (((viewYawDeg % 360) + 360) % 360) * (Math.PI / 180);
   return (
     <WallDimWorld
       key={wallId + 'len'}
       position={[a.x, a.y, a.z]}
-      yaw={a.yaw}
+      yaw={yaw}
       faceUp
       text={text}
       selected={selected}
