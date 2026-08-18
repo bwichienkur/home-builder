@@ -18,6 +18,7 @@ import {
   Info,
   Lamp,
   PanelTop,
+  Pentagon,
   Plus,
   Redo2,
   RotateCw,
@@ -823,6 +824,32 @@ export function StudioChrome({
                 >
                   <PanelTop size={15} />
                   <span>Win</span>
+                </button>
+                <button
+                  type="button"
+                  className={`studio-dock-action studio-dock-priority${tool === 'corner' ? ' is-active' : ''}`}
+                  title="Add a corner — tap a wall of the selected room"
+                  aria-pressed={tool === 'corner'}
+                  onClick={() => {
+                    onCloseInspector?.();
+                    setPendingAttachMode(false);
+                    setPlanWallTool(false);
+                    setCamera('top');
+                    if (tool === 'corner') {
+                      setTool('select');
+                      return;
+                    }
+                    if (!selectedRoomId && planRooms.length === 1) selectRoom(planRooms[0]!.id);
+                    if (!selectedRoomId && planRooms.length !== 1) {
+                      setTool('corner');
+                      usePlannerStore.setState({ openingNotice: 'Tap a room, then tap a wall to add a corner.' });
+                      return;
+                    }
+                    setTool('corner');
+                  }}
+                >
+                  <Pentagon size={15} />
+                  <span>Corner</span>
                 </button>
                 <button
                   type="button"

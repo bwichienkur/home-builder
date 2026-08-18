@@ -367,6 +367,8 @@ export default function StudioApp() {
       } else if (e.key === 'Escape') {
         if (store.pendingPlacement) store.cancelPendingPlacement();
         store.setDraftStart(null);
+        store.setTool('select');
+        store.setPendingAttachMode(false);
         setCatalogOpen(false);
         closeNav();
         closeProjectMenu();

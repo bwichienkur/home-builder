@@ -10,7 +10,7 @@ import { alignmentGuides, clampWallMountY, constrainPlacement, pointOnWall, room
 import { doorSwingZones, furnitureHitsDoorSwing } from '../../lib/geometry/doorClearance';
 import { wouldOverlapFurniture } from '../../lib/collisions';
 import { framingFromPoints, framingFromWall, framingFromWalls, planChromeFit, worldShiftForFreeArea } from '../../lib/geometry/planFraming';
-import { pointInPlanRoom, enclosureWallsForRoom } from '../../lib/geometry/roomWalls';
+import { pointInPlanRoom, enclosureWallsForRoom, planRoomEdgeIndexForWall } from '../../lib/geometry/roomWalls';
 import { pickFacingWall, elevationFaceBasis, wallWorldFrame, elevationOrthoZoom } from '../../lib/geometry/elevationFace';
 import { planWallDimAnchor, elevationDimPillAnchors, DIM_FONT_M } from '../../lib/geometry/wallDimPills';
 import { preferInteriorPicks as filterInteriorPicks } from '../../lib/geometry/scenePicks';
@@ -1284,11 +1284,37 @@ function WallMeshes() {
   // Openings can be dragged in top plan and 3D orbit (not walk).
   const openingDragEnabled = tool === 'select' && (cameraMode === 'top' || cameraMode === 'orbit');
   const placingOpening = tool === 'door' || tool === 'window' || tool === 'passage';
+  const placingCorner = tool === 'corner';
   const { invalidate } = useThree();
 
   const onWallClick = (id: string, point?: { x: number; z: number }) => {
     if (placingOpening && point && (tool === 'door' || tool === 'window' || tool === 'passage')) {
       placeOpeningAtWorld(id, tool, point.x, point.z);
+      return;
+    }
+    if (placingCorner) {
+      const st = usePlannerStore.getState();
+      const wall = st.walls.find((w) => w.id === id);
+      if (!wall) return;
+      let room = st.planRooms.find((r) => r.id === st.selectedRoomId) ?? null;
+      let edge = room ? planRoomEdgeIndexForWall(room, wall) : null;
+      if (edge == null) {
+        const owner = st.planRooms.find((r) => planRoomEdgeIndexForWall(r, wall) != null) ?? null;
+        if (owner) {
+          room = owner;
+          st.selectRoom(owner.id);
+          edge = planRoomEdgeIndexForWall(owner, wall);
+        }
+      }
+      if (!room || edge == null) {
+        usePlannerStore.setState({
+          openingNotice: room ? 'Tap a wall of the selected room.' : 'Tap a room, then tap a wall to add a corner.',
+        });
+        return;
+      }
+      st.insertPlanRoomVertex(room.id, edge);
+      st.setTool('select');
+      usePlannerStore.setState({ openingNotice: 'Drag the new corner.' });
       return;
     }
     select(id);
@@ -1338,7 +1364,7 @@ function WallMeshes() {
 
         // Plan: thin pick strip while tagging openings or dragging walls.
         const topPick =
-          cameraMode === 'top' && (placingOpening || planWallTool) ? (
+          cameraMode === 'top' && (placingOpening || placingCorner || planWallTool) ? (
             <mesh
               key={w.id + 'toppick'}
               userData={{ wallPlanPick: true }}
@@ -2246,7 +2272,11 @@ function Room() {
         selectRoom(roomId);
         const st = usePlannerStore.getState();
         const placing =
-          st.pendingAttachMode || st.tool === 'door' || st.tool === 'window' || st.tool === 'passage';
+          st.pendingAttachMode ||
+          st.tool === 'door' ||
+          st.tool === 'window' ||
+          st.tool === 'passage' ||
+          st.tool === 'corner';
         if (!placing) window.dispatchEvent(new Event('roomcraft-open-properties'));
         window.setTimeout(() => {
           window.dispatchEvent(new Event('roomcraft-fit-plan'));

@@ -14,6 +14,15 @@ describe('planToolHint', () => {
     );
   });
 
+  it('prompts to tap a wall while adding a corner', () => {
+    expect(planToolHint({ tool: 'corner', pendingAttachMode: false, selectedRoomId: 'r1' })).toBe(
+      'Tap a wall to add a corner',
+    );
+    expect(planToolHint({ tool: 'corner', pendingAttachMode: false, selectedRoomId: null })).toBe(
+      'Tap a room, then Corner',
+    );
+  });
+
   it('prompts a side once a host room is selected', () => {
     expect(planToolHint({ tool: 'select', pendingAttachMode: true, selectedRoomId: 'r1' })).toBe(
       'Tap a side of the room to add another',

@@ -23,25 +23,17 @@ export function snapPlanPoint(point: Point, snapPx: number): Point {
   };
 }
 
-/**
- * Pointer → vertex gain. Stay well below 1:1 even when zoomed in — a flick
- * used to throw the room out of frame.
- */
-export function vertexDragGain(zoom: number): number {
-  return Math.min(0.16, Math.max(0.05, zoom / 480));
+/** Pointer → vertex gain. 1:1 so the corner follows the cursor. */
+export function vertexDragGain(_zoom?: number): number {
+  return 1;
 }
 
-export const VERTEX_DRAG_MAX_M = 1.35;
+export const VERTEX_DRAG_MAX_M = Infinity;
 
-/** Cap one gesture so a long swipe cannot send a corner off-screen. */
-export function clampVertexDragTravel(start: Point, next: Point, maxM = VERTEX_DRAG_MAX_M): Point {
-  const maxPx = maxM * PIXELS_PER_METER;
-  const dx = next.x - start.x;
-  const dy = next.y - start.y;
-  const d = Math.hypot(dx, dy);
-  if (d <= maxPx || d < 1e-6) return next;
-  const s = maxPx / d;
-  return { x: start.x + dx * s, y: start.y + dy * s };
+/** @deprecated travel is no longer capped — corners follow the pointer. */
+export function clampVertexDragTravel(start: Point, next: Point, _maxM = VERTEX_DRAG_MAX_M): Point {
+  void start;
+  return next;
 }
 
 export type VertexDragAxis = 'x' | 'y';
@@ -57,7 +49,7 @@ export function lockVertexDragAxis(start: Point, next: Point, axis: VertexDragAx
   return axis === 'x' ? { x: next.x, y: start.y } : { x: start.x, y: next.y };
 }
 
-/** Apply gain, axis lock, travel cap, then snap. */
+/** Apply 1:1 travel, optional Shift axis lock, then snap. */
 export function applyVertexDrag(opts: {
   anchor: Point;
   startPointer: Point;
@@ -65,15 +57,19 @@ export function applyVertexDrag(opts: {
   others: Point[];
   zoom: number;
   axis: VertexDragAxis | null;
+  /** Hold Shift to lock to the dominant axis. */
+  lockAxis?: boolean;
 }): { point: Point; axis: VertexDragAxis | null } {
   const gain = vertexDragGain(opts.zoom);
   let point: Point = {
     x: opts.anchor.x + (opts.pointer.x - opts.startPointer.x) * gain,
     y: opts.anchor.y + (opts.pointer.y - opts.startPointer.y) * gain,
   };
-  const axis = opts.axis ?? vertexDragAxisLock(opts.anchor, point, opts.zoom);
-  if (axis) point = lockVertexDragAxis(opts.anchor, point, axis);
-  point = clampVertexDragTravel(opts.anchor, point);
+  let axis: VertexDragAxis | null = null;
+  if (opts.lockAxis) {
+    axis = opts.axis ?? vertexDragAxisLock(opts.anchor, point, opts.zoom);
+    if (axis) point = lockVertexDragAxis(opts.anchor, point, axis);
+  }
   point = snapVertexDrag(point, opts.others, opts.zoom);
   return { point, axis };
 }
@@ -98,7 +94,7 @@ export function snapVertexDrag(
 }
 
 /** Ignore sub-threshold pointer noise before the first committed move. */
-export function vertexDragArmed(from: Point, to: Point, zoom: number, thresholdPx = 18): boolean {
+export function vertexDragArmed(from: Point, to: Point, zoom: number, thresholdPx = 8): boolean {
   const meters = Math.hypot(to.x - from.x, to.y - from.y) / PIXELS_PER_METER;
   return meters * Math.max(zoom, 1) >= thresholdPx;
 }

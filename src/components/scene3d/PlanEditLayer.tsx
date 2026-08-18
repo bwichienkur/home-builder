@@ -131,6 +131,7 @@ export function PlanEditLayer() {
     startPointer: { x: number; y: number };
     armed: boolean;
     axis: VertexDragAxis | null;
+    lockAxis: boolean;
   } | null>(null);
   const wallDrag = useRef<{ wallId: string; pointerId: number; lastX: number; lastZ: number } | null>(null);
   const [vertexDragging, setVertexDragging] = useState(false);
@@ -327,6 +328,7 @@ export function PlanEditLayer() {
       startPointer,
       armed: false,
       axis: null,
+      lockAxis: !!e.shiftKey,
     };
     setVertexDragging(true);
     document.body.dataset.movingFurniture = 'true';
@@ -345,6 +347,7 @@ export function PlanEditLayer() {
     const raw = hitPlan(e);
     if (!raw) return;
     const zoom = cameraZoom(camera);
+    if (e.shiftKey) drag.lockAxis = true;
     if (!drag.armed) {
       if (!vertexDragArmed(drag.startPointer, raw, zoom)) return;
       drag.armed = true;
@@ -358,6 +361,7 @@ export function PlanEditLayer() {
       others,
       zoom,
       axis: drag.axis,
+      lockAxis: drag.lockAxis,
     });
     drag.axis = next.axis;
     const current = room?.points[drag.index];
@@ -383,6 +387,7 @@ export function PlanEditLayer() {
           others,
           zoom,
           axis: drag.axis,
+          lockAxis: drag.lockAxis || !!e.shiftKey,
         });
         movePlanRoomVertex(drag.roomId, drag.index, next.point, { live: false });
       }

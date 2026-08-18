@@ -33,7 +33,11 @@ export function preferInteriorPicks<T extends ScenePickHit>(hits: T[], state: Sc
     return hits.filter((h) => !hasUserDataFlag(h.object, 'furniturePick'));
   }
   const wallPriority =
-    state.planWallTool || state.tool === 'door' || state.tool === 'window' || state.tool === 'passage';
+    state.planWallTool ||
+    state.tool === 'door' ||
+    state.tool === 'window' ||
+    state.tool === 'passage' ||
+    state.tool === 'corner';
   if (state.cameraMode === 'top') {
     if (wallPriority) {
       const wallPlan = hits.filter((h) => hasUserDataFlag(h.object, 'wallPlanPick'));

@@ -11,6 +11,13 @@ describe('preferInteriorPicks', () => {
     expect(next[0]?.object.userData?.roomPick).toBe(true);
   });
 
+  it('keeps wall strips first while adding a corner', () => {
+    const hits = [hit({ roomPick: true }), hit({ wallPlanPick: true })];
+    const next = preferInteriorPicks(hits, { cameraMode: 'top', planWallTool: false, tool: 'corner' });
+    expect(next).toHaveLength(1);
+    expect(next[0]?.object.userData?.wallPlanPick).toBe(true);
+  });
+
   it('keeps wall strips first while the Walls tool is armed', () => {
     const hits = [hit({ roomPick: true }), hit({ wallPlanPick: true })];
     const next = preferInteriorPicks(hits, { cameraMode: 'top', planWallTool: true, tool: 'select' });

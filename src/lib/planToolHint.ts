@@ -6,6 +6,9 @@ export function planToolHint(opts: {
   if (opts.tool === 'door' || opts.tool === 'window' || opts.tool === 'passage') {
     return `Tap a wall to place a ${opts.tool}`;
   }
+  if (opts.tool === 'corner') {
+    return opts.selectedRoomId ? 'Tap a wall to add a corner' : 'Tap a room, then Corner';
+  }
   if (opts.pendingAttachMode) {
     return opts.selectedRoomId ? 'Tap a side of the room to add another' : 'Tap a room to add onto';
   }
