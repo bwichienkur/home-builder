@@ -257,7 +257,7 @@ export function planChromeFit(opts: {
   const dimVertPx = showPlanDims ? (opts.mode === 'elevation' ? 36 : 34) : 0;
   const dimTrayPx = opts.dimTray ? (coarse ? 44 : 36) : 0;
   const topChromePx = (coarse ? 112 : 88) + dimVertPx;
-  const bottomChromePx = (coarse ? 128 : 100) + dimVertPx + dimTrayPx;
+  const bottomChromePx = (coarse ? 140 : 104) + dimVertPx + dimTrayPx;
   const railPx = opts.showRightRail ? 86 : 0;
   const gutterPx = railPx ? (coarse ? 18 : 12) : 0;
   if (inspectorOpen || opts.focusWall) {
