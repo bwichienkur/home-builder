@@ -34,7 +34,7 @@ export const residentialFlooring = [
       'Children’s room',
       'Kitchen',
     ],
-    note: '5×48 in plank look · tap then tap a room to fill the floor',
+    note: '5×48 in 3D planks · tap then tap a room to fill the floor',
   },
   {
     id: 'floor-walnut-hardwood',
@@ -59,7 +59,7 @@ export const residentialFlooring = [
     thumbnailUrl: '/catalog/thumbs/floor-wood.svg',
     tags: ['flooring', 'hardwood', 'wood'],
     roomTypes: ['Bedroom', 'Living room', 'Dining room', 'Office', 'Hallway'],
-    note: 'Wide-plank walnut · tap then tap a room to fill the floor',
+    note: 'Wide-plank 3D walnut boards · tap then tap a room to fill the floor',
   },
   {
     id: 'floor-ash-laminate',
@@ -93,7 +93,7 @@ export const residentialFlooring = [
       'Kitchen',
       'Laundry',
     ],
-    note: 'Click-lock laminate · tap then tap a room to fill the floor',
+    note: 'Click-lock 3D laminate planks · tap then tap a room to fill the floor',
   },
   {
     id: 'floor-vinyl-gray',
@@ -126,7 +126,7 @@ export const residentialFlooring = [
       'Children’s room',
       'Office',
     ],
-    note: 'Waterproof LVP · tap then tap a room to fill the floor',
+    note: 'Waterproof 3D LVP planks · tap then tap a room to fill the floor',
   },
   {
     id: 'floor-concrete-polished',
@@ -174,7 +174,7 @@ export const residentialFlooring = [
     thumbnailUrl: '/catalog/thumbs/floor-tile.svg',
     tags: ['flooring', 'tile', 'ceramic'],
     roomTypes: ['Bathroom', 'Kitchen', 'Laundry', 'Hallway'],
-    note: '12×12 in ceramic · tap then tap a room to fill the floor',
+    note: '12×12 in 3D ceramic tiles · tap then tap a room to fill the floor',
   },
   {
     id: 'floor-tile-porcelain-gray',
@@ -199,7 +199,7 @@ export const residentialFlooring = [
     thumbnailUrl: '/catalog/thumbs/floor-tile.svg',
     tags: ['flooring', 'tile', 'porcelain'],
     roomTypes: ['Bathroom', 'Kitchen', 'Laundry', 'Hallway', 'Living room'],
-    note: '12×24 in porcelain · tap then tap a room to fill the floor',
+    note: '12×24 in 3D porcelain tiles · tap then tap a room to fill the floor',
   },
   {
     id: 'floor-tile-hex-stone',
@@ -224,7 +224,7 @@ export const residentialFlooring = [
     thumbnailUrl: '/catalog/thumbs/floor-tile.svg',
     tags: ['flooring', 'tile', 'mosaic'],
     roomTypes: ['Bathroom', 'Kitchen', 'Hallway', 'Laundry'],
-    note: 'Hex mosaic field · tap then tap a room to fill the floor',
+    note: '3D hex mosaic field · tap then tap a room to fill the floor',
   },
   {
     id: 'floor-subway-tile',
@@ -248,7 +248,7 @@ export const residentialFlooring = [
     thumbnailUrl: '/catalog/thumbs/floor-tile.svg',
     tags: ['flooring', 'tile', 'subway'],
     roomTypes: ['Bathroom', 'Kitchen', 'Laundry'],
-    note: '3×6 in subway laid running bond · tap then tap a room to fill the floor',
+    note: '3×6 in 3D subway tiles, running bond · tap then tap a room to fill the floor',
   },
   {
     id: 'floor-carpet-beige',
