@@ -519,7 +519,7 @@ function CameraRig() {
       if (controls.current) {
         controls.current.enabled = !placing;
         controls.current.enablePan = true;
-        controls.current.enableRotate = mode !== 'top';
+        controls.current.enableRotate = mode !== 'top' && mode !== 'elevation';
         controls.current.enableZoom = true;
       }
     };
@@ -1450,33 +1450,23 @@ function WallMeshes() {
                   dimRoom?.points,
                 );
                 return [
-                  <Html
+                  <Text
                     key={w.id + 'len'}
-                    position={[labelX, 0.18, labelZ]}
-                    center
-                    transform={false}
-                    distanceFactor={14}
-                    zIndexRange={[55, 35]}
-                    wrapperClass="wall-dim-html"
+                    position={[labelX, 0.16, labelZ]}
+                    rotation={[-Math.PI / 2, 0, 0]}
+                    fontSize={Math.min(0.28, Math.max(0.16, origLen * 0.05))}
+                    color={selected ? '#ffffff' : '#1a2330'}
+                    anchorX="center"
+                    anchorY="middle"
+                    outlineWidth={0.02}
+                    outlineColor={selected ? '#0058a3' : '#ffffff'}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onWallClick(w.id);
+                    }}
                   >
-                    <span
-                      role="button"
-                      tabIndex={0}
-                      className={`wall-dim-label${selected ? ' is-selected' : ''}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onWallClick(w.id);
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          onWallClick(w.id);
-                        }
-                      }}
-                    >
-                      {formatLength(origLen, unitSystem)}
-                    </span>
-                  </Html>,
+                    {formatLength(origLen, unitSystem)}
+                  </Text>,
                 ];
               })()
             : []),
