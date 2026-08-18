@@ -104,6 +104,7 @@ function CameraRig() {
   const selectedRoomId = usePlannerStore((s) => s.selectedRoomId);
   const workflowStage = usePlannerStore((s) => s.workflowStage);
   const placing = usePlannerStore((s) => !!s.pendingPlacement);
+  const planWallTool = usePlannerStore((s) => s.planWallTool);
   const [moving, setMoving] = useState(false);
   const controls = useRef<any>(null);
   const { invalidate, get, size } = useThree();
@@ -166,6 +167,8 @@ function CameraRig() {
   void railTick;
   const canvasW = size?.width || (typeof window !== 'undefined' ? window.innerWidth : 390);
   const canvasH = size?.height || (typeof window !== 'undefined' ? window.innerHeight : 844);
+  const dimTray =
+    mode === 'top' && workflowStage === 'house' && planWallTool && !!planSelectedRoom && planSelectedRoom.points.length >= 3;
 
   // Rail: stay page-centered and zoom so the plate + dims clear the slim rail.
   // Wide overlays (inspector / wall dim card) still use free-area shift.
@@ -180,8 +183,9 @@ function CameraRig() {
         mode,
         frameRoom: !!frameRoom,
         focusWall: !!focusWall,
+        dimTray,
       }),
-    [canvasW, canvasH, inspectorOpen, showRightRail, coarse, inspectorTick, focusWall, frameRoom, mode],
+    [canvasW, canvasH, inspectorOpen, showRightRail, coarse, inspectorTick, focusWall, frameRoom, mode, dimTray],
   );
 
   const framing = useMemo(() => {

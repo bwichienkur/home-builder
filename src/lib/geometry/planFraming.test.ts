@@ -175,4 +175,18 @@ describe('plan framing', () => {
     expect(rail.shiftFraction).toBe(0);
     expect(inspector.shiftFraction).toBeGreaterThan(0.2);
   });
+
+  it('keeps the room page-centered when W/D/H is in the dock', () => {
+    const fit = planChromeFit({
+      width: 390,
+      height: 844,
+      coarse: true,
+      showRightRail: true,
+      mode: 'top',
+      frameRoom: true,
+      dimTray: true,
+    });
+    expect(fit.shiftFraction).toBe(0);
+    expect(fit.padScale).toBeGreaterThan(1.3);
+  });
 });

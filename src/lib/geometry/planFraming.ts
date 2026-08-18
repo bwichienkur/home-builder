@@ -247,14 +247,17 @@ export function planChromeFit(opts: {
   mode: CameraMode;
   frameRoom?: boolean;
   focusWall?: boolean;
+  /** W/D/H row is in the dock — reserve extra bottom chrome. */
+  dimTray?: boolean;
 }) {
   const coarse = !!opts.coarse;
   const inspectorOpen = !!opts.inspectorOpen;
   const showElevDims = opts.mode === 'elevation' && !inspectorOpen && !opts.focusWall;
   const showPlanDims = (!!opts.frameRoom && opts.mode !== 'elevation') || showElevDims;
   const dimVertPx = showPlanDims ? (opts.mode === 'elevation' ? 36 : 34) : 0;
+  const dimTrayPx = opts.dimTray ? (coarse ? 44 : 36) : 0;
   const topChromePx = (coarse ? 112 : 88) + dimVertPx;
-  const bottomChromePx = (coarse ? 118 : 96) + dimVertPx;
+  const bottomChromePx = (coarse ? 128 : 100) + dimVertPx + dimTrayPx;
   const railPx = opts.showRightRail ? 86 : 0;
   const gutterPx = railPx ? (coarse ? 18 : 12) : 0;
   if (inspectorOpen || opts.focusWall) {
