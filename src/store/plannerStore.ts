@@ -13,7 +13,8 @@ import type { HousePlan } from '../lib/housePlans/buildPlan';
 import { getHousePlan } from '../lib/housePlans/planRegistry';
 import { remapFurnitureAfterPlanRebuild } from '../lib/geometry/planFurnitureRemap';
 import { remapOpeningsAfterPlanRebuild } from '../lib/geometry/planOpeningRemap';
-import { pointInPlanRoom, wallEndpointForGrowSide, type WallGrowSide } from '../lib/geometry/roomWalls';
+import { pointInPlanRoom, planRoomEdgeIndexForWall, wallEndpointForGrowSide, type WallGrowSide } from '../lib/geometry/roomWalls';
+import { clampInsertT, projectPointOntoPolygonOutline } from '../lib/geometry/planCornerGhost';
 import { PIXELS_PER_METER } from '../lib/geometry/snapping';
 
 export type { PlanRoomShape, AttachSide };
@@ -35,6 +36,13 @@ export type FurnitureAddMeta = {
   y?: number;
   wallId?: string | null;
   wallOffset?: number | null;
+};
+
+/** Ghost corner on a room outline, awaiting Confirm. */
+export type PendingCorner = {
+  roomId: string;
+  edgeIndex: number;
+  t: number;
 };
 
 /** Catalog item awaiting IKEA-style ghost place → commit. */
@@ -72,6 +80,9 @@ type PlannerState = SceneSnapshot & {
   selectedSurface: SurfaceTarget | null;
   selectedRoomId: string | null;
   pendingPlacement: PendingPlacement | null;
+  pendingCorner: PendingCorner | null;
+  /** Highlight a polygon vertex after inserting a corner. */
+  selectedVertexIndex: number | null;
   pendingFloorFill: PendingFloorFill | null;
   draftStart: Point | null;
   floors: FloorRecord[];
@@ -188,7 +199,11 @@ type PlannerState = SceneSnapshot & {
   /** Drag a polygon vertex (plan pixels) for angled / non-rect rooms. */
   movePlanRoomVertex: (id: string, vertexIndex: number, point: Point, opts?: { live?: boolean }) => boolean;
   commitPlanRoomVertex: () => void;
-  insertPlanRoomVertex: (id: string, edgeIndex: number) => boolean;
+  insertPlanRoomVertex: (id: string, edgeIndex: number, t?: number) => boolean;
+  beginPendingCorner: (roomId: string, planPoint: Point) => boolean;
+  movePendingCorner: (planPoint: Point) => boolean;
+  commitPendingCorner: () => boolean;
+  cancelPendingCorner: () => void;
   removePlanRoomVertex: (id: string, vertexIndex: number) => boolean;
   /** Place a stair annotation linking two floors. */
   addStair: (fromFloorId: string, toFloorId: string, x?: number, z?: number) => void;
@@ -489,6 +504,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     selectedSurface: null,
     selectedRoomId: null,
     pendingPlacement: null,
+    pendingCorner: null,
+    selectedVertexIndex: null,
     pendingFloorFill: null,
     draftStart: null,
     floors: [{ id: 'ground', name: 'Ground floor', scene: initial, storyHeightM: 2.7 }],
@@ -598,7 +615,15 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         annotations: s.annotations.filter((a) => a.id !== id),
         selectedAnnotationId: s.selectedAnnotationId === id ? null : s.selectedAnnotationId,
       })),
-    setTool: (tool) => set({ tool: tool === 'wall' ? 'select' : tool, draftStart: null }),
+    setTool: (tool) => {
+      const next = tool === 'wall' ? 'select' : tool;
+      set({
+        tool: next,
+        draftStart: null,
+        pendingCorner: next === 'corner' ? get().pendingCorner : null,
+        selectedVertexIndex: next === 'select' ? get().selectedVertexIndex : null,
+      });
+    },
     setView: (view) => set({ view, draftStart: null }),
     setCameraMode: (cameraMode) => set({ cameraMode }),
     setElevationFace: (elevationFace) => set({ elevationFace }),
@@ -827,15 +852,29 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       });
       return true;
     },
-    selectWall: (selectedWallId) =>
+    selectWall: (selectedWallId) => {
+      const st = get();
+      const wall = selectedWallId ? st.walls.find((w) => w.id === selectedWallId) : undefined;
+      let selectedRoomId = st.selectedRoomId;
+      if (st.workflowStage === 'room') {
+        selectedRoomId = st.selectedRoomId;
+      } else if (st.planWallTool) {
+        if (wall) {
+          const owner = st.planRooms.find((r) => planRoomEdgeIndexForWall(r, wall) != null);
+          if (owner) selectedRoomId = owner.id;
+        }
+      } else if (selectedWallId) {
+        selectedRoomId = null;
+      }
       set({
         selectedWallId,
         selectedOpeningId: null,
         selectedFurnitureId: null,
         selectedSurface: null,
-        selectedRoomId:
-          get().workflowStage === 'room' ? get().selectedRoomId : selectedWallId ? null : get().selectedRoomId,
-      }),
+        selectedVertexIndex: null,
+        selectedRoomId,
+      });
+    },
     selectOpening: (selectedOpeningId) =>
       set({
         selectedOpeningId,
@@ -860,7 +899,9 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         selectedOpeningId: null,
         selectedFurnitureId: null,
         selectedSurface: null,
-        planWallTool: selectedRoomId ? false : get().planWallTool,
+        selectedVertexIndex: null,
+        pendingCorner: get().pendingCorner?.roomId === selectedRoomId ? get().pendingCorner : null,
+        planWallTool: get().planWallTool,
         roomType: selectedRoomId ? get().planRooms.find((r) => r.id === selectedRoomId)?.roomType ?? get().roomType : get().roomType,
         // Selecting a room at plan level must not enter room focus — use enterRoom for that.
       }),
@@ -876,6 +917,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         selectedOpeningId: null,
         selectedSurface: null,
         pendingPlacement: null,
+        pendingCorner: null,
+        selectedVertexIndex: null,
         planWallTool: false,
         pendingAttachMode: false,
         cameraMode: 'top',
@@ -898,6 +941,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         draftStart: null,
         planWallTool: false,
         pendingAttachMode: false,
+        pendingCorner: null,
+        selectedVertexIndex: null,
       });
     },
     exitRoom: () =>
@@ -910,6 +955,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         selectedOpeningId: null,
         selectedFurnitureId: null,
         pendingPlacement: null,
+        pendingCorner: null,
+        selectedVertexIndex: null,
         cameraMode: 'top',
         view: '3d',
         tool: 'select',
@@ -925,6 +972,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         selectedOpeningId: null,
         selectedSurface: null,
         pendingPlacement: null,
+        pendingCorner: null,
+        selectedVertexIndex: null,
       }),
     updatePlanRoom: (id, patch) => {
       const planRooms = get().planRooms.map((r) => (r.id === id ? { ...r, ...patch } : r));
@@ -1007,10 +1056,12 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       set({
         pendingAttachMode,
         pendingRoomShape: null,
+        pendingCorner: null,
         planWallTool: false,
         tool: 'select',
         draftStart: null,
         selectedWallId: null,
+        selectedVertexIndex: null,
         studioMode: 'architect',
         cameraMode: 'top',
         view: '3d',
@@ -1023,9 +1074,11 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         planWallTool,
         pendingAttachMode: false,
         pendingRoomShape: null,
+        pendingCorner: null,
         tool: 'select',
         draftStart: null,
         selectedWallId: null,
+        selectedVertexIndex: null,
         // Keep (or auto-pick) a room so the exterior dim card has a target.
         selectedRoomId: planWallTool
           ? keepRoom ?? (rooms.length === 1 ? rooms[0]!.id : keepRoom)
@@ -1170,16 +1223,57 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         planRooms: get().planRooms,
       });
     },
-    insertPlanRoomVertex: (id, edgeIndex) => {
+    insertPlanRoomVertex: (id, edgeIndex, t) => {
       const current = get().planRooms;
       const room = current.find((r) => r.id === id);
       if (!room) return false;
-      const nextPoints = insertPlanRoomVertexPoints(room.points, edgeIndex);
+      const i = ((edgeIndex % room.points.length) + room.points.length) % room.points.length;
+      const a = room.points[i]!;
+      const b = room.points[(i + 1) % room.points.length]!;
+      const edgeLen = Math.hypot(b.x - a.x, b.y - a.y);
+      const nextPoints = insertPlanRoomVertexPoints(room.points, edgeIndex, clampInsertT(t ?? 0.5, edgeLen));
       if (!nextPoints) return false;
       const nextLabels = current.map((r) => (r.id === id ? { ...r, points: nextPoints } : r));
       applyPlanRoomRebuild(nextLabels, { selectedRoomId: id });
+      set({ selectedVertexIndex: i + 1, selectedWallId: null, pendingCorner: null, openingNotice: '' });
       return true;
     },
+    beginPendingCorner: (roomId, planPoint) => {
+      const room = get().planRooms.find((r) => r.id === roomId);
+      if (!room || room.points.length < 3) return false;
+      const hit = projectPointOntoPolygonOutline(room.points, planPoint);
+      if (!hit) return false;
+      set({
+        pendingCorner: { roomId, edgeIndex: hit.edgeIndex, t: hit.t },
+        selectedRoomId: roomId,
+        selectedWallId: null,
+        selectedVertexIndex: null,
+        selectedOpeningId: null,
+        selectedFurnitureId: null,
+        tool: 'corner',
+        planWallTool: false,
+        pendingAttachMode: false,
+      });
+      return true;
+    },
+    movePendingCorner: (planPoint) => {
+      const pending = get().pendingCorner;
+      if (!pending) return false;
+      const room = get().planRooms.find((r) => r.id === pending.roomId);
+      if (!room) return false;
+      const hit = projectPointOntoPolygonOutline(room.points, planPoint);
+      if (!hit) return false;
+      set({ pendingCorner: { roomId: pending.roomId, edgeIndex: hit.edgeIndex, t: hit.t } });
+      return true;
+    },
+    commitPendingCorner: () => {
+      const pending = get().pendingCorner;
+      if (!pending) return false;
+      const ok = get().insertPlanRoomVertex(pending.roomId, pending.edgeIndex, pending.t);
+      set({ pendingCorner: null, tool: 'select' });
+      return ok;
+    },
+    cancelPendingCorner: () => set({ pendingCorner: null, openingNotice: '' }),
     removePlanRoomVertex: (id, vertexIndex) => {
       const current = get().planRooms;
       const room = current.find((r) => r.id === id);

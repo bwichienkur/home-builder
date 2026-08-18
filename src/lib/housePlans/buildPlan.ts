@@ -424,15 +424,16 @@ export function movePlanRoomVertexPoints(points: Point[], index: number, next: P
   return moved;
 }
 
-/** Insert a vertex midway along edge `edgeIndex` → next (supports angled walls). */
-export function insertPlanRoomVertexPoints(points: Point[], edgeIndex: number): Point[] | null {
+/** Insert a vertex along edge `edgeIndex` → next at `t` (0–1, default midpoint). */
+export function insertPlanRoomVertexPoints(points: Point[], edgeIndex: number, t = 0.5): Point[] | null {
   if (points.length < 3) return null;
   const i = ((edgeIndex % points.length) + points.length) % points.length;
   const a = points[i]!;
   const b = points[(i + 1) % points.length]!;
-  const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  const tt = Math.max(0.02, Math.min(0.98, Number.isFinite(t) ? t : 0.5));
+  const inserted = { x: a.x + (b.x - a.x) * tt, y: a.y + (b.y - a.y) * tt };
   const next = [...points];
-  next.splice(i + 1, 0, mid);
+  next.splice(i + 1, 0, inserted);
   return next;
 }
 
