@@ -107,3 +107,45 @@ export function pickFacingWall(
 export function wallWorldFrame(wall: Wall) {
   return wallMidWorld(wall);
 }
+
+/** World anchors for Front-view length/height pills — on the exterior, not on the wall body. */
+export function elevationDimAnchors(wall: Wall, face: ElevationFace) {
+  const frame = wallWorldFrame(wall);
+  const b = elevationFaceBasis(face);
+  const towardCam = 0.12;
+  const pastEnd = 0.1;
+  return {
+    width: {
+      x: frame.x + b.camX * towardCam,
+      y: 0,
+      z: frame.z + b.camZ * towardCam,
+    },
+    height: {
+      x: frame.x + b.rightX * (frame.len / 2 + pastEnd) + b.camX * towardCam,
+      y: wall.height / 2,
+      z: frame.z + b.rightZ * (frame.len / 2 + pastEnd) + b.camZ * towardCam,
+    },
+  };
+}
+
+/**
+ * Ortho zoom so the facing wall plus exterior dim pills fit in the free plate
+ * (page-centered, so padScale already reserves the black rail on both sides).
+ */
+export function elevationOrthoZoom(opts: {
+  canvasW: number;
+  canvasH: number;
+  wallLen: number;
+  wallH: number;
+  padScale?: number;
+}): number {
+  const pad = Math.max(opts.padScale ?? 1, 1);
+  const sideM = 0.72;
+  const belowM = 0.52;
+  const aboveM = 0.32;
+  const visW = pad * (Math.max(opts.wallLen, 1.5) + sideM * 2);
+  const visH = pad * (Math.max(opts.wallH, 1.5) + belowM + aboveM);
+  const zoomW = Math.max(1, opts.canvasW) / visW;
+  const zoomH = Math.max(1, opts.canvasH) / visH;
+  return Math.max(8, Math.min(zoomW, zoomH));
+}
