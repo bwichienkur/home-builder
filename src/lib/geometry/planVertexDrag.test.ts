@@ -1,13 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { PIXELS_PER_METER } from './snapping';
 import {
+  applyVertexDrag,
+  clampVertexDragTravel,
   exteriorCornerDir,
   samePlanPoint,
   screenHandleMeters,
   snapVertexDrag,
+  VERTEX_DRAG_MAX_M,
   vertexDragArmed,
   vertexDragGain,
   vertexSnapStepPx,
+  wallDimFaceOffset,
   wallDimWorldOffset,
 } from './planVertexDrag';
 
@@ -51,13 +55,41 @@ describe('plan vertex drag', () => {
     expect(dir.y).toBeLessThan(0);
   });
 
-  it('slows corner travel when the plan is zoomed out', () => {
-    expect(vertexDragGain(12)).toBeLessThan(0.5);
-    expect(vertexDragGain(80)).toBe(1);
+  it('slows corner travel far below 1:1 even when zoomed in', () => {
+    expect(vertexDragGain(12)).toBeLessThan(0.08);
+    expect(vertexDragGain(80)).toBeLessThan(0.18);
+    expect(vertexDragGain(80)).toBeGreaterThan(vertexDragGain(12));
   });
 
-  it('offsets dim pills by more than half their screen size', () => {
-    const z = 20;
-    expect(wallDimWorldOffset(z)).toBeGreaterThan((22 + 16) / z);
+  it('caps a single corner gesture so a flick cannot throw the room', () => {
+    const start = { x: 0, y: 0 };
+    const far = { x: 20 * PIXELS_PER_METER, y: 0 };
+    const clamped = clampVertexDragTravel(start, far);
+    expect(Math.abs(clamped.x - start.x) / PIXELS_PER_METER).toBeCloseTo(VERTEX_DRAG_MAX_M, 5);
+  });
+
+  it('applies low gain, axis lock, and a travel cap together', () => {
+    const anchor = { x: 200, y: 200 };
+    const startPointer = { x: 200, y: 200 };
+    const pointer = { x: 200 + 8 * PIXELS_PER_METER, y: 200 + 0.4 * PIXELS_PER_METER };
+    const { point, axis } = applyVertexDrag({
+      anchor,
+      startPointer,
+      pointer,
+      others: [],
+      zoom: 40,
+      axis: null,
+    });
+    expect(axis).toBe('x');
+    expect(Math.abs(point.y - anchor.y)).toBeLessThan(PIXELS_PER_METER * 0.05);
+    const movedM = Math.abs(point.x - anchor.x) / PIXELS_PER_METER;
+    expect(movedM).toBeLessThan(1.4);
+    expect(movedM).toBeGreaterThan(0.2);
+  });
+
+  it('parks dim origins on the wall face independent of zoom', () => {
+    expect(wallDimWorldOffset(8)).toBeCloseTo(wallDimWorldOffset(80));
+    expect(wallDimFaceOffset(0.15)).toBeGreaterThan(0.1);
+    expect(wallDimFaceOffset(0.15)).toBeLessThan(0.2);
   });
 });

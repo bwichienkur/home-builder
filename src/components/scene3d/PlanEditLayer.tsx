@@ -6,12 +6,12 @@ import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp } from 'lucide-react';
 import { WORLD_ORIGIN } from '../../lib/geometry/placement';
 import { enclosureWallsForRoom } from '../../lib/geometry/roomWalls';
 import {
+  applyVertexDrag,
   exteriorCornerDir,
   samePlanPoint,
   screenHandleMeters,
-  snapVertexDrag,
   vertexDragArmed,
-  vertexDragGain,
+  type VertexDragAxis,
 } from '../../lib/geometry/planVertexDrag';
 import {
   attachSideBlocked,
@@ -130,6 +130,7 @@ export function PlanEditLayer() {
     anchor: { x: number; y: number };
     startPointer: { x: number; y: number };
     armed: boolean;
+    axis: VertexDragAxis | null;
   } | null>(null);
   const wallDrag = useRef<{ wallId: string; pointerId: number; lastX: number; lastZ: number } | null>(null);
   const [vertexDragging, setVertexDragging] = useState(false);
@@ -310,6 +311,7 @@ export function PlanEditLayer() {
     commitPlanRoomVertex();
     delete document.body.dataset.movingFurniture;
     window.dispatchEvent(new Event('roomcraft-drag-end'));
+    window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-fit-plan')), 40);
   };
 
   const onVertexPointerDown = (e: any, roomId: string, index: number) => {
@@ -317,7 +319,15 @@ export function PlanEditLayer() {
     const room = planRooms.find((r) => r.id === roomId);
     const anchor = room?.points[index] ?? { x: 0, y: 0 };
     const startPointer = hitPlan(e) ?? anchor;
-    vertexDrag.current = { roomId, index, pointerId: e.pointerId, anchor, startPointer, armed: false };
+    vertexDrag.current = {
+      roomId,
+      index,
+      pointerId: e.pointerId,
+      anchor,
+      startPointer,
+      armed: false,
+      axis: null,
+    };
     setVertexDragging(true);
     document.body.dataset.movingFurniture = 'true';
     window.dispatchEvent(new Event('roomcraft-drag-start'));
@@ -339,20 +349,20 @@ export function PlanEditLayer() {
       if (!vertexDragArmed(drag.startPointer, raw, zoom)) return;
       drag.armed = true;
     }
-    const gain = vertexDragGain(zoom);
     const room = planRooms.find((r) => r.id === drag.roomId);
     const others = room?.points.filter((_, i) => i !== drag.index) ?? [];
-    const pt = snapVertexDrag(
-      {
-        x: drag.anchor.x + (raw.x - drag.startPointer.x) * gain,
-        y: drag.anchor.y + (raw.y - drag.startPointer.y) * gain,
-      },
+    const next = applyVertexDrag({
+      anchor: drag.anchor,
+      startPointer: drag.startPointer,
+      pointer: raw,
       others,
       zoom,
-    );
+      axis: drag.axis,
+    });
+    drag.axis = next.axis;
     const current = room?.points[drag.index];
-    if (current && samePlanPoint(current, pt)) return;
-    movePlanRoomVertex(drag.roomId, drag.index, pt, { live: true });
+    if (current && samePlanPoint(current, next.point)) return;
+    movePlanRoomVertex(drag.roomId, drag.index, next.point, { live: true });
     invalidate();
   };
 
@@ -366,16 +376,15 @@ export function PlanEditLayer() {
         const room = planRooms.find((r) => r.id === drag.roomId);
         const others = room?.points.filter((_, i) => i !== drag.index) ?? [];
         const zoom = cameraZoom(camera);
-        const gain = vertexDragGain(zoom);
-        const pt = snapVertexDrag(
-          {
-            x: drag.anchor.x + (raw.x - drag.startPointer.x) * gain,
-            y: drag.anchor.y + (raw.y - drag.startPointer.y) * gain,
-          },
+        const next = applyVertexDrag({
+          anchor: drag.anchor,
+          startPointer: drag.startPointer,
+          pointer: raw,
           others,
           zoom,
-        );
-        movePlanRoomVertex(drag.roomId, drag.index, pt, { live: false });
+          axis: drag.axis,
+        });
+        movePlanRoomVertex(drag.roomId, drag.index, next.point, { live: false });
       }
     }
     endVertexDrag();

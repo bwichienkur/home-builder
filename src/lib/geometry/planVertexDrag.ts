@@ -23,9 +23,59 @@ export function snapPlanPoint(point: Point, snapPx: number): Point {
   };
 }
 
-/** Slow vertex travel when the plan is zoomed out so a finger flick doesn’t throw a wall. */
+/**
+ * Pointer → vertex gain. Stay well below 1:1 even when zoomed in — a flick
+ * used to throw the room out of frame.
+ */
 export function vertexDragGain(zoom: number): number {
-  return Math.min(1, Math.max(0.32, zoom / 42));
+  return Math.min(0.16, Math.max(0.05, zoom / 480));
+}
+
+export const VERTEX_DRAG_MAX_M = 1.35;
+
+/** Cap one gesture so a long swipe cannot send a corner off-screen. */
+export function clampVertexDragTravel(start: Point, next: Point, maxM = VERTEX_DRAG_MAX_M): Point {
+  const maxPx = maxM * PIXELS_PER_METER;
+  const dx = next.x - start.x;
+  const dy = next.y - start.y;
+  const d = Math.hypot(dx, dy);
+  if (d <= maxPx || d < 1e-6) return next;
+  const s = maxPx / d;
+  return { x: start.x + dx * s, y: start.y + dy * s };
+}
+
+export type VertexDragAxis = 'x' | 'y';
+
+/** Lock to the dominant axis once the pointer has a clear direction. */
+export function vertexDragAxisLock(from: Point, to: Point, zoom: number, thresholdPx = 10): VertexDragAxis | null {
+  const meters = Math.hypot(to.x - from.x, to.y - from.y) / PIXELS_PER_METER;
+  if (meters * Math.max(zoom, 1) < thresholdPx) return null;
+  return Math.abs(to.x - from.x) >= Math.abs(to.y - from.y) ? 'x' : 'y';
+}
+
+export function lockVertexDragAxis(start: Point, next: Point, axis: VertexDragAxis): Point {
+  return axis === 'x' ? { x: next.x, y: start.y } : { x: start.x, y: next.y };
+}
+
+/** Apply gain, axis lock, travel cap, then snap. */
+export function applyVertexDrag(opts: {
+  anchor: Point;
+  startPointer: Point;
+  pointer: Point;
+  others: Point[];
+  zoom: number;
+  axis: VertexDragAxis | null;
+}): { point: Point; axis: VertexDragAxis | null } {
+  const gain = vertexDragGain(opts.zoom);
+  let point: Point = {
+    x: opts.anchor.x + (opts.pointer.x - opts.startPointer.x) * gain,
+    y: opts.anchor.y + (opts.pointer.y - opts.startPointer.y) * gain,
+  };
+  const axis = opts.axis ?? vertexDragAxisLock(opts.anchor, point, opts.zoom);
+  if (axis) point = lockVertexDragAxis(opts.anchor, point, axis);
+  point = clampVertexDragTravel(opts.anchor, point);
+  point = snapVertexDrag(point, opts.others, opts.zoom);
+  return { point, axis };
 }
 
 /**
@@ -48,13 +98,22 @@ export function snapVertexDrag(
 }
 
 /** Ignore sub-threshold pointer noise before the first committed move. */
-export function vertexDragArmed(from: Point, to: Point, zoom: number, thresholdPx = 12): boolean {
+export function vertexDragArmed(from: Point, to: Point, zoom: number, thresholdPx = 18): boolean {
   const meters = Math.hypot(to.x - from.x, to.y - from.y) / PIXELS_PER_METER;
   return meters * Math.max(zoom, 1) >= thresholdPx;
 }
 
-export function wallDimWorldOffset(zoom: number, pillHalfPx = 22, gapPx = 16): number {
-  return (pillHalfPx + gapPx) * orthoMetersPerPixel(zoom) + 0.1;
+/**
+ * World offset from the wall centerline to the exterior face.
+ * Dim pills are then parked in CSS so they stay outside at every zoom.
+ */
+export function wallDimFaceOffset(thicknessM = 0.15, gapM = 0.06): number {
+  return Math.max(thicknessM, 0.1) * 0.5 + gapM;
+}
+
+/** @deprecated use wallDimFaceOffset — zoom no longer affects the dim origin. */
+export function wallDimWorldOffset(_zoom?: number, thicknessM = 0.15): number {
+  return wallDimFaceOffset(thicknessM);
 }
 
 export function samePlanPoint(a: Point, b: Point, epsilonPx = 0.75): boolean {
