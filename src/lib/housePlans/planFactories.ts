@@ -1,4 +1,4 @@
-/** Shared room()/poly() helpers without Olsen brochure catalog. */
+/** Shared room()/poly() helpers for sample and Olsen flyer catalogs. */
 import type { PlanRoomRect } from './buildPlan';
 import type { RoomType } from '../../types';
 

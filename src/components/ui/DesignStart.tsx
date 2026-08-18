@@ -69,7 +69,7 @@ export function DesignStart({ onBegan }: { onBegan?: () => void }) {
           </button>
         </div>
         <p className="design-start-eyebrow" style={{ marginTop: 22 }}>
-          Sample plans
+          House plans
         </p>
         <div className="design-start-gallery">
           {plans.map((plan) => (
