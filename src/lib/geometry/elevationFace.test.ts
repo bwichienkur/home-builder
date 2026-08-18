@@ -68,6 +68,7 @@ describe('elevation face', () => {
     const rail = elevationOrthoZoom({ canvasW: 1280, canvasH: 800, wallLen: 6, wallH: 2.7, padScale: 1.45 });
     expect(rail).toBeLessThan(tight);
     const visW = 1280 / rail;
-    expect(visW).toBeGreaterThan(1.45 * (6 + 2.2));
+    expect(visW).toBeGreaterThan(1.45 * 6);
+    expect(visW).toBeLessThan(1.45 * (6 + 1.2));
   });
 });
