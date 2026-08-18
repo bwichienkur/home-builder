@@ -504,20 +504,41 @@ export function StudioChrome({
                   <ChevronDown size={14} />
                 </button>
                 <div className="studio-takeoff-details">
-                  <span title="Floor area">{formatArea(takeoff.floorAreaM2, unitSystem)}</span>
-                  <span title="Wall length">{formatLength(takeoff.wallLengthM, unitSystem)} walls</span>
+                  <div className="studio-takeoff-row">
+                    <span>Area</span>
+                    <strong>{formatArea(takeoff.floorAreaM2, unitSystem)}</strong>
+                  </div>
+                  <div className="studio-takeoff-row">
+                    <span>Walls</span>
+                    <strong>{formatLength(takeoff.wallLengthM, unitSystem)}</strong>
+                  </div>
                   {takeoff.exteriorWallLengthM > 0 && (
-                    <span title="Exterior wall length">{formatLength(takeoff.exteriorWallLengthM, unitSystem)} ext</span>
+                    <div className="studio-takeoff-row">
+                      <span>Exterior</span>
+                      <strong>{formatLength(takeoff.exteriorWallLengthM, unitSystem)}</strong>
+                    </div>
                   )}
-                  <span title="Drywall both faces (net)">
-                    {formatArea(takeoff.drywallAreaM2, unitSystem)} drywall
-                  </span>
-                  <span title="Studs at 16 in OC">{takeoff.studCount} studs</span>
-                  <span title="Doors / windows / openings">
-                    {takeoff.doorCount} dr · {takeoff.windowCount} win
-                    {takeoff.passageCount ? ` · ${takeoff.passageCount} open` : ''}
-                  </span>
-                  {takeoff.stairCount > 0 && <span>{takeoff.stairCount} stair</span>}
+                  <div className="studio-takeoff-row">
+                    <span>Drywall</span>
+                    <strong>{formatArea(takeoff.drywallAreaM2, unitSystem)}</strong>
+                  </div>
+                  <div className="studio-takeoff-row">
+                    <span>Studs</span>
+                    <strong>{takeoff.studCount}</strong>
+                  </div>
+                  <div className="studio-takeoff-row">
+                    <span>Openings</span>
+                    <strong>
+                      {takeoff.doorCount} dr · {takeoff.windowCount} win
+                      {takeoff.passageCount ? ` · ${takeoff.passageCount} open` : ''}
+                    </strong>
+                  </div>
+                  {takeoff.stairCount > 0 && (
+                    <div className="studio-takeoff-row">
+                      <span>Stairs</span>
+                      <strong>{takeoff.stairCount}</strong>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -659,8 +680,6 @@ export function StudioChrome({
         </div>
       )}
 
-      <RoomDimTray />
-
       {showPlanRail && (
         <div className="studio-category-rail studio-plan-rail" aria-label="Plan tools">
           <button
@@ -717,6 +736,7 @@ export function StudioChrome({
 
       <div className={`studio-dock${inRoom ? ' is-room' : ''}`} role="toolbar" aria-label="Studio controls">
         <div className="studio-dock-shell studio-dock-flat">
+          <RoomDimTray />
           <div className="studio-dock-row studio-dock-row--views">
             <div className="studio-dock-seg" role="group" aria-label="View mode">
               <button type="button" className={isTop ? 'is-active' : ''} onClick={chooseTop} title="Plan view — orthographic">

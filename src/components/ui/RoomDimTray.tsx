@@ -84,7 +84,7 @@ export function RoomDimTray() {
   const depthM = size.depthFt * 0.3048;
   const ceiling = walls[0]?.height ?? 2.7;
   return (
-    <div className="studio-dim-tray" role="group" aria-label="Room dimensions">
+    <div className="studio-dim-tray studio-dim-tray--dock" role="group" aria-label="Room dimensions">
       <DimField
         key={`W-${room.id}-${unit}-${widthM.toFixed(3)}`}
         label="W"
