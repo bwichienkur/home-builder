@@ -6,6 +6,7 @@ import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp } from 'lucide-react';
 import { WORLD_ORIGIN } from '../../lib/geometry/placement';
 import { enclosureWallsForRoom } from '../../lib/geometry/roomWalls';
 import {
+  exteriorCornerDir,
   samePlanPoint,
   screenHandleMeters,
   snapVertexDrag,
@@ -40,9 +41,11 @@ function cameraZoom(camera: THREE.Camera): number {
 
 function PlanCornerHandle({
   position,
+  outward,
   ...events
 }: {
   position: [number, number, number];
+  outward: [number, number];
   onPointerDown?: (e: any) => void;
   onPointerMove?: (e: any) => void;
   onPointerUp?: (e: any) => void;
@@ -51,51 +54,31 @@ function PlanCornerHandle({
 }) {
   const ref = useRef<THREE.Group>(null);
   const { camera } = useThree();
+  const targetPx = useMemo(
+    () => (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches ? 44 : 28),
+    [],
+  );
   useFrame(() => {
     const group = ref.current;
     if (!group) return;
-    const world = screenHandleMeters(cameraZoom(camera), 22);
-    group.scale.setScalar(world / 0.1);
+    const radius = screenHandleMeters(cameraZoom(camera), targetPx);
+    const push = radius * 0.72 + 0.08;
+    group.position.set(position[0] + outward[0] * push, position[1], position[2] + outward[1] * push);
+    group.scale.setScalar(radius / 0.5);
   });
   return (
-    <group ref={ref} position={position}>
+    <group ref={ref} position={position} rotation={[-Math.PI / 2, 0, 0]}>
       <mesh {...events} renderOrder={12}>
-        <ringGeometry args={[0.46, 0.56, 32]} />
-        <meshBasicMaterial color="#ffffff" transparent opacity={0.98} depthTest={false} toneMapped={false} />
+        <circleGeometry args={[0.5, 32]} />
+        <meshBasicMaterial color="#ffffff" depthTest={false} toneMapped={false} />
       </mesh>
-      <mesh {...events} renderOrder={13}>
-        <circleGeometry args={[0.36, 32]} />
+      <mesh {...events} renderOrder={13} raycast={() => {}}>
+        <circleGeometry args={[0.32, 32]} />
         <meshBasicMaterial color="#111820" depthTest={false} toneMapped={false} />
       </mesh>
-      <mesh {...events} renderOrder={14}>
-        <ringGeometry args={[0.3, 0.36, 32]} />
+      <mesh {...events} renderOrder={14} raycast={() => {}}>
+        <ringGeometry args={[0.26, 0.32, 32]} />
         <meshBasicMaterial color="#0058a3" depthTest={false} toneMapped={false} />
-      </mesh>
-    </group>
-  );
-}
-
-function PlanEdgeHandle({
-  position,
-  ...events
-}: {
-  position: [number, number, number];
-  onPointerDown?: (e: any) => void;
-  onClick?: (e: any) => void;
-}) {
-  const ref = useRef<THREE.Group>(null);
-  const { camera } = useThree();
-  useFrame(() => {
-    const group = ref.current;
-    if (!group) return;
-    const world = screenHandleMeters(cameraZoom(camera), 10);
-    group.scale.setScalar(world / 0.1);
-  });
-  return (
-    <group ref={ref} position={position}>
-      <mesh {...events} renderOrder={12}>
-        <boxGeometry args={[0.72, 0.1, 0.16]} />
-        <meshBasicMaterial color="#0058a3" transparent opacity={0.92} depthTest={false} toneMapped={false} />
       </mesh>
     </group>
   );
@@ -151,7 +134,7 @@ export function PlanEditLayer() {
   const placingRoom = active && (!!pendingRoomShape || tool === 'room');
   const hostRoom = planRooms.find((r) => r.id === selectedRoomId) ?? null;
   const showAttachSides = active && pendingAttachMode && !!hostRoom;
-  const showVertices = active && !!hostRoom && !placingRoom && !pendingAttachMode && !planWallTool;
+  const showVertices = active && !!hostRoom && !placingRoom && !pendingAttachMode;
   const showWallHandles = active && !!hostRoom && !placingRoom && !pendingAttachMode && planWallTool;
   const ceiling = walls[0]?.height ?? 2.7;
 
@@ -162,14 +145,14 @@ export function PlanEditLayer() {
     return enclosure
       .map((edge, i) => {
         if (!liveIds.has(edge.id)) return null;
-        const mid = {
-          x: (edge.start.x + edge.end.x) / 2,
-          y: (edge.start.y + edge.end.y) / 2,
-        };
-        const pos = world(mid.x, mid.y);
-        return { wallId: edge.id, edgeIndex: i, pos };
+        const [sx, sz] = world(edge.start.x, edge.start.y);
+        const [ex, ez] = world(edge.end.x, edge.end.y);
+        const pos: [number, number] = [(sx + ex) / 2, (sz + ez) / 2];
+        const angle = -Math.atan2(ez - sz, ex - sx);
+        const length = Math.hypot(ex - sx, ez - sz) || 0.8;
+        return { wallId: edge.id, edgeIndex: i, pos, angle, length };
       })
-      .filter(Boolean) as { wallId: string; edgeIndex: number; pos: [number, number] }[];
+      .filter(Boolean) as { wallId: string; edgeIndex: number; pos: [number, number]; angle: number; length: number }[];
   }, [hostRoom, showWallHandles, walls, ceiling]);
 
   useEffect(() => {
@@ -456,11 +439,20 @@ export function PlanEditLayer() {
 
       {showVertices &&
         hostRoom!.points.map((p, i) => {
+          const pts = hostRoom!.points;
+          const prev = pts[(i + pts.length - 1) % pts.length]!;
+          const next = pts[(i + 1) % pts.length]!;
+          const centroid = {
+            x: pts.reduce((s, q) => s + q.x, 0) / pts.length,
+            y: pts.reduce((s, q) => s + q.y, 0) / pts.length,
+          };
+          const dir = exteriorCornerDir(prev, p, next, centroid);
           const pos = world(p.x, p.y);
           return (
             <PlanCornerHandle
               key={`v-${hostRoom!.id}-${i}`}
               position={[pos[0], 0.16, pos[1]]}
+              outward={[dir.x, dir.y]}
               onPointerDown={(e: any) => onVertexPointerDown(e, hostRoom!.id, i)}
               onPointerMove={onVertexPointerMove}
               onPointerUp={onVertexPointerUp}
@@ -474,12 +466,16 @@ export function PlanEditLayer() {
         })}
 
       {showWallHandles &&
-        wallHandles.map(({ wallId, edgeIndex, pos }) => (
-          <PlanEdgeHandle
+        wallHandles.map(({ wallId, edgeIndex, pos, angle, length }) => (
+          <mesh
             key={`wh-${wallId}-${edgeIndex}`}
-            position={[pos[0], 0.15, pos[1]]}
+            position={[pos[0], 0.12, pos[1]]}
+            rotation={[-Math.PI / 2, 0, angle]}
             onPointerDown={(e: any) => onWallPointerDown(e, wallId)}
-          />
+          >
+            <planeGeometry args={[Math.max(length * 0.55, 0.9), 0.42]} />
+            <meshBasicMaterial transparent opacity={0} depthWrite={false} side={THREE.DoubleSide} />
+          </mesh>
         ))}
     </group>
   );

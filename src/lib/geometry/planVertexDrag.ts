@@ -58,3 +58,36 @@ export function screenHandleMeters(zoom: number, targetPx: number, minM = 0.16, 
   const world = targetPx * orthoMetersPerPixel(zoom);
   return Math.min(maxM, Math.max(minM, world));
 }
+
+/**
+ * Unit outward bisector at a polygon corner (plan space). Used to park
+ * drag handles outside the room instead of on top of the vertex.
+ */
+export function exteriorCornerDir(
+  prev: Point,
+  point: Point,
+  next: Point,
+  centroid: Point,
+): { x: number; y: number } {
+  const ax = prev.x - point.x;
+  const ay = prev.y - point.y;
+  const bx = next.x - point.x;
+  const by = next.y - point.y;
+  const al = Math.hypot(ax, ay) || 1;
+  const bl = Math.hypot(bx, by) || 1;
+  let ox = ax / al + bx / bl;
+  let oy = ay / al + by / bl;
+  let ol = Math.hypot(ox, oy);
+  if (ol < 1e-4) {
+    ox = -ay / al;
+    oy = ax / al;
+    ol = 1;
+  }
+  ox /= ol;
+  oy /= ol;
+  if (ox * (point.x - centroid.x) + oy * (point.y - centroid.y) < 0) {
+    ox = -ox;
+    oy = -oy;
+  }
+  return { x: ox, y: oy };
+}
