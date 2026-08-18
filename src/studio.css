@@ -14,6 +14,8 @@
   width: 100%;
   overflow: hidden;
   background: var(--void);
+  --studio-top-chrome: 56px;
+  --studio-dock-stack: 100px;
 }
 
 .studio-canvas {
@@ -404,13 +406,15 @@
 .studio-category-rail {
   position: absolute;
   right: max(12px, env(safe-area-inset-right));
-  top: calc((100% - var(--studio-dock-stack, 100px)) / 2);
+  top: calc(
+    var(--studio-top-chrome, 100px) + (100% - var(--studio-top-chrome, 100px) - var(--studio-dock-stack, 100px)) / 2
+  );
   bottom: auto;
   transform: translateY(-50%);
   display: flex;
   flex-direction: column;
   width: 64px;
-  max-height: calc(100% - var(--studio-dock-stack, 100px) - 24px);
+  max-height: calc(100% - var(--studio-top-chrome, 100px) - var(--studio-dock-stack, 100px) - 16px);
   padding: 4px;
   border-radius: 18px;
   background: var(--rail);
@@ -480,6 +484,9 @@
   pointer-events: none;
   width: max-content;
   max-width: min(520px, calc(100vw - 24px));
+}
+.studio-shell:has(.studio-subbar) {
+  --studio-top-chrome: 100px;
 }
 .studio-shell:has(.studio-category-rail) {
   --studio-dock-stack: 100px;
@@ -1402,6 +1409,9 @@
 .admin-card p { margin: 0 0 18px; color: var(--muted); line-height: 1.5; }
 
 @media (max-width: 820px), (hover: none) and (pointer: coarse) and (max-width: 1100px) {
+  .studio-shell:has(.studio-subbar) {
+    --studio-top-chrome: 120px;
+  }
   .scene-help { display: none; }
   .selection-inspector {
     left: auto;
@@ -1679,12 +1689,14 @@
     height: 44px;
   }
   .studio-category-rail {
-    top: calc((100% - var(--studio-dock-stack, 100px)) / 2);
+    top: calc(
+      var(--studio-top-chrome, 120px) + (100% - var(--studio-top-chrome, 120px) - var(--studio-dock-stack, 100px)) / 2
+    );
     bottom: auto;
     right: max(8px, env(safe-area-inset-right));
     left: auto;
     transform: translateY(-50%);
-    max-height: calc(100% - var(--studio-dock-stack, 100px) - 24px);
+    max-height: calc(100% - var(--studio-top-chrome, 120px) - var(--studio-dock-stack, 100px) - 16px);
   }
   .studio-dim-tray {
     position: static;
