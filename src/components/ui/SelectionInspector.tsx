@@ -409,7 +409,7 @@ function PlanRoomProperties({ room, onClose }: { room: PlanRoomLabel; onClose: (
           ? `${formatLength(size.widthFt * 0.3048, unit)} × ${formatLength(size.depthFt * 0.3048, unit)}`
           : `${size.widthFt.toFixed(1)}′ × ${size.depthFt.toFixed(1)}′`}
       </p>
-      <p className="muted">Drag corner handles on the plan to angle walls. Tap a mid-edge square to add a corner. Width/Depth scale the polygon (shape preserved).</p>
+      <p className="muted">Drag corner handles on the plan to angle walls. Use Add corner below to insert a vertex. Width/Depth scale the polygon (shape preserved).</p>
       <LengthField
         label="Width"
         value={size.widthFt * 0.3048}
