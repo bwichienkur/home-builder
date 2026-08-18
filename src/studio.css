@@ -2004,19 +2004,13 @@
   overflow: auto;
   padding-right: 2px;
 }
-.design-start-plan {
-  display: grid;
-  gap: 2px;
-  text-align: left;
-  padding: 14px 16px;
-  border: 1px solid rgba(17, 24, 32, 0.12);
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.94);
-  min-height: 56px;
+.design-start-gallery .house-plan-card {
+  grid-template-columns: 108px minmax(0, 1fr);
+  padding: 10px;
 }
-.design-start-plan strong { font-size: 15px; font-weight: 800; color: var(--ink, #111820); }
-.design-start-plan span { font-size: 12px; color: var(--muted, #5c6770); font-weight: 600; }
-.design-start-plan:hover { border-color: var(--accent, #0058a3); }
+.design-start-gallery .house-plan-thumb {
+  height: 88px;
+}
 
 .studio-local-save-banner {
   position: relative;

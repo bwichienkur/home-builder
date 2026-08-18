@@ -4,6 +4,7 @@ import { usePlannerStore } from '../../store/plannerStore';
 import { formatLength, parseLength } from '../../lib/measurements';
 import { listBuiltinHousePlans } from '../../lib/housePlans/planRegistry';
 import { planRoomSizeFeet } from '../../lib/housePlans/buildPlan';
+import { HousePlanCard } from './HousePlanThumb';
 import { openingMetersFromOffset, openingOffsetFromMeters, wallLengthM } from '../../lib/planExport/drawFloorPlan';
 import type { Opening, PlanRoomLabel, RoomType, Wall, WallAssembly } from '../../types';
 import { WALL_ASSEMBLY_PRESETS } from '../../lib/buildingChecks';
@@ -535,18 +536,12 @@ export function RoomDesigner({ compact = false, hidePlans = false }: { compact?:
           {housePlanName && <p className="muted house-plan-active">Loaded: {housePlanName}</p>}
           <div className="house-plan-list">
             {listBuiltinHousePlans().map((plan) => (
-              <button
+              <HousePlanCard
                 key={plan.id}
-                type="button"
-                className={housePlanId === plan.id ? 'active' : ''}
-                onClick={() => loadHouse(plan.id)}
-                title={`${plan.beds} bed · ${plan.baths} bath · ${plan.livingSqFt.toLocaleString()} sf living · ${plan.stories} stor${plan.stories === 1 ? 'y' : 'ies'}`}
-              >
-                <strong>{plan.name}</strong>
-                <span>
-                  {plan.beds}/{plan.baths} · {plan.livingSqFt.toLocaleString()} sf · {plan.stories === 1 ? '1 story' : '2 story'}
-                </span>
-              </button>
+                plan={plan}
+                active={housePlanId === plan.id}
+                onSelect={() => loadHouse(plan.id)}
+              />
             ))}
           </div>
           <p className="muted house-plan-note">

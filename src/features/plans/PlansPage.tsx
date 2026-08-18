@@ -5,6 +5,7 @@ import { importDxfHousePlan, inspectIfc } from '../../lib/housePlans/dxfImport';
 import { listBuiltinHousePlans } from '../../lib/housePlans/planRegistry';
 import { useCrmStore } from '../../store/crmStore';
 import { usePlannerStore } from '../../store/plannerStore';
+import { HousePlanCard } from '../../components/ui/HousePlanThumb';
 
 export function PlansPage() {
   const navigate = useNavigate();
@@ -165,78 +166,40 @@ export function PlansPage() {
       )}
 
       <h2 style={{ fontSize: '1rem', margin: '0 0 10px' }}>Built-in samples</h2>
-      <div className="data-table-wrap" style={{ marginBottom: 24 }}>
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Stats</th>
-              <th>Source</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {builtins.map((p) => (
-              <tr key={p.id}>
-                <td>
-                  <strong>{p.name}</strong>
-                </td>
-                <td>
-                  {p.beds} bed · {p.baths} bath · {p.livingSqFt.toLocaleString()} sf · {p.stories} story
-                </td>
-                <td className="muted">{p.note.slice(0, 80)}…</td>
-                <td>
-                  <button type="button" className="auth-link" onClick={() => openInBuild(p)}>
-                    Open in Build
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="house-plan-library">
+        {builtins.map((p) => (
+          <HousePlanCard key={p.id} plan={p} onSelect={() => openInBuild(p)} />
+        ))}
       </div>
 
       <h2 style={{ fontSize: '1rem', margin: '0 0 10px' }}>Imported / saved</h2>
-      <div className="data-table-wrap">
-        {imported.length === 0 ? (
-          <div className="data-empty">No imported plans yet. Import a DXF or native JSON plan.</div>
-        ) : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Format</th>
-                <th>License</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {imported.map((p) => (
-                <tr key={p.id}>
-                  <td>
-                    <strong>{p.name}</strong>
-                  </td>
-                  <td>{p.format}</td>
-                  <td className="muted">{p.license || p.source}</td>
-                  <td>
-                    <button
-                      type="button"
-                      className="auth-link"
-                      onClick={() => openInBuild(p.planJson as HousePlan)}
-                    >
-                      Open in Build
-                    </button>
-                    {' · '}
-                    <button type="button" className="auth-link" onClick={() => removePlan(p.id)}>
-                      Remove
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+      {imported.length === 0 ? (
+        <div className="data-empty">No imported plans yet. Import a DXF or native JSON plan.</div>
+      ) : (
+        <div className="house-plan-library">
+          {imported.map((p) => {
+            const plan = p.planJson as HousePlan | undefined;
+            if (plan?.floors?.length) {
+              return (
+                <div key={p.id} className="house-plan-imported">
+                  <HousePlanCard plan={plan} onSelect={() => openInBuild(plan)} />
+                  <button type="button" className="auth-link" onClick={() => removePlan(p.id)}>
+                    Remove
+                  </button>
+                </div>
+              );
+            }
+            return (
+              <div key={p.id} className="house-plan-imported">
+                <strong>{p.name}</strong>
+                <button type="button" className="auth-link" onClick={() => removePlan(p.id)}>
+                  Remove
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {manualOpen && (
         <div className="data-drawer" onMouseDown={(e) => e.target === e.currentTarget && setManualOpen(false)}>
