@@ -528,7 +528,7 @@ export function RoomDesigner({ compact = false, hidePlans = false }: { compact?:
       </div>
       {!hidePlans && (
         <>
-          <span className="template-label">Sample house plans</span>
+          <span className="template-label">House plans</span>
           {housePlanName && <p className="muted house-plan-active">Loaded: {housePlanName}</p>}
           <div className="house-plan-list">
             {listBuiltinHousePlans().map((plan) => (
@@ -541,7 +541,7 @@ export function RoomDesigner({ compact = false, hidePlans = false }: { compact?:
             ))}
           </div>
           <p className="muted house-plan-note">
-            Open sample layouts with measured footprints. Import DXF/JSON from House plans. Not proprietary brochure tracings.
+            Olsen flyer layouts and measured samples. Import DXF/JSON from House plans.
           </p>
         </>
       )}

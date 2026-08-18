@@ -28,7 +28,7 @@ function ranch_36x28(): HousePlan {
     room('Bedroom 1', 'Bedroom', 0, 14, 12, 14, 9),
     room('Bedroom 2', 'Bedroom', 12, 18, 8, 10, 9),
     room('Utility', 'Laundry', 28, 0, 8, 10, 9),
-    room('Garage', 'Storage /wardrobe', 28, 10, 8, 18, 9),
+    room('Garage', 'Storage / wardrobe', 28, 10, 8, 18, 9),
   ];
   return plan({
     id: 'sample-ranch-36x28',
@@ -79,7 +79,7 @@ function cottage_40x30(): HousePlan {
 /** Two-story townhouse plate — identical stacked rectangles for import demos. */
 function townhouse_20x40(): HousePlan {
   const first: PlanRoomRect[] = [
-    room('Garage', 'Storage /wardrobe', 0, 0, 20, 18, 9),
+    room('Garage', 'Storage / wardrobe', 0, 0, 20, 18, 9),
     room('Foyer', 'Hallway', 0, 18, 8, 8, 9),
     room('Powder', 'Bathroom', 8, 18, 5, 8, 9),
     room('Kitchen', 'Kitchen', 13, 18, 7, 12, 9),

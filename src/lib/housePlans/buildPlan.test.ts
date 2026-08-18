@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { RoomType } from '../../types';
 import { buildHouse, livingAreaSqFt, insertPlanRoomVertexPoints, movePlanRoomVertexPoints, removePlanRoomVertexPoints, resizePlanRoomPoints, planRoomSizeFeet } from './buildPlan';
 import { assertPlanCatalog, getHousePlan, listBuiltinHousePlans } from './planRegistry';
 import { importDxfHousePlan } from './dxfImport';
@@ -6,17 +7,48 @@ import { usePlannerStore } from '../../store/plannerStore';
 import { WORLD_ORIGIN } from '../geometry/placement';
 import { PIXELS_PER_METER } from '../geometry/snapping';
 
+const ROOM_TYPES = new Set<RoomType>([
+  'Bedroom',
+  'Living room',
+  'Bathroom',
+  'Kitchen',
+  'Dining room',
+  'Office',
+  'Children’s room',
+  'Laundry',
+  'Hallway',
+  'Storage / wardrobe',
+  'Outdoor',
+]);
+
 describe('sample house plans', () => {
-  it('ships measured sample plans (no proprietary brochure set)', () => {
+  it('ships Olsen flyer layouts plus measured samples', () => {
     assertPlanCatalog();
     const plans = listBuiltinHousePlans();
-    expect(plans.length).toBeGreaterThanOrEqual(3);
+    expect(plans.length).toBeGreaterThanOrEqual(20);
+    expect(plans.some((p) => p.id === 'driftwood')).toBe(true);
+    expect(plans.some((p) => p.id === 'oyster-bay')).toBe(true);
+    expect(plans.some((p) => p.id === 'sandbridge')).toBe(true);
+    expect(plans.some((p) => p.id === 'sample-ranch-36x28')).toBe(true);
     for (const plan of plans) {
       expect(plan.floors.length).toBe(plan.stories);
+      for (const floor of plan.floors) {
+        for (const room of floor.rooms) {
+          expect(ROOM_TYPES.has(room.roomType), `${plan.id} ${room.name}`).toBe(true);
+        }
+      }
       const built = buildHouse(plan);
       expect(built.floors.length).toBe(plan.stories);
       expect(built.floors[0]!.scene.walls.length).toBeGreaterThan(3);
+      expect(built.floors[0]!.roomPolygons.length).toBe(plan.floors[0]!.rooms.length);
     }
+  });
+
+  it('keeps non-rectangular Olsen flyer rooms as polygons', () => {
+    const sandbridge = getHousePlan('sandbridge')!;
+    expect(sandbridge.floors[0]!.rooms.some((room) => (room.pointsFt?.length ?? 0) > 4)).toBe(true);
+    const driftwood = getHousePlan('driftwood')!;
+    expect(driftwood.floors[0]!.rooms.some((room) => (room.pointsFt?.length ?? 0) >= 4)).toBe(true);
   });
 
   it('builds the ranch sample with contiguous rooms', () => {
@@ -42,6 +74,26 @@ describe('sample house plans', () => {
     expect(usePlannerStore.getState().applyHousePlan('sample-ranch-36x28')).toBe(true);
     expect(usePlannerStore.getState().housePlanId).toBe('sample-ranch-36x28');
     expect(usePlannerStore.getState().walls.length).toBeGreaterThan(0);
+    expect(usePlannerStore.getState().cameraMode).toBe('top');
+  });
+
+  it('opens an Olsen flyer plan in the planner store', () => {
+    usePlannerStore.setState({
+      walls: [],
+      openings: [],
+      furniture: [],
+      floors: [{ id: 'ground', name: 'Ground floor', scene: { walls: [], openings: [], furniture: [], floorColor: '#c9b18f', wallColor: '#f3f0e9', ceilingColor: '#f4f6f8' } }],
+      activeFloorId: 'ground',
+      planRooms: [],
+      housePlanId: null,
+      housePlanName: null,
+      selectedRoomId: null,
+    } as any);
+    expect(usePlannerStore.getState().applyHousePlan('driftwood')).toBe(true);
+    expect(usePlannerStore.getState().housePlanId).toBe('driftwood');
+    expect(usePlannerStore.getState().housePlanName).toBe('Driftwood');
+    expect(usePlannerStore.getState().walls.length).toBeGreaterThan(0);
+    expect(usePlannerStore.getState().planRooms.length).toBeGreaterThan(4);
     expect(usePlannerStore.getState().cameraMode).toBe('top');
   });
 });

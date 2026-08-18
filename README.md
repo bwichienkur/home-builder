@@ -36,9 +36,7 @@ Persistence goes through a **CrmProvider** (`local` browser or `http` API) so yo
 
 ## House plans
 
-Proprietary Olsen brochure approximations were **removed**.
-
-Built-in samples are measured orthogonal footprints (ranch, cottage, townhouse) documented in `src/lib/housePlans/samplePlans.ts`.
+Built-in plans include Olsen Custom Homes flyer-derived layouts (polygon footprints from published PDFs) plus measured orthogonal samples in `src/lib/housePlans/samplePlans.ts`.
 
 ### Import formats
 

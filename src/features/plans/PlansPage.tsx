@@ -135,7 +135,7 @@ export function PlansPage() {
           <p className="eyebrow">House plans</p>
           <h1>Plan library</h1>
           <p className="muted">
-            Accurate open samples plus DXF/JSON imports. Proprietary brochure approximations were removed.
+            Olsen Custom Homes flyer layouts plus measured samples. Import DXF/JSON for additional plates.
           </p>
         </div>
         <div className="data-page-actions">
@@ -165,7 +165,7 @@ export function PlansPage() {
         </div>
       )}
 
-      <h2 style={{ fontSize: '1rem', margin: '0 0 10px' }}>Built-in samples</h2>
+      <h2 style={{ fontSize: '1rem', margin: '0 0 10px' }}>Built-in plans</h2>
       <div className="house-plan-library">
         {builtins.map((p) => (
           <HousePlanCard key={p.id} plan={p} onSelect={() => openInBuild(p)} />

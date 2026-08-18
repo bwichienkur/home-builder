@@ -1,14 +1,15 @@
 import type { HousePlan } from './buildPlan';
+import { olsenHousePlans } from './olsenPlans';
 import { sampleHousePlans } from './samplePlans';
 import { useCrmStore } from '../../store/crmStore';
 
-/** Built-in accurate samples (not proprietary brochure tracings). */
+/** Olsen flyer layouts plus measured open samples. */
 export function listBuiltinHousePlans(): HousePlan[] {
-  return sampleHousePlans;
+  return [...olsenHousePlans, ...sampleHousePlans];
 }
 
 export function getBuiltinHousePlan(id: string) {
-  return sampleHousePlans.find((p) => p.id === id);
+  return listBuiltinHousePlans().find((p) => p.id === id);
 }
 
 /** Resolve a plan from builtins or CRM-imported library. */
@@ -21,7 +22,7 @@ export function getHousePlan(id: string): HousePlan | undefined {
 }
 
 export function listHousePlanSummaries() {
-  const builtin = sampleHousePlans.map((p) => ({
+  const builtin = listBuiltinHousePlans().map((p) => ({
     id: p.id,
     name: p.name,
     beds: p.beds,
@@ -47,7 +48,7 @@ export function listHousePlanSummaries() {
 }
 
 export function assertPlanCatalog() {
-  for (const plan of sampleHousePlans) {
+  for (const plan of listBuiltinHousePlans()) {
     if (!plan.id || !plan.floors?.length) throw new Error(`Invalid sample plan ${plan.id}`);
   }
 }
