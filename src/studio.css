@@ -2721,8 +2721,16 @@
 
 .wall-dim-html {
   pointer-events: none !important;
-  width: max-content !important;
-  height: max-content !important;
+}
+/* 0-size origin on the exterior face; the pill is then parked fully outside in CSS. */
+.wall-dim-html--top > div,
+.wall-dim-html--bottom > div,
+.wall-dim-html--left > div,
+.wall-dim-html--right > div {
+  width: 0 !important;
+  height: 0 !important;
+  overflow: visible !important;
+  transform: none !important;
 }
 .wall-dim-pill {
   display: inline-flex;
@@ -2744,10 +2752,32 @@
   color: #fff;
   box-shadow: 0 1px 3px rgba(0, 88, 163, 0.28);
 }
-.wall-dim-html--top .wall-dim-pill { transform: none; }
-.wall-dim-html--bottom .wall-dim-pill { transform: none; }
-.wall-dim-html--left .wall-dim-pill { transform: none; }
-.wall-dim-html--right .wall-dim-pill { transform: none; }
+.wall-dim-html--top .wall-dim-pill,
+.wall-dim-html--bottom .wall-dim-pill,
+.wall-dim-html--left .wall-dim-pill,
+.wall-dim-html--right .wall-dim-pill {
+  position: absolute;
+}
+.wall-dim-html--top .wall-dim-pill {
+  left: 0;
+  bottom: 16px;
+  transform: translateX(-50%);
+}
+.wall-dim-html--bottom .wall-dim-pill {
+  left: 0;
+  top: 16px;
+  transform: translateX(-50%);
+}
+.wall-dim-html--left .wall-dim-pill {
+  right: 16px;
+  top: 0;
+  transform: translateY(-50%);
+}
+.wall-dim-html--right .wall-dim-pill {
+  left: 16px;
+  top: 0;
+  transform: translateY(-50%);
+}
 
 /* Wall dimension card — L/W/H grouped outside the room (interaction panel). */
 .wall-dim-card {

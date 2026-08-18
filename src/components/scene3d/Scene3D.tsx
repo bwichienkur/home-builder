@@ -12,7 +12,7 @@ import { wouldOverlapFurniture } from '../../lib/collisions';
 import { framingFromPoints, framingFromWall, framingFromWalls, freeAreaFit, pageCenterFit, worldShiftForFreeArea } from '../../lib/geometry/planFraming';
 import { pointInPlanRoom, enclosureWallsForRoom } from '../../lib/geometry/roomWalls';
 import { pickFacingWall, elevationFaceBasis, wallWorldFrame } from '../../lib/geometry/elevationFace';
-import { wallDimWorldOffset } from '../../lib/geometry/planVertexDrag';
+import { wallDimFaceOffset } from '../../lib/geometry/planVertexDrag';
 import { stairsCuttingFloor } from '../../lib/geometry/stairCutouts';
 import { wallExteriorSide } from '../../lib/geometry/roomWalls';
 import { clampOpeningOffset, openingCenterOnWall, wallOffsetFromWorldPoint, wallSolidBoxes } from '../../lib/geometry/wallOpenings';
@@ -136,6 +136,9 @@ function CameraRig() {
   const controls = useRef<any>(null);
   const { invalidate, get, size } = useThree();
   const focusRoom = workflowStage === 'room' ? planRooms.find((r) => r.id === selectedRoomId) : null;
+  const planSelectedRoom =
+    workflowStage !== 'room' && selectedRoomId ? planRooms.find((r) => r.id === selectedRoomId) : null;
+  const frameRoom = focusRoom ?? planSelectedRoom ?? null;
   const elevationRoom = planRooms.find((r) => r.id === selectedRoomId) ?? planRooms[0] ?? null;
   const facingWall = useMemo(
     () => (mode === 'elevation' ? pickFacingWall(walls, elevationRoom, elevationFace) : null),
@@ -186,7 +189,8 @@ function CameraRig() {
     inspectorOpen ||
     (typeof document !== 'undefined' && document.body.dataset.rightRail === '1') ||
     // Fallback before chrome mounts its dataset.
-    !!focusRoom;
+    !!focusRoom ||
+    !!planSelectedRoom;
   void railTick;
   const canvasW = size?.width || (typeof window !== 'undefined' ? window.innerWidth : 390);
   const canvasH = size?.height || (typeof window !== 'undefined' ? window.innerHeight : 844);
@@ -194,11 +198,15 @@ function CameraRig() {
   // Rail: stay page-centered and zoom so the plate clears the rail with a small margin.
   // Wide overlays (inspector / wall dim card) still use free-area shift.
   const chromeFit = useMemo(() => {
-    const topChromePx = coarse ? 112 : 88;
-    const bottomChromePx = coarse ? 96 : 84;
+    const showPlanDims = !!planSelectedRoom && !inspectorOpen && !focusWall;
+    // Dim pills sit fully outside the room in CSS — reserve screen space so they
+    // never tuck under the black rail or the top/bottom chrome.
+    const dimReservePx = showPlanDims ? (coarse ? 40 : 48) : 0;
+    const dimVertPx = showPlanDims ? 36 : 0;
+    const topChromePx = (coarse ? 112 : 88) + dimVertPx;
+    const bottomChromePx = (coarse ? 96 : 84) + dimVertPx;
     const railPx = showRightRail ? 86 : 0;
-    // Clear the plan rail and dim pills.
-    const gutterPx = railPx ? (coarse ? 28 : 18) : 0;
+    const gutterPx = (railPx ? (coarse ? 28 : 18) : 0) + dimReservePx;
     if (inspectorOpen || focusWall) {
       const rightChromePx = inspectorOpen
         ? Math.min(260, Math.round(canvasW * 0.44))
@@ -220,7 +228,7 @@ function CameraRig() {
       topChromePx,
       bottomChromePx,
     });
-  }, [canvasW, canvasH, inspectorOpen, showRightRail, coarse, inspectorTick, focusWall]);
+  }, [canvasW, canvasH, inspectorOpen, showRightRail, coarse, inspectorTick, focusWall, planSelectedRoom]);
 
   const framing = useMemo(() => {
     // Keep orbit as tight as chromeFit allows — padScale already clears the rail.
@@ -246,12 +254,17 @@ function CameraRig() {
         exteriorSide: wallExteriorSide(focusWall, roomsForExterior),
       });
     }
-    if (focusRoom?.points.length) {
-      return framingFromPoints(focusRoom.points, { pad, orbitPad, minSpan: 2.5, minHeight: 9 });
+    if (frameRoom?.points.length) {
+      // Extra pad so exterior dim pills + handles stay in the free plate.
+      const roomPad = pad * (planSelectedRoom ? 1.18 : 1);
+      return framingFromPoints(frameRoom.points, { pad: roomPad, orbitPad, minSpan: 2.5, minHeight: 9 });
     }
     return framingFromWalls(walls, { pad, orbitPad, minHeight: 12 });
-  }, [walls, planRooms, focusRoom, focusWall, coarse, menuOpen, chromeFit.padScale]);
-  const center = framing.center;
+  }, [walls, planRooms, frameRoom, planSelectedRoom, focusWall, coarse, menuOpen, chromeFit.padScale]);
+  const framingRef = useRef(framing);
+  if (!moving) framingRef.current = framing;
+  const viewFraming = moving ? framingRef.current : framing;
+  const center = viewFraming.center;
   const viewYawRad = ((viewYawDeg % 360) + 360) % 360 * (Math.PI / 180);
   const yawCos = Math.cos(viewYawRad);
   const yawSin = Math.sin(viewYawRad);
@@ -266,17 +279,17 @@ function CameraRig() {
   // Page center by default; pan into the free left area only for wide overlays
   // (edit inspector / wall focus) — never for the narrow side rail.
   const shiftX = useMemo(() => {
-    const menuShiftX = menuOpen ? framing.span * 0.28 : 0;
+    const menuShiftX = menuOpen ? viewFraming.span * 0.28 : 0;
     if (chromeFit.shiftFraction <= 0) return menuShiftX;
     const dist =
       mode === 'top'
-        ? framing.topHeight
+        ? viewFraming.topHeight
         : mode === 'walk'
-          ? Math.max(4.2, framing.span * 0.55)
-          : Math.hypot(framing.orbitPose[0] - center[0], framing.orbitPose[1], framing.orbitPose[2] - center[2]) ||
-            framing.topHeight;
+          ? Math.max(4.2, viewFraming.span * 0.55)
+          : Math.hypot(viewFraming.orbitPose[0] - center[0], viewFraming.orbitPose[1], viewFraming.orbitPose[2] - center[2]) ||
+            viewFraming.topHeight;
     return menuShiftX + worldShiftForFreeArea(chromeFit.shiftFraction, dist, fovDeg, aspect);
-  }, [menuOpen, framing, chromeFit.shiftFraction, mode, center, fovDeg, aspect]);
+  }, [menuOpen, viewFraming, chromeFit.shiftFraction, mode, center, fovDeg, aspect]);
   const [shiftWorldX, shiftWorldZ] = yawOffset(shiftX, 0);
   const targetTuple = useMemo<[number, number, number]>(() => {
     if (mode === 'elevation') {
@@ -306,7 +319,7 @@ function CameraRig() {
       const wallH = facingWall?.height ?? walls[0]?.height ?? 2.7;
       const frame = facingWall ? wallWorldFrame(facingWall) : null;
       const cy = wallH * 0.5;
-      const dist = Math.max((frame?.len ?? framing.span) * 1.7, 9);
+      const dist = Math.max((frame?.len ?? viewFraming.span) * 1.7, 9);
       const cx = frame?.x ?? center[0];
       const cz = frame?.z ?? center[2];
       switch (elevationFace) {
@@ -323,20 +336,20 @@ function CameraRig() {
       }
     }
     if (mode === 'top') {
-      const zBias = framing.topPose[2] - center[2];
+      const zBias = viewFraming.topPose[2] - center[2];
       const [ox, oz] = yawOffset(0, zBias);
-      return [center[0] + shiftWorldX + ox, framing.topPose[1], center[2] + shiftWorldZ + oz];
+      return [center[0] + shiftWorldX + ox, viewFraming.topPose[1], center[2] + shiftWorldZ + oz];
     }
     if (mode === 'walk') {
-      const back = Math.max(4.2, framing.span * 0.55);
+      const back = Math.max(4.2, viewFraming.span * 0.55);
       const [ox, oz] = yawOffset(0, back);
       return [center[0] + shiftWorldX + ox, 1.55, center[2] + shiftWorldZ + oz];
     }
-    const ox0 = framing.orbitPose[0] - center[0];
-    const oz0 = framing.orbitPose[2] - center[2];
+    const ox0 = viewFraming.orbitPose[0] - center[0];
+    const oz0 = viewFraming.orbitPose[2] - center[2];
     const [ox, oz] = yawOffset(ox0, oz0);
-      return [center[0] + shiftWorldX + ox, framing.orbitPose[1], center[2] + shiftWorldZ + oz];
-  }, [mode, center, framing, shiftWorldX, shiftWorldZ, viewYawRad, elevationFace, walls, facingWall]);
+      return [center[0] + shiftWorldX + ox, viewFraming.orbitPose[1], center[2] + shiftWorldZ + oz];
+  }, [mode, center, viewFraming, shiftWorldX, shiftWorldZ, viewYawRad, elevationFace, walls, facingWall]);
 
   // Clear any leftover viewOffset from earlier experiments.
   useEffect(() => {
@@ -350,26 +363,27 @@ function CameraRig() {
 
   const maxDistance =
     mode === 'top'
-      ? Math.max(framing.topHeight * 2.4, framing.span * 7, 100)
+      ? Math.max(viewFraming.topHeight * 2.4, viewFraming.span * 7, 100)
       : mode === 'walk'
-        ? Math.max(14, framing.span * 1.4)
-        : Math.max(framing.orbitPose[1] * 2.6, framing.span * 5.5, 52);
-  const minDistance = mode === 'walk' ? 1.2 : mode === 'top' ? Math.max(3, framing.span * 0.08) : Math.max(2.5, framing.span * 0.12);
+        ? Math.max(14, viewFraming.span * 1.4)
+        : Math.max(viewFraming.orbitPose[1] * 2.6, viewFraming.span * 5.5, 52);
+  const minDistance = mode === 'walk' ? 1.2 : mode === 'top' ? Math.max(3, viewFraming.span * 0.08) : Math.max(2.5, viewFraming.span * 0.12);
 
   // Orthographic plan zoom — true top-down (no perspective tilt).
   const orthoZoom = useMemo(() => {
-    const half = Math.max(framing.span * 0.62, 5);
+    const spanPad = 0.62 * chromeFit.padScale * (planSelectedRoom ? 1.14 : 1);
+    const half = Math.max(viewFraming.span * spanPad, 5);
     const px = Math.min(size.width, size.height) || 800;
     if (mode === 'elevation') {
       const wallH = facingWall?.height ?? walls[0]?.height ?? 2.7;
-      const wallLen = facingWall ? wallWorldFrame(facingWall).len : framing.span;
+      const wallLen = facingWall ? wallWorldFrame(facingWall).len : viewFraming.span;
       const pad = 0.62;
       const zoomW = (size.width || px) / (2 * Math.max(wallLen, 2) * pad + 1.6);
       const zoomH = (size.height || px) / (2 * (wallH + 0.55) * pad + 0.8);
       return Math.max(10, Math.min(zoomW, zoomH));
     }
     return Math.max(8, px / (2 * half));
-  }, [framing.span, size.width, size.height, mode, elevationFace, walls, facingWall]);
+  }, [viewFraming.span, size.width, size.height, mode, elevationFace, walls, facingWall, chromeFit.padScale, planSelectedRoom]);
 
   const animating = useRef(false);
   const modeAnimUntil = useRef(0);
@@ -455,7 +469,7 @@ function CameraRig() {
     if (performance.now() < inspectorAnimUntil.current) return;
     animateToPose(mode === 'top' ? 360 : 480);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focusRoom?.id, workflowStage, chromeFit.padScale, chromeFit.shiftFraction, inspectorOpen, focusWall?.id]);
+  }, [focusRoom?.id, selectedRoomId, workflowStage, chromeFit.padScale, chromeFit.shiftFraction, inspectorOpen, focusWall?.id]);
 
   // Keep the selected wall centered as length / width / height change (not during plan wall resize).
   useEffect(() => {
@@ -1179,12 +1193,6 @@ function useVisibleWalls(): Wall[] {
   }, [walls, planRooms, selectedRoomId, workflowStage, cameraMode, elevationFace]);
 }
 
-function cameraZoom(camera: THREE.Camera): number {
-  return 'zoom' in camera && typeof (camera as THREE.OrthographicCamera).zoom === 'number'
-    ? Math.max((camera as THREE.OrthographicCamera).zoom, 1)
-    : 40;
-}
-
 function elevationPlaneYaw(face: import('../../types').ElevationFace): number {
   switch (face) {
     case 'front':
@@ -1209,6 +1217,7 @@ function PlanWallDim({
   roomPoints,
   text,
   selected,
+  thickness,
 }: {
   wallId: string;
   midX: number;
@@ -1220,16 +1229,15 @@ function PlanWallDim({
   roomPoints?: { x: number; y: number }[];
   text: string;
   selected: boolean;
+  thickness: number;
 }) {
-  const { camera } = useThree();
-  const zoom = cameraZoom(camera);
-  const offset = wallDimWorldOffset(zoom);
+  const offset = wallDimFaceOffset(thickness);
   const label = exteriorWallLabelPosition(midX, midZ, sx, sz, ex, ez, roomPoints, offset);
   return (
     <Html
       key={wallId + 'len'}
       position={[label.x, 0.22, label.z]}
-      center
+      center={false}
       zIndexRange={[24, 8]}
       style={{ pointerEvents: 'none' }}
       wrapperClass={`wall-dim-html wall-dim-html--${label.placement}`}
@@ -1628,6 +1636,7 @@ function WallMeshes() {
                   roomPoints={dimRoom?.points}
                   text={formatLength(origLen, unitSystem)}
                   selected={selected}
+                  thickness={w.thickness}
                 />,
               ]
             : []),
@@ -2271,6 +2280,10 @@ function Room() {
       // Plan level: select the room — Edit / Furnish / Remove live on the plan rail.
       if (workflowStage !== 'room') {
         selectRoom(roomId);
+        window.setTimeout(() => {
+          window.dispatchEvent(new Event('roomcraft-fit-plan'));
+          window.dispatchEvent(new Event('roomcraft-refocus'));
+        }, 40);
         return;
       }
       // Switching rooms while already in room focus.
