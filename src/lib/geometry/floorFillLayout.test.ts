@@ -42,9 +42,8 @@ function interiorCovered(
     for (let z = b.minZ + 0.04; z < b.maxZ - 0.04; z += 0.18) {
       if (!pointInWorldPoly(x, z, poly)) continue;
       const hit = poses.some((p) => {
-        const hw = (spec.width * p.sx) / 2 + grout;
-        const hl = (spec.length * p.sz) / 2 + grout;
-        return Math.abs(x - p.x) <= hw && Math.abs(z - p.z) <= hl;
+        const box = pieceWorldAabb(p, spec);
+        return x >= box.minX - grout && x <= box.maxX + grout && z >= box.minZ - grout && z <= box.maxZ + grout;
       });
       if (!hit) return false;
     }
@@ -89,6 +88,43 @@ describe('floor fill layout', () => {
     expect(spec.kind).toBe('running-bond');
     expect(spec.width).toBeCloseTo(0.076);
     expect(spec.length).toBeCloseTo(0.152);
+  });
+
+  it('staggers rectangular planks along the long edge, not the short', () => {
+    const oak = catalog.find((i) => i.id === 'floor-oak-hardwood')!;
+    const spec = floorPieceSpec(oak);
+    const poses = layoutFloorPieces({ polygon: rect, spec });
+    const full = poses.filter((p) => p.sx > 0.92 && p.sz > 0.92);
+    expect(full.some((p) => Math.abs(p.yaw) > 0.1)).toBe(true);
+    const rowKey = (p: (typeof poses)[number]) => p.z.toFixed(2);
+    const rows = [...new Set(full.map(rowKey))];
+    expect(rows.length).toBeGreaterThan(1);
+    const xsFor = (key: string) =>
+      full
+        .filter((p) => rowKey(p) === key)
+        .map((p) => p.x)
+        .sort((a, b) => a - b);
+    const a = xsFor(rows[0]!);
+    const b = xsFor(rows[1]!);
+    expect(a.length).toBeGreaterThan(0);
+    expect(b.length).toBeGreaterThan(0);
+    const pitch = spec.length + spec.grout;
+    const phase = (x: number) => ((x % pitch) + pitch) % pitch;
+    const delta = Math.min(
+      Math.abs(phase(a[0]!) - phase(b[0]!)),
+      pitch - Math.abs(phase(a[0]!) - phase(b[0]!)),
+    );
+    expect(delta).toBeGreaterThan(spec.length * 0.35);
+    expect(delta).toBeLessThan(spec.length * 0.65);
+  });
+
+  it('treats 12×24 porcelain as staggered rectangles', () => {
+    const plank = catalog.find((i) => i.id === 'floor-tile-porcelain-gray')!;
+    const spec = floorPieceSpec(plank);
+    expect(spec.kind).toBe('running-bond');
+    const poses = layoutFloorPieces({ polygon: rect, spec });
+    expect(poses.length).toBeGreaterThan(8);
+    expect(interiorCovered(rect, poses, spec)).toBe(true);
   });
 
   it('treats ceramic as a grouted grid of tiles', () => {
