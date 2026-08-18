@@ -1289,7 +1289,6 @@ function WallMeshes() {
   const onWallClick = (id: string, point?: { x: number; z: number }) => {
     if (placingOpening && point && (tool === 'door' || tool === 'window' || tool === 'passage')) {
       placeOpeningAtWorld(id, tool, point.x, point.z);
-      window.dispatchEvent(new Event('roomcraft-open-properties'));
       return;
     }
     select(id);
@@ -2245,7 +2244,10 @@ function Room() {
       // Plan level: select the room and open the editor (name, type, dims, furnish).
       if (workflowStage !== 'room') {
         selectRoom(roomId);
-        window.dispatchEvent(new Event('roomcraft-open-properties'));
+        const st = usePlannerStore.getState();
+        const placing =
+          st.pendingAttachMode || st.tool === 'door' || st.tool === 'window' || st.tool === 'passage';
+        if (!placing) window.dispatchEvent(new Event('roomcraft-open-properties'));
         window.setTimeout(() => {
           window.dispatchEvent(new Event('roomcraft-fit-plan'));
           window.dispatchEvent(new Event('roomcraft-refocus'));
@@ -2755,14 +2757,11 @@ function GhostPlacement() {
 export function Scene3D() {
   const begin = usePlannerStore((s) => s.beginPlacement);
   const pending = usePlannerStore((s) => s.pendingPlacement);
-  const tool = usePlannerStore((s) => s.tool);
-  const cameraMode = usePlannerStore((s) => s.cameraMode);
   const select = usePlannerStore((s) => s.selectFurniture);
   const selectWall = usePlannerStore((s) => s.selectWall);
   const selectSurface = usePlannerStore((s) => s.selectSurface);
   const selectRoom = usePlannerStore((s) => s.selectRoom);
   const custom = useInventoryStore((s) => s.items);
-  const placingOpening = tool === 'door' || tool === 'window' || tool === 'passage';
   const drop = (e: React.DragEvent) => {
     e.preventDefault();
     const id = e.dataTransfer.getData('catalogId');
@@ -2854,11 +2853,6 @@ export function Scene3D() {
         <div className="scene-help">Move to place · Tap floor or Confirm to drop · Cancel to abort</div>
       ) : (
         <div className="scene-help">Drag furniture to move · Tap through open walls · Empty space pans/orbits</div>
-      )}
-      {placingOpening && cameraMode === 'top' && (
-        <div className="opening-place-hint opening-place-hint--chrome" role="status">
-          Tap a wall to place {tool}
-        </div>
       )}
     </div>
   );

@@ -47,6 +47,7 @@ import { StoryOverview } from './StoryOverview';
 import { BuildingChecksBar } from './BuildingChecksBar';
 import { RoomDimTray } from './RoomDimTray';
 import { nextElevationFace } from '../../lib/geometry/elevationFace';
+import { addRoomPlanAction, planToolHint } from '../../lib/planToolHint';
 
 const icons: Record<string, typeof ShoppingBag> = {
   Bedroom: BedDouble,
@@ -265,6 +266,7 @@ export function StudioChrome({
   const placePlanRoom = usePlannerStore((s) => s.placePlanRoom);
   const deletePlanRoom = usePlannerStore((s) => s.deletePlanRoom);
   const enterRoom = usePlannerStore((s) => s.enterRoom);
+  const selectRoom = usePlannerStore((s) => s.selectRoom);
   const showPlanRoomActions = atPlanLevel && !pending && !!selectedRoom;
   /** Black rail only after a room is selected — never empty tool chrome on plan load. */
   const showPlanRail = showPlanRoomActions;
@@ -315,6 +317,7 @@ export function StudioChrome({
     setView('3d');
     setCamera('top');
     setPlanWallTool(false);
+    onCloseInspector?.();
     if (!planRooms.length) {
       const id = placePlanRoom(WORLD_ORIGIN, 'rectangle', 'Room 1');
       if (id) {
@@ -325,8 +328,19 @@ export function StudioChrome({
       }
       return;
     }
-    setPendingAttachMode(!pendingAttachMode);
+    const next = addRoomPlanAction({
+      selectedRoomId,
+      onlyRoomId: planRooms.length === 1 ? planRooms[0]!.id : null,
+      pendingAttachMode,
+    });
+    if (next.selectId && next.selectId !== selectedRoomId) selectRoom(next.selectId);
+    setPendingAttachMode(next.attach);
+    if (next.prompt) {
+      usePlannerStore.setState({ openingNotice: 'Tap a room to add onto, then pick a side.' });
+    }
   };
+
+  const planHint = planToolHint({ tool, pendingAttachMode, selectedRoomId });
 
   /** Enter the room for furnishing — do not auto-open the properties panel. */
   const editSelectedPlanRoom = () => {
@@ -609,6 +623,12 @@ export function StudioChrome({
         )}
       </div>
 
+      {planHint && (
+        <div className="studio-plan-hint" role="status">
+          {planHint}
+        </div>
+      )}
+
       {pendingFloorFill && !pending && (
         <div className="studio-selection-fabs" role="toolbar" aria-label="Floor fill">
           <button type="button" className="is-danger" onClick={() => cancelFloorFill()} aria-label="Cancel floor fill" title="Cancel">
@@ -780,6 +800,8 @@ export function StudioChrome({
                   title="Place door — switches to plan, then tap a wall"
                   aria-pressed={tool === 'door'}
                   onClick={() => {
+                    onCloseInspector?.();
+                    setPendingAttachMode(false);
                     setTool(tool === 'door' ? 'select' : 'door');
                     setCamera('top');
                   }}
@@ -793,6 +815,8 @@ export function StudioChrome({
                   title="Place window — switches to plan, then tap a wall"
                   aria-pressed={tool === 'window'}
                   onClick={() => {
+                    onCloseInspector?.();
+                    setPendingAttachMode(false);
                     setTool(tool === 'window' ? 'select' : 'window');
                     setCamera('top');
                   }}
