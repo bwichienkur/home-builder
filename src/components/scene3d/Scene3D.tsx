@@ -1204,19 +1204,21 @@ function WallDimWorld({
           <planeGeometry args={[size.w, size.h]} />
           <meshBasicMaterial color={bg} depthTest={false} toneMapped={false} />
         </mesh>
-        <Text
-          renderOrder={25}
-          position={[0, 0, 0.002]}
-          fontSize={DIM_FONT_M}
-          color={fg}
-          anchorX="center"
-          anchorY="middle"
-          outlineWidth={0.006}
-          outlineColor={bg}
-          depthOffset={-2}
-        >
-          {text}
-        </Text>
+        <Suspense fallback={null}>
+          <Text
+            renderOrder={25}
+            position={[0, 0, 0.002]}
+            fontSize={DIM_FONT_M}
+            color={fg}
+            anchorX="center"
+            anchorY="middle"
+            outlineWidth={0.006}
+            outlineColor={bg}
+            depthOffset={-2}
+          >
+            {text}
+          </Text>
+        </Suspense>
       </group>
     </group>
   );
@@ -2868,8 +2870,12 @@ export function Scene3D() {
         />
         <Suspense fallback={null}>
           <Room />
-          {!coarse && <Environment preset="apartment" environmentIntensity={0.35} />}
         </Suspense>
+        {!coarse && (
+          <Suspense fallback={null}>
+            <Environment preset="apartment" environmentIntensity={0.35} />
+          </Suspense>
+        )}
         <CameraRig />
       </Canvas>
       {pending ? (
