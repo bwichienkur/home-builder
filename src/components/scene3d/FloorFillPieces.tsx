@@ -85,6 +85,7 @@ export function FloorFillPieces({
   opacity,
   transparent,
   depthWrite,
+  userData,
   onClick,
 }: {
   points: Point[];
@@ -94,6 +95,7 @@ export function FloorFillPieces({
   opacity: number;
   transparent: boolean;
   depthWrite: boolean;
+  userData?: Record<string, unknown>;
   onClick?: (e: any) => void;
 }) {
   const inventory = useInventoryStore((s) => s.items);
@@ -140,6 +142,7 @@ export function FloorFillPieces({
       rotation={[Math.PI / 2, 0, 0]}
       position={[0, groutY, 0]}
       receiveShadow
+      userData={userData}
       onClick={onClick}
     >
       <shapeGeometry args={[shape]} />
@@ -158,7 +161,7 @@ export function FloorFillPieces({
 
   if (spec.kind === 'slab' || poses.length === 0) {
     return (
-      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, FLOOR_FILL_TOP_Y, 0]} receiveShadow onClick={onClick}>
+      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, FLOOR_FILL_TOP_Y, 0]} receiveShadow userData={userData} onClick={onClick}>
         <extrudeGeometry args={[shape, { depth: spec.thickness, bevelEnabled: false, steps: 1 }]} />
         <PieceMaterial
           color={color}
@@ -183,6 +186,7 @@ export function FloorFillPieces({
         args={[undefined, undefined, count]}
         receiveShadow
         frustumCulled={false}
+        userData={userData}
         onClick={onClick}
       >
         {spec.kind === 'hex' ? (
