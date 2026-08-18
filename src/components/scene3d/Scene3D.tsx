@@ -11,6 +11,7 @@ import { doorSwingZones, furnitureHitsDoorSwing } from '../../lib/geometry/doorC
 import { wouldOverlapFurniture } from '../../lib/collisions';
 import { framingFromPoints, framingFromWall, framingFromWalls, freeAreaFit, pageCenterFit, worldShiftForFreeArea } from '../../lib/geometry/planFraming';
 import { pointInPlanRoom, enclosureWallsForRoom } from '../../lib/geometry/roomWalls';
+import { nearestElevationFace } from '../../lib/geometry/elevationFace';
 import { stairsCuttingFloor } from '../../lib/geometry/stairCutouts';
 import { wallExteriorSide } from '../../lib/geometry/roomWalls';
 import { clampOpeningOffset, openingCenterOnWall, wallOffsetFromWorldPoint, wallSolidBoxes } from '../../lib/geometry/wallOpenings';
@@ -42,8 +43,8 @@ function exteriorWallLabelPosition(
   ex: number,
   ez: number,
   roomPoints?: { x: number; y: number }[],
-  offsetM = 0.46,
-): [number, number] {
+  offsetM = 0.38,
+): { x: number; z: number; placement: 'top' | 'bottom' | 'left' | 'right' } {
   const length = Math.hypot(ex - sx, ez - sz) || 1;
   let nx = -(ez - sz) / length;
   let nz = (ex - sx) / length;
@@ -55,7 +56,11 @@ function exteriorWallLabelPosition(
       nz = -nz;
     }
   }
-  return [midX + nx * offsetM, midZ + nz * offsetM];
+  const x = midX + nx * offsetM;
+  const z = midZ + nz * offsetM;
+  const placement: 'top' | 'bottom' | 'left' | 'right' =
+    Math.abs(nx) >= Math.abs(nz) ? (nx >= 0 ? 'right' : 'left') : nz >= 0 ? 'bottom' : 'top';
+  return { x, z, placement };
 }
 
 function hasUserDataFlag(object: THREE.Object3D, key: string) {
@@ -76,10 +81,15 @@ function preferInteriorPicks(hits: THREE.Intersection[]) {
     if (plane.length) return plane;
     return hits.filter((h) => !hasUserDataFlag(h.object, 'furniturePick'));
   }
-  // Plan: wall edge strips win over room floors so Exterior / openings stay discoverable.
+  // Plan: wall strips win only while tagging openings or dragging walls.
   if (usePlannerStore.getState().cameraMode === 'top') {
-    const wallPlan = hits.filter((h) => hasUserDataFlag(h.object, 'wallPlanPick'));
-    if (wallPlan.length) return wallPlan;
+    const st = usePlannerStore.getState();
+    const wallPriority =
+      st.planWallTool || st.tool === 'door' || st.tool === 'window' || st.tool === 'passage';
+    if (wallPriority) {
+      const wallPlan = hits.filter((h) => hasUserDataFlag(h.object, 'wallPlanPick'));
+      if (wallPlan.length) return wallPlan;
+    }
   }
   const furniture = hits.filter((h) => hasUserDataFlag(h.object, 'furniturePick'));
   if (!furniture.length) return hits;
@@ -115,6 +125,7 @@ function wallDragPlane(wall: Wall, item: FurnitureItem) {
 function CameraRig() {
   const mode = usePlannerStore((s) => s.cameraMode);
   const elevationFace = usePlannerStore((s) => s.elevationFace);
+  const setElevationFace = usePlannerStore((s) => s.setElevationFace);
   const viewYawDeg = usePlannerStore((s) => s.viewYawDeg);
   const walls = usePlannerStore((s) => s.walls);
   const planRooms = usePlannerStore((s) => s.planRooms);
@@ -292,15 +303,15 @@ function CameraRig() {
       const cz = center[2];
       switch (elevationFace) {
         case 'front':
-          return [cx, cy, cz + dist];
-        case 'back':
           return [cx, cy, cz - dist];
-        case 'left':
-          return [cx - dist, cy, cz];
-        case 'right':
-          return [cx + dist, cy, cz];
-        default:
+        case 'back':
           return [cx, cy, cz + dist];
+        case 'left':
+          return [cx + dist, cy, cz];
+        case 'right':
+          return [cx - dist, cy, cz];
+        default:
+          return [cx, cy, cz - dist];
       }
     }
     if (mode === 'top') {
@@ -372,18 +383,12 @@ function CameraRig() {
           controls.current.minAzimuthAngle = viewYawRad;
           controls.current.maxAzimuthAngle = viewYawRad;
           if (typeof controls.current.setAzimuthalAngle === 'function') controls.current.setAzimuthalAngle(viewYawRad);
-        } else if (mode === 'elevation') {
-          controls.current.minAzimuthAngle = elevationAzimuth;
-          controls.current.maxAzimuthAngle = elevationAzimuth;
-          if (typeof controls.current.setAzimuthalAngle === 'function') {
-            controls.current.setAzimuthalAngle(elevationAzimuth);
-          }
-          if (typeof controls.current.setPolarAngle === 'function') {
-            controls.current.setPolarAngle(Math.PI / 2);
-          }
         } else {
           controls.current.minAzimuthAngle = -Infinity;
           controls.current.maxAzimuthAngle = Infinity;
+          if (mode === 'elevation' && typeof controls.current.setPolarAngle === 'function') {
+            controls.current.setPolarAngle(Math.PI / 2);
+          }
         }
         controls.current.update();
       } else {
@@ -519,7 +524,7 @@ function CameraRig() {
       if (controls.current) {
         controls.current.enabled = !placing;
         controls.current.enablePan = true;
-        controls.current.enableRotate = mode !== 'top' && mode !== 'elevation';
+        controls.current.enableRotate = mode !== 'top';
         controls.current.enableZoom = true;
       }
     };
@@ -576,25 +581,34 @@ function CameraRig() {
         ref={controls}
         enabled={!moving && !placing}
         target={[targetTuple[0], mode === 'walk' ? 1.1 : targetTuple[1], targetTuple[2]]}
-        minPolarAngle={mode === 'top' ? 1e-4 : mode === 'elevation' ? Math.PI / 2 - 1e-4 : mode === 'walk' ? 0.7 : 0}
-        maxPolarAngle={mode === 'top' ? 1e-3 : mode === 'elevation' ? Math.PI / 2 + 1e-4 : mode === 'walk' ? Math.PI / 2.05 : Math.PI - 0.06}
-        minAzimuthAngle={mode === 'top' ? viewYawRad : mode === 'elevation' ? elevationAzimuth : -Infinity}
-        maxAzimuthAngle={mode === 'top' ? viewYawRad : mode === 'elevation' ? elevationAzimuth : Infinity}
+        minPolarAngle={mode === 'top' ? 1e-4 : mode === 'elevation' ? Math.PI / 2 - 0.04 : mode === 'walk' ? 0.7 : 0}
+        maxPolarAngle={mode === 'top' ? 1e-3 : mode === 'elevation' ? Math.PI / 2 + 0.04 : mode === 'walk' ? Math.PI / 2.05 : Math.PI - 0.06}
+        minAzimuthAngle={mode === 'top' ? viewYawRad : -Infinity}
+        maxAzimuthAngle={mode === 'top' ? viewYawRad : Infinity}
         minDistance={minDistance}
         maxDistance={maxDistance}
         enableZoom
         enablePan={!moving}
-        enableRotate={mode !== 'top' && mode !== 'elevation' && !moving}
+        enableRotate={mode !== 'top' && !moving}
         mouseButtons={{
-          LEFT: mode === 'top' || mode === 'elevation' ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE,
+          LEFT: mode === 'top' ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE,
           MIDDLE: THREE.MOUSE.DOLLY,
           RIGHT: THREE.MOUSE.PAN,
         }}
         touches={{
-          ONE: mode === 'top' || mode === 'elevation' ? THREE.TOUCH.PAN : THREE.TOUCH.ROTATE,
+          ONE: mode === 'top' ? THREE.TOUCH.PAN : THREE.TOUCH.ROTATE,
           TWO: THREE.TOUCH.DOLLY_PAN,
         }}
         onChange={() => invalidate()}
+        onEnd={() => {
+          if (mode !== 'elevation' || !controls.current) return;
+          const az =
+            typeof controls.current.getAzimuthalAngle === 'function'
+              ? controls.current.getAzimuthalAngle()
+              : elevationAzimuth;
+          const face = nearestElevationFace(az);
+          if (face !== usePlannerStore.getState().elevationFace) setElevationFace(face);
+        }}
       />
     </>
   );
@@ -1184,6 +1198,12 @@ function WallMeshes() {
   const orbiting = cameraMode === 'orbit';
   const elevating = cameraMode === 'elevation';
   const dimRoom = workflowStage === 'house' ? planRooms.find((r) => r.id === selectedRoomId) : null;
+  const dimWallIds = useMemo(() => {
+    if (!dimRoom) return null;
+    const height = walls[0]?.height ?? 2.7;
+    return new Set(enclosureWallsForRoom(dimRoom, walls, height).map((w) => w.id));
+  }, [dimRoom, walls]);
+  const planWallTool = usePlannerStore((s) => s.planWallTool);
   // Openings can be dragged in top plan and 3D orbit (not walk).
   const openingDragEnabled = tool === 'select' && (cameraMode === 'top' || cameraMode === 'orbit');
   const placingOpening = tool === 'door' || tool === 'window' || tool === 'passage';
@@ -1238,9 +1258,9 @@ function WallMeshes() {
           </mesh>
         );
 
-        // Plan: thin pick strip so builders can tag walls / add openings without a Walls CAD tool.
+        // Plan: thin pick strip while tagging openings or dragging walls.
         const topPick =
-          cameraMode === 'top' ? (
+          cameraMode === 'top' && (placingOpening || planWallTool) ? (
             <mesh
               key={w.id + 'toppick'}
               userData={{ wallPlanPick: true }}
@@ -1333,7 +1353,26 @@ function WallMeshes() {
           );
         });
         const selectionHalo = selected
-          ? solids.map((box, i) => {
+          ? cameraMode === 'top'
+            ? [
+                <mesh
+                  key={w.id + 'sel-plan'}
+                  position={[midX, 0.06, midZ]}
+                  rotation={[-Math.PI / 2, 0, angle]}
+                  raycast={() => {}}
+                  renderOrder={3}
+                >
+                  <planeGeometry args={[origLen + 0.04, Math.max(w.thickness + 0.1, 0.22)]} />
+                  <meshBasicMaterial
+                    color="#0058a3"
+                    transparent
+                    opacity={0.32}
+                    depthWrite={false}
+                    toneMapped={false}
+                  />
+                </mesh>,
+              ]
+            : solids.map((box, i) => {
               // Halo each solid segment so openings stay visible as gaps (not a full-run slab).
               const c = (box.along0 + box.along1) / 2;
               const t = c / length;
@@ -1438,9 +1477,9 @@ function WallMeshes() {
           ...base,
           ...selectionHalo,
           ...fixtures,
-          ...(cameraMode === 'top' && layers.dims
+          ...(cameraMode === 'top' && layers.dims && dimWallIds?.has(w.id)
             ? (() => {
-                const [labelX, labelZ] = exteriorWallLabelPosition(
+                const label = exteriorWallLabelPosition(
                   midX,
                   midZ,
                   sx,
@@ -1450,23 +1489,18 @@ function WallMeshes() {
                   dimRoom?.points,
                 );
                 return [
-                  <Text
+                  <Html
                     key={w.id + 'len'}
-                    position={[labelX, 0.16, labelZ]}
-                    rotation={[-Math.PI / 2, 0, 0]}
-                    fontSize={Math.min(0.28, Math.max(0.16, origLen * 0.05))}
-                    color={selected ? '#ffffff' : '#1a2330'}
-                    anchorX="center"
-                    anchorY="middle"
-                    outlineWidth={0.02}
-                    outlineColor={selected ? '#0058a3' : '#ffffff'}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onWallClick(w.id);
-                    }}
+                    position={[label.x, 0.2, label.z]}
+                    center
+                    zIndexRange={[24, 8]}
+                    style={{ pointerEvents: 'none' }}
+                    wrapperClass={`wall-dim-html wall-dim-html--${label.placement}`}
                   >
-                    {formatLength(origLen, unitSystem)}
-                  </Text>,
+                    <div className={`wall-dim-pill${selected ? ' is-selected' : ''}`}>
+                      {formatLength(origLen, unitSystem)}
+                    </div>
+                  </Html>,
                 ];
               })()
             : []),
@@ -1542,7 +1576,7 @@ function WallMeshes() {
                 />
               </mesh>,
             );
-            if (selectedTouch) {
+            if (selectedTouch && cameraMode !== 'top') {
               posts.push(
                 <mesh key={`corner-sel-${key}`} position={[x, h / 2, z]} raycast={() => {}} renderOrder={4}>
                   <boxGeometry args={[t * 1.08, h + 0.04, t * 1.08]} />
@@ -2165,6 +2199,35 @@ function Room() {
                   worldSpan={span}
                 />
               </mesh>
+              {selected && cameraMode === 'top' && (
+                <>
+                  <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, -0.016, 0]} raycast={() => {}} renderOrder={2}>
+                    <shapeGeometry args={[roomShapeWithHoles(points, stairs)]} />
+                    <meshBasicMaterial
+                      color="#0058a3"
+                      transparent
+                      opacity={0.14}
+                      depthWrite={false}
+                      toneMapped={false}
+                      side={THREE.DoubleSide}
+                    />
+                  </mesh>
+                  <Line
+                    points={[
+                      ...points.map((p) => {
+                        const [x, z] = world(p.x, p.y);
+                        return [x, 0.07, z] as [number, number, number];
+                      }),
+                      (() => {
+                        const [x, z] = world(points[0]!.x, points[0]!.y);
+                        return [x, 0.07, z] as [number, number, number];
+                      })(),
+                    ]}
+                    color="#0058a3"
+                    lineWidth={2.5}
+                  />
+                </>
+              )}
               {selected && cameraMode !== 'top' && (
                 <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, -0.018, 0]} raycast={() => {}} renderOrder={2}>
                   <shapeGeometry args={[roomShapeWithHoles(points, stairs)]} />
@@ -2290,6 +2353,8 @@ function RoofAndSite() {
   const siteSetback = usePlannerStore((s) => s.siteSetback);
   const cameraMode = usePlannerStore((s) => s.cameraMode);
   const studioMode = usePlannerStore((s) => s.studioMode);
+  const selectedRoomId = usePlannerStore((s) => s.selectedRoomId);
+  const layers = usePlannerStore((s) => s.layerVisibility);
   const height = walls[0]?.height ?? 2.7;
 
   const envelope = useMemo(() => {
@@ -2316,9 +2381,9 @@ function RoofAndSite() {
 
   const outdoorRooms = planRooms.filter((r) => r.roomType === 'Outdoor');
   // Only show roofs in exterior orbit — never while walking inside or on top plan.
-  const layers = usePlannerStore((s) => s.layerVisibility);
   const showRoof = layers.roof && roofStyle !== 'none' && cameraMode === 'orbit';
-  const showSetback = layers.setbacks && cameraMode === 'top' && studioMode === 'architect';
+  const showSetback =
+    layers.setbacks && cameraMode === 'top' && studioMode === 'architect' && !selectedRoomId && !isCoarsePointer();
   const rise = Math.min(1.1, Math.max(0.4, Math.min(w, d) * 0.2));
   const ridgeAlongZ = w >= d;
   const halfSpan = (ridgeAlongZ ? w : d) / 2;

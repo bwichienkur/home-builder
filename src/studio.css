@@ -1650,11 +1650,8 @@
   .studio-dock-seg button span {
     display: none;
   }
-  .studio-local-save-full {
+  .studio-local-save-banner {
     display: none;
-  }
-  .studio-local-save-short {
-    display: inline;
   }
   .studio-bag strong {
     display: inline;
@@ -1673,7 +1670,12 @@
     max-height: min(62vh, calc(100% - 150px));
   }
   .studio-dim-tray {
-    bottom: max(72px, calc(env(safe-area-inset-bottom) + 60px));
+    bottom: max(118px, calc(env(safe-area-inset-bottom) + 104px));
+    padding: 4px;
+    gap: 4px;
+  }
+  .studio-dim-tray .wall-length-field {
+    min-width: 76px;
   }
   .studio-selection-fabs {
     left: max(12px, env(safe-area-inset-left));
@@ -1711,6 +1713,12 @@
   .wall-dim-card--bottom {
     margin-top: 72px;
   }
+  .wall-dim-pill {
+    min-width: 0;
+    min-height: 0;
+    padding: 4px 8px;
+    font-size: 11px;
+  }
 }
 
 @media (min-width: 821px) {
@@ -1722,7 +1730,7 @@
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  bottom: max(72px, calc(env(safe-area-inset-bottom) + 60px));
+  bottom: max(88px, calc(env(safe-area-inset-bottom) + 76px));
   z-index: 46;
   display: flex;
   gap: 6px;
@@ -2710,6 +2718,36 @@
   }
 }
 
+.wall-dim-html {
+  pointer-events: none !important;
+  width: max-content !important;
+  height: max-content !important;
+}
+.wall-dim-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: #fff;
+  color: #111820;
+  font: 700 11px/1.1 var(--font);
+  letter-spacing: -0.01em;
+  box-shadow: 0 1px 3px rgba(17, 24, 32, 0.16), 0 0 0 1px rgba(17, 24, 32, 0.1);
+  white-space: nowrap;
+  user-select: none;
+  pointer-events: none;
+}
+.wall-dim-pill.is-selected {
+  background: #0058a3;
+  color: #fff;
+  box-shadow: 0 1px 3px rgba(0, 88, 163, 0.28);
+}
+.wall-dim-html--top .wall-dim-pill { transform: translateY(-10px); }
+.wall-dim-html--bottom .wall-dim-pill { transform: translateY(10px); }
+.wall-dim-html--left .wall-dim-pill { transform: translateX(-10px); }
+.wall-dim-html--right .wall-dim-pill { transform: translateX(10px); }
+
 /* Wall dimension card — L/W/H grouped outside the room (interaction panel). */
 .wall-dim-card {
   display: flex;
@@ -3050,19 +3088,23 @@
 
 .elevation-view-overlay {
   position: absolute;
-  z-index: 6;
-  left: max(12px, env(safe-area-inset-left));
-  top: max(72px, calc(env(safe-area-inset-top) + 56px));
+  z-index: 8;
+  left: 50%;
+  right: auto;
+  top: auto;
+  bottom: max(96px, calc(env(safe-area-inset-bottom) + 84px));
+  transform: translateX(-50%);
   pointer-events: none;
 }
 .elevation-view-overlay .elevation-view-toolbar {
   pointer-events: auto;
   display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: nowrap;
   padding: 4px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.94);
+  background: rgba(255, 255, 255, 0.96);
   box-shadow: var(--shadow);
   border: 1px solid rgba(17, 24, 32, 0.08);
 }
@@ -3079,6 +3121,13 @@
 .elevation-view-toolbar button.is-active {
   background: #111820;
   color: #fff;
+}
+.elevation-view-toolbar .elevation-view-spin {
+  width: 36px;
+  min-width: 36px;
+  padding: 0;
+  display: grid;
+  place-items: center;
 }
 
 .elevation-preview-root {

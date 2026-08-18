@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { PIXELS_PER_METER } from './snapping';
 import {
+  exteriorCornerDir,
   samePlanPoint,
   screenHandleMeters,
   snapVertexDrag,
@@ -39,5 +40,12 @@ describe('plan vertex drag', () => {
   it('treats near-identical plan points as unchanged', () => {
     expect(samePlanPoint({ x: 10, y: 10 }, { x: 10.2, y: 10.1 })).toBe(true);
     expect(samePlanPoint({ x: 10, y: 10 }, { x: 40, y: 10 })).toBe(false);
+  });
+
+  it('points corner handles outward from the room centroid', () => {
+    const centroid = { x: 200, y: 200 };
+    const dir = exteriorCornerDir({ x: 100, y: 300 }, { x: 100, y: 100 }, { x: 300, y: 100 }, centroid);
+    expect(dir.x).toBeLessThan(0);
+    expect(dir.y).toBeLessThan(0);
   });
 });
