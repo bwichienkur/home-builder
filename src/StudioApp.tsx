@@ -398,8 +398,11 @@ export default function StudioApp() {
       closeProjectMenu();
     };
     window.addEventListener('roomcraft-open-properties', open);
+    const close = () => setInspectorOpen(false);
+    window.addEventListener('roomcraft-close-properties', close);
     return () => {
       window.removeEventListener('roomcraft-open-properties', open);
+      window.removeEventListener('roomcraft-close-properties', close);
     };
   }, [closeProjectMenu]);
 

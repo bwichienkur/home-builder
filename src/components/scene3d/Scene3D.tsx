@@ -2267,17 +2267,10 @@ function Room() {
         selectSurface('floor');
         return;
       }
-      // Plan level: select the room and open the editor (name, type, dims, furnish).
+      // Plan level: select the room so the black rail (Edit / Walls / Furnish) appears.
       if (workflowStage !== 'room') {
         selectRoom(roomId);
-        const st = usePlannerStore.getState();
-        const placing =
-          st.pendingAttachMode ||
-          st.tool === 'door' ||
-          st.tool === 'window' ||
-          st.tool === 'passage' ||
-          st.tool === 'corner';
-        if (!placing) window.dispatchEvent(new Event('roomcraft-open-properties'));
+        window.dispatchEvent(new Event('roomcraft-close-properties'));
         window.setTimeout(() => {
           window.dispatchEvent(new Event('roomcraft-fit-plan'));
           window.dispatchEvent(new Event('roomcraft-refocus'));
