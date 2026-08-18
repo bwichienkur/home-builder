@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { nearestElevationFace, nextElevationFace } from './elevationFace';
+import { nearestElevationFace, nextElevationFace, pickFacingWall, elevationFaceBasis } from './elevationFace';
+import { WORLD_ORIGIN } from './placement';
+import { PIXELS_PER_METER } from './snapping';
+import type { PlanRoomLabel, Wall } from '../../types';
 
 describe('elevation face', () => {
   it('maps cardinal azimuths to faces', () => {
@@ -20,5 +23,27 @@ describe('elevation face', () => {
     expect(nextElevationFace('back', 1)).toBe('left');
     expect(nextElevationFace('left', 1)).toBe('front');
     expect(nextElevationFace('front', -1)).toBe('left');
+  });
+
+  it('picks the south wall for the front camera', () => {
+    const px = (x: number, y: number) => ({
+      x: WORLD_ORIGIN.x + x * PIXELS_PER_METER,
+      y: WORLD_ORIGIN.y + y * PIXELS_PER_METER,
+    });
+    const walls: Wall[] = [
+      { id: 'n', start: px(-3, -2), end: px(3, -2), thickness: 0.15, height: 2.7 },
+      { id: 's', start: px(3, 2), end: px(-3, 2), thickness: 0.15, height: 2.7 },
+      { id: 'e', start: px(3, -2), end: px(3, 2), thickness: 0.15, height: 2.7 },
+      { id: 'w', start: px(-3, 2), end: px(-3, -2), thickness: 0.15, height: 2.7 },
+    ];
+    const room: PlanRoomLabel = {
+      id: 'r',
+      name: 'Room',
+      roomType: 'Living room',
+      points: [px(-3, -2), px(3, -2), px(3, 2), px(-3, 2)],
+    };
+    expect(pickFacingWall(walls, room, 'front')?.id).toBe('n');
+    expect(pickFacingWall(walls, room, 'back')?.id).toBe('s');
+    expect(elevationFaceBasis('front').camZ).toBe(-1);
   });
 });

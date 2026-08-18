@@ -11,6 +11,7 @@ import {
   screenHandleMeters,
   snapVertexDrag,
   vertexDragArmed,
+  vertexDragGain,
 } from '../../lib/geometry/planVertexDrag';
 import {
   attachSideBlocked,
@@ -42,10 +43,12 @@ function cameraZoom(camera: THREE.Camera): number {
 function PlanCornerHandle({
   position,
   outward,
+  dragging = false,
   ...events
 }: {
   position: [number, number, number];
   outward: [number, number];
+  dragging?: boolean;
   onPointerDown?: (e: any) => void;
   onPointerMove?: (e: any) => void;
   onPointerUp?: (e: any) => void;
@@ -55,29 +58,32 @@ function PlanCornerHandle({
   const ref = useRef<THREE.Group>(null);
   const { camera } = useThree();
   const targetPx = useMemo(
-    () => (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches ? 44 : 28),
+    () => (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches ? 36 : 26),
     [],
   );
+  const frozen = useRef<number | null>(null);
   useFrame(() => {
     const group = ref.current;
     if (!group) return;
-    const radius = screenHandleMeters(cameraZoom(camera), targetPx);
-    const push = radius * 0.72 + 0.08;
+    if (!dragging) frozen.current = null;
+    const radius = frozen.current ?? screenHandleMeters(cameraZoom(camera), targetPx);
+    if (dragging && frozen.current == null) frozen.current = radius;
+    const push = radius * 0.78 + 0.1;
     group.position.set(position[0] + outward[0] * push, position[1], position[2] + outward[1] * push);
     group.scale.setScalar(radius / 0.5);
   });
   return (
     <group ref={ref} position={position} rotation={[-Math.PI / 2, 0, 0]}>
       <mesh {...events} renderOrder={12}>
-        <circleGeometry args={[0.5, 32]} />
+        <circleGeometry args={[0.5, 48]} />
         <meshBasicMaterial color="#ffffff" depthTest={false} toneMapped={false} />
       </mesh>
       <mesh {...events} renderOrder={13} raycast={() => {}}>
-        <circleGeometry args={[0.32, 32]} />
-        <meshBasicMaterial color="#111820" depthTest={false} toneMapped={false} />
+        <ringGeometry args={[0.4, 0.5, 48]} />
+        <meshBasicMaterial color="#1a2330" depthTest={false} toneMapped={false} />
       </mesh>
       <mesh {...events} renderOrder={14} raycast={() => {}}>
-        <ringGeometry args={[0.26, 0.32, 32]} />
+        <circleGeometry args={[0.14, 32]} />
         <meshBasicMaterial color="#0058a3" depthTest={false} toneMapped={false} />
       </mesh>
     </group>
@@ -333,12 +339,13 @@ export function PlanEditLayer() {
       if (!vertexDragArmed(drag.startPointer, raw, zoom)) return;
       drag.armed = true;
     }
+    const gain = vertexDragGain(zoom);
     const room = planRooms.find((r) => r.id === drag.roomId);
     const others = room?.points.filter((_, i) => i !== drag.index) ?? [];
     const pt = snapVertexDrag(
       {
-        x: drag.anchor.x + (raw.x - drag.startPointer.x),
-        y: drag.anchor.y + (raw.y - drag.startPointer.y),
+        x: drag.anchor.x + (raw.x - drag.startPointer.x) * gain,
+        y: drag.anchor.y + (raw.y - drag.startPointer.y) * gain,
       },
       others,
       zoom,
@@ -358,13 +365,15 @@ export function PlanEditLayer() {
       if (raw) {
         const room = planRooms.find((r) => r.id === drag.roomId);
         const others = room?.points.filter((_, i) => i !== drag.index) ?? [];
+        const zoom = cameraZoom(camera);
+        const gain = vertexDragGain(zoom);
         const pt = snapVertexDrag(
           {
-            x: drag.anchor.x + (raw.x - drag.startPointer.x),
-            y: drag.anchor.y + (raw.y - drag.startPointer.y),
+            x: drag.anchor.x + (raw.x - drag.startPointer.x) * gain,
+            y: drag.anchor.y + (raw.y - drag.startPointer.y) * gain,
           },
           others,
-          cameraZoom(camera),
+          zoom,
         );
         movePlanRoomVertex(drag.roomId, drag.index, pt, { live: false });
       }
@@ -453,6 +462,7 @@ export function PlanEditLayer() {
               key={`v-${hostRoom!.id}-${i}`}
               position={[pos[0], 0.16, pos[1]]}
               outward={[dir.x, dir.y]}
+              dragging={vertexDragging}
               onPointerDown={(e: any) => onVertexPointerDown(e, hostRoom!.id, i)}
               onPointerMove={onVertexPointerMove}
               onPointerUp={onVertexPointerUp}

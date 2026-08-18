@@ -16,7 +16,6 @@ import { catalog as catalogItems } from './components/catalog/catalogData';
 import { BomDialog } from './components/ui/BomDialog';
 import { SelectionInspector } from './components/ui/SelectionInspector';
 import { ElevationPreview } from './components/ui/ElevationPreview';
-import { ElevationView } from './components/ui/ElevationView';
 import { StudioChrome } from './components/ui/StudioChrome';
 import { DesignStart } from './components/ui/DesignStart';
 import { useInventoryStore } from './store/inventoryStore';
@@ -578,7 +577,6 @@ export default function StudioApp() {
             <Scene3D />
           </Suspense>
         </div>
-        {isElevation && <ElevationView />}
       </section>
 
       {workflowStage === 'start' && (

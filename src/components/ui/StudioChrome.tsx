@@ -46,6 +46,7 @@ import { LayersMenu } from './LayersMenu';
 import { StoryOverview } from './StoryOverview';
 import { BuildingChecksBar } from './BuildingChecksBar';
 import { RoomDimTray } from './RoomDimTray';
+import { nextElevationFace } from '../../lib/geometry/elevationFace';
 
 const icons: Record<string, typeof ShoppingBag> = {
   Bedroom: BedDouble,
@@ -104,6 +105,8 @@ export function StudioChrome({
   const [takeoffOpen, setTakeoffOpen] = useState(false);
   const camera = usePlannerStore((s) => s.cameraMode);
   const rotateViewYaw = usePlannerStore((s) => s.rotateViewYaw);
+  const elevationFace = usePlannerStore((s) => s.elevationFace);
+  const setElevationFace = usePlannerStore((s) => s.setElevationFace);
   const setView = usePlannerStore((s) => s.setView);
   const setCamera = usePlannerStore((s) => s.setCameraMode);
   const undo = usePlannerStore((s) => s.undo);
@@ -216,6 +219,14 @@ export function StudioChrome({
   };
 
   const rotateView = () => {
+    if (isElevation) {
+      setElevationFace(nextElevationFace(elevationFace, 1));
+      window.setTimeout(() => {
+        window.dispatchEvent(new Event('roomcraft-fit-plan'));
+        window.dispatchEvent(new Event('roomcraft-refocus'));
+      }, 0);
+      return;
+    }
     rotateViewYaw(90);
     window.setTimeout(() => {
       window.dispatchEvent(new Event('roomcraft-fit-plan'));
@@ -769,7 +780,7 @@ export function StudioChrome({
               </button>
             )}
             {!atStart && <LayersMenu />}
-            <button type="button" className="studio-dock-action" onClick={rotateView} title="Rotate view 90°">
+            <button type="button" className="studio-dock-action" onClick={rotateView} title={isElevation ? 'Next wall' : 'Rotate view 90°'}>
               <RotateCw size={15} />
               <span>Rotate</span>
             </button>
