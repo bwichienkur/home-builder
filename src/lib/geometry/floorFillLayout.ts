@@ -57,7 +57,7 @@ export function floorPieceSpec(item: {
   if (sub === 'carpet' || sub === 'concrete' || cat === 'carpet' || minFace >= 0.85) {
     return { kind: 'slab', width: maxFace, length: maxFace, thickness: Math.max(thickness, 0.01), grout: 0 };
   }
-  if (aspect >= 1.45) {
+  if (aspect >= 1.2) {
     const grout = sub === 'tile' || cat === 'tile' || name.includes('tile') ? 0.003 : 0.0012;
     return { kind: 'running-bond', width: minFace, length: maxFace, thickness, grout };
   }
@@ -222,14 +222,18 @@ export function pieceWorldAabb(pose: FloorPiecePose, spec: FloorPieceSpec): Aabb
   return { minX: pose.x - ex, maxX: pose.x + ex, minZ: pose.z - ez, maxZ: pose.z + ez };
 }
 
-function poseFromAabb(box: Aabb, geomW: number, geomL: number, y: number): FloorPiecePose {
+function poseFromAabb(box: Aabb, geomW: number, geomL: number, y: number, yaw = 0): FloorPiecePose {
+  const worldW = box.maxX - box.minX;
+  const worldL = box.maxZ - box.minZ;
+  // yaw 0: local X → world X (geomW), local Z → world Z (geomL)
+  // yaw π/2: local X → world Z (geomW), local Z → world X (geomL)
   return {
     x: (box.minX + box.maxX) / 2,
     y,
     z: (box.minZ + box.maxZ) / 2,
-    yaw: 0,
-    sx: (box.maxX - box.minX) / geomW,
-    sz: (box.maxZ - box.minZ) / geomL,
+    yaw,
+    sx: (yaw ? worldL : worldW) / geomW,
+    sz: (yaw ? worldW : worldL) / geomL,
   };
 }
 
@@ -295,13 +299,46 @@ export function layoutFloorPieces(opts: {
 
   const pitchX = width + grout;
   const pitchZ = length + grout;
-  const stagger = opts.spec.kind === 'running-bond';
-  let row = 0;
-  for (let z0 = bounds.minZ; z0 < bounds.maxZ - CLIP_EPS && poses.length < maxCount; z0 += pitchZ, row++) {
-    const xOff = stagger && row % 2 === 1 ? pitchX * 0.5 : 0;
-    for (let x0 = bounds.minX - xOff; x0 < bounds.maxX - CLIP_EPS && poses.length < maxCount; x0 += pitchX) {
-      const cellAabb: Aabb = { minX: x0, maxX: x0 + width, minZ: z0, maxZ: z0 + length };
-      for (const part of clipCellToFloor(cellAabb, poly, holes)) pushBox(part);
+  if (opts.spec.kind !== 'running-bond') {
+    for (let z0 = bounds.minZ; z0 < bounds.maxZ - CLIP_EPS && poses.length < maxCount; z0 += pitchZ) {
+      for (let x0 = bounds.minX; x0 < bounds.maxX - CLIP_EPS && poses.length < maxCount; x0 += pitchX) {
+        const cellAabb: Aabb = { minX: x0, maxX: x0 + width, minZ: z0, maxZ: z0 + length };
+        for (const part of clipCellToFloor(cellAabb, poly, holes)) pushBox(part);
+      }
+    }
+    return poses;
+  }
+
+  // Running bond: long edge is the run, short edge is the row. Offset every other
+  // row by half a board so rectangles read as staggered planks / subway tiles.
+  const runAlongX = spanX >= spanZ;
+  const along = length + grout;
+  const across = width + grout;
+  const halfLap = along * 0.5;
+  const yaw = runAlongX ? Math.PI / 2 : 0;
+  if (runAlongX) {
+    let row = 0;
+    for (let z0 = bounds.minZ; z0 < bounds.maxZ - CLIP_EPS && poses.length < maxCount; z0 += across, row++) {
+      const xOff = row % 2 === 1 ? halfLap : 0;
+      for (let x0 = bounds.minX - xOff; x0 < bounds.maxX - CLIP_EPS && poses.length < maxCount; x0 += along) {
+        const cellAabb: Aabb = { minX: x0, maxX: x0 + length, minZ: z0, maxZ: z0 + width };
+        for (const part of clipCellToFloor(cellAabb, poly, holes)) {
+          if (poses.length >= maxCount) break;
+          poses.push(poseFromAabb(part, geomW, geomL, y, yaw));
+        }
+      }
+    }
+  } else {
+    let row = 0;
+    for (let x0 = bounds.minX; x0 < bounds.maxX - CLIP_EPS && poses.length < maxCount; x0 += across, row++) {
+      const zOff = row % 2 === 1 ? halfLap : 0;
+      for (let z0 = bounds.minZ - zOff; z0 < bounds.maxZ - CLIP_EPS && poses.length < maxCount; z0 += along) {
+        const cellAabb: Aabb = { minX: x0, maxX: x0 + width, minZ: z0, maxZ: z0 + length };
+        for (const part of clipCellToFloor(cellAabb, poly, holes)) {
+          if (poses.length >= maxCount) break;
+          poses.push(poseFromAabb(part, geomW, geomL, y, yaw));
+        }
+      }
     }
   }
   return poses;
