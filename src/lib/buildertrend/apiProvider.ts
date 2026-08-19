@@ -3,7 +3,8 @@ import type { OwnerDashboardProvider } from './types';
 /**
  * Partner Buildertrend API client — not wired.
  *
- * Do not scrape buildertrend.com and do not log in with stored passwords.
+ * Do not scrape buildertrend.com from the browser and do not put passwords in git.
+ * Live read-only refresh goes through POST /api/buildertrend/refresh (env credentials or session cookie, GET reports only).
  * When Olsen has written API access, implement reads here and map into OwnerDashboard:
  * - GET projects / jobs (status, phase, PM, contract)
  * - job costing (contract, billed-to-date, projected, margin, WIP)

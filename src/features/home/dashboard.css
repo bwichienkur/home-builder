@@ -74,6 +74,25 @@
   font-weight: 650;
 }
 
+.dash-refresh {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 14px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.dash-refresh:hover:not(:disabled) {
+  background: #f4f4f5;
+}
+
+.dash-refresh:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
 .dash-source {
   margin-top: -6px;
 }

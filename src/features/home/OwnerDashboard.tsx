@@ -1,8 +1,50 @@
 import { useEffect, useMemo, useState } from 'react';
-import { formatCloseDate, formatCompactUsd, formatDays, formatDelta, formatPct, formatRefreshedAt, formatUsd, getOwnerDashboardProvider, mockOwnerDashboardProvider, phaseLabel } from '../../lib/buildertrend';
-import type { DateRangeId, JobStatus, OwnerDashboard, ProjectSnapshot } from '../../lib/buildertrend/types';
+import {
+  fetchCachedBuildertrendPull,
+  formatCloseDate,
+  formatCompactUsd,
+  formatDays,
+  formatDelta,
+  formatPct,
+  formatRefreshedAt,
+  formatUsd,
+  getOwnerDashboardProvider,
+  loadStoredLivePull,
+  mapBuildertrendReports,
+  mockOwnerDashboardProvider,
+  phaseLabel,
+  refreshBuildertrendPull,
+  storeLivePull,
+  clearStoredLivePull,
+  summarizeOwnerDashboard,
+} from '../../lib/buildertrend';
+import type { BuildertrendLivePull } from '../../lib/buildertrend';
+import type { DateRangeId, JobStatus, OwnerDashboard, OwnerDashboardFilters, ProjectSnapshot } from '../../lib/buildertrend/types';
 import { PerformanceBars, PipelineFunnel, Sparkline, StatusDonut } from './dashboardCharts';
 import './dashboard.css';
+
+function dashboardFromPull(pull: BuildertrendLivePull, filters: OwnerDashboardFilters): OwnerDashboard {
+  const mapped = mapBuildertrendReports(pull.reports, { now: new Date(pull.pulledAt) });
+  return summarizeOwnerDashboard({
+    source: 'buildertrend',
+    refreshedAt: pull.pulledAt,
+    filters,
+    ...mapped,
+  });
+}
+
+function sourceLine(dash: OwnerDashboard, live: boolean, error: string) {
+  const date = new Date(dash.refreshedAt).toLocaleDateString(undefined, {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+  const base =
+    dash.source === 'mock'
+      ? 'Demo data · Buildertrend API not connected'
+      : `Buildertrend read-only${live ? ' · live pull' : ' snapshot'} · ${date}`;
+  return error ? `${base} · ${error}` : base;
+}
 
 const STATUS: { id: JobStatus; label: string }[] = [
   { id: 'open', label: 'Open' },
@@ -33,12 +75,26 @@ export function OwnerDashboard() {
   const [dateRange, setDateRange] = useState<DateRangeId>('all');
   const [dash, setDash] = useState<OwnerDashboard | null>(null);
   const [error, setError] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+  const [livePull, setLivePull] = useState<BuildertrendLivePull | null>(() => loadStoredLivePull());
   const [sort, setSort] = useState<{ key: SortKey; dir: 'asc' | 'desc' }>({ key: 'name', dir: 'asc' });
 
   useEffect(() => {
     let cancelled = false;
+    const filters = { status, dateRange };
+    if (livePull) {
+      try {
+        setDash(dashboardFromPull(livePull, filters));
+      } catch {
+        clearStoredLivePull();
+        setLivePull(null);
+      }
+      return () => {
+        cancelled = true;
+      };
+    }
     const provider = getOwnerDashboardProvider();
-    void provider.getDashboard({ status, dateRange }).then(
+    void provider.getDashboard(filters).then(
       (next) => {
         if (!cancelled) {
           setDash(next);
@@ -48,14 +104,42 @@ export function OwnerDashboard() {
       async (reason: unknown) => {
         if (cancelled) return;
         setError(reason instanceof Error ? reason.message : 'Dashboard could not load.');
-        const fallback = await mockOwnerDashboardProvider.getDashboard({ status, dateRange });
+        const fallback = await mockOwnerDashboardProvider.getDashboard(filters);
         if (!cancelled) setDash(fallback);
       },
     );
     return () => {
       cancelled = true;
     };
-  }, [status, dateRange]);
+  }, [status, dateRange, livePull]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchCachedBuildertrendPull().then((cached) => {
+      if (cancelled || !cached) return;
+      setLivePull((prev) => {
+        if (prev && prev.pulledAt >= cached.pulledAt) return prev;
+        storeLivePull(cached);
+        return cached;
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      const pull = await refreshBuildertrendPull();
+      setLivePull(pull);
+      setError('');
+    } catch (reason: unknown) {
+      setError(reason instanceof Error ? reason.message : 'Buildertrend refresh failed.');
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const rows = useMemo(() => {
     const list = dash?.projects ?? [];
@@ -111,14 +195,20 @@ export function OwnerDashboard() {
             </select>
           </label>
           <p className="dash-refreshed">{formatRefreshedAt(dash.refreshedAt, now)}</p>
+          <button
+            type="button"
+            className="dash-refresh"
+            onClick={() => void onRefresh()}
+            disabled={refreshing}
+            aria-busy={refreshing}
+          >
+            {refreshing ? 'Pulling…' : 'Refresh from Buildertrend'}
+          </button>
         </div>
       </header>
 
       <p className="dash-source">
-        {dash.source === 'mock'
-          ? 'Demo data · Buildertrend API not connected'
-          : 'Buildertrend read-only snapshot · 19 Aug 2026'}
-        {error ? ` · ${error}` : ''}
+        {sourceLine(dash, Boolean(livePull), error)}
       </p>
 
       <div className="dash-kpis">
