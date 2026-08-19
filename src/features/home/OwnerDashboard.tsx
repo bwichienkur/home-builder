@@ -42,7 +42,7 @@ function sourceLine(dash: OwnerDashboard, live: boolean, error: string) {
   const base =
     dash.source === 'mock'
       ? 'Demo data · Buildertrend API not connected'
-      : `Buildertrend read-only${live ? ' · live pull' : ' snapshot'} · ${date}`;
+      : `Buildertrend read-only${live ? ' · live pull' : ' · snapshot (refresh for latest)'} · ${date}`;
   return error ? `${base} · ${error}` : base;
 }
 
