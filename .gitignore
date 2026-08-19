@@ -17,3 +17,6 @@ data/*.json
 
 # CRM file store
 data/
+buildertrend_cookies.txt
+buildertrend_session_report.txt
+buildertrend_tasks_api.txt

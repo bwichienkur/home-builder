@@ -11,10 +11,14 @@ const TEST_JOB = /tate\s+test\s+job/i;
 export type BuildertrendReports = {
   wip?: unknown;
   dailyLogs?: unknown;
+  userDailyLogsRecent?: unknown;
+  schedulePercentComplete?: unknown;
   leads?: unknown;
   jobs?: unknown;
   jobsites?: unknown;
   leadStatus?: unknown;
+  tasks?: unknown;
+  actionItemsByJob?: Record<string, unknown>;
 };
 
 export type MappedBuildertrendPull = {
@@ -204,6 +208,7 @@ function expectedLogs(input: {
 type JobDraft = {
   key: string;
   id: string;
+  jobId?: number;
   name: string;
   pm: string;
   status: OwnerJob['status'];
@@ -219,6 +224,9 @@ type JobDraft = {
   earnedRevenue: number;
   projectedProfit: number;
   onWip: boolean;
+  pendingSelections: number;
+  pastDueTasks: number;
+  dailyLogsRecentDone: number | null;
   notes: string[];
 };
 
@@ -240,6 +248,10 @@ function mergeJob(target: JobDraft, patch: Partial<JobDraft>) {
   if ((patch.earnedRevenue ?? 0) > 0) target.earnedRevenue = patch.earnedRevenue ?? 0;
   if (patch.projectedProfit != null) target.projectedProfit = patch.projectedProfit;
   if (patch.notes?.length) target.notes.push(...patch.notes);
+  if (patch.jobId != null) target.jobId = patch.jobId;
+  if ((patch.pendingSelections ?? 0) > target.pendingSelections) target.pendingSelections = patch.pendingSelections ?? 0;
+  if ((patch.pastDueTasks ?? 0) > target.pastDueTasks) target.pastDueTasks = patch.pastDueTasks ?? 0;
+  if (patch.dailyLogsRecentDone != null) target.dailyLogsRecentDone = patch.dailyLogsRecentDone;
 }
 
 function jobKey(name: string, jobId: unknown) {
@@ -273,11 +285,15 @@ function ingest(jobs: Map<string, JobDraft>, row: Record<string, unknown>, kind:
       earnedRevenue: 0,
       projectedProfit: 0,
       onWip: false,
+      pendingSelections: 0,
+      pastDueTasks: 0,
+      dailyLogsRecentDone: null,
       notes: [],
     } satisfies JobDraft);
 
   const pm = pickProjectManager(pick(row, 'projectManagers', 'projectManager', 'pm', 'PMs'));
   const status = mapStatus(pick(row, 'jobStatus', 'status'));
+  const numericJobId = num(pick(row, 'jobID', 'jobId', 'id', 'jobsiteId')) || undefined;
   const start = isoDate(pick(row, 'actualStartDate', 'startDate', 'projectedStartDate', 'createdDate', 'openedAt', 'dateCreated'));
   const completion = isoDate(pick(row, 'actualCompletionDate', 'completionDate', 'estCloseDate'));
   const lastLog = isoDate(pick(row, 'lastDailyLogDate', 'lastLogDate'));
@@ -300,6 +316,7 @@ function ingest(jobs: Map<string, JobDraft>, row: Record<string, unknown>, kind:
     mergeJob(draft, {
       name,
       id: slugId(name, jobId),
+      jobId: numericJobId,
       pm,
       status,
       openedAt: start,
@@ -317,6 +334,7 @@ function ingest(jobs: Map<string, JobDraft>, row: Record<string, unknown>, kind:
     mergeJob(draft, {
       name,
       id: slugId(name, jobId),
+      jobId: numericJobId,
       pm,
       status,
       openedAt: start,
@@ -330,6 +348,7 @@ function ingest(jobs: Map<string, JobDraft>, row: Record<string, unknown>, kind:
     mergeJob(draft, {
       name,
       id: slugId(name, jobId),
+      jobId: numericJobId,
       pm,
       status,
       openedAt: start,
@@ -337,6 +356,136 @@ function ingest(jobs: Map<string, JobDraft>, row: Record<string, unknown>, kind:
     });
   }
 
+  jobs.set(key, draft);
+  if (name) jobs.set(`name:${name.toLowerCase()}`, draft);
+}
+
+function taskDueIso(task: Record<string, unknown>) {
+  return isoDate(pick(task, 'endDate', 'endDateTimeCalculated', 'baseEndDate', 'dueDate'));
+}
+
+function isIncompleteTask(task: Record<string, unknown>) {
+  const status = num(pick(task, 'status', 'taskStatus'));
+  if (status === 0) return true;
+  const label = str(pick(task, 'statusName', 'statusLabel')).toLowerCase();
+  return label.includes('not complete') || label.includes('incomplete') || label.includes('open');
+}
+
+export function pastDueTasksByJob(reports: BuildertrendReports, now = new Date()) {
+  const today = now.toISOString().slice(0, 10);
+  const counts = new Map<number, number>();
+  for (const row of asArray(asRecord(reports.tasks)?.tasks ?? reports.tasks)) {
+    const task = asRecord(row);
+    if (!task || task.isDeleted) continue;
+    if (!isIncompleteTask(task)) continue;
+    const due = taskDueIso(task);
+    if (!due || due >= today) continue;
+    const jobId = num(pick(task, 'jobId', 'jobID'));
+    if (!jobId) continue;
+    counts.set(jobId, (counts.get(jobId) ?? 0) + 1);
+  }
+  return counts;
+}
+
+function recentDailyLogsByJob(reports: BuildertrendReports) {
+  const counts = new Map<number, number>();
+  for (const row of asArray(reports.userDailyLogsRecent)) {
+    const rec = asRecord(row);
+    if (!rec) continue;
+    const jobId = num(pick(rec, 'jobID', 'jobId'));
+    const count = num(pick(rec, 'dailyLogCount', 'logCount'));
+    if (!jobId) continue;
+    counts.set(jobId, (counts.get(jobId) ?? 0) + count);
+  }
+  return counts;
+}
+
+function pendingSelectionsByJob(reports: BuildertrendReports) {
+  const counts = new Map<number, number>();
+  const byJob = asRecord(reports.actionItemsByJob) ?? {};
+  for (const [jobId, payload] of Object.entries(byJob)) {
+    const rec = asRecord(payload);
+    if (!rec) continue;
+    const unapproved = asRecord(rec.unapprovedSelections);
+    const total = unapproved ? num(pick(unapproved, 'count')) : 0;
+    if (total) counts.set(Number(jobId), total);
+  }
+  return counts;
+}
+
+function scheduleRowsByJob(reports: BuildertrendReports) {
+  const rows = new Map<number, { completion: string; pct: number }>();
+  for (const row of asArray(reports.schedulePercentComplete)) {
+    const rec = asRecord(row);
+    if (!rec) continue;
+    const jobId = num(pick(rec, 'jobID', 'jobId'));
+    if (!jobId) continue;
+    rows.set(jobId, {
+      completion: isoDate(pick(rec, 'projectedCompletionDate', 'actualCompletionDate')),
+      pct: num(pick(rec, 'percentComplete', 'jobCompletionPercentage')),
+    });
+  }
+  return rows;
+}
+
+function applyJobEnrichment(jobs: Map<string, JobDraft>, reports: BuildertrendReports, now: Date) {
+  const recent = recentDailyLogsByJob(reports);
+  const pastDue = pastDueTasksByJob(reports, now);
+  const selections = pendingSelectionsByJob(reports);
+  const schedule = scheduleRowsByJob(reports);
+  for (const draft of jobs.values()) {
+    if (!draft.jobId) continue;
+    if (recent.has(draft.jobId)) draft.dailyLogsRecentDone = recent.get(draft.jobId)!;
+    if (pastDue.has(draft.jobId)) draft.pastDueTasks = pastDue.get(draft.jobId)!;
+    if (selections.has(draft.jobId)) draft.pendingSelections = selections.get(draft.jobId)!;
+    const sched = schedule.get(draft.jobId);
+    if (sched) {
+      if (sched.completion) draft.completion = sched.completion;
+      if (sched.pct > 0) draft.pctComplete = Math.max(draft.pctComplete, sched.pct);
+    }
+  }
+}
+
+function ingestSchedule(jobs: Map<string, JobDraft>, row: Record<string, unknown>) {
+  const name = str(pick(row, 'jobName', 'name', 'title', 'NewJobName', 'job'));
+  if (!name || TEST_JOB.test(name) || /template/i.test(name)) return;
+  const jobId = pick(row, 'jobID', 'jobId', 'id', 'jobsiteId');
+  const key = jobKey(name, jobId);
+  const existing = jobs.get(key) ?? jobs.get(`name:${name.toLowerCase()}`);
+  const draft: JobDraft =
+    existing ??
+    ({
+      key,
+      id: slugId(name, jobId),
+      jobId: num(jobId) || undefined,
+      name,
+      pm: pickProjectManager(pick(row, 'projectManagers', 'projectManager', 'pm', 'PMs')),
+      status: mapStatus(pick(row, 'jobStatus', 'status')),
+      openedAt: '',
+      completion: isoDate(pick(row, 'projectedCompletionDate', 'actualCompletionDate')),
+      lastLog: '',
+      logCount: 0,
+      workDays: 0,
+      contractPrice: 0,
+      revenueToDate: 0,
+      wip: 0,
+      pctComplete: num(pick(row, 'percentComplete', 'jobCompletionPercentage')),
+      earnedRevenue: 0,
+      projectedProfit: 0,
+      onWip: false,
+      pendingSelections: 0,
+      pastDueTasks: 0,
+      dailyLogsRecentDone: null,
+      notes: [],
+    } satisfies JobDraft);
+  mergeJob(draft, {
+    name,
+    id: slugId(name, jobId),
+    jobId: num(jobId) || undefined,
+    pm: pickProjectManager(pick(row, 'projectManagers', 'projectManager', 'pm', 'PMs')),
+    completion: isoDate(pick(row, 'projectedCompletionDate', 'actualCompletionDate')),
+    pctComplete: num(pick(row, 'percentComplete', 'jobCompletionPercentage')),
+  });
   jobs.set(key, draft);
   if (name) jobs.set(`name:${name.toLowerCase()}`, draft);
 }
@@ -372,10 +521,10 @@ function toOwnerJob(draft: JobDraft, now: Date): OwnerJob {
     pm: draft.pm,
     status: draft.status,
     phase,
-    pendingSelections: 0,
-    pastDueTasks: 0,
+    pendingSelections: draft.pendingSelections,
+    pastDueTasks: draft.pastDueTasks,
     dailyLogsTotal: draft.logCount || undefined,
-    dailyLogsRecentDone: null,
+    dailyLogsRecentDone: draft.dailyLogsRecentDone,
     contractPrice: draft.contractPrice,
     revenueToDate: draft.revenueToDate,
     wip: draft.onWip ? draft.wip : 0,
@@ -413,7 +562,9 @@ export function mapBuildertrendReports(
   for (const row of asArray(reports.jobsites)) ingest(jobs, asRecord(row) ?? {}, 'job');
   for (const row of asArray(reports.dailyLogs)) ingest(jobs, asRecord(row) ?? {}, 'log');
   for (const row of asArray(reports.wip)) ingest(jobs, asRecord(row) ?? {}, 'wip');
+  for (const row of asArray(reports.schedulePercentComplete)) ingestSchedule(jobs, asRecord(row) ?? {});
 
+  applyJobEnrichment(jobs, reports, now);
   const unique = [...new Map([...jobs.values()].map((job) => [job.name.toLowerCase(), job])).values()];
   const ownerJobs = unique.map((job) => toOwnerJob(job, now)).sort((a, b) => a.name.localeCompare(b.name));
 

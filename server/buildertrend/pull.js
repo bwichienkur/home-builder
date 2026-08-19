@@ -14,6 +14,13 @@ const AUTH0_CLIENT_ID = 'rM9vUB980Q7Tfy1eSi9fc5FDBpNM0jt3';
 const AUTH0_AUDIENCE = 'https://api.buildertrend.net/';
 
 const WRITE_METHODS = new Set(['PUT', 'PATCH', 'DELETE']);
+/** POST bodies allowed for read-only list/report queries (never create/update/delete). */
+const READ_POST_PREFIXES = ['/apix/v2/Tasks/list', '/api/Leads/Grid'];
+
+function isReadOnlyPost(urlPath) {
+  const path = String(urlPath).split('?')[0];
+  return READ_POST_PREFIXES.some((prefix) => path === prefix || path.endsWith(prefix));
+}
 
 function cachePath() {
   if (process.env.VERCEL) return path.join('/tmp', 'buildertrend-cache.json');
@@ -63,7 +70,11 @@ async function btFetch(session, method, urlPath, { json, query, headers } = {}) 
   if (session.bearer) reqHeaders.Authorization = `Bearer ${session.bearer}`;
   let body;
   if (json !== undefined) {
-    if (methodUpper !== 'POST') throw new Error('JSON body is only used for the login POST.');
+    if (methodUpper !== 'POST') throw new Error('JSON body is only used for POST requests.');
+    const login = urlPath.includes('/api/Login/AjaxLogin');
+    if (!login && !isReadOnlyPost(urlPath)) {
+      throw new Error(`Refusing POST to ${urlPath} (not a read-only list endpoint).`);
+    }
     reqHeaders['Content-Type'] = 'application/json';
     body = JSON.stringify(json);
   }
@@ -198,22 +209,66 @@ async function getJson(session, urlPath, query) {
   return { ok: true, status: result.status, data: result.data };
 }
 
+async function postJson(session, urlPath, json) {
+  const result = await btFetch(session, 'POST', urlPath, { json });
+  if (!result.ok) return { ok: false, status: result.status, data: result.data };
+  return { ok: true, status: result.status, data: result.data };
+}
+
+function rollingLogWindow(now = new Date()) {
+  const end = now.toISOString().slice(0, 10);
+  const start = new Date(now.getTime() - 28 * 86_400_000).toISOString().slice(0, 10);
+  return { start, end };
+}
+
+function openJobIdsFromPicker(jobsPayload) {
+  const list = jobsPayload?.data?.jobs ?? jobsPayload?.jobs ?? [];
+  return list.filter((job) => job.jobStatus === 1 || String(job.jobStatus).toLowerCase() === 'open').map((job) => job.jobID);
+}
+
+async function fetchActionItemsByJob(session, jobIds) {
+  const entries = await Promise.all(
+    jobIds.map(async (jobId) => {
+      const result = await getJson(session, `/apix/v2/Summary/job/${jobId}/action-items/count`);
+      return [jobId, result.ok ? result.data : null];
+    }),
+  );
+  return Object.fromEntries(entries.filter(([, value]) => value != null));
+}
+
 export async function fetchReports(session) {
-  const [wip, dailyLogs, leadStatus, jobs, leads, jobsites] = await Promise.all([
-    getJson(session, '/apix/v3/Reporting/work-in-progress', { openJobLimit: 500 }),
-    getJson(session, '/apix/v3/Reporting/daily-log-creation-by-job'),
-    getJson(session, '/apix/v3/Reporting/lead-status-by-source'),
-    getJson(session, '/api/jobpicker/GetExistingJobList'),
-    getJson(session, '/api/Leads'),
-    getJson(session, '/apix/v3/Jobsites'),
+  const { start: logStart, end: logEnd } = rollingLogWindow();
+  const [wip, dailyLogs, userDailyLogsRecent, schedulePercentComplete, leadStatus, jobs, leadsGrid, jobsites] =
+    await Promise.all([
+      getJson(session, '/apix/v3/Reporting/work-in-progress', { openJobLimit: 500 }),
+      getJson(session, '/apix/v3/Reporting/daily-log-creation-by-job'),
+      getJson(session, '/apix/v3/Reporting/user-daily-logs', { startDate: logStart, endDate: logEnd }),
+      getJson(session, '/apix/v3/Reporting/schedule-percent-complete-by-job'),
+      getJson(session, '/apix/v3/Reporting/lead-status-by-source'),
+      getJson(session, '/api/jobpicker/GetExistingJobList'),
+      postJson(session, '/api/Leads/Grid', { firstRow: 0, rowsPerPage: 500, page: 1 }),
+      getJson(session, '/apix/v3/Jobsites'),
+    ]);
+
+  const jobIds = openJobIdsFromPicker(jobs.data);
+  const [tasks, actionItemsByJob] = await Promise.all([
+    jobIds.length
+      ? postJson(session, '/apix/v2/Tasks/list', { jobIds, includeDeleted: false })
+      : Promise.resolve({ ok: false, status: 0, data: null }),
+    jobIds.length ? fetchActionItemsByJob(session, jobIds) : Promise.resolve({}),
   ]);
+
   const reports = {
     wip: wip.data,
     dailyLogs: dailyLogs.data,
+    userDailyLogsRecent: userDailyLogsRecent.data,
+    schedulePercentComplete: schedulePercentComplete.data,
     leadStatus: leadStatus.data,
     jobs: jobs.data,
-    leads: leads.data,
+    leads: leadsGrid.data,
     jobsites: jobsites.data,
+    tasks: tasks.data,
+    actionItemsByJob,
   };
   const failed = [
     ['work-in-progress', wip],
@@ -226,7 +281,20 @@ export async function fetchReports(session) {
       code: 'reports_failed',
     });
   }
-  return { reports, statuses: { wip: wip.status, dailyLogs: dailyLogs.status, leadStatus: leadStatus.status, jobs: jobs.status, leads: leads.status, jobsites: jobsites.status } };
+  return {
+    reports,
+    statuses: {
+      wip: wip.status,
+      dailyLogs: dailyLogs.status,
+      userDailyLogsRecent: userDailyLogsRecent.status,
+      schedulePercentComplete: schedulePercentComplete.status,
+      leadStatus: leadStatus.status,
+      jobs: jobs.status,
+      leads: leadsGrid.status,
+      jobsites: jobsites.status,
+      tasks: tasks.status,
+    },
+  };
 }
 
 export function readCache() {
