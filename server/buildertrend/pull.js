@@ -99,8 +99,8 @@ function parseCookieEnv(raw) {
   return jar;
 }
 
-async function loginWithCookie() {
-  const raw = env('BUILDERTREND_COOKIE');
+async function loginWithCookie(cookieOverride) {
+  const raw = cookieOverride ?? env('BUILDERTREND_COOKIE');
   if (!raw) return null;
   const session = newSession({
     jar: parseCookieEnv(raw),
@@ -160,8 +160,8 @@ async function loginAuth0(username, password) {
   return { session };
 }
 
-export async function authenticate() {
-  const cookieSession = await loginWithCookie();
+export async function authenticate({ cookie } = {}) {
+  const cookieSession = await loginWithCookie(cookie);
   if (cookieSession) return { session: cookieSession };
 
   const username = env('BUILDERTREND_USERNAME') || env('BUILDERTREND_EMAIL');
@@ -243,8 +243,8 @@ export function writeCache(payload) {
   fs.writeFileSync(file, JSON.stringify(payload, null, 2));
 }
 
-export async function pullBuildertrend() {
-  const { session } = await authenticate();
+export async function pullBuildertrend({ cookie } = {}) {
+  const { session } = await authenticate({ cookie });
   const { reports, statuses } = await fetchReports(session);
   const payload = {
     pulledAt: new Date().toISOString(),

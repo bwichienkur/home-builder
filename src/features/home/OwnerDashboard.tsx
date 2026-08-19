@@ -135,7 +135,27 @@ export function OwnerDashboard() {
       setLivePull(pull);
       setError('');
     } catch (reason: unknown) {
-      setError(reason instanceof Error ? reason.message : 'Buildertrend refresh failed.');
+      const err = reason instanceof Error ? reason : null;
+      const code = (reason as any)?.code;
+      if (code === 'credentials_missing') {
+        const pasted = window
+          .prompt(
+            'Paste Buildertrend cookie header (BUILDERTREND_COOKIE) from your logged-in Buildertrend tab:\n\nFormat: name1=value1; name2=value2; ...',
+          )
+          ?.trim();
+        if (pasted) {
+          try {
+            const pull = await refreshBuildertrendPull(pasted);
+            setLivePull(pull);
+            setError('');
+            return;
+          } catch (retryReason: unknown) {
+            setError(retryReason instanceof Error ? retryReason.message : 'Buildertrend refresh failed.');
+            return;
+          }
+        }
+      }
+      setError(err ? err.message : 'Buildertrend refresh failed.');
     } finally {
       setRefreshing(false);
     }

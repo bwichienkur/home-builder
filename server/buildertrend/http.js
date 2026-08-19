@@ -15,7 +15,8 @@ export async function handleRefresh(req, res) {
     return res.status(405).json({ ok: false, error: 'Use POST to refresh.' });
   }
   try {
-    const payload = await pullBuildertrend();
+    const cookie = typeof req.body?.cookie === 'string' ? req.body.cookie : undefined;
+    const payload = await pullBuildertrend({ cookie });
     res.json({ ok: true, ...payload });
   } catch (err) {
     sendError(res, err);
