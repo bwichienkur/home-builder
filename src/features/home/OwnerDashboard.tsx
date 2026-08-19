@@ -64,6 +64,11 @@ type SortKey = keyof Pick<
   'name' | 'pm' | 'pendingSelections' | 'pastDueTasks' | 'contractPrice' | 'revenueToDate' | 'pctComplete' | 'estCloseDate' | 'phase' | 'totalSlip'
 >;
 
+function formatRecentLogs(done: number | null, expected: number) {
+  if (done == null) return `—/${expected}`;
+  return `${done}/${expected}`;
+}
+
 function deltaClass(delta: number, invert = false) {
   const good = invert ? delta <= 0 : delta >= 0;
   if (delta === 0) return 'is-flat';
@@ -280,7 +285,8 @@ export function OwnerDashboard() {
                   <th>PM</th>
                   <th>Projects</th>
                   <th>Total WIP</th>
-                  <th>Daily log %</th>
+                  <th>Daily logs (4 wk)</th>
+                  <th>Daily log % (life)</th>
                   <th>Past due</th>
                 </tr>
               </thead>
@@ -290,7 +296,10 @@ export function OwnerDashboard() {
                     <td>{row.pm}</td>
                     <td>{row.projects}</td>
                     <td>{formatCompactUsd(row.wip)}</td>
-                    <td>{formatPct(row.dailyLogPct, 0)}</td>
+                    <td>
+                      {row.dailyLogsRecentDone}/{row.dailyLogsRecentExpected}
+                    </td>
+                    <td>{formatPct(row.dailyLogLifetimePct, 0)}</td>
                     <td className={row.pastDueTasks ? 'is-alert' : undefined}>{row.pastDueTasks}</td>
                   </tr>
                 ))}
@@ -335,7 +344,8 @@ export function OwnerDashboard() {
                     </button>
                   </th>
                 ))}
-                <th>Logs</th>
+                <th>Logs (4 wk)</th>
+                <th>Log % (life)</th>
                 <th>Permit</th>
                 <th>Sel.</th>
                 <th>Purch.</th>
@@ -357,8 +367,9 @@ export function OwnerDashboard() {
                   <td>{phaseLabel(row.phase)}</td>
                   <td className={row.totalSlip > 0 ? 'is-alert' : 'is-ok'}>{formatDays(row.totalSlip)}</td>
                   <td>
-                    {row.dailyLogsThisMonth}/{row.dailyLogsExpected}
+                    {formatRecentLogs(row.dailyLogsRecentDone, row.dailyLogsRecentExpected)}
                   </td>
+                  <td>{formatPct(row.dailyLogLifetimePct, 0)}</td>
                   <td>{row.slip.permit}</td>
                   <td>{row.slip.selections}</td>
                   <td>{row.slip.purchasing}</td>
@@ -378,7 +389,13 @@ export function OwnerDashboard() {
           <span>WIP {formatCompactUsd(dash.totals.totalWip)}</span>
           <span>Pending selections {dash.totals.pendingSelections}</span>
           <span>Past due {dash.totals.pastDueTasks}</span>
-          <span>Avg. daily logs {formatPct(dash.totals.avgDailyLogPct, 0)}</span>
+          <span>
+            Daily logs (4 wk) {formatRecentLogs(
+              dash.projects.reduce((s, p) => s + (p.dailyLogsRecentDone ?? 0), 0),
+              dash.projects.reduce((s, p) => s + p.dailyLogsRecentExpected, 0),
+            )}
+          </span>
+          <span>Avg. daily log % (life) {formatPct(dash.totals.avgDailyLogLifetimePct, 0)}</span>
         </footer>
       </article>
     </section>

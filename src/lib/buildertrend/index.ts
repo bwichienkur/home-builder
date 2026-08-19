@@ -27,6 +27,7 @@ export { snapshotOwnerDashboardProvider } from './snapshotProvider';
 export { apiOwnerDashboardProvider } from './apiProvider';
 export { summarizeOwnerDashboard, filterJobs, roundPctParts } from './summarize';
 export { mapBuildertrendReports } from './mapReports';
+export { enrichOwnerJobs, computeDailyLogMetrics, DAILY_LOGS_PER_WEEK, DAILY_LOG_ROLLING_WEEKS } from './dailyLogStandards';
 export {
   fetchCachedBuildertrendPull,
   loadStoredLivePull,

@@ -34,8 +34,10 @@ export type OwnerJob = {
   phase: OwnerPhase;
   pendingSelections: number;
   pastDueTasks: number;
-  dailyLogsThisMonth: number;
-  dailyLogsExpected: number;
+  /** Lifetime count from BT (optional; parsed from notes when absent). */
+  dailyLogsTotal?: number;
+  /** Past 4 weeks from BT user-daily-logs when available. */
+  dailyLogsRecentDone?: number | null;
   /** USD */
   contractPrice: number;
   revenueToDate: number;
@@ -78,7 +80,11 @@ export type PmScorecardRow = {
   pm: string;
   projects: number;
   wip: number;
-  dailyLogPct: number;
+  /** Rolling 4-week window (4 logs/week × 4 weeks × project count). */
+  dailyLogsRecentDone: number;
+  dailyLogsRecentExpected: number;
+  dailyLogRecentPct: number;
+  dailyLogLifetimePct: number;
   pastDueTasks: number;
 };
 
@@ -100,8 +106,10 @@ export type ProjectSnapshot = {
   pm: string;
   pendingSelections: number;
   pastDueTasks: number;
-  dailyLogsThisMonth: number;
-  dailyLogsExpected: number;
+  dailyLogsRecentDone: number | null;
+  dailyLogsRecentExpected: number;
+  dailyLogsTotal: number;
+  dailyLogLifetimePct: number;
   contractPrice: number;
   revenueToDate: number;
   pctComplete: number;
@@ -121,6 +129,7 @@ export type DashboardTotals = {
   pendingSelections: number;
   pastDueTasks: number;
   avgDailyLogPct: number;
+  avgDailyLogLifetimePct: number;
 };
 
 export type OwnerDashboard = {

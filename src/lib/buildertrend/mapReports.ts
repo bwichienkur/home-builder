@@ -25,6 +25,8 @@ export type MappedBuildertrendPull = {
   targetMarginPct: number;
   projectedMarginPct: number;
   rollingRevenue12Mo: number;
+  /** Sum of confidence × estimated revenue min from lead opportunities. */
+  weightedPipeline?: number;
 };
 
 export function weekdaysElapsedInMonth(now: Date) {
@@ -339,41 +341,31 @@ function ingest(jobs: Map<string, JobDraft>, row: Record<string, unknown>, kind:
   if (name) jobs.set(`name:${name.toLowerCase()}`, draft);
 }
 
-function leadDollars(reports: BuildertrendReports): number {
+function weightedLeadPipeline(reports: BuildertrendReports) {
   const rows = [...asArray(reports.leads), ...asArray(reports.leadStatus)];
-  let total = 0;
+  let weighted = 0;
+  let rawLead = 0;
   for (const row of rows) {
     const rec = asRecord(row);
     if (!rec) continue;
     const status = str(pick(rec, 'status', 'leadStatus', 'stage')).toLowerCase();
     if (status.includes('lost') || status.includes('no opp')) continue;
-    const amount =
-      num(pick(rec, 'estimatedRevenueMax', 'estimatedRevenue', 'estimatedRevenueMin', 'amount', 'value', 'opportunityValue')) ||
-      num(asRecord(pick(rec, 'estimatedRevenue')));
-    total += amount;
+    const min = num(pick(rec, 'estimatedRevenueMin', 'estimatedRevenue', 'amount', 'value'));
+    const confidenceRaw = num(pick(rec, 'confidence', 'confidencePct', 'confidencePercentage'));
+    const confidence = confidenceRaw > 1 ? confidenceRaw / 100 : confidenceRaw;
+    rawLead += min;
+    if (min > 0 && confidence > 0) weighted += min * confidence;
   }
-  return total;
+  return { weighted, rawLead };
 }
 
 function toOwnerJob(draft: JobDraft, now: Date): OwnerJob {
   const openedAt = draft.openedAt || draft.lastLog || now.toISOString().slice(0, 10);
-  const lastLogThisMonth = sameMonth(draft.lastLog, now);
-  const daysOnJob = draft.workDays || daysBetween(openedAt, now);
   const phase = inferPhase({ onWip: draft.onWip, pctComplete: draft.pctComplete, logCount: draft.logCount });
-  const expected = expectedLogs({
-    logCount: draft.logCount,
-    lastLogThisMonth,
-    onWip: draft.onWip,
-    daysOnJob,
-    now,
-  });
   const notes = [...new Set(draft.notes.filter(Boolean))];
   if (!draft.onWip) notes.unshift('Not on WIP report');
-  if (lastLogThisMonth) notes.push(`Last daily log this month (${draft.lastLog})`);
-  else if (draft.lastLog) notes.push(`Last daily log ${draft.lastLog}`);
-  if (draft.pm !== 'Unassigned' && DESIGNER.test(String(draft.notes))) {
-    notes.push('Designer Monique Lumley also on the job.');
-  }
+  if (draft.lastLog) notes.push(`Last daily log ${draft.lastLog}`);
+  if (draft.logCount) notes.push(`${draft.logCount} daily logs`);
   return {
     id: draft.id,
     name: draft.name,
@@ -382,8 +374,8 @@ function toOwnerJob(draft: JobDraft, now: Date): OwnerJob {
     phase,
     pendingSelections: 0,
     pastDueTasks: 0,
-    dailyLogsThisMonth: lastLogThisMonth ? 1 : 0,
-    dailyLogsExpected: expected,
+    dailyLogsTotal: draft.logCount || undefined,
+    dailyLogsRecentDone: null,
     contractPrice: draft.contractPrice,
     revenueToDate: draft.revenueToDate,
     wip: draft.onWip ? draft.wip : 0,
@@ -434,11 +426,11 @@ export function mapBuildertrendReports(
   const projectedClosings = ownerJobs
     .filter((job) => job.status === 'open' && job.estCloseDate && job.estCloseDate <= soon)
     .reduce((sum, job) => sum + job.wip, 0);
-  const leadValue = leadDollars(reports);
+  const { weighted: weightedLead, rawLead } = weightedLeadPipeline(reports);
   const pipeline =
-    leadValue > 0
+    rawLead > 0
       ? [
-          { id: 'lead', label: 'Lead', value: leadValue },
+          { id: 'lead', label: 'Lead', value: rawLead },
           { id: 'proposal', label: 'Proposal', value: 0 },
           { id: 'pre-contract', label: 'Pre-Contract', value: 0 },
           { id: 'contract', label: 'Contract', value: 0 },
@@ -449,6 +441,7 @@ export function mapBuildertrendReports(
   return {
     jobs: ownerJobs,
     pipeline,
+    weightedPipeline: weightedLead || undefined,
     salesPerformance: [
       { id: 'backlog', label: 'Signed Backlog', value: totalWip },
       { id: 'closings', label: 'Projected Closings', value: projectedClosings || totalWip },

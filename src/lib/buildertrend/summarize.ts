@@ -1,4 +1,5 @@
 import { formatCompactUsd, formatPct, phaseLabel, totalSlipDays } from './format';
+import { enrichOwnerJobs, type DailyLogJobMetrics } from './dailyLogStandards';
 import type {
   DateRangeId,
   KpiCard,
@@ -12,6 +13,8 @@ import type {
 import { PIPELINE_WEIGHTS } from './types';
 
 export const PHASE_ORDER = ['construction', 'permitting', 'design', 'closeout'] as const;
+
+type EnrichedOwnerJob = OwnerJob & DailyLogJobMetrics;
 
 const SPARK_UP = [18, 19, 19.4, 20.1, 20.8, 21.6, 22.4, 23.5, 24];
 
@@ -80,15 +83,17 @@ export function summarizeOwnerDashboard(input: {
   now?: Date;
 }): OwnerDashboard {
   const now = input.now ?? new Date();
-  const jobs = filterJobs(input.jobs, input.filters, now);
+  const jobs = enrichOwnerJobs(filterJobs(input.jobs, input.filters, now), now);
   const jobCount = jobs.length;
   const totalContract = jobs.reduce((s, j) => s + j.contractPrice, 0);
   const totalRevenue = jobs.reduce((s, j) => s + j.revenueToDate, 0);
   const totalWip = jobs.reduce((s, j) => s + j.wip, 0);
   const pendingSelections = jobs.reduce((s, j) => s + j.pendingSelections, 0);
   const pastDueTasks = jobs.reduce((s, j) => s + j.pastDueTasks, 0);
-  const logDone = jobs.reduce((s, j) => s + j.dailyLogsThisMonth, 0);
-  const logExp = jobs.reduce((s, j) => s + j.dailyLogsExpected, 0);
+  const logRecentDone = jobs.reduce((s, j) => s + (j.dailyLogsRecentDone ?? 0), 0);
+  const logRecentExp = jobs.reduce((s, j) => s + j.dailyLogsRecentExpected, 0);
+  const logLifetimeDone = jobs.reduce((s, j) => s + j.dailyLogsTotal, 0);
+  const logLifetimeExp = jobs.reduce((s, j) => s + j.dailyLogsLifetimeDue, 0);
   const slipSum = jobs.reduce((s, j) => s + totalSlipDays(j.slip), 0);
   const weighted = input.weightedPipeline ?? weightedPipelineValue(input.pipeline);
   const marginDelta = input.projectedMarginPct - input.targetMarginPct;
@@ -106,13 +111,19 @@ export function summarizeOwnerDashboard(input: {
   const pmScorecard = pms
     .map((pm) => {
       const rows = jobs.filter((j) => j.pm === pm);
-      const logs = rows.reduce((s, j) => s + j.dailyLogsThisMonth, 0);
-      const exp = rows.reduce((s, j) => s + j.dailyLogsExpected, 0);
+      const recentDone = rows.reduce((s, j) => s + (j.dailyLogsRecentDone ?? 0), 0);
+      const recentExp = rows.reduce((s, j) => s + j.dailyLogsRecentExpected, 0);
+      const lifetimeDone = rows.reduce((s, j) => s + j.dailyLogsTotal, 0);
+      const lifetimeExp = rows.reduce((s, j) => s + j.dailyLogsLifetimeDue, 0);
+      const lifetimePct = lifetimeExp ? (lifetimeDone / lifetimeExp) * 100 : 0;
       return {
         pm,
         projects: rows.length,
         wip: rows.reduce((s, j) => s + j.wip, 0),
-        dailyLogPct: exp ? (logs / exp) * 100 : 0,
+        dailyLogsRecentDone: recentDone,
+        dailyLogsRecentExpected: recentExp,
+        dailyLogRecentPct: recentExp ? (recentDone / recentExp) * 100 : 0,
+        dailyLogLifetimePct: lifetimePct,
         pastDueTasks: rows.reduce((s, j) => s + j.pastDueTasks, 0),
       };
     })
@@ -175,8 +186,10 @@ export function summarizeOwnerDashboard(input: {
         pm: job.pm,
         pendingSelections: job.pendingSelections,
         pastDueTasks: job.pastDueTasks,
-        dailyLogsThisMonth: job.dailyLogsThisMonth,
-        dailyLogsExpected: job.dailyLogsExpected,
+        dailyLogsRecentDone: job.dailyLogsRecentDone,
+        dailyLogsRecentExpected: job.dailyLogsRecentExpected,
+        dailyLogsTotal: job.dailyLogsTotal,
+        dailyLogLifetimePct: job.dailyLogLifetimePct,
         contractPrice: job.contractPrice,
         revenueToDate: job.revenueToDate,
         pctComplete: job.contractPrice ? (job.revenueToDate / job.contractPrice) * 100 : 0,
@@ -195,7 +208,8 @@ export function summarizeOwnerDashboard(input: {
       totalWip,
       pendingSelections,
       pastDueTasks,
-      avgDailyLogPct: logExp ? (logDone / logExp) * 100 : 0,
+      avgDailyLogPct: logRecentExp ? (logRecentDone / logRecentExp) * 100 : 0,
+      avgDailyLogLifetimePct: logLifetimeExp ? (logLifetimeDone / logLifetimeExp) * 100 : 0,
     },
   };
 }

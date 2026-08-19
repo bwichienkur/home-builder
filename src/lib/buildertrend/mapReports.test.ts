@@ -138,8 +138,8 @@ describe('Buildertrend report mapper', () => {
       contractPrice: 1_158_353,
       revenueToDate: 626_047.24,
       wip: 532_305.76,
-      dailyLogsThisMonth: 1,
-      dailyLogsExpected: 13,
+      dailyLogsTotal: 157,
+      dailyLogsRecentDone: null,
     });
     expect(mapped.jobs.find((job) => job.name === 'Ahigian - Habashi')).toMatchObject({
       contractPrice: 0,
@@ -154,26 +154,26 @@ describe('Buildertrend report mapper', () => {
     });
     expect(mapped.jobs.find((job) => job.name === 'Allie Job')).toMatchObject({
       phase: 'permitting',
-      dailyLogsThisMonth: 1,
-      dailyLogsExpected: 4,
+      dailyLogsTotal: 1,
+      dailyLogsRecentDone: null,
       contractPrice: 0,
     });
     expect(mapped.jobs.find((job) => job.name === 'Graham')).toMatchObject({
       phase: 'design',
-      dailyLogsExpected: 0,
-      dailyLogsThisMonth: 0,
+      dailyLogsTotal: undefined,
+      dailyLogsRecentDone: null,
     });
     expect(mapped.jobs.find((job) => job.name === 'Norris')).toMatchObject({
       pm: 'Richard Linck',
       phase: 'construction',
-      dailyLogsExpected: 13,
+      dailyLogsTotal: 54,
     });
     expect(mapped.jobs.find((job) => job.name === 'Whipple')?.phase).toBe('closeout');
     expect(mapped.jobs.find((job) => job.name === 'Chahlavi')?.phase).toBe('design');
     expect(mapped.jobs.find((job) => job.name === 'Bucciarelli')).toMatchObject({
       phase: 'permitting',
-      dailyLogsThisMonth: 0,
-      dailyLogsExpected: 4,
+      dailyLogsTotal: 3,
+      dailyLogsRecentDone: null,
     });
     expect(mapped.pipeline[0]).toMatchObject({ id: 'lead', value: 43_000_000 });
     expect(mapped.rollingRevenue12Mo).toBe(4_290_000);
