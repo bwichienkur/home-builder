@@ -1,8 +1,50 @@
 import { useEffect, useMemo, useState } from 'react';
-import { formatCloseDate, formatCompactUsd, formatDays, formatDelta, formatPct, formatRefreshedAt, formatUsd, getOwnerDashboardProvider, mockOwnerDashboardProvider, phaseLabel } from '../../lib/buildertrend';
-import type { DateRangeId, JobStatus, OwnerDashboard, ProjectSnapshot } from '../../lib/buildertrend/types';
+import {
+  fetchCachedBuildertrendPull,
+  formatCloseDate,
+  formatCompactUsd,
+  formatDays,
+  formatDelta,
+  formatPct,
+  formatRefreshedAt,
+  formatUsd,
+  getOwnerDashboardProvider,
+  loadStoredLivePull,
+  mapBuildertrendReports,
+  mockOwnerDashboardProvider,
+  phaseLabel,
+  refreshBuildertrendPull,
+  storeLivePull,
+  clearStoredLivePull,
+  summarizeOwnerDashboard,
+} from '../../lib/buildertrend';
+import type { BuildertrendLivePull } from '../../lib/buildertrend';
+import type { DateRangeId, JobStatus, OwnerDashboard, OwnerDashboardFilters, ProjectSnapshot } from '../../lib/buildertrend/types';
 import { PerformanceBars, PipelineFunnel, Sparkline, StatusDonut } from './dashboardCharts';
 import './dashboard.css';
+
+function dashboardFromPull(pull: BuildertrendLivePull, filters: OwnerDashboardFilters): OwnerDashboard {
+  const mapped = mapBuildertrendReports(pull.reports, { now: new Date(pull.pulledAt) });
+  return summarizeOwnerDashboard({
+    source: 'buildertrend',
+    refreshedAt: pull.pulledAt,
+    filters,
+    ...mapped,
+  });
+}
+
+function sourceLine(dash: OwnerDashboard, live: boolean, error: string) {
+  const date = new Date(dash.refreshedAt).toLocaleDateString(undefined, {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+  const base =
+    dash.source === 'mock'
+      ? 'Demo data · Buildertrend API not connected'
+      : `Buildertrend read-only${live ? ' · live pull' : ' snapshot'} · ${date}`;
+  return error ? `${base} · ${error}` : base;
+}
 
 const STATUS: { id: JobStatus; label: string }[] = [
   { id: 'open', label: 'Open' },
@@ -22,6 +64,11 @@ type SortKey = keyof Pick<
   'name' | 'pm' | 'pendingSelections' | 'pastDueTasks' | 'contractPrice' | 'revenueToDate' | 'pctComplete' | 'estCloseDate' | 'phase' | 'totalSlip'
 >;
 
+function formatRecentLogs(done: number | null, expected: number) {
+  if (done == null) return `—/${expected}`;
+  return `${done}/${expected}`;
+}
+
 function deltaClass(delta: number, invert = false) {
   const good = invert ? delta <= 0 : delta >= 0;
   if (delta === 0) return 'is-flat';
@@ -33,12 +80,26 @@ export function OwnerDashboard() {
   const [dateRange, setDateRange] = useState<DateRangeId>('all');
   const [dash, setDash] = useState<OwnerDashboard | null>(null);
   const [error, setError] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+  const [livePull, setLivePull] = useState<BuildertrendLivePull | null>(() => loadStoredLivePull());
   const [sort, setSort] = useState<{ key: SortKey; dir: 'asc' | 'desc' }>({ key: 'name', dir: 'asc' });
 
   useEffect(() => {
     let cancelled = false;
+    const filters = { status, dateRange };
+    if (livePull) {
+      try {
+        setDash(dashboardFromPull(livePull, filters));
+      } catch {
+        clearStoredLivePull();
+        setLivePull(null);
+      }
+      return () => {
+        cancelled = true;
+      };
+    }
     const provider = getOwnerDashboardProvider();
-    void provider.getDashboard({ status, dateRange }).then(
+    void provider.getDashboard(filters).then(
       (next) => {
         if (!cancelled) {
           setDash(next);
@@ -48,14 +109,62 @@ export function OwnerDashboard() {
       async (reason: unknown) => {
         if (cancelled) return;
         setError(reason instanceof Error ? reason.message : 'Dashboard could not load.');
-        const fallback = await mockOwnerDashboardProvider.getDashboard({ status, dateRange });
+        const fallback = await mockOwnerDashboardProvider.getDashboard(filters);
         if (!cancelled) setDash(fallback);
       },
     );
     return () => {
       cancelled = true;
     };
-  }, [status, dateRange]);
+  }, [status, dateRange, livePull]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchCachedBuildertrendPull().then((cached) => {
+      if (cancelled || !cached) return;
+      setLivePull((prev) => {
+        if (prev && prev.pulledAt >= cached.pulledAt) return prev;
+        storeLivePull(cached);
+        return cached;
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      const pull = await refreshBuildertrendPull();
+      setLivePull(pull);
+      setError('');
+    } catch (reason: unknown) {
+      const err = reason instanceof Error ? reason : null;
+      const code = (reason as any)?.code;
+      if (code === 'credentials_missing') {
+        const pasted = window
+          .prompt(
+            'Paste Buildertrend cookie header (BUILDERTREND_COOKIE) from your logged-in Buildertrend tab:\n\nFormat: name1=value1; name2=value2; ...',
+          )
+          ?.trim();
+        if (pasted) {
+          try {
+            const pull = await refreshBuildertrendPull(pasted);
+            setLivePull(pull);
+            setError('');
+            return;
+          } catch (retryReason: unknown) {
+            setError(retryReason instanceof Error ? retryReason.message : 'Buildertrend refresh failed.');
+            return;
+          }
+        }
+      }
+      setError(err ? err.message : 'Buildertrend refresh failed.');
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const rows = useMemo(() => {
     const list = dash?.projects ?? [];
@@ -111,14 +220,24 @@ export function OwnerDashboard() {
             </select>
           </label>
           <p className="dash-refreshed">{formatRefreshedAt(dash.refreshedAt, now)}</p>
+          <button
+            type="button"
+            className="dash-refresh"
+            onClick={() => void onRefresh()}
+            disabled={refreshing}
+            aria-busy={refreshing}
+          >
+            {refreshing ? 'Pulling…' : 'Refresh from Buildertrend'}
+          </button>
+          <p className="dash-refresh-help">
+            Chrome: log in to Buildertrend tab → F12 → Application → Cookies → https://buildertrend.net, then paste
+            <code> name=value; ...</code> when prompted.
+          </p>
         </div>
       </header>
 
       <p className="dash-source">
-        {dash.source === 'mock'
-          ? 'Demo data · Buildertrend API not connected'
-          : 'Buildertrend read-only snapshot · 19 Aug 2026'}
-        {error ? ` · ${error}` : ''}
+        {sourceLine(dash, Boolean(livePull), error)}
       </p>
 
       <div className="dash-kpis">
@@ -166,7 +285,8 @@ export function OwnerDashboard() {
                   <th>PM</th>
                   <th>Projects</th>
                   <th>Total WIP</th>
-                  <th>Daily log %</th>
+                  <th>Daily logs (4 wk)</th>
+                  <th>Daily log % (life)</th>
                   <th>Past due</th>
                 </tr>
               </thead>
@@ -176,7 +296,10 @@ export function OwnerDashboard() {
                     <td>{row.pm}</td>
                     <td>{row.projects}</td>
                     <td>{formatCompactUsd(row.wip)}</td>
-                    <td>{formatPct(row.dailyLogPct, 0)}</td>
+                    <td>
+                      {row.dailyLogsRecentDone}/{row.dailyLogsRecentExpected}
+                    </td>
+                    <td>{formatPct(row.dailyLogLifetimePct, 0)}</td>
                     <td className={row.pastDueTasks ? 'is-alert' : undefined}>{row.pastDueTasks}</td>
                   </tr>
                 ))}
@@ -221,7 +344,8 @@ export function OwnerDashboard() {
                     </button>
                   </th>
                 ))}
-                <th>Logs</th>
+                <th>Logs (4 wk)</th>
+                <th>Log % (life)</th>
                 <th>Permit</th>
                 <th>Sel.</th>
                 <th>Purch.</th>
@@ -243,8 +367,9 @@ export function OwnerDashboard() {
                   <td>{phaseLabel(row.phase)}</td>
                   <td className={row.totalSlip > 0 ? 'is-alert' : 'is-ok'}>{formatDays(row.totalSlip)}</td>
                   <td>
-                    {row.dailyLogsThisMonth}/{row.dailyLogsExpected}
+                    {formatRecentLogs(row.dailyLogsRecentDone, row.dailyLogsRecentExpected)}
                   </td>
+                  <td>{formatPct(row.dailyLogLifetimePct, 0)}</td>
                   <td>{row.slip.permit}</td>
                   <td>{row.slip.selections}</td>
                   <td>{row.slip.purchasing}</td>
@@ -264,7 +389,13 @@ export function OwnerDashboard() {
           <span>WIP {formatCompactUsd(dash.totals.totalWip)}</span>
           <span>Pending selections {dash.totals.pendingSelections}</span>
           <span>Past due {dash.totals.pastDueTasks}</span>
-          <span>Avg. daily logs {formatPct(dash.totals.avgDailyLogPct, 0)}</span>
+          <span>
+            Daily logs (4 wk) {formatRecentLogs(
+              dash.projects.reduce((s, p) => s + (p.dailyLogsRecentDone ?? 0), 0),
+              dash.projects.reduce((s, p) => s + p.dailyLogsRecentExpected, 0),
+            )}
+          </span>
+          <span>Avg. daily log % (life) {formatPct(dash.totals.avgDailyLogLifetimePct, 0)}</span>
         </footer>
       </article>
     </section>

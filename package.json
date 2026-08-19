@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "server": "node server/index.js",
+    "buildertrend:pull": "node -e \"import('./server/buildertrend/pull.js').then((m) => m.pullBuildertrend().then((p) => { console.log(JSON.stringify({ ok: true, authMethod: p.authMethod, pulledAt: p.pulledAt, statuses: p.statuses }, null, 2)); }).catch((e) => { console.error(e.message); process.exit(1); }))\"",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest run"
