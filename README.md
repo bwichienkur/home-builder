@@ -7,7 +7,7 @@ React + TypeScript + React Three Fiber home planning studio with an authenticate
 | Path | Purpose |
 |------|---------|
 | `/login` | Sign in / register (start page) |
-| `/` | Owner dashboard (mock Olsen ops) + Build files |
+| `/` | Owner dashboard (Buildertrend read-only snapshot) + Build files |
 | `/build` | Plan / room 3D studio |
 | `/clients` | Client CRM + CSV import/export |
 | `/vendors` | Vendor CRM + CSV import/export |
