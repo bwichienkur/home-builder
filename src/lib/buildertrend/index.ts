@@ -1,22 +1,29 @@
 import { apiOwnerDashboardProvider } from './apiProvider';
 import { mockOwnerDashboardProvider } from './mockProvider';
+import { snapshotOwnerDashboardProvider } from './snapshotProvider';
 import type { OwnerDashboardProvider } from './types';
 
-export type BuildertrendProviderId = 'mock' | 'api';
+export type BuildertrendProviderId = 'mock' | 'api' | 'snapshot';
 
 function envProvider(): BuildertrendProviderId {
-  const value = String((import.meta.env as Record<string, string | undefined>).VITE_BUILDERTREND_PROVIDER ?? 'mock')
+  const value = String((import.meta.env as Record<string, string | undefined>).VITE_BUILDERTREND_PROVIDER ?? 'snapshot')
     .trim()
     .toLowerCase();
-  return value === 'api' ? 'api' : 'mock';
+  if (value === 'api') return 'api';
+  if (value === 'mock') return 'mock';
+  return 'snapshot';
 }
 
-/** UI talks only to this port. Default is mock; `api` is a stub until partner access exists. */
+/** UI talks only to this port. Default is the 19 Aug 2026 Buildertrend read-only snapshot. */
 export function getOwnerDashboardProvider(): OwnerDashboardProvider {
-  return envProvider() === 'api' ? apiOwnerDashboardProvider : mockOwnerDashboardProvider;
+  const id = envProvider();
+  if (id === 'api') return apiOwnerDashboardProvider;
+  if (id === 'mock') return mockOwnerDashboardProvider;
+  return snapshotOwnerDashboardProvider;
 }
 
 export { mockOwnerDashboardProvider } from './mockProvider';
+export { snapshotOwnerDashboardProvider } from './snapshotProvider';
 export { apiOwnerDashboardProvider } from './apiProvider';
 export { summarizeOwnerDashboard, filterJobs, roundPctParts } from './summarize';
 export { formatCompactUsd, formatUsd, formatPct, formatDelta, formatRefreshedAt, formatCloseDate, formatDays, totalSlipDays, phaseLabel } from './format';

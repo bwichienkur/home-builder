@@ -118,29 +118,42 @@ export function summarizeOwnerDashboard(input: {
     })
     .sort((a, b) => a.pm.localeCompare(b.pm));
 
+  const live = input.source === 'buildertrend';
+  const trend = (mockDelta: number, mockSpark: number[], value: number) =>
+    live ? { delta: 0, sparkline: [value, value] } : { delta: mockDelta, sparkline: mockSpark };
+  const activeTrend = trend(9.1, [18, 19, 20, 20, 21, 22, 23, 24], jobCount);
+  const wipTrend = trend(7.2, [14.2, 15.1, 15.8, 16.4, 16.9, 17.4, 18.1, 18.74], totalWip);
+  const revenueTrend = trend(8.6, [11.2, 12.0, 12.6, 13.1, 13.7, 14.2, 14.7, 15.11], totalRevenue);
+  const contractTrend = trend(6.3, [20.4, 21.2, 22.0, 22.8, 23.5, 24.2, 24.9, 25.65], totalContract);
+  const pipelineTrend = trend(10.4, [16.8, 17.5, 18.4, 19.2, 20.1, 20.9, 21.8, 22.65], weighted);
+  const marginTrend = live
+    ? { sparkline: [input.projectedMarginPct, input.projectedMarginPct] }
+    : { sparkline: [14.8, 15.2, 15.9, 16.4, 17.0, 17.5, 18.1, 18.6] };
+  const rollingTrend = trend(9.7, [32.4, 34.1, 35.8, 37.2, 38.6, 40.1, 41.4, 42.82], input.rollingRevenue12Mo);
+
   const kpis: KpiCard[] = [
-    kpi('active', 'Active Projects', jobCount, String(jobCount), 9.1, {
-      sparkline: [18, 19, 20, 20, 21, 22, 23, 24],
+    kpi('active', 'Active Projects', jobCount, String(jobCount), activeTrend.delta, {
+      sparkline: activeTrend.sparkline,
     }),
-    kpi('wip', 'Total Work in Progress', totalWip, formatCompactUsd(totalWip), 7.2, {
-      sparkline: [14.2, 15.1, 15.8, 16.4, 16.9, 17.4, 18.1, 18.74],
+    kpi('wip', 'Total Work in Progress', totalWip, formatCompactUsd(totalWip), wipTrend.delta, {
+      sparkline: wipTrend.sparkline,
     }),
-    kpi('revenue', 'Revenue to Date', totalRevenue, formatCompactUsd(totalRevenue), 8.6, {
-      sparkline: [11.2, 12.0, 12.6, 13.1, 13.7, 14.2, 14.7, 15.11],
+    kpi('revenue', 'Revenue to Date', totalRevenue, formatCompactUsd(totalRevenue), revenueTrend.delta, {
+      sparkline: revenueTrend.sparkline,
     }),
-    kpi('contract', 'Total Contract Value', totalContract, formatCompactUsd(totalContract), 6.3, {
-      sparkline: [20.4, 21.2, 22.0, 22.8, 23.5, 24.2, 24.9, 25.65],
+    kpi('contract', 'Total Contract Value', totalContract, formatCompactUsd(totalContract), contractTrend.delta, {
+      sparkline: contractTrend.sparkline,
     }),
-    kpi('pipeline', 'Weighted Pipeline', weighted, formatCompactUsd(weighted), 10.4, {
-      sparkline: [16.8, 17.5, 18.4, 19.2, 20.1, 20.9, 21.8, 22.65],
+    kpi('pipeline', 'Weighted Pipeline', weighted, formatCompactUsd(weighted), pipelineTrend.delta, {
+      sparkline: pipelineTrend.sparkline,
     }),
     kpi('margin', 'Target Margin vs Projected', input.projectedMarginPct, formatPct(input.projectedMarginPct), marginDelta, {
       deltaUnit: 'pts',
       detail: `${formatPct(input.targetMarginPct)} target vs ${formatPct(input.projectedMarginPct)} projected`,
-      sparkline: [14.8, 15.2, 15.9, 16.4, 17.0, 17.5, 18.1, 18.6],
+      sparkline: marginTrend.sparkline,
     }),
-    kpi('rolling', '12 Mo. Rolling Revenue', input.rollingRevenue12Mo, formatCompactUsd(input.rollingRevenue12Mo), 9.7, {
-      sparkline: [32.4, 34.1, 35.8, 37.2, 38.6, 40.1, 41.4, 42.82],
+    kpi('rolling', '12 Mo. Rolling Revenue', input.rollingRevenue12Mo, formatCompactUsd(input.rollingRevenue12Mo), rollingTrend.delta, {
+      sparkline: rollingTrend.sparkline,
     }),
   ];
 

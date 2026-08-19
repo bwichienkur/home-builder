@@ -117,7 +117,7 @@ export function OwnerDashboard() {
       <p className="dash-source">
         {dash.source === 'mock'
           ? 'Demo data · Buildertrend API not connected'
-          : 'Live Buildertrend'}
+          : 'Buildertrend read-only snapshot · 19 Aug 2026'}
         {error ? ` · ${error}` : ''}
       </p>
 
