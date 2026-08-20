@@ -7,6 +7,7 @@ import {
   LIVE_SNAPSHOT_AT,
   LIVE_TARGET_MARGIN_PCT,
   LIVE_TIME_METRICS,
+  LIVE_WEIGHTED_PIPELINE,
 } from './liveSnapshot';
 import { summarizeOwnerDashboard } from './summarize';
 import type { OwnerDashboardFilters, OwnerDashboardProvider } from './types';
@@ -26,6 +27,7 @@ export const snapshotOwnerDashboardProvider: OwnerDashboardProvider = {
       targetMarginPct: LIVE_TARGET_MARGIN_PCT,
       projectedMarginPct: LIVE_PROJECTED_MARGIN_PCT,
       rollingRevenue12Mo: LIVE_ROLLING_REVENUE_12MO,
+      weightedPipeline: LIVE_WEIGHTED_PIPELINE,
     });
   },
 };

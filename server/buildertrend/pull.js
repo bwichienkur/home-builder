@@ -236,6 +236,37 @@ async function fetchActionItemsByJob(session, jobIds) {
   return Object.fromEntries(entries.filter(([, value]) => value != null));
 }
 
+function leadsGridBody() {
+  return {
+    gridRequest: {
+      hideMultiJobsColumns: true,
+      selectedColumns: [
+        '1', '2', '3', '4', '29', '26', '5', '6', '7', '12', '13', '9', '10', '20', '24', '11', '52', '15',
+        '55', '56', '54', '57', '58', '25', '8', '22', '48', '49', '35', '53', '33', '32', '17', '18', '16',
+        '31', '19', '14', '23', '34', '50', '30', '21', '62', '63',
+      ],
+      sortColumn: '4',
+      sortDirection: 'asc',
+      hasFooter: true,
+      emptyStateEntity: 14,
+      savedViewId: -1,
+    },
+    pagingData: {
+      pageNumber: '1',
+      pageSize: 500,
+      resetScroll: false,
+      firstRow: 1,
+      lastRow: 500,
+      totalRowsAllPages: 500,
+      currentPage: 1,
+    },
+    // Sales → Lead Opportunities list (company-wide). Empty filters = all open opportunities.
+    filters: '{}',
+    jobIds: [],
+    gridType: 1,
+  };
+}
+
 export async function fetchReports(session) {
   const { start: logStart, end: logEnd } = rollingLogWindow();
   const [wip, dailyLogs, userDailyLogsRecent, schedulePercentComplete, leadStatus, jobs, leadsGrid, jobsites] =
@@ -246,14 +277,31 @@ export async function fetchReports(session) {
       getJson(session, '/apix/v3/Reporting/schedule-percent-complete-by-job'),
       getJson(session, '/apix/v3/Reporting/lead-status-by-source'),
       getJson(session, '/api/jobpicker/GetExistingJobList'),
-      postJson(session, '/api/Leads/Grid', { firstRow: 0, rowsPerPage: 500, page: 1 }),
+      postJson(session, '/api/Leads/Grid', leadsGridBody()),
       getJson(session, '/apix/v3/Jobsites'),
     ]);
 
   const jobIds = openJobIdsFromPicker(jobs.data);
   const [tasks, actionItemsByJob] = await Promise.all([
     jobIds.length
-      ? postJson(session, '/apix/v2/Tasks/list', { jobIds, includeDeleted: false })
+      ? postJson(session, '/apix/v2/Tasks/list', {
+          jobIds,
+          // PM → Tasks → All tasks: Status includes Not completed (status 0).
+          // Past-due (due before today) is applied in the mapper.
+          filters: {
+            filters: [
+              {
+                groups: [
+                  {
+                    booleanOperator: 0,
+                    filters: [{ field: 'status', operator: 24, value: '[0]' }],
+                  },
+                ],
+              },
+            ],
+          },
+          includeDeleted: false,
+        })
       : Promise.resolve({ ok: false, status: 0, data: null }),
     jobIds.length ? fetchActionItemsByJob(session, jobIds) : Promise.resolve({}),
   ]);

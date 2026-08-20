@@ -18,6 +18,8 @@ describe('owner dashboard Buildertrend snapshot', () => {
     expect(dash.totals.pendingSelections).toBe(openJobs.reduce((sum, job) => sum + job.pendingSelections, 0));
     expect(dash.totals.pastDueTasks).toBeGreaterThan(0);
     expect(dash.totals.pendingSelections).toBeGreaterThan(0);
+    // Lead Opportunities: confidence × estimatedRevenueMin
+    expect(dash.kpis.find((k) => k.id === 'pipeline')?.value).toBeGreaterThan(0);
     expect(dash.kpis.find((k) => k.id === 'active')?.delta).toBe(0);
   });
 

@@ -3,7 +3,8 @@ import type { OwnerJob, PipelineStage, SalesPerformanceBar, TimeMetric } from '.
 /**
  * Read-only Olsen Custom Homes snapshot from Buildertrend.
  * Regenerate: BUILDERTREND_COOKIE=… npm run buildertrend:pull && npm run buildertrend:update-snapshot
- * Includes past-due tasks, pending selections, schedule est. close, and 4-week daily log counts.
+ * Weighted pipeline = Lead Opportunities confidence × estimatedRevenueMin.
+ * Past due = Tasks Status includes Not completed + due date before today.
  * Test job "**** Tate TEST JOB" omitted.
  */
 const OPEN_JOBS: OwnerJob[] = [
@@ -13,7 +14,7 @@ const OPEN_JOBS: OwnerJob[] = [
     pm: "Richard Linck",
     status: "open",
     phase: "construction",
-    pendingSelections: 6,
+    pendingSelections: 5,
     pastDueTasks: 0,
     dailyLogsRecentDone: 23,
     dailyLogsTotal: 170,
@@ -33,12 +34,12 @@ const OPEN_JOBS: OwnerJob[] = [
     phase: "permitting",
     pendingSelections: 0,
     pastDueTasks: 0,
-    dailyLogsRecentDone: 1,
+    dailyLogsRecentDone: 2,
     dailyLogsTotal: 2,
     contractPrice: 0,
     revenueToDate: 0,
     wip: 0,
-    estCloseDate: "2027-03-19",
+    estCloseDate: "2027-03-20",
     openedAt: "2026-08-11",
     slip: {"permit":0,"selections":0,"purchasing":0,"construction":0},
     notes: "Not on WIP report · 2 daily logs · Last daily log 2026-08-11 · 2 daily logs",
@@ -69,7 +70,7 @@ const OPEN_JOBS: OwnerJob[] = [
     phase: "closeout",
     pendingSelections: 0,
     pastDueTasks: 0,
-    dailyLogsRecentDone: 22,
+    dailyLogsRecentDone: 19,
     dailyLogsTotal: 231,
     contractPrice: 1298960.06,
     revenueToDate: 1289596.45,
@@ -105,7 +106,7 @@ const OPEN_JOBS: OwnerJob[] = [
     phase: "construction",
     pendingSelections: 10,
     pastDueTasks: 0,
-    dailyLogsRecentDone: 20,
+    dailyLogsRecentDone: 18,
     dailyLogsTotal: 108,
     contractPrice: 1554603,
     revenueToDate: 955406.37,
@@ -121,17 +122,17 @@ const OPEN_JOBS: OwnerJob[] = [
     pm: "Adam Horseman",
     status: "open",
     phase: "construction",
-    pendingSelections: 5,
+    pendingSelections: 4,
     pastDueTasks: 0,
-    dailyLogsRecentDone: 18,
-    dailyLogsTotal: 63,
+    dailyLogsRecentDone: 19,
+    dailyLogsTotal: 64,
     contractPrice: 1088116,
     revenueToDate: 329276.44,
     wip: 758839.56,
     estCloseDate: "2026-12-24",
     openedAt: "2026-03-12",
     slip: {"permit":0,"selections":0,"purchasing":0,"construction":0},
-    notes: "63 daily logs · BT 35% complete · Last daily log 2026-08-19 · 63 daily logs",
+    notes: "64 daily logs · BT 35% complete · Last daily log 2026-08-20 · 64 daily logs",
   },
   {
     id: "bt-35764730",
@@ -193,14 +194,14 @@ const OPEN_JOBS: OwnerJob[] = [
     pendingSelections: 0,
     pastDueTasks: 0,
     dailyLogsRecentDone: 23,
-    dailyLogsTotal: 252,
+    dailyLogsTotal: 253,
     contractPrice: 1255497.41,
     revenueToDate: 995399.09,
     wip: 260098.31999999995,
     estCloseDate: "2026-09-03",
     openedAt: "2025-02-17",
     slip: {"permit":0,"selections":0,"purchasing":0,"construction":0},
-    notes: "252 daily logs · BT 84% complete · Last daily log 2026-08-18 · 252 daily logs",
+    notes: "253 daily logs · BT 84% complete · Last daily log 2026-08-19 · 253 daily logs",
   },
   {
     id: "bt-41118068",
@@ -231,8 +232,8 @@ const OPEN_JOBS: OwnerJob[] = [
     contractPrice: 0,
     revenueToDate: 0,
     wip: 0,
-    estCloseDate: "2027-02-19",
-    openedAt: "2026-08-19",
+    estCloseDate: "2027-02-20",
+    openedAt: "2026-08-20",
     slip: {"permit":0,"selections":0,"purchasing":0,"construction":0},
     notes: "Not on WIP report · No daily logs",
   },
@@ -244,15 +245,15 @@ const OPEN_JOBS: OwnerJob[] = [
     phase: "permitting",
     pendingSelections: 10,
     pastDueTasks: 0,
-    dailyLogsRecentDone: 1,
-    dailyLogsTotal: 1,
+    dailyLogsRecentDone: 2,
+    dailyLogsTotal: 2,
     contractPrice: 0,
     revenueToDate: 0,
     wip: 0,
     estCloseDate: "2027-02-22",
     openedAt: "2025-09-18",
     slip: {"permit":0,"selections":0,"purchasing":0,"construction":0},
-    notes: "Not on WIP report · 1 daily logs · Last daily log 2026-08-18 · 1 daily logs",
+    notes: "Not on WIP report · 2 daily logs · Last daily log 2026-08-19 · 2 daily logs",
   },
   {
     id: "bt-35918575",
@@ -262,7 +263,7 @@ const OPEN_JOBS: OwnerJob[] = [
     phase: "construction",
     pendingSelections: 0,
     pastDueTasks: 14,
-    dailyLogsRecentDone: 23,
+    dailyLogsRecentDone: 22,
     dailyLogsTotal: 248,
     contractPrice: 1360391.07,
     revenueToDate: 1377463.99,
@@ -280,7 +281,7 @@ const OPEN_JOBS: OwnerJob[] = [
     phase: "construction",
     pendingSelections: 1,
     pastDueTasks: 0,
-    dailyLogsRecentDone: 20,
+    dailyLogsRecentDone: 19,
     dailyLogsTotal: 54,
     contractPrice: 0,
     revenueToDate: 0,
@@ -331,7 +332,7 @@ const OPEN_JOBS: OwnerJob[] = [
     phase: "closeout",
     pendingSelections: 0,
     pastDueTasks: 0,
-    dailyLogsRecentDone: 22,
+    dailyLogsRecentDone: 21,
     dailyLogsTotal: 124,
     contractPrice: 982110,
     revenueToDate: 855641.13,
@@ -389,7 +390,7 @@ const OPEN_JOBS: OwnerJob[] = [
     contractPrice: 1078675,
     revenueToDate: 1164852.51,
     wip: 0,
-    estCloseDate: "2026-08-26",
+    estCloseDate: "2026-09-17",
     openedAt: "2025-06-09",
     slip: {"permit":0,"selections":0,"purchasing":0,"construction":0},
     notes: "222 daily logs · BT 91% complete · invoiced above revised price · Last daily log 2026-08-18 · 222 daily logs",
@@ -402,7 +403,7 @@ const OPEN_JOBS: OwnerJob[] = [
     phase: "closeout",
     pendingSelections: 0,
     pastDueTasks: 0,
-    dailyLogsRecentDone: 21,
+    dailyLogsRecentDone: 18,
     dailyLogsTotal: 163,
     contractPrice: 939194.88,
     revenueToDate: 839240.47,
@@ -416,12 +417,12 @@ const OPEN_JOBS: OwnerJob[] = [
 
 export const LIVE_JOBS: OwnerJob[] = OPEN_JOBS;
 
-/** Intended later BT source: sales CRM stages. */
+/** Lead Opportunities open estimated-revenue-min totals by stage (proposal+ left empty when BT has no buckets). */
 export const LIVE_PIPELINE: PipelineStage[] = [
   {
     "id": "lead",
     "label": "Lead",
-    "value": 43000000
+    "value": 46100000
   },
   {
     "id": "proposal",
@@ -449,17 +450,17 @@ export const LIVE_SALES_PERFORMANCE: SalesPerformanceBar[] = [
   {
     "id": "backlog",
     "label": "Signed Backlog",
-    "value": 4505574.95
+    "value": 5628561.73
   },
   {
     "id": "closings",
     "label": "Projected Closings",
-    "value": 4154497.88
+    "value": 3986533.8900000006
   },
   {
     "id": "signing",
     "label": "Expected Signing Value",
-    "value": 43000000
+    "value": 46100000
   }
 ];
 
@@ -467,19 +468,19 @@ export const LIVE_TIME_METRICS: TimeMetric[] = [
   {
     "id": "contract-close",
     "label": "Avg. days on job",
-    "days": 222,
+    "days": 491,
     "deltaDays": 0
   },
   {
     "id": "permit-close",
     "label": "Longest job (days)",
-    "days": 396,
+    "days": 1437,
     "deltaDays": 0
   },
   {
     "id": "slab-close",
     "label": "Shortest tracked job",
-    "days": 39,
+    "days": 41,
     "deltaDays": 0
   }
 ];
@@ -487,4 +488,6 @@ export const LIVE_TIME_METRICS: TimeMetric[] = [
 export const LIVE_TARGET_MARGIN_PCT = 15;
 export const LIVE_PROJECTED_MARGIN_PCT = 7.8;
 export const LIVE_ROLLING_REVENUE_12MO = 11926559.83;
-export const LIVE_SNAPSHOT_AT = '2026-08-19T18:26:35.192Z';
+/** Sales → Lead Opportunities: sum(confidence × estimatedRevenueMin). */
+export const LIVE_WEIGHTED_PIPELINE = 21428500;
+export const LIVE_SNAPSHOT_AT = '2026-08-20T14:02:46.863Z';

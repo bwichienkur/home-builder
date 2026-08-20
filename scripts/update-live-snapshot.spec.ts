@@ -2,14 +2,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { mapBuildertrendReports } from '../src/lib/buildertrend/mapReports';
-import {
-  LIVE_PIPELINE,
-  LIVE_PROJECTED_MARGIN_PCT,
-  LIVE_ROLLING_REVENUE_12MO,
-  LIVE_SALES_PERFORMANCE,
-  LIVE_TARGET_MARGIN_PCT,
-  LIVE_TIME_METRICS,
-} from '../src/lib/buildertrend/liveSnapshot';
+import { LIVE_TARGET_MARGIN_PCT } from '../src/lib/buildertrend/liveSnapshot';
 
 function jobToTs(job: Record<string, unknown>, indent: string) {
   const lines = [`${indent}{`];
@@ -56,7 +49,8 @@ describe('update live snapshot from Buildertrend cache', () => {
 /**
  * Read-only Olsen Custom Homes snapshot from Buildertrend.
  * Regenerate: BUILDERTREND_COOKIE=… npm run buildertrend:pull && npm run buildertrend:update-snapshot
- * Includes past-due tasks, pending selections, schedule est. close, and 4-week daily log counts.
+ * Weighted pipeline = Lead Opportunities confidence × estimatedRevenueMin.
+ * Past due = Tasks Status includes Not completed + due date before today.
  * Test job "**** Tate TEST JOB" omitted.
  */
 const OPEN_JOBS: OwnerJob[] = [
@@ -65,20 +59,23 @@ ${jobBlocks},
 
 export const LIVE_JOBS: OwnerJob[] = OPEN_JOBS;
 
-/** Intended later BT source: sales CRM stages. */
-export const LIVE_PIPELINE: PipelineStage[] = ${JSON.stringify(LIVE_PIPELINE, null, 2)};
+/** Lead Opportunities open estimated-revenue-min totals by stage (proposal+ left empty when BT has no buckets). */
+export const LIVE_PIPELINE: PipelineStage[] = ${JSON.stringify(mapped.pipeline, null, 2)};
 
-export const LIVE_SALES_PERFORMANCE: SalesPerformanceBar[] = ${JSON.stringify(LIVE_SALES_PERFORMANCE, null, 2)};
+export const LIVE_SALES_PERFORMANCE: SalesPerformanceBar[] = ${JSON.stringify(mapped.salesPerformance, null, 2)};
 
-export const LIVE_TIME_METRICS: TimeMetric[] = ${JSON.stringify(LIVE_TIME_METRICS, null, 2)};
+export const LIVE_TIME_METRICS: TimeMetric[] = ${JSON.stringify(mapped.timeMetrics, null, 2)};
 
 export const LIVE_TARGET_MARGIN_PCT = ${LIVE_TARGET_MARGIN_PCT};
 export const LIVE_PROJECTED_MARGIN_PCT = ${mapped.projectedMarginPct};
 export const LIVE_ROLLING_REVENUE_12MO = ${mapped.rollingRevenue12Mo};
+/** Sales → Lead Opportunities: sum(confidence × estimatedRevenueMin). */
+export const LIVE_WEIGHTED_PIPELINE = ${mapped.weightedPipeline ?? 0};
 export const LIVE_SNAPSHOT_AT = '${pulledDate}';
 `;
 
     writeFileSync(path.join(process.cwd(), 'src/lib/buildertrend/liveSnapshot.ts'), file);
+    expect(mapped.weightedPipeline ?? 0).toBeGreaterThan(0);
     expect(mapped.jobs.some((j) => j.pastDueTasks > 0 || j.pendingSelections > 0)).toBe(true);
   });
 });
