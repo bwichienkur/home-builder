@@ -20,3 +20,9 @@ data/
 buildertrend_cookies.txt
 buildertrend_session_report.txt
 buildertrend_tasks_api.txt
+buildertrend_leads_*.txt
+buildertrend_leads_*.json
+FINDINGS.md
+FINDINGS_SUMMARY.txt
+network_analysis.txt
+test_grid_request.sh

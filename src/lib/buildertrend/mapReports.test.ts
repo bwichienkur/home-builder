@@ -126,7 +126,25 @@ describe('Buildertrend report mapper', () => {
             ],
           },
         },
-        leads: [{ estimatedRevenueMax: 43_000_000, status: 'Open' }],
+        leads: {
+          data: [
+            {
+              leadStatus: 0,
+              confidence: 50,
+              estimatedRevenueMin: { value: 1_400_000, scale: 2 },
+              estimatedRevenueMax: { value: 1_800_000, scale: 2 },
+              opportunityTitle: { leadLink: { title: 'Allen Kim' } },
+            },
+            {
+              leadStatus: 0,
+              confidence: 40,
+              estimatedRevenueMin: { value: 900_000, scale: 2 },
+              estimatedRevenueMax: { value: 1_000_000, scale: 2 },
+              opportunityTitle: { leadLink: { title: 'Blanks Todd' } },
+            },
+          ],
+          records: 2,
+        },
       },
       { now },
     );
@@ -175,7 +193,9 @@ describe('Buildertrend report mapper', () => {
       dailyLogsTotal: 3,
       dailyLogsRecentDone: null,
     });
-    expect(mapped.pipeline[0]).toMatchObject({ id: 'lead', value: 43_000_000 });
+    // Lead Opportunities: sum(confidence × estimatedRevenueMin) e.g. 50%×1.4M + 40%×0.9M
+    expect(mapped.pipeline[0]).toMatchObject({ id: 'lead', value: 2_300_000 });
+    expect(mapped.weightedPipeline).toBe(700_000 + 360_000);
     expect(mapped.rollingRevenue12Mo).toBe(4_290_000);
     expect(mapped.projectedMarginPct).toBeGreaterThan(0);
   });

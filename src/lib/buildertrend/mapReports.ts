@@ -365,6 +365,7 @@ function taskDueIso(task: Record<string, unknown>) {
 }
 
 function isIncompleteTask(task: Record<string, unknown>) {
+  // PM → Tasks filter: Status includes “Not completed” (BT status code 0).
   const status = num(pick(task, 'status', 'taskStatus'));
   if (status === 0) return true;
   const label = str(pick(task, 'statusName', 'statusLabel')).toLowerCase();
@@ -372,6 +373,7 @@ function isIncompleteTask(task: Record<string, unknown>) {
 }
 
 export function pastDueTasksByJob(reports: BuildertrendReports, now = new Date()) {
+  // Due date is before today (matches Tasks list filter “Due date / is before / today’s date”).
   const today = now.toISOString().slice(0, 10);
   const counts = new Map<number, number>();
   for (const row of asArray(asRecord(reports.tasks)?.tasks ?? reports.tasks)) {
@@ -490,15 +492,35 @@ function ingestSchedule(jobs: Map<string, JobDraft>, row: Record<string, unknown
   if (name) jobs.set(`name:${name.toLowerCase()}`, draft);
 }
 
-function weightedLeadPipeline(reports: BuildertrendReports) {
-  const rows = [...asArray(reports.leads), ...asArray(reports.leadStatus)];
+/** Lead Opportunities rows: confidence × estimatedRevenueMin (Sales → Lead Opportunities). */
+function leadOpportunityRows(reports: BuildertrendReports) {
+  const fromLeads = asArray(reports.leads);
+  // Prefer nested Lead Opportunities grid rows when present.
+  const nested = asRecord(reports.leads);
+  const nestedRows = nested ? asArray(nested.data) : [];
+  const rows = nestedRows.length ? nestedRows : fromLeads;
+  return rows
+    .map((row) => asRecord(row))
+    .filter((rec): rec is Record<string, unknown> => Boolean(rec && (pick(rec, 'estimatedRevenueMin', 'confidence') != null || pick(rec, 'opportunityTitle', 'id'))));
+}
+
+function isOpenLeadOpportunity(rec: Record<string, unknown>) {
+  const statusRaw = pick(rec, 'leadStatus', 'status', 'stage');
+  if (typeof statusRaw === 'number') {
+    // BT Lead Opportunities: 0 = Open (matches List view “Open”).
+    return statusRaw === 0;
+  }
+  const status = str(statusRaw).toLowerCase();
+  if (!status) return true;
+  if (status.includes('lost') || status.includes('no opp') || status.includes('sold') || status.includes('closed')) return false;
+  return status.includes('open') || status === '0';
+}
+
+export function weightedLeadPipeline(reports: BuildertrendReports) {
   let weighted = 0;
   let rawLead = 0;
-  for (const row of rows) {
-    const rec = asRecord(row);
-    if (!rec) continue;
-    const status = str(pick(rec, 'status', 'leadStatus', 'stage')).toLowerCase();
-    if (status.includes('lost') || status.includes('no opp')) continue;
+  for (const rec of leadOpportunityRows(reports)) {
+    if (!isOpenLeadOpportunity(rec)) continue;
     const min = num(pick(rec, 'estimatedRevenueMin', 'estimatedRevenue', 'amount', 'value'));
     const confidenceRaw = num(pick(rec, 'confidence', 'confidencePct', 'confidencePercentage'));
     const confidence = confidenceRaw > 1 ? confidenceRaw / 100 : confidenceRaw;
