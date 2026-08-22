@@ -182,5 +182,6 @@ Reports available in BT (16): Baseline vs. actual duration by job · Budgeted vs
 
 ## Related probe notes
 
+- **Reports research (how to get each datapoint):** [`docs/buildertrend-reports-research.md`](./buildertrend-reports-research.md)  
 - UI notes: `docs/bt-probe-ui-notes.txt`  
 - Live pull cache (gitignored): `data/buildertrend-cache.json` after `npm run buildertrend:pull`
