@@ -491,4 +491,4 @@ export const LIVE_PROJECTED_MARGIN_PCT = 34.2;
 export const LIVE_ROLLING_REVENUE_12MO = 16248558.739999998;
 /** Sales → Lead Opportunities: sum(confidence × estimatedRevenueMin). */
 export const LIVE_WEIGHTED_PIPELINE = 21428500;
-export const LIVE_SNAPSHOT_AT = '2026-08-22T11:41:51.701Z';
+export const LIVE_SNAPSHOT_AT = '2026-08-22T13:33:38.609Z';
