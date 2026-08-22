@@ -226,6 +226,101 @@ function openJobIdsFromPicker(jobsPayload) {
   return list.filter((job) => job.jobStatus === 1 || String(job.jobStatus).toLowerCase() === 'open').map((job) => job.jobID);
 }
 
+/** BT caps Tasks/list responses at 4,000 rows; per-job pulls avoid cross-job truncation. */
+export const TASKS_LIST_ROW_CAP = 4000;
+
+/** PM → Tasks: Status includes Not completed. Past-due (due before today) is applied in the mapper. */
+export const INCOMPLETE_TASKS_FILTERS = {
+  filters: [
+    {
+      groups: [
+        {
+          booleanOperator: 0,
+          filters: [{ field: 'status', operator: 24, value: '[0]' }],
+        },
+      ],
+    },
+  ],
+};
+
+export function mergeTasksListResponses(parts) {
+  const tasksById = new Map();
+  const jobsById = new Map();
+  const dependencies = [];
+  const taskComments = [];
+  const watchers = [];
+  const cappedJobIds = [];
+
+  for (const part of parts) {
+    const data = part?.data;
+    if (!data) continue;
+    const taskList = Array.isArray(data.tasks) ? data.tasks : [];
+    if (taskList.length >= TASKS_LIST_ROW_CAP && part.jobId != null) cappedJobIds.push(part.jobId);
+    for (const task of taskList) {
+      const key = task?.taskId ?? `${task?.jobId ?? part.jobId}-${tasksById.size}`;
+      if (!tasksById.has(key)) tasksById.set(key, task);
+    }
+    for (const job of data.jobs ?? []) {
+      if (job?.jobId != null) jobsById.set(job.jobId, job);
+    }
+    if (Array.isArray(data.dependencies)) dependencies.push(...data.dependencies);
+    if (Array.isArray(data.taskComments)) taskComments.push(...data.taskComments);
+    if (Array.isArray(data.watchers)) watchers.push(...data.watchers);
+  }
+
+  return {
+    tasks: [...tasksById.values()],
+    dependencies,
+    jobs: [...jobsById.values()],
+    taskComments,
+    watchers,
+    meta: {
+      jobPullCount: parts.length,
+      cappedJobIds,
+    },
+  };
+}
+
+async function mapPool(items, concurrency, mapper) {
+  const results = new Array(items.length);
+  let next = 0;
+  async function worker() {
+    while (next < items.length) {
+      const index = next;
+      next += 1;
+      results[index] = await mapper(items[index], index);
+    }
+  }
+  const workers = Array.from({ length: Math.min(concurrency, items.length) }, () => worker());
+  await Promise.all(workers);
+  return results;
+}
+
+async function fetchTasksForOpenJobs(session, jobIds, { concurrency = 5 } = {}) {
+  if (!jobIds.length) return { ok: false, status: 0, data: null };
+
+  const parts = await mapPool(jobIds, concurrency, async (jobId) => {
+    const result = await postJson(session, '/apix/v2/Tasks/list', {
+      jobIds: [jobId],
+      filters: INCOMPLETE_TASKS_FILTERS,
+      includeDeleted: false,
+    });
+    return { jobId, ok: result.ok, status: result.status, data: result.ok ? result.data : null };
+  });
+
+  const succeeded = parts.filter((part) => part.ok && part.data);
+  if (!succeeded.length) {
+    const firstFailure = parts.find((part) => !part.ok);
+    return { ok: false, status: firstFailure?.status ?? 502, data: null };
+  }
+
+  return {
+    ok: true,
+    status: parts.every((part) => part.ok) ? 200 : 207,
+    data: mergeTasksListResponses(succeeded),
+  };
+}
+
 async function fetchActionItemsByJob(session, jobIds) {
   const entries = await Promise.all(
     jobIds.map(async (jobId) => {
@@ -283,26 +378,7 @@ export async function fetchReports(session) {
 
   const jobIds = openJobIdsFromPicker(jobs.data);
   const [tasks, actionItemsByJob] = await Promise.all([
-    jobIds.length
-      ? postJson(session, '/apix/v2/Tasks/list', {
-          jobIds,
-          // PM → Tasks → All tasks: Status includes Not completed (status 0).
-          // Past-due (due before today) is applied in the mapper.
-          filters: {
-            filters: [
-              {
-                groups: [
-                  {
-                    booleanOperator: 0,
-                    filters: [{ field: 'status', operator: 24, value: '[0]' }],
-                  },
-                ],
-              },
-            ],
-          },
-          includeDeleted: false,
-        })
-      : Promise.resolve({ ok: false, status: 0, data: null }),
+    fetchTasksForOpenJobs(session, jobIds),
     jobIds.length ? fetchActionItemsByJob(session, jobIds) : Promise.resolve({}),
   ]);
 
