@@ -19,6 +19,8 @@ export type BuildertrendReports = {
   leadStatus?: unknown;
   tasks?: unknown;
   actionItemsByJob?: Record<string, unknown>;
+  /** Per-job selection rows from POST /api/Selections/Grid (List tab). */
+  selectionsByJob?: Record<string, unknown[]>;
 };
 
 export type MappedBuildertrendPull = {
@@ -402,15 +404,24 @@ function recentDailyLogsByJob(reports: BuildertrendReports) {
   return counts;
 }
 
-function pendingSelectionsByJob(reports: BuildertrendReports) {
+/** Matches Buildertrend SelectionStatusTag: Selected (2) or BuilderOverride (3) with maxSelected === 1. */
+export function isSelectionMarkedSelected(status: unknown): boolean {
+  const rec = asRecord(status);
+  if (!rec) return false;
+  const code = num(pick(rec, 'status'));
+  const maxSelected = num(pick(rec, 'maxSelected'));
+  if (code === 2) return true;
+  if (code === 3 && maxSelected === 1) return true;
+  return false;
+}
+
+export function pendingSelectionsByJob(reports: BuildertrendReports) {
   const counts = new Map<number, number>();
-  const byJob = asRecord(reports.actionItemsByJob) ?? {};
-  for (const [jobId, payload] of Object.entries(byJob)) {
-    const rec = asRecord(payload);
-    if (!rec) continue;
-    const unapproved = asRecord(rec.unapprovedSelections);
-    const total = unapproved ? num(pick(unapproved, 'count')) : 0;
-    if (total) counts.set(Number(jobId), total);
+  const byJob = reports.selectionsByJob ?? {};
+  for (const [jobId, rows] of Object.entries(byJob)) {
+    if (!Array.isArray(rows)) continue;
+    const pending = rows.filter((row) => !isSelectionMarkedSelected(asRecord(row)?.status)).length;
+    counts.set(Number(jobId), pending);
   }
   return counts;
 }

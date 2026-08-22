@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { INCOMPLETE_TASKS_FILTERS, mergeTasksListResponses, TASKS_LIST_ROW_CAP } from './pull.js';
+import {
+  INCOMPLETE_TASKS_FILTERS,
+  mergeTasksListResponses,
+  selectionsGridBody,
+  SELECTIONS_GRID_SELECTED_TAB,
+  TASKS_LIST_ROW_CAP,
+} from './pull.js';
 
 describe('mergeTasksListResponses', () => {
   it('dedupes tasks by taskId across per-job pulls', () => {
@@ -46,5 +52,18 @@ describe('INCOMPLETE_TASKS_FILTERS', () => {
       operator: 24,
       value: '[0]',
     });
+  });
+});
+
+describe('selectionsGridBody', () => {
+  it('targets the Selections list grid for one job', () => {
+    const body = selectionsGridBody(40497055);
+    expect(body.jobIds).toEqual([40497055]);
+    expect(body.filters).toBe('{}');
+    expect(body.pagingData.pageSize).toBe(500);
+  });
+
+  it('uses the list tab query param constant', () => {
+    expect(SELECTIONS_GRID_SELECTED_TAB).toBe(1);
   });
 });

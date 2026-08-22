@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { mapBuildertrendReports, pastDueTasksByJob, pickProjectManager, weekdaysElapsedInMonth } from './mapReports';
+import {
+  isSelectionMarkedSelected,
+  mapBuildertrendReports,
+  pastDueTasksByJob,
+  pendingSelectionsByJob,
+  pickProjectManager,
+  weekdaysElapsedInMonth,
+} from './mapReports';
 
 const now = new Date(2026, 7, 19, 12);
 
@@ -219,5 +226,29 @@ describe('Buildertrend report mapper', () => {
     expect(counts.get(42673665)).toBe(2);
     expect(counts.get(35918575)).toBe(1);
     expect([...counts.values()].reduce((sum, value) => sum + value, 0)).toBe(3);
+  });
+
+  it('treats Selected and single-choice BuilderOverride as selected', () => {
+    expect(isSelectionMarkedSelected({ status: 2 })).toBe(true);
+    expect(isSelectionMarkedSelected({ status: 3, maxSelected: 1 })).toBe(true);
+    expect(isSelectionMarkedSelected({ status: 3, maxSelected: -999 })).toBe(false);
+    expect(isSelectionMarkedSelected({ status: 0, maxSelected: 1 })).toBe(false);
+    expect(isSelectionMarkedSelected({ status: -1 })).toBe(false);
+  });
+
+  it('counts pending selections per job as rows not marked Selected', () => {
+    const counts = pendingSelectionsByJob({
+      selectionsByJob: {
+        '40497055': [
+          { status: { status: 3, maxSelected: -999 } },
+          { status: { status: 3, maxSelected: 1 } },
+          { status: { status: 0, maxSelected: 1 } },
+        ],
+        '123': [{ status: { status: 2 } }],
+      },
+    });
+
+    expect(counts.get(40497055)).toBe(2);
+    expect(counts.get(123)).toBe(0);
   });
 });
