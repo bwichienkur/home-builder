@@ -15,7 +15,7 @@ const AUTH0_AUDIENCE = 'https://api.buildertrend.net/';
 
 const WRITE_METHODS = new Set(['PUT', 'PATCH', 'DELETE']);
 /** POST bodies allowed for read-only list/report queries (never create/update/delete). */
-const READ_POST_PREFIXES = ['/apix/v2/Tasks/list', '/api/Leads/Grid'];
+const READ_POST_PREFIXES = ['/apix/v2/Tasks/list', '/api/Leads/Grid', '/api/Selections/Grid'];
 
 function isReadOnlyPost(urlPath) {
   const path = String(urlPath).split('?')[0];
@@ -321,6 +321,72 @@ async function fetchTasksForOpenJobs(session, jobIds, { concurrency = 5 } = {}) 
   };
 }
 
+/** PM → Selections list view (`selectedTab=1`). */
+export const SELECTIONS_GRID_SELECTED_TAB = 1;
+export const SELECTIONS_GRID_PAGE_SIZE = 500;
+
+export function selectionsGridBody(jobId, { pageNumber = 1, pageSize = SELECTIONS_GRID_PAGE_SIZE } = {}) {
+  const firstRow = (pageNumber - 1) * pageSize + 1;
+  const lastRow = pageNumber * pageSize;
+  return {
+    gridRequest: { selectedColumns: [], sortColumn: null, sortDirection: 'asc', savedViewId: -1 },
+    pagingData: {
+      pageNumber,
+      pageSize,
+      firstRow,
+      lastRow,
+      totalRowsAllPages: pageSize,
+      resetScroll: false,
+    },
+    filters: '{}',
+    jobIds: [jobId],
+  };
+}
+
+async function fetchSelectionsPage(session, jobId, pageNumber) {
+  return postJson(
+    session,
+    `/api/Selections/Grid?selectedTab=${SELECTIONS_GRID_SELECTED_TAB}`,
+    selectionsGridBody(jobId, { pageNumber }),
+  );
+}
+
+async function fetchSelectionsForJob(session, jobId) {
+  const rows = [];
+  let pageNumber = 1;
+  let totalRecords = null;
+
+  while (true) {
+    const result = await fetchSelectionsPage(session, jobId, pageNumber);
+    if (!result.ok) return { ok: false, status: result.status, rows: [] };
+
+    const payload = result.data?.data ?? {};
+    const pageRows = Array.isArray(payload.data) ? payload.data : [];
+    if (totalRecords == null) totalRecords = Number(payload.records ?? pageRows.length);
+
+    rows.push(...pageRows);
+    if (!pageRows.length || rows.length >= totalRecords || pageRows.length < SELECTIONS_GRID_PAGE_SIZE) break;
+    pageNumber += 1;
+  }
+
+  return { ok: true, status: 200, rows };
+}
+
+async function fetchSelectionsForOpenJobs(session, jobIds, { concurrency = 5 } = {}) {
+  if (!jobIds.length) return {};
+
+  const parts = await mapPool(jobIds, concurrency, async (jobId) => {
+    const result = await fetchSelectionsForJob(session, jobId);
+    return { jobId, ...result };
+  });
+
+  const byJob = {};
+  for (const part of parts) {
+    if (part.ok) byJob[part.jobId] = part.rows;
+  }
+  return byJob;
+}
+
 async function fetchActionItemsByJob(session, jobIds) {
   const entries = await Promise.all(
     jobIds.map(async (jobId) => {
@@ -377,9 +443,10 @@ export async function fetchReports(session) {
     ]);
 
   const jobIds = openJobIdsFromPicker(jobs.data);
-  const [tasks, actionItemsByJob] = await Promise.all([
+  const [tasks, actionItemsByJob, selectionsByJob] = await Promise.all([
     fetchTasksForOpenJobs(session, jobIds),
     jobIds.length ? fetchActionItemsByJob(session, jobIds) : Promise.resolve({}),
+    jobIds.length ? fetchSelectionsForOpenJobs(session, jobIds) : Promise.resolve({}),
   ]);
 
   const reports = {
@@ -393,6 +460,7 @@ export async function fetchReports(session) {
     jobsites: jobsites.data,
     tasks: tasks.data,
     actionItemsByJob,
+    selectionsByJob,
   };
   const failed = [
     ['work-in-progress', wip],
