@@ -117,7 +117,7 @@ Reports available in BT (16): Baseline vs. actual duration by job · Budgeted vs
 
 | # | Column | Question | BT source | Field / filter | Rule | Owner | Answer |
 |---|--------|----------|-----------|----------------|------|-------|--------|
-| H1 | Pending selections | Per job: count all selections **not** marked **Selected** (includes Unreleased, Pending:*, Expired, Completed) | Job → Selections → List | `POST /api/Selections/Grid?selectedTab=1` per open job | Status enum + `maxSelected` (BuilderOverride w/ `maxSelected===1` = Selected) | | **Confirmed:** per job, everything except BT “Selected” tag. Implemented via Selections grid pull (not `unapprovedSelections` proxy). |
+| H1 | Pending selections | Per job: count selections **without** green **Selected** or **Completed** status | Job → Selections → List | `POST /api/Selections/Grid?selectedTab=1` per open job | Status 2 (Selected) and 3 (BuilderOverride → Selected or Completed) excluded | | **Confirmed:** exclude all BT green/success tags (Selected + Completed). |
 | H2 | Past due tasks | Same as E7? Exclude tags? | Tasks | Not completed · due before today | Tags exist (Office To Do, Inspections, etc.) | | **Probe:** Same filter works. **Needs owner:** exclude any tags? (App today: no tag exclusions.) |
 | H3 | Daily logs | 4 wk vs calendar month? | User daily logs report | Date-bounded pull | | | **Assumed in app:** rolling **4 weeks** per owner standard (not calendar month weekdays). |
 | H4 | % Complete | Schedule vs cost vs revenue/contract? | Schedule % · WIP | `percentComplete` vs `jobCompletionPercentage` | **They differ** on same jobs | | **Needs owner.** Example Ahigian: schedule ~89% vs WIP 73%. |

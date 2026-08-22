@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  isSelectionMarkedSelected,
+  isSelectionGreenStatus,
   mapBuildertrendReports,
   pastDueTasksByJob,
   pendingSelectionsByJob,
@@ -228,15 +228,15 @@ describe('Buildertrend report mapper', () => {
     expect([...counts.values()].reduce((sum, value) => sum + value, 0)).toBe(3);
   });
 
-  it('treats Selected and single-choice BuilderOverride as selected', () => {
-    expect(isSelectionMarkedSelected({ status: 2 })).toBe(true);
-    expect(isSelectionMarkedSelected({ status: 3, maxSelected: 1 })).toBe(true);
-    expect(isSelectionMarkedSelected({ status: 3, maxSelected: -999 })).toBe(false);
-    expect(isSelectionMarkedSelected({ status: 0, maxSelected: 1 })).toBe(false);
-    expect(isSelectionMarkedSelected({ status: -1 })).toBe(false);
+  it('treats Selected and Completed (green) BuilderOverride as excluded from pending', () => {
+    expect(isSelectionGreenStatus({ status: 2 })).toBe(true);
+    expect(isSelectionGreenStatus({ status: 3, maxSelected: 1 })).toBe(true);
+    expect(isSelectionGreenStatus({ status: 3, maxSelected: -999 })).toBe(true);
+    expect(isSelectionGreenStatus({ status: 0, maxSelected: 1 })).toBe(false);
+    expect(isSelectionGreenStatus({ status: -1 })).toBe(false);
   });
 
-  it('counts pending selections per job as rows not marked Selected', () => {
+  it('counts pending selections per job as rows without green Selected/Completed status', () => {
     const counts = pendingSelectionsByJob({
       selectionsByJob: {
         '40497055': [
@@ -248,7 +248,7 @@ describe('Buildertrend report mapper', () => {
       },
     });
 
-    expect(counts.get(40497055)).toBe(2);
+    expect(counts.get(40497055)).toBe(1);
     expect(counts.get(123)).toBe(0);
   });
 });
