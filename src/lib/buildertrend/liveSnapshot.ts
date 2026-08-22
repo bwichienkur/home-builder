@@ -81,6 +81,23 @@ const OPEN_JOBS: OwnerJob[] = [
     notes: "233 daily logs · BT 81% complete · Last daily log 2026-08-21 · 233 daily logs",
   },
   {
+    id: "bt-42790290",
+    name: "Bucciarelli",
+    pm: "Richard Linck",
+    status: "open",
+    phase: "permitting",
+    pendingSelections: 67,
+    pastDueTasks: 15,
+    dailyLogsTotal: 3,
+    contractPrice: 0,
+    revenueToDate: 0,
+    wip: 0,
+    estCloseDate: "2027-03-22",
+    openedAt: "2026-06-04",
+    slip: {"permit":0,"selections":0,"purchasing":0,"construction":0},
+    notes: "Not on WIP report · No daily logs · 3 daily logs · Last daily log 2026-07-24 · 3 daily logs",
+  },
+  {
     id: "bt-42615310",
     name: "Chahlavi",
     pm: "Adam Horseman",
@@ -491,4 +508,4 @@ export const LIVE_PROJECTED_MARGIN_PCT = 34.2;
 export const LIVE_ROLLING_REVENUE_12MO = 16248558.739999998;
 /** Sales → Lead Opportunities: sum(confidence × estimatedRevenueMin). */
 export const LIVE_WEIGHTED_PIPELINE = 21428500;
-export const LIVE_SNAPSHOT_AT = '2026-08-22T13:54:43.154Z';
+export const LIVE_SNAPSHOT_AT = '2026-08-22T14:13:10.425Z';

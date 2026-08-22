@@ -251,4 +251,27 @@ describe('Buildertrend report mapper', () => {
     expect(counts.get(40497055)).toBe(1);
     expect(counts.get(123)).toBe(0);
   });
+
+  it('keeps job picker Open status when daily logs report Closed for the same name', () => {
+    const mapped = mapBuildertrendReports({
+      jobs: [{ jobID: 42790290, jobName: 'Bucciarelli', jobStatus: 'Open', projectManagers: 'Richard Linck' }],
+      dailyLogs: {
+        data: {
+          rowData: [
+            {
+              jobID: 11641078,
+              jobName: 'Bucciarelli',
+              jobStatus: 'Closed',
+              totalDailyLogEntries: 0,
+              totalWorkDays: 62,
+            },
+          ],
+        },
+      },
+    });
+
+    const bucci = mapped.jobs.find((job) => job.name === 'Bucciarelli');
+    expect(bucci).toMatchObject({ status: 'open', id: 'bt-42790290' });
+    expect(mapped.jobs.filter((job) => job.status === 'open')).toHaveLength(1);
+  });
 });

@@ -230,13 +230,28 @@ type JobDraft = {
   pastDueTasks: number;
   dailyLogsRecentDone: number | null;
   notes: string[];
+  /** Set from job picker; blocks other reports from overriding status/jobId. */
+  pickerStatus?: OwnerJob['status'];
+  pickerJobId?: number;
 };
 
-function mergeJob(target: JobDraft, patch: Partial<JobDraft>) {
+function mergeJob(target: JobDraft, patch: Partial<JobDraft> & { fromPicker?: boolean }) {
   if (patch.name && (!target.name || patch.name.length > target.name.length)) target.name = patch.name;
   if (patch.id && patch.id !== target.id && !target.id.startsWith('bt-')) target.id = patch.id;
   if (patch.pm && patch.pm !== 'Unassigned') target.pm = patch.pm;
-  if (patch.status && patch.status !== 'open') target.status = patch.status;
+  if (patch.fromPicker) {
+    if (patch.status) {
+      target.pickerStatus = patch.status;
+      target.status = patch.status;
+    }
+    if (patch.jobId != null) {
+      target.pickerJobId = patch.jobId;
+      target.jobId = patch.jobId;
+    }
+  } else {
+    if (patch.status && target.pickerStatus == null && patch.status !== 'open') target.status = patch.status;
+    if (patch.jobId != null && target.pickerJobId == null) target.jobId = patch.jobId;
+  }
   if (patch.openedAt && (!target.openedAt || patch.openedAt < target.openedAt)) target.openedAt = patch.openedAt;
   if (patch.completion) target.completion = patch.completion;
   if (patch.lastLog && (!target.lastLog || patch.lastLog > target.lastLog)) target.lastLog = patch.lastLog;
@@ -250,7 +265,6 @@ function mergeJob(target: JobDraft, patch: Partial<JobDraft>) {
   if ((patch.earnedRevenue ?? 0) > 0) target.earnedRevenue = patch.earnedRevenue ?? 0;
   if (patch.projectedProfit != null) target.projectedProfit = patch.projectedProfit;
   if (patch.notes?.length) target.notes.push(...patch.notes);
-  if (patch.jobId != null) target.jobId = patch.jobId;
   if ((patch.pendingSelections ?? 0) > target.pendingSelections) target.pendingSelections = patch.pendingSelections ?? 0;
   if ((patch.pastDueTasks ?? 0) > target.pastDueTasks) target.pastDueTasks = patch.pastDueTasks ?? 0;
   if (patch.dailyLogsRecentDone != null) target.dailyLogsRecentDone = patch.dailyLogsRecentDone;
@@ -261,7 +275,7 @@ function jobKey(name: string, jobId: unknown) {
   return `name:${name.toLowerCase()}`;
 }
 
-function ingest(jobs: Map<string, JobDraft>, row: Record<string, unknown>, kind: 'wip' | 'log' | 'job') {
+function ingest(jobs: Map<string, JobDraft>, row: Record<string, unknown>, kind: 'picker' | 'wip' | 'log' | 'job') {
   const name = str(pick(row, 'jobName', 'name', 'title', 'NewJobName', 'job'));
   if (!name || TEST_JOB.test(name) || /template/i.test(name)) return;
   const jobId = pick(row, 'jobID', 'jobId', 'id', 'jobsiteId');
@@ -320,7 +334,6 @@ function ingest(jobs: Map<string, JobDraft>, row: Record<string, unknown>, kind:
       id: slugId(name, jobId),
       jobId: numericJobId,
       pm,
-      status,
       openedAt: start,
       completion,
       contractPrice: contract,
@@ -336,7 +349,6 @@ function ingest(jobs: Map<string, JobDraft>, row: Record<string, unknown>, kind:
     mergeJob(draft, {
       name,
       id: slugId(name, jobId),
-      jobId: numericJobId,
       pm,
       status,
       openedAt: start,
@@ -345,6 +357,17 @@ function ingest(jobs: Map<string, JobDraft>, row: Record<string, unknown>, kind:
       logCount,
       workDays,
       notes: logCount ? [`${logCount} daily logs`] : ['No daily logs'],
+    });
+  } else if (kind === 'picker') {
+    mergeJob(draft, {
+      name,
+      id: slugId(name, jobId),
+      jobId: numericJobId,
+      pm,
+      status,
+      openedAt: start,
+      completion,
+      fromPicker: true,
     });
   } else {
     mergeJob(draft, {
@@ -591,7 +614,7 @@ export function mapBuildertrendReports(
 ): MappedBuildertrendPull {
   const now = options?.now ?? new Date();
   const jobs = new Map<string, JobDraft>();
-  for (const row of asArray(reports.jobs)) ingest(jobs, asRecord(row) ?? {}, 'job');
+  for (const row of asArray(reports.jobs)) ingest(jobs, asRecord(row) ?? {}, 'picker');
   for (const row of asArray(reports.jobsites)) ingest(jobs, asRecord(row) ?? {}, 'job');
   for (const row of asArray(reports.dailyLogs)) ingest(jobs, asRecord(row) ?? {}, 'log');
   for (const row of asArray(reports.wip)) ingest(jobs, asRecord(row) ?? {}, 'wip');
