@@ -1,0 +1,122 @@
+BUILDERTREND UI PROBE - OLSEN CUSTOM HOMES
+Date: Saturday Aug 22, 2026
+Purpose: Read-only browser probe to document UI elements and statuses
+
+==============================================================================
+1. REPORTS (https://buildertrend.net/app/Reporting)
+==============================================================================
+
+TOTAL REPORTS: 16 (across all tabs)
+
+ALL TAB (16 reports):
+- Baseline vs. actual duration by job
+- Budgeted vs. projected
+- Cash flow
+- Change order profit
+- Daily Log count by user
+- Daily Log creation by job
+- Hours worked, by employee
+- Hours worked, by job
+- Invoicing
+- Labor actuals vs. budgeted
+- Lead activities by salesperson
+- Lead count by salesperson
+- Lead status by source
+- Profitability
+- Schedule percent complete by job
+- Work in progress
+
+PROJECT MANAGEMENT TAB (7 reports):
+- Baseline vs. actual duration by job
+- Change order profit
+- Daily Log count by user
+- Daily Log creation by job
+- Hours worked, by employee
+- Hours worked, by job
+- Schedule percent complete by job
+
+FINANCIAL TAB (6 reports):
+- Budgeted vs. projected
+- Cash flow
+- Invoicing
+- Labor actuals vs. budgeted
+- Profitability
+- Work in progress
+
+SALES TAB (3 reports):
+- Lead activities by salesperson
+- Lead count by salesperson
+- Lead status by source
+
+==============================================================================
+2. JOBS LIST - STATUS FILTERS
+==============================================================================
+
+Job Status Options (Filter dropdown):
+- Select All
+- Presale
+- Open (currently active filter)
+- Warranty
+- Closed
+
+==============================================================================
+3. SELECTIONS - AHIGIAN-HABASHI JOB
+==============================================================================
+
+Navigation: Jobs > Jobs List > Ahigian - Habashi > Project Management > Selections
+
+Total Selections in this job: 63 items (showing 1-50 per page)
+
+SELECTION STATUS OPTIONS:
+The following statuses are available in the Selection Status filter:
+- Select All
+- Unreleased
+- All Pending
+- Pending: No Choices
+- Pending: TBD Choices Remaining
+- Pending: Client Price Requested
+- Pending: Sub/Vendor Price Requested
+- Pending: Available
+- Pending: Overdue
+- Pending: Selected
+- Expired
+- Selected
+
+OBSERVED STATUS:
+All visible selections in the Ahigian - Habashi job showed "Unreleased" status.
+
+SELECTION FIELDS VISIBLE:
+- Title (selection name)
+- Comments (count)
+- Category (e.g., Phase 1)
+- Location (e.g., ARB, Interior, Whole House)
+- Price
+- Remaining from Allowance
+- Deadline
+- Status
+
+NOTE: The current list shows no count of "incomplete" or "pending" in the main view,
+but individual statuses can be filtered using the Selection Status dropdown which
+includes multiple "Pending" subcategories and a "Selected" status.
+
+==============================================================================
+SUMMARY
+==============================================================================
+
+Report Names (Schedule/Baseline/Margin/Revenue/Daily Logs/Selections):
+✓ Baseline vs. actual duration by job - YES
+✓ Profitability (margin) - YES
+✓ Work in progress (revenue) - YES
+✓ Daily Log count by user - YES
+✓ Daily Log creation by job - YES
+✓ Selections - Accessible via Project Management menu (not a report)
+
+Selection Statuses:
+- Unreleased, Selected, Expired
+- Multiple Pending subtypes: No Choices, TBD Choices Remaining, Client Price Requested,
+  Sub/Vendor Price Requested, Available, Overdue, Selected
+
+Job Status Filter Labels:
+- Presale, Open, Warranty, Closed
+
+==============================================================================
