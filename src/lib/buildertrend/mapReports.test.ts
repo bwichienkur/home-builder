@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mapBuildertrendReports, pickProjectManager, weekdaysElapsedInMonth } from './mapReports';
+import { mapBuildertrendReports, pastDueTasksByJob, pickProjectManager, weekdaysElapsedInMonth } from './mapReports';
 
 const now = new Date(2026, 7, 19, 12);
 
@@ -198,5 +198,26 @@ describe('Buildertrend report mapper', () => {
     expect(mapped.weightedPipeline).toBe(700_000 + 360_000);
     expect(mapped.rollingRevenue12Mo).toBe(4_290_000);
     expect(mapped.projectedMarginPct).toBeGreaterThan(0);
+  });
+
+  it('counts past-due incomplete tasks from merged per-job Tasks/list payloads', () => {
+    const counts = pastDueTasksByJob(
+      {
+        tasks: {
+          tasks: [
+            { taskId: 1, jobId: 42673665, status: 0, endDate: '2026-08-12T00:00:00' },
+            { taskId: 2, jobId: 42673665, status: 0, endDate: '2026-08-18T00:00:00' },
+            { taskId: 3, jobId: 42673665, status: 0, endDate: '2026-09-01T00:00:00' },
+            { taskId: 4, jobId: 35918575, status: 0, endDate: '2026-07-01T00:00:00' },
+            { taskId: 5, jobId: 35918575, status: 1, endDate: '2026-07-01T00:00:00' },
+          ],
+        },
+      },
+      new Date(2026, 7, 22, 12),
+    );
+
+    expect(counts.get(42673665)).toBe(2);
+    expect(counts.get(35918575)).toBe(1);
+    expect([...counts.values()].reduce((sum, value) => sum + value, 0)).toBe(3);
   });
 });
