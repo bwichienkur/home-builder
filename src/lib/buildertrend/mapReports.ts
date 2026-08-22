@@ -404,23 +404,23 @@ function recentDailyLogsByJob(reports: BuildertrendReports) {
   return counts;
 }
 
-/** Matches Buildertrend SelectionStatusTag: Selected (2) or BuilderOverride (3) with maxSelected === 1. */
-export function isSelectionMarkedSelected(status: unknown): boolean {
+/** BT green (success) tags: Selected (2) and BuilderOverride (3) — UI label "Selected" or "Completed". */
+export function isSelectionGreenStatus(status: unknown): boolean {
   const rec = asRecord(status);
   if (!rec) return false;
   const code = num(pick(rec, 'status'));
-  const maxSelected = num(pick(rec, 'maxSelected'));
-  if (code === 2) return true;
-  if (code === 3 && maxSelected === 1) return true;
-  return false;
+  return code === 2 || code === 3;
 }
+
+/** @deprecated Use isSelectionGreenStatus */
+export const isSelectionMarkedSelected = isSelectionGreenStatus;
 
 export function pendingSelectionsByJob(reports: BuildertrendReports) {
   const counts = new Map<number, number>();
   const byJob = reports.selectionsByJob ?? {};
   for (const [jobId, rows] of Object.entries(byJob)) {
     if (!Array.isArray(rows)) continue;
-    const pending = rows.filter((row) => !isSelectionMarkedSelected(asRecord(row)?.status)).length;
+    const pending = rows.filter((row) => !isSelectionGreenStatus(asRecord(row)?.status)).length;
     counts.set(Number(jobId), pending);
   }
   return counts;
