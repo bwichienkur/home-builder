@@ -19,35 +19,43 @@ export function DrilldownPage() {
 
   if (!kind) {
     return (
-      <section className="owner-dash dash-drill-page" aria-label="Dashboard detail">
-        <p className="dash-status">Unknown detail link.</p>
-        <Link className="dash-drill-back" to="/">
-          ← Back to overview
-        </Link>
-      </section>
+      <div className="data-page home-page dash-drill-page">
+        <section className="owner-dash" aria-label="Dashboard detail">
+          <Link className="dash-drill-back" to="/">
+            ← Back to overview
+          </Link>
+          <p className="dash-status">Unknown detail link.</p>
+        </section>
+      </div>
     );
   }
 
   if (!dash || !data) {
-    return <p className="dash-status">Loading detail…</p>;
+    return (
+      <div className="data-page home-page dash-drill-page">
+        <p className="dash-status">Loading detail…</p>
+      </div>
+    );
   }
 
   return (
-    <section className="owner-dash dash-drill-page" aria-label={data.title}>
-      <header className="dash-drill-page-head">
-        <Link className="dash-drill-back" to="/">
-          ← Back to overview
-        </Link>
-        <div>
-          <p className="eyebrow">Olsen Custom Homes</p>
-          <h1>{data.title}</h1>
-          <p className="dash-drill-page-sub">{data.subtitle}</p>
-          {error ? <p className="dash-source">{error}</p> : null}
-        </div>
-      </header>
-      <article className="dash-card dash-drill-page-card">
-        <DrilldownTable data={data} />
-      </article>
-    </section>
+    <div className="data-page home-page dash-drill-page">
+      <section className="owner-dash" aria-label={data.title}>
+        <header className="dash-drill-page-head">
+          <Link className="dash-drill-back" to="/">
+            ← Back to overview
+          </Link>
+          <div className="dash-drill-page-titles">
+            <p className="eyebrow">Olsen Custom Homes</p>
+            <h1>{data.title}</h1>
+            <p className="dash-drill-page-sub">{data.subtitle}</p>
+            {error ? <p className="dash-source">{error}</p> : null}
+          </div>
+        </header>
+        <article className="dash-card dash-drill-page-card">
+          <DrilldownTable data={data} />
+        </article>
+      </section>
+    </div>
   );
 }
