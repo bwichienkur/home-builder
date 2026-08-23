@@ -8,6 +8,8 @@
     "server": "node server/index.js",
     "buildertrend:pull": "node -e \"import('./server/buildertrend/pull.js').then((m) => m.pullBuildertrend().then((p) => { console.log(JSON.stringify({ ok: true, authMethod: p.authMethod, pulledAt: p.pulledAt, statuses: p.statuses }, null, 2)); }).catch((e) => { console.error(e.message); process.exit(1); }))\"",
     "buildertrend:update-snapshot": "vitest run scripts/update-live-snapshot.spec.ts",
+    "pipedrive:pull": "node -e \"import('./server/pipedrive/pull.js').then((m) => m.pullPipedrive().then((p) => { console.log(JSON.stringify({ ok: true, pulledAt: p.pulledAt, company: p.reports.company, openDeals: p.reports.openDeals.length, wonDeals: p.reports.wonDeals.length }, null, 2)); }).catch((e) => { console.error(e.message); process.exit(1); }))\"",
+    "dashboard:update-snapshot": "vitest run scripts/update-live-snapshot.spec.ts",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest run"
