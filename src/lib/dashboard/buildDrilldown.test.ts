@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ProjectSnapshot } from '../buildertrend/types';
 import { buildLiveDrilldown, selectionStatusLabel } from './buildDrilldown';
-import { resolveDrilldown } from './resolveDrilldown';
+import { filterDrillRows, resolveDrilldown } from './resolveDrilldown';
 
 const sampleProjects: ProjectSnapshot[] = [
   {
@@ -159,5 +159,22 @@ describe('dashboard drilldown', () => {
     expect(resolved.rows.every((r) => r.jobName === 'Bennett')).toBe(true);
     expect(resolved.rows.map((r) => r.userName)).toEqual(['James Manford', 'Rob Dougherty']);
     expect(resolved.columns.map((c) => c.key)).toContain('pm');
+  });
+
+  it('filters detail rows by search query', () => {
+    const columns = [
+      { key: 'name', label: 'Project' },
+      { key: 'pm', label: 'PM' },
+      { key: 'wip', label: 'WIP', sum: 'usd' as const },
+    ];
+    const rows = [
+      { name: 'Bennett', pm: 'James Manford', wip: 600_000 },
+      { name: 'Ahigian', pm: 'Richard Linck', wip: 500_000 },
+    ];
+    expect(filterDrillRows(columns, rows, 'bennett')).toHaveLength(1);
+    expect(filterDrillRows(columns, rows, 'LINCK')).toHaveLength(1);
+    expect(filterDrillRows(columns, rows, '600,000')).toHaveLength(1);
+    expect(filterDrillRows(columns, rows, '   ')).toHaveLength(2);
+    expect(filterDrillRows(columns, rows, 'zzzz')).toHaveLength(0);
   });
 });
