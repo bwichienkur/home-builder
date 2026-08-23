@@ -73,5 +73,7 @@ describe('dashboard drilldown', () => {
     );
     expect(resolved.rows).toHaveLength(1);
     expect(resolved.rows[0]?.title).toBe('Test Deal');
+    expect(resolved.rows[0]?.value).toBe(1_000_000);
+    expect(resolved.columns.find((c) => c.key === 'value')?.sum).toBe('usd');
   });
 });

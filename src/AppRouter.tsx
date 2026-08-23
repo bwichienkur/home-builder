@@ -3,6 +3,7 @@ import { lazy, Suspense } from 'react';
 import { AuthCatchAll, LoginPage, RequireAuth } from './features/auth/LoginPage';
 import { AppShell } from './features/shell/AppShell';
 import { HomePage } from './features/home/HomePage';
+import { DrilldownPage } from './features/home/DrilldownPage';
 import { ClientsPage } from './features/crm/ClientsPage';
 import { VendorsPage } from './features/crm/VendorsPage';
 import { InventoryPage } from './features/crm/InventoryPage';
@@ -44,6 +45,7 @@ export function AppRouter() {
           }
         >
           <Route index element={<HomePage />} />
+          <Route path="dashboard/detail" element={<DrilldownPage />} />
           <Route
             path="build"
             element={
