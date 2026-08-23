@@ -52,6 +52,15 @@ export function sumDrillColumns(columns: DrillColumn[], rows: DrillRow[]): Recor
   return totals;
 }
 
+/** Case-insensitive match across formatted cell values for a detail grid search. */
+export function filterDrillRows(columns: DrillColumn[], rows: DrillRow[], query: string): DrillRow[] {
+  const needle = query.trim().toLowerCase();
+  if (!needle) return rows;
+  return rows.filter((row) =>
+    columns.some((col) => formatDrillCell(col, row[col.key]).toLowerCase().includes(needle)),
+  );
+}
+
 export function resolveDrilldown(
   kind: DrilldownKind,
   projects: ProjectSnapshot[],
