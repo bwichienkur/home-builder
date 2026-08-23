@@ -192,6 +192,7 @@ export function summarizeOwnerDashboard(input: {
         dailyLogLifetimePct: job.dailyLogLifetimePct,
         contractPrice: job.contractPrice,
         revenueToDate: job.revenueToDate,
+        wip: job.wip,
         pctComplete: job.contractPrice ? (job.revenueToDate / job.contractPrice) * 100 : 0,
         estCloseDate: job.estCloseDate,
         phase: job.phase,

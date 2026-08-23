@@ -145,22 +145,19 @@ export function OwnerDashboard() {
           <article key={card.id} className="dash-kpi">
             <p className="dash-kpi-title">{card.title}</p>
             <p className="dash-kpi-value">
-              {card.id === 'active' || card.id === 'wip' || card.id === 'contract' || card.id === 'revenue' ? (
+              {card.id === 'active' || card.id === 'contract' ? (
                 <DrillLink
                   to={href({
                     type: 'all-projects',
-                    label:
-                      card.id === 'active'
-                        ? 'Active projects'
-                        : card.id === 'wip'
-                          ? 'Projects contributing to WIP'
-                          : card.id === 'contract'
-                            ? 'Projects · contract value'
-                            : 'Projects · revenue to date',
+                    label: card.id === 'active' ? 'Active projects' : 'Projects · contract value',
                   })}
                 >
                   {card.display}
                 </DrillLink>
+              ) : card.id === 'wip' ? (
+                <DrillLink to={href({ type: 'wip-breakdown' })}>{card.display}</DrillLink>
+              ) : card.id === 'revenue' ? (
+                <DrillLink to={href({ type: 'revenue-breakdown' })}>{card.display}</DrillLink>
               ) : card.id === 'pipeline' ? (
                 <DrillLink to={href({ type: 'open-deals', label: 'Weighted pipeline · open deals' })}>
                   {card.display}

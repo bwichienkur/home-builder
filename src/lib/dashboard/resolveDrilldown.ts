@@ -181,27 +181,93 @@ export function resolveDrilldown(
       const ids = new Set(projects.filter((p) => p.pm === kind.pm).map((p) => numericJobId(p.id)));
       entries = entries.filter((l) => ids.has(String(l.jobId)));
     }
+    const pmByJob = new Map(projects.map((p) => [numericJobId(p.id), p.pm]));
+    entries = [...entries].sort((a, b) => {
+      const byJob = a.jobName.localeCompare(b.jobName);
+      if (byJob !== 0) return byJob;
+      return a.userName.localeCompare(b.userName);
+    });
     const total = entries.reduce((s, r) => s + r.dailyLogCount, 0);
+    const projectCount = new Set(entries.map((e) => e.jobId)).size;
     const title =
       kind.type === 'job-logs'
         ? `Daily logs (4 wk) · ${kind.jobName}`
         : kind.type === 'pm-logs'
           ? `Daily logs (4 wk) · ${kind.pm}`
           : 'Daily logs (4 wk · all jobs)';
+    const subtitle =
+      kind.type === 'pm-logs'
+        ? `${total} logs on ${projectCount} projects · each row is one person’s logs on one project in the rolling 4-week window (scorecard total = sum of Logs)`
+        : `${total} logs across ${entries.length} user×project rows in the rolling 4-week window`;
     return {
       title,
-      subtitle: `${total} logs across ${entries.length} user×job rows in the rolling 4-week window`,
+      subtitle,
       columns: [
-        { key: 'jobName', label: 'Job' },
-        { key: 'userName', label: 'User' },
+        { key: 'jobName', label: 'Project' },
+        { key: 'pm', label: 'PM' },
+        { key: 'userName', label: 'Logged by' },
         { key: 'dailyLogCount', label: 'Logs', align: 'right', sum: 'number' },
         { key: 'lastLogDate', label: 'Last log' },
       ],
       rows: entries.map((row) => ({
         jobName: row.jobName,
+        pm: pmByJob.get(String(row.jobId)) || '—',
         userName: row.userName || '—',
         dailyLogCount: row.dailyLogCount,
         lastLogDate: row.lastLogDate || '—',
+      })),
+    };
+  }
+
+  if (kind.type === 'wip-breakdown') {
+    const list = [...projects].sort((a, b) => b.wip - a.wip || a.name.localeCompare(b.name));
+    const totalWip = list.reduce((s, p) => s + p.wip, 0);
+    const totalContract = list.reduce((s, p) => s + p.contractPrice, 0);
+    const totalRevenue = list.reduce((s, p) => s + p.revenueToDate, 0);
+    return {
+      title: 'Total work in progress',
+      subtitle: `WIP = revised contract − amount invoiced · ${formatCompactUsd(totalContract)} contract − ${formatCompactUsd(totalRevenue)} invoiced = ${formatCompactUsd(totalWip)}`,
+      columns: [
+        { key: 'name', label: 'Project' },
+        { key: 'pm', label: 'PM' },
+        { key: 'contract', label: 'Revised contract', align: 'right', sum: 'usd' },
+        { key: 'revenue', label: 'Amount invoiced', align: 'right', sum: 'usd' },
+        { key: 'wip', label: 'WIP remaining', align: 'right', sum: 'usd' },
+        { key: 'calc', label: 'Calculation' },
+      ],
+      rows: list.map((p) => ({
+        name: p.name,
+        pm: p.pm,
+        contract: p.contractPrice,
+        revenue: p.revenueToDate,
+        wip: p.wip,
+        calc: `${formatCompactUsd(p.contractPrice)} − ${formatCompactUsd(p.revenueToDate)}`,
+      })),
+    };
+  }
+
+  if (kind.type === 'revenue-breakdown') {
+    const list = [...projects].sort((a, b) => b.revenueToDate - a.revenueToDate || a.name.localeCompare(b.name));
+    const totalRevenue = list.reduce((s, p) => s + p.revenueToDate, 0);
+    const totalContract = list.reduce((s, p) => s + p.contractPrice, 0);
+    return {
+      title: 'Revenue to date',
+      subtitle: `Sum of Buildertrend amount invoiced on these jobs · ${formatCompactUsd(totalRevenue)} of ${formatCompactUsd(totalContract)} revised contract`,
+      columns: [
+        { key: 'name', label: 'Project' },
+        { key: 'pm', label: 'PM' },
+        { key: 'contract', label: 'Revised contract', align: 'right', sum: 'usd' },
+        { key: 'revenue', label: 'Amount invoiced', align: 'right', sum: 'usd' },
+        { key: 'pct', label: '% invoiced', align: 'right' },
+        { key: 'wip', label: 'WIP remaining', align: 'right', sum: 'usd' },
+      ],
+      rows: list.map((p) => ({
+        name: p.name,
+        pm: p.pm,
+        contract: p.contractPrice,
+        revenue: p.revenueToDate,
+        pct: p.contractPrice ? `${Math.round((p.revenueToDate / p.contractPrice) * 100)}%` : '—',
+        wip: p.wip,
       })),
     };
   }
@@ -223,6 +289,8 @@ export function resolveDrilldown(
       { key: 'pendingSelections', label: 'Pending sel.', align: 'right', sum: 'number' },
       { key: 'pastDueTasks', label: 'Past due', align: 'right', sum: 'number' },
       { key: 'contract', label: 'Contract', align: 'right', sum: 'compactUsd' },
+      { key: 'revenue', label: 'Revenue', align: 'right', sum: 'compactUsd' },
+      { key: 'wip', label: 'WIP', align: 'right', sum: 'compactUsd' },
     ],
     rows: list.map((p) => ({
       name: p.name,
@@ -231,6 +299,8 @@ export function resolveDrilldown(
       pendingSelections: p.pendingSelections,
       pastDueTasks: p.pastDueTasks,
       contract: p.contractPrice,
+      revenue: p.revenueToDate,
+      wip: p.wip,
     })),
   };
 }
