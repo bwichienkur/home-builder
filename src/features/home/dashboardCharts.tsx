@@ -1,3 +1,4 @@
+import { Link, useNavigate } from 'react-router-dom';
 import type { PhaseSlice, PipelineStage, SalesPerformanceBar } from '../../lib/buildertrend/types';
 import { formatCompactUsd } from '../../lib/buildertrend/format';
 
@@ -31,13 +32,14 @@ export function Sparkline({ values, label }: { values: number[]; label: string }
 
 export function StatusDonut({
   slices,
-  onSliceClick,
-  onTotalClick,
+  hrefForSlice,
+  totalHref,
 }: {
   slices: PhaseSlice[];
-  onSliceClick?: (slice: PhaseSlice) => void;
-  onTotalClick?: () => void;
+  hrefForSlice?: (slice: PhaseSlice) => string;
+  totalHref?: string;
 }) {
+  const navigate = useNavigate();
   const size = 132;
   const cx = size / 2;
   const cy = size / 2;
@@ -52,6 +54,7 @@ export function StatusDonut({
         {slices.map((slice) => {
           const frac = total ? slice.pct / 100 : 0;
           const dash = frac * circ;
+          const href = hrefForSlice?.(slice);
           const el = (
             <circle
               key={slice.phase}
@@ -64,9 +67,9 @@ export function StatusDonut({
               strokeDasharray={`${dash} ${circ - dash}`}
               strokeDashoffset={-offset}
               transform={`rotate(-90 ${cx} ${cy})`}
-              className={onSliceClick ? 'dash-donut-seg is-clickable' : undefined}
-              onClick={onSliceClick ? () => onSliceClick(slice) : undefined}
-              style={onSliceClick ? { cursor: 'pointer' } : undefined}
+              className={href ? 'dash-donut-seg is-clickable' : undefined}
+              style={href ? { cursor: 'pointer' } : undefined}
+              onClick={href ? () => navigate(href) : undefined}
             />
           );
           offset += dash;
@@ -76,9 +79,9 @@ export function StatusDonut({
           x={cx}
           y={cy - 4}
           textAnchor="middle"
-          className={`dash-donut-total${onTotalClick ? ' is-clickable' : ''}`}
-          onClick={onTotalClick}
-          style={onTotalClick ? { cursor: 'pointer' } : undefined}
+          className={`dash-donut-total${totalHref ? ' is-clickable' : ''}`}
+          style={totalHref ? { cursor: 'pointer' } : undefined}
+          onClick={totalHref ? () => navigate(totalHref) : undefined}
         >
           {total}
         </text>
@@ -87,21 +90,24 @@ export function StatusDonut({
         </text>
       </svg>
       <ul className="dash-legend">
-        {slices.map((slice) => (
-          <li key={slice.phase}>
-            <span className="dash-swatch" style={{ background: PHASE_COLOR[slice.phase] }} />
-            {onSliceClick ? (
-              <button type="button" className="dash-drill-link" onClick={() => onSliceClick(slice)}>
-                {slice.label} · {slice.count}
-              </button>
-            ) : (
-              <span>
-                {slice.label} · {slice.count}
-              </span>
-            )}
-            <strong>{Math.round(slice.pct)}%</strong>
-          </li>
-        ))}
+        {slices.map((slice, index) => {
+          const href = hrefForSlice?.(slice);
+          return (
+            <li key={slice.phase}>
+              <span className="dash-swatch" style={{ background: PHASE_COLOR[slice.phase] }} />
+              {href ? (
+                <Link to={href} className="dash-drill-link">
+                  {index + 1}. {slice.label} · {slice.count}
+                </Link>
+              ) : (
+                <span>
+                  {index + 1}. {slice.label} · {slice.count}
+                </span>
+              )}
+              <strong>{Math.round(slice.pct)}%</strong>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
@@ -109,16 +115,17 @@ export function StatusDonut({
 
 export function PipelineFunnel({
   stages,
-  onStageClick,
+  hrefForStage,
 }: {
   stages: PipelineStage[];
-  onStageClick?: (stage: PipelineStage) => void;
+  hrefForStage?: (stage: PipelineStage) => string;
 }) {
   const max = Math.max(...stages.map((s) => s.value), 1);
   return (
     <ol className="dash-funnel">
       {stages.map((stage, index) => {
         const width = 30 + (stage.value / max) * 68;
+        const href = hrefForStage?.(stage);
         const content = (
           <>
             <span className="dash-funnel-label">
@@ -129,10 +136,10 @@ export function PipelineFunnel({
         );
         return (
           <li key={stage.id} style={{ width: `${width}%` }}>
-            {onStageClick ? (
-              <button type="button" className="dash-funnel-btn" onClick={() => onStageClick(stage)}>
+            {href ? (
+              <Link to={href} className="dash-funnel-btn">
                 {content}
-              </button>
+              </Link>
             ) : (
               content
             )}
@@ -145,15 +152,16 @@ export function PipelineFunnel({
 
 export function PerformanceBars({
   bars,
-  onBarClick,
+  hrefForBar,
 }: {
   bars: SalesPerformanceBar[];
-  onBarClick?: (bar: SalesPerformanceBar) => void;
+  hrefForBar?: (bar: SalesPerformanceBar) => string;
 }) {
   const max = Math.max(...bars.map((b) => b.value), 1);
   return (
     <div className="dash-bars" role="img" aria-label="Sales performance">
       {bars.map((bar) => {
+        const href = hrefForBar?.(bar);
         const content = (
           <>
             <div className="dash-bar-track">
@@ -163,10 +171,10 @@ export function PerformanceBars({
             <span>{bar.label}</span>
           </>
         );
-        return onBarClick ? (
-          <button key={bar.id} type="button" className="dash-bar dash-bar-btn" onClick={() => onBarClick(bar)}>
+        return href ? (
+          <Link key={bar.id} to={href} className="dash-bar dash-bar-btn">
             {content}
-          </button>
+          </Link>
         ) : (
           <div key={bar.id} className="dash-bar">
             {content}

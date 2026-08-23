@@ -3,7 +3,14 @@ import type { OwnerPhase, ProjectSnapshot } from '../buildertrend/types';
 import { numericJobId } from './buildDrilldown';
 import type { DrilldownKind, LiveDrilldown } from './drilldownTypes';
 
-export type DrillColumn = { key: string; label: string; align?: 'left' | 'right' };
+export type DrillColumn = {
+  key: string;
+  label: string;
+  align?: 'left' | 'right';
+  /** When set, values are numeric and a totals row sums this column. */
+  sum?: 'usd' | 'compactUsd' | 'number';
+};
+
 export type DrillRow = Record<string, string | number>;
 
 export type ResolvedDrilldown = {
@@ -22,6 +29,27 @@ function projectsFor(projects: ProjectSnapshot[], kind: DrilldownKind): ProjectS
   }
   if (kind.type === 'all-projects') return projects;
   return [];
+}
+
+export function formatDrillCell(col: DrillColumn, value: string | number | undefined): string {
+  if (value == null || value === '') return '—';
+  if (col.sum === 'usd' && typeof value === 'number') return formatUsd(value);
+  if (col.sum === 'compactUsd' && typeof value === 'number') return formatCompactUsd(value);
+  if (col.sum === 'number' && typeof value === 'number') return String(value);
+  return String(value);
+}
+
+/** Sum numeric columns marked with `sum` for the totals footer. */
+export function sumDrillColumns(columns: DrillColumn[], rows: DrillRow[]): Record<string, number> {
+  const totals: Record<string, number> = {};
+  for (const col of columns) {
+    if (!col.sum) continue;
+    totals[col.key] = rows.reduce((sum, row) => {
+      const value = row[col.key];
+      return sum + (typeof value === 'number' && Number.isFinite(value) ? value : 0);
+    }, 0);
+  }
+  return totals;
 }
 
 export function resolveDrilldown(
@@ -69,17 +97,17 @@ export function resolveDrilldown(
       columns: [
         { key: 'title', label: 'Deal' },
         { key: 'stageName', label: 'Pipedrive stage' },
-        { key: 'value', label: 'Value', align: 'right' },
+        { key: 'value', label: 'Value', align: 'right', sum: 'usd' },
         { key: 'probabilityPct', label: 'Prob %', align: 'right' },
-        { key: 'weightedValue', label: 'Weighted', align: 'right' },
+        { key: 'weightedValue', label: 'Weighted', align: 'right', sum: 'usd' },
         { key: 'expectedCloseDate', label: 'Expected close' },
       ],
       rows: deals.map((d) => ({
         title: d.title || `Deal ${d.id}`,
         stageName: d.stageName,
-        value: formatUsd(d.value),
+        value: d.value,
         probabilityPct: Math.round(d.probabilityPct),
-        weightedValue: formatUsd(d.weightedValue),
+        weightedValue: d.weightedValue,
         expectedCloseDate: d.expectedCloseDate || '—',
       })),
     };
@@ -166,7 +194,7 @@ export function resolveDrilldown(
       columns: [
         { key: 'jobName', label: 'Job' },
         { key: 'userName', label: 'User' },
-        { key: 'dailyLogCount', label: 'Logs', align: 'right' },
+        { key: 'dailyLogCount', label: 'Logs', align: 'right', sum: 'number' },
         { key: 'lastLogDate', label: 'Last log' },
       ],
       rows: entries.map((row) => ({
@@ -192,9 +220,9 @@ export function resolveDrilldown(
       { key: 'name', label: 'Project' },
       { key: 'pm', label: 'PM' },
       { key: 'phase', label: 'Phase' },
-      { key: 'pendingSelections', label: 'Pending sel.', align: 'right' },
-      { key: 'pastDueTasks', label: 'Past due', align: 'right' },
-      { key: 'contract', label: 'Contract', align: 'right' },
+      { key: 'pendingSelections', label: 'Pending sel.', align: 'right', sum: 'number' },
+      { key: 'pastDueTasks', label: 'Past due', align: 'right', sum: 'number' },
+      { key: 'contract', label: 'Contract', align: 'right', sum: 'compactUsd' },
     ],
     rows: list.map((p) => ({
       name: p.name,
@@ -202,7 +230,7 @@ export function resolveDrilldown(
       phase: phaseLabel(p.phase),
       pendingSelections: p.pendingSelections,
       pastDueTasks: p.pastDueTasks,
-      contract: formatCompactUsd(p.contractPrice),
+      contract: p.contractPrice,
     })),
   };
 }
