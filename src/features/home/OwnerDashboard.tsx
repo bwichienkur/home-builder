@@ -20,6 +20,11 @@ import {
 } from '../../lib/buildertrend';
 import type { BuildertrendLivePull } from '../../lib/buildertrend';
 import type { DateRangeId, JobStatus, OwnerDashboard, OwnerDashboardFilters, ProjectSnapshot } from '../../lib/buildertrend/types';
+import { LIVE_DRILLDOWN } from '../../lib/buildertrend/liveDrilldown';
+import { buildLiveDrilldown } from '../../lib/dashboard/buildDrilldown';
+import type { DrilldownKind, LiveDrilldown } from '../../lib/dashboard/drilldownTypes';
+import { resolveDrilldown } from '../../lib/dashboard/resolveDrilldown';
+import { DrilldownPanel, DrillLink } from './DrilldownPanel';
 import { PerformanceBars, PipelineFunnel, Sparkline, StatusDonut } from './dashboardCharts';
 import './dashboard.css';
 
@@ -83,6 +88,8 @@ export function OwnerDashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [livePull, setLivePull] = useState<BuildertrendLivePull | null>(() => loadStoredLivePull());
   const [sort, setSort] = useState<{ key: SortKey; dir: 'asc' | 'desc' }>({ key: 'name', dir: 'asc' });
+  const [drillKind, setDrillKind] = useState<DrilldownKind | null>(null);
+  const [liveDetail, setLiveDetail] = useState<LiveDrilldown | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -90,6 +97,12 @@ export function OwnerDashboard() {
     if (livePull) {
       try {
         setDash(dashboardFromPull(livePull, filters));
+        const built = buildLiveDrilldown({ buildertrend: livePull });
+        const hasDeals = Object.values(built.dealsByStage).some((rows) => rows.length > 0);
+        setLiveDetail({
+          ...built,
+          dealsByStage: hasDeals ? built.dealsByStage : LIVE_DRILLDOWN.dealsByStage,
+        });
       } catch {
         clearStoredLivePull();
         setLivePull(null);
@@ -104,6 +117,7 @@ export function OwnerDashboard() {
         if (!cancelled) {
           setDash(next);
           setError('');
+          setLiveDetail(null);
         }
       },
       async (reason: unknown) => {
@@ -132,6 +146,15 @@ export function OwnerDashboard() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!drillKind) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setDrillKind(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [drillKind]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -176,6 +199,12 @@ export function OwnerDashboard() {
       return String(av).localeCompare(String(bv)) * dir;
     });
   }, [dash, sort]);
+
+  const detail = liveDetail ?? LIVE_DRILLDOWN;
+  const drillData = useMemo(
+    () => (drillKind && dash ? resolveDrilldown(drillKind, dash.projects, detail) : null),
+    [drillKind, dash, detail],
+  );
 
   const toggleSort = (key: SortKey) => {
     setSort((prev) => (prev.key === key ? { key, dir: prev.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' }));
@@ -236,15 +265,39 @@ export function OwnerDashboard() {
         </div>
       </header>
 
-      <p className="dash-source">
-        {sourceLine(dash, Boolean(livePull), error)}
-      </p>
+      <p className="dash-source">{sourceLine(dash, Boolean(livePull), error)}</p>
 
       <div className="dash-kpis">
         {dash.kpis.map((card) => (
           <article key={card.id} className="dash-kpi">
             <p className="dash-kpi-title">{card.title}</p>
-            <p className="dash-kpi-value">{card.display}</p>
+            <p className="dash-kpi-value">
+              {card.id === 'active' || card.id === 'wip' || card.id === 'contract' || card.id === 'revenue' ? (
+                <DrillLink
+                  onClick={() =>
+                    setDrillKind({
+                      type: 'all-projects',
+                      label:
+                        card.id === 'active'
+                          ? 'Active projects'
+                          : card.id === 'wip'
+                            ? 'Projects contributing to WIP'
+                            : card.id === 'contract'
+                              ? 'Projects · contract value'
+                              : 'Projects · revenue to date',
+                    })
+                  }
+                >
+                  {card.display}
+                </DrillLink>
+              ) : card.id === 'pipeline' ? (
+                <DrillLink onClick={() => setDrillKind({ type: 'open-deals', label: 'Weighted pipeline · open deals' })}>
+                  {card.display}
+                </DrillLink>
+              ) : (
+                card.display
+              )}
+            </p>
             {card.detail ? <p className="dash-kpi-detail">{card.detail}</p> : null}
             <div className="dash-kpi-foot">
               <span className={`dash-delta ${deltaClass(card.delta)}`}>
@@ -260,7 +313,11 @@ export function OwnerDashboard() {
       <div className="dash-widgets">
         <article className="dash-card">
           <h2>Project status overview</h2>
-          <StatusDonut slices={dash.phases} />
+          <StatusDonut
+            slices={dash.phases}
+            onSliceClick={(slice) => setDrillKind({ type: 'phase-projects', phase: slice.phase, label: slice.label })}
+            onTotalClick={() => setDrillKind({ type: 'all-projects', label: 'All projects in overview' })}
+          />
         </article>
         <article className="dash-card">
           <h2>Average time metrics</h2>
@@ -294,13 +351,19 @@ export function OwnerDashboard() {
                 {dash.pmScorecard.map((row) => (
                   <tr key={row.pm}>
                     <td>{row.pm}</td>
-                    <td>{row.projects}</td>
+                    <td>
+                      <DrillLink onClick={() => setDrillKind({ type: 'pm-projects', pm: row.pm })}>{row.projects}</DrillLink>
+                    </td>
                     <td>{formatCompactUsd(row.wip)}</td>
                     <td>
-                      {row.dailyLogsRecentDone}/{row.dailyLogsRecentExpected}
+                      <DrillLink onClick={() => setDrillKind({ type: 'pm-logs', pm: row.pm })}>
+                        {row.dailyLogsRecentDone}/{row.dailyLogsRecentExpected}
+                      </DrillLink>
                     </td>
                     <td>{formatPct(row.dailyLogLifetimePct, 0)}</td>
-                    <td className={row.pastDueTasks ? 'is-alert' : undefined}>{row.pastDueTasks}</td>
+                    <td className={row.pastDueTasks ? 'is-alert' : undefined}>
+                      <DrillLink onClick={() => setDrillKind({ type: 'pm-past-due', pm: row.pm })}>{row.pastDueTasks}</DrillLink>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -309,11 +372,17 @@ export function OwnerDashboard() {
         </article>
         <article className="dash-card">
           <h2>Sales pipeline</h2>
-          <PipelineFunnel stages={dash.pipeline} />
+          <PipelineFunnel
+            stages={dash.pipeline}
+            onStageClick={(stage) => setDrillKind({ type: 'pipeline-stage', stageId: stage.id, label: stage.label })}
+          />
         </article>
         <article className="dash-card">
           <h2>Sales performance</h2>
-          <PerformanceBars bars={dash.salesPerformance} />
+          <PerformanceBars
+            bars={dash.salesPerformance}
+            onBarClick={() => setDrillKind({ type: 'expected-signing' })}
+          />
         </article>
       </div>
 
@@ -357,17 +426,37 @@ export function OwnerDashboard() {
               {rows.map((row) => (
                 <tr key={row.id}>
                   <td className="is-name">{row.name}</td>
-                  <td>{row.pm}</td>
-                  <td>{row.pendingSelections}</td>
-                  <td className={row.pastDueTasks ? 'is-alert' : undefined}>{row.pastDueTasks}</td>
+                  <td>
+                    <DrillLink onClick={() => setDrillKind({ type: 'pm-projects', pm: row.pm })}>{row.pm}</DrillLink>
+                  </td>
+                  <td>
+                    <DrillLink
+                      onClick={() => setDrillKind({ type: 'job-selections', jobId: row.id, jobName: row.name })}
+                    >
+                      {row.pendingSelections}
+                    </DrillLink>
+                  </td>
+                  <td className={row.pastDueTasks ? 'is-alert' : undefined}>
+                    <DrillLink onClick={() => setDrillKind({ type: 'job-past-due', jobId: row.id, jobName: row.name })}>
+                      {row.pastDueTasks}
+                    </DrillLink>
+                  </td>
                   <td>{formatUsd(row.contractPrice)}</td>
                   <td>{formatUsd(row.revenueToDate)}</td>
                   <td>{formatPct(row.pctComplete, 0)}</td>
                   <td>{formatCloseDate(row.estCloseDate)}</td>
-                  <td>{phaseLabel(row.phase)}</td>
+                  <td>
+                    <DrillLink
+                      onClick={() => setDrillKind({ type: 'phase-projects', phase: row.phase, label: phaseLabel(row.phase) })}
+                    >
+                      {phaseLabel(row.phase)}
+                    </DrillLink>
+                  </td>
                   <td className={row.totalSlip > 0 ? 'is-alert' : 'is-ok'}>{formatDays(row.totalSlip)}</td>
                   <td>
-                    {formatRecentLogs(row.dailyLogsRecentDone, row.dailyLogsRecentExpected)}
+                    <DrillLink onClick={() => setDrillKind({ type: 'job-logs', jobId: row.id, jobName: row.name })}>
+                      {formatRecentLogs(row.dailyLogsRecentDone, row.dailyLogsRecentExpected)}
+                    </DrillLink>
                   </td>
                   <td>{formatPct(row.dailyLogLifetimePct, 0)}</td>
                   <td>{row.slip.permit}</td>
@@ -382,22 +471,39 @@ export function OwnerDashboard() {
         </div>
         <footer className="dash-totals">
           <strong>Project breakout totals &amp; averages</strong>
-          <span>{dash.totals.jobCount} jobs</span>
+          <span>
+            <DrillLink onClick={() => setDrillKind({ type: 'all-projects', label: 'All projects' })}>
+              {dash.totals.jobCount} jobs
+            </DrillLink>
+          </span>
           <span>Avg. total slip {formatDays(dash.totals.avgTotalSlipDays)}</span>
           <span>Revenue to date {formatCompactUsd(dash.totals.totalRevenueToDate)}</span>
           <span>Contract {formatCompactUsd(dash.totals.totalContract)}</span>
           <span>WIP {formatCompactUsd(dash.totals.totalWip)}</span>
-          <span>Pending selections {dash.totals.pendingSelections}</span>
-          <span>Past due {dash.totals.pastDueTasks}</span>
           <span>
-            Daily logs (4 wk) {formatRecentLogs(
-              dash.projects.reduce((s, p) => s + (p.dailyLogsRecentDone ?? 0), 0),
-              dash.projects.reduce((s, p) => s + p.dailyLogsRecentExpected, 0),
-            )}
+            <DrillLink onClick={() => setDrillKind({ type: 'all-pending-selections' })}>
+              Pending selections {dash.totals.pendingSelections}
+            </DrillLink>
+          </span>
+          <span>
+            <DrillLink onClick={() => setDrillKind({ type: 'all-past-due' })}>
+              Past due {dash.totals.pastDueTasks}
+            </DrillLink>
+          </span>
+          <span>
+            <DrillLink onClick={() => setDrillKind({ type: 'all-logs' })}>
+              Daily logs (4 wk){' '}
+              {formatRecentLogs(
+                dash.projects.reduce((s, p) => s + (p.dailyLogsRecentDone ?? 0), 0),
+                dash.projects.reduce((s, p) => s + p.dailyLogsRecentExpected, 0),
+              )}
+            </DrillLink>
           </span>
           <span>Avg. daily log % (life) {formatPct(dash.totals.avgDailyLogLifetimePct, 0)}</span>
         </footer>
       </article>
+
+      <DrilldownPanel open={Boolean(drillKind)} data={drillData} onClose={() => setDrillKind(null)} />
     </section>
   );
 }

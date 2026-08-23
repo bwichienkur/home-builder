@@ -1,0 +1,212 @@
+import { formatCompactUsd, formatUsd, phaseLabel } from '../buildertrend/format';
+import type { OwnerPhase, ProjectSnapshot } from '../buildertrend/types';
+import { numericJobId } from './buildDrilldown';
+import type { DrilldownKind, LiveDrilldown } from './drilldownTypes';
+
+export type DrillColumn = { key: string; label: string; align?: 'left' | 'right' };
+export type DrillRow = Record<string, string | number>;
+
+export type ResolvedDrilldown = {
+  title: string;
+  subtitle: string;
+  columns: DrillColumn[];
+  rows: DrillRow[];
+};
+
+function projectsFor(projects: ProjectSnapshot[], kind: DrilldownKind): ProjectSnapshot[] {
+  if (kind.type === 'pm-projects' || kind.type === 'pm-logs' || kind.type === 'pm-past-due') {
+    return projects.filter((p) => p.pm === kind.pm);
+  }
+  if (kind.type === 'phase-projects') {
+    return projects.filter((p) => p.phase === kind.phase);
+  }
+  if (kind.type === 'all-projects') return projects;
+  return [];
+}
+
+export function resolveDrilldown(
+  kind: DrilldownKind,
+  projects: ProjectSnapshot[],
+  detail: LiveDrilldown | null,
+): ResolvedDrilldown {
+  if (kind.type === 'pipeline-stage' || kind.type === 'expected-signing' || kind.type === 'open-deals') {
+    let deals =
+      kind.type === 'pipeline-stage'
+        ? detail?.dealsByStage[kind.stageId] ?? []
+        : kind.type === 'open-deals'
+          ? [
+              ...(detail?.dealsByStage.lead ?? []),
+              ...(detail?.dealsByStage.proposal ?? []),
+              ...(detail?.dealsByStage['pre-contract'] ?? []),
+              ...(detail?.dealsByStage.contract ?? []),
+            ]
+          : [
+              ...(detail?.dealsByStage.contract ?? []),
+              ...(detail?.dealsByStage.lead ?? []),
+              ...(detail?.dealsByStage.proposal ?? []),
+              ...(detail?.dealsByStage['pre-contract'] ?? []),
+            ].filter((d) => d.expectedCloseDate || d.stageName === 'Contract Sent');
+    if (kind.type === 'expected-signing' && deals.length === 0) {
+      deals = detail?.dealsByStage.contract ?? [];
+    }
+    const total = deals.reduce((s, d) => s + d.value, 0);
+    const weighted = deals.reduce((s, d) => s + d.weightedValue, 0);
+    const title =
+      kind.type === 'expected-signing'
+        ? 'Expected signing value'
+        : kind.type === 'open-deals'
+          ? kind.label || 'Open Sales deals (weighted pipeline)'
+          : `${kind.label} deals`;
+    const subtitle =
+      kind.type === 'expected-signing'
+        ? `${deals.length} deals · ${formatCompactUsd(total)} (Contract Sent and/or expected close within ~90 days)`
+        : kind.type === 'open-deals'
+          ? `${deals.length} open deals · ${formatCompactUsd(total)} value · ${formatCompactUsd(weighted)} weighted`
+          : `${deals.length} deals · ${formatCompactUsd(total)} total value`;
+    return {
+      title,
+      subtitle,
+      columns: [
+        { key: 'title', label: 'Deal' },
+        { key: 'stageName', label: 'Pipedrive stage' },
+        { key: 'value', label: 'Value', align: 'right' },
+        { key: 'probabilityPct', label: 'Prob %', align: 'right' },
+        { key: 'weightedValue', label: 'Weighted', align: 'right' },
+        { key: 'expectedCloseDate', label: 'Expected close' },
+      ],
+      rows: deals.map((d) => ({
+        title: d.title || `Deal ${d.id}`,
+        stageName: d.stageName,
+        value: formatUsd(d.value),
+        probabilityPct: Math.round(d.probabilityPct),
+        weightedValue: formatUsd(d.weightedValue),
+        expectedCloseDate: d.expectedCloseDate || '—',
+      })),
+    };
+  }
+
+  if (kind.type === 'job-selections' || kind.type === 'all-pending-selections') {
+    const entries =
+      kind.type === 'job-selections'
+        ? detail?.selectionsByJobId[numericJobId(kind.jobId)] ?? []
+        : Object.values(detail?.selectionsByJobId ?? {}).flat();
+    const title = kind.type === 'job-selections' ? `Pending selections · ${kind.jobName}` : 'Pending selections (all jobs)';
+    return {
+      title,
+      subtitle: `${entries.length} selections not marked Selected/Completed`,
+      columns: [
+        { key: 'jobName', label: 'Job' },
+        { key: 'title', label: 'Selection' },
+        { key: 'statusLabel', label: 'Status' },
+        { key: 'category', label: 'Category' },
+        { key: 'location', label: 'Location' },
+        { key: 'deadline', label: 'Deadline' },
+      ],
+      rows: entries.map((row) => ({
+        jobName: row.jobName,
+        title: row.title || `Selection ${row.id}`,
+        statusLabel: row.statusLabel,
+        category: row.category || '—',
+        location: row.location || '—',
+        deadline: row.deadline || '—',
+      })),
+    };
+  }
+
+  if (kind.type === 'job-past-due' || kind.type === 'all-past-due' || kind.type === 'pm-past-due') {
+    let entries = Object.values(detail?.pastDueByJobId ?? {}).flat();
+    if (kind.type === 'job-past-due') {
+      entries = detail?.pastDueByJobId[numericJobId(kind.jobId)] ?? [];
+    } else if (kind.type === 'pm-past-due') {
+      const ids = new Set(projects.filter((p) => p.pm === kind.pm).map((p) => numericJobId(p.id)));
+      entries = entries.filter((t) => ids.has(String(t.jobId)));
+    }
+    const title =
+      kind.type === 'job-past-due'
+        ? `Past-due tasks · ${kind.jobName}`
+        : kind.type === 'pm-past-due'
+          ? `Past-due tasks · ${kind.pm}`
+          : 'Past-due tasks (all jobs)';
+    return {
+      title,
+      subtitle: `${entries.length} incomplete tasks with due date before today`,
+      columns: [
+        { key: 'jobName', label: 'Job' },
+        { key: 'title', label: 'Task' },
+        { key: 'endDate', label: 'Due' },
+        { key: 'assignedTo', label: 'Assigned' },
+      ],
+      rows: entries.map((row) => ({
+        jobName: row.jobName,
+        title: row.title || `Task ${row.taskId}`,
+        endDate: row.endDate,
+        assignedTo: row.assignedTo || '—',
+      })),
+    };
+  }
+
+  if (kind.type === 'job-logs' || kind.type === 'pm-logs' || kind.type === 'all-logs') {
+    let entries = Object.values(detail?.logsByJobId ?? {}).flat();
+    if (kind.type === 'job-logs') {
+      entries = detail?.logsByJobId[numericJobId(kind.jobId)] ?? [];
+    } else if (kind.type === 'pm-logs') {
+      const ids = new Set(projects.filter((p) => p.pm === kind.pm).map((p) => numericJobId(p.id)));
+      entries = entries.filter((l) => ids.has(String(l.jobId)));
+    }
+    const total = entries.reduce((s, r) => s + r.dailyLogCount, 0);
+    const title =
+      kind.type === 'job-logs'
+        ? `Daily logs (4 wk) · ${kind.jobName}`
+        : kind.type === 'pm-logs'
+          ? `Daily logs (4 wk) · ${kind.pm}`
+          : 'Daily logs (4 wk · all jobs)';
+    return {
+      title,
+      subtitle: `${total} logs across ${entries.length} user×job rows in the rolling 4-week window`,
+      columns: [
+        { key: 'jobName', label: 'Job' },
+        { key: 'userName', label: 'User' },
+        { key: 'dailyLogCount', label: 'Logs', align: 'right' },
+        { key: 'lastLogDate', label: 'Last log' },
+      ],
+      rows: entries.map((row) => ({
+        jobName: row.jobName,
+        userName: row.userName || '—',
+        dailyLogCount: row.dailyLogCount,
+        lastLogDate: row.lastLogDate || '—',
+      })),
+    };
+  }
+
+  const list = projectsFor(projects, kind);
+  const title =
+    kind.type === 'phase-projects'
+      ? `${kind.label} projects`
+      : kind.type === 'pm-projects'
+        ? `Projects · ${kind.pm}`
+        : kind.label || 'Projects';
+  return {
+    title,
+    subtitle: `${list.length} projects in this view`,
+    columns: [
+      { key: 'name', label: 'Project' },
+      { key: 'pm', label: 'PM' },
+      { key: 'phase', label: 'Phase' },
+      { key: 'pendingSelections', label: 'Pending sel.', align: 'right' },
+      { key: 'pastDueTasks', label: 'Past due', align: 'right' },
+      { key: 'contract', label: 'Contract', align: 'right' },
+    ],
+    rows: list.map((p) => ({
+      name: p.name,
+      pm: p.pm,
+      phase: phaseLabel(p.phase),
+      pendingSelections: p.pendingSelections,
+      pastDueTasks: p.pastDueTasks,
+      contract: formatCompactUsd(p.contractPrice),
+    })),
+  };
+}
+
+export function phaseDrill(phase: OwnerPhase, label: string): DrilldownKind {
+  return { type: 'phase-projects', phase, label };
+}

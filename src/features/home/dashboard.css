@@ -498,3 +498,127 @@
     font-size: 1.5rem;
   }
 }
+
+.dash-drill-link,
+.dash-funnel-btn {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: inherit;
+}
+
+.dash-drill-link {
+  color: var(--accent, #0058a3);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-weight: 700;
+}
+
+.dash-drill-link:hover,
+.dash-funnel-btn:hover {
+  opacity: 0.85;
+}
+
+.dash-funnel-btn {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.dash-bar-btn {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.dash-bar-btn:hover {
+  opacity: 0.85;
+}
+
+.dash-bar-btn strong {
+  color: var(--accent, #0058a3);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.dash-donut-total.is-clickable {
+  fill: var(--accent, #0058a3);
+  text-decoration: underline;
+}
+
+.dash-drill-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: rgba(18, 24, 38, 0.45);
+  display: grid;
+  place-items: end center;
+  padding: 12px;
+}
+
+.dash-drill-panel {
+  width: min(1100px, 100%);
+  max-height: min(88vh, 900px);
+  background: #fff;
+  border-radius: 16px 16px 12px 12px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.22);
+  display: grid;
+  grid-template-rows: auto 1fr;
+  overflow: hidden;
+}
+
+.dash-drill-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.dash-drill-head h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.dash-drill-head p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.dash-drill-close {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 14px;
+  background: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.dash-drill-body {
+  padding: 0 8px 12px;
+}
+
+.dash-drill-empty {
+  padding: 24px 16px;
+  color: var(--muted);
+}
+
+.dash-table th.is-num,
+.dash-table td.is-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}

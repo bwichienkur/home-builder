@@ -3,6 +3,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { mapBuildertrendReports } from '../src/lib/buildertrend/mapReports';
 import { LIVE_TARGET_MARGIN_PCT } from '../src/lib/buildertrend/liveSnapshot';
+import { buildLiveDrilldown } from '../src/lib/dashboard/buildDrilldown';
 import { mapPipedriveDeals, mergeSalesFromPipedrive } from '../src/lib/pipedrive/mapDeals';
 
 function jobToTs(job: Record<string, unknown>, indent: string) {
@@ -91,6 +92,30 @@ export const LIVE_SNAPSHOT_AT = '${pulledDate}';
 `;
 
     writeFileSync(path.join(process.cwd(), 'src/lib/buildertrend/liveSnapshot.ts'), file);
+
+    const pdCache = existsSync(pdPath)
+      ? (JSON.parse(readFileSync(pdPath, 'utf8')) as { pulledAt: string; reports: unknown })
+      : null;
+    const drilldown = buildLiveDrilldown({
+      buildertrend: cache,
+      pipedrive: pdCache,
+      now: new Date(cache.pulledAt),
+    });
+    const drillFile = `import type { LiveDrilldown } from '../dashboard/drilldownTypes';
+
+/**
+ * Compact drill-down rows for clickable dashboard numbers.
+ * Regenerated with liveSnapshot via \`npm run buildertrend:update-snapshot\`.
+ * Pending selections exclude green Selected/Completed (status 2 and 3).
+ * Past due = incomplete tasks with due date before pull day.
+ * Daily logs = user×job rows from the rolling 4-week window.
+ */
+export const LIVE_DRILLDOWN: LiveDrilldown = ${JSON.stringify(drilldown, null, 2)};
+`;
+    writeFileSync(path.join(process.cwd(), 'src/lib/buildertrend/liveDrilldown.ts'), drillFile);
+    expect(Object.keys(drilldown.selectionsByJobId).length).toBeGreaterThan(0);
+    expect(Object.values(drilldown.dealsByStage).some((rows) => rows.length > 0)).toBe(true);
+
     expect(mapped.weightedPipeline ?? 0).toBeGreaterThan(0);
     expect(mapped.jobs.some((j) => j.pastDueTasks > 0 || j.pendingSelections > 0)).toBe(true);
   });
