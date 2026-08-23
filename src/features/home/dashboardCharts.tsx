@@ -29,7 +29,15 @@ export function Sparkline({ values, label }: { values: number[]; label: string }
   );
 }
 
-export function StatusDonut({ slices }: { slices: PhaseSlice[] }) {
+export function StatusDonut({
+  slices,
+  onSliceClick,
+  onTotalClick,
+}: {
+  slices: PhaseSlice[];
+  onSliceClick?: (slice: PhaseSlice) => void;
+  onTotalClick?: () => void;
+}) {
   const size = 132;
   const cx = size / 2;
   const cy = size / 2;
@@ -56,12 +64,22 @@ export function StatusDonut({ slices }: { slices: PhaseSlice[] }) {
               strokeDasharray={`${dash} ${circ - dash}`}
               strokeDashoffset={-offset}
               transform={`rotate(-90 ${cx} ${cy})`}
+              className={onSliceClick ? 'dash-donut-seg is-clickable' : undefined}
+              onClick={onSliceClick ? () => onSliceClick(slice) : undefined}
+              style={onSliceClick ? { cursor: 'pointer' } : undefined}
             />
           );
           offset += dash;
           return el;
         })}
-        <text x={cx} y={cy - 4} textAnchor="middle" className="dash-donut-total">
+        <text
+          x={cx}
+          y={cy - 4}
+          textAnchor="middle"
+          className={`dash-donut-total${onTotalClick ? ' is-clickable' : ''}`}
+          onClick={onTotalClick}
+          style={onTotalClick ? { cursor: 'pointer' } : undefined}
+        >
           {total}
         </text>
         <text x={cx} y={cy + 14} textAnchor="middle" className="dash-donut-sub">
@@ -72,7 +90,15 @@ export function StatusDonut({ slices }: { slices: PhaseSlice[] }) {
         {slices.map((slice) => (
           <li key={slice.phase}>
             <span className="dash-swatch" style={{ background: PHASE_COLOR[slice.phase] }} />
-            <span>{slice.label}</span>
+            {onSliceClick ? (
+              <button type="button" className="dash-drill-link" onClick={() => onSliceClick(slice)}>
+                {slice.label} · {slice.count}
+              </button>
+            ) : (
+              <span>
+                {slice.label} · {slice.count}
+              </span>
+            )}
             <strong>{Math.round(slice.pct)}%</strong>
           </li>
         ))}
@@ -81,18 +107,35 @@ export function StatusDonut({ slices }: { slices: PhaseSlice[] }) {
   );
 }
 
-export function PipelineFunnel({ stages }: { stages: PipelineStage[] }) {
+export function PipelineFunnel({
+  stages,
+  onStageClick,
+}: {
+  stages: PipelineStage[];
+  onStageClick?: (stage: PipelineStage) => void;
+}) {
   const max = Math.max(...stages.map((s) => s.value), 1);
   return (
     <ol className="dash-funnel">
       {stages.map((stage, index) => {
-          const width = 30 + (stage.value / max) * 68;
-        return (
-          <li key={stage.id} style={{ width: `${width}%` }}>
+        const width = 30 + (stage.value / max) * 68;
+        const content = (
+          <>
             <span className="dash-funnel-label">
               {index + 1}. {stage.label}
             </span>
             <strong>{formatCompactUsd(stage.value)}</strong>
+          </>
+        );
+        return (
+          <li key={stage.id} style={{ width: `${width}%` }}>
+            {onStageClick ? (
+              <button type="button" className="dash-funnel-btn" onClick={() => onStageClick(stage)}>
+                {content}
+              </button>
+            ) : (
+              content
+            )}
           </li>
         );
       })}
@@ -100,19 +143,36 @@ export function PipelineFunnel({ stages }: { stages: PipelineStage[] }) {
   );
 }
 
-export function PerformanceBars({ bars }: { bars: SalesPerformanceBar[] }) {
+export function PerformanceBars({
+  bars,
+  onBarClick,
+}: {
+  bars: SalesPerformanceBar[];
+  onBarClick?: (bar: SalesPerformanceBar) => void;
+}) {
   const max = Math.max(...bars.map((b) => b.value), 1);
   return (
     <div className="dash-bars" role="img" aria-label="Sales performance">
-      {bars.map((bar) => (
-        <div key={bar.id} className="dash-bar">
-          <div className="dash-bar-track">
-            <div className="dash-bar-fill" style={{ height: `${Math.max(8, (bar.value / max) * 100)}%` }} />
+      {bars.map((bar) => {
+        const content = (
+          <>
+            <div className="dash-bar-track">
+              <div className="dash-bar-fill" style={{ height: `${Math.max(8, (bar.value / max) * 100)}%` }} />
+            </div>
+            <strong>{formatCompactUsd(bar.value)}</strong>
+            <span>{bar.label}</span>
+          </>
+        );
+        return onBarClick ? (
+          <button key={bar.id} type="button" className="dash-bar dash-bar-btn" onClick={() => onBarClick(bar)}>
+            {content}
+          </button>
+        ) : (
+          <div key={bar.id} className="dash-bar">
+            {content}
           </div>
-          <strong>{formatCompactUsd(bar.value)}</strong>
-          <span>{bar.label}</span>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
