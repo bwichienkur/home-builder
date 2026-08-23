@@ -1,10 +1,15 @@
 import type { OwnerJob, PipelineStage, SalesPerformanceBar, TimeMetric } from './types';
 
 /**
- * Read-only Olsen Custom Homes snapshot from Buildertrend.
- * Regenerate: BUILDERTREND_COOKIE=… npm run buildertrend:pull && npm run buildertrend:update-snapshot
- * Weighted pipeline = Lead Opportunities confidence × estimatedRevenueMin.
+ * Read-only Olsen Custom Homes snapshot from Buildertrend (+ Pipedrive when available).
+ * Regenerate:
+ *   BUILDERTREND_COOKIE=… npm run buildertrend:pull
+ *   PIPEDRIVE_API_TOKEN=… npm run pipedrive:pull
+ *   npm run buildertrend:update-snapshot
+ * Jobs / WIP / logs / tasks / selections = Buildertrend.
+ * Sales funnel + weighted pipeline from Pipedrive Sales pipeline (pulled 2026-08-23T10:29:12.296Z).
  * Past due = Tasks Status includes Not completed + due date before today.
+ * Pending selections = per job, exclude green Selected/Completed (status 2 and 3).
  * Test job "**** Tate TEST JOB" omitted.
  */
 const OPEN_JOBS: OwnerJob[] = [
@@ -435,22 +440,22 @@ const OPEN_JOBS: OwnerJob[] = [
 
 export const LIVE_JOBS: OwnerJob[] = OPEN_JOBS;
 
-/** Lead Opportunities open estimated-revenue-min totals by stage (proposal+ left empty when BT has no buckets). */
+/** Sales funnel: Pipedrive Sales stages when PD cache present, else BT Lead Opportunities. */
 export const LIVE_PIPELINE: PipelineStage[] = [
   {
     "id": "lead",
     "label": "Lead",
-    "value": 46100000
+    "value": 36880628
   },
   {
     "id": "proposal",
     "label": "Proposal",
-    "value": 0
+    "value": 2328721
   },
   {
     "id": "pre-contract",
     "label": "Pre-Contract",
-    "value": 0
+    "value": 8641767
   },
   {
     "id": "contract",
@@ -460,7 +465,7 @@ export const LIVE_PIPELINE: PipelineStage[] = [
   {
     "id": "closed",
     "label": "Closed / Won",
-    "value": 0
+    "value": 60572032
   }
 ];
 
@@ -478,7 +483,7 @@ export const LIVE_SALES_PERFORMANCE: SalesPerformanceBar[] = [
   {
     "id": "signing",
     "label": "Expected Signing Value",
-    "value": 46100000
+    "value": 0
   }
 ];
 
@@ -506,6 +511,6 @@ export const LIVE_TIME_METRICS: TimeMetric[] = [
 export const LIVE_TARGET_MARGIN_PCT = 15;
 export const LIVE_PROJECTED_MARGIN_PCT = 34.2;
 export const LIVE_ROLLING_REVENUE_12MO = 16248558.739999998;
-/** Sales → Lead Opportunities: sum(confidence × estimatedRevenueMin). */
-export const LIVE_WEIGHTED_PIPELINE = 21428500;
+/** Weighted pipeline: Pipedrive value × stage probability when PD cache present. */
+export const LIVE_WEIGHTED_PIPELINE = 10280650;
 export const LIVE_SNAPSHOT_AT = '2026-08-22T14:13:10.425Z';
