@@ -82,6 +82,8 @@ export function parseDrilldownKind(params: URLSearchParams): DrilldownKind | nul
     case 'all-past-due':
     case 'all-logs':
     case 'expected-signing':
+    case 'wip-breakdown':
+    case 'revenue-breakdown':
       return { type };
     case 'open-deals':
     case 'all-projects':

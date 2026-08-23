@@ -112,6 +112,8 @@ export type ProjectSnapshot = {
   dailyLogLifetimePct: number;
   contractPrice: number;
   revenueToDate: number;
+  /** Remaining production value: revised contract − amount invoiced (BT WIP). */
+  wip: number;
   pctComplete: number;
   estCloseDate: string;
   phase: OwnerPhase;
