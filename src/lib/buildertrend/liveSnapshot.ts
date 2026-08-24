@@ -49,7 +49,7 @@ const OPEN_JOBS: OwnerJob[] = [
     estCloseDate: "2026-09-03",
     openedAt: "2025-05-27",
     slip: {"permit":0,"selections":0,"purchasing":0,"construction":0},
-    notes: "159 daily logs · BT 84% complete · Site Work started (Construction) · Foundation started (daily logs required) · Last daily log 2026-08-21 · 159 daily logs",
+    notes: "159 daily logs · BT 86% complete · Site Work started (Construction) · Foundation started (daily logs required) · Last daily log 2026-08-21 · 159 daily logs",
   },
   {
     id: "bt-40228562",
@@ -68,12 +68,12 @@ const OPEN_JOBS: OwnerJob[] = [
     estCloseDate: "2026-09-03",
     openedAt: "2025-05-14",
     slip: {"permit":0,"selections":0,"purchasing":0,"construction":0},
-    notes: "233 daily logs · BT 81% complete · Site Work started (Construction) · Foundation started (daily logs required) · Last daily log 2026-08-21 · 233 daily logs",
+    notes: "233 daily logs · BT 83% complete · Site Work started (Construction) · Foundation started (daily logs required) · Last daily log 2026-08-21 · 233 daily logs",
   },
   {
     id: "bt-42790290",
     name: "Bucciarelli",
-    pm: "Richard Linck",
+    pm: "Unassigned",
     status: "open",
     phase: "design",
     pendingSelections: 67,
@@ -91,7 +91,7 @@ const OPEN_JOBS: OwnerJob[] = [
   {
     id: "bt-42615310",
     name: "Chahlavi",
-    pm: "Adam Horseman",
+    pm: "Unassigned",
     status: "open",
     phase: "design",
     pendingSelections: 17,
@@ -105,7 +105,7 @@ const OPEN_JOBS: OwnerJob[] = [
     estCloseDate: "2027-02-22",
     openedAt: "2026-03-25",
     slip: {"permit":0,"selections":0,"purchasing":0,"construction":0},
-    notes: "7 daily logs · BT 4% complete · Site Work not started (Design / Permitting) · Foundation not started (daily logs not required) · Last daily log 2026-08-21 · 7 daily logs",
+    notes: "7 daily logs · BT 5% complete · Site Work not started (Design / Permitting) · Foundation not started (daily logs not required) · Last daily log 2026-08-21 · 7 daily logs",
   },
   {
     id: "bt-40214880",
@@ -116,7 +116,7 @@ const OPEN_JOBS: OwnerJob[] = [
     pendingSelections: 12,
     pastDueTasks: 16,
     dailyLogsRecentDone: 21,
-    dailyLogsTotal: 111,
+    dailyLogsTotal: 113,
     foundationStarted: true,
     contractPrice: 1554603,
     revenueToDate: 955406.37,
@@ -124,7 +124,7 @@ const OPEN_JOBS: OwnerJob[] = [
     estCloseDate: "2026-10-29",
     openedAt: "2025-05-09",
     slip: {"permit":0,"selections":0,"purchasing":0,"construction":0},
-    notes: "111 daily logs · BT 43% complete · Site Work started (Construction) · Foundation started (daily logs required) · Last daily log 2026-08-21 · 111 daily logs",
+    notes: "113 daily logs · BT 43% complete · Site Work started (Construction) · Foundation started (daily logs required) · Last daily log 2026-08-24 · 113 daily logs",
   },
   {
     id: "bt-42969582",
@@ -132,8 +132,8 @@ const OPEN_JOBS: OwnerJob[] = [
     pm: "Adam Horseman",
     status: "open",
     phase: "construction",
-    pendingSelections: 2,
-    pastDueTasks: 27,
+    pendingSelections: 3,
+    pastDueTasks: 22,
     dailyLogsRecentDone: 19,
     dailyLogsTotal: 66,
     foundationStarted: true,
@@ -143,12 +143,12 @@ const OPEN_JOBS: OwnerJob[] = [
     estCloseDate: "2026-12-24",
     openedAt: "2026-03-12",
     slip: {"permit":0,"selections":0,"purchasing":0,"construction":0},
-    notes: "66 daily logs · BT 35% complete · Site Work started (Construction) · Foundation started (daily logs required) · Last daily log 2026-08-24 · 66 daily logs",
+    notes: "66 daily logs · BT 41% complete · Site Work started (Construction) · Foundation started (daily logs required) · Last daily log 2026-08-24 · 66 daily logs",
   },
   {
     id: "bt-35764730",
     name: "Goumas",
-    pm: "Paul Dimeglio",
+    pm: "Unassigned",
     status: "open",
     phase: "design",
     pendingSelections: 54,
@@ -166,7 +166,7 @@ const OPEN_JOBS: OwnerJob[] = [
   {
     id: "bt-44516256",
     name: "Graham",
-    pm: "Adam Horseman",
+    pm: "Unassigned",
     status: "open",
     phase: "design",
     pendingSelections: 67,
@@ -208,7 +208,7 @@ const OPEN_JOBS: OwnerJob[] = [
     pendingSelections: 0,
     pastDueTasks: 33,
     dailyLogsRecentDone: 23,
-    dailyLogsTotal: 256,
+    dailyLogsTotal: 258,
     foundationStarted: true,
     contractPrice: 1513789.57,
     revenueToDate: 995399.09,
@@ -216,7 +216,7 @@ const OPEN_JOBS: OwnerJob[] = [
     estCloseDate: "2026-09-03",
     openedAt: "2025-02-17",
     slip: {"permit":0,"selections":0,"purchasing":0,"construction":0},
-    notes: "256 daily logs · BT 90% complete · Site Work started (Construction) · Foundation started (daily logs required) · Last daily log 2026-08-21 · 256 daily logs",
+    notes: "258 daily logs · BT 90% complete · Site Work started (Construction) · Foundation started (daily logs required) · Last daily log 2026-08-24 · 258 daily logs",
   },
   {
     id: "bt-41118068",
@@ -240,7 +240,7 @@ const OPEN_JOBS: OwnerJob[] = [
   {
     id: "bt-45667667",
     name: "Morris",
-    pm: "Adam Horseman",
+    pm: "Unassigned",
     status: "open",
     phase: "design",
     pendingSelections: 67,
@@ -257,7 +257,7 @@ const OPEN_JOBS: OwnerJob[] = [
   {
     id: "bt-38319441",
     name: "Moura",
-    pm: "Richard Linck",
+    pm: "Unassigned",
     status: "open",
     phase: "design",
     pendingSelections: 19,
@@ -301,7 +301,7 @@ const OPEN_JOBS: OwnerJob[] = [
     pendingSelections: 1,
     pastDueTasks: 10,
     dailyLogsRecentDone: 18,
-    dailyLogsTotal: 55,
+    dailyLogsTotal: 56,
     foundationStarted: true,
     contractPrice: 1290391.99,
     revenueToDate: 539665.65,
@@ -309,12 +309,12 @@ const OPEN_JOBS: OwnerJob[] = [
     estCloseDate: "2026-10-20",
     openedAt: "2025-09-29",
     slip: {"permit":0,"selections":0,"purchasing":0,"construction":0},
-    notes: "55 daily logs · BT 51% complete · Site Work started (Construction) · Foundation started (daily logs required) · Last daily log 2026-08-21 · 55 daily logs",
+    notes: "56 daily logs · BT 52% complete · Site Work started (Construction) · Foundation started (daily logs required) · Last daily log 2026-08-24 · 56 daily logs",
   },
   {
     id: "bt-45275922",
     name: "Olmstead",
-    pm: "Paul Dimeglio",
+    pm: "Unassigned",
     status: "open",
     phase: "design",
     pendingSelections: 67,
@@ -333,7 +333,7 @@ const OPEN_JOBS: OwnerJob[] = [
   {
     id: "bt-45118977",
     name: "Peters",
-    pm: "Paul Dimeglio",
+    pm: "Unassigned",
     status: "open",
     phase: "design",
     pendingSelections: 66,
@@ -364,12 +364,12 @@ const OPEN_JOBS: OwnerJob[] = [
     estCloseDate: "2026-09-10",
     openedAt: "2025-08-21",
     slip: {"permit":0,"selections":0,"purchasing":0,"construction":0},
-    notes: "126 daily logs · BT 71% complete · Site Work started (Construction) · Foundation started (daily logs required) · Last daily log 2026-08-21 · 126 daily logs",
+    notes: "126 daily logs · BT 72% complete · Site Work started (Construction) · Foundation started (daily logs required) · Last daily log 2026-08-21 · 126 daily logs",
   },
   {
     id: "bt-43331519",
     name: "Shagnea",
-    pm: "Richard Linck",
+    pm: "Unassigned",
     status: "open",
     phase: "design",
     pendingSelections: 67,
@@ -393,7 +393,7 @@ const OPEN_JOBS: OwnerJob[] = [
     pendingSelections: 0,
     pastDueTasks: 48,
     dailyLogsRecentDone: 21,
-    dailyLogsTotal: 134,
+    dailyLogsTotal: 135,
     foundationStarted: true,
     contractPrice: 1508343.5,
     revenueToDate: 0,
@@ -401,7 +401,7 @@ const OPEN_JOBS: OwnerJob[] = [
     estCloseDate: "2026-08-27",
     openedAt: "2026-01-02",
     slip: {"permit":0,"selections":0,"purchasing":0,"construction":0},
-    notes: "134 daily logs · BT 95% complete · WIP report had no amount invoiced · Site Work started (Construction) · Foundation started (daily logs required) · Last daily log 2026-08-21 · 134 daily logs",
+    notes: "135 daily logs · BT 93% complete · WIP report had no amount invoiced · Site Work started (Construction) · Foundation started (daily logs required) · Last daily log 2026-08-24 · 135 daily logs",
   },
   {
     id: "bt-38397739",
@@ -439,7 +439,7 @@ const OPEN_JOBS: OwnerJob[] = [
     estCloseDate: "2026-09-03",
     openedAt: "2025-07-15",
     slip: {"permit":0,"selections":0,"purchasing":0,"construction":0},
-    notes: "164 daily logs · BT 150% complete · Site Work started (Construction) · Foundation started (daily logs required) · Last daily log 2026-08-20 · 164 daily logs",
+    notes: "164 daily logs · BT 153% complete · Site Work started (Construction) · Foundation started (daily logs required) · Last daily log 2026-08-20 · 164 daily logs",
   },
 ];
 
@@ -514,8 +514,8 @@ export const LIVE_TIME_METRICS: TimeMetric[] = [
 ];
 
 export const LIVE_TARGET_MARGIN_PCT = 15;
-export const LIVE_PROJECTED_MARGIN_PCT = 34.2;
-export const LIVE_ROLLING_REVENUE_12MO = 16248558.739999998;
+export const LIVE_PROJECTED_MARGIN_PCT = 33.3;
+export const LIVE_ROLLING_REVENUE_12MO = 16409316.15;
 /** Weighted pipeline: Pipedrive value × stage probability when PD cache present. */
 export const LIVE_WEIGHTED_PIPELINE = 10280650;
-export const LIVE_SNAPSHOT_AT = '2026-08-24T13:20:52.666Z';
+export const LIVE_SNAPSHOT_AT = '2026-08-24T16:29:18.117Z';
