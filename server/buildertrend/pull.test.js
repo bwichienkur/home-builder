@@ -3,6 +3,7 @@ import {
   INCOMPLETE_TASKS_FILTERS,
   isSiteWorkScheduleTitle,
   mergeTasksListResponses,
+  scheduleMilestonesFromGantt,
   selectionsGridBody,
   SELECTIONS_GRID_SELECTED_TAB,
   siteWorkStatusFromGantt,
@@ -92,5 +93,46 @@ describe('Site Work schedule helpers', () => {
     expect(byJob['2']?.started).toBe(true);
     expect(byJob['3']?.started).toBe(true);
     expect(byJob['4']).toBeUndefined();
+  });
+});
+
+describe('scheduleMilestonesFromGantt', () => {
+  it('extracts first item, Permitting end, Foundation start/started, Closing end', () => {
+    const byJob = scheduleMilestonesFromGantt({
+      data: {
+        items: [
+          { jobId: 10, title: 'Sale/Contract Deposit', startDate: '2025-01-01', endDate: '2025-01-01', percentComplete: 100, isComplete: true },
+          { jobId: 10, title: 'Permitting', startDate: '2025-02-01', endDate: '2025-06-15', percentComplete: 100, isComplete: true },
+          { jobId: 10, title: 'Site Work', startDate: '2025-06-16', endDate: '2025-06-20', percentComplete: 100, isComplete: true },
+          { jobId: 10, title: 'Foundation', startDate: '2025-06-21', endDate: '2025-07-01', percentComplete: 100, isComplete: true },
+          { jobId: 10, title: 'Closing', startDate: '2026-03-01', endDate: '2026-03-05', percentComplete: 100, isComplete: true },
+          { jobId: 11, title: 'Foundation', startDate: '2026-09-01', endDate: '2026-09-10', percentComplete: 0, isComplete: false },
+          { jobId: 11, title: 'Site Work', startDate: '2026-08-01', endDate: '2026-08-05', percentComplete: 0, isComplete: false },
+        ],
+      },
+    });
+    expect(byJob['10']).toMatchObject({
+      firstItemStartDate: '2025-01-01',
+      siteWorkStarted: true,
+      foundationStarted: true,
+      permitting: { endDate: '2025-06-15' },
+      foundation: { startDate: '2025-06-21' },
+      closing: { endDate: '2026-03-05' },
+    });
+    expect(byJob['11']?.foundationStarted).toBe(false);
+    expect(byJob['11']?.siteWorkStarted).toBe(false);
+  });
+
+  it('marks Foundation started if any Foundation item has progress', () => {
+    const byJob = scheduleMilestonesFromGantt({
+      data: {
+        items: [
+          { jobId: 1, title: 'Foundation', startDate: '2025-01-01', endDate: '2025-01-05', percentComplete: 0, isComplete: false },
+          { jobId: 1, title: 'Foundation', startDate: '2025-02-01', endDate: '2025-02-10', percentComplete: 50, isComplete: false },
+        ],
+      },
+    });
+    expect(byJob['1']?.foundation?.startDate).toBe('2025-01-01');
+    expect(byJob['1']?.foundationStarted).toBe(true);
   });
 });

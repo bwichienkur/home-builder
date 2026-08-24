@@ -19,6 +19,7 @@ function jobToTs(job: Record<string, unknown>, indent: string) {
   ];
   if (job.dailyLogsRecentDone != null) fields.push(['dailyLogsRecentDone', job.dailyLogsRecentDone]);
   if (job.dailyLogsTotal != null) fields.push(['dailyLogsTotal', job.dailyLogsTotal]);
+  if (job.foundationStarted != null) fields.push(['foundationStarted', job.foundationStarted]);
   fields.push(
     ['contractPrice', job.contractPrice],
     ['revenueToDate', job.revenueToDate],

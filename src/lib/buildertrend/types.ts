@@ -38,6 +38,11 @@ export type OwnerJob = {
   dailyLogsTotal?: number;
   /** Past 4 weeks from BT user-daily-logs when available. */
   dailyLogsRecentDone?: number | null;
+  /**
+   * When false, daily logs are not required yet (Foundation schedule item not started).
+   * null/undefined = unknown (treat as required for mock / legacy snapshots).
+   */
+  foundationStarted?: boolean | null;
   /** USD */
   contractPrice: number;
   revenueToDate: number;
