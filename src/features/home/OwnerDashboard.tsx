@@ -4,6 +4,7 @@ import {
   formatCompactUsd,
   formatDays,
   formatDelta,
+  formatMonthsDays,
   formatPct,
   formatRefreshedAt,
   formatUsd,
@@ -193,9 +194,9 @@ export function OwnerDashboard() {
             {dash.timeMetrics.map((metric) => (
               <li key={metric.id}>
                 <span>{metric.label}</span>
-                <strong>{metric.days} days</strong>
+                <strong>{formatMonthsDays(metric.days)}</strong>
                 <em className={`dash-delta ${deltaClass(metric.deltaDays, true)}`}>
-                  {metric.deltaDays <= 0 ? '↓' : '↑'} {Math.abs(metric.deltaDays)} days
+                  {metric.deltaDays <= 0 ? '↓' : '↑'} {formatMonthsDays(Math.abs(metric.deltaDays))}
                 </em>
               </li>
             ))}

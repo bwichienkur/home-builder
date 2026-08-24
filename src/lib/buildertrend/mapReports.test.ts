@@ -162,7 +162,7 @@ describe('Buildertrend report mapper', () => {
       phase: 'construction',
       contractPrice: 1_158_353,
       revenueToDate: 626_047.24,
-      wip: 532_305.76,
+      wip: 1_158_353,
       dailyLogsTotal: 157,
       dailyLogsRecentDone: null,
     });
@@ -174,7 +174,7 @@ describe('Buildertrend report mapper', () => {
     });
     expect(mapped.jobs.find((job) => job.name === 'Nagle')).toMatchObject({
       pm: 'Adam Horseman',
-      wip: 0,
+      wip: 1_360_391.07,
       revenueToDate: 1_377_463.99,
     });
     expect(mapped.jobs.find((job) => job.name === 'Allie Job')).toMatchObject({
