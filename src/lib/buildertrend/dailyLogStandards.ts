@@ -38,16 +38,38 @@ export type DailyLogJobMetrics = {
   dailyLogsRecentExpected: number;
   dailyLogsLifetimeDue: number;
   dailyLogLifetimePct: number;
+  /** False when Foundation has not started — logs are not required. */
+  requiresDailyLogs: boolean;
 };
+
+/**
+ * Daily logs are required only after the Foundation schedule item has started.
+ * `foundationStarted === false` → not required. Missing/unknown → required (mock / legacy).
+ */
+export function jobRequiresDailyLogs(foundationStarted?: boolean | null) {
+  return foundationStarted !== false;
+}
 
 export function computeDailyLogMetrics(input: {
   openedAt: string;
   totalLogs: number;
   recentDone?: number | null;
+  foundationStarted?: boolean | null;
   now?: Date;
 }): DailyLogJobMetrics {
   const now = input.now ?? new Date();
   const dailyLogsTotal = Math.max(0, input.totalLogs);
+  const requiresDailyLogs = jobRequiresDailyLogs(input.foundationStarted);
+  if (!requiresDailyLogs) {
+    return {
+      dailyLogsTotal,
+      dailyLogsRecentDone: input.recentDone ?? null,
+      dailyLogsRecentExpected: 0,
+      dailyLogsLifetimeDue: 0,
+      dailyLogLifetimePct: 0,
+      requiresDailyLogs: false,
+    };
+  }
   const dailyLogsLifetimeDue = expectedLogsForWeeks(weeksOnSite(input.openedAt, now));
   return {
     dailyLogsTotal,
@@ -55,15 +77,30 @@ export function computeDailyLogMetrics(input: {
     dailyLogsRecentExpected: expectedLogsRolling(now),
     dailyLogsLifetimeDue,
     dailyLogLifetimePct: lifetimeLogCompletionPct(dailyLogsTotal, input.openedAt, now),
+    requiresDailyLogs: true,
   };
 }
 
-export function enrichOwnerJobs<T extends { openedAt: string; notes: string; dailyLogsTotal?: number; dailyLogsRecentDone?: number | null }>(
-  jobs: T[],
-  now = new Date(),
-): (T & DailyLogJobMetrics)[] {
+export function enrichOwnerJobs<
+  T extends {
+    openedAt: string;
+    notes: string;
+    dailyLogsTotal?: number;
+    dailyLogsRecentDone?: number | null;
+    foundationStarted?: boolean | null;
+  },
+>(jobs: T[], now = new Date()): (T & DailyLogJobMetrics)[] {
   return jobs.map((job) => {
     const total = job.dailyLogsTotal ?? parseTotalLogsFromNotes(job.notes);
-    return { ...job, ...computeDailyLogMetrics({ openedAt: job.openedAt, totalLogs: total, recentDone: job.dailyLogsRecentDone, now }) };
+    return {
+      ...job,
+      ...computeDailyLogMetrics({
+        openedAt: job.openedAt,
+        totalLogs: total,
+        recentDone: job.dailyLogsRecentDone,
+        foundationStarted: job.foundationStarted,
+        now,
+      }),
+    };
   });
 }

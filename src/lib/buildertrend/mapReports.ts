@@ -26,6 +26,22 @@ export type BuildertrendReports = {
     string,
     { started?: boolean; title?: string; percentComplete?: number; isComplete?: boolean; startDate?: string }
   >;
+  /**
+   * jobId → schedule milestones from GanttChart (Site Work, Permitting, Foundation, Closing,
+   * first item start). Used for status overview, daily-log eligibility, and time metrics.
+   */
+  scheduleByJob?: Record<
+    string,
+    {
+      firstItemStartDate?: string;
+      siteWorkStarted?: boolean | null;
+      foundationStarted?: boolean | null;
+      siteWork?: { title?: string; started?: boolean; percentComplete?: number; isComplete?: boolean; startDate?: string; endDate?: string } | null;
+      permitting?: { title?: string; startDate?: string; endDate?: string } | null;
+      foundation?: { title?: string; startDate?: string; endDate?: string; started?: boolean } | null;
+      closing?: { title?: string; startDate?: string; endDate?: string } | null;
+    }
+  >;
 };
 
 export type MappedBuildertrendPull = {
@@ -241,6 +257,12 @@ type JobDraft = {
   dailyLogsRecentDone: number | null;
   /** null = no Site Work schedule item (or schedule not pulled). */
   siteWorkStarted: boolean | null;
+  /** null = no Foundation schedule item (or schedule not pulled). */
+  foundationStarted: boolean | null;
+  firstScheduleStart: string;
+  permittingEndDate: string;
+  foundationStartDate: string;
+  closingEndDate: string;
   notes: string[];
   /** Set from job picker; blocks other reports from overriding status/jobId. */
   pickerStatus?: OwnerJob['status'];
@@ -281,6 +303,11 @@ function mergeJob(target: JobDraft, patch: Partial<JobDraft> & { fromPicker?: bo
   if ((patch.pastDueTasks ?? 0) > target.pastDueTasks) target.pastDueTasks = patch.pastDueTasks ?? 0;
   if (patch.dailyLogsRecentDone != null) target.dailyLogsRecentDone = patch.dailyLogsRecentDone;
   if (patch.siteWorkStarted != null) target.siteWorkStarted = patch.siteWorkStarted;
+  if (patch.foundationStarted != null) target.foundationStarted = patch.foundationStarted;
+  if (patch.firstScheduleStart) target.firstScheduleStart = patch.firstScheduleStart;
+  if (patch.permittingEndDate) target.permittingEndDate = patch.permittingEndDate;
+  if (patch.foundationStartDate) target.foundationStartDate = patch.foundationStartDate;
+  if (patch.closingEndDate) target.closingEndDate = patch.closingEndDate;
 }
 
 function jobKey(name: string, jobId: unknown) {
@@ -299,6 +326,7 @@ function ingest(jobs: Map<string, JobDraft>, row: Record<string, unknown>, kind:
     ({
       key,
       id: slugId(name, jobId),
+      jobId: num(jobId) || undefined,
       name,
       pm: 'Unassigned',
       status: 'open',
@@ -318,6 +346,11 @@ function ingest(jobs: Map<string, JobDraft>, row: Record<string, unknown>, kind:
       pastDueTasks: 0,
       dailyLogsRecentDone: null,
       siteWorkStarted: null,
+      foundationStarted: null,
+      firstScheduleStart: '',
+      permittingEndDate: '',
+      foundationStartDate: '',
+      closingEndDate: '',
       notes: [],
     } satisfies JobDraft);
 
@@ -363,6 +396,7 @@ function ingest(jobs: Map<string, JobDraft>, row: Record<string, unknown>, kind:
     mergeJob(draft, {
       name,
       id: slugId(name, jobId),
+      jobId: numericJobId,
       pm,
       status,
       openedAt: start,
@@ -483,6 +517,7 @@ function applyJobEnrichment(jobs: Map<string, JobDraft>, reports: BuildertrendRe
   const pastDue = pastDueTasksByJob(reports, now);
   const selections = pendingSelectionsByJob(reports);
   const schedule = scheduleRowsByJob(reports);
+  const scheduleByJob = reports.scheduleByJob ?? {};
   const siteWork = reports.siteWorkByJob ?? {};
   for (const draft of jobs.values()) {
     if (!draft.jobId) continue;
@@ -494,8 +529,21 @@ function applyJobEnrichment(jobs: Map<string, JobDraft>, reports: BuildertrendRe
       if (sched.completion) draft.completion = sched.completion;
       if (sched.pct > 0) draft.pctComplete = Math.max(draft.pctComplete, sched.pct);
     }
-    const sw = siteWork[String(draft.jobId)];
-    if (sw && typeof sw.started === 'boolean') draft.siteWorkStarted = sw.started;
+    const milestones = scheduleByJob[String(draft.jobId)];
+    if (milestones) {
+      if (typeof milestones.siteWorkStarted === 'boolean') draft.siteWorkStarted = milestones.siteWorkStarted;
+      else if (milestones.siteWork && typeof milestones.siteWork.started === 'boolean') {
+        draft.siteWorkStarted = milestones.siteWork.started;
+      }
+      if (typeof milestones.foundationStarted === 'boolean') draft.foundationStarted = milestones.foundationStarted;
+      if (milestones.firstItemStartDate) draft.firstScheduleStart = milestones.firstItemStartDate;
+      if (milestones.permitting?.endDate) draft.permittingEndDate = milestones.permitting.endDate;
+      if (milestones.foundation?.startDate) draft.foundationStartDate = milestones.foundation.startDate;
+      if (milestones.closing?.endDate) draft.closingEndDate = milestones.closing.endDate;
+    } else {
+      const sw = siteWork[String(draft.jobId)];
+      if (sw && typeof sw.started === 'boolean') draft.siteWorkStarted = sw.started;
+    }
   }
 }
 
@@ -530,6 +578,11 @@ function ingestSchedule(jobs: Map<string, JobDraft>, row: Record<string, unknown
       pastDueTasks: 0,
       dailyLogsRecentDone: null,
       siteWorkStarted: null,
+      foundationStarted: null,
+      firstScheduleStart: '',
+      permittingEndDate: '',
+      foundationStartDate: '',
+      closingEndDate: '',
       notes: [],
     } satisfies JobDraft);
   mergeJob(draft, {
@@ -594,6 +647,8 @@ function toOwnerJob(draft: JobDraft, now: Date): OwnerJob {
   if (!draft.onWip) notes.unshift('Not on WIP report');
   if (draft.siteWorkStarted === false) notes.push('Site Work not started (Design / Permitting)');
   if (draft.siteWorkStarted === true) notes.push('Site Work started (Construction)');
+  if (draft.foundationStarted === true) notes.push('Foundation started (daily logs required)');
+  if (draft.foundationStarted === false) notes.push('Foundation not started (daily logs not required)');
   if (draft.lastLog) notes.push(`Last daily log ${draft.lastLog}`);
   if (draft.logCount) notes.push(`${draft.logCount} daily logs`);
   return {
@@ -606,6 +661,7 @@ function toOwnerJob(draft: JobDraft, now: Date): OwnerJob {
     pastDueTasks: draft.pastDueTasks,
     dailyLogsTotal: draft.logCount || undefined,
     dailyLogsRecentDone: draft.dailyLogsRecentDone,
+    foundationStarted: draft.foundationStarted,
     contractPrice: draft.contractPrice,
     revenueToDate: draft.revenueToDate,
     wip: draft.onWip ? draft.wip : 0,
@@ -621,14 +677,59 @@ function toOwnerJob(draft: JobDraft, now: Date): OwnerJob {
   };
 }
 
+function calendarDaysBetween(start: string, end: string): number | null {
+  if (!start || !end) return null;
+  const a = new Date(`${start}T12:00:00`).getTime();
+  const b = new Date(`${end}T12:00:00`).getTime();
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+  return Math.round((b - a) / 86_400_000);
+}
+
+function averageDays(values: number[]): number | null {
+  if (!values.length) return null;
+  return Math.round(values.reduce((sum, n) => sum + n, 0) / values.length);
+}
+
+/**
+ * Closed + Warranty only.
+ * Contract→close: first schedule item start → Closing end.
+ * Permit→close: Permitting end → Closing end.
+ * Slab→close: Foundation start → Closing end.
+ */
 function timeMetricsFrom(jobs: JobDraft[], fallback: TimeMetric[]): TimeMetric[] {
-  const days = jobs.map((job) => job.workDays).filter((value) => value > 0);
-  if (!days.length) return fallback;
-  const avg = Math.round(days.reduce((sum, n) => sum + n, 0) / days.length);
+  const closed = jobs.filter((job) => job.status === 'closed' || job.status === 'warranty');
+  const contract: number[] = [];
+  const permit: number[] = [];
+  const slab: number[] = [];
+  for (const job of closed) {
+    if (!job.closingEndDate) continue;
+    const contractDays = calendarDaysBetween(job.firstScheduleStart, job.closingEndDate);
+    if (contractDays != null && contractDays >= 0) contract.push(contractDays);
+    const permitDays = calendarDaysBetween(job.permittingEndDate, job.closingEndDate);
+    if (permitDays != null && permitDays >= 0) permit.push(permitDays);
+    const slabDays = calendarDaysBetween(job.foundationStartDate, job.closingEndDate);
+    if (slabDays != null && slabDays >= 0) slab.push(slabDays);
+  }
+  const fallbackById = Object.fromEntries(fallback.map((row) => [row.id, row]));
   return [
-    { id: 'contract-close', label: 'Avg. days on job', days: avg, deltaDays: 0 },
-    { id: 'permit-close', label: 'Longest job (days)', days: Math.max(...days), deltaDays: 0 },
-    { id: 'slab-close', label: 'Shortest tracked job', days: Math.min(...days), deltaDays: 0 },
+    {
+      id: 'contract-close',
+      label: 'Contract to Close',
+      days: averageDays(contract) ?? fallbackById['contract-close']?.days ?? 0,
+      deltaDays: 0,
+    },
+    {
+      id: 'permit-close',
+      label: 'Permit to Close',
+      days: averageDays(permit) ?? fallbackById['permit-close']?.days ?? 0,
+      deltaDays: 0,
+    },
+    {
+      id: 'slab-close',
+      label: 'Slab Pour to Close',
+      days: averageDays(slab) ?? fallbackById['slab-close']?.days ?? 0,
+      deltaDays: 0,
+    },
   ];
 }
 
@@ -647,10 +748,11 @@ export function mapBuildertrendReports(
 
   applyJobEnrichment(jobs, reports, now);
   const unique = [...new Map([...jobs.values()].map((job) => [job.name.toLowerCase(), job])).values()];
-  const siteWorkPulled = Object.keys(reports.siteWorkByJob ?? {}).length > 0;
+  const schedulePulled =
+    Object.keys(reports.scheduleByJob ?? {}).length > 0 || Object.keys(reports.siteWorkByJob ?? {}).length > 0;
   // When Site Work schedule data is present, omit open jobs that have no Site Work item
   // (e.g. scratch jobs) so status overview matches owner active-job counts.
-  const forDashboard = siteWorkPulled
+  const forDashboard = schedulePulled
     ? unique.filter((job) => job.status !== 'open' || job.siteWorkStarted != null)
     : unique;
   const ownerJobs = forDashboard.map((job) => toOwnerJob(job, now)).sort((a, b) => a.name.localeCompare(b.name));

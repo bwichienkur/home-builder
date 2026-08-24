@@ -331,35 +331,160 @@ export function isSiteWorkScheduleTitle(title) {
   return /^\s*site\s*work\s*$/i.test(String(title || '').trim());
 }
 
+export function isExactScheduleTitle(title, expected) {
+  return new RegExp(`^\\s*${expected}\\s*$`, 'i').test(String(title || '').trim());
+}
+
+/** Schedule item started = complete or percentComplete > 0. */
+export function scheduleItemStarted(item) {
+  if (!item) return false;
+  return Boolean(item.isComplete) || Number(item.percentComplete) > 0;
+}
+
+function isoDay(value) {
+  return value ? String(value).slice(0, 10) : '';
+}
+
 /**
  * Site Work started = schedule item complete or percentComplete > 0.
  * Returns map of jobId → { started, title, percentComplete, isComplete, startDate }.
  */
 export function siteWorkStatusFromGantt(ganttPayload) {
-  const items = ganttPayload?.data?.items ?? ganttPayload?.items ?? [];
-  const byJob = new Map();
-  for (const item of items) {
-    if (!isSiteWorkScheduleTitle(item?.title)) continue;
-    const jobId = Number(item.jobId);
-    if (!jobId) continue;
-    const percentComplete = Number(item.percentComplete) || 0;
-    const isComplete = Boolean(item.isComplete);
-    byJob.set(jobId, {
-      title: String(item.title || '').trim(),
-      started: isComplete || percentComplete > 0,
-      percentComplete,
-      isComplete,
-      startDate: item.startDate ? String(item.startDate).slice(0, 10) : '',
-    });
+  const schedule = scheduleMilestonesFromGantt(ganttPayload);
+  const byJob = {};
+  for (const [jobId, row] of Object.entries(schedule)) {
+    if (!row.siteWork) continue;
+    byJob[jobId] = {
+      title: row.siteWork.title,
+      started: row.siteWork.started,
+      percentComplete: row.siteWork.percentComplete,
+      isComplete: row.siteWork.isComplete,
+      startDate: row.siteWork.startDate,
+    };
   }
-  return Object.fromEntries(byJob.entries());
+  return byJob;
 }
 
-async function fetchSiteWorkByJob(session, jobIds) {
+/**
+ * Per-job schedule milestones from GanttChart items.
+ * Exact titles: Site Work, Permitting, Foundation, Closing.
+ * firstItemStartDate = earliest startDate among all items for the job.
+ */
+export function scheduleMilestonesFromGantt(ganttPayload) {
+  const items = ganttPayload?.data?.items ?? ganttPayload?.items ?? [];
+  const byJob = new Map();
+
+  const ensure = (jobId) => {
+    if (!byJob.has(jobId)) {
+      byJob.set(jobId, {
+        firstItemStartDate: '',
+        siteWork: null,
+        permitting: null,
+        foundation: null,
+        closing: null,
+        siteWorkStarted: null,
+        foundationStarted: null,
+      });
+    }
+    return byJob.get(jobId);
+  };
+
+  for (const item of items) {
+    const jobId = Number(item?.jobId);
+    if (!jobId) continue;
+    const row = ensure(jobId);
+    const startDate = isoDay(item.startDate);
+    const endDate = isoDay(item.endDate);
+    if (startDate && (!row.firstItemStartDate || startDate < row.firstItemStartDate)) {
+      row.firstItemStartDate = startDate;
+    }
+
+    const title = String(item.title || '').trim();
+    const percentComplete = Number(item.percentComplete) || 0;
+    const isComplete = Boolean(item.isComplete);
+    const started = isComplete || percentComplete > 0;
+    const milestone = { title, started, percentComplete, isComplete, startDate, endDate };
+
+    if (isSiteWorkScheduleTitle(title)) {
+      row.siteWork = milestone;
+      row.siteWorkStarted = started;
+    } else if (isExactScheduleTitle(title, 'Permitting')) {
+      // Last day of Permitting = max endDate when multiple.
+      if (!row.permitting || (endDate && endDate > (row.permitting.endDate || ''))) {
+        row.permitting = milestone;
+      }
+    } else if (isExactScheduleTitle(title, 'Foundation')) {
+      // First day of Foundation = earliest startDate.
+      if (!row.foundation || (startDate && startDate < (row.foundation.startDate || '9999'))) {
+        row.foundation = milestone;
+      }
+      row.foundationStarted = scheduleItemStarted(row.foundation);
+    } else if (isExactScheduleTitle(title, 'Closing')) {
+      // Last date of Closing = max endDate.
+      if (!row.closing || (endDate && endDate > (row.closing.endDate || ''))) {
+        row.closing = milestone;
+      }
+    }
+  }
+
+  // Recompute foundationStarted from final foundation row (earliest start may not be the started one).
+  for (const row of byJob.values()) {
+    if (row.foundation) row.foundationStarted = scheduleItemStarted(row.foundation);
+    // If multiple Foundation items exist, started if ANY has started.
+  }
+
+  // Second pass: foundationStarted if any Foundation item started (not only earliest).
+  const foundationByJob = new Map();
+  for (const item of items) {
+    if (!isExactScheduleTitle(item?.title, 'Foundation')) continue;
+    const jobId = Number(item.jobId);
+    if (!jobId) continue;
+    const prev = foundationByJob.get(jobId) || false;
+    foundationByJob.set(jobId, prev || scheduleItemStarted(item));
+  }
+  for (const [jobId, started] of foundationByJob.entries()) {
+    const row = byJob.get(jobId);
+    if (row) row.foundationStarted = started;
+  }
+
+  return Object.fromEntries([...byJob.entries()].map(([id, row]) => [String(id), row]));
+}
+
+const GANTT_JOB_CHUNK = 25;
+
+async function fetchScheduleMilestonesByJob(session, jobIds) {
   if (!jobIds.length) return { ok: false, status: 0, data: {} };
-  const result = await postJson(session, '/api/Calendar/GanttChart', { jobIds });
-  if (!result.ok) return { ok: false, status: result.status, data: {} };
-  return { ok: true, status: result.status, data: siteWorkStatusFromGantt(result.data) };
+  const unique = [...new Set(jobIds.map(Number).filter(Boolean))];
+  const merged = {};
+  let lastStatus = 200;
+  let anyOk = false;
+  for (let i = 0; i < unique.length; i += GANTT_JOB_CHUNK) {
+    const chunk = unique.slice(i, i + GANTT_JOB_CHUNK);
+    const result = await postJson(session, '/api/Calendar/GanttChart', { jobIds: chunk });
+    lastStatus = result.status;
+    if (!result.ok) continue;
+    anyOk = true;
+    Object.assign(merged, scheduleMilestonesFromGantt(result.data));
+  }
+  return { ok: anyOk, status: lastStatus, data: merged };
+}
+
+function closedWarrantyJobIdsFromReports(...payloads) {
+  const ids = new Set();
+  for (const payload of payloads) {
+    const list =
+      payload?.data?.rowData ??
+      payload?.rowData ??
+      (Array.isArray(payload?.data) ? payload.data : null) ??
+      (Array.isArray(payload) ? payload : []);
+    for (const row of list) {
+      const status = String(row?.jobStatus ?? '').toLowerCase();
+      if (!status.includes('closed') && !status.includes('warranty')) continue;
+      const id = Number(row?.jobID ?? row?.jobId);
+      if (id) ids.add(id);
+    }
+  }
+  return [...ids];
 }
 
 /** PM → Selections list view (`selectedTab=1`). */
@@ -484,12 +609,33 @@ export async function fetchReports(session) {
     ]);
 
   const jobIds = openJobIdsFromPicker(jobs.data);
-  const [tasks, actionItemsByJob, selectionsByJob, siteWorkByJob] = await Promise.all([
+  const closedWarrantyIds = closedWarrantyJobIdsFromReports(schedulePercentComplete.data, dailyLogs.data);
+  const scheduleJobIds = [...new Set([...jobIds, ...closedWarrantyIds])];
+  const [tasks, actionItemsByJob, selectionsByJob, scheduleByJob] = await Promise.all([
     fetchTasksForOpenJobs(session, jobIds),
     jobIds.length ? fetchActionItemsByJob(session, jobIds) : Promise.resolve({}),
     jobIds.length ? fetchSelectionsForOpenJobs(session, jobIds) : Promise.resolve({}),
-    jobIds.length ? fetchSiteWorkByJob(session, jobIds) : Promise.resolve({ ok: true, status: 200, data: {} }),
+    scheduleJobIds.length
+      ? fetchScheduleMilestonesByJob(session, scheduleJobIds)
+      : Promise.resolve({ ok: true, status: 200, data: {} }),
   ]);
+
+  const scheduleData = scheduleByJob.data ?? {};
+  // Back-compat: Site Work–only map used by older snapshot/tests.
+  const siteWorkByJob = Object.fromEntries(
+    Object.entries(scheduleData)
+      .filter(([, row]) => row?.siteWork)
+      .map(([jobId, row]) => [
+        jobId,
+        {
+          title: row.siteWork.title,
+          started: row.siteWork.started,
+          percentComplete: row.siteWork.percentComplete,
+          isComplete: row.siteWork.isComplete,
+          startDate: row.siteWork.startDate,
+        },
+      ]),
+  );
 
   const reports = {
     wip: wip.data,
@@ -503,7 +649,8 @@ export async function fetchReports(session) {
     tasks: tasks.data,
     actionItemsByJob,
     selectionsByJob,
-    siteWorkByJob: siteWorkByJob.data ?? {},
+    scheduleByJob: scheduleData,
+    siteWorkByJob,
   };
   const failed = [
     ['work-in-progress', wip],
@@ -528,7 +675,8 @@ export async function fetchReports(session) {
       leads: leadsGrid.status,
       jobsites: jobsites.status,
       tasks: tasks.status,
-      siteWorkByJob: siteWorkByJob.status ?? 0,
+      scheduleByJob: scheduleByJob.status ?? 0,
+      siteWorkByJob: scheduleByJob.status ?? 0,
     },
   };
 }

@@ -90,15 +90,23 @@ export function summarizeOwnerDashboard(input: {
 }): OwnerDashboard {
   const now = input.now ?? new Date();
   const jobs = enrichOwnerJobs(filterJobs(input.jobs, input.filters, now), now);
+  // PM scorecard always reflects OPEN projects, regardless of the status chip.
+  const openForScorecard = enrichOwnerJobs(
+    input.jobs.filter((job) => job.status === 'open'),
+    now,
+  );
   const jobCount = jobs.length;
   const totalContract = jobs.reduce((s, j) => s + j.contractPrice, 0);
   const totalRevenue = jobs.reduce((s, j) => s + j.revenueToDate, 0);
   const totalWip = jobs.reduce((s, j) => s + j.wip, 0);
   const pendingSelections = jobs.reduce((s, j) => s + j.pendingSelections, 0);
   const pastDueTasks = jobs.reduce((s, j) => s + j.pastDueTasks, 0);
-  const logRecentDone = jobs.reduce((s, j) => s + (j.dailyLogsRecentDone ?? 0), 0);
+  const logRecentDone = jobs.reduce(
+    (s, j) => s + (j.requiresDailyLogs ? (j.dailyLogsRecentDone ?? 0) : 0),
+    0,
+  );
   const logRecentExp = jobs.reduce((s, j) => s + j.dailyLogsRecentExpected, 0);
-  const logLifetimeDone = jobs.reduce((s, j) => s + j.dailyLogsTotal, 0);
+  const logLifetimeDone = jobs.reduce((s, j) => s + (j.requiresDailyLogs ? j.dailyLogsTotal : 0), 0);
   const logLifetimeExp = jobs.reduce((s, j) => s + j.dailyLogsLifetimeDue, 0);
   const slipSum = jobs.reduce((s, j) => s + totalSlipDays(j.slip), 0);
   const weighted = input.weightedPipeline ?? weightedPipelineValue(input.pipeline);
@@ -113,13 +121,16 @@ export function summarizeOwnerDashboard(input: {
     pct: phasePcts[index] ?? 0,
   }));
 
-  const pms = [...new Set(jobs.map((j) => j.pm))];
+  const pms = [...new Set(openForScorecard.map((j) => j.pm))];
   const pmScorecard = pms
     .map((pm) => {
-      const rows = jobs.filter((j) => j.pm === pm);
-      const recentDone = rows.reduce((s, j) => s + (j.dailyLogsRecentDone ?? 0), 0);
+      const rows = openForScorecard.filter((j) => j.pm === pm);
+      const recentDone = rows.reduce(
+        (s, j) => s + (j.requiresDailyLogs ? (j.dailyLogsRecentDone ?? 0) : 0),
+        0,
+      );
       const recentExp = rows.reduce((s, j) => s + j.dailyLogsRecentExpected, 0);
-      const lifetimeDone = rows.reduce((s, j) => s + j.dailyLogsTotal, 0);
+      const lifetimeDone = rows.reduce((s, j) => s + (j.requiresDailyLogs ? j.dailyLogsTotal : 0), 0);
       const lifetimeExp = rows.reduce((s, j) => s + j.dailyLogsLifetimeDue, 0);
       const lifetimePct = lifetimeExp ? (lifetimeDone / lifetimeExp) * 100 : 0;
       return {

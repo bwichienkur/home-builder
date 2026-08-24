@@ -34,11 +34,27 @@ describe('daily log standards', () => {
     expect(job.dailyLogsRecentDone).toBe(12);
     expect(job.dailyLogsTotal).toBe(55);
     expect(job.dailyLogLifetimePct).toBeGreaterThan(0);
+    expect(job.requiresDailyLogs).toBe(true);
   });
 
   it('shows —/expected when recent count is unknown', () => {
     const metrics = computeDailyLogMetrics({ openedAt: '2026-01-01', totalLogs: 10, now });
     expect(metrics.dailyLogsRecentDone).toBeNull();
     expect(metrics.dailyLogsRecentExpected).toBe(16);
+  });
+
+  it('expects no daily logs until Foundation has started', () => {
+    const metrics = computeDailyLogMetrics({
+      openedAt: '2026-01-01',
+      totalLogs: 3,
+      recentDone: 2,
+      foundationStarted: false,
+      now,
+    });
+    expect(metrics.requiresDailyLogs).toBe(false);
+    expect(metrics.dailyLogsRecentExpected).toBe(0);
+    expect(metrics.dailyLogsLifetimeDue).toBe(0);
+    expect(metrics.dailyLogLifetimePct).toBe(0);
+    expect(metrics.dailyLogsRecentDone).toBe(2);
   });
 });

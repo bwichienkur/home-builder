@@ -292,4 +292,57 @@ describe('Buildertrend report mapper', () => {
     expect(mapped.jobs.find((job) => job.name === 'Design Job')?.phase).toBe('design');
     expect(mapped.jobs.find((job) => job.name === 'Build Job')?.phase).toBe('construction');
   });
+
+  it('computes closed/warranty time metrics from schedule milestones', () => {
+    const mapped = mapBuildertrendReports({
+      dailyLogs: {
+        data: {
+          rowData: [
+            { jobID: 100, jobName: 'Closed A', jobStatus: 'Closed', totalDailyLogEntries: 10, totalWorkDays: 400 },
+            { jobID: 101, jobName: 'Open B', jobStatus: 'Open', totalDailyLogEntries: 5, totalWorkDays: 100 },
+          ],
+        },
+      },
+      scheduleByJob: {
+        '100': {
+          firstItemStartDate: '2024-01-01',
+          permitting: { endDate: '2024-04-01' },
+          foundation: { startDate: '2024-05-01' },
+          closing: { endDate: '2025-01-01' },
+          foundationStarted: true,
+          siteWorkStarted: true,
+        },
+        '101': {
+          firstItemStartDate: '2025-01-01',
+          permitting: { endDate: '2025-02-01' },
+          foundation: { startDate: '2025-03-01' },
+          closing: { endDate: '2026-01-01' },
+          foundationStarted: true,
+          siteWorkStarted: true,
+        },
+      },
+    });
+
+    expect(mapped.timeMetrics).toEqual([
+      { id: 'contract-close', label: 'Contract to Close', days: 366, deltaDays: 0 },
+      { id: 'permit-close', label: 'Permit to Close', days: 275, deltaDays: 0 },
+      { id: 'slab-close', label: 'Slab Pour to Close', days: 245, deltaDays: 0 },
+    ]);
+    expect(mapped.jobs.find((job) => job.name === 'Closed A')?.foundationStarted).toBe(true);
+  });
+
+  it('sets foundationStarted from scheduleByJob for open jobs', () => {
+    const mapped = mapBuildertrendReports({
+      jobs: [
+        { jobID: 1, jobName: 'Needs Logs', jobStatus: 'Open', projectManagers: 'Adam Horseman' },
+        { jobID: 2, jobName: 'No Logs Yet', jobStatus: 'Open', projectManagers: 'Adam Horseman' },
+      ],
+      scheduleByJob: {
+        '1': { siteWorkStarted: true, foundationStarted: true, siteWork: { started: true, title: 'Site Work' } },
+        '2': { siteWorkStarted: false, foundationStarted: false, siteWork: { started: false, title: 'Site Work' } },
+      },
+    });
+    expect(mapped.jobs.find((j) => j.name === 'Needs Logs')?.foundationStarted).toBe(true);
+    expect(mapped.jobs.find((j) => j.name === 'No Logs Yet')?.foundationStarted).toBe(false);
+  });
 });
