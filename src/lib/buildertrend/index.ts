@@ -35,7 +35,7 @@ export {
   storeLivePull,
   clearStoredLivePull,
 } from './refreshClient';
-export { formatCompactUsd, formatUsd, formatPct, formatDelta, formatRefreshedAt, formatCloseDate, formatDays, totalSlipDays, phaseLabel } from './format';
+export { formatCompactUsd, formatUsd, formatPct, formatDelta, formatRefreshedAt, formatCloseDate, formatDays, formatMonthsDays, splitMonthsDays, totalSlipDays, phaseLabel } from './format';
 export type * from './types';
 export type { BuildertrendLivePull } from './refreshClient';
 export type { BuildertrendReports, MappedBuildertrendPull } from './mapReports';

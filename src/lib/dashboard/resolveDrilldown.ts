@@ -232,26 +232,20 @@ export function resolveDrilldown(
   if (kind.type === 'wip-breakdown') {
     const list = [...projects].sort((a, b) => b.wip - a.wip || a.name.localeCompare(b.name));
     const totalWip = list.reduce((s, p) => s + p.wip, 0);
-    const totalContract = list.reduce((s, p) => s + p.contractPrice, 0);
-    const totalRevenue = list.reduce((s, p) => s + p.revenueToDate, 0);
     return {
       title: 'Total work in progress',
-      subtitle: `WIP = revised contract − amount invoiced · ${formatCompactUsd(totalContract)} contract − ${formatCompactUsd(totalRevenue)} invoiced = ${formatCompactUsd(totalWip)}`,
+      subtitle: `Sum of revised contract values (original + change orders) · ${formatCompactUsd(totalWip)}`,
       columns: [
         { key: 'name', label: 'Project' },
         { key: 'pm', label: 'PM' },
-        { key: 'contract', label: 'Revised contract', align: 'right', sum: 'usd' },
+        { key: 'wip', label: 'Revised contract', align: 'right', sum: 'usd' },
         { key: 'revenue', label: 'Amount invoiced', align: 'right', sum: 'usd' },
-        { key: 'wip', label: 'WIP remaining', align: 'right', sum: 'usd' },
-        { key: 'calc', label: 'Calculation' },
       ],
       rows: list.map((p) => ({
         name: p.name,
         pm: p.pm,
-        contract: p.contractPrice,
-        revenue: p.revenueToDate,
         wip: p.wip,
-        calc: `${formatCompactUsd(p.contractPrice)} − ${formatCompactUsd(p.revenueToDate)}`,
+        revenue: p.revenueToDate,
       })),
     };
   }
@@ -269,7 +263,7 @@ export function resolveDrilldown(
         { key: 'contract', label: 'Revised contract', align: 'right', sum: 'usd' },
         { key: 'revenue', label: 'Amount invoiced', align: 'right', sum: 'usd' },
         { key: 'pct', label: '% invoiced', align: 'right' },
-        { key: 'wip', label: 'WIP remaining', align: 'right', sum: 'usd' },
+        { key: 'wip', label: 'Revised contract', align: 'right', sum: 'usd' },
       ],
       rows: list.map((p) => ({
         name: p.name,

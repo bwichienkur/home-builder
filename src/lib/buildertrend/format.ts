@@ -35,6 +35,21 @@ export function formatDays(value: number) {
   return `${rounded > 0 ? '+' : ''}${body}d`;
 }
 
+/** Split a day count into 30-day months + remainder (for schedule duration labels). */
+export function splitMonthsDays(totalDays: number) {
+  const total = Math.max(0, Math.round(totalDays));
+  return { months: Math.floor(total / 30), days: total % 30 };
+}
+
+/** e.g. 244 → "8 months 4 days", 420 → "14 months" */
+export function formatMonthsDays(totalDays: number) {
+  const { months, days } = splitMonthsDays(totalDays);
+  const parts: string[] = [];
+  if (months > 0) parts.push(`${months} month${months === 1 ? '' : 's'}`);
+  if (days > 0) parts.push(`${days} day${days === 1 ? '' : 's'}`);
+  return parts.length ? parts.join(' ') : '0 days';
+}
+
 export function formatDelta(delta: number, unit: 'pct' | 'pts') {
   const arrow = delta >= 0 ? '↑' : '↓';
   const abs = Math.abs(delta).toFixed(1);

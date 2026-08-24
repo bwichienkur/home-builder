@@ -16,7 +16,7 @@ const sampleProjects: ProjectSnapshot[] = [
     dailyLogLifetimePct: 50,
     contractPrice: 1_000_000,
     revenueToDate: 400_000,
-    wip: 600_000,
+    wip: 1_000_000,
     pctComplete: 40,
     estCloseDate: '2026-12-01',
     phase: 'construction',
@@ -36,7 +36,7 @@ const sampleProjects: ProjectSnapshot[] = [
     dailyLogLifetimePct: 60,
     contractPrice: 2_000_000,
     revenueToDate: 1_500_000,
-    wip: 500_000,
+    wip: 2_000_000,
     pctComplete: 75,
     estCloseDate: '2026-10-01',
     phase: 'construction',
@@ -121,12 +121,12 @@ describe('dashboard drilldown', () => {
     expect(resolved.columns.find((c) => c.key === 'value')?.sum).toBe('usd');
   });
 
-  it('shows WIP as contract minus invoiced per project', () => {
+  it('shows WIP as revised contract per project', () => {
     const resolved = resolveDrilldown({ type: 'wip-breakdown' }, sampleProjects, null);
-    expect(resolved.subtitle).toContain('revised contract − amount invoiced');
+    expect(resolved.subtitle).toContain('revised contract values');
     expect(resolved.rows).toHaveLength(2);
-    expect(resolved.rows[0]?.wip).toBe(600_000);
-    expect(resolved.rows[0]?.calc).toContain('−');
+    expect(resolved.rows[0]?.wip).toBe(2_000_000);
+    expect(resolved.columns.find((c) => c.key === 'wip')?.label).toBe('Revised contract');
     expect(resolved.columns.find((c) => c.key === 'wip')?.sum).toBe('usd');
   });
 

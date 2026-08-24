@@ -46,7 +46,7 @@ export type OwnerJob = {
   /** USD */
   contractPrice: number;
   revenueToDate: number;
-  /** USD work-in-progress (remaining production value). */
+  /** USD revised contract (original + change orders) for WIP totals. */
   wip: number;
   /** ISO date */
   estCloseDate: string;
@@ -117,7 +117,7 @@ export type ProjectSnapshot = {
   dailyLogLifetimePct: number;
   contractPrice: number;
   revenueToDate: number;
-  /** Remaining production value: revised contract − amount invoiced (BT WIP). */
+  /** Revised contract (original + change orders) for WIP totals. */
   wip: number;
   pctComplete: number;
   estCloseDate: string;

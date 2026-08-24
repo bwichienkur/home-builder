@@ -369,7 +369,6 @@ function ingest(jobs: Map<string, JobDraft>, row: Record<string, unknown>, kind:
     const pct = num(pick(row, 'jobCompletionPercentage', 'percentComplete', 'pctComplete'));
     const earned = num(pick(row, 'earnedRevenue'));
     const profit = num(pick(row, 'projectedProfit'));
-    const remaining = Math.max(0, contract - invoiced);
     const bits = [
       pct ? `BT ${Math.round(pct)}% complete` : '',
       contract === 0 && invoiced > 0 ? 'BT revised price $0' : '',
@@ -385,7 +384,7 @@ function ingest(jobs: Map<string, JobDraft>, row: Record<string, unknown>, kind:
       completion,
       contractPrice: contract,
       revenueToDate: invoiced,
-      wip: remaining,
+      wip: contract,
       pctComplete: pct,
       earnedRevenue: earned,
       projectedProfit: profit,
