@@ -12,7 +12,13 @@ import type {
 } from './types';
 import { PIPELINE_WEIGHTS } from './types';
 
-export const PHASE_ORDER = ['construction', 'permitting', 'design', 'closeout'] as const;
+export const PHASE_ORDER = ['design', 'construction'] as const;
+
+/** Status overview buckets: Design/Permitting vs Construction. */
+export function overviewPhase(phase: string): (typeof PHASE_ORDER)[number] {
+  if (phase === 'design' || phase === 'permitting') return 'design';
+  return 'construction';
+}
 
 type EnrichedOwnerJob = OwnerJob & DailyLogJobMetrics;
 
@@ -98,7 +104,7 @@ export function summarizeOwnerDashboard(input: {
   const weighted = input.weightedPipeline ?? weightedPipelineValue(input.pipeline);
   const marginDelta = input.projectedMarginPct - input.targetMarginPct;
 
-  const phaseCountsRaw = PHASE_ORDER.map((phase) => jobs.filter((j) => j.phase === phase).length);
+  const phaseCountsRaw = PHASE_ORDER.map((phase) => jobs.filter((j) => overviewPhase(j.phase) === phase).length);
   const phasePcts = roundPctParts(phaseCountsRaw);
   const phaseCounts = PHASE_ORDER.map((phase, index) => ({
     phase,

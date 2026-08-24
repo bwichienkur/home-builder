@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   INCOMPLETE_TASKS_FILTERS,
+  isSiteWorkScheduleTitle,
   mergeTasksListResponses,
   selectionsGridBody,
   SELECTIONS_GRID_SELECTED_TAB,
+  siteWorkStatusFromGantt,
   TASKS_LIST_ROW_CAP,
 } from './pull.js';
 
@@ -65,5 +67,30 @@ describe('selectionsGridBody', () => {
 
   it('uses the list tab query param constant', () => {
     expect(SELECTIONS_GRID_SELECTED_TAB).toBe(1);
+  });
+});
+
+describe('Site Work schedule helpers', () => {
+  it('recognizes Site Work titles', () => {
+    expect(isSiteWorkScheduleTitle('Site Work')).toBe(true);
+    expect(isSiteWorkScheduleTitle('SITEWORK')).toBe(true);
+    expect(isSiteWorkScheduleTitle('Site Work Checklist')).toBe(false);
+  });
+
+  it('marks Site Work started when complete or percent > 0', () => {
+    const byJob = siteWorkStatusFromGantt({
+      data: {
+        items: [
+          { jobId: 1, title: 'Site Work', isComplete: false, percentComplete: 0, startDate: '2026-10-01' },
+          { jobId: 2, title: 'Site Work', isComplete: true, percentComplete: 0, startDate: '2026-01-01' },
+          { jobId: 3, title: 'Site Work', isComplete: false, percentComplete: 25, startDate: '2026-01-01' },
+          { jobId: 4, title: 'Foundation', isComplete: true, percentComplete: 100 },
+        ],
+      },
+    });
+    expect(byJob['1']?.started).toBe(false);
+    expect(byJob['2']?.started).toBe(true);
+    expect(byJob['3']?.started).toBe(true);
+    expect(byJob['4']).toBeUndefined();
   });
 });

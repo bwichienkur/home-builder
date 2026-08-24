@@ -15,7 +15,12 @@ const AUTH0_AUDIENCE = 'https://api.buildertrend.net/';
 
 const WRITE_METHODS = new Set(['PUT', 'PATCH', 'DELETE']);
 /** POST bodies allowed for read-only list/report queries (never create/update/delete). */
-const READ_POST_PREFIXES = ['/apix/v2/Tasks/list', '/api/Leads/Grid', '/api/Selections/Grid'];
+const READ_POST_PREFIXES = [
+  '/apix/v2/Tasks/list',
+  '/api/Leads/Grid',
+  '/api/Selections/Grid',
+  '/api/Calendar/GanttChart',
+];
 
 function isReadOnlyPost(urlPath) {
   const path = String(urlPath).split('?')[0];
@@ -321,6 +326,42 @@ async function fetchTasksForOpenJobs(session, jobIds, { concurrency = 5 } = {}) 
   };
 }
 
+/** Match BT schedule titles "Site Work" / "SITEWORK". */
+export function isSiteWorkScheduleTitle(title) {
+  return /^\s*site\s*work\s*$/i.test(String(title || '').trim());
+}
+
+/**
+ * Site Work started = schedule item complete or percentComplete > 0.
+ * Returns map of jobId → { started, title, percentComplete, isComplete, startDate }.
+ */
+export function siteWorkStatusFromGantt(ganttPayload) {
+  const items = ganttPayload?.data?.items ?? ganttPayload?.items ?? [];
+  const byJob = new Map();
+  for (const item of items) {
+    if (!isSiteWorkScheduleTitle(item?.title)) continue;
+    const jobId = Number(item.jobId);
+    if (!jobId) continue;
+    const percentComplete = Number(item.percentComplete) || 0;
+    const isComplete = Boolean(item.isComplete);
+    byJob.set(jobId, {
+      title: String(item.title || '').trim(),
+      started: isComplete || percentComplete > 0,
+      percentComplete,
+      isComplete,
+      startDate: item.startDate ? String(item.startDate).slice(0, 10) : '',
+    });
+  }
+  return Object.fromEntries(byJob.entries());
+}
+
+async function fetchSiteWorkByJob(session, jobIds) {
+  if (!jobIds.length) return { ok: false, status: 0, data: {} };
+  const result = await postJson(session, '/api/Calendar/GanttChart', { jobIds });
+  if (!result.ok) return { ok: false, status: result.status, data: {} };
+  return { ok: true, status: result.status, data: siteWorkStatusFromGantt(result.data) };
+}
+
 /** PM → Selections list view (`selectedTab=1`). */
 export const SELECTIONS_GRID_SELECTED_TAB = 1;
 export const SELECTIONS_GRID_PAGE_SIZE = 500;
@@ -443,10 +484,11 @@ export async function fetchReports(session) {
     ]);
 
   const jobIds = openJobIdsFromPicker(jobs.data);
-  const [tasks, actionItemsByJob, selectionsByJob] = await Promise.all([
+  const [tasks, actionItemsByJob, selectionsByJob, siteWorkByJob] = await Promise.all([
     fetchTasksForOpenJobs(session, jobIds),
     jobIds.length ? fetchActionItemsByJob(session, jobIds) : Promise.resolve({}),
     jobIds.length ? fetchSelectionsForOpenJobs(session, jobIds) : Promise.resolve({}),
+    jobIds.length ? fetchSiteWorkByJob(session, jobIds) : Promise.resolve({ ok: true, status: 200, data: {} }),
   ]);
 
   const reports = {
@@ -461,6 +503,7 @@ export async function fetchReports(session) {
     tasks: tasks.data,
     actionItemsByJob,
     selectionsByJob,
+    siteWorkByJob: siteWorkByJob.data ?? {},
   };
   const failed = [
     ['work-in-progress', wip],
@@ -485,6 +528,7 @@ export async function fetchReports(session) {
       leads: leadsGrid.status,
       jobsites: jobsites.status,
       tasks: tasks.status,
+      siteWorkByJob: siteWorkByJob.status ?? 0,
     },
   };
 }

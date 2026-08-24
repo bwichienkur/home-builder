@@ -25,13 +25,13 @@ describe('owner dashboard mock', () => {
     expect(dash.totals.totalContract).toBe(25_650_000);
   });
 
-  it('splits the 24 open jobs into the mockup phase mix', async () => {
+  it('splits the 24 open jobs into Design/Permitting vs Construction', async () => {
     const dash = await mockOwnerDashboardProvider.getDashboard({ status: 'open', dateRange: 'all' });
     const byPhase = Object.fromEntries(dash.phases.map((p) => [p.phase, p]));
-    expect(byPhase.construction).toMatchObject({ count: 11, pct: 46 });
-    expect(byPhase.permitting).toMatchObject({ count: 6, pct: 25 });
-    expect(byPhase.design).toMatchObject({ count: 4, pct: 17 });
-    expect(byPhase.closeout).toMatchObject({ count: 3, pct: 12 });
+    expect(dash.phases).toHaveLength(2);
+    expect(byPhase.design).toMatchObject({ count: 10, label: 'Design / Permitting' });
+    expect(byPhase.construction).toMatchObject({ count: 14, label: 'Construction' });
+    expect(byPhase.design!.count + byPhase.construction!.count).toBe(24);
     expect(dash.pmScorecard.map((row) => row.pm)).toEqual([
       'Adam Horseman',
       'James Manford',

@@ -21,6 +21,11 @@ export type BuildertrendReports = {
   actionItemsByJob?: Record<string, unknown>;
   /** Per-job selection rows from POST /api/Selections/Grid (List tab). */
   selectionsByJob?: Record<string, unknown[]>;
+  /** jobId → Site Work schedule status from POST /api/Calendar/GanttChart. */
+  siteWorkByJob?: Record<
+    string,
+    { started?: boolean; title?: string; percentComplete?: number; isComplete?: boolean; startDate?: string }
+  >;
 };
 
 export type MappedBuildertrendPull = {
@@ -168,10 +173,15 @@ function addMonths(iso: string, months: number) {
 }
 
 function inferPhase(input: {
+  siteWorkStarted: boolean | null;
   onWip: boolean;
   pctComplete: number;
   logCount: number;
 }): OwnerPhase {
+  // Owner rule: Design/Permitting = Site Work not started; Construction = all other open jobs.
+  if (input.siteWorkStarted === false) return 'design';
+  if (input.siteWorkStarted === true) return 'construction';
+  // Fallback when schedule pull is missing (mock / partial caches).
   if (input.pctComplete >= 90) return 'closeout';
   if (input.onWip && input.pctComplete >= 15) return 'construction';
   if (input.onWip) return 'design';
@@ -229,6 +239,8 @@ type JobDraft = {
   pendingSelections: number;
   pastDueTasks: number;
   dailyLogsRecentDone: number | null;
+  /** null = no Site Work schedule item (or schedule not pulled). */
+  siteWorkStarted: boolean | null;
   notes: string[];
   /** Set from job picker; blocks other reports from overriding status/jobId. */
   pickerStatus?: OwnerJob['status'];
@@ -268,6 +280,7 @@ function mergeJob(target: JobDraft, patch: Partial<JobDraft> & { fromPicker?: bo
   if ((patch.pendingSelections ?? 0) > target.pendingSelections) target.pendingSelections = patch.pendingSelections ?? 0;
   if ((patch.pastDueTasks ?? 0) > target.pastDueTasks) target.pastDueTasks = patch.pastDueTasks ?? 0;
   if (patch.dailyLogsRecentDone != null) target.dailyLogsRecentDone = patch.dailyLogsRecentDone;
+  if (patch.siteWorkStarted != null) target.siteWorkStarted = patch.siteWorkStarted;
 }
 
 function jobKey(name: string, jobId: unknown) {
@@ -304,6 +317,7 @@ function ingest(jobs: Map<string, JobDraft>, row: Record<string, unknown>, kind:
       pendingSelections: 0,
       pastDueTasks: 0,
       dailyLogsRecentDone: null,
+      siteWorkStarted: null,
       notes: [],
     } satisfies JobDraft);
 
@@ -469,6 +483,7 @@ function applyJobEnrichment(jobs: Map<string, JobDraft>, reports: BuildertrendRe
   const pastDue = pastDueTasksByJob(reports, now);
   const selections = pendingSelectionsByJob(reports);
   const schedule = scheduleRowsByJob(reports);
+  const siteWork = reports.siteWorkByJob ?? {};
   for (const draft of jobs.values()) {
     if (!draft.jobId) continue;
     if (recent.has(draft.jobId)) draft.dailyLogsRecentDone = recent.get(draft.jobId)!;
@@ -479,6 +494,8 @@ function applyJobEnrichment(jobs: Map<string, JobDraft>, reports: BuildertrendRe
       if (sched.completion) draft.completion = sched.completion;
       if (sched.pct > 0) draft.pctComplete = Math.max(draft.pctComplete, sched.pct);
     }
+    const sw = siteWork[String(draft.jobId)];
+    if (sw && typeof sw.started === 'boolean') draft.siteWorkStarted = sw.started;
   }
 }
 
@@ -512,6 +529,7 @@ function ingestSchedule(jobs: Map<string, JobDraft>, row: Record<string, unknown
       pendingSelections: 0,
       pastDueTasks: 0,
       dailyLogsRecentDone: null,
+      siteWorkStarted: null,
       notes: [],
     } satisfies JobDraft);
   mergeJob(draft, {
@@ -566,9 +584,16 @@ export function weightedLeadPipeline(reports: BuildertrendReports) {
 
 function toOwnerJob(draft: JobDraft, now: Date): OwnerJob {
   const openedAt = draft.openedAt || draft.lastLog || now.toISOString().slice(0, 10);
-  const phase = inferPhase({ onWip: draft.onWip, pctComplete: draft.pctComplete, logCount: draft.logCount });
+  const phase = inferPhase({
+    siteWorkStarted: draft.siteWorkStarted,
+    onWip: draft.onWip,
+    pctComplete: draft.pctComplete,
+    logCount: draft.logCount,
+  });
   const notes = [...new Set(draft.notes.filter(Boolean))];
   if (!draft.onWip) notes.unshift('Not on WIP report');
+  if (draft.siteWorkStarted === false) notes.push('Site Work not started (Design / Permitting)');
+  if (draft.siteWorkStarted === true) notes.push('Site Work started (Construction)');
   if (draft.lastLog) notes.push(`Last daily log ${draft.lastLog}`);
   if (draft.logCount) notes.push(`${draft.logCount} daily logs`);
   return {
@@ -622,9 +647,15 @@ export function mapBuildertrendReports(
 
   applyJobEnrichment(jobs, reports, now);
   const unique = [...new Map([...jobs.values()].map((job) => [job.name.toLowerCase(), job])).values()];
-  const ownerJobs = unique.map((job) => toOwnerJob(job, now)).sort((a, b) => a.name.localeCompare(b.name));
+  const siteWorkPulled = Object.keys(reports.siteWorkByJob ?? {}).length > 0;
+  // When Site Work schedule data is present, omit open jobs that have no Site Work item
+  // (e.g. scratch jobs) so status overview matches owner active-job counts.
+  const forDashboard = siteWorkPulled
+    ? unique.filter((job) => job.status !== 'open' || job.siteWorkStarted != null)
+    : unique;
+  const ownerJobs = forDashboard.map((job) => toOwnerJob(job, now)).sort((a, b) => a.name.localeCompare(b.name));
 
-  const wipJobs = unique.filter((job) => job.onWip);
+  const wipJobs = forDashboard.filter((job) => job.onWip);
   const totalRevised = wipJobs.reduce((sum, job) => sum + job.contractPrice, 0);
   const totalProfit = wipJobs.reduce((sum, job) => sum + job.projectedProfit, 0);
   const rolling = wipJobs.reduce((sum, job) => sum + job.earnedRevenue, 0);
@@ -654,7 +685,7 @@ export function mapBuildertrendReports(
       { id: 'closings', label: 'Projected Closings', value: projectedClosings || totalWip },
       { id: 'signing', label: 'Expected Signing Value', value: pipeline[0]?.value ?? 0 },
     ],
-    timeMetrics: timeMetricsFrom(unique, LIVE_TIME_METRICS),
+    timeMetrics: timeMetricsFrom(forDashboard, LIVE_TIME_METRICS),
     targetMarginPct: LIVE_TARGET_MARGIN_PCT,
     projectedMarginPct: totalRevised > 0 ? Math.round((totalProfit / totalRevised) * 1000) / 10 : 0,
     rollingRevenue12Mo: rolling,

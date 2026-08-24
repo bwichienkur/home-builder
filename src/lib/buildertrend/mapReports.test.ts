@@ -274,4 +274,22 @@ describe('Buildertrend report mapper', () => {
     expect(bucci).toMatchObject({ status: 'open', id: 'bt-42790290' });
     expect(mapped.jobs.filter((job) => job.status === 'open')).toHaveLength(1);
   });
+
+  it('phases open jobs by Site Work schedule start and drops jobs without that item', () => {
+    const mapped = mapBuildertrendReports({
+      jobs: [
+        { jobID: 1, jobName: 'Design Job', jobStatus: 'Open', projectManagers: 'Adam Horseman' },
+        { jobID: 2, jobName: 'Build Job', jobStatus: 'Open', projectManagers: 'James Manford' },
+        { jobID: 3, jobName: 'Scratch Job', jobStatus: 'Open', projectManagers: '' },
+      ],
+      siteWorkByJob: {
+        '1': { started: false, title: 'Site Work', percentComplete: 0, isComplete: false },
+        '2': { started: true, title: 'Site Work', percentComplete: 100, isComplete: true },
+      },
+    });
+
+    expect(mapped.jobs.map((job) => job.name).sort()).toEqual(['Build Job', 'Design Job']);
+    expect(mapped.jobs.find((job) => job.name === 'Design Job')?.phase).toBe('design');
+    expect(mapped.jobs.find((job) => job.name === 'Build Job')?.phase).toBe('construction');
+  });
 });

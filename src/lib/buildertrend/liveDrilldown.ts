@@ -3471,16 +3471,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "location": "Interior",
         "statusLabel": "Partially Complete AND Expired",
         "deadline": "2026-04-09"
-      },
-      {
-        "id": 59614096,
-        "jobId": 42969582,
-        "jobName": "Etienne",
-        "title": "Cabinet - Color/Style/Hardware",
-        "category": "Phase 4",
-        "location": "Interior",
-        "statusLabel": "Partially Complete AND Expired",
-        "deadline": "2026-05-11"
       }
     ],
     "43331519": [
@@ -7592,33 +7582,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 35918575,
         "jobName": "Nagle",
         "title": "Install Bath Accessories",
-        "endDate": "2026-07-31",
-        "status": 0,
-        "assignedTo": "Adam Horseman"
-      },
-      {
-        "taskId": 49895145,
-        "jobId": 35918575,
-        "jobName": "Nagle",
-        "title": "Final Survey",
-        "endDate": "2026-07-31",
-        "status": 0,
-        "assignedTo": "Adam Horseman"
-      },
-      {
-        "taskId": 49895147,
-        "jobId": 35918575,
-        "jobName": "Nagle",
-        "title": "Final Termite Treatment",
-        "endDate": "2026-07-31",
-        "status": 0,
-        "assignedTo": "Adam Horseman"
-      },
-      {
-        "taskId": 49895584,
-        "jobId": 35918575,
-        "jobName": "Nagle",
-        "title": "Shrub and Tree Install",
         "endDate": "2026-07-31",
         "status": 0,
         "assignedTo": "Adam Horseman"

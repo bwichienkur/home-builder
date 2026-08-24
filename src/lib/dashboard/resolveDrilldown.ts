@@ -1,5 +1,6 @@
 import { formatCompactUsd, formatUsd, phaseLabel } from '../buildertrend/format';
 import type { OwnerPhase, ProjectSnapshot } from '../buildertrend/types';
+import { overviewPhase } from '../buildertrend/summarize';
 import { numericJobId } from './buildDrilldown';
 import type { DrilldownKind, LiveDrilldown } from './drilldownTypes';
 
@@ -25,7 +26,7 @@ function projectsFor(projects: ProjectSnapshot[], kind: DrilldownKind): ProjectS
     return projects.filter((p) => p.pm === kind.pm);
   }
   if (kind.type === 'phase-projects') {
-    return projects.filter((p) => p.phase === kind.phase);
+    return projects.filter((p) => overviewPhase(p.phase) === overviewPhase(kind.phase));
   }
   if (kind.type === 'all-projects') return projects;
   return [];
