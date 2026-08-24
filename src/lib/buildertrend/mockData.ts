@@ -77,13 +77,15 @@ function scaleOpenJobs(jobs: OwnerJob[]) {
   }));
 }
 
-/** Intended later BT source: sales CRM stages. */
+/** Mock sales pipeline mirrors Pipedrive Sales stages (deal counts). */
 export const MOCK_PIPELINE: PipelineStage[] = [
-  { id: 'lead', label: 'Lead', value: 46_300_000 },
-  { id: 'proposal', label: 'Proposal', value: 31_200_000 },
-  { id: 'pre-contract', label: 'Pre-Contract', value: 18_600_000 },
-  { id: 'contract', label: 'Contract', value: 12_450_000 },
-  { id: 'closed', label: 'Closed / Won', value: 6_850_000 },
+  { id: 'pd-1', label: 'First Contact', value: 22_630_628, dealCount: 22 },
+  { id: 'pd-2', label: 'Qualified', value: 14_250_000, dealCount: 11 },
+  { id: 'pd-4', label: 'Homesite Secured', value: 3_400_000, dealCount: 3 },
+  { id: 'pd-3', label: 'Meet with Eric', value: 4_276_730, dealCount: 3 },
+  { id: 'pd-5', label: 'Pricing Proposal', value: 2_328_721, dealCount: 2 },
+  { id: 'pd-17', label: 'Under Negotiation', value: 965_037, dealCount: 1 },
+  { id: 'pd-6', label: 'Contract Sent', value: 0, dealCount: 0 },
 ];
 
 export const MOCK_SALES_PERFORMANCE: SalesPerformanceBar[] = [

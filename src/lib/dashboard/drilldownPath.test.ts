@@ -1,14 +1,19 @@
+import { pipedriveStageKey } from '../pipedrive/stageMap';
 import { describe, expect, it } from 'vitest';
 import { drilldownHref, parseDrilldownFilters, parseDrilldownKind } from './drilldownPath';
 
 describe('drilldownPath', () => {
   it('round-trips pipeline and project kinds', () => {
     const href = drilldownHref(
-      { type: 'pipeline-stage', stageId: 'lead', label: 'Lead' },
+      { type: 'pipeline-stage', stageId: pipedriveStageKey(1), label: 'First Contact' },
       { status: 'open', dateRange: 'ytd' },
     );
     const params = new URLSearchParams(href.split('?')[1]);
-    expect(parseDrilldownKind(params)).toEqual({ type: 'pipeline-stage', stageId: 'lead', label: 'Lead' });
+    expect(parseDrilldownKind(params)).toEqual({
+      type: 'pipeline-stage',
+      stageId: pipedriveStageKey(1),
+      label: 'First Contact',
+    });
     expect(parseDrilldownFilters(params)).toEqual({ status: 'open', dateRange: 'ytd' });
   });
 

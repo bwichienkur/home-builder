@@ -1,8 +1,16 @@
 import { formatCompactUsd, formatUsd, phaseLabel } from '../buildertrend/format';
+import { CONTRACT_SENT_STAGE_ID, isPipedriveStageKey, pipedriveStageKey } from '../pipedrive/stageMap';
 import type { OwnerPhase, ProjectSnapshot } from '../buildertrend/types';
 import { overviewPhase } from '../buildertrend/summarize';
 import { numericJobId } from './buildDrilldown';
-import type { DrilldownKind, LiveDrilldown } from './drilldownTypes';
+import type { DrillDealRow, DrilldownKind, LiveDrilldown } from './drilldownTypes';
+
+function openPipedriveDeals(detail: LiveDrilldown | null | undefined): DrillDealRow[] {
+  if (!detail) return [];
+  return Object.entries(detail.dealsByStage)
+    .filter(([key]) => isPipedriveStageKey(key))
+    .flatMap(([, rows]) => rows);
+}
 
 export type DrillColumn = {
   key: string;
@@ -72,20 +80,12 @@ export function resolveDrilldown(
       kind.type === 'pipeline-stage'
         ? detail?.dealsByStage[kind.stageId] ?? []
         : kind.type === 'open-deals'
-          ? [
-              ...(detail?.dealsByStage.lead ?? []),
-              ...(detail?.dealsByStage.proposal ?? []),
-              ...(detail?.dealsByStage['pre-contract'] ?? []),
-              ...(detail?.dealsByStage.contract ?? []),
-            ]
-          : [
-              ...(detail?.dealsByStage.contract ?? []),
-              ...(detail?.dealsByStage.lead ?? []),
-              ...(detail?.dealsByStage.proposal ?? []),
-              ...(detail?.dealsByStage['pre-contract'] ?? []),
-            ].filter((d) => d.expectedCloseDate || d.stageName === 'Contract Sent');
+          ? openPipedriveDeals(detail)
+          : openPipedriveDeals(detail).filter(
+              (d) => d.expectedCloseDate || d.stageName === 'Contract Sent',
+            );
     if (kind.type === 'expected-signing' && deals.length === 0) {
-      deals = detail?.dealsByStage.contract ?? [];
+      deals = detail?.dealsByStage[pipedriveStageKey(CONTRACT_SENT_STAGE_ID)] ?? [];
     }
     const total = deals.reduce((s, d) => s + d.value, 0);
     const weighted = deals.reduce((s, d) => s + d.weightedValue, 0);

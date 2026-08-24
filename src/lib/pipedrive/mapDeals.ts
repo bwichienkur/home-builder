@@ -1,5 +1,5 @@
 import type { PipelineStage, SalesPerformanceBar } from '../buildertrend/types';
-import { STAGE_TO_FUNNEL, SALES_PIPELINE_ID } from './stageMap';
+import { CONTRACT_SENT_STAGE_ID, pipedriveStageKey, SALES_PIPELINE_ID } from './stageMap';
 
 export type PipedriveReports = {
   company?: { id?: number; name?: string; domain?: string };
@@ -7,6 +7,7 @@ export type PipedriveReports = {
   stages?: Array<{
     id: number;
     name: string;
+    order_nr: number;
     pipeline_id: number;
     deal_probability?: number;
     is_deleted?: boolean;
@@ -62,8 +63,10 @@ function dealProbability(deal: { probability?: number | null; stage_id?: number 
   return stageProbability(reports, deal.stage_id);
 }
 
-function emptyFunnel(): Record<string, number> {
-  return { lead: 0, proposal: 0, 'pre-contract': 0, contract: 0, closed: 0 };
+function salesPipelineStages(reports: PipedriveReports) {
+  return (reports.stages ?? [])
+    .filter((stage) => stage.pipeline_id === SALES_PIPELINE_ID && !stage.is_deleted)
+    .sort((a, b) => a.order_nr - b.order_nr);
 }
 
 export function mapPipedriveDeals(reports: PipedriveReports, options?: { now?: Date }): MappedPipedrivePull {
@@ -71,7 +74,8 @@ export function mapPipedriveDeals(reports: PipedriveReports, options?: { now?: D
   const today = now.toISOString().slice(0, 10);
   const horizon = new Date(now.getTime() + 90 * 86_400_000).toISOString().slice(0, 10);
 
-  const buckets = emptyFunnel();
+  const valueByStage = new Map<number, number>();
+  const countByStage = new Map<number, number>();
   let weighted = 0;
   let expectedSigning = 0;
   let contractSent = 0;
@@ -81,37 +85,31 @@ export function mapPipedriveDeals(reports: PipedriveReports, options?: { now?: D
   );
 
   for (const deal of openSales) {
+    const stageId = deal.stage_id;
+    if (stageId == null) continue;
     const value = num(deal.value);
-    const funnelId = STAGE_TO_FUNNEL[deal.stage_id as keyof typeof STAGE_TO_FUNNEL];
-    if (funnelId) buckets[funnelId] = (buckets[funnelId] ?? 0) + value;
+    valueByStage.set(stageId, (valueByStage.get(stageId) ?? 0) + value);
+    countByStage.set(stageId, (countByStage.get(stageId) ?? 0) + 1);
     weighted += value * dealProbability(deal, reports);
-    if (funnelId === 'contract') contractSent += value;
+    if (stageId === CONTRACT_SENT_STAGE_ID) contractSent += value;
     const close = deal.expected_close_date;
     if (close && close >= today && close <= horizon) expectedSigning += value;
   }
 
-  for (const deal of reports.wonDeals ?? []) {
-    buckets.closed += num(deal.value);
-  }
+  const pipeline: PipelineStage[] = salesPipelineStages(reports).map((stage) => ({
+    id: pipedriveStageKey(stage.id),
+    label: stage.name,
+    value: valueByStage.get(stage.id) ?? 0,
+    dealCount: countByStage.get(stage.id) ?? 0,
+  }));
 
-  const pipeline: PipelineStage[] = [
-    { id: 'lead', label: 'Lead', value: buckets.lead },
-    { id: 'proposal', label: 'Proposal', value: buckets.proposal },
-    { id: 'pre-contract', label: 'Pre-Contract', value: buckets['pre-contract'] },
-    { id: 'contract', label: 'Contract', value: buckets.contract },
-    { id: 'closed', label: 'Closed / Won', value: buckets.closed },
-  ];
-
-  // Many Sales deals lack expected_close_date; Contract Sent is the nearest “about to sign” bucket.
   const signing = expectedSigning > 0 ? expectedSigning : contractSent;
 
   return {
     pipeline,
     weightedPipeline: Math.round(weighted),
     expectedSigning90d: Math.round(signing),
-    salesPerformance: [
-      { id: 'signing', label: 'Expected Signing Value', value: Math.round(signing) },
-    ],
+    salesPerformance: [{ id: 'signing', label: 'Expected Signing Value', value: Math.round(signing) }],
     openDealCount: openSales.length,
     wonDealCount: (reports.wonDeals ?? []).length,
   };
