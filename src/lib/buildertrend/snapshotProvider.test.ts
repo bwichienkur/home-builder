@@ -23,12 +23,17 @@ describe('owner dashboard Buildertrend snapshot', () => {
     expect(dash.kpis.find((k) => k.id === 'active')?.delta).toBe(0);
   });
 
-  it('splits open jobs by phase and lists PMs from Buildertrend', async () => {
+  it('splits open jobs by Site Work into Design/Permitting vs Construction', async () => {
     const dash = await snapshotOwnerDashboardProvider.getDashboard({ status: 'open', dateRange: 'all' });
     const openJobs = filterJobs(LIVE_JOBS, { status: 'open', dateRange: 'all' }, snapshotNow);
     const phaseSum = dash.phases.reduce((sum, slice) => sum + slice.count, 0);
+    const byPhase = Object.fromEntries(dash.phases.map((p) => [p.phase, p]));
 
-    expect(phaseSum).toBe(openJobs.length);
+    expect(openJobs.length).toBe(23);
+    expect(phaseSum).toBe(23);
+    expect(byPhase.design?.count).toBe(9);
+    expect(byPhase.construction?.count).toBe(14);
+    expect(dash.phases.map((p) => p.label)).toEqual(['Design / Permitting', 'Construction']);
     expect(dash.pmScorecard.length).toBeGreaterThan(0);
     expect(dash.pmScorecard.every((row) => row.projects > 0)).toBe(true);
   });

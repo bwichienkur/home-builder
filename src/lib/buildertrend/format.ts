@@ -1,6 +1,6 @@
 const PHASE_LABEL: Record<string, string> = {
-  design: 'Design',
-  permitting: 'Permitting',
+  design: 'Design / Permitting',
+  permitting: 'Design / Permitting',
   construction: 'Construction',
   closeout: 'Closeout / Warranty',
 };

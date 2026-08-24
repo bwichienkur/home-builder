@@ -4,8 +4,8 @@ import { formatCompactUsd } from '../../lib/buildertrend/format';
 
 const PHASE_COLOR: Record<string, string> = {
   construction: '#0058a3',
-  permitting: '#2a9d8f',
   design: '#d4a017',
+  permitting: '#d4a017',
   closeout: '#6b5ea8',
 };
 
