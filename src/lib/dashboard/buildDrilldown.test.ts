@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ProjectSnapshot } from '../buildertrend/types';
+import { pipedriveStageKey } from '../pipedrive/stageMap';
 import { buildLiveDrilldown, selectionStatusLabel } from './buildDrilldown';
 import { filterDrillRows, resolveDrilldown } from './resolveDrilldown';
 
@@ -88,27 +89,23 @@ describe('dashboard drilldown', () => {
 
   it('resolves pipeline stage drilldown rows', () => {
     const resolved = resolveDrilldown(
-      { type: 'pipeline-stage', stageId: 'lead', label: 'Lead' },
+      { type: 'pipeline-stage', stageId: pipedriveStageKey(1), label: 'First Contact' },
       [],
       {
         generatedAt: '2026-08-22T12:00:00.000Z',
         dealsByStage: {
-          lead: [
+          [pipedriveStageKey(1)]: [
             {
               id: 1,
               title: 'Test Deal',
               value: 1_000_000,
-              stageName: 'Qualified',
-              probabilityPct: 25,
-              weightedValue: 250_000,
+              stageName: 'First Contact',
+              probabilityPct: 10,
+              weightedValue: 100_000,
               expectedCloseDate: '',
               status: 'open',
             },
           ],
-          proposal: [],
-          'pre-contract': [],
-          contract: [],
-          closed: [],
         },
         selectionsByJobId: {},
         pastDueByJobId: {},
@@ -143,7 +140,7 @@ describe('dashboard drilldown', () => {
       sampleProjects,
       {
         generatedAt: '2026-08-22T12:00:00.000Z',
-        dealsByStage: { lead: [], proposal: [], 'pre-contract': [], contract: [], closed: [] },
+        dealsByStage: {},
         selectionsByJobId: {},
         pastDueByJobId: {},
         logsByJobId: {

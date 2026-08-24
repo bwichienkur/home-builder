@@ -1,5 +1,5 @@
 import { isSelectionGreenStatus } from '../buildertrend/mapReports';
-import { STAGE_TO_FUNNEL, SALES_PIPELINE_ID } from '../pipedrive/stageMap';
+import { pipedriveStageKey, SALES_PIPELINE_ID } from '../pipedrive/stageMap';
 import type {
   DrillDealRow,
   DrillLogRow,
@@ -167,16 +167,14 @@ export function buildLiveDrilldown(input: {
     });
   }
 
-  const dealsByStage: Record<string, DrillDealRow[]> = {
-    lead: [],
-    proposal: [],
-    'pre-contract': [],
-    contract: [],
-    closed: [],
-  };
+  const dealsByStage: Record<string, DrillDealRow[]> = {};
   const pd = input.pipedrive?.reports;
   if (pd) {
     const stages = Array.isArray(pd.stages) ? pd.stages : [];
+    for (const stage of stages) {
+      if (stage.pipeline_id !== SALES_PIPELINE_ID || stage.is_deleted) continue;
+      dealsByStage[pipedriveStageKey(stage.id)] = [];
+    }
     const stageName = (id: number) => str(stages.find((s: any) => s.id === id)?.name) || String(id);
     const stageProb = (id: number) => {
       const pct = num(stages.find((s: any) => s.id === id && !s.is_deleted)?.deal_probability);
@@ -185,13 +183,13 @@ export function buildLiveDrilldown(input: {
     for (const deal of pd.openDeals ?? []) {
       if (deal.pipeline_id !== SALES_PIPELINE_ID) continue;
       const stageId = num(deal.stage_id);
-      const funnel = STAGE_TO_FUNNEL[stageId];
-      if (!funnel) continue;
+      const key = pipedriveStageKey(stageId);
+      if (!dealsByStage[key]) dealsByStage[key] = [];
       const value = num(deal.value);
       const dealProb = num(deal.probability);
       const probabilityPct = dealProb > 0 ? (dealProb > 1 ? dealProb : dealProb * 100) : stageProb(stageId);
       const pct = probabilityPct > 1 ? probabilityPct : probabilityPct * 100;
-      dealsByStage[funnel].push({
+      dealsByStage[key].push({
         id: num(deal.id),
         title: str(deal.title),
         value,
@@ -200,19 +198,6 @@ export function buildLiveDrilldown(input: {
         weightedValue: value * (pct / 100),
         expectedCloseDate: isoDate(deal.expected_close_date),
         status: str(deal.status) || 'open',
-      });
-    }
-    for (const deal of pd.wonDeals ?? []) {
-      const value = num(deal.value);
-      dealsByStage.closed.push({
-        id: num(deal.id),
-        title: str(deal.title),
-        value,
-        stageName: 'Won',
-        probabilityPct: 100,
-        weightedValue: value,
-        expectedCloseDate: isoDate(deal.won_time ?? deal.local_won_date),
-        status: 'won',
       });
     }
   }

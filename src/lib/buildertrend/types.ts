@@ -96,7 +96,10 @@ export type PmScorecardRow = {
 export type PipelineStage = {
   id: string;
   label: string;
+  /** Dollar value in stage (Pipedrive deal value sum). */
   value: number;
+  /** Open deal count when sourced from Pipedrive. */
+  dealCount?: number;
 };
 
 export type SalesPerformanceBar = {

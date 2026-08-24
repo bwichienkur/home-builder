@@ -448,29 +448,46 @@ export const LIVE_JOBS: OwnerJob[] = OPEN_JOBS;
 /** Sales funnel: Pipedrive Sales stages when PD cache present, else BT Lead Opportunities. */
 export const LIVE_PIPELINE: PipelineStage[] = [
   {
-    "id": "lead",
-    "label": "Lead",
-    "value": 36880628
+    "id": "pd-1",
+    "label": "First Contact",
+    "value": 22630628,
+    "dealCount": 22
   },
   {
-    "id": "proposal",
-    "label": "Proposal",
-    "value": 2328721
+    "id": "pd-2",
+    "label": "Qualified",
+    "value": 14250000,
+    "dealCount": 11
   },
   {
-    "id": "pre-contract",
-    "label": "Pre-Contract",
-    "value": 8641767
+    "id": "pd-4",
+    "label": "Homesite Secured",
+    "value": 3400000,
+    "dealCount": 3
   },
   {
-    "id": "contract",
-    "label": "Contract",
-    "value": 0
+    "id": "pd-3",
+    "label": "Meet with Eric",
+    "value": 4276730,
+    "dealCount": 3
   },
   {
-    "id": "closed",
-    "label": "Closed / Won",
-    "value": 60572032
+    "id": "pd-5",
+    "label": "Pricing Proposal",
+    "value": 2328721,
+    "dealCount": 2
+  },
+  {
+    "id": "pd-17",
+    "label": "Under Negotiation",
+    "value": 965037,
+    "dealCount": 1
+  },
+  {
+    "id": "pd-6",
+    "label": "Contract Sent",
+    "value": 0,
+    "dealCount": 0
   }
 ];
 

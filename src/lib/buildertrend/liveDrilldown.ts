@@ -10,37 +10,7 @@ import type { LiveDrilldown } from '../dashboard/drilldownTypes';
 export const LIVE_DRILLDOWN: LiveDrilldown = {
   "generatedAt": "2026-08-23T10:29:12.296Z",
   "dealsByStage": {
-    "lead": [
-      {
-        "id": 9,
-        "title": "Tim and Lori Antolovic | 288 Yacht Harbor Drive",
-        "value": 0,
-        "stageName": "Qualified",
-        "probabilityPct": 25,
-        "weightedValue": 0,
-        "expectedCloseDate": "",
-        "status": "open"
-      },
-      {
-        "id": 10,
-        "title": "Todd Blanks | 275 South Riverwalk Drive",
-        "value": 1000000,
-        "stageName": "Qualified",
-        "probabilityPct": 25,
-        "weightedValue": 250000,
-        "expectedCloseDate": "",
-        "status": "open"
-      },
-      {
-        "id": 11,
-        "title": "Indrani Manbahal | 729 Strihal Loop",
-        "value": 1200000,
-        "stageName": "Qualified",
-        "probabilityPct": 25,
-        "weightedValue": 300000,
-        "expectedCloseDate": "",
-        "status": "open"
-      },
+    "pd-1": [
       {
         "id": 12,
         "title": "Michael and Gabrielle Sergent | 5806 Spruce Creek Road",
@@ -62,62 +32,12 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "status": "open"
       },
       {
-        "id": 15,
-        "title": "Kovacs Mark",
-        "value": 0,
-        "stageName": "Qualified",
-        "probabilityPct": 25,
-        "weightedValue": 0,
-        "expectedCloseDate": "",
-        "status": "open"
-      },
-      {
         "id": 19,
         "title": "Yanet Garay | 1707 Destino Court",
         "value": 1000000,
         "stageName": "First Contact",
         "probabilityPct": 10,
         "weightedValue": 100000,
-        "expectedCloseDate": "",
-        "status": "open"
-      },
-      {
-        "id": 20,
-        "title": "Scott Cate | 15 Ice House Road",
-        "value": 3000000,
-        "stageName": "Qualified",
-        "probabilityPct": 10,
-        "weightedValue": 300000,
-        "expectedCloseDate": "",
-        "status": "open"
-      },
-      {
-        "id": 23,
-        "title": "Robert and Jenny Burton | 2 Camino Del Mar",
-        "value": 1200000,
-        "stageName": "Qualified",
-        "probabilityPct": 10,
-        "weightedValue": 120000,
-        "expectedCloseDate": "",
-        "status": "open"
-      },
-      {
-        "id": 34,
-        "title": "Mark & Carol Reeve | 607 Goodwin Avenue",
-        "value": 950000,
-        "stageName": "Qualified",
-        "probabilityPct": 10,
-        "weightedValue": 95000,
-        "expectedCloseDate": "",
-        "status": "open"
-      },
-      {
-        "id": 54,
-        "title": "John and Tina Gray | 5350 Southwest 26th Court",
-        "value": 1100000,
-        "stageName": "Qualified",
-        "probabilityPct": 25,
-        "weightedValue": 275000,
         "expectedCloseDate": "",
         "status": "open"
       },
@@ -162,32 +82,12 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "status": "open"
       },
       {
-        "id": 62,
-        "title": "Jane & Tim Veschio | 4 Turkey Oak Lane",
-        "value": 1300000,
-        "stageName": "Qualified",
-        "probabilityPct": 25,
-        "weightedValue": 325000,
-        "expectedCloseDate": "",
-        "status": "open"
-      },
-      {
         "id": 63,
         "title": "R. Kim & Michele Etherdige |  lot 10 VB",
         "value": 1100000,
         "stageName": "First Contact",
         "probabilityPct": 10,
         "weightedValue": 110000,
-        "expectedCloseDate": "",
-        "status": "open"
-      },
-      {
-        "id": 71,
-        "title": "Shackelford Mike (Has Realtor)",
-        "value": 2000000,
-        "stageName": "Qualified",
-        "probabilityPct": 25,
-        "weightedValue": 500000,
         "expectedCloseDate": "",
         "status": "open"
       },
@@ -272,16 +172,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "status": "open"
       },
       {
-        "id": 839,
-        "title": "Joe and KellyAnn Cossetti",
-        "value": 2500000,
-        "stageName": "Qualified",
-        "probabilityPct": 2,
-        "weightedValue": 50000,
-        "expectedCloseDate": "",
-        "status": "open"
-      },
-      {
         "id": 865,
         "title": "Rachel Akins | 4734 Riverglen Boulevard",
         "value": 0,
@@ -342,39 +232,119 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "status": "open"
       }
     ],
-    "proposal": [
+    "pd-2": [
       {
-        "id": 654,
-        "title": "Bussa Bill (Has Realtor)",
-        "value": 1100000,
-        "stageName": "Pricing Proposal",
-        "probabilityPct": 70,
-        "weightedValue": 770000,
+        "id": 9,
+        "title": "Tim and Lori Antolovic | 288 Yacht Harbor Drive",
+        "value": 0,
+        "stageName": "Qualified",
+        "probabilityPct": 25,
+        "weightedValue": 0,
         "expectedCloseDate": "",
         "status": "open"
       },
       {
-        "id": 864,
-        "title": "Sharley & Hank Gilbert |  Stillwater Drive",
-        "value": 1228721,
-        "stageName": "Pricing Proposal",
-        "probabilityPct": 70,
-        "weightedValue": 860104.7,
+        "id": 10,
+        "title": "Todd Blanks | 275 South Riverwalk Drive",
+        "value": 1000000,
+        "stageName": "Qualified",
+        "probabilityPct": 25,
+        "weightedValue": 250000,
         "expectedCloseDate": "",
         "status": "open"
-      }
-    ],
-    "pre-contract": [
+      },
       {
-        "id": 37,
-        "title": "Jim Orr | 1926 Lake Disston Drive",
+        "id": 11,
+        "title": "Indrani Manbahal | 729 Strihal Loop",
         "value": 1200000,
-        "stageName": "Homesite Secured",
+        "stageName": "Qualified",
+        "probabilityPct": 25,
+        "weightedValue": 300000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 15,
+        "title": "Kovacs Mark",
+        "value": 0,
+        "stageName": "Qualified",
+        "probabilityPct": 25,
+        "weightedValue": 0,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 20,
+        "title": "Scott Cate | 15 Ice House Road",
+        "value": 3000000,
+        "stageName": "Qualified",
+        "probabilityPct": 10,
+        "weightedValue": 300000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 23,
+        "title": "Robert and Jenny Burton | 2 Camino Del Mar",
+        "value": 1200000,
+        "stageName": "Qualified",
         "probabilityPct": 10,
         "weightedValue": 120000,
         "expectedCloseDate": "",
         "status": "open"
       },
+      {
+        "id": 34,
+        "title": "Mark & Carol Reeve | 607 Goodwin Avenue",
+        "value": 950000,
+        "stageName": "Qualified",
+        "probabilityPct": 10,
+        "weightedValue": 95000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 54,
+        "title": "John and Tina Gray | 5350 Southwest 26th Court",
+        "value": 1100000,
+        "stageName": "Qualified",
+        "probabilityPct": 25,
+        "weightedValue": 275000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 62,
+        "title": "Jane & Tim Veschio | 4 Turkey Oak Lane",
+        "value": 1300000,
+        "stageName": "Qualified",
+        "probabilityPct": 25,
+        "weightedValue": 325000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 71,
+        "title": "Shackelford Mike (Has Realtor)",
+        "value": 2000000,
+        "stageName": "Qualified",
+        "probabilityPct": 25,
+        "weightedValue": 500000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 839,
+        "title": "Joe and KellyAnn Cossetti",
+        "value": 2500000,
+        "stageName": "Qualified",
+        "probabilityPct": 2,
+        "weightedValue": 50000,
+        "expectedCloseDate": "",
+        "status": "open"
+      }
+    ],
+    "pd-3": [
       {
         "id": 53,
         "title": "Nix Gene LISA GARDNER CLIENT",
@@ -382,16 +352,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "stageName": "Meet with Eric",
         "probabilityPct": 55,
         "weightedValue": 1210000,
-        "expectedCloseDate": "",
-        "status": "open"
-      },
-      {
-        "id": 67,
-        "title": "Kimberly and Michael Inglis | 50 Cool Water Court",
-        "value": 1000000,
-        "stageName": "Homesite Secured",
-        "probabilityPct": 40,
-        "weightedValue": 400000,
         "expectedCloseDate": "",
         "status": "open"
       },
@@ -414,14 +374,26 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "weightedValue": 427201.50000000006,
         "expectedCloseDate": "",
         "status": "open"
+      }
+    ],
+    "pd-4": [
+      {
+        "id": 37,
+        "title": "Jim Orr | 1926 Lake Disston Drive",
+        "value": 1200000,
+        "stageName": "Homesite Secured",
+        "probabilityPct": 10,
+        "weightedValue": 120000,
+        "expectedCloseDate": "",
+        "status": "open"
       },
       {
-        "id": 106,
-        "title": "Anne & Brent Lister | 122 Coronado Road",
-        "value": 965037,
-        "stageName": "Under Negotiation",
-        "probabilityPct": 85,
-        "weightedValue": 820281.45,
+        "id": 67,
+        "title": "Kimberly and Michael Inglis | 50 Cool Water Court",
+        "value": 1000000,
+        "stageName": "Homesite Secured",
+        "probabilityPct": 40,
+        "weightedValue": 400000,
         "expectedCloseDate": "",
         "status": "open"
       },
@@ -436,607 +408,39 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "status": "open"
       }
     ],
-    "contract": [],
-    "closed": [
+    "pd-5": [
       {
-        "id": 61,
-        "title": "Brian Muehlenbeck | 2817 Osprey Cove Drive",
-        "value": 1791482,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 1791482,
-        "expectedCloseDate": "2026-08-19",
-        "status": "won"
-      },
-      {
-        "id": 80,
-        "title": "Dan & Debbie Morris/Drew | 2360 South Glencoe Road",
-        "value": 1145430,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 1145430,
-        "expectedCloseDate": "2026-07-15",
-        "status": "won"
-      },
-      {
-        "id": 142,
-        "title": "DuRant | 104 Bulow Cove",
-        "value": 1124550,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 1124550,
-        "expectedCloseDate": "2026-08-03",
-        "status": "won"
-      },
-      {
-        "id": 150,
-        "title": "Henry | 18 Ocean Ridge Boulevard South",
-        "value": 1325010,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 1325010,
-        "expectedCloseDate": "2026-08-03",
-        "status": "won"
-      },
-      {
-        "id": 505,
-        "title": "Barry & Adrienne Sherman SOLD",
-        "value": 950000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 950000,
-        "expectedCloseDate": "2023-02-27",
-        "status": "won"
-      },
-      {
-        "id": 506,
-        "title": "Steve Solviletti",
-        "value": 1200000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 1200000,
-        "expectedCloseDate": "2022-02-02",
-        "status": "won"
-      },
-      {
-        "id": 507,
-        "title": "Debbie & Chris Shanea",
-        "value": 0,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 0,
-        "expectedCloseDate": "2022-01-14",
-        "status": "won"
-      },
-      {
-        "id": 509,
-        "title": "Melissa & Michael Wilk",
-        "value": 800000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 800000,
-        "expectedCloseDate": "2022-01-14",
-        "status": "won"
-      },
-      {
-        "id": 510,
-        "title": "Mark & Kathy Kircher",
-        "value": 650000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 650000,
-        "expectedCloseDate": "2022-02-10",
-        "status": "won"
-      },
-      {
-        "id": 511,
-        "title": "Slavo Valko",
-        "value": 1080000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 1080000,
-        "expectedCloseDate": "2022-02-14",
-        "status": "won"
-      },
-      {
-        "id": 513,
-        "title": "Linda & Jim Fanning",
-        "value": 0,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 0,
-        "expectedCloseDate": "2022-01-14",
-        "status": "won"
-      },
-      {
-        "id": 514,
-        "title": "John & Denise Burgers",
-        "value": 0,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 0,
-        "expectedCloseDate": "2022-04-11",
-        "status": "won"
-      },
-      {
-        "id": 515,
-        "title": "Rich & Kris Lacava",
-        "value": 1200000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 1200000,
-        "expectedCloseDate": "2022-04-05",
-        "status": "won"
-      },
-      {
-        "id": 516,
-        "title": "Akhil Patel",
-        "value": 1400000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 1400000,
-        "expectedCloseDate": "2022-07-15",
-        "status": "won"
-      },
-      {
-        "id": 517,
-        "title": "Joe & Nancy Barnes",
-        "value": 1300000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 1300000,
-        "expectedCloseDate": "2023-02-13",
-        "status": "won"
-      },
-      {
-        "id": 518,
-        "title": "Keram Nazari",
-        "value": 850000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 850000,
-        "expectedCloseDate": "2022-08-29",
-        "status": "won"
-      },
-      {
-        "id": 521,
-        "title": "Alice Pereira",
-        "value": 1200000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 1200000,
-        "expectedCloseDate": "2022-11-29",
-        "status": "won"
-      },
-      {
-        "id": 523,
-        "title": "Jimenez Ron",
-        "value": 1200000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 1200000,
-        "expectedCloseDate": "2025-01-22",
-        "status": "won"
-      },
-      {
-        "id": 529,
-        "title": "Chahlavi Nayla",
-        "value": 1300000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 1300000,
-        "expectedCloseDate": "2025-10-25",
-        "status": "won"
-      },
-      {
-        "id": 532,
-        "title": "Friedenzohn, Dianna",
-        "value": 0,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 0,
-        "expectedCloseDate": "2023-08-01",
-        "status": "won"
-      },
-      {
-        "id": 535,
-        "title": "Lois Evis & Cira",
-        "value": 900000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 900000,
-        "expectedCloseDate": "2025-07-31",
-        "status": "won"
-      },
-      {
-        "id": 538,
-        "title": "Mike Duloc",
-        "value": 1200000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 1200000,
-        "expectedCloseDate": "2023-05-21",
-        "status": "won"
-      },
-      {
-        "id": 546,
-        "title": "Pinette Ilyse & David",
-        "value": 1050000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 1050000,
-        "expectedCloseDate": "2023-07-31",
-        "status": "won"
-      },
-      {
-        "id": 550,
-        "title": "Harris Andy",
-        "value": 850000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 850000,
-        "expectedCloseDate": "2023-07-31",
-        "status": "won"
-      },
-      {
-        "id": 551,
-        "title": "Bohan-Leach Elizabeth",
-        "value": 850000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 850000,
-        "expectedCloseDate": "2024-03-20",
-        "status": "won"
-      },
-      {
-        "id": 553,
-        "title": "Marin, De and Steve",
-        "value": 900000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 900000,
-        "expectedCloseDate": "2023-05-23",
-        "status": "won"
-      },
-      {
-        "id": 554,
-        "title": "Mapes Cathy & Mike",
-        "value": 850000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 850000,
-        "expectedCloseDate": "2023-07-31",
-        "status": "won"
-      },
-      {
-        "id": 565,
-        "title": "Massouras Andrew & Rebecca",
-        "value": 950000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 950000,
-        "expectedCloseDate": "2023-10-27",
-        "status": "won"
-      },
-      {
-        "id": 567,
-        "title": "Martinez Rodney and Becky REALTOR Rob Snyder",
+        "id": 654,
+        "title": "Bussa Bill (Has Realtor)",
         "value": 1100000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 1100000,
-        "expectedCloseDate": "2024-03-25",
-        "status": "won"
+        "stageName": "Pricing Proposal",
+        "probabilityPct": 70,
+        "weightedValue": 770000,
+        "expectedCloseDate": "",
+        "status": "open"
       },
       {
-        "id": 570,
-        "title": "Bolton John & Bonnie",
-        "value": 1000000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 1000000,
-        "expectedCloseDate": "2024-03-20",
-        "status": "won"
-      },
+        "id": 864,
+        "title": "Sharley & Hank Gilbert |  Stillwater Drive",
+        "value": 1228721,
+        "stageName": "Pricing Proposal",
+        "probabilityPct": 70,
+        "weightedValue": 860104.7,
+        "expectedCloseDate": "",
+        "status": "open"
+      }
+    ],
+    "pd-6": [],
+    "pd-17": [
       {
-        "id": 573,
-        "title": "Reuss Paul & Laura Kupinksi",
-        "value": 700000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 700000,
-        "expectedCloseDate": "2024-04-26",
-        "status": "won"
-      },
-      {
-        "id": 575,
-        "title": "Etienne Ralph & Felicia",
-        "value": 800000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 800000,
-        "expectedCloseDate": "2025-12-09",
-        "status": "won"
-      },
-      {
-        "id": 578,
-        "title": "Mike Lynch",
-        "value": 1000000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 1000000,
-        "expectedCloseDate": "2024-03-20",
-        "status": "won"
-      },
-      {
-        "id": 581,
-        "title": "Daimler Matt",
-        "value": 1500000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 1500000,
-        "expectedCloseDate": "2024-05-25",
-        "status": "won"
-      },
-      {
-        "id": 582,
-        "title": "Naugle Greg",
-        "value": 1300000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 1300000,
-        "expectedCloseDate": "2024-04-18",
-        "status": "won"
-      },
-      {
-        "id": 585,
-        "title": "Kolka Jim & Linda",
-        "value": 1300000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 1300000,
-        "expectedCloseDate": "2024-06-03",
-        "status": "won"
-      },
-      {
-        "id": 589,
-        "title": "Whelan Jim",
-        "value": 0,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 0,
-        "expectedCloseDate": "2024-08-15",
-        "status": "won"
-      },
-      {
-        "id": 590,
-        "title": "Goumas Michael",
-        "value": 2000000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 2000000,
-        "expectedCloseDate": "2024-05-07",
-        "status": "won"
-      },
-      {
-        "id": 594,
-        "title": "Blandford Justin",
-        "value": 1400000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 1400000,
-        "expectedCloseDate": "2025-05-21",
-        "status": "won"
-      },
-      {
-        "id": 603,
-        "title": "Emerson Kyra",
-        "value": 1400000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 1400000,
-        "expectedCloseDate": "2025-05-21",
-        "status": "won"
-      },
-      {
-        "id": 605,
-        "title": "Martin Pierani Gabriela",
-        "value": 960000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 960000,
-        "expectedCloseDate": "2025-08-25",
-        "status": "won"
-      },
-      {
-        "id": 606,
-        "title": "Livermore Julie LISA GARDNER CUSTOMER",
-        "value": 1200000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 1200000,
-        "expectedCloseDate": "2024-09-05",
-        "status": "won"
-      },
-      {
-        "id": 609,
-        "title": "Karas Adrian",
-        "value": 1600000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 1600000,
-        "expectedCloseDate": "2025-02-24",
-        "status": "won"
-      },
-      {
-        "id": 613,
-        "title": "Young Mary & Fred Wolfe",
-        "value": 950000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 950000,
-        "expectedCloseDate": "2025-07-31",
-        "status": "won"
-      },
-      {
-        "id": 616,
-        "title": "Kulesa John",
-        "value": 1100000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 1100000,
-        "expectedCloseDate": "2025-04-18",
-        "status": "won"
-      },
-      {
-        "id": 619,
-        "title": "Ferguson Julie",
-        "value": 1000000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 1000000,
-        "expectedCloseDate": "2025-05-05",
-        "status": "won"
-      },
-      {
-        "id": 623,
-        "title": "Nagle Jay & Debbie",
-        "value": 1050000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 1050000,
-        "expectedCloseDate": "2024-08-15",
-        "status": "won"
-      },
-      {
-        "id": 632,
-        "title": "Gombatz William & Leanne HAVE REALTOR",
-        "value": 0,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 0,
-        "expectedCloseDate": "2025-01-08",
-        "status": "won"
-      },
-      {
-        "id": 633,
-        "title": "Kinney Walter",
-        "value": 0,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 0,
-        "expectedCloseDate": "2024-12-02",
-        "status": "won"
-      },
-      {
-        "id": 634,
-        "title": "Esteves  Olga & Manny LISA GARDNER CLIENT",
-        "value": 1200000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 1200000,
-        "expectedCloseDate": "2024-11-19",
-        "status": "won"
-      },
-      {
-        "id": 637,
-        "title": "Moura Eden & Aurinir REALTOR IS JOHN ROGELL",
-        "value": 0,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 0,
-        "expectedCloseDate": "2025-01-27",
-        "status": "won"
-      },
-      {
-        "id": 639,
-        "title": "Ahigian Jerry & Susane Habashi-Ahigian HAS REALTOR",
-        "value": 2646000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 2646000,
-        "expectedCloseDate": "2025-06-11",
-        "status": "won"
-      },
-      {
-        "id": 640,
-        "title": "Whipple Allen & Babette (New Lead contacted Eric)",
-        "value": 1000000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 1000000,
-        "expectedCloseDate": "2025-01-22",
-        "status": "won"
-      },
-      {
-        "id": 649,
-        "title": "Durant Dwight",
-        "value": 1100000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 1100000,
-        "expectedCloseDate": "2025-01-16",
-        "status": "won"
-      },
-      {
-        "id": 652,
-        "title": "Henry Kimberly & Keith",
-        "value": 1300000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 1300000,
-        "expectedCloseDate": "2025-04-03",
-        "status": "won"
-      },
-      {
-        "id": 682,
-        "title": "Karas Donna (Adrian Karas's mother)",
-        "value": 950000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 950000,
-        "expectedCloseDate": "2025-04-03",
-        "status": "won"
-      },
-      {
-        "id": 686,
-        "title": "Bennett Sean & Amy (New Carsten Lead)",
-        "value": 900000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 900000,
-        "expectedCloseDate": "2025-05-29",
-        "status": "won"
-      },
-      {
-        "id": 694,
-        "title": "Flaherty Terry & Penny",
-        "value": 1600000,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 1600000,
-        "expectedCloseDate": "2025-05-05",
-        "status": "won"
-      },
-      {
-        "id": 906,
-        "title": "DuRant | 104 Bulow Cove",
-        "value": 1124550,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 1124550,
-        "expectedCloseDate": "2026-08-10",
-        "status": "won"
-      },
-      {
-        "id": 907,
-        "title": "Henry | 18 Ocean Ridge Boulevard South",
-        "value": 1325010,
-        "stageName": "Won",
-        "probabilityPct": 100,
-        "weightedValue": 1325010,
-        "expectedCloseDate": "2026-08-10",
-        "status": "won"
+        "id": 106,
+        "title": "Anne & Brent Lister | 122 Coronado Road",
+        "value": 965037,
+        "stageName": "Under Negotiation",
+        "probabilityPct": 85,
+        "weightedValue": 820281.45,
+        "expectedCloseDate": "",
+        "status": "open"
       }
     ]
   },
