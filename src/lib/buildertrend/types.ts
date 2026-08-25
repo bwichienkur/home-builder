@@ -22,7 +22,6 @@ export const PIPELINE_WEIGHTS: Record<string, number> = {
 export type SlipBuckets = {
   permit: number;
   selections: number;
-  purchasing: number;
   construction: number;
 };
 
@@ -52,7 +51,11 @@ export type OwnerJob = {
   estCloseDate: string;
   openedAt: string;
   slip: SlipBuckets;
-  /** Current in-progress Buildertrend schedule item title (when known). */
+  /**
+   * Total end-date slip workdays from Baseline vs. actual duration by job.
+   * Prefer this over summing category slips (they do not add to total).
+   */
+  totalSlip?: number;
   notes: string;
 };
 

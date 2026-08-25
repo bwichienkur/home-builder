@@ -15,7 +15,7 @@ const baseJob = (overrides: Partial<OwnerJob>): OwnerJob => ({
   wip: 50000,
   estCloseDate: '2026-12-01',
   openedAt: '2026-01-01',
-  slip: { permit: 0, selections: 0, purchasing: 0, construction: 0 },
+  slip: { permit: 0, selections: 0, construction: 0 },
   notes: '10 daily logs',
   dailyLogsTotal: 10,
   dailyLogsRecentDone: 4,

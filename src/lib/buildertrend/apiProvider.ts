@@ -12,7 +12,7 @@ import type { OwnerDashboardProvider } from './types';
  * - sales stages (lead → closed) for weighted pipeline
  * - selections pending, to-dos past due
  * - daily logs this month
- * - schedule baseline vs actual, grouped into permit / selections / purchasing / construction slip
+ * - schedule baseline vs actual total slip + Permit / Selections / Construction breakdown
  */
 export const apiOwnerDashboardProvider: OwnerDashboardProvider = {
   id: 'buildertrend',

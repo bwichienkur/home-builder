@@ -71,6 +71,6 @@ export function formatRefreshedAt(iso: string, now = new Date()) {
   return `Updated ${ago} · ${date}`;
 }
 
-export function totalSlipDays(slip: { permit: number; selections: number; purchasing: number; construction: number }) {
-  return slip.permit + slip.selections + slip.purchasing + slip.construction;
+export function totalSlipDays(slip: { permit: number; selections: number; construction: number }) {
+  return slip.permit + slip.selections + slip.construction;
 }

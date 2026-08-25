@@ -378,4 +378,24 @@ describe('Buildertrend report mapper', () => {
     expect(mapped.jobs.find((j) => j.name === 'Tile Job')?.notes).toBe('Install Tile');
     expect(mapped.jobs.find((j) => j.name === 'Quiet Job')?.notes).toBe('');
   });
+
+  it('maps total slip from baseline report and category slips from baseline grid', () => {
+    const mapped = mapBuildertrendReports({
+      jobs: [
+        { jobID: 1, jobName: 'Ahigian', jobStatus: 'Open', projectManagers: 'Richard Linck' },
+      ],
+      baselineDuration: {
+        rowData: [{ jobID: 1, jobName: 'Ahigian', endDateSlip: 144 }],
+      },
+      baselineSlipByJob: {
+        '1': { permit: 28, selections: 131, construction: 129 },
+      },
+      scheduleByJob: {
+        '1': { siteWorkStarted: true, foundationStarted: true },
+      },
+    });
+    const job = mapped.jobs.find((j) => j.name === 'Ahigian');
+    expect(job?.totalSlip).toBe(144);
+    expect(job?.slip).toEqual({ permit: 28, selections: 131, construction: 129 });
+  });
 });

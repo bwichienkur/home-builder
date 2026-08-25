@@ -43,6 +43,10 @@ export type BuildertrendReports = {
       closing?: { title?: string; startDate?: string; endDate?: string } | null;
     }
   >;
+  /** jobId → total endDateSlip from Baseline vs. actual duration by job report. */
+  baselineDuration?: unknown;
+  /** jobId → Permit / Selections / Construction slip from Schedule → Baseline. */
+  baselineSlipByJob?: Record<string, { permit?: number; selections?: number; construction?: number }>;
 };
 
 export type MappedBuildertrendPull = {
@@ -266,6 +270,9 @@ type JobDraft = {
   closingEndDate: string;
   /** Title of the current in-progress Gantt schedule item (when known). */
   currentScheduleItem: string;
+  slip: { permit: number; selections: number; construction: number };
+  /** Total end-date slip from Baseline vs. actual duration report. */
+  totalSlip: number | null;
   notes: string[];
   /** Set from job picker; blocks other reports from overriding status/jobId. */
   pickerStatus?: OwnerJob['status'];
@@ -312,6 +319,8 @@ function mergeJob(target: JobDraft, patch: Partial<JobDraft> & { fromPicker?: bo
   if (patch.foundationStartDate) target.foundationStartDate = patch.foundationStartDate;
   if (patch.closingEndDate) target.closingEndDate = patch.closingEndDate;
   if (patch.currentScheduleItem) target.currentScheduleItem = patch.currentScheduleItem;
+  if (patch.slip) target.slip = { ...target.slip, ...patch.slip };
+  if (patch.totalSlip != null) target.totalSlip = patch.totalSlip;
 }
 
 function jobKey(name: string, jobId: unknown) {
@@ -356,6 +365,8 @@ function ingest(jobs: Map<string, JobDraft>, row: Record<string, unknown>, kind:
       foundationStartDate: '',
       closingEndDate: '',
       currentScheduleItem: '',
+      slip: { permit: 0, selections: 0, construction: 0 },
+      totalSlip: null,
       notes: [],
     } satisfies JobDraft);
 
@@ -516,6 +527,18 @@ function scheduleRowsByJob(reports: BuildertrendReports) {
   return rows;
 }
 
+function baselineTotalSlipByJob(reports: BuildertrendReports) {
+  const byJob = new Map<number, number>();
+  for (const row of asArray(reports.baselineDuration)) {
+    const rec = asRecord(row);
+    if (!rec) continue;
+    const jobId = num(pick(rec, 'jobID', 'jobId'));
+    if (!jobId) continue;
+    byJob.set(jobId, Math.round(num(pick(rec, 'endDateSlip'))));
+  }
+  return byJob;
+}
+
 function applyJobEnrichment(jobs: Map<string, JobDraft>, reports: BuildertrendReports, now: Date) {
   const recent = recentDailyLogsByJob(reports);
   const pastDue = pastDueTasksByJob(reports, now);
@@ -523,6 +546,8 @@ function applyJobEnrichment(jobs: Map<string, JobDraft>, reports: BuildertrendRe
   const schedule = scheduleRowsByJob(reports);
   const scheduleByJob = reports.scheduleByJob ?? {};
   const siteWork = reports.siteWorkByJob ?? {};
+  const baselineSlip = reports.baselineSlipByJob ?? {};
+  const totalSlipByJob = baselineTotalSlipByJob(reports);
   for (const draft of jobs.values()) {
     if (!draft.jobId) continue;
     if (recent.has(draft.jobId)) draft.dailyLogsRecentDone = recent.get(draft.jobId)!;
@@ -549,6 +574,15 @@ function applyJobEnrichment(jobs: Map<string, JobDraft>, reports: BuildertrendRe
       const sw = siteWork[String(draft.jobId)];
       if (sw && typeof sw.started === 'boolean') draft.siteWorkStarted = sw.started;
     }
+    const slipRow = baselineSlip[String(draft.jobId)];
+    if (slipRow) {
+      draft.slip = {
+        permit: Math.round(Number(slipRow.permit) || 0),
+        selections: Math.round(Number(slipRow.selections) || 0),
+        construction: Math.round(Number(slipRow.construction) || 0),
+      };
+    }
+    if (totalSlipByJob.has(draft.jobId)) draft.totalSlip = totalSlipByJob.get(draft.jobId)!;
   }
 }
 
@@ -589,6 +623,8 @@ function ingestSchedule(jobs: Map<string, JobDraft>, row: Record<string, unknown
       foundationStartDate: '',
       closingEndDate: '',
       currentScheduleItem: '',
+      slip: { permit: 0, selections: 0, construction: 0 },
+      totalSlip: null,
       notes: [],
     } satisfies JobDraft);
   mergeJob(draft, {
@@ -670,7 +706,8 @@ function toOwnerJob(draft: JobDraft, now: Date): OwnerJob {
       now,
     }),
     openedAt,
-    slip: { permit: 0, selections: 0, purchasing: 0, construction: 0 },
+    slip: draft.slip,
+    totalSlip: draft.totalSlip ?? undefined,
     notes: draft.currentScheduleItem || '',
   };
 }
