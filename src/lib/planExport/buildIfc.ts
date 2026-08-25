@@ -41,7 +41,7 @@ function gid() {
 
 /**
  * Minimal IFC4 STEP export with walls, openings, and spaces in meters.
- * Sufficient for CAD/BIM tools to ingest axes + spaces from Mahnikka.
+ * Sufficient for CAD/BIM tools to ingest axes + spaces from Olsen Custom Homes.
  */
 export function buildPlanIfc(input: IfcExportInput): string {
   const wallPts = input.walls.flatMap((w) => [w.start, w.end]);
@@ -63,8 +63,8 @@ export function buildPlanIfc(input: IfcExportInput): string {
   };
 
   const person = add("IFCPERSON($,$,'Planner',$,$,$,$,$)");
-  const org = add("IFCORGANIZATION($,'Mahnikka',$,$,$)");
-  const app = add(`IFCAPPLICATION(#${org},'2.0','Mahnikka Planner','Mahnikka')`);
+  const org = add("IFCORGANIZATION($,'Olsen Custom Homes',$,$,$)");
+  const app = add(`IFCAPPLICATION(#${org},'2.0','Olsen Custom Homes','Olsen Custom Homes')`);
   const owner = add(`IFCOWNERHISTORY(#${app},$,.ADDED.,$,$,$,$,${Math.floor(Date.now() / 1000)})`);
   const metre = add('IFCSIUNIT(*,.LENGTHUNIT.,$,.METRE.)');
   const units = add(`IFCUNITASSIGNMENT((#${metre}))`);
@@ -257,7 +257,7 @@ export function buildPlanIfc(input: IfcExportInput): string {
     'ISO-10303-21;',
     'HEADER;',
     "FILE_DESCRIPTION(('ViewDefinition [CoordinationView]'),'2;1');",
-    `FILE_NAME('${esc(input.name || 'plan')}.ifc','${new Date().toISOString()}',('Mahnikka'),('Mahnikka'),'Mahnikka Planner','Mahnikka Planner','');`,
+    `FILE_NAME('${esc(input.name || 'plan')}.ifc','${new Date().toISOString()}',('Olsen Custom Homes'),('Olsen Custom Homes'),'Olsen Custom Homes','Olsen Custom Homes','');`,
     "FILE_SCHEMA(('IFC4'));",
     'ENDSEC;',
     'DATA;',

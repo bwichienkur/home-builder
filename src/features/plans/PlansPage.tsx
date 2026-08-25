@@ -72,7 +72,7 @@ export function PlansPage() {
       const info = inspectIfc(text);
       setNotice(
         info.ok
-          ? `${info.message} Tip: export IFC4 from Build for Mahnikka-native geometry, or import DXF/JSON for editable rooms.`
+          ? `${info.message} Tip: export IFC4 from Build for Olsen Custom Homes-native geometry, or import DXF/JSON for editable rooms.`
           : info.message,
       );
       return;

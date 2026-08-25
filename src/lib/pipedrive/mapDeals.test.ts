@@ -13,7 +13,7 @@ const salesStages = [
 ];
 
 describe('mapPipedriveDeals', () => {
-  it('maps each Sales pipeline stage with deal counts and dollar totals', () => {
+  it('maps each Sales pipeline stage with deal counts and weighted dollar totals', () => {
     const mapped = mapPipedriveDeals({
       stages: salesStages,
       openDeals: [
@@ -28,17 +28,17 @@ describe('mapPipedriveDeals', () => {
     expect(mapped.pipeline.find((s) => s.id === pipedriveStageKey(1))).toMatchObject({
       label: 'First Contact',
       dealCount: 1,
-      value: 1_000_000,
+      value: 100_000, // 1M × 10%
     });
     expect(mapped.pipeline.find((s) => s.id === pipedriveStageKey(5))).toMatchObject({
       label: 'Pricing Proposal',
       dealCount: 1,
-      value: 2_000_000,
+      value: 1_400_000, // 2M × 70%
     });
     expect(mapped.pipeline.find((s) => s.id === pipedriveStageKey(6))).toMatchObject({
       label: 'Contract Sent',
       dealCount: 1,
-      value: 500_000,
+      value: 500_000, // 500k × 100%
     });
     expect(mapped.pipeline.some((s) => s.id === 'closed')).toBe(false);
     expect(mapped.weightedPipeline).toBe(100_000 + 1_400_000 + 500_000);
@@ -61,7 +61,7 @@ describe('mapPipedriveDeals', () => {
       wonDeals: [],
     });
     const merged = mergeSalesFromPipedrive(bt, pd);
-    expect(merged.pipeline.find((s) => s.id === pipedriveStageKey(6))?.value).toBe(800_000);
+    expect(merged.pipeline.find((s) => s.id === pipedriveStageKey(6))?.value).toBe(800_000); // 800k × 100%
     expect(merged.weightedPipeline).toBe(800_000);
     expect(merged.salesPerformance.find((b) => b.id === 'backlog')?.value).toBe(7_000_000);
     expect(merged.salesPerformance.find((b) => b.id === 'signing')?.value).toBe(800_000);

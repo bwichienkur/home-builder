@@ -439,7 +439,7 @@ export function BomDialog({
                     downloadBidProposalPdf(
                       snap,
                       {
-                        projectName: 'Mahnikka project',
+                        projectName: 'Olsen Custom Homes project',
                         jurisdiction: bidSettings.jurisdiction,
                         validityDays: bidSettings.validityDays,
                         paymentTerms: bidSettings.paymentTerms,
@@ -469,7 +469,7 @@ export function BomDialog({
                     setEstimateSnapshot(snap);
                     downloadBidFile(
                       scheduleOfValuesCsv(snap, {
-                        projectName: 'Mahnikka project',
+                        projectName: 'Olsen Custom Homes project',
                         jurisdiction: bidSettings.jurisdiction,
                       }),
                       'schedule-of-values.csv',

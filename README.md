@@ -1,4 +1,4 @@
-# Mahnikka 3D Home Planner
+# Olsen Custom Homes
 
 React + TypeScript + React Three Fiber home planning studio with an authenticated app shell for **Build**, **Clients**, **Vendors**, **Inventory**, **House plans**, and **Settings**.
 

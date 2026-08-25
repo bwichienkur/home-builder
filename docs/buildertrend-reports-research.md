@@ -22,7 +22,7 @@ General research on **where Owner Dashboard metrics come from in Buildertrend**,
 | **Summary widgets** | Per-job action-item counts | Pending selections proxy (`unapprovedSelections`) |
 | **Partner API** (`api.buildertrend.com`) | Gated REST API for integrators | Not available without Buildertrend partner agreement; public probes return 401 |
 | **CSV export** | Most reports support export from UI | Fallback for one-off analysis; not ideal for live dashboard |
-| **Session cookie pull** | Browser `Cookie` header → same `/apix/` calls the web app uses | What Mahnikka implements today (`BUILDERTREND_COOKIE`) |
+| **Session cookie pull** | Browser `Cookie` header → same `/apix/` calls the web app uses | What Olsen Custom Homes implements today (`BUILDERTREND_COOKIE`) |
 
 Buildertrend does **not** publish an OpenAPI spec for internal endpoints. Discovery is done by watching network traffic while logged in, same as any browser session.
 
@@ -97,7 +97,7 @@ Legend: **✅** automatable now · **⚠️** partial / rule needed · **❌** n
 | Target Margin 15% | — | Not in any of 16 reports | ❌ Manual company constant unless stored in BT Settings / custom field |
 | Projected Margin | WIP · Profitability | `Σ projectedProfit / Σ totalRevisedPrice` or `projectedProfitPercentage` | ✅ |
 | 12 Mo. Rolling Revenue | — | No trailing-12 report. Cash flow = 30d. WIP `earnedRevenue` is point-in-time, not rolling | ❌ Needs: store monthly snapshots, export Invoicing history, or custom report |
-| vs last month / sparklines | — | BT reports are current snapshot only | ❌ Requires Mahnikka history store (save each refresh) |
+| vs last month / sparklines | — | BT reports are current snapshot only | ❌ Requires Olsen Custom Homes history store (save each refresh) |
 
 **WIP % complete (official BT definition):**  
 `(Actual Costs ÷ Projected Costs) × 100` — from [WIP Report FAQs](https://buildertrend.com/help-article/work-in-progress-report-faqs/).  
@@ -190,7 +190,7 @@ All are **client-side sums/averages** of the filtered job table once columns abo
 | 3 | Contract / Permit / Slab → Close averages | Closed jobs: Job Details dates + Schedule milestone actuals | High — per-job schedule API, milestone naming standard |
 | 4 | Slip split (4 categories) | Custom schedule phases with baseline dates; or manual tracker | High — not in BT reports as-is |
 | 5 | Target margin 15% | Company constant in app Settings; or BT custom company field if one exists | Low — not a report field |
-| 6 | True 12-mo rolling revenue | Monthly snapshot table in Mahnikka; or export Invoicing + filter by invoice date | Medium — needs history or export pipeline |
+| 6 | True 12-mo rolling revenue | Monthly snapshot table in Olsen Custom Homes; or export Invoicing + filter by invoice date | Medium — needs history or export pipeline |
 | 7 | MoM deltas & sparklines | Store `pulledAt` snapshots on each refresh | Medium — app-side only |
 | 8 | Notes / risks | Optional: latest daily log subject line; job `notes` field if exposed | Low quality — mostly manual |
 | 9 | Pending selections exact count | Selections list API per job (filter `All Pending` or status ≠ Selected) | Medium — discover grid endpoint |
@@ -220,7 +220,7 @@ Priority order for a logged-in DevTools session:
 
 ---
 
-## 7. What Mahnikka pulls today
+## 7. What Olsen Custom Homes pulls today
 
 `npm run buildertrend:pull` (see `server/buildertrend/pull.js`):
 

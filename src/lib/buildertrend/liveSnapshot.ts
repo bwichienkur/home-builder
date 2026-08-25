@@ -450,37 +450,37 @@ export const LIVE_PIPELINE: PipelineStage[] = [
   {
     "id": "pd-1",
     "label": "First Contact",
-    "value": 22630628,
+    "value": 2263063,
     "dealCount": 22
   },
   {
     "id": "pd-2",
     "label": "Qualified",
-    "value": 14250000,
+    "value": 2215000,
     "dealCount": 11
   },
   {
     "id": "pd-4",
     "label": "Homesite Secured",
-    "value": 3400000,
+    "value": 1000000,
     "dealCount": 3
   },
   {
     "id": "pd-3",
     "label": "Meet with Eric",
-    "value": 4276730,
+    "value": 2352202,
     "dealCount": 3
   },
   {
     "id": "pd-5",
     "label": "Pricing Proposal",
-    "value": 2328721,
+    "value": 1630105,
     "dealCount": 2
   },
   {
     "id": "pd-17",
     "label": "Under Negotiation",
-    "value": 965037,
+    "value": 820281,
     "dealCount": 1
   },
   {

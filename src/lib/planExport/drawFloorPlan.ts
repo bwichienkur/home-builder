@@ -217,7 +217,7 @@ function drawTitleBlock(
   ctx.fillText(`SCALE  ${scaleLabel}`, rect.x + 10, rect.y + rect.h * 0.38 + 22);
   ctx.fillText(`DATE  ${new Date().toLocaleDateString()}`, rect.x + 10, rect.y + rect.h * 0.38 + 40);
   ctx.fillText(sheetLabel, rect.x + 10, rect.y + rect.h * 0.62 + 22);
-  ctx.fillText('Mahnikka Planner', rect.x + rect.w * 0.55 + 10, rect.y + rect.h * 0.62 + 22);
+  ctx.fillText('Olsen Custom Homes', rect.x + rect.w * 0.55 + 10, rect.y + rect.h * 0.62 + 22);
   ctx.font = '500 10px Figtree, system-ui, sans-serif';
   ctx.fillStyle = '#5c6770';
   ctx.fillText('INTERNAL ESTIMATE SET — not a contract bid', rect.x + rect.w * 0.55 + 10, rect.y + rect.h * 0.62 + 40);

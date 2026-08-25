@@ -112,7 +112,7 @@ export function ApiDocsPage() {
         </h1>
         <p>
           Vendors and external apps can push <strong>clients</strong>, <strong>vendors</strong>,{' '}
-          <strong>inventory</strong>, and <strong>house plans</strong> into Mahnikka with an API key.
+          <strong>inventory</strong>, and <strong>house plans</strong> into Olsen Custom Homes with an API key.
         </p>
         <div className="api-docs-actions">
           <Link to="/login">Sign in</Link>
