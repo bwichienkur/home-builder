@@ -8,7 +8,6 @@ import {
   formatPct,
   formatRefreshedAt,
   formatUsd,
-  phaseLabel,
 } from '../../lib/buildertrend';
 import type { DateRangeId, JobStatus, ProjectSnapshot } from '../../lib/buildertrend/types';
 import type { DrilldownKind } from '../../lib/dashboard/drilldownTypes';
@@ -46,7 +45,7 @@ const RANGES: { id: DateRangeId; label: string }[] = [
 
 type SortKey = keyof Pick<
   ProjectSnapshot,
-  'name' | 'pm' | 'pendingSelections' | 'pastDueTasks' | 'contractPrice' | 'revenueToDate' | 'pctComplete' | 'estCloseDate' | 'phase' | 'totalSlip'
+  'name' | 'pm' | 'pendingSelections' | 'pastDueTasks' | 'contractPrice' | 'revenueToDate' | 'pctComplete' | 'estCloseDate' | 'totalSlip'
 >;
 
 function formatRecentLogs(done: number | null, expected: number) {
@@ -268,8 +267,6 @@ export function OwnerDashboard() {
                     ['revenueToDate', 'Revenue'],
                     ['pctComplete', '% complete'],
                     ['estCloseDate', 'Est. close'],
-                    ['phase', 'Phase'],
-                    ['totalSlip', 'Total slip'],
                   ] as [SortKey, string][]
                 ).map(([key, label]) => (
                   <th key={key}>
@@ -279,12 +276,18 @@ export function OwnerDashboard() {
                     </button>
                   </th>
                 ))}
+                <th>Current schedule</th>
+                <th>
+                  <button type="button" className="dash-sort" onClick={() => toggleSort('totalSlip')}>
+                    Total slip
+                    {sort.key === 'totalSlip' ? (sort.dir === 'asc' ? ' ↑' : ' ↓') : ''}
+                  </button>
+                </th>
                 <th>Logs (4 wk)</th>
                 <th>Log % (life)</th>
                 <th>Permit</th>
                 <th>Sel.</th>
                 <th>Const.</th>
-                <th>Current schedule</th>
               </tr>
             </thead>
             <tbody>
@@ -308,11 +311,7 @@ export function OwnerDashboard() {
                   <td>{formatUsd(row.revenueToDate)}</td>
                   <td>{formatPct(row.pctComplete, 0)}</td>
                   <td>{formatCloseDate(row.estCloseDate)}</td>
-                  <td>
-                    <DrillLink to={href({ type: 'phase-projects', phase: row.phase, label: phaseLabel(row.phase) })}>
-                      {phaseLabel(row.phase)}
-                    </DrillLink>
-                  </td>
+                  <td className="is-notes">{row.notes || '—'}</td>
                   <td className={row.totalSlip > 0 ? 'is-alert' : 'is-ok'}>{formatDays(row.totalSlip)}</td>
                   <td>
                     <DrillLink to={href({ type: 'job-logs', jobId: row.id, jobName: row.name })}>
@@ -323,7 +322,6 @@ export function OwnerDashboard() {
                   <td>{row.slip.permit}</td>
                   <td>{row.slip.selections}</td>
                   <td>{row.slip.construction}</td>
-                  <td className="is-notes">{row.notes || '—'}</td>
                 </tr>
               ))}
             </tbody>
