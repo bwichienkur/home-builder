@@ -345,4 +345,37 @@ describe('Buildertrend report mapper', () => {
     expect(mapped.jobs.find((j) => j.name === 'Needs Logs')?.foundationStarted).toBe(true);
     expect(mapped.jobs.find((j) => j.name === 'No Logs Yet')?.foundationStarted).toBe(false);
   });
+
+  it('uses current schedule item title as notes', () => {
+    const mapped = mapBuildertrendReports({
+      jobs: [
+        { jobID: 1, jobName: 'Tile Job', jobStatus: 'Open', projectManagers: 'Adam Horseman' },
+        { jobID: 2, jobName: 'Quiet Job', jobStatus: 'Open', projectManagers: 'Adam Horseman' },
+      ],
+      wip: {
+        data: {
+          rowData: [
+            {
+              jobID: 1,
+              jobName: 'Tile Job',
+              jobStatus: 'Open',
+              totalRevisedPrice: 1000000,
+              amountInvoiced: 100000,
+              jobCompletionPercentage: 40,
+            },
+          ],
+        },
+      },
+      scheduleByJob: {
+        '1': {
+          siteWorkStarted: true,
+          foundationStarted: true,
+          currentItem: { title: 'Install Tile', percentComplete: 0, startDate: '2026-08-10', endDate: '2026-09-04' },
+        },
+        '2': { siteWorkStarted: true, foundationStarted: false },
+      },
+    });
+    expect(mapped.jobs.find((j) => j.name === 'Tile Job')?.notes).toBe('Install Tile');
+    expect(mapped.jobs.find((j) => j.name === 'Quiet Job')?.notes).toBe('');
+  });
 });

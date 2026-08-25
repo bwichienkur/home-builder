@@ -2857,10 +2857,10 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
     ],
     "42969582": [
       {
-        "id": 59614072,
+        "id": 59614069,
         "jobId": 42969582,
         "jobName": "Etienne",
-        "title": "Specialties - Glass Shower Enclosures",
+        "title": "Plumbing - Disposal",
         "category": "Phase 2",
         "location": "Interior",
         "statusLabel": "Partially Complete AND Expired",
@@ -6713,6 +6713,51 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "assignedTo": "James Manford"
       },
       {
+        "taskId": 49920990,
+        "jobId": 38215830,
+        "jobName": "Kinney",
+        "title": "Engineering Final Inspection",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "James Manford"
+      },
+      {
+        "taskId": 49920991,
+        "jobId": 38215830,
+        "jobName": "Kinney",
+        "title": "Corporate Inspection",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "James Manford"
+      },
+      {
+        "taskId": 49920992,
+        "jobId": 38215830,
+        "jobName": "Kinney",
+        "title": "Utility Inspection",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "James Manford"
+      },
+      {
+        "taskId": 49920993,
+        "jobId": 38215830,
+        "jobName": "Kinney",
+        "title": "Final Building Inspection",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "James Manford"
+      },
+      {
+        "taskId": 49920994,
+        "jobId": 38215830,
+        "jobName": "Kinney",
+        "title": "Final Touchup Builder",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "James Manford"
+      },
+      {
         "taskId": 49920997,
         "jobId": 38215830,
         "jobName": "Kinney",
@@ -6727,6 +6772,15 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobName": "Kinney",
         "title": "20 Certificate of Occupancy (Checklist)",
         "endDate": "2026-07-13",
+        "status": 0,
+        "assignedTo": "James Manford"
+      },
+      {
+        "taskId": 49920999,
+        "jobId": 38215830,
+        "jobName": "Kinney",
+        "title": "21 Superintendent Checklist for Final Walk (Checklist)",
+        "endDate": "2026-08-24",
         "status": 0,
         "assignedTo": "James Manford"
       },
@@ -6875,6 +6929,267 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "endDate": "2025-10-30",
         "status": 0,
         "assignedTo": "Collin Olsen"
+      },
+      {
+        "taskId": 49925798,
+        "jobId": 38319441,
+        "jobName": "Moura",
+        "title": "Corbels - Exterior Selection",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
+      },
+      {
+        "taskId": 49925799,
+        "jobId": 38319441,
+        "jobName": "Moura",
+        "title": "Doors - Exterior Selection",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
+      },
+      {
+        "taskId": 49925800,
+        "jobId": 38319441,
+        "jobName": "Moura",
+        "title": "Doors - Garage Selection",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
+      },
+      {
+        "taskId": 49925801,
+        "jobId": 38319441,
+        "jobName": "Moura",
+        "title": "Exterior Finishes Selection",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
+      },
+      {
+        "taskId": 49925802,
+        "jobId": 38319441,
+        "jobName": "Moura",
+        "title": "Paint - Exterior Selection",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
+      },
+      {
+        "taskId": 49925803,
+        "jobId": 38319441,
+        "jobName": "Moura",
+        "title": "Paint - Garage Floor Coating selection",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
+      },
+      {
+        "taskId": 49925804,
+        "jobId": 38319441,
+        "jobName": "Moura",
+        "title": "Pavers Selection",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
+      },
+      {
+        "taskId": 49925805,
+        "jobId": 38319441,
+        "jobName": "Moura",
+        "title": "Railing - Exterior Selection",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
+      },
+      {
+        "taskId": 49925806,
+        "jobId": 38319441,
+        "jobName": "Moura",
+        "title": "Roofing Selection",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
+      },
+      {
+        "taskId": 49925807,
+        "jobId": 38319441,
+        "jobName": "Moura",
+        "title": "Stone - Exterior Selection",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
+      },
+      {
+        "taskId": 49925808,
+        "jobId": 38319441,
+        "jobName": "Moura",
+        "title": "Well/ Water Supply Selection",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
+      },
+      {
+        "taskId": 49925809,
+        "jobId": 38319441,
+        "jobName": "Moura",
+        "title": "Windows & Sliders Selection",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
+      },
+      {
+        "taskId": 49925810,
+        "jobId": 38319441,
+        "jobName": "Moura",
+        "title": "A/C Walls Selection",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
+      },
+      {
+        "taskId": 49925811,
+        "jobId": 38319441,
+        "jobName": "Moura",
+        "title": "Electrical - Lighting Exterior Selection",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
+      },
+      {
+        "taskId": 49925812,
+        "jobId": 38319441,
+        "jobName": "Moura",
+        "title": "Exterior Ceiling Selection",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
+      },
+      {
+        "taskId": 49925813,
+        "jobId": 38319441,
+        "jobName": "Moura",
+        "title": "Fireplace - Exterior Selection",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
+      },
+      {
+        "taskId": 49925814,
+        "jobId": 38319441,
+        "jobName": "Moura",
+        "title": "Gas/Propane Selection",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
+      },
+      {
+        "taskId": 49926161,
+        "jobId": 38319441,
+        "jobName": "Moura",
+        "title": "Generator Selection",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
+      },
+      {
+        "taskId": 49926162,
+        "jobId": 38319441,
+        "jobName": "Moura",
+        "title": "Gutters Selction",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
+      },
+      {
+        "taskId": 49926163,
+        "jobId": 38319441,
+        "jobName": "Moura",
+        "title": "HVAC Selection",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
+      },
+      {
+        "taskId": 49926164,
+        "jobId": 38319441,
+        "jobName": "Moura",
+        "title": "Insulation Selection",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
+      },
+      {
+        "taskId": 49926165,
+        "jobId": 38319441,
+        "jobName": "Moura",
+        "title": "Landscaping Selection",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
+      },
+      {
+        "taskId": 49926166,
+        "jobId": 38319441,
+        "jobName": "Moura",
+        "title": "Mailbox Selection",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
+      },
+      {
+        "taskId": 49926167,
+        "jobId": 38319441,
+        "jobName": "Moura",
+        "title": "Plumbing - Hose Bibs Selection",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
+      },
+      {
+        "taskId": 49926168,
+        "jobId": 38319441,
+        "jobName": "Moura",
+        "title": "Plumbing - Water Heater Selection",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
+      },
+      {
+        "taskId": 49926169,
+        "jobId": 38319441,
+        "jobName": "Moura",
+        "title": "Pool Selection",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
+      },
+      {
+        "taskId": 49926170,
+        "jobId": 38319441,
+        "jobName": "Moura",
+        "title": "Septic selection",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
+      },
+      {
+        "taskId": 49926171,
+        "jobId": 38319441,
+        "jobName": "Moura",
+        "title": "Shutter Selection",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
+      },
+      {
+        "taskId": 49926172,
+        "jobId": 38319441,
+        "jobName": "Moura",
+        "title": "Summer Kitchen Selection",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
       }
     ],
     "38397739": [
@@ -7072,6 +7387,15 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "assignedTo": "Paul Dimeglio"
       },
       {
+        "taskId": 49967014,
+        "jobId": 40214880,
+        "jobName": "Emerson",
+        "title": "Deliver Drywall",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "Paul Dimeglio"
+      },
+      {
         "taskId": 49967026,
         "jobId": 40214880,
         "jobName": "Emerson",
@@ -7236,11 +7560,65 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "assignedTo": "Paul Dimeglio"
       },
       {
+        "taskId": 49972692,
+        "jobId": 40228562,
+        "jobName": "Blandford",
+        "title": "Secure Delivery - Generator",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "Paul Dimeglio"
+      },
+      {
         "taskId": 49972693,
         "jobId": 40228562,
         "jobName": "Blandford",
         "title": "Install Generator",
         "endDate": "2026-05-18",
+        "status": 0,
+        "assignedTo": "Paul Dimeglio"
+      },
+      {
+        "taskId": 49972696,
+        "jobId": 40228562,
+        "jobName": "Blandford",
+        "title": "Final Termite Treatment",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "Paul Dimeglio"
+      },
+      {
+        "taskId": 49972697,
+        "jobId": 40228562,
+        "jobName": "Blandford",
+        "title": "Irrigation Install",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "Paul Dimeglio"
+      },
+      {
+        "taskId": 49972698,
+        "jobId": 40228562,
+        "jobName": "Blandford",
+        "title": "Shrub and Tree Install",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "Paul Dimeglio"
+      },
+      {
+        "taskId": 49972699,
+        "jobId": 40228562,
+        "jobName": "Blandford",
+        "title": "Sod Install",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "Paul Dimeglio"
+      },
+      {
+        "taskId": 49972700,
+        "jobId": 40228562,
+        "jobName": "Blandford",
+        "title": "Landscape Final Inspection",
+        "endDate": "2026-08-24",
         "status": 0,
         "assignedTo": "Paul Dimeglio"
       },
@@ -7364,11 +7742,29 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "assignedTo": "James Manford"
       },
       {
+        "taskId": 49978877,
+        "jobId": 40351917,
+        "jobName": "Bennett",
+        "title": "Deliver Doors/Trim",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "James Manford"
+      },
+      {
         "taskId": 49978879,
         "jobId": 40351917,
         "jobName": "Bennett",
         "title": "Deliver Specialty Trim",
         "endDate": "2026-08-17",
+        "status": 0,
+        "assignedTo": "James Manford"
+      },
+      {
+        "taskId": 49978881,
+        "jobId": 40351917,
+        "jobName": "Bennett",
+        "title": "Measure Mirrors, Shelving, Glass",
+        "endDate": "2026-08-24",
         "status": 0,
         "assignedTo": "James Manford"
       },
@@ -7472,11 +7868,146 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "assignedTo": "James Manford"
       },
       {
+        "taskId": 49979447,
+        "jobId": 40351917,
+        "jobName": "Bennett",
+        "title": "Secure Delivery - Generator",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "James Manford"
+      },
+      {
+        "taskId": 49979449,
+        "jobId": 40351917,
+        "jobName": "Bennett",
+        "title": "Final Exterior Grade",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "James Manford"
+      },
+      {
+        "taskId": 49979450,
+        "jobId": 40351917,
+        "jobName": "Bennett",
+        "title": "Final Survey",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "James Manford"
+      },
+      {
+        "taskId": 49979451,
+        "jobId": 40351917,
+        "jobName": "Bennett",
+        "title": "Final Termite Treatment",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "James Manford"
+      },
+      {
+        "taskId": 49979452,
+        "jobId": 40351917,
+        "jobName": "Bennett",
+        "title": "Irrigation Install",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "James Manford"
+      },
+      {
+        "taskId": 49979453,
+        "jobId": 40351917,
+        "jobName": "Bennett",
+        "title": "Shrub and Tree Install",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "James Manford"
+      },
+      {
+        "taskId": 49979454,
+        "jobId": 40351917,
+        "jobName": "Bennett",
+        "title": "Sod Install",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "James Manford"
+      },
+      {
+        "taskId": 49979456,
+        "jobId": 40351917,
+        "jobName": "Bennett",
+        "title": "Landscape Final Inspection",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "James Manford"
+      },
+      {
+        "taskId": 49979458,
+        "jobId": 40351917,
+        "jobName": "Bennett",
+        "title": "Install Mailbox",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "James Manford"
+      },
+      {
         "taskId": 49979460,
         "jobId": 40351917,
         "jobName": "Bennett",
         "title": "Measure Interior and Exterior Railing",
         "endDate": "2026-06-16",
+        "status": 0,
+        "assignedTo": "James Manford"
+      },
+      {
+        "taskId": 49979473,
+        "jobId": 40351917,
+        "jobName": "Bennett",
+        "title": "Engineering Final Inspection",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "James Manford"
+      },
+      {
+        "taskId": 49979475,
+        "jobId": 40351917,
+        "jobName": "Bennett",
+        "title": "Corporate Inspection",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "James Manford"
+      },
+      {
+        "taskId": 49979477,
+        "jobId": 40351917,
+        "jobName": "Bennett",
+        "title": "Utility Inspection",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "James Manford"
+      },
+      {
+        "taskId": 49979479,
+        "jobId": 40351917,
+        "jobName": "Bennett",
+        "title": "Final Building Inspection",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "James Manford"
+      },
+      {
+        "taskId": 49979481,
+        "jobId": 40351917,
+        "jobName": "Bennett",
+        "title": "Final Touchup Builder",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "James Manford"
+      },
+      {
+        "taskId": 49979493,
+        "jobId": 40351917,
+        "jobName": "Bennett",
+        "title": "21 Superintendent Checklist for Final Walk (Checklist)",
+        "endDate": "2026-08-24",
         "status": 0,
         "assignedTo": "James Manford"
       },
@@ -7688,6 +8219,15 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobName": "Lois",
         "title": "12 Progress Walk Form (Checklist)",
         "endDate": "2026-05-29",
+        "status": 0,
+        "assignedTo": "Paul Dimeglio"
+      },
+      {
+        "taskId": 50004153,
+        "jobId": 41118068,
+        "jobName": "Lois",
+        "title": "Deliver Base/Pavers",
+        "endDate": "2026-08-24",
         "status": 0,
         "assignedTo": "Paul Dimeglio"
       },
@@ -8143,11 +8683,29 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "assignedTo": "James Manford"
       },
       {
+        "taskId": 50037674,
+        "jobId": 42673665,
+        "jobName": "Veranda Bay Model 2",
+        "title": "Insulation Inspection",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "James Manford"
+      },
+      {
         "taskId": 50037692,
         "jobId": 42673665,
         "jobName": "Veranda Bay Model 2",
         "title": "12 Progress Walk Form (Checklist)",
         "endDate": "2026-03-31",
+        "status": 0,
+        "assignedTo": "James Manford"
+      },
+      {
+        "taskId": 50037694,
+        "jobId": 42673665,
+        "jobName": "Veranda Bay Model 2",
+        "title": "Final Inspection",
+        "endDate": "2026-08-24",
         "status": 0,
         "assignedTo": "James Manford"
       },
@@ -8548,6 +9106,24 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "assignedTo": "James Manford"
       },
       {
+        "taskId": 50038316,
+        "jobId": 42673665,
+        "jobName": "Veranda Bay Model 2",
+        "title": "Final House Clean",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "James Manford"
+      },
+      {
+        "taskId": 50038317,
+        "jobId": 42673665,
+        "jobName": "Veranda Bay Model 2",
+        "title": "19 Corporate Inspection Form (Checklist)",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "James Manford"
+      },
+      {
         "taskId": 50038319,
         "jobId": 42673665,
         "jobName": "Veranda Bay Model 2",
@@ -8750,6 +9326,24 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "assignedTo": "Adam Horseman"
       },
       {
+        "taskId": 50048729,
+        "jobId": 42969582,
+        "jobName": "Etienne",
+        "title": "Install Sewer/Water Lines",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "Adam Horseman"
+      },
+      {
+        "taskId": 50048730,
+        "jobId": 42969582,
+        "jobName": "Etienne",
+        "title": "Gravity Sewer Inspection",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "Adam Horseman"
+      },
+      {
         "taskId": 50048735,
         "jobId": 42969582,
         "jobName": "Etienne",
@@ -8759,11 +9353,29 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "assignedTo": "Adam Horseman"
       },
       {
+        "taskId": 50048736,
+        "jobId": 42969582,
+        "jobName": "Etienne",
+        "title": "Hang Drywall",
+        "endDate": "2026-08-24",
+        "status": 0,
+        "assignedTo": "Adam Horseman"
+      },
+      {
         "taskId": 50048742,
         "jobId": 42969582,
         "jobName": "Etienne",
         "title": "Deliver Tile",
         "endDate": "2026-08-11",
+        "status": 0,
+        "assignedTo": "Adam Horseman"
+      },
+      {
+        "taskId": 50049208,
+        "jobId": 42969582,
+        "jobName": "Etienne",
+        "title": "12 Progress Walk Form (Checklist)",
+        "endDate": "2026-08-24",
         "status": 0,
         "assignedTo": "Adam Horseman"
       },
@@ -9764,14 +10376,14 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 35918575,
         "jobName": "Nagle",
         "userName": "Adam Horseman",
-        "dailyLogCount": 12,
-        "lastLogDate": "2026-08-20"
+        "dailyLogCount": 13,
+        "lastLogDate": "2026-08-24"
       },
       {
         "jobId": 35918575,
         "jobName": "Nagle",
         "userName": "Rob Dougherty",
-        "dailyLogCount": 8,
+        "dailyLogCount": 7,
         "lastLogDate": "2026-08-17"
       }
     ],
@@ -9806,7 +10418,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobName": "Kinney",
         "userName": "James Manford",
         "dailyLogCount": 16,
-        "lastLogDate": "2026-08-21"
+        "lastLogDate": "2026-08-24"
       },
       {
         "jobId": 38215830,
@@ -9819,8 +10431,8 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 38215830,
         "jobName": "Kinney",
         "userName": "Trevor Ragno",
-        "dailyLogCount": 1,
-        "lastLogDate": "2026-08-21"
+        "dailyLogCount": 2,
+        "lastLogDate": "2026-08-24"
       }
     ],
     "38319441": [
@@ -9837,8 +10449,8 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 38397739,
         "jobName": "Whipple",
         "userName": "Adam Horseman",
-        "dailyLogCount": 13,
-        "lastLogDate": "2026-08-21"
+        "dailyLogCount": 14,
+        "lastLogDate": "2026-08-24"
       },
       {
         "jobId": 38397739,
@@ -9860,7 +10472,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 38690567,
         "jobName": "DuRant",
         "userName": "Paul Dimeglio",
-        "dailyLogCount": 4,
+        "dailyLogCount": 3,
         "lastLogDate": "2026-08-18"
       }
     ],
@@ -9869,8 +10481,8 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 38901121,
         "jobName": "Jimenez",
         "userName": "Adam Horseman",
-        "dailyLogCount": 12,
-        "lastLogDate": "2026-08-21"
+        "dailyLogCount": 13,
+        "lastLogDate": "2026-08-24"
       },
       {
         "jobId": 38901121,
@@ -9918,16 +10530,23 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
       {
         "jobId": 40214880,
         "jobName": "Emerson",
+        "userName": "Brian Dye",
+        "dailyLogCount": 1,
+        "lastLogDate": "2026-08-24"
+      },
+      {
+        "jobId": 40214880,
+        "jobName": "Emerson",
         "userName": "Paul Dimeglio",
-        "dailyLogCount": 16,
+        "dailyLogCount": 15,
         "lastLogDate": "2026-08-21"
       },
       {
         "jobId": 40214880,
         "jobName": "Emerson",
         "userName": "Rob Dougherty",
-        "dailyLogCount": 5,
-        "lastLogDate": "2026-08-18"
+        "dailyLogCount": 7,
+        "lastLogDate": "2026-08-24"
       }
     ],
     "40228562": [
@@ -9935,7 +10554,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 40228562,
         "jobName": "Blandford",
         "userName": "Paul Dimeglio",
-        "dailyLogCount": 18,
+        "dailyLogCount": 16,
         "lastLogDate": "2026-08-21"
       },
       {
@@ -9959,7 +10578,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobName": "Bennett",
         "userName": "James Manford",
         "dailyLogCount": 16,
-        "lastLogDate": "2026-08-21"
+        "lastLogDate": "2026-08-24"
       },
       {
         "jobId": 40351917,
@@ -9997,7 +10616,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 41118068,
         "jobName": "Lois",
         "userName": "Paul Dimeglio",
-        "dailyLogCount": 15,
+        "dailyLogCount": 13,
         "lastLogDate": "2026-08-20"
       },
       {
@@ -10013,7 +10632,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 41200140,
         "jobName": "Youngs/Wolfe",
         "userName": "Paul Dimeglio",
-        "dailyLogCount": 14,
+        "dailyLogCount": 13,
         "lastLogDate": "2026-08-20"
       },
       {
@@ -10029,7 +10648,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 41776958,
         "jobName": "Pierami",
         "userName": "Richard Linck",
-        "dailyLogCount": 14,
+        "dailyLogCount": 13,
         "lastLogDate": "2026-08-17"
       },
       {
@@ -10059,15 +10678,15 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 42083349,
         "jobName": "Norris",
         "userName": "Richard Linck",
-        "dailyLogCount": 12,
+        "dailyLogCount": 10,
         "lastLogDate": "2026-08-17"
       },
       {
         "jobId": 42083349,
         "jobName": "Norris",
         "userName": "Rob Dougherty",
-        "dailyLogCount": 5,
-        "lastLogDate": "2026-08-21"
+        "dailyLogCount": 6,
+        "lastLogDate": "2026-08-24"
       }
     ],
     "42615310": [
@@ -10092,7 +10711,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobName": "Veranda Bay Model 2",
         "userName": "James Manford",
         "dailyLogCount": 16,
-        "lastLogDate": "2026-08-21"
+        "lastLogDate": "2026-08-24"
       },
       {
         "jobId": 42673665,
@@ -10107,8 +10726,15 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 42969582,
         "jobName": "Etienne",
         "userName": "Adam Horseman",
-        "dailyLogCount": 15,
+        "dailyLogCount": 14,
         "lastLogDate": "2026-08-21"
+      },
+      {
+        "jobId": 42969582,
+        "jobName": "Etienne",
+        "userName": "Brian Dye",
+        "dailyLogCount": 1,
+        "lastLogDate": "2026-08-24"
       },
       {
         "jobId": 42969582,

@@ -3,6 +3,7 @@ import {
   INCOMPLETE_TASKS_FILTERS,
   isSiteWorkScheduleTitle,
   mergeTasksListResponses,
+  pickCurrentScheduleItem,
   scheduleMilestonesFromGantt,
   selectionsGridBody,
   SELECTIONS_GRID_SELECTED_TAB,
@@ -134,5 +135,47 @@ describe('scheduleMilestonesFromGantt', () => {
     });
     expect(byJob['1']?.foundation?.startDate).toBe('2025-01-01');
     expect(byJob['1']?.foundationStarted).toBe(true);
+  });
+
+  it('sets currentItem to the in-progress schedule activity', () => {
+    const byJob = scheduleMilestonesFromGantt(
+      {
+        data: {
+          items: [
+            { jobId: 1, title: 'Framing', startDate: '2026-07-01', endDate: '2026-07-20', percentComplete: 100, isComplete: true },
+            { jobId: 1, title: 'Drywall', startDate: '2026-08-01', endDate: '2026-08-20', percentComplete: 0, isComplete: false },
+            { jobId: 1, title: 'Paint', startDate: '2026-08-10', endDate: '2026-08-28', percentComplete: 0, isComplete: false },
+            { jobId: 1, title: 'Closing', startDate: '2026-09-01', endDate: '2026-09-05', percentComplete: 0, isComplete: false },
+          ],
+        },
+      },
+      { now: new Date('2026-08-15T12:00:00Z') },
+    );
+    expect(byJob['1']?.currentItem).toMatchObject({ title: 'Paint', startDate: '2026-08-10', endDate: '2026-08-28' });
+  });
+});
+
+describe('pickCurrentScheduleItem', () => {
+  it('prefers the most recently started incomplete item still in window', () => {
+    const pick = pickCurrentScheduleItem(
+      [
+        { title: 'Install Tile', startDate: '2026-08-10', endDate: '2026-09-04', isComplete: false, percentComplete: 0 },
+        { title: 'Driveway', startDate: '2026-08-24', endDate: '2026-08-27', isComplete: false, percentComplete: 0 },
+        { title: 'Closing', startDate: '2026-10-01', endDate: '2026-10-05', isComplete: false, percentComplete: 0 },
+      ],
+      new Date('2026-08-25T12:00:00Z'),
+    );
+    expect(pick?.title).toBe('Driveway');
+  });
+
+  it('falls back to the next upcoming incomplete item', () => {
+    const pick = pickCurrentScheduleItem(
+      [
+        { title: 'Done', startDate: '2026-01-01', endDate: '2026-01-10', isComplete: true, percentComplete: 100 },
+        { title: 'Next Up', startDate: '2026-09-01', endDate: '2026-09-10', isComplete: false, percentComplete: 0 },
+      ],
+      new Date('2026-08-25T12:00:00Z'),
+    );
+    expect(pick?.title).toBe('Next Up');
   });
 });

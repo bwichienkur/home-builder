@@ -36,6 +36,7 @@ export type BuildertrendReports = {
       firstItemStartDate?: string;
       siteWorkStarted?: boolean | null;
       foundationStarted?: boolean | null;
+      currentItem?: { title?: string; percentComplete?: number; startDate?: string; endDate?: string } | null;
       siteWork?: { title?: string; started?: boolean; percentComplete?: number; isComplete?: boolean; startDate?: string; endDate?: string } | null;
       permitting?: { title?: string; startDate?: string; endDate?: string } | null;
       foundation?: { title?: string; startDate?: string; endDate?: string; started?: boolean } | null;
@@ -263,6 +264,8 @@ type JobDraft = {
   permittingEndDate: string;
   foundationStartDate: string;
   closingEndDate: string;
+  /** Title of the current in-progress Gantt schedule item (when known). */
+  currentScheduleItem: string;
   notes: string[];
   /** Set from job picker; blocks other reports from overriding status/jobId. */
   pickerStatus?: OwnerJob['status'];
@@ -308,6 +311,7 @@ function mergeJob(target: JobDraft, patch: Partial<JobDraft> & { fromPicker?: bo
   if (patch.permittingEndDate) target.permittingEndDate = patch.permittingEndDate;
   if (patch.foundationStartDate) target.foundationStartDate = patch.foundationStartDate;
   if (patch.closingEndDate) target.closingEndDate = patch.closingEndDate;
+  if (patch.currentScheduleItem) target.currentScheduleItem = patch.currentScheduleItem;
 }
 
 function jobKey(name: string, jobId: unknown) {
@@ -351,6 +355,7 @@ function ingest(jobs: Map<string, JobDraft>, row: Record<string, unknown>, kind:
       permittingEndDate: '',
       foundationStartDate: '',
       closingEndDate: '',
+      currentScheduleItem: '',
       notes: [],
     } satisfies JobDraft);
 
@@ -539,6 +544,7 @@ function applyJobEnrichment(jobs: Map<string, JobDraft>, reports: BuildertrendRe
       if (milestones.permitting?.endDate) draft.permittingEndDate = milestones.permitting.endDate;
       if (milestones.foundation?.startDate) draft.foundationStartDate = milestones.foundation.startDate;
       if (milestones.closing?.endDate) draft.closingEndDate = milestones.closing.endDate;
+      if (milestones.currentItem?.title) draft.currentScheduleItem = String(milestones.currentItem.title).trim();
     } else {
       const sw = siteWork[String(draft.jobId)];
       if (sw && typeof sw.started === 'boolean') draft.siteWorkStarted = sw.started;
@@ -582,6 +588,7 @@ function ingestSchedule(jobs: Map<string, JobDraft>, row: Record<string, unknown
       permittingEndDate: '',
       foundationStartDate: '',
       closingEndDate: '',
+      currentScheduleItem: '',
       notes: [],
     } satisfies JobDraft);
   mergeJob(draft, {
@@ -642,14 +649,6 @@ function toOwnerJob(draft: JobDraft, now: Date): OwnerJob {
     pctComplete: draft.pctComplete,
     logCount: draft.logCount,
   });
-  const notes = [...new Set(draft.notes.filter(Boolean))];
-  if (!draft.onWip) notes.unshift('Not on WIP report');
-  if (draft.siteWorkStarted === false) notes.push('Site Work not started (Design / Permitting)');
-  if (draft.siteWorkStarted === true) notes.push('Site Work started (Construction)');
-  if (draft.foundationStarted === true) notes.push('Foundation started (daily logs required)');
-  if (draft.foundationStarted === false) notes.push('Foundation not started (daily logs not required)');
-  if (draft.lastLog) notes.push(`Last daily log ${draft.lastLog}`);
-  if (draft.logCount) notes.push(`${draft.logCount} daily logs`);
   return {
     id: draft.id,
     name: draft.name,
@@ -672,7 +671,7 @@ function toOwnerJob(draft: JobDraft, now: Date): OwnerJob {
     }),
     openedAt,
     slip: { permit: 0, selections: 0, purchasing: 0, construction: 0 },
-    notes: notes.join(' · '),
+    notes: draft.currentScheduleItem || '',
   };
 }
 
