@@ -283,7 +283,6 @@ export function OwnerDashboard() {
                 <th>Log % (life)</th>
                 <th>Permit</th>
                 <th>Sel.</th>
-                <th>Purch.</th>
                 <th>Const.</th>
                 <th>Current schedule</th>
               </tr>
@@ -323,7 +322,6 @@ export function OwnerDashboard() {
                   <td>{formatPct(row.dailyLogLifetimePct, 0)}</td>
                   <td>{row.slip.permit}</td>
                   <td>{row.slip.selections}</td>
-                  <td>{row.slip.purchasing}</td>
                   <td>{row.slip.construction}</td>
                   <td className="is-notes">{row.notes || '—'}</td>
                 </tr>

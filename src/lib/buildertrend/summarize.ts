@@ -108,7 +108,7 @@ export function summarizeOwnerDashboard(input: {
   const logRecentExp = jobs.reduce((s, j) => s + j.dailyLogsRecentExpected, 0);
   const logLifetimeDone = jobs.reduce((s, j) => s + (j.requiresDailyLogs ? j.dailyLogsTotal : 0), 0);
   const logLifetimeExp = jobs.reduce((s, j) => s + j.dailyLogsLifetimeDue, 0);
-  const slipSum = jobs.reduce((s, j) => s + totalSlipDays(j.slip), 0);
+  const slipSum = jobs.reduce((s, j) => s + (j.totalSlip ?? totalSlipDays(j.slip)), 0);
   const weighted = input.weightedPipeline ?? weightedPipelineValue(input.pipeline);
   const marginDelta = input.projectedMarginPct - input.targetMarginPct;
 
@@ -214,7 +214,7 @@ export function summarizeOwnerDashboard(input: {
         estCloseDate: job.estCloseDate,
         phase: job.phase,
         slip: job.slip,
-        totalSlip: totalSlipDays(job.slip),
+        totalSlip: job.totalSlip ?? totalSlipDays(job.slip),
         notes: job.notes,
       }))
       .sort((a, b) => a.name.localeCompare(b.name)),

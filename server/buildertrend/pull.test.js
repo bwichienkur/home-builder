@@ -8,6 +8,7 @@ import {
   selectionsGridBody,
   SELECTIONS_GRID_SELECTED_TAB,
   siteWorkStatusFromGantt,
+  slipBucketsFromBaselineItems,
   TASKS_LIST_ROW_CAP,
 } from './pull.js';
 
@@ -177,5 +178,20 @@ describe('pickCurrentScheduleItem', () => {
       new Date('2026-08-25T12:00:00Z'),
     );
     expect(pick?.title).toBe('Next Up');
+  });
+});
+
+describe('slipBucketsFromBaselineItems', () => {
+  it('uses Permitting, max of selection phases 1-3, and Closing minus Site Work', () => {
+    const slip = slipBucketsFromBaselineItems([
+      { title: 'Permitting', endDateSlip: 28 },
+      { title: 'Selection Phase 1 Due ', endDateSlip: 20 },
+      { title: 'Selection Phase 2 Due', endDateSlip: 30 },
+      { title: 'Selection Phase 3 Due', endDateSlip: 25 },
+      { title: 'Selection Phase 4 Due', endDateSlip: 99 },
+      { title: 'Site Work', endDateSlip: 100 },
+      { title: 'Closing', endDateSlip: 130 },
+    ]);
+    expect(slip).toEqual({ permit: 28, selections: 30, construction: 30 });
   });
 });

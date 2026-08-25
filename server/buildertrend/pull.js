@@ -20,6 +20,7 @@ const READ_POST_PREFIXES = [
   '/api/Leads/Grid',
   '/api/Selections/Grid',
   '/api/Calendar/GanttChart',
+  '/api/Calendar/BaselineGrid',
 ];
 
 function isReadOnlyPost(urlPath) {
@@ -335,10 +336,48 @@ export function isExactScheduleTitle(title, expected) {
   return new RegExp(`^\\s*${expected}\\s*$`, 'i').test(String(title || '').trim());
 }
 
+/** Selection Phase 1/2/3 Due titles (trailing space tolerated). */
+export function isSelectionPhaseDueTitle(title, phase) {
+  return new RegExp(`^\\s*selection\\s*phase\\s*${phase}\\s*due\\s*$`, 'i').test(String(title || '').trim());
+}
+
 /** Schedule item started = complete or percentComplete > 0. */
 export function scheduleItemStarted(item) {
   if (!item) return false;
   return Boolean(item.isComplete) || Number(item.percentComplete) > 0;
+}
+
+function endDateSlipDays(row) {
+  const raw = row?.endDateSlip;
+  if (typeof raw === 'number' && Number.isFinite(raw)) return Math.round(raw);
+  if (raw && typeof raw === 'object') {
+    const nested = Number(raw.workdays ?? raw.days ?? raw.value);
+    if (Number.isFinite(nested)) return Math.round(nested);
+  }
+  return 0;
+}
+
+/**
+ * Permit / Selections / Construction slip from Schedule → Baseline item rows.
+ * - Permit: Permitting endDateSlip
+ * - Selections: max endDateSlip among Selection Phase 1/2/3 Due
+ * - Construction: Closing endDateSlip − Site Work endDateSlip (floor at 0)
+ */
+export function slipBucketsFromBaselineItems(items) {
+  const rows = Array.isArray(items) ? items : [];
+  const findExact = (expected) => rows.find((row) => isExactScheduleTitle(row?.title, expected));
+  const permit = endDateSlipDays(findExact('Permitting'));
+  const selectionSlips = [1, 2, 3]
+    .map((phase) => endDateSlipDays(rows.find((row) => isSelectionPhaseDueTitle(row?.title, phase))))
+    .filter((n) => Number.isFinite(n));
+  const selections = selectionSlips.length ? Math.max(...selectionSlips) : 0;
+  const siteWork = endDateSlipDays(findExact('Site Work'));
+  const closing = endDateSlipDays(findExact('Closing'));
+  return {
+    permit,
+    selections,
+    construction: Math.max(0, closing - siteWork),
+  };
 }
 
 function isoDay(value) {
@@ -521,6 +560,40 @@ async function fetchScheduleMilestonesByJob(session, jobIds) {
   return { ok: anyOk, status: lastStatus, data: merged };
 }
 
+async function fetchBaselineGridForJob(session, jobId) {
+  const result = await postJson(session, '/api/Calendar/BaselineGrid', { jobIds: [Number(jobId)] });
+  if (!result.ok) return { ok: false, status: result.status, rows: [] };
+  const rows = result.data?.data?.data;
+  return {
+    ok: true,
+    status: result.status,
+    rows: Array.isArray(rows) ? rows : [],
+  };
+}
+
+/**
+ * Per open job: Permit / Selections / Construction slip from Schedule → Baseline.
+ * Fetches one job at a time (BaselineGrid ignores extra jobIds beyond the first).
+ */
+async function fetchBaselineSlipByJob(session, jobIds, { concurrency = 5 } = {}) {
+  if (!jobIds.length) return { ok: true, status: 200, data: {} };
+  const unique = [...new Set(jobIds.map(Number).filter(Boolean))];
+  const parts = await mapPool(unique, concurrency, async (jobId) => {
+    const result = await fetchBaselineGridForJob(session, jobId);
+    return { jobId, ...result };
+  });
+  const data = {};
+  let lastStatus = 200;
+  let anyOk = false;
+  for (const part of parts) {
+    lastStatus = part.status || lastStatus;
+    if (!part.ok) continue;
+    anyOk = true;
+    data[String(part.jobId)] = slipBucketsFromBaselineItems(part.rows);
+  }
+  return { ok: anyOk || !unique.length, status: lastStatus, data };
+}
+
 function closedWarrantyJobIdsFromReports(...payloads) {
   const ids = new Set();
   for (const payload of payloads) {
@@ -648,12 +721,22 @@ function leadsGridBody() {
 
 export async function fetchReports(session) {
   const { start: logStart, end: logEnd } = rollingLogWindow();
-  const [wip, dailyLogs, userDailyLogsRecent, schedulePercentComplete, leadStatus, jobs, leadsGrid, jobsites] =
-    await Promise.all([
+  const [
+    wip,
+    dailyLogs,
+    userDailyLogsRecent,
+    schedulePercentComplete,
+    baselineDuration,
+    leadStatus,
+    jobs,
+    leadsGrid,
+    jobsites,
+  ] = await Promise.all([
       getJson(session, '/apix/v3/Reporting/work-in-progress', { openJobLimit: 500 }),
       getJson(session, '/apix/v3/Reporting/daily-log-creation-by-job'),
       getJson(session, '/apix/v3/Reporting/user-daily-logs', { startDate: logStart, endDate: logEnd }),
       getJson(session, '/apix/v3/Reporting/schedule-percent-complete-by-job'),
+      getJson(session, '/apix/v3/Reporting/baseline-vs-actual-duration-by-job'),
       getJson(session, '/apix/v3/Reporting/lead-status-by-source'),
       getJson(session, '/api/jobpicker/GetExistingJobList'),
       postJson(session, '/api/Leads/Grid', leadsGridBody()),
@@ -663,12 +746,15 @@ export async function fetchReports(session) {
   const jobIds = openJobIdsFromPicker(jobs.data);
   const closedWarrantyIds = closedWarrantyJobIdsFromReports(schedulePercentComplete.data, dailyLogs.data);
   const scheduleJobIds = [...new Set([...jobIds, ...closedWarrantyIds])];
-  const [tasks, actionItemsByJob, selectionsByJob, scheduleByJob] = await Promise.all([
+  const [tasks, actionItemsByJob, selectionsByJob, scheduleByJob, baselineSlipByJob] = await Promise.all([
     fetchTasksForOpenJobs(session, jobIds),
     jobIds.length ? fetchActionItemsByJob(session, jobIds) : Promise.resolve({}),
     jobIds.length ? fetchSelectionsForOpenJobs(session, jobIds) : Promise.resolve({}),
     scheduleJobIds.length
       ? fetchScheduleMilestonesByJob(session, scheduleJobIds)
+      : Promise.resolve({ ok: true, status: 200, data: {} }),
+    jobIds.length
+      ? fetchBaselineSlipByJob(session, jobIds)
       : Promise.resolve({ ok: true, status: 200, data: {} }),
   ]);
 
@@ -694,6 +780,7 @@ export async function fetchReports(session) {
     dailyLogs: dailyLogs.data,
     userDailyLogsRecent: userDailyLogsRecent.data,
     schedulePercentComplete: schedulePercentComplete.data,
+    baselineDuration: baselineDuration.data,
     leadStatus: leadStatus.data,
     jobs: jobs.data,
     leads: leadsGrid.data,
@@ -703,6 +790,7 @@ export async function fetchReports(session) {
     selectionsByJob,
     scheduleByJob: scheduleData,
     siteWorkByJob,
+    baselineSlipByJob: baselineSlipByJob.data ?? {},
   };
   const failed = [
     ['work-in-progress', wip],
@@ -722,6 +810,7 @@ export async function fetchReports(session) {
       dailyLogs: dailyLogs.status,
       userDailyLogsRecent: userDailyLogsRecent.status,
       schedulePercentComplete: schedulePercentComplete.status,
+      baselineDuration: baselineDuration.status,
       leadStatus: leadStatus.status,
       jobs: jobs.status,
       leads: leadsGrid.status,
@@ -729,6 +818,7 @@ export async function fetchReports(session) {
       tasks: tasks.status,
       scheduleByJob: scheduleByJob.status ?? 0,
       siteWorkByJob: scheduleByJob.status ?? 0,
+      baselineSlipByJob: baselineSlipByJob.status ?? 0,
     },
   };
 }
