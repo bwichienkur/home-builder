@@ -8,7 +8,7 @@ import type { LiveDrilldown } from '../dashboard/drilldownTypes';
  * Daily logs = user×job rows from the rolling 4-week window.
  */
 export const LIVE_DRILLDOWN: LiveDrilldown = {
-  "generatedAt": "2026-08-23T10:29:12.296Z",
+  "generatedAt": "2026-08-25T12:26:20.522Z",
   "dealsByStage": {
     "pd-1": [
       {
@@ -162,6 +162,16 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "status": "open"
       },
       {
+        "id": 118,
+        "title": "Hank Foley | 2724 South Peninsula Drive",
+        "value": 2100000,
+        "stageName": "First Contact",
+        "probabilityPct": 10,
+        "weightedValue": 210000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
         "id": 758,
         "title": "David Torres | (305)308-5475",
         "value": 0,
@@ -228,6 +238,16 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "stageName": "First Contact",
         "probabilityPct": 10,
         "weightedValue": 150000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 912,
+        "title": "Chris Lovett",
+        "value": 1200000,
+        "stageName": "First Contact",
+        "probabilityPct": 10,
+        "weightedValue": 120000,
         "expectedCloseDate": "",
         "status": "open"
       }
