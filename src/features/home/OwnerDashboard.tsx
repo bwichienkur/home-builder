@@ -285,7 +285,7 @@ export function OwnerDashboard() {
                 <th>Sel.</th>
                 <th>Purch.</th>
                 <th>Const.</th>
-                <th>Notes / risks</th>
+                <th>Current schedule</th>
               </tr>
             </thead>
             <tbody>

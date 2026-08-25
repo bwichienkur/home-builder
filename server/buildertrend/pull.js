@@ -346,6 +346,47 @@ function isoDay(value) {
 }
 
 /**
+ * Current schedule item for a job: incomplete work that has started (start ≤ today),
+ * preferring items still inside their planned window. Falls back to the next upcoming
+ * incomplete item. Returns { title, percentComplete, startDate, endDate } or null.
+ */
+export function pickCurrentScheduleItem(items, now = new Date()) {
+  const today = now.toISOString().slice(0, 10);
+  const incomplete = (items ?? []).filter((item) => !item?.isComplete && String(item?.title || '').trim());
+  if (!incomplete.length) return null;
+
+  const active = incomplete.filter((item) => {
+    const start = isoDay(item.startDate);
+    return Boolean(start && start <= today);
+  });
+  const inWindow = active.filter((item) => {
+    const end = isoDay(item.endDate);
+    return !end || end >= today;
+  });
+  const pool = inWindow.length ? inWindow : active;
+
+  const rank = (list) =>
+    [...list].sort((a, b) => {
+      const startCmp = isoDay(b.startDate).localeCompare(isoDay(a.startDate));
+      if (startCmp) return startCmp;
+      const endCmp = isoDay(a.endDate).localeCompare(isoDay(b.endDate));
+      if (endCmp) return endCmp;
+      return Number(b.percentComplete || 0) - Number(a.percentComplete || 0);
+    });
+
+  const pick = pool.length
+    ? rank(pool)[0]
+    : [...incomplete].sort((a, b) => isoDay(a.startDate).localeCompare(isoDay(b.startDate)))[0];
+  if (!pick) return null;
+  return {
+    title: String(pick.title).trim(),
+    percentComplete: Number(pick.percentComplete) || 0,
+    startDate: isoDay(pick.startDate),
+    endDate: isoDay(pick.endDate),
+  };
+}
+
+/**
  * Site Work started = schedule item complete or percentComplete > 0.
  * Returns map of jobId → { started, title, percentComplete, isComplete, startDate }.
  */
@@ -369,10 +410,13 @@ export function siteWorkStatusFromGantt(ganttPayload) {
  * Per-job schedule milestones from GanttChart items.
  * Exact titles: Site Work, Permitting, Foundation, Closing.
  * firstItemStartDate = earliest startDate among all items for the job.
+ * currentItem = incomplete schedule item currently in progress (or next upcoming).
  */
-export function scheduleMilestonesFromGantt(ganttPayload) {
+export function scheduleMilestonesFromGantt(ganttPayload, options = {}) {
   const items = ganttPayload?.data?.items ?? ganttPayload?.items ?? [];
+  const now = options.now ?? new Date();
   const byJob = new Map();
+  const itemsByJob = new Map();
 
   const ensure = (jobId) => {
     if (!byJob.has(jobId)) {
@@ -384,6 +428,7 @@ export function scheduleMilestonesFromGantt(ganttPayload) {
         closing: null,
         siteWorkStarted: null,
         foundationStarted: null,
+        currentItem: null,
       });
     }
     return byJob.get(jobId);
@@ -393,6 +438,8 @@ export function scheduleMilestonesFromGantt(ganttPayload) {
     const jobId = Number(item?.jobId);
     if (!jobId) continue;
     const row = ensure(jobId);
+    if (!itemsByJob.has(jobId)) itemsByJob.set(jobId, []);
+    itemsByJob.get(jobId).push(item);
     const startDate = isoDay(item.startDate);
     const endDate = isoDay(item.endDate);
     if (startDate && (!row.firstItemStartDate || startDate < row.firstItemStartDate)) {
@@ -445,6 +492,11 @@ export function scheduleMilestonesFromGantt(ganttPayload) {
   for (const [jobId, started] of foundationByJob.entries()) {
     const row = byJob.get(jobId);
     if (row) row.foundationStarted = started;
+  }
+
+  for (const [jobId, jobItems] of itemsByJob.entries()) {
+    const row = byJob.get(jobId);
+    if (row) row.currentItem = pickCurrentScheduleItem(jobItems, now);
   }
 
   return Object.fromEntries([...byJob.entries()].map(([id, row]) => [String(id), row]));

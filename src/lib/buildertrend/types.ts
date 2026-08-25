@@ -52,6 +52,7 @@ export type OwnerJob = {
   estCloseDate: string;
   openedAt: string;
   slip: SlipBuckets;
+  /** Current in-progress Buildertrend schedule item title (when known). */
   notes: string;
 };
 
