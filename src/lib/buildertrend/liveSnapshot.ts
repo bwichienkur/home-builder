@@ -7,7 +7,7 @@ import type { OwnerJob, PipelineStage, SalesPerformanceBar, TimeMetric } from '.
  *   PIPEDRIVE_API_TOKEN=… npm run pipedrive:pull
  *   npm run buildertrend:update-snapshot
  * Jobs / WIP / logs / tasks / selections = Buildertrend.
- * Sales funnel + weighted pipeline from Pipedrive Sales pipeline (pulled 2026-08-23T10:29:12.296Z).
+ * Sales funnel + weighted pipeline from Pipedrive Sales pipeline (pulled 2026-08-25T12:26:20.522Z).
  * Past due = Tasks Status includes Not completed + due date before today.
  * Pending selections = per job, exclude green Selected/Completed (status 2 and 3).
  * Test job "**** Tate TEST JOB" omitted.
@@ -450,8 +450,8 @@ export const LIVE_PIPELINE: PipelineStage[] = [
   {
     "id": "pd-1",
     "label": "First Contact",
-    "value": 2263063,
-    "dealCount": 22
+    "value": 2593063,
+    "dealCount": 24
   },
   {
     "id": "pd-2",
@@ -534,5 +534,5 @@ export const LIVE_TARGET_MARGIN_PCT = 15;
 export const LIVE_PROJECTED_MARGIN_PCT = 33.3;
 export const LIVE_ROLLING_REVENUE_12MO = 16411194.450000001;
 /** Weighted pipeline: Pipedrive value × stage probability when PD cache present. */
-export const LIVE_WEIGHTED_PIPELINE = 10280650;
-export const LIVE_SNAPSHOT_AT = '2026-08-25T12:22:31.576Z';
+export const LIVE_WEIGHTED_PIPELINE = 10610650;
+export const LIVE_SNAPSHOT_AT = '2026-08-25T12:26:19.369Z';
