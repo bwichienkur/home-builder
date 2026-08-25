@@ -10,7 +10,7 @@ Probe used a logged-in Buildertrend session: GET reports + allowlisted POST list
 |--------|---------|
 | **Probe** | Observed directly in BT UI/API |
 | **Needs owner** | Business rule still required |
-| **Assumed in app** | How Mahnikka maps it today (change if wrong) |
+| **Assumed in app** | How Olsen Custom Homes maps it today (change if wrong) |
 
 ---
 

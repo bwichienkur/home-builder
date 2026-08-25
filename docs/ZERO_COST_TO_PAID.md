@@ -1,6 +1,6 @@
 # $0 path now → paid path later
 
-Mahnikka is set up so you can stay at **$0** today and flip to hosted auth/database later **without rewriting the UI**.
+Olsen Custom Homes is set up so you can stay at **$0** today and flip to hosted auth/database later **without rewriting the UI**.
 
 ## Current default ($0)
 

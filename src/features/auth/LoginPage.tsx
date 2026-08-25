@@ -50,7 +50,7 @@ export function LoginPage() {
   return (
     <div className="auth-screen">
       <div className="auth-card">
-        <p className="eyebrow">Mahnikka</p>
+        <p className="eyebrow">Olsen Custom Homes</p>
         <h1>{mode === 'login' ? 'Sign in' : 'Create account'}</h1>
         <p className="auth-lede">
           Plan studio, clients, vendors, inventory, and house-plan imports in one workspace.

@@ -7,7 +7,7 @@ import { room } from './planFactories';
  * Sources / licenses are recorded on each plan for redistribution clarity.
  */
 const NOTE =
-  'Open sample geometry for Mahnikka. Orthogonal footprints with published dimensions — not traced from proprietary builder brochures.';
+  'Open sample geometry for Olsen Custom Homes. Orthogonal footprints with published dimensions — not traced from proprietary builder brochures.';
 
 function plan(partial: Omit<HousePlan, 'note' | 'sourceUrl'> & { sourceUrl?: string; note?: string }): HousePlan {
   return {

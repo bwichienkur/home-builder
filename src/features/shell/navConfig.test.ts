@@ -21,7 +21,7 @@ describe('app nav', () => {
     expect(pageTitleForPath('/')).toBe('Overview');
     expect(pageTitleForPath('/build')).toBe('Build');
     expect(pageTitleForPath('/inventory')).toBe('Materials');
-    expect(pageTitleForPath('/unknown')).toBe('Mahnikka');
+    expect(pageTitleForPath('/unknown')).toBe('Olsen Custom Homes');
   });
 
   it('gives every destination an icon', () => {

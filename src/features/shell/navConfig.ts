@@ -70,5 +70,5 @@ export function pageTitleForPath(pathname: string): string {
   const match = PAGE_TITLES.find((item) =>
     item.end ? pathname === item.path : pathname === item.path || pathname.startsWith(`${item.path}/`),
   );
-  return match?.title ?? 'Mahnikka';
+  return match?.title ?? 'Olsen Custom Homes';
 }

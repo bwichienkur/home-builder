@@ -187,7 +187,7 @@ export default function StudioApp() {
       store.save();
       const { entry } = persistToLibrary();
       const url = designShareUrl(entry.code);
-      if (navigator.share) await navigator.share({ title: projectName, text: `Mahnikka design ${entry.code}`, url });
+      if (navigator.share) await navigator.share({ title: projectName, text: `Olsen Custom Homes design ${entry.code}`, url });
       else {
         await navigator.clipboard.writeText(url);
         notify(`Link copied · ${entry.code}`);
@@ -242,7 +242,7 @@ export default function StudioApp() {
     });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `${design.name.replace(/[^\w\-]+/g, '-').toLowerCase() || 'mahnikka'}-build.json`;
+    a.download = `${design.name.replace(/[^\w\-]+/g, '-').toLowerCase() || 'olsen'}-build.json`;
     a.click();
     URL.revokeObjectURL(a.href);
     notify('Build exported');
@@ -252,7 +252,7 @@ export default function StudioApp() {
     (design: SharedDesign) => {
       const csv = shoppingListCsvFromDesign(design.payload, allCatalog);
       downloadTextFile(
-        `${design.name.replace(/[^\w\-]+/g, '-').toLowerCase() || 'mahnikka'}-shopping-list.csv`,
+        `${design.name.replace(/[^\w\-]+/g, '-').toLowerCase() || 'olsen'}-shopping-list.csv`,
         csv,
       );
       notify('Shopping list exported');
@@ -280,7 +280,7 @@ export default function StudioApp() {
         };
       });
       const active = inputs.find((_, i) => floors[i]?.id === store.activeFloorId) ?? inputs[0];
-      const base = `${projectName.replace(/[^\w\-]+/g, '-').toLowerCase() || 'mahnikka'}-plan`;
+      const base = `${projectName.replace(/[^\w\-]+/g, '-').toLowerCase() || 'olsen'}-plan`;
       if (format === 'dxf') {
         if (inputs.length <= 1 && active) {
           downloadPlanDxf(active, `${base}.dxf`);
@@ -532,7 +532,7 @@ export default function StudioApp() {
         url.searchParams.delete('design');
         history.replaceState(null, '', url.toString());
         notify('Project imported — save to add it to Saved builds');
-      } else notify('This is not a valid Mahnikka project');
+      } else notify('This is not a valid Olsen Custom Homes project');
     } catch {
       notify('Could not read that project file');
     }
@@ -806,7 +806,7 @@ export default function StudioApp() {
                         exclusions: store.bidSettings.exclusions,
                         alternateNotes: store.bidSettings.alternateNotes,
                       },
-                      `${projectName.replace(/[^\w\-]+/g, '-').toLowerCase() || 'mahnikka'}-bid.pdf`,
+                      `${projectName.replace(/[^\w\-]+/g, '-').toLowerCase() || 'olsen'}-bid.pdf`,
                     );
                     notify('Bid proposal PDF exported');
                   }}
@@ -837,7 +837,7 @@ export default function StudioApp() {
                       disclaimer: ESTIMATE_DISCLAIMER,
                     });
                     downloadTextFile(
-                      `${projectName.replace(/[^\w\-]+/g, '-').toLowerCase() || 'mahnikka'}-takeoff.csv`,
+                      `${projectName.replace(/[^\w\-]+/g, '-').toLowerCase() || 'olsen'}-takeoff.csv`,
                       csv,
                     );
                     notify(store.floors.length > 1 ? 'Whole-house takeoff CSV exported' : 'Construction takeoff CSV exported');

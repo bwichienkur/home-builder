@@ -46,7 +46,7 @@ export function DesignStart({ onBegan }: { onBegan?: () => void }) {
   return (
     <section className="design-start" aria-label="Start a job">
       <div className="design-start-panel">
-        <p className="design-start-eyebrow">Mahnikka · Build</p>
+        <p className="design-start-eyebrow">Olsen Custom Homes · Build</p>
         <h1>Open a job</h1>
         <p className="design-start-lede">
           Frame rooms, place materials, then pull FF&amp;E and takeoff from the bag. Or import from{' '}

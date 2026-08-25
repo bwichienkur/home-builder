@@ -120,23 +120,18 @@ export function PipelineFunnel({
   stages: PipelineStage[];
   hrefForStage?: (stage: PipelineStage) => string;
 }) {
-  const metric = (stage: PipelineStage) => stage.dealCount ?? stage.value;
-  const max = Math.max(...stages.map(metric), 1);
+  const max = Math.max(...stages.map((stage) => stage.value), 1);
   return (
     <ol className="dash-funnel">
       {stages.map((stage, index) => {
-        const width = 30 + (metric(stage) / max) * 68;
+        const width = 30 + (stage.value / max) * 68;
         const href = hrefForStage?.(stage);
-        const display =
-          stage.dealCount != null
-            ? `${stage.dealCount} deal${stage.dealCount === 1 ? '' : 's'}`
-            : formatCompactUsd(stage.value);
         const content = (
           <>
             <span className="dash-funnel-label">
               {index + 1}. {stage.label}
             </span>
-            <strong>{display}</strong>
+            <strong>{formatCompactUsd(stage.value)}</strong>
           </>
         );
         return (

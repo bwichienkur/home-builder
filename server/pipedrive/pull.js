@@ -32,7 +32,7 @@ async function pdFetch(token, urlPath, query = {}) {
     headers: {
       Accept: 'application/json',
       'x-api-token': token,
-      'User-Agent': 'Mahnikka-OwnerDashboard/1.0',
+      'User-Agent': 'OlsenCustomHomes-OwnerDashboard/1.0',
     },
   });
   const text = await response.text();

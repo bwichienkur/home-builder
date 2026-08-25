@@ -184,7 +184,7 @@ function filterItems(items, q) {
 export function mountPublicApiRoutes(app) {
   app.get('/api/v1', (_req, res) => {
     res.json({
-      name: 'Mahnikka Public API',
+      name: 'Olsen Custom Homes Public API',
       version: 'v1',
       auth: 'X-Api-Key: mnk_… (or Authorization: Bearer mnk_…)',
       resources: Object.keys(COLLECTIONS),

@@ -74,7 +74,7 @@ export function mapPipedriveDeals(reports: PipedriveReports, options?: { now?: D
   const today = now.toISOString().slice(0, 10);
   const horizon = new Date(now.getTime() + 90 * 86_400_000).toISOString().slice(0, 10);
 
-  const valueByStage = new Map<number, number>();
+  const weightedByStage = new Map<number, number>();
   const countByStage = new Map<number, number>();
   let weighted = 0;
   let expectedSigning = 0;
@@ -88,9 +88,10 @@ export function mapPipedriveDeals(reports: PipedriveReports, options?: { now?: D
     const stageId = deal.stage_id;
     if (stageId == null) continue;
     const value = num(deal.value);
-    valueByStage.set(stageId, (valueByStage.get(stageId) ?? 0) + value);
+    const dealWeighted = value * dealProbability(deal, reports);
+    weightedByStage.set(stageId, (weightedByStage.get(stageId) ?? 0) + dealWeighted);
     countByStage.set(stageId, (countByStage.get(stageId) ?? 0) + 1);
-    weighted += value * dealProbability(deal, reports);
+    weighted += dealWeighted;
     if (stageId === CONTRACT_SENT_STAGE_ID) contractSent += value;
     const close = deal.expected_close_date;
     if (close && close >= today && close <= horizon) expectedSigning += value;
@@ -99,7 +100,8 @@ export function mapPipedriveDeals(reports: PipedriveReports, options?: { now?: D
   const pipeline: PipelineStage[] = salesPipelineStages(reports).map((stage) => ({
     id: pipedriveStageKey(stage.id),
     label: stage.name,
-    value: valueByStage.get(stage.id) ?? 0,
+    /** Weighted deal value sum for this Pipedrive stage. */
+    value: Math.round(weightedByStage.get(stage.id) ?? 0),
     dealCount: countByStage.get(stage.id) ?? 0,
   }));
 

@@ -125,7 +125,7 @@ function drawProposalPage(
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = '#1c2a33';
   ctx.font = '700 42px "Iowan Old Style", "Palatino Linotype", Palatino, serif';
-  ctx.fillText('Mahnikka', 72, 90);
+  ctx.fillText('Olsen Custom Homes', 72, 90);
   ctx.font = '600 28px "Segoe UI", system-ui, sans-serif';
   ctx.fillText(title, 72, 140);
   ctx.strokeStyle = '#c4b8a8';

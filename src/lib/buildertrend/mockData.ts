@@ -77,14 +77,14 @@ function scaleOpenJobs(jobs: OwnerJob[]) {
   }));
 }
 
-/** Mock sales pipeline mirrors Pipedrive Sales stages (deal counts). */
+/** Mock sales pipeline mirrors Pipedrive Sales stages (weighted $). */
 export const MOCK_PIPELINE: PipelineStage[] = [
-  { id: 'pd-1', label: 'First Contact', value: 22_630_628, dealCount: 22 },
-  { id: 'pd-2', label: 'Qualified', value: 14_250_000, dealCount: 11 },
-  { id: 'pd-4', label: 'Homesite Secured', value: 3_400_000, dealCount: 3 },
-  { id: 'pd-3', label: 'Meet with Eric', value: 4_276_730, dealCount: 3 },
-  { id: 'pd-5', label: 'Pricing Proposal', value: 2_328_721, dealCount: 2 },
-  { id: 'pd-17', label: 'Under Negotiation', value: 965_037, dealCount: 1 },
+  { id: 'pd-1', label: 'First Contact', value: 2_263_063, dealCount: 22 },
+  { id: 'pd-2', label: 'Qualified', value: 2_215_000, dealCount: 11 },
+  { id: 'pd-4', label: 'Homesite Secured', value: 1_000_000, dealCount: 3 },
+  { id: 'pd-3', label: 'Meet with Eric', value: 2_352_202, dealCount: 3 },
+  { id: 'pd-5', label: 'Pricing Proposal', value: 1_630_105, dealCount: 2 },
+  { id: 'pd-17', label: 'Under Negotiation', value: 820_281, dealCount: 1 },
   { id: 'pd-6', label: 'Contract Sent', value: 0, dealCount: 0 },
 ];
 

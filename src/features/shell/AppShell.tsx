@@ -136,7 +136,7 @@ export function AppShell() {
             )}
           </button>
           <NavLink to="/" className="app-shell-brand" end>
-            Mahnikka
+            Olsen Custom Homes
           </NavLink>
           <span className="app-shell-page">{pageTitle}</span>
           <div className="app-shell-user">
