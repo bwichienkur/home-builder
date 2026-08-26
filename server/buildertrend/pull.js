@@ -688,6 +688,38 @@ async function fetchActionItemsByJob(session, jobIds) {
   return Object.fromEntries(entries.filter(([, value]) => value != null));
 }
 
+export function contractPriceFromJobInfo(payload) {
+  const raw = payload?.data?.jobInfo?.contractPrice ?? payload?.jobInfo?.contractPrice;
+  if (typeof raw === 'number' && Number.isFinite(raw)) return raw;
+  if (raw && typeof raw === 'object') {
+    const value = Number(raw.value);
+    if (Number.isFinite(value)) return value;
+  }
+  if (typeof raw === 'string' && raw.trim()) {
+    const parsed = Number(raw.replace(/[$,]/g, ''));
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return 0;
+}
+
+/**
+ * Jobs → Job Info contract price for open jobs not yet "sent to budget"
+ * (absent from Profitability / WIP with a revised price).
+ */
+async function fetchJobInfoContractByJob(session, jobIds, { concurrency = 5 } = {}) {
+  if (!jobIds.length) return {};
+  const unique = [...new Set(jobIds.map(Number).filter(Boolean))];
+  const parts = await mapPool(unique, concurrency, async (jobId) => {
+    const result = await getJson(session, `/api/Jobsites/${jobId}`);
+    return { jobId, ok: result.ok, contractPrice: result.ok ? contractPriceFromJobInfo(result.data) : 0 };
+  });
+  const byJob = {};
+  for (const part of parts) {
+    if (part.ok) byJob[String(part.jobId)] = part.contractPrice;
+  }
+  return byJob;
+}
+
 function leadsGridBody() {
   return {
     gridRequest: {
@@ -723,6 +755,7 @@ export async function fetchReports(session) {
   const { start: logStart, end: logEnd } = rollingLogWindow();
   const [
     wip,
+    profitability,
     dailyLogs,
     userDailyLogsRecent,
     schedulePercentComplete,
@@ -733,6 +766,11 @@ export async function fetchReports(session) {
     jobsites,
   ] = await Promise.all([
       getJson(session, '/apix/v3/Reporting/work-in-progress', { openJobLimit: 500 }),
+      getJson(session, '/apix/v3/Reporting/profitability', {
+        openJobLimit: 500,
+        closedJobLimit: 500,
+        warrantyJobLimit: 500,
+      }),
       getJson(session, '/apix/v3/Reporting/daily-log-creation-by-job'),
       getJson(session, '/apix/v3/Reporting/user-daily-logs', { startDate: logStart, endDate: logEnd }),
       getJson(session, '/apix/v3/Reporting/schedule-percent-complete-by-job'),
@@ -746,7 +784,8 @@ export async function fetchReports(session) {
   const jobIds = openJobIdsFromPicker(jobs.data);
   const closedWarrantyIds = closedWarrantyJobIdsFromReports(schedulePercentComplete.data, dailyLogs.data);
   const scheduleJobIds = [...new Set([...jobIds, ...closedWarrantyIds])];
-  const [tasks, actionItemsByJob, selectionsByJob, scheduleByJob, baselineSlipByJob] = await Promise.all([
+  const [tasks, actionItemsByJob, selectionsByJob, scheduleByJob, baselineSlipByJob, jobInfoContractByJob] =
+    await Promise.all([
     fetchTasksForOpenJobs(session, jobIds),
     jobIds.length ? fetchActionItemsByJob(session, jobIds) : Promise.resolve({}),
     jobIds.length ? fetchSelectionsForOpenJobs(session, jobIds) : Promise.resolve({}),
@@ -756,6 +795,7 @@ export async function fetchReports(session) {
     jobIds.length
       ? fetchBaselineSlipByJob(session, jobIds)
       : Promise.resolve({ ok: true, status: 200, data: {} }),
+    jobIds.length ? fetchJobInfoContractByJob(session, jobIds) : Promise.resolve({}),
   ]);
 
   const scheduleData = scheduleByJob.data ?? {};
@@ -777,6 +817,8 @@ export async function fetchReports(session) {
 
   const reports = {
     wip: wip.data,
+    profitability: profitability.data,
+    jobInfoContractByJob,
     dailyLogs: dailyLogs.data,
     userDailyLogsRecent: userDailyLogsRecent.data,
     schedulePercentComplete: schedulePercentComplete.data,
@@ -807,6 +849,7 @@ export async function fetchReports(session) {
     reports,
     statuses: {
       wip: wip.status,
+      profitability: profitability.status,
       dailyLogs: dailyLogs.status,
       userDailyLogsRecent: userDailyLogsRecent.status,
       schedulePercentComplete: schedulePercentComplete.status,

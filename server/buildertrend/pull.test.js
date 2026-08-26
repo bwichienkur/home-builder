@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  contractPriceFromJobInfo,
   INCOMPLETE_TASKS_FILTERS,
   isSiteWorkScheduleTitle,
   mergeTasksListResponses,
@@ -193,5 +194,16 @@ describe('slipBucketsFromBaselineItems', () => {
       { title: 'Closing', endDateSlip: 130 },
     ]);
     expect(slip).toEqual({ permit: 28, selections: 30, construction: 30 });
+  });
+});
+
+describe('contractPriceFromJobInfo', () => {
+  it('reads nested BT currency value objects', () => {
+    expect(
+      contractPriceFromJobInfo({
+        data: { jobInfo: { contractPrice: { value: 1_204_751, currencyIdentifier: '$' } } },
+      }),
+    ).toBe(1_204_751);
+    expect(contractPriceFromJobInfo({ data: { jobInfo: { contractPrice: { value: 0 } } } })).toBe(0);
   });
 });

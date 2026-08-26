@@ -47,6 +47,10 @@ export type BuildertrendReports = {
   baselineDuration?: unknown;
   /** jobId → Permit / Selections / Construction slip from Schedule → Baseline. */
   baselineSlipByJob?: Record<string, { permit?: number; selections?: number; construction?: number }>;
+  /** Profitability report (Open + Closed + Warranty) — revised client price per job. */
+  profitability?: unknown;
+  /** jobId → contract price from Jobs → Job Info (fallback when not sent to budget). */
+  jobInfoContractByJob?: Record<string, number>;
 };
 
 export type MappedBuildertrendPull = {
@@ -527,6 +531,55 @@ function scheduleRowsByJob(reports: BuildertrendReports) {
   return rows;
 }
 
+function revisedPriceFromRow(row: Record<string, unknown>): number {
+  return num(pick(row, 'revisedClientPrice', 'totalRevisedPrice', 'revisedPrice', 'contractPrice'));
+}
+
+function profitabilityRevisedByJob(reports: BuildertrendReports) {
+  const byJob = new Map<number, number>();
+  for (const row of asArray(reports.profitability)) {
+    const rec = asRecord(row);
+    if (!rec) continue;
+    const jobId = num(pick(rec, 'jobID', 'jobId'));
+    if (!jobId) continue;
+    const revised = revisedPriceFromRow(rec);
+    if (revised > 0) byJob.set(jobId, revised);
+  }
+  return byJob;
+}
+
+/**
+ * Expected revenue (contract + change orders):
+ * 1. Profitability revised client price (includes COs; Open/Closed/Warranty)
+ * 2. Job Info contract price when not yet sent to budget
+ * 3. WIP `totalRevisedPrice` when present (open jobs on WIP report)
+ * 4. $0 (e.g. design-only contracts like Morris)
+ */
+export function resolveJobContractPrice(
+  jobId: number | undefined,
+  reports: BuildertrendReports,
+  profitabilityByJob?: Map<number, number>,
+): number {
+  if (!jobId) return 0;
+  const profMap = profitabilityByJob ?? profitabilityRevisedByJob(reports);
+  const revised = profMap.get(jobId) ?? 0;
+  if (revised > 0) return revised;
+  const jobInfo = num(reports.jobInfoContractByJob?.[String(jobId)]);
+  if (jobInfo > 0) return jobInfo;
+  return 0;
+}
+
+function applyContractResolution(jobs: Map<string, JobDraft>, reports: BuildertrendReports) {
+  const profMap = profitabilityRevisedByJob(reports);
+  for (const draft of jobs.values()) {
+    const wipContract = draft.contractPrice;
+    let resolved = resolveJobContractPrice(draft.jobId, reports, profMap);
+    if (resolved <= 0 && wipContract > 0) resolved = wipContract;
+    draft.contractPrice = resolved;
+    draft.wip = draft.status === 'open' ? resolved : 0;
+  }
+}
+
 function baselineTotalSlipByJob(reports: BuildertrendReports) {
   const byJob = new Map<number, number>();
   for (const row of asArray(reports.baselineDuration)) {
@@ -698,7 +751,7 @@ function toOwnerJob(draft: JobDraft, now: Date): OwnerJob {
     foundationStarted: draft.foundationStarted,
     contractPrice: draft.contractPrice,
     revenueToDate: draft.revenueToDate,
-    wip: draft.onWip ? draft.wip : 0,
+    wip: draft.wip,
     estCloseDate: inferCloseDate({
       completion: draft.completion,
       openedAt,
@@ -779,9 +832,11 @@ export function mapBuildertrendReports(
   for (const row of asArray(reports.jobsites)) ingest(jobs, asRecord(row) ?? {}, 'job');
   for (const row of asArray(reports.dailyLogs)) ingest(jobs, asRecord(row) ?? {}, 'log');
   for (const row of asArray(reports.wip)) ingest(jobs, asRecord(row) ?? {}, 'wip');
+  for (const row of asArray(reports.profitability)) ingest(jobs, asRecord(row) ?? {}, 'job');
   for (const row of asArray(reports.schedulePercentComplete)) ingestSchedule(jobs, asRecord(row) ?? {});
 
   applyJobEnrichment(jobs, reports, now);
+  applyContractResolution(jobs, reports);
   const unique = [...new Map([...jobs.values()].map((job) => [job.name.toLowerCase(), job])).values()];
   const schedulePulled =
     Object.keys(reports.scheduleByJob ?? {}).length > 0 || Object.keys(reports.siteWorkByJob ?? {}).length > 0;
