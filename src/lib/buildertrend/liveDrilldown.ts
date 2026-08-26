@@ -1201,66 +1201,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
     ],
     "40214880": [
       {
-        "id": 55872665,
-        "jobId": 40214880,
-        "jobName": "Emerson",
-        "title": "Pavers",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Expired: Available",
-        "deadline": "2025-10-02"
-      },
-      {
-        "id": 55872715,
-        "jobId": 40214880,
-        "jobName": "Emerson",
-        "title": "Specialties - Glass Shower Enclosures",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Partially Complete AND Expired",
-        "deadline": "2025-11-03"
-      },
-      {
-        "id": 55872693,
-        "jobId": 40214880,
-        "jobName": "Emerson",
-        "title": "Trim Carpentry",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Partially Complete AND Expired",
-        "deadline": "2025-11-03"
-      },
-      {
-        "id": 55872687,
-        "jobId": 40214880,
-        "jobName": "Emerson",
-        "title": "Plumbing Fixtures - Faucets",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Partially Complete AND Expired",
-        "deadline": "2025-11-03"
-      },
-      {
-        "id": 55872660,
-        "jobId": 40214880,
-        "jobName": "Emerson",
-        "title": "Framing",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Partially Complete AND Expired",
-        "deadline": "2025-11-03"
-      },
-      {
-        "id": 55872696,
-        "jobId": 40214880,
-        "jobName": "Emerson",
-        "title": "Paint - Interior",
-        "category": "Phase 3",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2025-12-03"
-      },
-      {
         "id": 55872719,
         "jobId": 40214880,
         "jobName": "Emerson",
@@ -1269,56 +1209,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "location": "Interior",
         "statusLabel": "Expired: Available",
         "deadline": "2025-12-30"
-      },
-      {
-        "id": 55872702,
-        "jobId": 40214880,
-        "jobName": "Emerson",
-        "title": "Cabinetry Color/Style",
-        "category": "Phase 4",
-        "location": "Interior",
-        "statusLabel": "Partially Complete AND Expired",
-        "deadline": "2025-12-30"
-      },
-      {
-        "id": 55872697,
-        "jobId": 40214880,
-        "jobName": "Emerson",
-        "title": "Electrical - Lighting",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Partially Complete AND Expired",
-        "deadline": "2026-07-08"
-      },
-      {
-        "id": 63794565,
-        "jobId": 40214880,
-        "jobName": "Emerson",
-        "title": "Plumbing Fixtures - Drains",
-        "category": "",
-        "location": "",
-        "statusLabel": "Partially Completed",
-        "deadline": ""
-      },
-      {
-        "id": 63596045,
-        "jobId": 40214880,
-        "jobName": "Emerson",
-        "title": "Plumbing Fixtures - Master Steam Shower",
-        "category": "",
-        "location": "",
-        "statusLabel": "Unreleased",
-        "deadline": ""
-      },
-      {
-        "id": 63558538,
-        "jobId": 40214880,
-        "jobName": "Emerson",
-        "title": "Assembly - Eat In Kitchen Nook",
-        "category": "",
-        "location": "",
-        "statusLabel": "Unreleased",
-        "deadline": ""
       }
     ],
     "40351917": [
@@ -1335,6 +1225,16 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
     ],
     "40497055": [
       {
+        "id": 56173435,
+        "jobId": 40497055,
+        "jobName": "Ahigian - Habashi",
+        "title": "Doors - Exterior",
+        "category": "Phase 1",
+        "location": "ARB",
+        "statusLabel": "Partially Complete AND Expired",
+        "deadline": "2025-08-29"
+      },
+      {
         "id": 56173474,
         "jobId": 40497055,
         "jobName": "Ahigian - Habashi",
@@ -1343,16 +1243,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "location": "Interior",
         "statusLabel": "Expired: Available",
         "deadline": "2025-10-20"
-      },
-      {
-        "id": 62600250,
-        "jobId": 40497055,
-        "jobName": "Ahigian - Habashi",
-        "title": "Electrical - Powered Screens",
-        "category": "Phase 4",
-        "location": "",
-        "statusLabel": "Pending: Available",
-        "deadline": ""
       }
     ],
     "40596161": [
@@ -7407,15 +7297,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "assignedTo": "Paul Dimeglio"
       },
       {
-        "taskId": 49967014,
-        "jobId": 40214880,
-        "jobName": "Emerson",
-        "title": "Deliver Drywall",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "Paul Dimeglio"
-      },
-      {
         "taskId": 49967026,
         "jobId": 40214880,
         "jobName": "Emerson",
@@ -7457,24 +7338,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobName": "Emerson",
         "title": "08 Window Qualification (Checklist)",
         "endDate": "2026-06-17",
-        "status": 0,
-        "assignedTo": "Paul Dimeglio"
-      },
-      {
-        "taskId": 49968257,
-        "jobId": 40214880,
-        "jobName": "Emerson",
-        "title": "FMEP Inspection",
-        "endDate": "2026-08-20",
-        "status": 0,
-        "assignedTo": "Paul Dimeglio"
-      },
-      {
-        "taskId": 49968258,
-        "jobId": 40214880,
-        "jobName": "Emerson",
-        "title": "Matterport 3D Scan",
-        "endDate": "2026-08-21",
         "status": 0,
         "assignedTo": "Paul Dimeglio"
       },
@@ -7580,15 +7443,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "assignedTo": "Paul Dimeglio"
       },
       {
-        "taskId": 49972692,
-        "jobId": 40228562,
-        "jobName": "Blandford",
-        "title": "Secure Delivery - Generator",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "Paul Dimeglio"
-      },
-      {
         "taskId": 49972693,
         "jobId": 40228562,
         "jobName": "Blandford",
@@ -7598,65 +7452,11 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "assignedTo": "Paul Dimeglio"
       },
       {
-        "taskId": 49972696,
-        "jobId": 40228562,
-        "jobName": "Blandford",
-        "title": "Final Termite Treatment",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "Paul Dimeglio"
-      },
-      {
-        "taskId": 49972697,
-        "jobId": 40228562,
-        "jobName": "Blandford",
-        "title": "Irrigation Install",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "Paul Dimeglio"
-      },
-      {
-        "taskId": 49972698,
-        "jobId": 40228562,
-        "jobName": "Blandford",
-        "title": "Shrub and Tree Install",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "Paul Dimeglio"
-      },
-      {
-        "taskId": 49972699,
-        "jobId": 40228562,
-        "jobName": "Blandford",
-        "title": "Sod Install",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "Paul Dimeglio"
-      },
-      {
-        "taskId": 49972700,
-        "jobId": 40228562,
-        "jobName": "Blandford",
-        "title": "Landscape Final Inspection",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "Paul Dimeglio"
-      },
-      {
         "taskId": 49972703,
         "jobId": 40228562,
         "jobName": "Blandford",
         "title": "Final Paint Touch Up Exterior",
         "endDate": "2026-08-10",
-        "status": 0,
-        "assignedTo": "Paul Dimeglio"
-      },
-      {
-        "taskId": 49972704,
-        "jobId": 40228562,
-        "jobName": "Blandford",
-        "title": "Install Screens and Window Trim",
-        "endDate": "2026-08-21",
         "status": 0,
         "assignedTo": "Paul Dimeglio"
       },
@@ -7725,69 +7525,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
       }
     ],
     "40351917": [
-      {
-        "taskId": 49978845,
-        "jobId": 40351917,
-        "jobName": "Bennett",
-        "title": "Install Tile Floors",
-        "endDate": "2026-08-14",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49978847,
-        "jobId": 40351917,
-        "jobName": "Bennett",
-        "title": "Install Tile Shower(s)",
-        "endDate": "2026-08-14",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49978861,
-        "jobId": 40351917,
-        "jobName": "Bennett",
-        "title": "Install Tile",
-        "endDate": "2026-08-14",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49978876,
-        "jobId": 40351917,
-        "jobName": "Bennett",
-        "title": "Install Pavers",
-        "endDate": "2026-08-21",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49978877,
-        "jobId": 40351917,
-        "jobName": "Bennett",
-        "title": "Deliver Doors/Trim",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49978879,
-        "jobId": 40351917,
-        "jobName": "Bennett",
-        "title": "Deliver Specialty Trim",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49978881,
-        "jobId": 40351917,
-        "jobName": "Bennett",
-        "title": "Measure Mirrors, Shelving, Glass",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
       {
         "taskId": 49979426,
         "jobId": 40351917,
@@ -7978,60 +7715,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "assignedTo": "James Manford"
       },
       {
-        "taskId": 49979473,
-        "jobId": 40351917,
-        "jobName": "Bennett",
-        "title": "Engineering Final Inspection",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49979475,
-        "jobId": 40351917,
-        "jobName": "Bennett",
-        "title": "Corporate Inspection",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49979477,
-        "jobId": 40351917,
-        "jobName": "Bennett",
-        "title": "Utility Inspection",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49979479,
-        "jobId": 40351917,
-        "jobName": "Bennett",
-        "title": "Final Building Inspection",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49979481,
-        "jobId": 40351917,
-        "jobName": "Bennett",
-        "title": "Final Touchup Builder",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49979493,
-        "jobId": 40351917,
-        "jobName": "Bennett",
-        "title": "21 Superintendent Checklist for Final Walk (Checklist)",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
         "taskId": 49979761,
         "jobId": 40351917,
         "jobName": "Bennett",
@@ -8169,42 +7852,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "assignedTo": "Richard Linck"
       },
       {
-        "taskId": 49989730,
-        "jobId": 40497055,
-        "jobName": "Ahigian - Habashi",
-        "title": "Deliver Base/Pavers",
-        "endDate": "2026-08-21",
-        "status": 0,
-        "assignedTo": "Richard Linck"
-      },
-      {
-        "taskId": 49989734,
-        "jobId": 40497055,
-        "jobName": "Ahigian - Habashi",
-        "title": "Deliver Specialty Trim",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": "Richard Linck"
-      },
-      {
-        "taskId": 49989756,
-        "jobId": 40497055,
-        "jobName": "Ahigian - Habashi",
-        "title": "Soffit In-Progress Inspection",
-        "endDate": "2026-08-07",
-        "status": 0,
-        "assignedTo": "Richard Linck"
-      },
-      {
-        "taskId": 49989758,
-        "jobId": 40497055,
-        "jobName": "Ahigian - Habashi",
-        "title": "Install Foam Banding/Corbels",
-        "endDate": "2026-08-07",
-        "status": 0,
-        "assignedTo": "Richard Linck"
-      },
-      {
         "taskId": 49990485,
         "jobId": 40497055,
         "jobName": "Ahigian - Habashi",
@@ -8239,15 +7886,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobName": "Lois",
         "title": "12 Progress Walk Form (Checklist)",
         "endDate": "2026-05-29",
-        "status": 0,
-        "assignedTo": "Paul Dimeglio"
-      },
-      {
-        "taskId": 50004153,
-        "jobId": 41118068,
-        "jobName": "Lois",
-        "title": "Deliver Base/Pavers",
-        "endDate": "2026-08-24",
         "status": 0,
         "assignedTo": "Paul Dimeglio"
       },
@@ -8409,15 +8047,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "assignedTo": "Richard Linck"
       },
       {
-        "taskId": 50017584,
-        "jobId": 41776958,
-        "jobName": "Pierami",
-        "title": "Gas Trim-Out",
-        "endDate": "2026-07-13",
-        "status": 0,
-        "assignedTo": "Richard Linck"
-      },
-      {
         "taskId": 50017602,
         "jobId": 41776958,
         "jobName": "Pierami",
@@ -8431,15 +8060,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 41776958,
         "jobName": "Pierami",
         "title": "Final Paint Interior Walls",
-        "endDate": "2026-08-03",
-        "status": 0,
-        "assignedTo": "Richard Linck"
-      },
-      {
-        "taskId": 50017611,
-        "jobId": 41776958,
-        "jobName": "Pierami",
-        "title": "Install Exterior Door Handles",
         "endDate": "2026-08-03",
         "status": 0,
         "assignedTo": "Richard Linck"
@@ -8472,56 +8092,11 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "assignedTo": "Richard Linck"
       },
       {
-        "taskId": 50017621,
-        "jobId": 41776958,
-        "jobName": "Pierami",
-        "title": "Irrigation Install",
-        "endDate": "2026-08-18",
-        "status": 0,
-        "assignedTo": "Richard Linck"
-      },
-      {
-        "taskId": 50018208,
-        "jobId": 41776958,
-        "jobName": "Pierami",
-        "title": "Shrub and Tree Install",
-        "endDate": "2026-08-18",
-        "status": 0,
-        "assignedTo": "Richard Linck"
-      },
-      {
-        "taskId": 50018210,
-        "jobId": 41776958,
-        "jobName": "Pierami",
-        "title": "Sod Install",
-        "endDate": "2026-08-18",
-        "status": 0,
-        "assignedTo": "Richard Linck"
-      },
-      {
-        "taskId": 50018212,
-        "jobId": 41776958,
-        "jobName": "Pierami",
-        "title": "Landscape Final Inspection",
-        "endDate": "2026-08-18",
-        "status": 0,
-        "assignedTo": "Richard Linck"
-      },
-      {
         "taskId": 50018221,
         "jobId": 41776958,
         "jobName": "Pierami",
         "title": "Final Paint Touch Up Exterior",
         "endDate": "2026-08-03",
-        "status": 0,
-        "assignedTo": "Richard Linck"
-      },
-      {
-        "taskId": 50018223,
-        "jobId": 41776958,
-        "jobName": "Pierami",
-        "title": "Install Screens and Window Trim",
-        "endDate": "2026-08-12",
         "status": 0,
         "assignedTo": "Richard Linck"
       },
@@ -8549,15 +8124,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobName": "Pierami",
         "title": "Final Touchup Builder",
         "endDate": "2026-07-31",
-        "status": 0,
-        "assignedTo": "Richard Linck"
-      },
-      {
-        "taskId": 50018237,
-        "jobId": 41776958,
-        "jobName": "Pierami",
-        "title": "Final House Clean",
-        "endDate": "2026-08-07",
         "status": 0,
         "assignedTo": "Richard Linck"
       },
@@ -8591,65 +8157,11 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
     ],
     "42083349": [
       {
-        "taskId": 50022144,
-        "jobId": 42083349,
-        "jobName": "Norris",
-        "title": "Measure/Verify Block ROs",
-        "endDate": "2026-08-13",
-        "status": 0,
-        "assignedTo": "Richard Linck"
-      },
-      {
-        "taskId": 50022145,
-        "jobId": 42083349,
-        "jobName": "Norris",
-        "title": "Lay out Lentil",
-        "endDate": "2026-08-13",
-        "status": 0,
-        "assignedTo": "Richard Linck"
-      },
-      {
-        "taskId": 50022146,
-        "jobId": 42083349,
-        "jobName": "Norris",
-        "title": "Lentil Inspection",
-        "endDate": "2026-08-13",
-        "status": 0,
-        "assignedTo": "Richard Linck"
-      },
-      {
-        "taskId": 50022147,
-        "jobId": 42083349,
-        "jobName": "Norris",
-        "title": "Pour Lentils",
-        "endDate": "2026-08-13",
-        "status": 0,
-        "assignedTo": "Richard Linck"
-      },
-      {
         "taskId": 50022151,
         "jobId": 42083349,
         "jobName": "Norris",
         "title": "Rough Grade",
         "endDate": "2026-08-14",
-        "status": 0,
-        "assignedTo": "Richard Linck"
-      },
-      {
-        "taskId": 50022152,
-        "jobId": 42083349,
-        "jobName": "Norris",
-        "title": "Deliver Framing Material",
-        "endDate": "2026-08-14",
-        "status": 0,
-        "assignedTo": "Richard Linck"
-      },
-      {
-        "taskId": 50022155,
-        "jobId": 42083349,
-        "jobName": "Norris",
-        "title": "Poured Cell Inspection",
-        "endDate": "2026-08-13",
         "status": 0,
         "assignedTo": "Richard Linck"
       },
@@ -8670,15 +8182,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "endDate": "2025-11-10",
         "status": 0,
         "assignedTo": "Collin Olsen"
-      },
-      {
-        "taskId": 181099666,
-        "jobId": 42083349,
-        "jobName": "Norris",
-        "title": "Deliver Trusses (Roof)",
-        "endDate": "2026-08-21",
-        "status": 0,
-        "assignedTo": "Richard Linck"
       }
     ],
     "42615310": [
@@ -8744,15 +8247,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobName": "Veranda Bay Model 2",
         "title": "Measure Mirrors, Shelving, Glass",
         "endDate": "2026-08-10",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 50037710,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Install Mirrors, Shelving, Glass",
-        "endDate": "2026-08-05",
         "status": 0,
         "assignedTo": "James Manford"
       },
@@ -9328,15 +8822,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "assignedTo": "Adam Horseman"
       },
       {
-        "taskId": 50048720,
-        "jobId": 42969582,
-        "jobName": "Etienne",
-        "title": "Framing Punch-Out",
-        "endDate": "2026-08-11",
-        "status": 0,
-        "assignedTo": "Adam Horseman"
-      },
-      {
         "taskId": 50048721,
         "jobId": 42969582,
         "jobName": "Etienne",
@@ -9364,20 +8849,20 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "assignedTo": "Adam Horseman"
       },
       {
-        "taskId": 50048735,
+        "taskId": 50048733,
         "jobId": 42969582,
         "jobName": "Etienne",
-        "title": "Deliver Drywall",
-        "endDate": "2026-08-21",
+        "title": "Stucco",
+        "endDate": "2026-08-25",
         "status": 0,
         "assignedTo": "Adam Horseman"
       },
       {
-        "taskId": 50048736,
+        "taskId": 50048735,
         "jobId": 42969582,
         "jobName": "Etienne",
-        "title": "Hang Drywall",
-        "endDate": "2026-08-24",
+        "title": "Deliver Drywall",
+        "endDate": "2026-08-25",
         "status": 0,
         "assignedTo": "Adam Horseman"
       },
@@ -9407,6 +8892,15 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "endDate": "2026-05-05",
         "status": 0,
         "assignedTo": "Kati Bengelsdorf"
+      },
+      {
+        "taskId": 50049220,
+        "jobId": 42969582,
+        "jobName": "Etienne",
+        "title": "Rough Grade",
+        "endDate": "2026-08-25",
+        "status": 0,
+        "assignedTo": "Adam Horseman"
       },
       {
         "taskId": 50049277,
@@ -10396,8 +9890,8 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 35918575,
         "jobName": "Nagle",
         "userName": "Adam Horseman",
-        "dailyLogCount": 13,
-        "lastLogDate": "2026-08-24"
+        "dailyLogCount": 12,
+        "lastLogDate": "2026-08-25"
       },
       {
         "jobId": 35918575,
@@ -10429,23 +9923,16 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
       {
         "jobId": 38215830,
         "jobName": "Kinney",
-        "userName": "Brian Dye",
-        "dailyLogCount": 1,
-        "lastLogDate": "2026-07-28"
-      },
-      {
-        "jobId": 38215830,
-        "jobName": "Kinney",
         "userName": "James Manford",
         "dailyLogCount": 16,
-        "lastLogDate": "2026-08-24"
+        "lastLogDate": "2026-08-25"
       },
       {
         "jobId": 38215830,
         "jobName": "Kinney",
         "userName": "Rob Dougherty",
         "dailyLogCount": 5,
-        "lastLogDate": "2026-08-19"
+        "lastLogDate": "2026-08-25"
       },
       {
         "jobId": 38215830,
@@ -10459,9 +9946,16 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
       {
         "jobId": 38319441,
         "jobName": "Moura",
+        "userName": "Richard Linck",
+        "dailyLogCount": 1,
+        "lastLogDate": "2026-08-25"
+      },
+      {
+        "jobId": 38319441,
+        "jobName": "Moura",
         "userName": "Rob Dougherty",
-        "dailyLogCount": 3,
-        "lastLogDate": "2026-08-20"
+        "dailyLogCount": 4,
+        "lastLogDate": "2026-08-25"
       }
     ],
     "38397739": [
@@ -10470,7 +9964,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobName": "Whipple",
         "userName": "Adam Horseman",
         "dailyLogCount": 14,
-        "lastLogDate": "2026-08-24"
+        "lastLogDate": "2026-08-25"
       },
       {
         "jobId": 38397739,
@@ -10502,7 +9996,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobName": "Jimenez",
         "userName": "Adam Horseman",
         "dailyLogCount": 13,
-        "lastLogDate": "2026-08-24"
+        "lastLogDate": "2026-08-25"
       },
       {
         "jobId": 38901121,
@@ -10533,7 +10027,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 39819357,
         "jobName": "Henry",
         "userName": "Rob Dougherty",
-        "dailyLogCount": 2,
+        "dailyLogCount": 1,
         "lastLogDate": "2026-07-31"
       }
     ],
@@ -10581,7 +10075,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 40228562,
         "jobName": "Blandford",
         "userName": "Rob Dougherty",
-        "dailyLogCount": 3,
+        "dailyLogCount": 2,
         "lastLogDate": "2026-08-12"
       }
     ],
@@ -10598,13 +10092,13 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobName": "Bennett",
         "userName": "James Manford",
         "dailyLogCount": 16,
-        "lastLogDate": "2026-08-24"
+        "lastLogDate": "2026-08-25"
       },
       {
         "jobId": 40351917,
         "jobName": "Bennett",
         "userName": "Rob Dougherty",
-        "dailyLogCount": 5,
+        "dailyLogCount": 4,
         "lastLogDate": "2026-08-18"
       }
     ],
@@ -10620,14 +10114,14 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 40497055,
         "jobName": "Ahigian - Habashi",
         "userName": "Richard Linck",
-        "dailyLogCount": 14,
-        "lastLogDate": "2026-08-17"
+        "dailyLogCount": 16,
+        "lastLogDate": "2026-08-25"
       },
       {
         "jobId": 40497055,
         "jobName": "Ahigian - Habashi",
         "userName": "Rob Dougherty",
-        "dailyLogCount": 8,
+        "dailyLogCount": 7,
         "lastLogDate": "2026-08-21"
       }
     ],
@@ -10643,8 +10137,8 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 41118068,
         "jobName": "Lois",
         "userName": "Rob Dougherty",
-        "dailyLogCount": 4,
-        "lastLogDate": "2026-08-18"
+        "dailyLogCount": 5,
+        "lastLogDate": "2026-08-25"
       }
     ],
     "41200140": [
@@ -10668,14 +10162,14 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 41776958,
         "jobName": "Pierami",
         "userName": "Richard Linck",
-        "dailyLogCount": 13,
-        "lastLogDate": "2026-08-17"
+        "dailyLogCount": 14,
+        "lastLogDate": "2026-08-25"
       },
       {
         "jobId": 41776958,
         "jobName": "Pierami",
         "userName": "Rob Dougherty",
-        "dailyLogCount": 7,
+        "dailyLogCount": 6,
         "lastLogDate": "2026-08-21"
       },
       {
@@ -10698,8 +10192,8 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 42083349,
         "jobName": "Norris",
         "userName": "Richard Linck",
-        "dailyLogCount": 10,
-        "lastLogDate": "2026-08-17"
+        "dailyLogCount": 11,
+        "lastLogDate": "2026-08-25"
       },
       {
         "jobId": 42083349,
@@ -10731,14 +10225,21 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobName": "Veranda Bay Model 2",
         "userName": "James Manford",
         "dailyLogCount": 16,
-        "lastLogDate": "2026-08-24"
+        "lastLogDate": "2026-08-25"
       },
       {
         "jobId": 42673665,
         "jobName": "Veranda Bay Model 2",
         "userName": "Rob Dougherty",
-        "dailyLogCount": 5,
-        "lastLogDate": "2026-08-18"
+        "dailyLogCount": 6,
+        "lastLogDate": "2026-08-25"
+      },
+      {
+        "jobId": 42673665,
+        "jobName": "Veranda Bay Model 2",
+        "userName": "Trevor Ragno",
+        "dailyLogCount": 1,
+        "lastLogDate": "2026-08-25"
       }
     ],
     "42969582": [
@@ -10747,7 +10248,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobName": "Etienne",
         "userName": "Adam Horseman",
         "dailyLogCount": 14,
-        "lastLogDate": "2026-08-21"
+        "lastLogDate": "2026-08-25"
       },
       {
         "jobId": 42969582,
@@ -10760,8 +10261,8 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 42969582,
         "jobName": "Etienne",
         "userName": "Rob Dougherty",
-        "dailyLogCount": 4,
-        "lastLogDate": "2026-08-12"
+        "dailyLogCount": 5,
+        "lastLogDate": "2026-08-25"
       }
     ],
     "45275922": [

@@ -5,6 +5,7 @@ import {
   pastDueTasksByJob,
   pendingSelectionsByJob,
   pickProjectManager,
+  resolveJobContractPrice,
   weekdaysElapsedInMonth,
 } from './mapReports';
 
@@ -397,5 +398,57 @@ describe('Buildertrend report mapper', () => {
     const job = mapped.jobs.find((j) => j.name === 'Ahigian');
     expect(job?.totalSlip).toBe(144);
     expect(job?.slip).toEqual({ permit: 28, selections: 131, construction: 129 });
+  });
+
+  it('resolves contract/WIP: profitability revised price, then Job Info fallback, then $0', () => {
+    const reports = {
+      jobs: [
+        { jobID: 1, jobName: 'On Budget', jobStatus: 'Open' },
+        { jobID: 2, jobName: 'Pre Budget', jobStatus: 'Open' },
+        { jobID: 3, jobName: 'Design Only', jobStatus: 'Open' },
+        { jobID: 4, jobName: 'Closed Job', jobStatus: 'Closed' },
+      ],
+      profitability: {
+        data: {
+          rowData: [
+            { jobID: 1, jobName: 'On Budget', revisedClientPrice: 1_402_571.9, jobStatus: 'Open' },
+            { jobID: 4, jobName: 'Closed Job', revisedClientPrice: 980_000, jobStatus: 'Closed' },
+          ],
+        },
+      },
+      jobInfoContractByJob: {
+        '1': 1_314_110,
+        '2': 1_204_751,
+        '3': 0,
+      },
+      scheduleByJob: {
+        '1': { siteWorkStarted: true },
+        '2': { siteWorkStarted: false },
+        '3': { siteWorkStarted: false },
+      },
+    };
+
+    expect(resolveJobContractPrice(1, reports)).toBe(1_402_571.9);
+    expect(resolveJobContractPrice(2, reports)).toBe(1_204_751);
+    expect(resolveJobContractPrice(3, reports)).toBe(0);
+
+    const mapped = mapBuildertrendReports(reports, { now });
+    expect(mapped.jobs.find((j) => j.name === 'On Budget')).toMatchObject({
+      contractPrice: 1_402_571.9,
+      wip: 1_402_571.9,
+    });
+    expect(mapped.jobs.find((j) => j.name === 'Pre Budget')).toMatchObject({
+      contractPrice: 1_204_751,
+      wip: 1_204_751,
+    });
+    expect(mapped.jobs.find((j) => j.name === 'Design Only')).toMatchObject({
+      contractPrice: 0,
+      wip: 0,
+    });
+    expect(mapped.jobs.find((j) => j.name === 'Closed Job')).toMatchObject({
+      contractPrice: 980_000,
+      wip: 0,
+    });
+    expect(mapped.salesPerformance[0]?.value).toBe(1_402_571.9 + 1_204_751);
   });
 });
