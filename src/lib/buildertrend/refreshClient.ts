@@ -45,14 +45,24 @@ async function diagnosePing(): Promise<string> {
 
 async function parseError(response: Response) {
   const raw = await response.text();
+  let message = '';
+  let code = 'refresh_failed';
   try {
     const body = JSON.parse(raw) as {
       error?: unknown;
       code?: unknown;
       message?: unknown;
       stage?: unknown;
+      protection?: unknown;
     };
-    let message = vercelCrashHint(
+    if (response.status === 401 && (body?.protection || /protected deployment/i.test(JSON.stringify(body)))) {
+      return {
+        message:
+          'This Vercel deployment is SSO-protected. Open the site while logged into Vercel, or disable Deployment Protection for Production (Project Settings → Deployment Protection) so /api/buildertrend/refresh can run.',
+        code: 'deployment_protected',
+      };
+    }
+    message = vercelCrashHint(
       response.status,
       formatUnknownError(
         body?.error ?? body?.message,
@@ -62,29 +72,27 @@ async function parseError(response: Response) {
     if (typeof body?.stage === 'string' && body.stage && !message.includes(body.stage)) {
       message = `${message} (stage: ${body.stage})`;
     }
-    const code =
+    code =
       (typeof body?.code === 'string' && body.code) ||
       errorCodeFromUnknown(body?.error) ||
       (response.status === 404 ? 'not_running' : 'refresh_failed');
-    return { message, code };
   } catch {
-    /* not JSON — often Vercel platform crash HTML/text */
+    if (response.status === 404) {
+      return {
+        message: 'Refresh API is not running. Start `npm run server` locally, or deploy the /api/buildertrend functions.',
+        code: 'not_running',
+      };
+    }
+    message = vercelCrashHint(
+      response.status,
+      raw.trim() || `Buildertrend refresh failed (HTTP ${response.status}).`,
+    );
   }
-  if (response.status === 404) {
-    return {
-      message: 'Refresh API is not running. Start `npm run server` locally, or deploy the /api/buildertrend functions.',
-      code: 'not_running',
-    };
-  }
-  let fallback = vercelCrashHint(
-    response.status,
-    raw.trim() || `Buildertrend refresh failed (HTTP ${response.status}).`,
-  );
   if (response.status >= 500) {
     const ping = await diagnosePing();
-    fallback = `${fallback} ${ping}`;
+    message = `${message} ${ping}`;
   }
-  return { message: fallback, code: 'refresh_failed' };
+  return { message, code };
 }
 
 /** Carry forward heavy enrichment from a prior pull when the new pull is core-only. */
@@ -168,6 +176,7 @@ export async function refreshBuildertrendPull(cookie?: string): Promise<Buildert
     const requestBody = cookie ? JSON.stringify({ cookie }) : undefined;
     response = await fetch(`${apiBase()}/api/buildertrend/refresh`, {
       method: 'POST',
+      credentials: 'include',
       headers: { accept: 'application/json', ...(requestBody ? { 'content-type': 'application/json' } : {}) },
       body: requestBody,
     });

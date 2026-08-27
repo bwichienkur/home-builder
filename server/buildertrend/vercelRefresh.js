@@ -5,7 +5,7 @@
  */
 
 const ORIGIN = 'https://buildertrend.net';
-const FETCH_MS = 20_000;
+const FETCH_MS = 15_000;
 
 function parseCookieHeader(raw) {
   const jar = new Map();
@@ -52,6 +52,15 @@ function asRows(payload) {
   return [];
 }
 
+function abortSignal(ms) {
+  if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
+    return AbortSignal.timeout(ms);
+  }
+  const controller = new AbortController();
+  setTimeout(() => controller.abort(), ms);
+  return controller.signal;
+}
+
 async function btGet(session, urlPath, query, stage) {
   const url = new URL(`${ORIGIN}${urlPath}`);
   if (query) {
@@ -69,14 +78,14 @@ async function btGet(session, urlPath, query, stage) {
         Cookie: cookieHeader(session.jar),
       },
       redirect: 'manual',
-      signal: AbortSignal.timeout(FETCH_MS),
+      signal: abortSignal(FETCH_MS),
     });
   } catch (err) {
     const timedOut = err?.name === 'TimeoutError' || err?.name === 'AbortError';
     throw Object.assign(
       new Error(
         timedOut
-          ? `Buildertrend timed out during "${stage}" (no response in ${FETCH_MS / 1000}s). The host may block datacenter IPs — use local pull + snapshot bake.`
+          ? `Buildertrend timed out during "${stage}" (no response in ${FETCH_MS / 1000}s). Vercel may be blocked by Buildertrend — use local pull + snapshot bake.`
           : `Buildertrend unreachable during "${stage}": ${err?.message || err}`,
       ),
       { status: 504, code: timedOut ? 'bt_timeout' : 'bt_unreachable', stage },
@@ -152,23 +161,6 @@ function slimDailyLogs(payload) {
     .filter(Boolean);
 }
 
-function slimProfitability(payload) {
-  return asRows(payload)
-    .map((row) => {
-      const rec = asRecord(row);
-      if (!rec) return null;
-      return {
-        jobID: rec.jobID ?? rec.jobId,
-        jobName: rec.jobName ?? rec.name,
-        jobStatus: rec.jobStatus,
-        revisedClientPrice: rec.revisedClientPrice ?? rec.revisedContractPrice ?? rec.contractPrice,
-        contractPrice: rec.contractPrice,
-        projectManagers: rec.projectManagers ?? rec.projectManager,
-      };
-    })
-    .filter(Boolean);
-}
-
 function emptyReports() {
   return {
     wip: [],
@@ -195,35 +187,32 @@ function emptyReports() {
   };
 }
 
-async function readJsonBody(req) {
-  if (req.body != null && typeof req.body === 'object' && !Buffer.isBuffer(req.body)) {
-    return req.body;
-  }
-  if (typeof req.body === 'string' && req.body.trim()) {
-    try {
-      return JSON.parse(req.body);
-    } catch {
-      return {};
-    }
-  }
-  if (typeof req.json === 'function') {
-    try {
-      return await req.json();
-    } catch {
-      return {};
-    }
-  }
-  if (req.readable && !req.readableEnded) {
-    const chunks = [];
-    for await (const chunk of req) chunks.push(chunk);
-    const raw = Buffer.concat(chunks.map((c) => (typeof c === 'string' ? Buffer.from(c) : c))).toString('utf8');
-    if (!raw.trim()) return {};
+/**
+ * Parse JSON body without hanging. On Vercel, awaiting the raw request stream
+ * can block until the platform kills the function (generic HTTP 500).
+ */
+export function readJsonBodySync(req) {
+  const body = req?.body;
+  if (body == null || body === '') return {};
+  if (Buffer.isBuffer(body)) {
+    const raw = body.toString('utf8').trim();
+    if (!raw) return {};
     try {
       return JSON.parse(raw);
     } catch {
       return {};
     }
   }
+  if (typeof body === 'string') {
+    const raw = body.trim();
+    if (!raw) return {};
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return {};
+    }
+  }
+  if (typeof body === 'object') return body;
   return {};
 }
 
@@ -239,13 +228,16 @@ export async function handleVercelRefresh(req, res) {
   const stages = [];
   try {
     stages.push('parse_body');
-    const body = await readJsonBody(req);
+    // Never for-await req — that hangs on Vercel and surfaces as a platform 500.
+    const body = readJsonBodySync(req);
     const cookie = typeof body?.cookie === 'string' ? body.cookie.trim() : '';
     if (!cookie) {
       return res.status(400).json({
         ok: false,
         error: 'Paste Buildertrend cookie values to refresh on this host.',
         code: 'credentials_missing',
+        stage: 'parse_body',
+        hint: 'If this keeps happening after pasting cookies, the request body may not be reaching the API (check Vercel Deployment Protection).',
       });
     }
 
@@ -274,23 +266,14 @@ export async function handleVercelRefresh(req, res) {
     const wipRaw = await btGet(
       session,
       '/apix/v3/Reporting/work-in-progress',
-      { openJobLimit: 200 },
+      { openJobLimit: 100 },
       'wip',
     );
-    const wip = wipRaw.ok ? slimWip(wipRaw.data) : [];
+    const wip = wipRaw.ok ? slimWip(wipRaw.data) : slimWip(probe.data);
 
     stages.push('daily_logs');
     const logsRaw = await btGet(session, '/apix/v3/Reporting/daily-log-creation-by-job', undefined, 'daily_logs');
     const dailyLogs = logsRaw.ok ? slimDailyLogs(logsRaw.data) : [];
-
-    stages.push('profitability');
-    const profitRaw = await btGet(
-      session,
-      '/apix/v3/Reporting/profitability',
-      { openJobLimit: 200, closedJobLimit: 50, warrantyJobLimit: 50 },
-      'profitability',
-    );
-    const profitability = profitRaw.ok ? slimProfitability(profitRaw.data) : [];
 
     if (!jobsRaw.ok && !wipRaw.ok && !logsRaw.ok) {
       return res.status(502).json({
@@ -306,7 +289,6 @@ export async function handleVercelRefresh(req, res) {
       jobs,
       wip,
       dailyLogs,
-      profitability,
     };
 
     return res.status(200).json({
@@ -320,7 +302,6 @@ export async function handleVercelRefresh(req, res) {
         jobs: jobsRaw.status,
         wip: wipRaw.status,
         dailyLogs: logsRaw.status,
-        profitability: profitRaw.status,
         stages,
       },
       reports,
