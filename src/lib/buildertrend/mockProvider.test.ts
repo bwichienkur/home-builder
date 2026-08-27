@@ -70,6 +70,8 @@ describe('dashboard formatters', () => {
   it('renders refreshed-at copy', () => {
     const stamp = new Date(now.getTime() - 2 * 60_000).toISOString();
     expect(formatRefreshedAt(stamp, now)).toMatch(/^Updated 2m ago · /);
+    const older = new Date(now.getTime() - (1 * 24 * 60 + 90) * 60_000).toISOString();
+    expect(formatRefreshedAt(older, now)).toMatch(/^Updated 1d 1h 30m ago · /);
   });
 
   it('rounds phase percents to 100', () => {

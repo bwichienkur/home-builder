@@ -7,7 +7,7 @@ import type { OwnerJob, PipelineStage, SalesPerformanceBar, TimeMetric } from '.
  *   PIPEDRIVE_API_TOKEN=… npm run pipedrive:pull
  *   npm run buildertrend:update-snapshot
  * Jobs / WIP / logs / tasks / selections = Buildertrend.
- * Sales funnel + weighted pipeline from Pipedrive Sales pipeline (pulled 2026-08-25T12:26:20.522Z).
+ * Sales funnel + weighted pipeline from Pipedrive Sales pipeline (pulled 2026-08-27T12:31:41.055Z).
  * Past due = Tasks Status includes Not completed + due date before today.
  * Pending selections = per job, exclude green Selected/Completed (status 2 and 3).
  * Test job "**** Tate TEST JOB" omitted.
@@ -26,17 +26,18 @@ const OPEN_JOBS: OwnerJob[] = [
     dailyLogsTotal: 173,
     foundationStarted: true,
     totalSlip: 157,
+    revenueLast30d: 275680.64,
     estFirstScheduleStart: "2025-06-05",
     estPermittingEnd: "2025-09-30",
     estFoundationStart: "2025-11-18",
     estClosingEnd: "2026-10-09",
     contractPrice: 2751692.31,
-    revenueToDate: 1628705.53,
+    revenueToDate: 1904386.17,
     wip: 2751692.31,
     estCloseDate: "2026-10-09",
     openedAt: "2025-06-05",
     slip: {"permit":28,"selections":131,"construction":129},
-    notes: "Generator",
+    notes: "Install Tile",
   },
   {
     id: "bt-40351917",
@@ -152,7 +153,7 @@ const OPEN_JOBS: OwnerJob[] = [
     dailyLogsTotal: 116,
     foundationStarted: true,
     totalSlip: 66,
-    revenueLast30d: 292829.12,
+    revenueLast30d: 141823.79,
     estFirstScheduleStart: "2025-05-09",
     estPermittingEnd: "2026-01-15",
     estFoundationStart: "2026-02-05",
@@ -428,6 +429,7 @@ const OPEN_JOBS: OwnerJob[] = [
     dailyLogsRecentPmDone: 0,
     dailyLogsTotal: 3,
     foundationStarted: false,
+    revenueLast30d: 117133.3,
     estFirstScheduleStart: "2026-06-05",
     estPermittingEnd: "2026-10-01",
     estFoundationStart: "2026-10-21",
@@ -517,7 +519,7 @@ const OPEN_JOBS: OwnerJob[] = [
     status: "open",
     phase: "construction",
     pendingSelections: 0,
-    pastDueTasks: 51,
+    pastDueTasks: 29,
     dailyLogsRecentDone: 23,
     dailyLogsRecentPmDone: 16,
     dailyLogsTotal: 139,
@@ -599,7 +601,7 @@ export const LIVE_PIPELINE: PipelineStage[] = [
   {
     "id": "pd-1",
     "label": "First Contact",
-    "value": 2593063,
+    "value": 2443063,
     "dealCount": 24
   },
   {
@@ -683,5 +685,5 @@ export const LIVE_TARGET_MARGIN_PCT = 15;
 export const LIVE_PROJECTED_MARGIN_PCT = 33.3;
 export const LIVE_ROLLING_REVENUE_12MO = 16404188.42;
 /** Weighted pipeline: Pipedrive value × stage probability when PD cache present. */
-export const LIVE_WEIGHTED_PIPELINE = 10610650;
-export const LIVE_SNAPSHOT_AT = '2026-08-27T02:05:18.011Z';
+export const LIVE_WEIGHTED_PIPELINE = 10460650;
+export const LIVE_SNAPSHOT_AT = '2026-08-27T12:30:51.657Z';

@@ -65,10 +65,24 @@ export function formatCloseDate(iso: string) {
 export function formatRefreshedAt(iso: string, now = new Date()) {
   const then = new Date(iso);
   if (Number.isNaN(then.getTime())) return '';
-  const minutes = Math.max(0, Math.round((now.getTime() - then.getTime()) / 60_000));
-  const ago = minutes < 1 ? 'just now' : minutes === 1 ? '1m ago' : `${minutes}m ago`;
+  const totalMinutes = Math.max(0, Math.round((now.getTime() - then.getTime()) / 60_000));
+  const ago = formatRefreshAgo(totalMinutes);
   const date = then.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
   return `Updated ${ago} · ${date}`;
+}
+
+/** Relative age as days / hours / minutes (e.g. "1d 3h 12m ago"). */
+export function formatRefreshAgo(totalMinutes: number) {
+  const minutes = Math.max(0, Math.round(totalMinutes));
+  if (minutes < 1) return 'just now';
+  const days = Math.floor(minutes / (60 * 24));
+  const hours = Math.floor((minutes % (60 * 24)) / 60);
+  const mins = minutes % 60;
+  const parts: string[] = [];
+  if (days > 0) parts.push(`${days}d`);
+  if (hours > 0) parts.push(`${hours}h`);
+  if (mins > 0 || parts.length === 0) parts.push(`${mins}m`);
+  return `${parts.join(' ')} ago`;
 }
 
 export function totalSlipDays(slip: { permit: number; selections: number; construction: number }) {
