@@ -8,8 +8,13 @@ import type { DrillDealRow, DrilldownKind, LiveDrilldown } from './drilldownType
 
 function openPipedriveDeals(detail: LiveDrilldown | null | undefined): DrillDealRow[] {
   if (!detail) return [];
-  return Object.entries(detail.dealsByStage)
+  const pipedrive = Object.entries(detail.dealsByStage)
     .filter(([key]) => isPipedriveStageKey(key))
+    .flatMap(([, rows]) => rows);
+  if (pipedrive.length) return pipedrive;
+  // Native Operations store keys deals by stage id (lead, proposal, …).
+  return Object.entries(detail.dealsByStage)
+    .filter(([key]) => !isPipedriveStageKey(key) && key !== 'lost' && key !== 'closed')
     .flatMap(([, rows]) => rows);
 }
 

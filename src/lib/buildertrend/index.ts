@@ -1,9 +1,10 @@
 import { apiOwnerDashboardProvider } from './apiProvider';
 import { mockOwnerDashboardProvider } from './mockProvider';
 import { snapshotOwnerDashboardProvider } from './snapshotProvider';
+import { nativeOwnerDashboardProvider } from '../operations/nativeProvider';
 import type { OwnerDashboardProvider } from './types';
 
-export type BuildertrendProviderId = 'mock' | 'api' | 'snapshot';
+export type BuildertrendProviderId = 'mock' | 'api' | 'snapshot' | 'native';
 
 function envProvider(): BuildertrendProviderId {
   const value = String((import.meta.env as Record<string, string | undefined>).VITE_BUILDERTREND_PROVIDER ?? 'snapshot')
@@ -11,14 +12,21 @@ function envProvider(): BuildertrendProviderId {
     .toLowerCase();
   if (value === 'api') return 'api';
   if (value === 'mock') return 'mock';
+  if (value === 'native') return 'native';
   return 'snapshot';
 }
 
-/** UI talks only to this port. Default is the 19 Aug 2026 Buildertrend read-only snapshot. */
+/** True when Owner Dashboard should use native Operations store (not BT live pulls). */
+export function isNativeOwnerDashboard(): boolean {
+  return envProvider() === 'native';
+}
+
+/** UI talks only to this port. Default is the baked Buildertrend read-only snapshot. */
 export function getOwnerDashboardProvider(): OwnerDashboardProvider {
   const id = envProvider();
   if (id === 'api') return apiOwnerDashboardProvider;
   if (id === 'mock') return mockOwnerDashboardProvider;
+  if (id === 'native') return nativeOwnerDashboardProvider;
   return snapshotOwnerDashboardProvider;
 }
 

@@ -4,6 +4,7 @@ import {
   clearStoredLivePull,
   fetchCachedBuildertrendPull,
   getOwnerDashboardProvider,
+  isNativeOwnerDashboard,
   loadStoredLivePull,
   mapBuildertrendReports,
   mockOwnerDashboardProvider,
@@ -34,6 +35,7 @@ import {
 import { LIVE_DRILLDOWN } from '../../lib/buildertrend/liveDrilldown';
 import { buildLiveDrilldown } from '../../lib/dashboard/buildDrilldown';
 import type { LiveDrilldown } from '../../lib/dashboard/drilldownTypes';
+import { buildOpsDrilldown, ensureOpsSeeded } from '../../lib/operations';
 import { mapPipedriveDeals, mergeSalesFromPipedrive } from '../../lib/pipedrive/mapDeals';
 import {
   fetchCachedPipedrivePull,
@@ -118,13 +120,18 @@ export type BtCookiePromptState = {
 };
 
 export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId) {
+  const native = isNativeOwnerDashboard();
   const [dash, setDash] = useState<OwnerDashboard | null>(null);
   const [error, setError] = useState('');
   const [pipedriveError, setPipedriveError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [refreshingPipedrive, setRefreshingPipedrive] = useState(false);
-  const [livePull, setLivePull] = useState<BuildertrendLivePull | null>(() => loadStoredLivePull());
-  const [livePdPull, setLivePdPull] = useState<PipedriveLivePull | null>(() => loadStoredPipedrivePull());
+  const [livePull, setLivePull] = useState<BuildertrendLivePull | null>(() =>
+    isNativeOwnerDashboard() ? null : loadStoredLivePull(),
+  );
+  const [livePdPull, setLivePdPull] = useState<PipedriveLivePull | null>(() =>
+    isNativeOwnerDashboard() ? null : loadStoredPipedrivePull(),
+  );
   const [liveDetail, setLiveDetail] = useState<LiveDrilldown | null>(null);
   const [cookiePrompt, setCookiePrompt] = useState<BtCookiePromptState | null>(null);
   const [cookieBusy, setCookieBusy] = useState(false);
@@ -133,6 +140,28 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
   useEffect(() => {
     let cancelled = false;
     const filters = { status, dateRange };
+
+    if (native) {
+      void getOwnerDashboardProvider()
+        .getDashboard(filters)
+        .then(
+          (next) => {
+            if (cancelled) return;
+            setDash(next);
+            setLiveDetail(buildOpsDrilldown(ensureOpsSeeded()));
+            setError('');
+          },
+          async (reason: unknown) => {
+            if (cancelled) return;
+            setError(formatUnknownError(reason, 'Dashboard could not load.'));
+            const fallback = await mockOwnerDashboardProvider.getDashboard(filters);
+            if (!cancelled) setDash(fallback);
+          },
+        );
+      return () => {
+        cancelled = true;
+      };
+    }
 
     if (livePull) {
       try {
@@ -180,9 +209,10 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
     return () => {
       cancelled = true;
     };
-  }, [status, dateRange, livePull, livePdPull]);
+  }, [status, dateRange, livePull, livePdPull, native]);
 
   useEffect(() => {
+    if (native) return;
     let cancelled = false;
     void fetchCachedBuildertrendPull().then((cached) => {
       if (cancelled || !cached) return;
@@ -203,7 +233,7 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [native]);
 
   useEffect(() => {
     return () => {
@@ -257,6 +287,20 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
 
   const onRefresh = async () => {
     setError('');
+
+    if (native) {
+      setRefreshing(true);
+      try {
+        const next = await getOwnerDashboardProvider().getDashboard({ status, dateRange });
+        setDash(next);
+        setLiveDetail(buildOpsDrilldown(ensureOpsSeeded()));
+      } catch (reason: unknown) {
+        setError(formatUnknownError(reason, 'Native operations dashboard failed to reload.'));
+      } finally {
+        setRefreshing(false);
+      }
+      return;
+    }
 
     const applyPull = (pull: BuildertrendLivePull) => {
       setLivePull(pull);
@@ -333,6 +377,10 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
   };
 
   const onRefreshPipedrive = async () => {
+    if (native) {
+      setPipedriveError('Pipedrive refresh is disabled while VITE_BUILDERTREND_PROVIDER=native.');
+      return;
+    }
     setPipedriveError('');
     setRefreshingPipedrive(true);
     try {

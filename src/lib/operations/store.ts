@@ -1,0 +1,186 @@
+import { seedOpsFromLiveSnapshot, newOpsId } from './seed';
+import type {
+  OpsDailyLog,
+  OpsDeal,
+  OpsJob,
+  OpsPerson,
+  OpsSelection,
+  OpsSnapshot,
+  OpsTask,
+} from './types';
+import { OPS_STORAGE_KEY } from './types';
+
+/** In-memory fallback when localStorage is unavailable (SSR / Vitest). */
+let memoryRaw: string | null = null;
+
+function storageGet(): string | null {
+  if (typeof localStorage !== 'undefined') return localStorage.getItem(OPS_STORAGE_KEY);
+  return memoryRaw;
+}
+
+function storageSet(value: string) {
+  if (typeof localStorage !== 'undefined') localStorage.setItem(OPS_STORAGE_KEY, value);
+  else memoryRaw = value;
+}
+
+function emptySnapshot(): OpsSnapshot {
+  return {
+    version: 1,
+    settings: {
+      targetMarginPct: 15,
+      projectedMarginPct: 0,
+      rollingRevenue12Mo: 0,
+      refreshedAt: new Date().toISOString(),
+    },
+    jobs: [],
+    logs: [],
+    tasks: [],
+    selections: [],
+    deals: [],
+    people: [],
+  };
+}
+
+export function loadOpsSnapshot(): OpsSnapshot {
+  try {
+    const raw = storageGet();
+    if (!raw) return emptySnapshot();
+    const parsed = JSON.parse(raw) as OpsSnapshot;
+    if (parsed?.version !== 1 || !Array.isArray(parsed.jobs)) return emptySnapshot();
+    return parsed;
+  } catch {
+    return emptySnapshot();
+  }
+}
+
+export function saveOpsSnapshot(snapshot: OpsSnapshot) {
+  const next = {
+    ...snapshot,
+    settings: { ...snapshot.settings, refreshedAt: new Date().toISOString() },
+  };
+  storageSet(JSON.stringify(next));
+}
+
+export function ensureOpsSeeded(): OpsSnapshot {
+  if (storageGet() == null) {
+    const seeded = seedOpsFromLiveSnapshot();
+    saveOpsSnapshot(seeded);
+    return seeded;
+  }
+  return loadOpsSnapshot();
+}
+
+export function resetOpsFromSnapshot(): OpsSnapshot {
+  const seeded = seedOpsFromLiveSnapshot();
+  saveOpsSnapshot(seeded);
+  return seeded;
+}
+
+export function clearOpsStore() {
+  saveOpsSnapshot(emptySnapshot());
+}
+
+/** Drop persisted data so the next ensureOpsSeeded re-seeds (tests / hard reset). */
+export function wipeOpsStoreForTests() {
+  if (typeof localStorage !== 'undefined') localStorage.removeItem(OPS_STORAGE_KEY);
+  memoryRaw = null;
+}
+
+function touch(snapshot: OpsSnapshot): OpsSnapshot {
+  return { ...snapshot, settings: { ...snapshot.settings, refreshedAt: new Date().toISOString() } };
+}
+
+export function upsertOpsJob(job: OpsJob) {
+  const snap = ensureOpsSeeded();
+  const idx = snap.jobs.findIndex((j) => j.id === job.id);
+  const jobs = [...snap.jobs];
+  const next = { ...job, updatedAt: new Date().toISOString() };
+  if (idx >= 0) jobs[idx] = next;
+  else jobs.push(next);
+  saveOpsSnapshot(touch({ ...snap, jobs }));
+  return next;
+}
+
+export function archiveOpsJob(jobId: string) {
+  const snap = ensureOpsSeeded();
+  const jobs = snap.jobs.map((j) => (j.id === jobId ? { ...j, archived: true, updatedAt: new Date().toISOString() } : j));
+  saveOpsSnapshot(touch({ ...snap, jobs }));
+}
+
+export function upsertOpsLog(log: OpsDailyLog) {
+  const snap = ensureOpsSeeded();
+  const idx = snap.logs.findIndex((r) => r.id === log.id);
+  const logs = [...snap.logs];
+  const next = { ...log, updatedAt: new Date().toISOString() };
+  if (idx >= 0) logs[idx] = next;
+  else logs.push(next);
+  saveOpsSnapshot(touch({ ...snap, logs }));
+  return next;
+}
+
+export function deleteOpsLog(id: string) {
+  const snap = ensureOpsSeeded();
+  saveOpsSnapshot(touch({ ...snap, logs: snap.logs.filter((r) => r.id !== id) }));
+}
+
+export function upsertOpsTask(task: OpsTask) {
+  const snap = ensureOpsSeeded();
+  const idx = snap.tasks.findIndex((r) => r.id === task.id);
+  const tasks = [...snap.tasks];
+  const next = { ...task, updatedAt: new Date().toISOString() };
+  if (idx >= 0) tasks[idx] = next;
+  else tasks.push(next);
+  saveOpsSnapshot(touch({ ...snap, tasks }));
+  return next;
+}
+
+export function deleteOpsTask(id: string) {
+  const snap = ensureOpsSeeded();
+  saveOpsSnapshot(touch({ ...snap, tasks: snap.tasks.filter((r) => r.id !== id) }));
+}
+
+export function upsertOpsSelection(row: OpsSelection) {
+  const snap = ensureOpsSeeded();
+  const idx = snap.selections.findIndex((r) => r.id === row.id);
+  const selections = [...snap.selections];
+  const next = { ...row, updatedAt: new Date().toISOString() };
+  if (idx >= 0) selections[idx] = next;
+  else selections.push(next);
+  saveOpsSnapshot(touch({ ...snap, selections }));
+  return next;
+}
+
+export function deleteOpsSelection(id: string) {
+  const snap = ensureOpsSeeded();
+  saveOpsSnapshot(touch({ ...snap, selections: snap.selections.filter((r) => r.id !== id) }));
+}
+
+export function upsertOpsDeal(deal: OpsDeal) {
+  const snap = ensureOpsSeeded();
+  const idx = snap.deals.findIndex((r) => r.id === deal.id);
+  const deals = [...snap.deals];
+  const next = { ...deal, updatedAt: new Date().toISOString() };
+  if (idx >= 0) deals[idx] = next;
+  else deals.push(next);
+  saveOpsSnapshot(touch({ ...snap, deals }));
+  return next;
+}
+
+export function archiveOpsDeal(id: string) {
+  const snap = ensureOpsSeeded();
+  const deals = snap.deals.map((d) => (d.id === id ? { ...d, archived: true, updatedAt: new Date().toISOString() } : d));
+  saveOpsSnapshot(touch({ ...snap, deals }));
+}
+
+export function upsertOpsPerson(person: OpsPerson) {
+  const snap = ensureOpsSeeded();
+  const idx = snap.people.findIndex((r) => r.id === person.id);
+  const people = [...snap.people];
+  const next = { ...person, updatedAt: new Date().toISOString() };
+  if (idx >= 0) people[idx] = next;
+  else people.push(next);
+  saveOpsSnapshot(touch({ ...snap, people }));
+  return next;
+}
+
+export { newOpsId };

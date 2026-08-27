@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { NAV_GROUPS, pageTitleForPath } from './navConfig';
 
 describe('app nav', () => {
-  it('groups studio, office, and account destinations', () => {
-    expect(NAV_GROUPS.map((g) => g.id)).toEqual(['studio', 'office', 'account']);
+  it('groups studio, office, operations, and account destinations', () => {
+    expect(NAV_GROUPS.map((g) => g.id)).toEqual(['studio', 'office', 'operations', 'account']);
     expect(NAV_GROUPS.flatMap((g) => g.items.map((i) => i.to))).toEqual([
       '/',
       '/build',
@@ -11,6 +11,10 @@ describe('app nav', () => {
       '/clients',
       '/vendors',
       '/inventory',
+      '/ops',
+      '/ops/jobs',
+      '/ops/deals',
+      '/ops/people',
       '/settings',
       '/users',
       '/docs/api',
@@ -21,6 +25,9 @@ describe('app nav', () => {
     expect(pageTitleForPath('/')).toBe('Overview');
     expect(pageTitleForPath('/build')).toBe('Build');
     expect(pageTitleForPath('/inventory')).toBe('Materials');
+    expect(pageTitleForPath('/ops')).toBe('Operations');
+    expect(pageTitleForPath('/ops/jobs')).toBe('Jobs');
+    expect(pageTitleForPath('/ops/jobs/bt-1')).toBe('Jobs');
     expect(pageTitleForPath('/unknown')).toBe('Olsen Custom Homes');
   });
 
