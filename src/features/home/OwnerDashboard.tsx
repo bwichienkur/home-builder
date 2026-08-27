@@ -215,8 +215,9 @@ export function OwnerDashboard() {
             {refreshing ? 'Pulling…' : 'Refresh from Buildertrend'}
           </button>
           <p className="dash-refresh-help">
-            Chrome: log in to Buildertrend tab → F12 → Application → Cookies → https://buildertrend.net, then paste
-            <code> name=value; ...</code> when prompted.
+            Refresh reuses cookies saved in this browser. When prompted, paste only the{' '}
+            <strong>Value</strong> for <code>.AspNet.Auth0</code>, <code>ASP.NET_SessionId</code>, and{' '}
+            <code>GAESA</code> (Chrome → Buildertrend tab → F12 → Application → Cookies → https://buildertrend.net).
           </p>
         </div>
       </header>
