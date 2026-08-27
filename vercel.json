@@ -5,12 +5,10 @@
   "outputDirectory": "dist",
   "functions": {
     "api/buildertrend/refresh.js": {
-      "maxDuration": 300,
-      "memory": 1024
+      "maxDuration": 60
     },
-    "api/buildertrend/dashboard.js": {
-      "maxDuration": 60,
-      "memory": 1024
+    "api/buildertrend/ping.js": {
+      "maxDuration": 10
     }
   },
   "rewrites": [
