@@ -53,11 +53,13 @@ describe('update live snapshot from Buildertrend (+ optional Pipedrive) cache', 
 
     const pdPath = path.join(process.cwd(), 'data/pipedrive-cache.json');
     let pdNote = 'Sales funnel still from BT Lead Opportunities when Pipedrive cache is absent.';
+    let pdPulledAt = '';
     if (existsSync(pdPath)) {
       const pdCache = JSON.parse(readFileSync(pdPath, 'utf8')) as { pulledAt: string; reports: any };
       const pd = mapPipedriveDeals(pdCache.reports, { now: new Date(pdCache.pulledAt) });
       mapped = mergeSalesFromPipedrive(mapped, pd);
       pdNote = `Sales funnel + weighted pipeline from Pipedrive Sales pipeline (pulled ${pdCache.pulledAt}).`;
+      pdPulledAt = new Date(pdCache.pulledAt).toISOString();
     }
 
     const openJobs = mapped.jobs.filter((job) => job.status === 'open');
@@ -99,6 +101,8 @@ export const LIVE_ROLLING_REVENUE_12MO = ${mapped.rollingRevenue12Mo};
 /** Weighted pipeline: Pipedrive value × stage probability when PD cache present. */
 export const LIVE_WEIGHTED_PIPELINE = ${mapped.weightedPipeline ?? 0};
 export const LIVE_SNAPSHOT_AT = '${pulledDate}';
+/** Pipedrive Sales pipeline pull timestamp baked into this snapshot (empty when PD cache absent). */
+export const LIVE_PIPEDRIVE_AT = '${pdPulledAt}';
 `;
 
     writeFileSync(path.join(process.cwd(), 'src/lib/buildertrend/liveSnapshot.ts'), file);

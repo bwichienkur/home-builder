@@ -687,3 +687,5 @@ export const LIVE_ROLLING_REVENUE_12MO = 16404188.42;
 /** Weighted pipeline: Pipedrive value × stage probability when PD cache present. */
 export const LIVE_WEIGHTED_PIPELINE = 10460650;
 export const LIVE_SNAPSHOT_AT = '2026-08-27T12:30:51.657Z';
+/** Pipedrive Sales pipeline pull timestamp baked into this snapshot (empty when PD cache absent). */
+export const LIVE_PIPEDRIVE_AT = '2026-08-27T12:31:41.055Z';

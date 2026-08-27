@@ -33,6 +33,16 @@ function sourceLine(source: string, refreshedAt: string, live: boolean, error: s
   return error ? `${base} · ${error}` : base;
 }
 
+function pipedriveSourceLine(live: boolean, refreshedAt: string, error: string) {
+  const date = new Date(refreshedAt).toLocaleDateString(undefined, {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+  const base = `Pipedrive read-only${live ? ' · live pull' : ' · snapshot'} · ${date}`;
+  return error ? `${base} · ${error}` : base;
+}
+
 const STATUS: { id: JobStatus; label: string }[] = [
   { id: 'open', label: 'Open' },
   { id: 'closed', label: 'Closed' },
@@ -144,8 +154,20 @@ export function OwnerDashboard() {
   const [dateRange, setDateRange] = useState<DateRangeId>('all');
   const [sort, setSort] = useState<SortState<SortKey>>({ key: 'name', dir: 'asc' });
   const [pmSort, setPmSort] = useState<SortState<PmSortKey>>({ key: 'pm', dir: 'asc' });
-  const { dash, error, refreshing, livePull, cookiePrompt, resolveCookiePrompt, onRefresh } =
-    useOwnerDashboardData(status, dateRange);
+  const {
+    dash,
+    error,
+    pipedriveError,
+    refreshing,
+    refreshingPipedrive,
+    livePull,
+    livePdPull,
+    pipedriveRefreshedAt,
+    cookiePrompt,
+    resolveCookiePrompt,
+    onRefresh,
+    onRefreshPipedrive,
+  } = useOwnerDashboardData(status, dateRange);
 
   const filters = useMemo(() => ({ status, dateRange }), [status, dateRange]);
   const href = (kind: DrilldownKind) => drilldownHref(kind, filters);
@@ -206,21 +228,36 @@ export function OwnerDashboard() {
               ))}
             </select>
           </label>
-          <p className="dash-refreshed">{formatRefreshedAt(dash.refreshedAt, now)}</p>
-          <button
-            type="button"
-            className="dash-refresh"
-            onClick={() => void onRefresh()}
-            disabled={refreshing || Boolean(cookiePrompt)}
-            aria-busy={refreshing}
-          >
-            {refreshing ? 'Pulling…' : 'Refresh from Buildertrend'}
-          </button>
-          <p className="dash-refresh-help">
-            Refresh reuses cookies saved in this browser. When needed, a dialog asks for the{' '}
-            <strong>Value</strong> of <code>.AspNet.Auth0</code>, <code>ASP.NET_SessionId</code>, and{' '}
-            <code>GAESA</code> from Chrome → Application → Cookies → https://buildertrend.net.
-          </p>
+          <div className="dash-refresh-group">
+            <p className="dash-refreshed">
+              <span className="dash-refresh-label">Buildertrend</span>
+              {formatRefreshedAt(dash.refreshedAt, now)}
+            </p>
+            <button
+              type="button"
+              className="dash-refresh"
+              onClick={() => void onRefresh()}
+              disabled={refreshing || Boolean(cookiePrompt)}
+              aria-busy={refreshing}
+            >
+              {refreshing ? 'Pulling…' : 'Refresh from Buildertrend'}
+            </button>
+          </div>
+          <div className="dash-refresh-group">
+            <p className="dash-refreshed">
+              <span className="dash-refresh-label">Pipedrive</span>
+              {pipedriveRefreshedAt ? formatRefreshedAt(pipedriveRefreshedAt, now) : 'No pull yet'}
+            </p>
+            <button
+              type="button"
+              className="dash-refresh"
+              onClick={() => void onRefreshPipedrive()}
+              disabled={refreshingPipedrive}
+              aria-busy={refreshingPipedrive}
+            >
+              {refreshingPipedrive ? 'Pulling…' : 'Refresh from Pipedrive'}
+            </button>
+          </div>
         </div>
       </header>
 
@@ -233,6 +270,9 @@ export function OwnerDashboard() {
       ) : null}
 
       <p className="dash-source">{sourceLine(dash.source, dash.refreshedAt, Boolean(livePull), error)}</p>
+      <p className="dash-source">
+        {pipedriveSourceLine(Boolean(livePdPull), pipedriveRefreshedAt, pipedriveError)}
+      </p>
 
       <div className="dash-kpis">
         {dash.kpis.map((card) => (

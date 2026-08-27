@@ -11,6 +11,18 @@ import {
   summarizeOwnerDashboard,
 } from '../../lib/buildertrend';
 import type { BuildertrendLivePull } from '../../lib/buildertrend';
+import {
+  LIVE_JOBS,
+  LIVE_PIPELINE,
+  LIVE_PIPEDRIVE_AT,
+  LIVE_PROJECTED_MARGIN_PCT,
+  LIVE_ROLLING_REVENUE_12MO,
+  LIVE_SALES_PERFORMANCE,
+  LIVE_SNAPSHOT_AT,
+  LIVE_TARGET_MARGIN_PCT,
+  LIVE_TIME_METRICS,
+  LIVE_WEIGHTED_PIPELINE,
+} from '../../lib/buildertrend/liveSnapshot';
 import type { DateRangeId, JobStatus, OwnerDashboard } from '../../lib/buildertrend/types';
 import {
   clearStoredBtCookie,
@@ -21,19 +33,82 @@ import {
 import { LIVE_DRILLDOWN } from '../../lib/buildertrend/liveDrilldown';
 import { buildLiveDrilldown } from '../../lib/dashboard/buildDrilldown';
 import type { LiveDrilldown } from '../../lib/dashboard/drilldownTypes';
+import { mapPipedriveDeals, mergeSalesFromPipedrive } from '../../lib/pipedrive/mapDeals';
+import {
+  fetchCachedPipedrivePull,
+  loadStoredPipedrivePull,
+  refreshPipedrivePull,
+  storePipedrivePull,
+  type PipedriveLivePull,
+} from '../../lib/pipedrive/refreshClient';
 
-function dashboardFromPull(pull: BuildertrendLivePull, filters: { status: JobStatus; dateRange: DateRangeId }): OwnerDashboard {
-  const mapped = mapBuildertrendReports(pull.reports, { now: new Date(pull.pulledAt) });
+function errorCode(reason: unknown): string | undefined {
+  return (reason as { code?: string })?.code;
+}
+
+function dashboardFromLive(
+  bt: BuildertrendLivePull,
+  pd: PipedriveLivePull | null,
+  filters: { status: JobStatus; dateRange: DateRangeId },
+): OwnerDashboard {
+  let mapped = mapBuildertrendReports(bt.reports, { now: new Date(bt.pulledAt) });
+  if (pd) {
+    mapped = mergeSalesFromPipedrive(
+      mapped,
+      mapPipedriveDeals(pd.reports, { now: new Date(pd.pulledAt) }),
+    );
+  }
   return summarizeOwnerDashboard({
     source: 'buildertrend',
-    refreshedAt: pull.pulledAt,
+    refreshedAt: bt.pulledAt,
     filters,
     ...mapped,
   });
 }
 
-function errorCode(reason: unknown): string | undefined {
-  return (reason as { code?: string })?.code;
+function dashboardFromSnapshotWithPd(
+  pd: PipedriveLivePull,
+  filters: { status: JobStatus; dateRange: DateRangeId },
+): OwnerDashboard {
+  const mapped = mergeSalesFromPipedrive(
+    {
+      jobs: LIVE_JOBS,
+      pipeline: LIVE_PIPELINE,
+      salesPerformance: LIVE_SALES_PERFORMANCE,
+      timeMetrics: LIVE_TIME_METRICS,
+      targetMarginPct: LIVE_TARGET_MARGIN_PCT,
+      projectedMarginPct: LIVE_PROJECTED_MARGIN_PCT,
+      rollingRevenue12Mo: LIVE_ROLLING_REVENUE_12MO,
+      weightedPipeline: LIVE_WEIGHTED_PIPELINE,
+    },
+    mapPipedriveDeals(pd.reports, { now: new Date(pd.pulledAt) }),
+  );
+  return summarizeOwnerDashboard({
+    source: 'buildertrend',
+    refreshedAt: LIVE_SNAPSHOT_AT,
+    filters,
+    ...mapped,
+  });
+}
+
+function detailFromLive(bt: BuildertrendLivePull | null, pd: PipedriveLivePull | null): LiveDrilldown {
+  const built = buildLiveDrilldown({
+    buildertrend: bt ?? { pulledAt: LIVE_SNAPSHOT_AT, reports: {} },
+    pipedrive: pd,
+  });
+  return {
+    ...LIVE_DRILLDOWN,
+    ...(bt
+      ? {
+          selectionsByJobId: built.selectionsByJobId,
+          pastDueByJobId: built.pastDueByJobId,
+          logsByJobId: built.logsByJobId,
+          baselineSlipByJobId: built.baselineSlipByJobId,
+        }
+      : {}),
+    ...(pd ? { dealsByStage: built.dealsByStage } : {}),
+    generatedAt: built.generatedAt,
+  };
 }
 
 export type BtCookiePromptState = {
@@ -43,8 +118,11 @@ export type BtCookiePromptState = {
 export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId) {
   const [dash, setDash] = useState<OwnerDashboard | null>(null);
   const [error, setError] = useState('');
+  const [pipedriveError, setPipedriveError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [refreshingPipedrive, setRefreshingPipedrive] = useState(false);
   const [livePull, setLivePull] = useState<BuildertrendLivePull | null>(() => loadStoredLivePull());
+  const [livePdPull, setLivePdPull] = useState<PipedriveLivePull | null>(() => loadStoredPipedrivePull());
   const [liveDetail, setLiveDetail] = useState<LiveDrilldown | null>(null);
   const [cookiePrompt, setCookiePrompt] = useState<BtCookiePromptState | null>(null);
   const cookieResolverRef = useRef<((cookie: string | null) => void) | null>(null);
@@ -52,15 +130,12 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
   useEffect(() => {
     let cancelled = false;
     const filters = { status, dateRange };
+
     if (livePull) {
       try {
-        setDash(dashboardFromPull(livePull, filters));
-        const built = buildLiveDrilldown({ buildertrend: livePull });
-        const hasDeals = Object.values(built.dealsByStage).some((rows) => rows.length > 0);
-        setLiveDetail({
-          ...built,
-          dealsByStage: hasDeals ? built.dealsByStage : LIVE_DRILLDOWN.dealsByStage,
-        });
+        setDash(dashboardFromLive(livePull, livePdPull, filters));
+        setLiveDetail(detailFromLive(livePull, livePdPull));
+        setError('');
       } catch {
         clearStoredLivePull();
         setLivePull(null);
@@ -69,6 +144,20 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
         cancelled = true;
       };
     }
+
+    if (livePdPull) {
+      try {
+        setDash(dashboardFromSnapshotWithPd(livePdPull, filters));
+        setLiveDetail(detailFromLive(null, livePdPull));
+        setError('');
+      } catch (reason: unknown) {
+        setError(reason instanceof Error ? reason.message : 'Dashboard could not load.');
+      }
+      return () => {
+        cancelled = true;
+      };
+    }
+
     const provider = getOwnerDashboardProvider();
     void provider.getDashboard(filters).then(
       (next) => {
@@ -88,7 +177,7 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
     return () => {
       cancelled = true;
     };
-  }, [status, dateRange, livePull]);
+  }, [status, dateRange, livePull, livePdPull]);
 
   useEffect(() => {
     let cancelled = false;
@@ -97,6 +186,14 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
       setLivePull((prev) => {
         if (prev && prev.pulledAt >= cached.pulledAt) return prev;
         storeLivePull(cached);
+        return cached;
+      });
+    });
+    void fetchCachedPipedrivePull().then((cached) => {
+      if (cancelled || !cached) return;
+      setLivePdPull((prev) => {
+        if (prev && prev.pulledAt >= cached.pulledAt) return prev;
+        storePipedrivePull(cached);
         return cached;
       });
     });
@@ -175,7 +272,6 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
         }
       }
 
-      // No saved browser cookie yet — collect values, then fall back to server env if cancelled.
       const cookie = await requestCookieValues(
         'Enter Buildertrend cookie values once. They are saved in this browser and reused until they stop working.',
       );
@@ -208,16 +304,36 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
     }
   };
 
+  const onRefreshPipedrive = async () => {
+    setPipedriveError('');
+    setRefreshingPipedrive(true);
+    try {
+      const pull = await refreshPipedrivePull();
+      setLivePdPull(pull);
+      setPipedriveError('');
+    } catch (reason: unknown) {
+      setPipedriveError(reason instanceof Error ? reason.message : 'Pipedrive refresh failed.');
+    } finally {
+      setRefreshingPipedrive(false);
+    }
+  };
+
   const detail = liveDetail ?? LIVE_DRILLDOWN;
+  const pipedriveRefreshedAt = livePdPull?.pulledAt || LIVE_PIPEDRIVE_AT || LIVE_SNAPSHOT_AT;
 
   return {
     dash,
     error,
+    pipedriveError,
     refreshing,
+    refreshingPipedrive,
     livePull,
+    livePdPull,
+    pipedriveRefreshedAt,
     detail,
     cookiePrompt,
     resolveCookiePrompt,
     onRefresh,
+    onRefreshPipedrive,
   };
 }
