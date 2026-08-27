@@ -1,11 +1,10 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { describe, expect, it, beforeEach } from 'vitest';
 import {
   BT_COOKIE_STORAGE_KEY,
   buildCookieHeader,
   clearStoredBtCookie,
   isAuthRefreshFailure,
   loadStoredBtCookie,
-  promptForBtCookieValues,
   storeBtCookie,
 } from './cookieSession';
 
@@ -31,10 +30,6 @@ describe('cookieSession', () => {
     installMemoryLocalStorage();
   });
 
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
   it('builds a cookie header from named values', () => {
     expect(
       buildCookieHeader({
@@ -57,29 +52,5 @@ describe('cookieSession', () => {
     expect(isAuthRefreshFailure('credentials_missing')).toBe(true);
     expect(isAuthRefreshFailure('login_failed')).toBe(true);
     expect(isAuthRefreshFailure('not_running')).toBe(false);
-  });
-
-  it('prompts for each required cookie value in order', () => {
-    const prompt = vi
-      .fn()
-      .mockReturnValueOnce('') // intro OK
-      .mockReturnValueOnce('auth-val')
-      .mockReturnValueOnce('session-val')
-      .mockReturnValueOnce('gaesa-val');
-    vi.stubGlobal('prompt', prompt);
-
-    expect(promptForBtCookieValues('Session expired')).toBe(
-      '.AspNet.Auth0=auth-val; ASP.NET_SessionId=session-val; GAESA=gaesa-val',
-    );
-    expect(prompt).toHaveBeenCalledTimes(4);
-    expect(String(prompt.mock.calls[1]?.[0])).toContain('.AspNet.Auth0');
-    expect(String(prompt.mock.calls[2]?.[0])).toContain('ASP.NET_SessionId');
-    expect(String(prompt.mock.calls[3]?.[0])).toContain('GAESA');
-  });
-
-  it('returns null when the user cancels a value prompt', () => {
-    const prompt = vi.fn().mockReturnValueOnce('').mockReturnValueOnce(null);
-    vi.stubGlobal('prompt', prompt);
-    expect(promptForBtCookieValues()).toBeNull();
   });
 });
