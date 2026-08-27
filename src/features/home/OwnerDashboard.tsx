@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import {
   formatCloseDate,
   formatCompactUsd,
@@ -51,6 +51,21 @@ type SortKey = keyof Pick<
 function formatRecentLogs(done: number | null, expected: number) {
   if (done == null) return `—/${expected}`;
   return `${done}/${expected}`;
+}
+
+function ThLabel({ text }: { text: string }) {
+  const lines = text.split('\n');
+  if (lines.length === 1) return <>{text}</>;
+  return (
+    <span className="dash-th-lines">
+      {lines.map((line, index) => (
+        <Fragment key={line}>
+          {index > 0 ? <br /> : null}
+          {line}
+        </Fragment>
+      ))}
+    </span>
+  );
 }
 
 function deltaClass(delta: number, invert = false) {
@@ -203,17 +218,21 @@ export function OwnerDashboard() {
             ))}
           </ul>
         </article>
-        <article className="dash-card dash-card-wide">
+        <article className="dash-card dash-card-pm">
           <h2>Project manager scorecard</h2>
           <div className="dash-table-scroll">
-            <table className="dash-table">
+            <table className="dash-table dash-table-pm dash-table-wrap-headers">
               <thead>
                 <tr>
                   <th>PM</th>
                   <th>Projects</th>
                   <th>Total WIP</th>
-                  <th>Daily logs (4 wk)</th>
-                  <th>Daily log % (life)</th>
+                  <th>
+                    <ThLabel text={'Daily logs\n(4 wk)'} />
+                  </th>
+                  <th>
+                    <ThLabel text={'Daily log %\n(life)'} />
+                  </th>
                   <th>Past due</th>
                 </tr>
               </thead>
@@ -256,37 +275,43 @@ export function OwnerDashboard() {
       <article className="dash-card dash-snapshot">
         <h2>Active projects snapshot</h2>
         <div className="dash-table-scroll">
-          <table className="dash-table dash-table-dense">
+          <table className="dash-table dash-table-dense dash-table-wrap-headers">
             <thead>
               <tr>
                 {(
                   [
                     ['name', 'Project'],
                     ['pm', 'PM'],
-                    ['pendingSelections', 'Pending sel.'],
+                    ['pendingSelections', 'Pending\nsel.'],
                     ['pastDueTasks', 'Past due'],
                     ['contractPrice', 'Contract'],
                     ['revenueToDate', 'Revenue'],
-                    ['pctComplete', '% complete'],
-                    ['estCloseDate', 'Est. close'],
+                    ['pctComplete', '%\ncomplete'],
+                    ['estCloseDate', 'Est.\nclose'],
                   ] as [SortKey, string][]
                 ).map(([key, label]) => (
                   <th key={key}>
                     <button type="button" className="dash-sort" onClick={() => toggleSort(key)}>
-                      {label}
+                      <ThLabel text={label} />
                       {sort.key === key ? (sort.dir === 'asc' ? ' ↑' : ' ↓') : ''}
                     </button>
                   </th>
                 ))}
-                <th>Current schedule</th>
+                <th>
+                  <ThLabel text={'Current\nschedule'} />
+                </th>
                 <th>
                   <button type="button" className="dash-sort" onClick={() => toggleSort('totalSlip')}>
-                    Total slip
+                    <ThLabel text={'Total\nslip'} />
                     {sort.key === 'totalSlip' ? (sort.dir === 'asc' ? ' ↑' : ' ↓') : ''}
                   </button>
                 </th>
-                <th>Logs (4 wk)</th>
-                <th>Log % (life)</th>
+                <th>
+                  <ThLabel text={'Logs\n(4 wk)'} />
+                </th>
+                <th>
+                  <ThLabel text={'Log %\n(life)'} />
+                </th>
                 <th>Permit</th>
                 <th>Sel.</th>
                 <th>Const.</th>
