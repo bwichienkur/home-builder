@@ -125,7 +125,7 @@ describe('dashboard drilldown', () => {
     );
     expect(resolved.title).toContain('Blandford');
     expect(resolved.subtitle).toContain('OCH MASTER 2026');
-    expect(resolved.rows.map((r) => r.title)).toEqual(['Pool', 'Driveway']);
+    expect(resolved.rows.map((r) => r.title)).toEqual(['Driveway', 'Pool']);
     expect(resolved.rows.find((r) => r.title === 'Driveway')?.endDateSlip).toBe(25);
   });
 

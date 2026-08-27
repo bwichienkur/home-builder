@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   filterDrillRows,
   formatDrillCell,
+  drillCellClassName,
   sumDrillColumns,
   type DrillColumn,
   type DrillRow,
@@ -82,6 +83,7 @@ export function DrilldownTable({ data }: { data: ResolvedDrilldown }) {
                       className={[
                         col.align === 'right' ? 'is-num' : undefined,
                         isLeadColumn(col, colIndex) ? 'dash-drill-sticky-lead' : undefined,
+                        drillCellClassName(col, row[col.key]),
                       ]
                         .filter(Boolean)
                         .join(' ')}
