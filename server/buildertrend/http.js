@@ -15,6 +15,7 @@ function sendError(res, err) {
     ok: false,
     error: message,
     code: err?.code || 'refresh_failed',
+    ...(err?.stage ? { stage: err.stage } : {}),
   });
 }
 
@@ -53,6 +54,14 @@ export async function readJsonBody(req) {
 }
 
 function clientPayload(payload) {
+  // Core serverless pulls are already field-slimmed; avoid a second full JSON.stringify
+  // size check that can OOM on the remaining report bags.
+  if (payload?.enrichment === 'core' || payload?.serverless) {
+    return {
+      ...payload,
+      reports: payload.reports,
+    };
+  }
   const slimmed = {
     ...payload,
     reports: slimReportsForClient(payload.reports),
@@ -69,7 +78,7 @@ function clientPayload(payload) {
   return slimmed;
 }
 
-export async function handleRefresh(req, res) {
+export async function handleRefresh(req, res, options = {}) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ ok: false, error: 'Use POST to refresh.' });
@@ -77,7 +86,11 @@ export async function handleRefresh(req, res) {
   try {
     const body = await readJsonBody(req);
     const cookie = typeof body?.cookie === 'string' ? body.cookie : undefined;
-    const payload = await pullBuildertrend({ cookie });
+    // Vercel API route always forces the minimal pull — do not rely on process.env.VERCEL alone.
+    const payload = await pullBuildertrend({
+      cookie,
+      serverless: options.serverless === true || Boolean(process.env.VERCEL),
+    });
     res.json({ ok: true, ...clientPayload(payload) });
   } catch (err) {
     sendError(res, err);
@@ -100,7 +113,7 @@ export async function handleDashboard(req, res) {
 
 export function mountBuildertrendRoutes(app) {
   app.all('/api/buildertrend/refresh', (req, res) => {
-    if (req.method === 'POST') return void handleRefresh(req, res);
+    if (req.method === 'POST') return void handleRefresh(req, res, { serverless: false });
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ ok: false, error: 'Use POST to refresh.' });
   });

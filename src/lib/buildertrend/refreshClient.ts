@@ -31,14 +31,22 @@ function vercelCrashHint(status: number, message: string) {
 async function parseError(response: Response) {
   const raw = await response.text();
   try {
-    const body = JSON.parse(raw) as { error?: unknown; code?: unknown; message?: unknown };
-    const message = vercelCrashHint(
+    const body = JSON.parse(raw) as {
+      error?: unknown;
+      code?: unknown;
+      message?: unknown;
+      stage?: unknown;
+    };
+    let message = vercelCrashHint(
       response.status,
       formatUnknownError(
         body?.error ?? body?.message,
         `Buildertrend refresh failed (HTTP ${response.status}).`,
       ),
     );
+    if (typeof body?.stage === 'string' && body.stage && !message.includes(body.stage)) {
+      message = `${message} (stage: ${body.stage})`;
+    }
     const code =
       (typeof body?.code === 'string' && body.code) ||
       errorCodeFromUnknown(body?.error) ||

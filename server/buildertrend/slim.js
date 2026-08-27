@@ -11,7 +11,15 @@ function asArray(value) {
   if (Array.isArray(value)) return value;
   if (value && typeof value === 'object') {
     if (Array.isArray(value.tasks)) return value.tasks;
+    if (Array.isArray(value.rowData)) return value.rowData;
     if (Array.isArray(value.data)) return value.data;
+    const nested = asRecord(value.data);
+    if (nested) {
+      if (Array.isArray(nested.rowData)) return nested.rowData;
+      if (Array.isArray(nested.data)) return nested.data;
+      if (Array.isArray(nested.jobs)) return nested.jobs;
+    }
+    if (Array.isArray(value.jobs)) return value.jobs;
   }
   return [];
 }
@@ -92,6 +100,118 @@ function slimBaselineItem(row) {
     actualEndDate: rec.actualEndDate,
     completed: rec.completed,
   };
+}
+
+/**
+ * Keep only fields the owner-dashboard mapper needs from bulk report rows.
+ * Call immediately after each BT fetch so the raw payload can be GC'd.
+ */
+export function slimCoreReportRows(kind, payload) {
+  const rows = asArray(payload);
+  switch (kind) {
+    case 'jobs': {
+      const root = asRecord(payload);
+      const nested = asRecord(root?.data);
+      const list = Array.isArray(nested?.jobs)
+        ? nested.jobs
+        : Array.isArray(root?.jobs)
+          ? root.jobs
+          : rows;
+      return {
+        data: {
+          jobs: list
+            .map((row) => {
+              const rec = asRecord(row);
+              if (!rec) return null;
+              return {
+                jobID: rec.jobID ?? rec.jobId,
+                jobName: rec.jobName ?? rec.name,
+                jobStatus: rec.jobStatus,
+                projectManagers: rec.projectManagers ?? rec.projectManager,
+              };
+            })
+            .filter(Boolean),
+        },
+      };
+    }
+    case 'wip':
+      return rows.map((row) => {
+        const rec = asRecord(row);
+        if (!rec) return null;
+        return {
+          jobID: rec.jobID ?? rec.jobId,
+          jobName: rec.jobName ?? rec.name,
+          jobStatus: rec.jobStatus,
+          projectManagers: rec.projectManagers ?? rec.projectManager,
+          contractPrice: rec.contractPrice ?? rec.revisedContractPrice,
+          amountInvoiced: rec.amountInvoiced,
+          percentComplete: rec.percentComplete,
+          earnedRevenue: rec.earnedRevenue,
+          projectedMargin: rec.projectedMargin,
+          amountRemaining: rec.amountRemaining,
+        };
+      }).filter(Boolean);
+    case 'profitability':
+      return rows.map((row) => {
+        const rec = asRecord(row);
+        if (!rec) return null;
+        return {
+          jobID: rec.jobID ?? rec.jobId,
+          jobName: rec.jobName ?? rec.name,
+          jobStatus: rec.jobStatus,
+          revisedClientPrice: rec.revisedClientPrice ?? rec.revisedContractPrice ?? rec.contractPrice,
+          contractPrice: rec.contractPrice,
+          projectManagers: rec.projectManagers ?? rec.projectManager,
+        };
+      }).filter(Boolean);
+    case 'changeOrderProfit':
+      return rows.map((row) => {
+        const rec = asRecord(row);
+        if (!rec) return null;
+        return {
+          jobID: rec.jobID ?? rec.jobId,
+          jobName: rec.jobName ?? rec.name,
+          price: rec.price ?? rec.changeOrderPrice ?? rec.revenue,
+          profit: rec.profit ?? rec.changeOrderProfit,
+        };
+      }).filter(Boolean);
+    case 'dailyLogs':
+      return rows.map((row) => {
+        const rec = asRecord(row);
+        if (!rec) return null;
+        return {
+          jobID: rec.jobID ?? rec.jobId,
+          jobName: rec.jobName ?? rec.name,
+          jobStatus: rec.jobStatus,
+          dailyLogCount: rec.dailyLogCount ?? rec.logCount,
+          openedDate: rec.openedDate ?? rec.openDate ?? rec.jobOpenedDate,
+          projectManagers: rec.projectManagers ?? rec.projectManager,
+        };
+      }).filter(Boolean);
+    case 'schedulePercentComplete':
+      return rows.map((row) => {
+        const rec = asRecord(row);
+        if (!rec) return null;
+        return {
+          jobID: rec.jobID ?? rec.jobId,
+          jobName: rec.jobName ?? rec.name,
+          jobStatus: rec.jobStatus,
+          projectedCompletionDate: rec.projectedCompletionDate ?? rec.actualCompletionDate,
+          percentComplete: rec.percentComplete ?? rec.jobCompletionPercentage,
+        };
+      }).filter(Boolean);
+    case 'baselineDuration':
+      return rows.map((row) => {
+        const rec = asRecord(row);
+        if (!rec) return null;
+        return {
+          jobID: rec.jobID ?? rec.jobId,
+          endDateSlip: rec.endDateSlip,
+        };
+      }).filter(Boolean);
+    default:
+      return payload;
+  }
 }
 
 export function slimPastDueTasksFromEnvelope(tasksEnvelope, options = {}) {
