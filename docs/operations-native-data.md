@@ -1,6 +1,6 @@
 # Native Operations data
 
-In-app CRUD for Owner Dashboard datapoints (jobs, daily logs, tasks, selections, deals, people). There is **no** write-back to Buildertrend or Pipedrive.
+In-app CRUD for Owner Dashboard datapoints (jobs, daily logs, tasks, selections, deals, people, schedule slip, cashflow) plus **Operations Reports** that mirror Buildertrend / Pipedrive report views. There is **no** write-back to Buildertrend or Pipedrive.
 
 ## Default behavior (unchanged)
 
@@ -26,15 +26,32 @@ Then restart Vite. Home loads `nativeOwnerDashboardProvider`. Live BT/PD pull + 
 | `/ops/selections` | **All** selections across jobs |
 | `/ops/deals` | Pipeline deals |
 | `/ops/people` | PMs / owners |
+| `/ops/reports` | Report hub (WIP, CO profit, cashflow, past-due, selections, logs, schedule slip, pipeline) |
+| `/ops/reports/:reportId` | Individual report grid (+ edit for cashflow / schedule slip) |
 
 ## Seed / reset (full BT row import)
 
 - First load with an empty store: `seedOpsFromLiveSnapshot()` copies `LIVE_JOBS` and imports **`LIVE_DRILLDOWN`** rows:
   - pending selections (full titles/categories/deadlines)
   - past-due tasks (full titles/assignees/due dates)
-  - Pipedrive open deals (mapped into Ops stages)
+  - Pipedrive open deals (mapped into Ops stages, including expected close when present)
   - daily logs expanded from BT user×job aggregates in the rolling window
+  - baseline schedule slip items (`baselineSlipByJobId`)
+  - cashflow Money In stubs from each job’s trailing-30d revenue
 - **Reset from snapshot** on the hub replaces the store with a fresh seed.
+
+## Reports vs Buildertrend
+
+| Ops report | Replaces |
+|------------|----------|
+| WIP & contracts | BT Work in progress / Profitability |
+| Change order profit | BT Change order profit |
+| Cash flow (Money In) | BT Cash flow |
+| Past-due tasks | BT Tasks |
+| Pending selections | BT Selections |
+| Daily logs | BT User daily logs |
+| Baseline schedule slip | BT Baseline vs actual duration |
+| Sales pipeline | Pipedrive Sales pipeline (BT Lead Opportunities fallback) |
 
 ## Storage (shared vs browser)
 

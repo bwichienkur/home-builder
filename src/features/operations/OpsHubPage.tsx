@@ -21,6 +21,12 @@ export function OpsHubPage() {
     { id: 'selections', section: 'Selections', records: ops.selections.length, to: '/ops/selections' },
     { id: 'deals', section: 'Deals', records: ops.deals.length, to: '/ops/deals' },
     { id: 'people', section: 'People', records: ops.people.length, to: '/ops/people' },
+    {
+      id: 'reports',
+      section: 'Reports',
+      records: ops.scheduleItems.length + ops.cashflow.length,
+      to: '/ops/reports',
+    },
   ];
 
   return (
@@ -30,8 +36,9 @@ export function OpsHubPage() {
           <p className="eyebrow">operations</p>
           <h1>Operations data</h1>
           <p className="muted">
-            In-app jobs, logs, tasks, selections, deals, and people. No Buildertrend or Pipedrive write-back.
-            Owner Dashboard uses this store only when <code>VITE_BUILDERTREND_PROVIDER=native</code>.
+            In-app jobs, logs, tasks, selections, deals, people, and BT-style reports. No Buildertrend or
+            Pipedrive write-back. Owner Dashboard uses this store only when{' '}
+            <code>VITE_BUILDERTREND_PROVIDER=native</code>.
           </p>
         </div>
         <div className="data-page-actions">

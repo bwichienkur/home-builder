@@ -13,6 +13,7 @@ import { OpsJobDetailPage } from './features/operations/OpsJobDetailPage';
 import { OpsDealsPage } from './features/operations/OpsDealsPage';
 import { OpsPeoplePage } from './features/operations/OpsPeoplePage';
 import { OpsLogsPage, OpsSelectionsPage, OpsTasksPage } from './features/operations/OpsGlobalListsPage';
+import { OpsReportDetailPage, OpsReportsHubPage } from './features/operations/OpsReportsPage';
 import { PlansPage } from './features/plans/PlansPage';
 import { SettingsPage } from './features/settings/SettingsPage';
 import { UsersPage } from './features/admin/UsersPage';
@@ -71,6 +72,8 @@ export function AppRouter() {
           <Route path="ops/selections" element={<OpsSelectionsPage />} />
           <Route path="ops/deals" element={<OpsDealsPage />} />
           <Route path="ops/people" element={<OpsPeoplePage />} />
+          <Route path="ops/reports" element={<OpsReportsHubPage />} />
+          <Route path="ops/reports/:reportId" element={<OpsReportDetailPage />} />
           <Route path="plans" element={<PlansPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="users" element={<UsersPage />} />

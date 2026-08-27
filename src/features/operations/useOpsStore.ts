@@ -3,23 +3,29 @@ import {
   archiveOpsDeal,
   archiveOpsJob,
   clearOpsStore,
+  deleteOpsCashflow,
   deleteOpsLog,
+  deleteOpsScheduleItem,
   deleteOpsSelection,
   deleteOpsTask,
   ensureOpsSeeded,
   hydrateOpsFromRemote,
   isOpsHttpProvider,
   resetOpsFromSnapshot,
+  upsertOpsCashflow,
   upsertOpsDeal,
   upsertOpsJob,
   upsertOpsLog,
   upsertOpsPerson,
+  upsertOpsScheduleItem,
   upsertOpsSelection,
   upsertOpsTask,
+  type OpsCashflowEntry,
   type OpsDailyLog,
   type OpsDeal,
   type OpsJob,
   type OpsPerson,
+  type OpsScheduleItem,
   type OpsSelection,
   type OpsSnapshot,
   type OpsTask,
@@ -77,6 +83,8 @@ export function useOpsStore() {
     selections: snapshot.selections,
     deals: snapshot.deals.filter((d) => !d.archived),
     people: snapshot.people,
+    scheduleItems: snapshot.scheduleItems ?? [],
+    cashflow: snapshot.cashflow ?? [],
     jobName,
     saveJob: (job: OpsJob) => {
       upsertOpsJob(job);
@@ -120,6 +128,22 @@ export function useOpsStore() {
     },
     savePerson: (person: OpsPerson) => {
       upsertOpsPerson(person);
+      reload();
+    },
+    saveScheduleItem: (row: OpsScheduleItem) => {
+      upsertOpsScheduleItem(row);
+      reload();
+    },
+    removeScheduleItem: (id: string) => {
+      deleteOpsScheduleItem(id);
+      reload();
+    },
+    saveCashflow: (row: OpsCashflowEntry) => {
+      upsertOpsCashflow(row);
+      reload();
+    },
+    removeCashflow: (id: string) => {
+      deleteOpsCashflow(id);
       reload();
     },
     resetFromSnapshot: () => {
