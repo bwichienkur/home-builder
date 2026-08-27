@@ -36,6 +36,17 @@ export {
   storeLivePull,
   clearStoredLivePull,
 } from './refreshClient';
+export {
+  BT_COOKIE_STORAGE_KEY,
+  REQUIRED_BT_COOKIE_NAMES,
+  loadStoredBtCookie,
+  storeBtCookie,
+  clearStoredBtCookie,
+  buildCookieHeader,
+  promptForBtCookieValues,
+  isAuthRefreshFailure,
+} from './cookieSession';
+export type { RequiredBtCookieName } from './cookieSession';
 export { formatCompactUsd, formatUsd, formatPct, formatDelta, formatRefreshedAt, formatRefreshAgo, formatCloseDate, formatDays, formatMonthsDays, splitMonthsDays, totalSlipDays, phaseLabel } from './format';
 export { PM_REVENUE_LAST_30D_GOAL } from './types';
 export type * from './types';

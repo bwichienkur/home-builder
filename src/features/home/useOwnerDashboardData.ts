@@ -12,6 +12,13 @@ import {
 } from '../../lib/buildertrend';
 import type { BuildertrendLivePull } from '../../lib/buildertrend';
 import type { DateRangeId, JobStatus, OwnerDashboard } from '../../lib/buildertrend/types';
+import {
+  clearStoredBtCookie,
+  isAuthRefreshFailure,
+  loadStoredBtCookie,
+  promptForBtCookieValues,
+  storeBtCookie,
+} from '../../lib/buildertrend/cookieSession';
 import { LIVE_DRILLDOWN } from '../../lib/buildertrend/liveDrilldown';
 import { buildLiveDrilldown } from '../../lib/dashboard/buildDrilldown';
 import type { LiveDrilldown } from '../../lib/dashboard/drilldownTypes';
@@ -24,6 +31,10 @@ function dashboardFromPull(pull: BuildertrendLivePull, filters: { status: JobSta
     filters,
     ...mapped,
   });
+}
+
+function errorCode(reason: unknown): string | undefined {
+  return (reason as { code?: string })?.code;
 }
 
 export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId) {
@@ -92,47 +103,72 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
   const onRefresh = async () => {
     setRefreshing(true);
     setError('');
-    try {
-      const pasted = window
-        .prompt(
-          'Paste Buildertrend cookie header from your logged-in Buildertrend tab.\n\n' +
-            'Required cookies: .AspNet.Auth0, ASP.NET_SessionId, GAESA\n' +
-            'Format: name1=value1; name2=value2; ...\n\n' +
-            'Leave blank / Cancel to try the server cookie (if configured).',
-        )
-        ?.trim();
 
-      const pull = await refreshBuildertrendPull(pasted || undefined);
+    const applyPull = (pull: BuildertrendLivePull) => {
       setLivePull(pull);
       setError('');
-    } catch (reason: unknown) {
-      const err = reason instanceof Error ? reason : null;
-      const code = (reason as { code?: string })?.code;
-      const authFailure = code === 'credentials_missing' || code === 'login_failed';
+    };
 
-      // If the first attempt used no pasted cookie (or it failed), offer one more paste.
-      if (authFailure) {
-        const retryPaste = window
-          .prompt(
-            (err?.message ? `${err.message}\n\n` : '') +
-              'Paste a fresh Buildertrend cookie header and try again:\n\n' +
-              'Required: .AspNet.Auth0; ASP.NET_SessionId; GAESA=…\n' +
-              'Format: name1=value1; name2=value2; ...',
-          )
-          ?.trim();
-        if (retryPaste) {
-          try {
-            const pull = await refreshBuildertrendPull(retryPaste);
-            setLivePull(pull);
-            setError('');
-            return;
-          } catch (retryReason: unknown) {
-            setError(retryReason instanceof Error ? retryReason.message : 'Buildertrend refresh failed.');
+    const pullWithCookie = async (cookie: string) => {
+      const pull = await refreshBuildertrendPull(cookie);
+      storeBtCookie(cookie);
+      applyPull(pull);
+    };
+
+    const collectAndPull = async (reason?: string) => {
+      const cookie = promptForBtCookieValues(reason);
+      if (!cookie) {
+        setError(reason || 'Refresh cancelled — paste the three Buildertrend cookie values to continue.');
+        return false;
+      }
+      await pullWithCookie(cookie);
+      return true;
+    };
+
+    try {
+      const stored = loadStoredBtCookie();
+      if (stored) {
+        try {
+          await pullWithCookie(stored);
+          return;
+        } catch (reason: unknown) {
+          if (!isAuthRefreshFailure(errorCode(reason))) {
+            setError(reason instanceof Error ? reason.message : 'Buildertrend refresh failed.');
             return;
           }
+          clearStoredBtCookie();
+          await collectAndPull(
+            'Saved Buildertrend cookies expired or were rejected. Enter fresh values from your logged-in tab.',
+          );
+          return;
         }
       }
-      setError(err ? err.message : 'Buildertrend refresh failed.');
+
+      // No saved browser cookie yet — collect values, then fall back to server env if cancelled.
+      const cookie = promptForBtCookieValues(
+        'Enter Buildertrend cookie values once. They are saved in this browser and reused until they stop working.',
+      );
+      if (cookie) {
+        await pullWithCookie(cookie);
+        return;
+      }
+
+      try {
+        const pull = await refreshBuildertrendPull();
+        applyPull(pull);
+      } catch (reason: unknown) {
+        if (isAuthRefreshFailure(errorCode(reason))) {
+          await collectAndPull(
+            reason instanceof Error
+              ? reason.message
+              : 'Server has no Buildertrend cookie. Paste values from your logged-in tab.',
+          );
+          return;
+        }
+        setError(reason instanceof Error ? reason.message : 'Buildertrend refresh failed.');
+      }
+    } catch (reason: unknown) {
+      setError(reason instanceof Error ? reason.message : 'Buildertrend refresh failed.');
     } finally {
       setRefreshing(false);
     }
