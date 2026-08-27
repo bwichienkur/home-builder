@@ -2,6 +2,7 @@
  * Client for the local/Vercel read-only Pipedrive refresh API.
  * Mapping happens in the browser so tests can run without hitting Pipedrive.
  */
+import { errorCodeFromUnknown, formatUnknownError } from '../httpError';
 import { platformConfig } from '../platform/config';
 import type { PipedriveReports } from './mapDeals';
 
@@ -18,8 +19,16 @@ function apiBase() {
 
 async function parseError(response: Response) {
   try {
-    const body = (await response.json()) as { error?: string; code?: string };
-    if (body?.error) return { message: body.error, code: body.code };
+    const body = (await response.json()) as { error?: unknown; code?: unknown; message?: unknown };
+    const message = formatUnknownError(
+      body?.error ?? body?.message,
+      `Pipedrive refresh failed (HTTP ${response.status}).`,
+    );
+    const code =
+      (typeof body?.code === 'string' && body.code) ||
+      errorCodeFromUnknown(body?.error) ||
+      (response.status === 404 ? 'not_running' : 'refresh_failed');
+    return { message, code };
   } catch {
     /* ignore */
   }
@@ -87,8 +96,10 @@ export async function refreshPipedrivePull(token?: string): Promise<PipedriveLiv
     (err as { code?: string }).code = info.code;
     throw err;
   }
-  const body = (await response.json()) as PipedriveLivePull & { ok?: boolean; error?: string };
-  if (!body?.reports) throw new Error(body.error || 'Pipedrive refresh returned no reports.');
+  const body = (await response.json()) as PipedriveLivePull & { ok?: boolean; error?: unknown };
+  if (!body?.reports) {
+    throw new Error(formatUnknownError(body.error, 'Pipedrive refresh returned no reports.'));
+  }
   const pull = { pulledAt: body.pulledAt, reports: body.reports };
   storePipedrivePull(pull);
   return pull;

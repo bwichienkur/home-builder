@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { formatUnknownError } from '../../lib/httpError';
 import {
   clearStoredLivePull,
   fetchCachedBuildertrendPull,
@@ -153,7 +154,7 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
         setLiveDetail(detailFromLive(null, livePdPull));
         setError('');
       } catch (reason: unknown) {
-        setError(reason instanceof Error ? reason.message : 'Dashboard could not load.');
+        setError(formatUnknownError(reason, 'Dashboard could not load.'));
       }
       return () => {
         cancelled = true;
@@ -171,7 +172,7 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
       },
       async (reason: unknown) => {
         if (cancelled) return;
-        setError(reason instanceof Error ? reason.message : 'Dashboard could not load.');
+        setError(formatUnknownError(reason, 'Dashboard could not load.'));
         const fallback = await mockOwnerDashboardProvider.getDashboard(filters);
         if (!cancelled) setDash(fallback);
       },
@@ -244,7 +245,7 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
       setCookieBusy(false);
       settle?.(true);
     } catch (reason: unknown) {
-      const message = reason instanceof Error ? reason.message : 'Buildertrend refresh failed.';
+      const message = formatUnknownError(reason, 'Buildertrend refresh failed.');
       setError(message);
       setCookiePrompt((prev) => ({
         reason: prev?.reason,
@@ -288,7 +289,7 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
           await pullWithCookie(stored);
           return;
         } catch (reason: unknown) {
-          const message = reason instanceof Error ? reason.message : 'Buildertrend refresh failed.';
+          const message = formatUnknownError(reason, 'Buildertrend refresh failed.');
           if (!isAuthRefreshFailure(errorCode(reason))) {
             setError(message);
             return;
@@ -312,7 +313,7 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
         const pull = await refreshBuildertrendPull();
         applyPull(pull);
       } catch (reason: unknown) {
-        const message = reason instanceof Error ? reason.message : 'Buildertrend refresh failed.';
+        const message = formatUnknownError(reason, 'Buildertrend refresh failed.');
         if (isAuthRefreshFailure(errorCode(reason))) {
           setRefreshing(false);
           await collectAndPull(
@@ -326,7 +327,7 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
         setRefreshing(false);
       }
     } catch (reason: unknown) {
-      setError(reason instanceof Error ? reason.message : 'Buildertrend refresh failed.');
+      setError(formatUnknownError(reason, 'Buildertrend refresh failed.'));
       setRefreshing(false);
     }
   };
@@ -339,7 +340,7 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
       setLivePdPull(pull);
       setPipedriveError('');
     } catch (reason: unknown) {
-      setPipedriveError(reason instanceof Error ? reason.message : 'Pipedrive refresh failed.');
+      setPipedriveError(formatUnknownError(reason, 'Pipedrive refresh failed.'));
     } finally {
       setRefreshingPipedrive(false);
     }
