@@ -23,7 +23,7 @@ function apiBase() {
 function vercelCrashHint(status: number, message: string) {
   if (status < 500) return message;
   if (/server error has occurred|function_invocation_failed|internal_server_error/i.test(message)) {
-    return 'The refresh API crashed on the server (timeout or memory). Wait a moment and try again. If it keeps failing, run `npm run buildertrend:pull` locally and bake the snapshot.';
+    return 'The refresh API was killed during the Buildertrend pull (Vercel timeout/memory). Ping works, so /api is up — Buildertrend is likely hanging from Vercel. Set BUILDERTREND_COOKIE in Vercel Production env, disable Deployment Protection, or run `npm run buildertrend:pull` locally and bake the snapshot.';
   }
   return message;
 }

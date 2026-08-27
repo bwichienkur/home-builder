@@ -1,11 +1,15 @@
 /**
  * Isolated Buildertrend refresh for Vercel serverless.
  * Intentionally does NOT import pull.js (large) or dotenv/fs.
- * Cookie auth + a few slim GET reports only.
+ *
+ * Locally this path succeeds in ~2s with a valid cookie. On Vercel, platform
+ * HTTP 500s usually mean the outbound BT call hung until the function was killed —
+ * so every network/parse step uses a hard Promise.race timeout and a size cap.
  */
 
 const ORIGIN = 'https://buildertrend.net';
-const FETCH_MS = 15_000;
+const FETCH_MS = 12_000;
+const MAX_BT_BODY_CHARS = 1_500_000;
 
 function parseCookieHeader(raw) {
   const jar = new Map();
@@ -52,13 +56,22 @@ function asRows(payload) {
   return [];
 }
 
-function abortSignal(ms) {
-  if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
-    return AbortSignal.timeout(ms);
-  }
-  const controller = new AbortController();
-  setTimeout(() => controller.abort(), ms);
-  return controller.signal;
+/** Hard timeout that does not rely on AbortSignal.timeout (flaky in some runtimes). */
+function raceTimeout(promise, ms, stage) {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => {
+      reject(
+        Object.assign(
+          new Error(
+            `Buildertrend timed out during "${stage}" (${ms / 1000}s). Vercel often cannot finish calls to buildertrend.net — set BUILDERTREND_COOKIE on Vercel or run a local pull + snapshot bake.`,
+          ),
+          { status: 504, code: 'bt_timeout', stage },
+        ),
+      );
+    }, ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 }
 
 async function btGet(session, urlPath, query, stage) {
@@ -68,37 +81,65 @@ async function btGet(session, urlPath, query, stage) {
       if (value != null && value !== '') url.searchParams.set(key, String(value));
     }
   }
-  let response;
-  try {
-    response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        Accept: 'application/json, text/plain, */*',
-        'User-Agent': session.userAgent,
-        Cookie: cookieHeader(session.jar),
-      },
-      redirect: 'manual',
-      signal: abortSignal(FETCH_MS),
-    });
-  } catch (err) {
-    const timedOut = err?.name === 'TimeoutError' || err?.name === 'AbortError';
-    throw Object.assign(
-      new Error(
-        timedOut
-          ? `Buildertrend timed out during "${stage}" (no response in ${FETCH_MS / 1000}s). Vercel may be blocked by Buildertrend — use local pull + snapshot bake.`
-          : `Buildertrend unreachable during "${stage}": ${err?.message || err}`,
-      ),
-      { status: 504, code: timedOut ? 'bt_timeout' : 'bt_unreachable', stage },
-    );
-  }
-  collectCookies(session.jar, readSetCookies(response.headers));
-  let data = null;
-  try {
-    data = await response.json();
-  } catch {
-    data = null;
-  }
-  return { ok: response.ok, status: response.status, data };
+
+  const run = async () => {
+    let response;
+    try {
+      const controller = new AbortController();
+      const abortTimer = setTimeout(() => controller.abort(), FETCH_MS);
+      try {
+        response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            Accept: 'application/json, text/plain, */*',
+            'User-Agent': session.userAgent,
+            Cookie: cookieHeader(session.jar),
+          },
+          redirect: 'manual',
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(abortTimer);
+      }
+    } catch (err) {
+      const timedOut = err?.name === 'TimeoutError' || err?.name === 'AbortError';
+      throw Object.assign(
+        new Error(
+          timedOut
+            ? `Buildertrend timed out during "${stage}". The Vercel host may be blocked — use local pull + snapshot bake, or set BUILDERTREND_COOKIE on Vercel and retry.`
+            : `Buildertrend unreachable during "${stage}": ${err?.message || err}`,
+        ),
+        { status: 504, code: timedOut ? 'bt_timeout' : 'bt_unreachable', stage },
+      );
+    }
+
+    collectCookies(session.jar, readSetCookies(response.headers));
+    const contentLength = Number(response.headers.get('content-length') || 0);
+    if (contentLength > MAX_BT_BODY_CHARS) {
+      throw Object.assign(
+        new Error(`Buildertrend "${stage}" response too large (${contentLength} bytes).`),
+        { status: 502, code: 'bt_payload_too_large', stage },
+      );
+    }
+
+    const text = await response.text();
+    if (text.length > MAX_BT_BODY_CHARS) {
+      throw Object.assign(
+        new Error(`Buildertrend "${stage}" body too large (${text.length} chars).`),
+        { status: 502, code: 'bt_payload_too_large', stage },
+      );
+    }
+
+    let data = null;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      data = null;
+    }
+    return { ok: response.ok, status: response.status, data };
+  };
+
+  return raceTimeout(run(), FETCH_MS + 2000, stage);
 }
 
 function slimJobs(payload) {
@@ -216,6 +257,14 @@ export function readJsonBodySync(req) {
   return {};
 }
 
+function resolveCookie(body) {
+  const fromBody = typeof body?.cookie === 'string' ? body.cookie.trim() : '';
+  if (fromBody) return { cookie: fromBody, source: 'body' };
+  const fromEnv = String(process.env.BUILDERTREND_COOKIE || '').trim();
+  if (fromEnv) return { cookie: fromEnv, source: 'env' };
+  return { cookie: '', source: '' };
+}
+
 /**
  * Vercel-safe Buildertrend refresh handler (self-contained).
  */
@@ -226,18 +275,18 @@ export async function handleVercelRefresh(req, res) {
   }
 
   const stages = [];
+  const startedAt = Date.now();
   try {
     stages.push('parse_body');
-    // Never for-await req — that hangs on Vercel and surfaces as a platform 500.
     const body = readJsonBodySync(req);
-    const cookie = typeof body?.cookie === 'string' ? body.cookie.trim() : '';
+    const { cookie, source: cookieSource } = resolveCookie(body);
     if (!cookie) {
       return res.status(400).json({
         ok: false,
-        error: 'Paste Buildertrend cookie values to refresh on this host.',
+        error:
+          'Paste Buildertrend cookie values, or set BUILDERTREND_COOKIE on the Vercel project (Production env).',
         code: 'credentials_missing',
         stage: 'parse_body',
-        hint: 'If this keeps happening after pasting cookies, the request body may not be reaching the API (check Vercel Deployment Protection).',
       });
     }
 
@@ -252,36 +301,58 @@ export async function handleVercelRefresh(req, res) {
     if (!probe.ok) {
       return res.status(401).json({
         ok: false,
-        error: `Buildertrend rejected the pasted cookies (HTTP ${probe.status}). Re-copy .AspNet.Auth0, ASP.NET_SessionId, and GAESA from a logged-in buildertrend.net tab (Value column only).`,
+        error: `Buildertrend rejected the cookies (HTTP ${probe.status}, source=${cookieSource || 'body'}). Re-copy .AspNet.Auth0, ASP.NET_SessionId, and GAESA from a logged-in buildertrend.net tab.`,
         code: 'cookie_rejected',
         stage: 'auth_probe',
       });
     }
 
-    stages.push('jobpicker');
-    const jobsRaw = await btGet(session, '/api/jobpicker/GetExistingJobList', undefined, 'jobpicker');
-    const jobs = jobsRaw.ok ? slimJobs(jobsRaw.data) : { data: { jobs: [] } };
+    // Prefer returning something useful quickly. Extra reports are best-effort.
+    let jobs = { data: { jobs: [] } };
+    let wip = slimWip(probe.data);
+    let dailyLogs = [];
+    let jobsStatus = 0;
+    let wipStatus = probe.status;
+    let logsStatus = 0;
 
-    stages.push('wip');
-    const wipRaw = await btGet(
-      session,
-      '/apix/v3/Reporting/work-in-progress',
-      { openJobLimit: 100 },
-      'wip',
-    );
-    const wip = wipRaw.ok ? slimWip(wipRaw.data) : slimWip(probe.data);
+    try {
+      stages.push('jobpicker');
+      const jobsRaw = await btGet(session, '/api/jobpicker/GetExistingJobList', undefined, 'jobpicker');
+      jobsStatus = jobsRaw.status;
+      if (jobsRaw.ok) jobs = slimJobs(jobsRaw.data);
+    } catch (err) {
+      console.error('jobpicker skipped', err?.message || err);
+    }
 
-    stages.push('daily_logs');
-    const logsRaw = await btGet(session, '/apix/v3/Reporting/daily-log-creation-by-job', undefined, 'daily_logs');
-    const dailyLogs = logsRaw.ok ? slimDailyLogs(logsRaw.data) : [];
+    try {
+      stages.push('wip');
+      const wipRaw = await btGet(
+        session,
+        '/apix/v3/Reporting/work-in-progress',
+        { openJobLimit: 100 },
+        'wip',
+      );
+      wipStatus = wipRaw.status;
+      if (wipRaw.ok) wip = slimWip(wipRaw.data);
+    } catch (err) {
+      console.error('wip skipped', err?.message || err);
+    }
 
-    if (!jobsRaw.ok && !wipRaw.ok && !logsRaw.ok) {
-      return res.status(502).json({
-        ok: false,
-        error: `Buildertrend reports failed after auth (jobs HTTP ${jobsRaw.status}, wip HTTP ${wipRaw.status}).`,
-        code: 'reports_failed',
-        stage: 'reports',
-      });
+    // Skip daily logs if we're already slow — platform may kill at ~60s.
+    if (Date.now() - startedAt < 35_000) {
+      try {
+        stages.push('daily_logs');
+        const logsRaw = await btGet(
+          session,
+          '/apix/v3/Reporting/daily-log-creation-by-job',
+          undefined,
+          'daily_logs',
+        );
+        logsStatus = logsRaw.status;
+        if (logsRaw.ok) dailyLogs = slimDailyLogs(logsRaw.data);
+      } catch (err) {
+        console.error('daily_logs skipped', err?.message || err);
+      }
     }
 
     const reports = {
@@ -294,15 +365,17 @@ export async function handleVercelRefresh(req, res) {
     return res.status(200).json({
       ok: true,
       pulledAt: new Date().toISOString(),
-      authMethod: 'cookie',
+      authMethod: cookieSource === 'env' ? 'cookie-env' : 'cookie',
       readonly: true,
       serverless: true,
       enrichment: 'core',
+      elapsedMs: Date.now() - startedAt,
       statuses: {
-        jobs: jobsRaw.status,
-        wip: wipRaw.status,
-        dailyLogs: logsRaw.status,
+        jobs: jobsStatus,
+        wip: wipStatus,
+        dailyLogs: logsStatus,
         stages,
+        cookieSource,
       },
       reports,
     });
@@ -319,6 +392,7 @@ export async function handleVercelRefresh(req, res) {
       code: err?.code || 'refresh_failed',
       stage: err?.stage || stages[stages.length - 1] || 'unknown',
       stages,
+      elapsedMs: Date.now() - startedAt,
     });
   }
 }
