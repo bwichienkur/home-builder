@@ -18,12 +18,24 @@ function apiBase() {
   return platformConfig.apiUrl.replace(/\/$/, '');
 }
 
+function vercelCrashHint(status: number, message: string) {
+  if (status < 500) return message;
+  if (/server error has occurred|function_invocation_failed|internal_server_error/i.test(message)) {
+    return 'The refresh API crashed on the server (timeout or memory). Wait a moment and try again. If it keeps failing, run `npm run buildertrend:pull` locally and bake the snapshot.';
+  }
+  return message;
+}
+
 async function parseError(response: Response) {
+  const raw = await response.text();
   try {
-    const body = (await response.json()) as { error?: unknown; code?: unknown; message?: unknown };
-    const message = formatUnknownError(
-      body?.error ?? body?.message,
-      `Buildertrend refresh failed (HTTP ${response.status}).`,
+    const body = JSON.parse(raw) as { error?: unknown; code?: unknown; message?: unknown };
+    const message = vercelCrashHint(
+      response.status,
+      formatUnknownError(
+        body?.error ?? body?.message,
+        `Buildertrend refresh failed (HTTP ${response.status}).`,
+      ),
     );
     const code =
       (typeof body?.code === 'string' && body.code) ||
@@ -31,7 +43,7 @@ async function parseError(response: Response) {
       (response.status === 404 ? 'not_running' : 'refresh_failed');
     return { message, code };
   } catch {
-    /* ignore */
+    /* not JSON */
   }
   if (response.status === 404) {
     return {
@@ -39,7 +51,11 @@ async function parseError(response: Response) {
       code: 'not_running',
     };
   }
-  return { message: `Buildertrend refresh failed (HTTP ${response.status}).`, code: 'refresh_failed' };
+  const fallback = vercelCrashHint(
+    response.status,
+    raw.trim() || `Buildertrend refresh failed (HTTP ${response.status}).`,
+  );
+  return { message: fallback, code: 'refresh_failed' };
 }
 
 export function loadStoredLivePull(): BuildertrendLivePull | null {

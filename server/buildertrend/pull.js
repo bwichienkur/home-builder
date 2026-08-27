@@ -6,6 +6,7 @@ import 'dotenv/config';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { slimReportsForClient } from './slim.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ORIGIN = 'https://buildertrend.net';
@@ -981,6 +982,15 @@ export function writeCache(payload) {
   fs.writeFileSync(file, JSON.stringify(payload));
 }
 
+/** On Vercel, keep only client-safe report slices — full pulls are ~100MB and OOM small hosts. */
+export function payloadForServerlessCache(payload) {
+  if (!process.env.VERCEL) return payload;
+  return {
+    ...payload,
+    reports: slimReportsForClient(payload.reports),
+  };
+}
+
 export async function pullBuildertrend({ cookie } = {}) {
   const { session } = await authenticate({ cookie });
   const { reports, statuses } = await fetchReports(session);
@@ -991,6 +1001,7 @@ export async function pullBuildertrend({ cookie } = {}) {
     statuses,
     reports,
   };
-  writeCache(payload);
-  return payload;
+  const cached = payloadForServerlessCache(payload);
+  writeCache(cached);
+  return cached;
 }
