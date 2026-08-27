@@ -193,7 +193,7 @@
 
 .dash-widgets {
   display: grid;
-  grid-template-columns: 1fr 1fr 1.4fr;
+  grid-template-columns: minmax(0, 260px) minmax(0, 260px) minmax(0, 1fr);
   grid-template-areas:
     'status time pm'
     'funnel funnel sales';
@@ -377,6 +377,37 @@
   overflow-x: auto;
 }
 
+.dash-card-pm .dash-table-scroll {
+  overflow-x: visible;
+}
+
+.dash-th-lines {
+  display: inline-block;
+  line-height: 1.2;
+  text-align: left;
+}
+
+.dash-table-wrap-headers th {
+  white-space: normal;
+  vertical-align: bottom;
+  line-height: 1.2;
+  hyphens: auto;
+}
+
+.dash-table-wrap-headers th .dash-sort {
+  text-align: left;
+}
+
+.dash-table-pm th:not(:first-child),
+.dash-table-pm td:not(:first-child) {
+  text-align: right;
+}
+
+.dash-table-pm th:first-child,
+.dash-table-pm td:first-child {
+  min-width: 7.5rem;
+}
+
 .dash-table {
   width: 100%;
   border-collapse: collapse;
@@ -429,12 +460,48 @@
   overflow: auto;
 }
 
+.dash-snapshot .dash-table-dense th,
+.dash-snapshot .dash-table-dense td {
+  padding: 6px 7px;
+}
+
+.dash-snapshot .dash-table-dense th {
+  font-size: 10px;
+  max-width: 4.75rem;
+  white-space: normal;
+  vertical-align: bottom;
+  line-height: 1.2;
+}
+
+.dash-snapshot .dash-table-dense td.is-notes {
+  min-width: 110px;
+  max-width: 160px;
+}
+
+.dash-snapshot .dash-table-dense td.is-name {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: #fff;
+  box-shadow: 2px 0 4px -2px rgb(15 23 42 / 8%);
+  min-width: 9rem;
+  max-width: 11rem;
+  white-space: normal;
+}
+
 .dash-snapshot .dash-table thead th {
   position: sticky;
   top: 0;
   z-index: 2;
   background: #fff;
   box-shadow: inset 0 -1px 0 var(--soft);
+}
+
+.dash-snapshot .dash-table-dense thead th:first-child {
+  left: 0;
+  z-index: 3;
+  max-width: none;
+  min-width: 9rem;
 }
 
 .dash-totals {
