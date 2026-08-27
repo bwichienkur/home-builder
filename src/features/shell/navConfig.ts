@@ -3,12 +3,15 @@ import {
   BookOpen,
   Box,
   Boxes,
+  Briefcase,
+  Handshake,
   House,
   LayoutTemplate,
   Settings,
   Shield,
   Store,
   Users,
+  Wrench,
 } from 'lucide-react';
 
 export type NavItem = {
@@ -45,6 +48,16 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    id: 'operations',
+    label: 'Operations',
+    items: [
+      { to: '/ops', label: 'Ops hub', icon: Wrench, end: true },
+      { to: '/ops/jobs', label: 'Jobs', icon: Briefcase },
+      { to: '/ops/deals', label: 'Deals', icon: Handshake },
+      { to: '/ops/people', label: 'People', icon: Users },
+    ],
+  },
+  {
     id: 'account',
     label: 'Account',
     items: [
@@ -61,6 +74,10 @@ export const PAGE_TITLES: { path: string; end?: boolean; title: string }[] = [
   { path: '/clients', title: 'Clients' },
   { path: '/vendors', title: 'Vendors' },
   { path: '/inventory', title: 'Materials' },
+  { path: '/ops/jobs', title: 'Jobs' },
+  { path: '/ops/deals', title: 'Deals' },
+  { path: '/ops/people', title: 'People' },
+  { path: '/ops', title: 'Operations' },
   { path: '/plans', title: 'Plans' },
   { path: '/settings', title: 'Settings' },
   { path: '/users', title: 'Users' },

@@ -3,7 +3,7 @@
 export type JobStatus = 'open' | 'closed' | 'warranty';
 export type OwnerPhase = 'design' | 'permitting' | 'construction' | 'closeout';
 export type DateRangeId = 'all' | '30d' | 'ytd' | '12mo';
-export type DashboardSource = 'mock' | 'buildertrend';
+export type DashboardSource = 'mock' | 'buildertrend' | 'native';
 
 export type OwnerDashboardFilters = {
   status: JobStatus;

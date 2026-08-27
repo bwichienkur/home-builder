@@ -7,6 +7,11 @@ import { DrilldownPage } from './features/home/DrilldownPage';
 import { ClientsPage } from './features/crm/ClientsPage';
 import { VendorsPage } from './features/crm/VendorsPage';
 import { InventoryPage } from './features/crm/InventoryPage';
+import { OpsHubPage } from './features/operations/OpsHubPage';
+import { OpsJobsPage } from './features/operations/OpsJobsPage';
+import { OpsJobDetailPage } from './features/operations/OpsJobDetailPage';
+import { OpsDealsPage } from './features/operations/OpsDealsPage';
+import { OpsPeoplePage } from './features/operations/OpsPeoplePage';
 import { PlansPage } from './features/plans/PlansPage';
 import { SettingsPage } from './features/settings/SettingsPage';
 import { UsersPage } from './features/admin/UsersPage';
@@ -57,6 +62,11 @@ export function AppRouter() {
           <Route path="clients" element={<ClientsPage />} />
           <Route path="vendors" element={<VendorsPage />} />
           <Route path="inventory" element={<InventoryPage />} />
+          <Route path="ops" element={<OpsHubPage />} />
+          <Route path="ops/jobs" element={<OpsJobsPage />} />
+          <Route path="ops/jobs/:jobId" element={<OpsJobDetailPage />} />
+          <Route path="ops/deals" element={<OpsDealsPage />} />
+          <Route path="ops/people" element={<OpsPeoplePage />} />
           <Route path="plans" element={<PlansPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="users" element={<UsersPage />} />
