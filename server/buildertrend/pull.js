@@ -977,7 +977,8 @@ export function readCache() {
 export function writeCache(payload) {
   const file = cachePath();
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, JSON.stringify(payload, null, 2));
+  // Compact JSON — pretty-printing a ~100MB pull can OOM small serverless hosts.
+  fs.writeFileSync(file, JSON.stringify(payload));
 }
 
 export async function pullBuildertrend({ cookie } = {}) {

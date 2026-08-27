@@ -93,7 +93,11 @@ export async function refreshBuildertrendPull(cookie?: string): Promise<Buildert
   }
   if (!response.ok) {
     const info = await parseError(response);
-    const err = new Error(info.message);
+    const err = new Error(
+      response.status >= 500
+        ? `${info.message} (HTTP ${response.status})`
+        : info.message,
+    );
     (err as { code?: string }).code = info.code;
     throw err;
   }
