@@ -91,22 +91,38 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
 
   const onRefresh = async () => {
     setRefreshing(true);
+    setError('');
     try {
-      const pull = await refreshBuildertrendPull();
+      const pasted = window
+        .prompt(
+          'Paste Buildertrend cookie header from your logged-in Buildertrend tab.\n\n' +
+            'Required cookies: .AspNet.Auth0, ASP.NET_SessionId, GAESA\n' +
+            'Format: name1=value1; name2=value2; ...\n\n' +
+            'Leave blank / Cancel to try the server cookie (if configured).',
+        )
+        ?.trim();
+
+      const pull = await refreshBuildertrendPull(pasted || undefined);
       setLivePull(pull);
       setError('');
     } catch (reason: unknown) {
       const err = reason instanceof Error ? reason : null;
       const code = (reason as { code?: string })?.code;
-      if (code === 'credentials_missing') {
-        const pasted = window
+      const authFailure = code === 'credentials_missing' || code === 'login_failed';
+
+      // If the first attempt used no pasted cookie (or it failed), offer one more paste.
+      if (authFailure) {
+        const retryPaste = window
           .prompt(
-            'Paste Buildertrend cookie header (BUILDERTREND_COOKIE) from your logged-in Buildertrend tab:\n\nFormat: name1=value1; name2=value2; ...',
+            (err?.message ? `${err.message}\n\n` : '') +
+              'Paste a fresh Buildertrend cookie header and try again:\n\n' +
+              'Required: .AspNet.Auth0; ASP.NET_SessionId; GAESA=…\n' +
+              'Format: name1=value1; name2=value2; ...',
           )
           ?.trim();
-        if (pasted) {
+        if (retryPaste) {
           try {
-            const pull = await refreshBuildertrendPull(pasted);
+            const pull = await refreshBuildertrendPull(retryPaste);
             setLivePull(pull);
             setError('');
             return;
