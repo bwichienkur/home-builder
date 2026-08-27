@@ -2,6 +2,7 @@ import { FormEvent, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { EntityDrawer } from '../crm/EntityCrmPage';
 import { newOpsId, type OpsDeal, type OpsDealStage } from '../../lib/operations';
+import { OpsDataGrid, OpsRowActions } from './OpsDataGrid';
 import { useOpsStore } from './useOpsStore';
 
 const STAGES: OpsDealStage[] = ['lead', 'proposal', 'pre-contract', 'contract', 'closed', 'lost'];
@@ -18,14 +19,13 @@ const emptyDeal = (): OpsDeal => ({
 
 export function OpsDealsPage() {
   const ops = useOpsStore();
-  const [query, setQuery] = useState('');
   const [draft, setDraft] = useState<OpsDeal | null>(null);
+  const [stageFilter, setStageFilter] = useState('');
 
   const rows = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return ops.deals;
-    return ops.deals.filter((d) => JSON.stringify(d).toLowerCase().includes(q));
-  }, [ops.deals, query]);
+    if (!stageFilter) return ops.deals;
+    return ops.deals.filter((d) => d.stage === stageFilter);
+  }, [ops.deals, stageFilter]);
 
   return (
     <>
@@ -37,65 +37,53 @@ export function OpsDealsPage() {
             <p className="muted">Sales pipeline opportunities (weighted by confidence on the native dashboard).</p>
           </div>
           <div className="data-page-actions">
-            <Link to="/ops" className="auth-link">
+            <Link to="/ops" className="ops-btn">
               Hub
             </Link>
-            <button type="button" className="primary" onClick={() => setDraft(emptyDeal())}>
+            <button type="button" className="ops-btn primary" onClick={() => setDraft(emptyDeal())}>
               Add deal
             </button>
           </div>
         </header>
-        <div style={{ marginBottom: 12 }}>
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search deals…"
-            style={{
-              width: 'min(360px, 100%)',
-              border: '1px solid var(--line)',
-              borderRadius: 10,
-              padding: '10px 12px',
-            }}
-          />
-        </div>
-        <div className="data-table-wrap">
-          {rows.length === 0 ? (
-            <div className="data-empty">No deals yet.</div>
-          ) : (
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Title</th>
-                  <th>Stage</th>
-                  <th>Value</th>
-                  <th>Confidence</th>
-                  <th>Owner</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((deal) => (
-                  <tr key={deal.id}>
-                    <td>{deal.title}</td>
-                    <td>{deal.stage}</td>
-                    <td>${Math.round(deal.value).toLocaleString()}</td>
-                    <td>{deal.confidence}%</td>
-                    <td>{deal.owner || '—'}</td>
-                    <td>
-                      <button type="button" className="auth-link" onClick={() => setDraft({ ...deal })}>
-                        Edit
-                      </button>
-                      {' · '}
-                      <button type="button" className="auth-link" onClick={() => ops.archiveDeal(deal.id)}>
-                        Archive
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+
+        <OpsDataGrid
+          rows={rows}
+          getRowId={(d) => d.id}
+          searchPlaceholder="Search deals…"
+          empty="No deals match."
+          initialSort={{ key: 'value', dir: 'desc' }}
+          filters={[
+            {
+              id: 'stage',
+              label: 'Stage',
+              value: stageFilter,
+              onChange: setStageFilter,
+              options: [{ value: '', label: 'All' }, ...STAGES.map((s) => ({ value: s, label: s }))],
+            },
+          ]}
+          columns={[
+            { key: 'title', label: 'Title', getValue: (d) => d.title, render: (d) => d.title },
+            { key: 'stage', label: 'Stage', getValue: (d) => d.stage, render: (d) => d.stage },
+            {
+              key: 'value',
+              label: 'Value',
+              align: 'right',
+              getValue: (d) => d.value,
+              render: (d) => `$${Math.round(d.value).toLocaleString()}`,
+            },
+            {
+              key: 'confidence',
+              label: 'Confidence',
+              align: 'right',
+              getValue: (d) => d.confidence,
+              render: (d) => `${d.confidence}%`,
+            },
+            { key: 'owner', label: 'Owner', getValue: (d) => d.owner, render: (d) => d.owner || '—' },
+          ]}
+          actions={(deal) => (
+            <OpsRowActions onEdit={() => setDraft({ ...deal })} onArchive={() => ops.archiveDeal(deal.id)} />
           )}
-        </div>
+        />
       </div>
 
       <EntityDrawer title="Deal" open={!!draft} onClose={() => setDraft(null)} fullscreen={false}>
@@ -149,10 +137,10 @@ export function OpsDealsPage() {
               <input value={draft.owner} onChange={(e) => setDraft({ ...draft, owner: e.target.value })} />
             </label>
             <div className="data-form-actions">
-              <button type="button" onClick={() => setDraft(null)}>
+              <button type="button" className="ops-btn" onClick={() => setDraft(null)}>
                 Cancel
               </button>
-              <button type="submit" className="primary">
+              <button type="submit" className="ops-btn primary">
                 Save
               </button>
             </div>
