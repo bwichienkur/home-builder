@@ -447,6 +447,18 @@
   letter-spacing: 0.03em;
 }
 
+.dash-table tbody tr:nth-child(odd) {
+  --dash-row-bg: #fff;
+}
+
+.dash-table tbody tr:nth-child(even) {
+  --dash-row-bg: #f4f4f5;
+}
+
+.dash-table tbody td {
+  background-color: var(--dash-row-bg);
+}
+
 .dash-table-dense td.is-name {
   font-weight: 750;
 }
@@ -497,7 +509,7 @@
   position: sticky;
   left: 0;
   z-index: 1;
-  background: #fff;
+  background-color: var(--dash-row-bg, #fff);
   box-shadow: 2px 0 4px -2px rgb(15 23 42 / 8%);
   min-width: 9rem;
   max-width: 11rem;
@@ -807,7 +819,7 @@
 .dash-drill-sticky,
 .dash-drill-sticky-lead {
   position: sticky;
-  background: #fff;
+  background-color: var(--dash-row-bg, #fff);
   z-index: 1;
 }
 
