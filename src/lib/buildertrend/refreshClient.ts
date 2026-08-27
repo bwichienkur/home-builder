@@ -28,6 +28,21 @@ function vercelCrashHint(status: number, message: string) {
   return message;
 }
 
+async function diagnosePing(): Promise<string> {
+  try {
+    const response = await fetch(`${apiBase()}/api/buildertrend/ping`, {
+      headers: { accept: 'application/json' },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (response.ok) {
+      return 'API ping ok — the crash happens during the Buildertrend pull (timeout/memory or BT blocking this host).';
+    }
+    return `API ping HTTP ${response.status}.`;
+  } catch {
+    return 'API ping failed — /api/buildertrend routes may not be deployed on this host.';
+  }
+}
+
 async function parseError(response: Response) {
   const raw = await response.text();
   try {
@@ -53,7 +68,7 @@ async function parseError(response: Response) {
       (response.status === 404 ? 'not_running' : 'refresh_failed');
     return { message, code };
   } catch {
-    /* not JSON */
+    /* not JSON — often Vercel platform crash HTML/text */
   }
   if (response.status === 404) {
     return {
@@ -61,10 +76,14 @@ async function parseError(response: Response) {
       code: 'not_running',
     };
   }
-  const fallback = vercelCrashHint(
+  let fallback = vercelCrashHint(
     response.status,
     raw.trim() || `Buildertrend refresh failed (HTTP ${response.status}).`,
   );
+  if (response.status >= 500) {
+    const ping = await diagnosePing();
+    fallback = `${fallback} ${ping}`;
+  }
   return { message: fallback, code: 'refresh_failed' };
 }
 
