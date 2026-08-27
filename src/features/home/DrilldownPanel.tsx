@@ -4,13 +4,12 @@ import {
   filterDrillRows,
   formatDrillCell,
   drillCellClassName,
-  sortDrillRows,
   sumDrillColumns,
   type DrillColumn,
   type DrillRow,
   type ResolvedDrilldown,
 } from '../../lib/dashboard/resolveDrilldown';
-import { sortIndicator, toggleSort, type SortState } from '../../lib/dashboard/sortGrid';
+import { sortDrillRows, sortIndicator, toggleSort, type SortState } from '../../lib/dashboard/sortGrid';
 import './dashboard.css';
 
 function isLeadColumn(col: DrillColumn, index: number) {
@@ -88,7 +87,7 @@ export function DrilldownTable({ data }: { data: ResolvedDrilldown }) {
               </tr>
             </thead>
             <tbody>
-              {displayRows.map((row: DrillRow, index) => (
+              {displayRows.map((row: DrillRow, index: number) => (
                 <tr key={index}>
                   <td className="is-num dash-drill-index dash-drill-sticky">{index + 1}</td>
                   {data.columns.map((col, colIndex) => (
