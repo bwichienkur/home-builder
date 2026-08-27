@@ -1,5 +1,13 @@
-import { LIVE_JOBS, LIVE_PIPELINE, LIVE_PROJECTED_MARGIN_PCT, LIVE_ROLLING_REVENUE_12MO, LIVE_SNAPSHOT_AT, LIVE_TARGET_MARGIN_PCT, LIVE_WEIGHTED_PIPELINE } from '../buildertrend/liveSnapshot';
-import type { OpsDeal, OpsDealStage, OpsJob, OpsPerson, OpsSnapshot } from './types';
+import {
+  LIVE_JOBS,
+  LIVE_PROJECTED_MARGIN_PCT,
+  LIVE_ROLLING_REVENUE_12MO,
+  LIVE_SNAPSHOT_AT,
+  LIVE_TARGET_MARGIN_PCT,
+  LIVE_WEIGHTED_PIPELINE,
+} from '../buildertrend/liveSnapshot';
+import { LIVE_DRILLDOWN } from '../buildertrend/liveDrilldown';
+import type { OpsDailyLog, OpsDeal, OpsDealStage, OpsJob, OpsPerson, OpsSelection, OpsSnapshot, OpsTask } from './types';
 
 function nowIso() {
   return new Date().toISOString();
@@ -9,15 +17,40 @@ function id(prefix: string) {
   return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-const STAGE_FROM_PIPELINE: Record<string, OpsDealStage> = {
-  lead: 'lead',
-  proposal: 'proposal',
-  'pre-contract': 'pre-contract',
-  contract: 'contract',
-  closed: 'closed',
-};
+function ownerJobId(numericJobId: number | string): string {
+  const raw = String(numericJobId);
+  return raw.startsWith('bt-') ? raw : `bt-${raw}`;
+}
 
-/** Build a native store seed from the baked Owner Dashboard snapshot. */
+/** Map Pipedrive / pipeline stage labels onto OpsDealStage buckets. */
+export function mapExternalDealStage(stageKey: string, stageName: string): OpsDealStage {
+  const name = stageName.toLowerCase();
+  if (name.includes('lost')) return 'lost';
+  if (name.includes('won') || name.includes('closed')) return 'closed';
+  if (name.includes('contract sent') || name.includes('negotiat')) return 'contract';
+  if (name.includes('proposal') || name.includes('pricing')) return 'proposal';
+  if (name.includes('homesite') || name.includes('meet with') || name.includes('pre-contract')) return 'pre-contract';
+  if (name.includes('qualified') || name.includes('first contact') || name.includes('lead')) return 'lead';
+  // Fallback by Pipedrive stage id order used in OCH Sales pipeline.
+  const idMatch = /^pd-(\d+)$/.exec(stageKey);
+  const n = idMatch ? Number(idMatch[1]) : 0;
+  if (n === 6 || n === 17) return 'contract';
+  if (n === 5) return 'proposal';
+  if (n === 3 || n === 4) return 'pre-contract';
+  return 'lead';
+}
+
+function selectionStatus(label: string): OpsSelection['status'] {
+  const lower = label.toLowerCase();
+  if (lower.includes('completed') || lower === 'completed') return 'completed';
+  if (lower.includes('selected') || lower === 'selected') return 'selected';
+  return 'pending';
+}
+
+/**
+ * Build a native store seed from the baked Owner Dashboard snapshot + LIVE_DRILLDOWN rows
+ * (full pending selections, past-due tasks, Pipedrive deals; logs expanded from user×job aggregates).
+ */
 export function seedOpsFromLiveSnapshot(): OpsSnapshot {
   const updatedAt = nowIso();
   const jobs: OpsJob[] = LIVE_JOBS.map((job) => ({
@@ -46,6 +79,7 @@ export function seedOpsFromLiveSnapshot(): OpsSnapshot {
     updatedAt,
   }));
 
+  const jobIdSet = new Set(jobs.map((j) => j.id));
   const peopleMap = new Map<string, OpsPerson>();
   for (const job of jobs) {
     const name = job.pm?.trim();
@@ -60,69 +94,80 @@ export function seedOpsFromLiveSnapshot(): OpsSnapshot {
     }
   }
 
-  // Approximate deals from pipeline stage totals (placeholder opportunities).
-  const deals: OpsDeal[] = [];
-  for (const stage of LIVE_PIPELINE) {
-    const dealStage = STAGE_FROM_PIPELINE[stage.id] ?? 'lead';
-    if (stage.value <= 0) continue;
-    const count = Math.max(1, stage.dealCount ?? 1);
-    const each = stage.value / count;
-    for (let i = 0; i < count; i += 1) {
-      deals.push({
-        id: id('deal'),
-        title: `${stage.label} opportunity ${i + 1}`,
-        stage: dealStage,
-        value: Math.round(each),
-        confidence: dealStage === 'lead' ? 10 : dealStage === 'proposal' ? 25 : dealStage === 'pre-contract' ? 45 : dealStage === 'contract' ? 80 : 100,
-        owner: 'Sales',
+  const selections: OpsSelection[] = [];
+  for (const rows of Object.values(LIVE_DRILLDOWN.selectionsByJobId)) {
+    for (const row of rows) {
+      const jobId = ownerJobId(row.jobId);
+      if (!jobIdSet.has(jobId) && !LIVE_JOBS.some((j) => j.id === jobId)) {
+        // Still import orphaned drilldown rows so counts match reporting.
+      }
+      selections.push({
+        id: `sel-${row.id}`,
+        jobId,
+        title: row.title || `Selection ${row.id}`,
+        category: row.category || '',
+        location: row.location || '',
+        status: selectionStatus(row.statusLabel || ''),
+        deadline: row.deadline || '',
         updatedAt,
       });
     }
   }
 
-  // Seed synthetic child rows from LIVE_JOBS counts (not stored on OpsJob).
-  const logs = [];
-  const tasks = [];
-  const selections = [];
-  for (const source of LIVE_JOBS) {
-    const recent = source.dailyLogsRecentDone ?? 0;
-    for (let i = 0; i < Math.min(recent, 8); i += 1) {
-      const day = new Date();
-      day.setDate(day.getDate() - i * 2);
-      logs.push({
-        id: id('log'),
-        jobId: source.id,
-        date: day.toISOString().slice(0, 10),
-        author: source.pm || 'PM',
-        isPm: true,
-        note: 'Seeded from snapshot daily-log count',
-        updatedAt,
-      });
-    }
-    for (let i = 0; i < Math.min(source.pastDueTasks, 5); i += 1) {
-      const due = new Date();
-      due.setDate(due.getDate() - (i + 1));
+  const tasks: OpsTask[] = [];
+  for (const rows of Object.values(LIVE_DRILLDOWN.pastDueByJobId)) {
+    for (const row of rows) {
+      const jobId = ownerJobId(row.jobId);
       tasks.push({
-        id: id('task'),
-        jobId: source.id,
-        title: `Past-due task ${i + 1}`,
-        assignee: source.pm || '',
-        dueDate: due.toISOString().slice(0, 10),
-        status: 'incomplete' as const,
+        id: `task-${row.taskId}`,
+        jobId,
+        title: row.title || `Task ${row.taskId}`,
+        assignee: row.assignedTo || '',
+        dueDate: row.endDate || '',
+        status: 'incomplete',
         updatedAt,
       });
     }
-    for (let i = 0; i < Math.min(source.pendingSelections, 5); i += 1) {
-      selections.push({
-        id: id('sel'),
-        jobId: source.id,
-        title: `Pending selection ${i + 1}`,
-        category: 'General',
-        location: '',
-        status: 'pending' as const,
-        deadline: '',
+  }
+
+  const logs: OpsDailyLog[] = [];
+  for (const rows of Object.values(LIVE_DRILLDOWN.logsByJobId)) {
+    for (const row of rows) {
+      const jobId = ownerJobId(row.jobId);
+      const count = Math.max(1, Math.min(row.dailyLogCount || 1, 28));
+      const last = row.lastLogDate ? new Date(`${row.lastLogDate}T12:00:00Z`) : new Date();
+      for (let i = 0; i < count; i += 1) {
+        const day = new Date(last);
+        day.setUTCDate(day.getUTCDate() - i);
+        logs.push({
+          id: id('log'),
+          jobId,
+          date: day.toISOString().slice(0, 10),
+          author: row.userName || 'User',
+          isPm: Boolean(jobs.find((j) => j.id === jobId)?.pm === row.userName),
+          note: i === 0 ? `Imported from BT user×job log aggregate (${row.dailyLogCount} in window)` : undefined,
+          updatedAt,
+        });
+      }
+    }
+  }
+
+  const deals: OpsDeal[] = [];
+  for (const [stageKey, rows] of Object.entries(LIVE_DRILLDOWN.dealsByStage)) {
+    for (const row of rows) {
+      const stage = mapExternalDealStage(stageKey, row.stageName || '');
+      deals.push({
+        id: `deal-${row.id}`,
+        title: row.title || `Deal ${row.id}`,
+        stage,
+        value: row.value || 0,
+        confidence: Math.round(row.probabilityPct || 0),
+        owner: 'Sales',
         updatedAt,
       });
+      if (row.stageName) {
+        // keep people list for sales later if needed
+      }
     }
   }
 
@@ -132,7 +177,7 @@ export function seedOpsFromLiveSnapshot(): OpsSnapshot {
       targetMarginPct: LIVE_TARGET_MARGIN_PCT,
       projectedMarginPct: LIVE_PROJECTED_MARGIN_PCT,
       rollingRevenue12Mo: LIVE_ROLLING_REVENUE_12MO || LIVE_WEIGHTED_PIPELINE,
-      refreshedAt: LIVE_SNAPSHOT_AT,
+      refreshedAt: LIVE_SNAPSHOT_AT || LIVE_DRILLDOWN.generatedAt,
     },
     jobs,
     logs,

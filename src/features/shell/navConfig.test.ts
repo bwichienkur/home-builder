@@ -13,6 +13,9 @@ describe('app nav', () => {
       '/inventory',
       '/ops',
       '/ops/jobs',
+      '/ops/tasks',
+      '/ops/logs',
+      '/ops/selections',
       '/ops/deals',
       '/ops/people',
       '/settings',
@@ -27,6 +30,7 @@ describe('app nav', () => {
     expect(pageTitleForPath('/inventory')).toBe('Materials');
     expect(pageTitleForPath('/ops')).toBe('Operations');
     expect(pageTitleForPath('/ops/jobs')).toBe('Jobs');
+    expect(pageTitleForPath('/ops/tasks')).toBe('Tasks');
     expect(pageTitleForPath('/ops/jobs/bt-1')).toBe('Jobs');
     expect(pageTitleForPath('/unknown')).toBe('Olsen Custom Homes');
   });

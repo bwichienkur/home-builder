@@ -24,7 +24,7 @@ export function OpsHubPage() {
           <button
             type="button"
             onClick={() => {
-              if (window.confirm('Clear all Operations data in this browser?')) ops.clearAll();
+              if (window.confirm('Clear all Operations data?')) ops.clearAll();
             }}
           >
             Clear store
@@ -32,11 +32,16 @@ export function OpsHubPage() {
         </div>
       </header>
 
-      <p className={native ? 'muted' : 'muted'} style={{ marginBottom: 16 }}>
+      <p className="muted" style={{ marginBottom: 8 }}>
         Dashboard provider: <strong>{native ? 'native' : 'snapshot (default)'}</strong>
         {!native
           ? ' — edit Operations freely; Home still shows the baked BT snapshot until you set the env flag.'
-          : ' — Home reads this browser store.'}
+          : ' — Home reads this Operations store.'}
+      </p>
+      <p className="muted" style={{ marginBottom: 16 }}>
+        Storage: <strong>{ops.http ? 'shared HTTP API (Postgres or file)' : 'this browser (localStorage)'}</strong>
+        {ops.hydrating ? ' · syncing…' : ''}
+        {ops.remoteError ? ` · ${ops.remoteError}` : ''}
       </p>
 
       <div className="data-table-wrap">
@@ -62,8 +67,8 @@ export function OpsHubPage() {
               <td>Daily logs</td>
               <td>{ops.logs.length}</td>
               <td>
-                <Link to="/ops/jobs" className="auth-link">
-                  Via job
+                <Link to="/ops/logs" className="auth-link">
+                  Open
                 </Link>
               </td>
             </tr>
@@ -71,8 +76,8 @@ export function OpsHubPage() {
               <td>Tasks</td>
               <td>{ops.tasks.length}</td>
               <td>
-                <Link to="/ops/jobs" className="auth-link">
-                  Via job
+                <Link to="/ops/tasks" className="auth-link">
+                  Open
                 </Link>
               </td>
             </tr>
@@ -80,8 +85,8 @@ export function OpsHubPage() {
               <td>Selections</td>
               <td>{ops.selections.length}</td>
               <td>
-                <Link to="/ops/jobs" className="auth-link">
-                  Via job
+                <Link to="/ops/selections" className="auth-link">
+                  Open
                 </Link>
               </td>
             </tr>

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   archiveOpsDeal,
   archiveOpsJob,
@@ -7,6 +7,8 @@ import {
   deleteOpsSelection,
   deleteOpsTask,
   ensureOpsSeeded,
+  hydrateOpsFromRemote,
+  isOpsHttpProvider,
   resetOpsFromSnapshot,
   upsertOpsDeal,
   upsertOpsJob,
@@ -23,19 +25,51 @@ import {
   type OpsTask,
 } from '../../lib/operations';
 
-/** Reactive handle over the localStorage Operations store. */
+/** Reactive handle over the Operations store (localStorage and/or shared HTTP API). */
 export function useOpsStore() {
   const [tick, setTick] = useState(0);
+  const [hydrating, setHydrating] = useState(isOpsHttpProvider());
+  const [remoteError, setRemoteError] = useState('');
+
+  useEffect(() => {
+    if (!isOpsHttpProvider()) return;
+    let cancelled = false;
+    setHydrating(true);
+    void hydrateOpsFromRemote()
+      .then(() => {
+        if (!cancelled) {
+          setRemoteError('');
+          setTick((n) => n + 1);
+        }
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) setRemoteError(err instanceof Error ? err.message : 'Remote ops load failed');
+      })
+      .finally(() => {
+        if (!cancelled) setHydrating(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const snapshot: OpsSnapshot = useMemo(() => {
     void tick;
     return ensureOpsSeeded();
   }, [tick]);
 
   const reload = useCallback(() => setTick((n) => n + 1), []);
+  const jobName = useCallback(
+    (jobId: string) => snapshot.jobs.find((j) => j.id === jobId)?.name || jobId,
+    [snapshot.jobs],
+  );
 
   return {
     snapshot,
     reload,
+    hydrating,
+    remoteError,
+    http: isOpsHttpProvider(),
     jobs: snapshot.jobs.filter((j) => !j.archived),
     allJobs: snapshot.jobs,
     logs: snapshot.logs,
@@ -43,6 +77,7 @@ export function useOpsStore() {
     selections: snapshot.selections,
     deals: snapshot.deals.filter((d) => !d.archived),
     people: snapshot.people,
+    jobName,
     saveJob: (job: OpsJob) => {
       upsertOpsJob(job);
       reload();
