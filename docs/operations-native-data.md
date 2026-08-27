@@ -40,7 +40,13 @@ Then restart Vite. Home loads `nativeOwnerDashboardProvider`. Live BT/PD pull + 
 
 | Mode | Env | Backend |
 |------|-----|---------|
-| local (default) | `VITE_OPS_PROVIDER=local` | Browser `localStorage` (`mahnikka-ops-v1`) — per device |
-| http | `VITE_OPS_PROVIDER=http` + `VITE_API_URL` (or same-origin `/api/ops`) | Shared: **Postgres** when `DATABASE_URL` is set, else `data/ops-store.json` via `npm run server`. On Vercel, Postgres is required. |
+| local (Vite default) | unset / `VITE_OPS_PROVIDER=local` | Browser `localStorage` (`mahnikka-ops-v1`) — per device |
+| http (production default) | Production builds default to http; or set `VITE_OPS_PROVIDER=http` | Shared **Neon Postgres** via `DATABASE_URL` on Vercel (`GET/PUT /api/ops`). Local `npm run server` uses Postgres when `DATABASE_URL` is set, else `data/ops-store.json`. |
+
+### Vercel + Neon
+
+1. Add the [Neon integration](https://vercel.com/integrations/neon) to the project (injects `DATABASE_URL`).
+2. Redeploy Production so serverless `/api/ops` sees the var.
+3. Open **Operations** in the deployed app — production builds use shared HTTP ops automatically. The first load seeds from the BT drilldown bake into Neon (`ops_snapshots` table is created on first request).
 
 Schema: `server/db/003_ops_snapshot.sql` (`ops_snapshots` jsonb).

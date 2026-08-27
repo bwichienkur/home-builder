@@ -16,13 +16,22 @@ function env(name: string, fallback = '') {
   return (value ?? fallback).trim();
 }
 
+function resolveOpsProvider(): OpsProviderId {
+  const explicit = env('VITE_OPS_PROVIDER', '');
+  if (explicit === 'http') return 'http';
+  if (explicit === 'local') return 'local';
+  // Production (Vercel) defaults to shared /api/ops — pairs with Neon DATABASE_URL.
+  // Local Vite stays browser-only unless VITE_OPS_PROVIDER=http is set.
+  return import.meta.env.PROD ? 'http' : 'local';
+}
+
 export const platformConfig = {
   /** local = browser accounts; remote = call API / IdP adapter. */
   authProvider: (env('VITE_AUTH_PROVIDER', 'local') === 'remote' ? 'remote' : 'local') as AuthProviderId,
   /** local = localStorage CRM; http = sync via VITE_API_URL /api/crm. */
   crmProvider: (env('VITE_CRM_PROVIDER', 'local') === 'http' ? 'http' : 'local') as CrmProviderId,
   /** local = localStorage Operations; http = sync via VITE_API_URL /api/ops (Postgres or file). */
-  opsProvider: (env('VITE_OPS_PROVIDER', 'local') === 'http' ? 'http' : 'local') as OpsProviderId,
+  opsProvider: resolveOpsProvider(),
   apiUrl: env('VITE_API_URL', '').replace(/\/$/, ''),
   /** True when a remote API base URL is configured (cloud-capable). */
   cloudConfigured(): boolean {
