@@ -821,6 +821,14 @@
   background: #f3f5f8;
 }
 
+.dash-slip-duration-pos {
+  background: #fdeaea;
+}
+
+.dash-slip-duration-neg {
+  background: #e8f5ec;
+}
+
 .dash-drill-total-count {
   font-weight: 600;
   color: var(--muted);

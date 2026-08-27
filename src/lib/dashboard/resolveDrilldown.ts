@@ -18,6 +18,8 @@ export type DrillColumn = {
   align?: 'left' | 'right';
   /** When set, values are numeric and a totals row sums this column. */
   sum?: 'usd' | 'compactUsd' | 'number';
+  /** Positive = light red, negative = light green (schedule duration slip). */
+  tone?: 'slip';
 };
 
 export type DrillRow = Record<string, string | number>;
@@ -51,6 +53,20 @@ export function formatDrillCell(col: DrillColumn, value: string | number | undef
   if (col.sum === 'compactUsd' && typeof value === 'number') return formatCompactUsd(value);
   if (col.sum === 'number' && typeof value === 'number') return String(value);
   return String(value);
+}
+
+/** Optional cell background for tone columns (e.g. duration slip). */
+export function drillCellClassName(col: DrillColumn, value: string | number | undefined): string | undefined {
+  if (col.tone !== 'slip' || typeof value !== 'number' || !Number.isFinite(value) || value === 0) return undefined;
+  return value > 0 ? 'dash-slip-duration-pos' : 'dash-slip-duration-neg';
+}
+
+function compareIsoDates(a: string, b: string) {
+  const empty = (value: string) => !value || value === '—';
+  if (empty(a) && empty(b)) return 0;
+  if (empty(a)) return 1;
+  if (empty(b)) return -1;
+  return a.localeCompare(b);
 }
 
 /** Sum numeric columns marked with `sum` for the totals footer. */
@@ -239,7 +255,8 @@ export function resolveDrilldown(
 
   if (kind.type === 'job-slip') {
     const entries = [...(detail?.baselineSlipByJobId?.[numericJobId(kind.jobId)] ?? [])].sort(
-      (a, b) => Math.abs(b.endDateSlip) - Math.abs(a.endDateSlip) || a.title.localeCompare(b.title),
+      (a, b) =>
+        compareIsoDates(a.expectedEndDate, b.expectedEndDate) || a.title.localeCompare(b.title),
     );
     const positive = entries.filter((r) => r.endDateSlip > 0).reduce((s, r) => s + r.endDateSlip, 0);
     const negative = entries.filter((r) => r.endDateSlip < 0).reduce((s, r) => s + r.endDateSlip, 0);
@@ -249,7 +266,7 @@ export function resolveDrilldown(
       columns: [
         { key: 'title', label: 'Schedule item' },
         { key: 'endDateSlip', label: 'End date slip', align: 'right', sum: 'number' },
-        { key: 'durationSlip', label: 'Duration slip', align: 'right', sum: 'number' },
+        { key: 'durationSlip', label: 'Duration slip', align: 'right', sum: 'number', tone: 'slip' },
         { key: 'expectedEndDate', label: 'Expected end' },
         { key: 'actualEndDate', label: 'Actual end' },
         { key: 'completed', label: 'Complete' },
