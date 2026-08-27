@@ -1,10 +1,27 @@
 import { Link } from 'react-router-dom';
 import { isNativeOwnerDashboard } from '../../lib/buildertrend';
+import { OpsDataGrid } from './OpsDataGrid';
 import { useOpsStore } from './useOpsStore';
+
+type HubRow = {
+  id: string;
+  section: string;
+  records: number;
+  to: string;
+};
 
 export function OpsHubPage() {
   const ops = useOpsStore();
   const native = isNativeOwnerDashboard();
+
+  const rows: HubRow[] = [
+    { id: 'jobs', section: 'Jobs', records: ops.jobs.length, to: '/ops/jobs' },
+    { id: 'logs', section: 'Daily logs', records: ops.logs.length, to: '/ops/logs' },
+    { id: 'tasks', section: 'Tasks', records: ops.tasks.length, to: '/ops/tasks' },
+    { id: 'selections', section: 'Selections', records: ops.selections.length, to: '/ops/selections' },
+    { id: 'deals', section: 'Deals', records: ops.deals.length, to: '/ops/deals' },
+    { id: 'people', section: 'People', records: ops.people.length, to: '/ops/people' },
+  ];
 
   return (
     <div className="data-page">
@@ -18,11 +35,12 @@ export function OpsHubPage() {
           </p>
         </div>
         <div className="data-page-actions">
-          <button type="button" onClick={() => ops.resetFromSnapshot()}>
+          <button type="button" className="ops-btn" onClick={() => ops.resetFromSnapshot()}>
             Reset from snapshot
           </button>
           <button
             type="button"
+            className="ops-btn ops-btn-danger"
             onClick={() => {
               if (window.confirm('Clear all Operations data?')) ops.clearAll();
             }}
@@ -44,73 +62,29 @@ export function OpsHubPage() {
         {ops.remoteError ? ` · ${ops.remoteError}` : ''}
       </p>
 
-      <div className="data-table-wrap">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Section</th>
-              <th>Records</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Jobs</td>
-              <td>{ops.jobs.length}</td>
-              <td>
-                <Link to="/ops/jobs" className="auth-link">
-                  Open
-                </Link>
-              </td>
-            </tr>
-            <tr>
-              <td>Daily logs</td>
-              <td>{ops.logs.length}</td>
-              <td>
-                <Link to="/ops/logs" className="auth-link">
-                  Open
-                </Link>
-              </td>
-            </tr>
-            <tr>
-              <td>Tasks</td>
-              <td>{ops.tasks.length}</td>
-              <td>
-                <Link to="/ops/tasks" className="auth-link">
-                  Open
-                </Link>
-              </td>
-            </tr>
-            <tr>
-              <td>Selections</td>
-              <td>{ops.selections.length}</td>
-              <td>
-                <Link to="/ops/selections" className="auth-link">
-                  Open
-                </Link>
-              </td>
-            </tr>
-            <tr>
-              <td>Deals</td>
-              <td>{ops.deals.length}</td>
-              <td>
-                <Link to="/ops/deals" className="auth-link">
-                  Open
-                </Link>
-              </td>
-            </tr>
-            <tr>
-              <td>People</td>
-              <td>{ops.people.length}</td>
-              <td>
-                <Link to="/ops/people" className="auth-link">
-                  Open
-                </Link>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <OpsDataGrid
+        rows={rows}
+        getRowId={(r) => r.id}
+        searchPlaceholder="Filter sections…"
+        empty="No sections."
+        pageSize={25}
+        initialSort={{ key: 'section', dir: 'asc' }}
+        columns={[
+          { key: 'section', label: 'Section', getValue: (r) => r.section, render: (r) => r.section },
+          {
+            key: 'records',
+            label: 'Records',
+            align: 'right',
+            getValue: (r) => r.records,
+            render: (r) => r.records,
+          },
+        ]}
+        actions={(row) => (
+          <Link to={row.to} className="ops-btn">
+            Open
+          </Link>
+        )}
+      />
     </div>
   );
 }

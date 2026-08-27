@@ -2,6 +2,7 @@ import { FormEvent, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { EntityDrawer } from '../crm/EntityCrmPage';
 import { newOpsId, type OpsDailyLog, type OpsSelection, type OpsTask } from '../../lib/operations';
+import { OpsDataGrid, OpsRowActions } from './OpsDataGrid';
 import { useOpsStore } from './useOpsStore';
 
 type Tab = 'logs' | 'tasks' | 'selections';
@@ -15,16 +16,24 @@ export function OpsJobDetailPage() {
   const [logDraft, setLogDraft] = useState<OpsDailyLog | null>(null);
   const [taskDraft, setTaskDraft] = useState<OpsTask | null>(null);
   const [selDraft, setSelDraft] = useState<OpsSelection | null>(null);
+  const [taskStatus, setTaskStatus] = useState('');
+  const [selStatus, setSelStatus] = useState('');
 
   const logs = useMemo(() => ops.logs.filter((l) => l.jobId === id), [ops.logs, id]);
-  const tasks = useMemo(() => ops.tasks.filter((t) => t.jobId === id), [ops.tasks, id]);
-  const selections = useMemo(() => ops.selections.filter((s) => s.jobId === id), [ops.selections, id]);
+  const tasks = useMemo(() => {
+    const list = ops.tasks.filter((t) => t.jobId === id);
+    return taskStatus ? list.filter((t) => t.status === taskStatus) : list;
+  }, [ops.tasks, id, taskStatus]);
+  const selections = useMemo(() => {
+    const list = ops.selections.filter((s) => s.jobId === id);
+    return selStatus ? list.filter((s) => s.status === selStatus) : list;
+  }, [ops.selections, id, selStatus]);
 
   if (!job) {
     return (
       <div className="data-page">
         <p className="muted">Job not found.</p>
-        <Link to="/ops/jobs" className="auth-link">
+        <Link to="/ops/jobs" className="ops-btn">
           Back to jobs
         </Link>
       </div>
@@ -42,25 +51,25 @@ export function OpsJobDetailPage() {
           </p>
         </div>
         <div className="data-page-actions">
-          <Link to="/ops/jobs" className="auth-link">
+          <Link to="/ops/jobs" className="ops-btn">
             All jobs
           </Link>
         </div>
       </header>
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }} role="tablist" aria-label="Job records">
+      <div className="data-page-actions" style={{ marginBottom: 16 }} role="tablist" aria-label="Job records">
         {(
           [
             ['logs', `Logs (${logs.length})`],
-            ['tasks', `Tasks (${tasks.length})`],
-            ['selections', `Selections (${selections.length})`],
+            ['tasks', `Tasks (${ops.tasks.filter((t) => t.jobId === id).length})`],
+            ['selections', `Selections (${ops.selections.filter((s) => s.jobId === id).length})`],
           ] as const
         ).map(([key, label]) => (
           <button
             key={key}
             type="button"
             role="tab"
-            className={tab === key ? 'primary' : undefined}
+            className={`ops-btn${tab === key ? ' primary' : ''}`}
             aria-selected={tab === key}
             onClick={() => setTab(key)}
           >
@@ -74,7 +83,7 @@ export function OpsJobDetailPage() {
           <div className="data-page-actions" style={{ marginBottom: 12 }}>
             <button
               type="button"
-              className="primary"
+              className="ops-btn primary"
               onClick={() =>
                 setLogDraft({
                   id: newOpsId('log'),
@@ -90,42 +99,32 @@ export function OpsJobDetailPage() {
               Add log
             </button>
           </div>
-          <div className="data-table-wrap">
-            {logs.length === 0 ? (
-              <div className="data-empty">No daily logs.</div>
-            ) : (
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Author</th>
-                    <th>PM?</th>
-                    <th>Note</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {logs.map((row) => (
-                    <tr key={row.id}>
-                      <td>{row.date.slice(0, 10)}</td>
-                      <td>{row.author}</td>
-                      <td>{row.isPm ? 'Yes' : 'No'}</td>
-                      <td>{row.note || '—'}</td>
-                      <td>
-                        <button type="button" className="auth-link" onClick={() => setLogDraft({ ...row })}>
-                          Edit
-                        </button>
-                        {' · '}
-                        <button type="button" className="auth-link" onClick={() => ops.removeLog(row.id)}>
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          <OpsDataGrid
+            rows={logs}
+            getRowId={(r) => r.id}
+            searchPlaceholder="Search logs…"
+            empty="No daily logs."
+            initialSort={{ key: 'date', dir: 'desc' }}
+            columns={[
+              {
+                key: 'date',
+                label: 'Date',
+                getValue: (r) => r.date.slice(0, 10),
+                render: (r) => r.date.slice(0, 10),
+              },
+              { key: 'author', label: 'Author', getValue: (r) => r.author, render: (r) => r.author },
+              {
+                key: 'isPm',
+                label: 'PM?',
+                getValue: (r) => (r.isPm ? 1 : 0),
+                render: (r) => (r.isPm ? 'Yes' : 'No'),
+              },
+              { key: 'note', label: 'Note', getValue: (r) => r.note || '', render: (r) => r.note || '—' },
+            ]}
+            actions={(row) => (
+              <OpsRowActions onEdit={() => setLogDraft({ ...row })} onDelete={() => ops.removeLog(row.id)} />
             )}
-          </div>
+          />
         </>
       ) : null}
 
@@ -134,7 +133,7 @@ export function OpsJobDetailPage() {
           <div className="data-page-actions" style={{ marginBottom: 12 }}>
             <button
               type="button"
-              className="primary"
+              className="ops-btn primary"
               onClick={() =>
                 setTaskDraft({
                   id: newOpsId('task'),
@@ -150,42 +149,35 @@ export function OpsJobDetailPage() {
               Add task
             </button>
           </div>
-          <div className="data-table-wrap">
-            {tasks.length === 0 ? (
-              <div className="data-empty">No tasks.</div>
-            ) : (
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Title</th>
-                    <th>Assignee</th>
-                    <th>Due</th>
-                    <th>Status</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tasks.map((row) => (
-                    <tr key={row.id}>
-                      <td>{row.title}</td>
-                      <td>{row.assignee || '—'}</td>
-                      <td>{row.dueDate.slice(0, 10)}</td>
-                      <td>{row.status}</td>
-                      <td>
-                        <button type="button" className="auth-link" onClick={() => setTaskDraft({ ...row })}>
-                          Edit
-                        </button>
-                        {' · '}
-                        <button type="button" className="auth-link" onClick={() => ops.removeTask(row.id)}>
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          <OpsDataGrid
+            rows={tasks}
+            getRowId={(r) => r.id}
+            searchPlaceholder="Search tasks…"
+            empty="No tasks match."
+            initialSort={{ key: 'dueDate', dir: 'asc' }}
+            filters={[
+              {
+                id: 'status',
+                label: 'Status',
+                value: taskStatus,
+                onChange: setTaskStatus,
+                options: [
+                  { value: '', label: 'All' },
+                  { value: 'incomplete', label: 'incomplete' },
+                  { value: 'complete', label: 'complete' },
+                ],
+              },
+            ]}
+            columns={[
+              { key: 'title', label: 'Title', getValue: (r) => r.title, render: (r) => r.title },
+              { key: 'assignee', label: 'Assignee', getValue: (r) => r.assignee, render: (r) => r.assignee || '—' },
+              { key: 'dueDate', label: 'Due', getValue: (r) => r.dueDate, render: (r) => r.dueDate.slice(0, 10) },
+              { key: 'status', label: 'Status', getValue: (r) => r.status, render: (r) => r.status },
+            ]}
+            actions={(row) => (
+              <OpsRowActions onEdit={() => setTaskDraft({ ...row })} onDelete={() => ops.removeTask(row.id)} />
             )}
-          </div>
+          />
         </>
       ) : null}
 
@@ -194,7 +186,7 @@ export function OpsJobDetailPage() {
           <div className="data-page-actions" style={{ marginBottom: 12 }}>
             <button
               type="button"
-              className="primary"
+              className="ops-btn primary"
               onClick={() =>
                 setSelDraft({
                   id: newOpsId('sel'),
@@ -211,42 +203,36 @@ export function OpsJobDetailPage() {
               Add selection
             </button>
           </div>
-          <div className="data-table-wrap">
-            {selections.length === 0 ? (
-              <div className="data-empty">No selections.</div>
-            ) : (
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Title</th>
-                    <th>Category</th>
-                    <th>Status</th>
-                    <th>Deadline</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {selections.map((row) => (
-                    <tr key={row.id}>
-                      <td>{row.title}</td>
-                      <td>{row.category || '—'}</td>
-                      <td>{row.status}</td>
-                      <td>{row.deadline || '—'}</td>
-                      <td>
-                        <button type="button" className="auth-link" onClick={() => setSelDraft({ ...row })}>
-                          Edit
-                        </button>
-                        {' · '}
-                        <button type="button" className="auth-link" onClick={() => ops.removeSelection(row.id)}>
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          <OpsDataGrid
+            rows={selections}
+            getRowId={(r) => r.id}
+            searchPlaceholder="Search selections…"
+            empty="No selections match."
+            initialSort={{ key: 'title', dir: 'asc' }}
+            filters={[
+              {
+                id: 'status',
+                label: 'Status',
+                value: selStatus,
+                onChange: setSelStatus,
+                options: [
+                  { value: '', label: 'All' },
+                  { value: 'pending', label: 'pending' },
+                  { value: 'selected', label: 'selected' },
+                  { value: 'completed', label: 'completed' },
+                ],
+              },
+            ]}
+            columns={[
+              { key: 'title', label: 'Title', getValue: (r) => r.title, render: (r) => r.title },
+              { key: 'category', label: 'Category', getValue: (r) => r.category, render: (r) => r.category || '—' },
+              { key: 'status', label: 'Status', getValue: (r) => r.status, render: (r) => r.status },
+              { key: 'deadline', label: 'Deadline', getValue: (r) => r.deadline, render: (r) => r.deadline || '—' },
+            ]}
+            actions={(row) => (
+              <OpsRowActions onEdit={() => setSelDraft({ ...row })} onDelete={() => ops.removeSelection(row.id)} />
             )}
-          </div>
+          />
         </>
       ) : null}
 
@@ -290,10 +276,10 @@ export function OpsJobDetailPage() {
               <input value={logDraft.note || ''} onChange={(e) => setLogDraft({ ...logDraft, note: e.target.value })} />
             </label>
             <div className="data-form-actions">
-              <button type="button" onClick={() => setLogDraft(null)}>
+              <button type="button" className="ops-btn" onClick={() => setLogDraft(null)}>
                 Cancel
               </button>
-              <button type="submit" className="primary">
+              <button type="submit" className="ops-btn primary">
                 Save
               </button>
             </div>
@@ -339,19 +325,17 @@ export function OpsJobDetailPage() {
               Status
               <select
                 value={taskDraft.status}
-                onChange={(e) =>
-                  setTaskDraft({ ...taskDraft, status: e.target.value as OpsTask['status'] })
-                }
+                onChange={(e) => setTaskDraft({ ...taskDraft, status: e.target.value as OpsTask['status'] })}
               >
                 <option value="incomplete">incomplete</option>
                 <option value="complete">complete</option>
               </select>
             </label>
             <div className="data-form-actions">
-              <button type="button" onClick={() => setTaskDraft(null)}>
+              <button type="button" className="ops-btn" onClick={() => setTaskDraft(null)}>
                 Cancel
               </button>
-              <button type="submit" className="primary">
+              <button type="submit" className="ops-btn primary">
                 Save
               </button>
             </div>
@@ -396,9 +380,7 @@ export function OpsJobDetailPage() {
               Status
               <select
                 value={selDraft.status}
-                onChange={(e) =>
-                  setSelDraft({ ...selDraft, status: e.target.value as OpsSelection['status'] })
-                }
+                onChange={(e) => setSelDraft({ ...selDraft, status: e.target.value as OpsSelection['status'] })}
               >
                 <option value="pending">pending</option>
                 <option value="selected">selected</option>
@@ -414,10 +396,10 @@ export function OpsJobDetailPage() {
               />
             </label>
             <div className="data-form-actions">
-              <button type="button" onClick={() => setSelDraft(null)}>
+              <button type="button" className="ops-btn" onClick={() => setSelDraft(null)}>
                 Cancel
               </button>
-              <button type="submit" className="primary">
+              <button type="submit" className="ops-btn primary">
                 Save
               </button>
             </div>

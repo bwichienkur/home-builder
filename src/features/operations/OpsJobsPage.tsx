@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { EntityDrawer } from '../crm/EntityCrmPage';
 import { newOpsId, type OpsJob } from '../../lib/operations';
 import type { JobStatus, OwnerPhase } from '../../lib/buildertrend/types';
+import { OpsDataGrid, OpsRowActions } from './OpsDataGrid';
 import { useOpsStore } from './useOpsStore';
 
 const emptyJob = (): OpsJob => ({
@@ -28,14 +29,17 @@ const emptyJob = (): OpsJob => ({
 
 export function OpsJobsPage() {
   const ops = useOpsStore();
-  const [query, setQuery] = useState('');
   const [draft, setDraft] = useState<OpsJob | null>(null);
+  const [statusFilter, setStatusFilter] = useState('');
+  const [phaseFilter, setPhaseFilter] = useState('');
 
   const rows = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return ops.jobs;
-    return ops.jobs.filter((j) => JSON.stringify(j).toLowerCase().includes(q));
-  }, [ops.jobs, query]);
+    return ops.jobs.filter((j) => {
+      if (statusFilter && j.status !== statusFilter) return false;
+      if (phaseFilter && j.phase !== phaseFilter) return false;
+      return true;
+    });
+  }, [ops.jobs, statusFilter, phaseFilter]);
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -54,72 +58,81 @@ export function OpsJobsPage() {
             <p className="muted">Open jobs that feed the Owner Dashboard when the native provider is on.</p>
           </div>
           <div className="data-page-actions">
-            <Link to="/ops" className="auth-link">
+            <Link to="/ops" className="ops-btn">
               Hub
             </Link>
-            <button type="button" className="primary" onClick={() => setDraft(emptyJob())}>
+            <button type="button" className="ops-btn primary" onClick={() => setDraft(emptyJob())}>
               Add job
             </button>
           </div>
         </header>
-        <div style={{ marginBottom: 12 }}>
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search jobs…"
-            style={{
-              width: 'min(360px, 100%)',
-              border: '1px solid var(--line)',
-              borderRadius: 10,
-              padding: '10px 12px',
-            }}
-          />
-        </div>
-        <div className="data-table-wrap">
-          {rows.length === 0 ? (
-            <div className="data-empty">No jobs yet. Add one or reset from the snapshot on the Ops hub.</div>
-          ) : (
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Job</th>
-                  <th>PM</th>
-                  <th>Status</th>
-                  <th>Phase</th>
-                  <th>Contract</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((job) => (
-                  <tr key={job.id}>
-                    <td>
-                      <Link to={`/ops/jobs/${encodeURIComponent(job.id)}`} className="auth-link">
-                        {job.name}
-                      </Link>
-                    </td>
-                    <td>{job.pm || '—'}</td>
-                    <td>{job.status}</td>
-                    <td>{job.phase}</td>
-                    <td>${Math.round(job.contractPrice).toLocaleString()}</td>
-                    <td>
-                      <button type="button" className="auth-link" onClick={() => setDraft({ ...job })}>
-                        Edit
-                      </button>
-                      {' · '}
-                      <button type="button" className="auth-link" onClick={() => ops.archiveJob(job.id)}>
-                        Archive
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+
+        <OpsDataGrid
+          rows={rows}
+          getRowId={(j) => j.id}
+          searchPlaceholder="Search jobs…"
+          empty="No jobs match. Add one or reset from the snapshot on the Ops hub."
+          initialSort={{ key: 'name', dir: 'asc' }}
+          filters={[
+            {
+              id: 'status',
+              label: 'Status',
+              value: statusFilter,
+              onChange: setStatusFilter,
+              options: [
+                { value: '', label: 'All' },
+                { value: 'open', label: 'open' },
+                { value: 'closed', label: 'closed' },
+                { value: 'warranty', label: 'warranty' },
+              ],
+            },
+            {
+              id: 'phase',
+              label: 'Phase',
+              value: phaseFilter,
+              onChange: setPhaseFilter,
+              options: [
+                { value: '', label: 'All' },
+                { value: 'design', label: 'design' },
+                { value: 'permitting', label: 'permitting' },
+                { value: 'construction', label: 'construction' },
+                { value: 'closeout', label: 'closeout' },
+              ],
+            },
+          ]}
+          columns={[
+            {
+              key: 'name',
+              label: 'Job',
+              getValue: (j) => j.name,
+              render: (job) => (
+                <Link to={`/ops/jobs/${encodeURIComponent(job.id)}`} className="ops-link">
+                  {job.name}
+                </Link>
+              ),
+            },
+            { key: 'pm', label: 'PM', getValue: (j) => j.pm, render: (j) => j.pm || '—' },
+            { key: 'status', label: 'Status', getValue: (j) => j.status, render: (j) => j.status },
+            { key: 'phase', label: 'Phase', getValue: (j) => j.phase, render: (j) => j.phase },
+            {
+              key: 'contractPrice',
+              label: 'Contract',
+              align: 'right',
+              getValue: (j) => j.contractPrice,
+              render: (j) => `$${Math.round(j.contractPrice).toLocaleString()}`,
+            },
+          ]}
+          actions={(job) => (
+            <OpsRowActions onEdit={() => setDraft({ ...job })} onArchive={() => ops.archiveJob(job.id)} />
           )}
-        </div>
+        />
       </div>
 
-      <EntityDrawer title={draft && ops.jobs.some((j) => j.id === draft.id) ? 'Edit job' : 'Add job'} open={!!draft} onClose={() => setDraft(null)}>
+      <EntityDrawer
+        title={draft && ops.jobs.some((j) => j.id === draft.id) ? 'Edit job' : 'Add job'}
+        open={!!draft}
+        onClose={() => setDraft(null)}
+      >
         {draft ? (
           <form className="data-form" onSubmit={onSubmit}>
             <fieldset className="data-form-section">
@@ -294,10 +307,10 @@ export function OpsJobsPage() {
               </label>
             </fieldset>
             <div className="data-form-actions">
-              <button type="button" onClick={() => setDraft(null)}>
+              <button type="button" className="ops-btn" onClick={() => setDraft(null)}>
                 Cancel
               </button>
-              <button type="submit" className="primary">
+              <button type="submit" className="ops-btn primary">
                 Save
               </button>
             </div>

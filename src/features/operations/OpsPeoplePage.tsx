@@ -2,6 +2,7 @@ import { FormEvent, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { EntityDrawer } from '../crm/EntityCrmPage';
 import { newOpsId, type OpsPerson } from '../../lib/operations';
+import { OpsDataGrid, OpsRowActions } from './OpsDataGrid';
 import { useOpsStore } from './useOpsStore';
 
 const emptyPerson = (): OpsPerson => ({
@@ -13,14 +14,13 @@ const emptyPerson = (): OpsPerson => ({
 
 export function OpsPeoplePage() {
   const ops = useOpsStore();
-  const [query, setQuery] = useState('');
   const [draft, setDraft] = useState<OpsPerson | null>(null);
+  const [roleFilter, setRoleFilter] = useState('');
 
   const rows = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return ops.people;
-    return ops.people.filter((p) => JSON.stringify(p).toLowerCase().includes(q));
-  }, [ops.people, query]);
+    if (!roleFilter) return ops.people;
+    return ops.people.filter((p) => p.role === roleFilter);
+  }, [ops.people, roleFilter]);
 
   return (
     <>
@@ -32,55 +32,41 @@ export function OpsPeoplePage() {
             <p className="muted">PMs and sales owners referenced on jobs and deals.</p>
           </div>
           <div className="data-page-actions">
-            <Link to="/ops" className="auth-link">
+            <Link to="/ops" className="ops-btn">
               Hub
             </Link>
-            <button type="button" className="primary" onClick={() => setDraft(emptyPerson())}>
+            <button type="button" className="ops-btn primary" onClick={() => setDraft(emptyPerson())}>
               Add person
             </button>
           </div>
         </header>
-        <div style={{ marginBottom: 12 }}>
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search people…"
-            style={{
-              width: 'min(360px, 100%)',
-              border: '1px solid var(--line)',
-              borderRadius: 10,
-              padding: '10px 12px',
-            }}
-          />
-        </div>
-        <div className="data-table-wrap">
-          {rows.length === 0 ? (
-            <div className="data-empty">No people yet.</div>
-          ) : (
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Role</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((person) => (
-                  <tr key={person.id}>
-                    <td>{person.name}</td>
-                    <td>{person.role}</td>
-                    <td>
-                      <button type="button" className="auth-link" onClick={() => setDraft({ ...person })}>
-                        Edit
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+
+        <OpsDataGrid
+          rows={rows}
+          getRowId={(p) => p.id}
+          searchPlaceholder="Search people…"
+          empty="No people match."
+          initialSort={{ key: 'name', dir: 'asc' }}
+          filters={[
+            {
+              id: 'role',
+              label: 'Role',
+              value: roleFilter,
+              onChange: setRoleFilter,
+              options: [
+                { value: '', label: 'All' },
+                { value: 'pm', label: 'pm' },
+                { value: 'sales', label: 'sales' },
+                { value: 'other', label: 'other' },
+              ],
+            },
+          ]}
+          columns={[
+            { key: 'name', label: 'Name', getValue: (p) => p.name, render: (p) => p.name },
+            { key: 'role', label: 'Role', getValue: (p) => p.role, render: (p) => p.role },
+          ]}
+          actions={(person) => <OpsRowActions onEdit={() => setDraft({ ...person })} />}
+        />
       </div>
 
       <EntityDrawer title="Person" open={!!draft} onClose={() => setDraft(null)} fullscreen={false}>
@@ -110,10 +96,10 @@ export function OpsPeoplePage() {
               </select>
             </label>
             <div className="data-form-actions">
-              <button type="button" onClick={() => setDraft(null)}>
+              <button type="button" className="ops-btn" onClick={() => setDraft(null)}>
                 Cancel
               </button>
-              <button type="submit" className="primary">
+              <button type="submit" className="ops-btn primary">
                 Save
               </button>
             </div>
