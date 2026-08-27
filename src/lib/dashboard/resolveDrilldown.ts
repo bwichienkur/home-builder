@@ -61,7 +61,7 @@ export function formatDrillCell(col: DrillColumn, value: string | number | undef
 /** Optional cell background for tone columns (e.g. duration slip). */
 export function drillCellClassName(col: DrillColumn, value: string | number | undefined): string | undefined {
   if (col.tone !== 'slip' || typeof value !== 'number' || !Number.isFinite(value) || value === 0) return undefined;
-  return value > 0 ? 'dash-slip-duration-pos' : 'dash-slip-duration-neg';
+  return value > 0 ? 'dash-cell-highlight dash-slip-duration-pos' : 'dash-cell-highlight dash-slip-duration-neg';
 }
 
 function compareIsoDates(a: string, b: string) {

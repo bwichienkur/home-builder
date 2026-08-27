@@ -455,7 +455,7 @@
   --dash-row-bg: #f4f4f5;
 }
 
-.dash-table tbody td {
+.dash-table tbody td:not(.dash-cell-highlight) {
   background-color: var(--dash-row-bg);
 }
 
@@ -816,8 +816,8 @@
   font-variant-numeric: tabular-nums;
 }
 
-.dash-drill-sticky,
-.dash-drill-sticky-lead {
+.dash-drill-sticky:not(.dash-cell-highlight),
+.dash-drill-sticky-lead:not(.dash-cell-highlight) {
   position: sticky;
   background-color: var(--dash-row-bg, #fff);
   z-index: 1;
@@ -852,12 +852,12 @@
   background: #f3f5f8;
 }
 
-.dash-slip-duration-pos {
-  background: #fdeaea;
+.dash-table tbody td.dash-slip-duration-pos {
+  background-color: #fdeaea;
 }
 
-.dash-slip-duration-neg {
-  background: #e8f5ec;
+.dash-table tbody td.dash-slip-duration-neg {
+  background-color: #e8f5ec;
 }
 
 .dash-drill-total-count {
