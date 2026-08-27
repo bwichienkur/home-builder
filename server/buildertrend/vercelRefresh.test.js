@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { handleVercelRefresh } from './vercelRefresh.js';
+import { handleVercelRefresh, readJsonBodySync } from './vercelRefresh.js';
+
+describe('readJsonBodySync', () => {
+  it('parses object, string, and buffer bodies without streaming', () => {
+    expect(readJsonBodySync({ body: { cookie: 'a=b' } })).toEqual({ cookie: 'a=b' });
+    expect(readJsonBodySync({ body: '{"cookie":"x=y"}' })).toEqual({ cookie: 'x=y' });
+    expect(readJsonBodySync({ body: Buffer.from('{"cookie":"p=q"}') })).toEqual({ cookie: 'p=q' });
+    expect(readJsonBodySync({ body: null })).toEqual({});
+  });
+});
 
 describe('handleVercelRefresh', () => {
   it('rejects non-POST', async () => {
