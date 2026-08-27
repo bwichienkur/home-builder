@@ -32,6 +32,7 @@ export { estimatedTimeMetricsForJob } from './estimatedTimeMetrics';
 export {
   fetchCachedBuildertrendPull,
   loadStoredLivePull,
+  mergeCorePullWithPrior,
   refreshBuildertrendPull,
   storeLivePull,
   clearStoredLivePull,

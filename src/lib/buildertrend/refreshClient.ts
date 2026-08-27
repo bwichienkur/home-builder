@@ -12,6 +12,8 @@ export type BuildertrendLivePull = {
   pulledAt: string;
   authMethod: string;
   reports: BuildertrendReports;
+  /** `core` = Vercel lite pull (no tasks/selections/baseline); `full` = complete. */
+  enrichment?: 'core' | 'full';
 };
 
 function apiBase() {
@@ -58,6 +60,39 @@ async function parseError(response: Response) {
   return { message: fallback, code: 'refresh_failed' };
 }
 
+/** Carry forward heavy enrichment from a prior pull when the new pull is core-only. */
+export function mergeCorePullWithPrior(
+  next: BuildertrendLivePull,
+  prior: BuildertrendLivePull | null,
+): BuildertrendLivePull {
+  if (next.enrichment !== 'core' || !prior?.reports) return next;
+  const reports: BuildertrendReports = { ...next.reports };
+  const priorTasks = prior.reports.tasks;
+  const nextTaskList = Array.isArray((reports.tasks as { tasks?: unknown[] } | undefined)?.tasks)
+    ? (reports.tasks as { tasks: unknown[] }).tasks
+    : [];
+  if ((!nextTaskList || nextTaskList.length === 0) && priorTasks) reports.tasks = priorTasks;
+  if (
+    (!reports.selectionsByJob || Object.keys(reports.selectionsByJob).length === 0) &&
+    prior.reports.selectionsByJob
+  ) {
+    reports.selectionsByJob = prior.reports.selectionsByJob;
+  }
+  if (
+    (!reports.baselineSlipByJob || Object.keys(reports.baselineSlipByJob).length === 0) &&
+    prior.reports.baselineSlipByJob
+  ) {
+    reports.baselineSlipByJob = prior.reports.baselineSlipByJob;
+  }
+  if (
+    (!reports.baselineItemsByJob || Object.keys(reports.baselineItemsByJob).length === 0) &&
+    prior.reports.baselineItemsByJob
+  ) {
+    reports.baselineItemsByJob = prior.reports.baselineItemsByJob;
+  }
+  return { ...next, reports };
+}
+
 export function loadStoredLivePull(): BuildertrendLivePull | null {
   if (typeof localStorage === 'undefined') return null;
   try {
@@ -89,7 +124,12 @@ export async function fetchCachedBuildertrendPull(): Promise<BuildertrendLivePul
     if (!response.ok) return null;
     const body = (await response.json()) as BuildertrendLivePull & { ok?: boolean };
     if (!body?.pulledAt || !body.reports) return null;
-    return { pulledAt: body.pulledAt, authMethod: body.authMethod, reports: body.reports };
+    return {
+      pulledAt: body.pulledAt,
+      authMethod: body.authMethod,
+      reports: body.reports,
+      enrichment: body.enrichment,
+    };
   } catch {
     return null;
   }
@@ -117,11 +157,26 @@ export async function refreshBuildertrendPull(cookie?: string): Promise<Buildert
     (err as { code?: string }).code = info.code;
     throw err;
   }
-  const body = (await response.json()) as BuildertrendLivePull & { ok?: boolean; error?: unknown };
+  const body = (await response.json()) as BuildertrendLivePull & {
+    ok?: boolean;
+    error?: unknown;
+    enrichment?: 'core' | 'full';
+    serverless?: boolean;
+  };
   if (!body?.reports) {
     throw new Error(formatUnknownError(body.error, 'Buildertrend refresh returned no reports.'));
   }
-  const pull = { pulledAt: body.pulledAt, authMethod: body.authMethod, reports: body.reports };
+  const prior = loadStoredLivePull();
+  const enrichment = body.enrichment ?? (body.serverless ? 'core' : 'full');
+  const pull = mergeCorePullWithPrior(
+    {
+      pulledAt: body.pulledAt,
+      authMethod: body.authMethod,
+      reports: body.reports,
+      enrichment,
+    },
+    prior,
+  );
   storeLivePull(pull);
   return pull;
 }
