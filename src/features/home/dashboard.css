@@ -408,6 +408,11 @@
   text-align: left;
 }
 
+.dash-drill-table th .dash-sort {
+  width: 100%;
+  text-align: inherit;
+}
+
 .dash-table-pm th:not(:first-child),
 .dash-table-pm td:not(:first-child) {
   text-align: right;

@@ -4,11 +4,13 @@ import {
   filterDrillRows,
   formatDrillCell,
   drillCellClassName,
+  sortDrillRows,
   sumDrillColumns,
   type DrillColumn,
   type DrillRow,
   type ResolvedDrilldown,
 } from '../../lib/dashboard/resolveDrilldown';
+import { sortIndicator, toggleSort, type SortState } from '../../lib/dashboard/sortGrid';
 import './dashboard.css';
 
 function isLeadColumn(col: DrillColumn, index: number) {
@@ -17,9 +19,14 @@ function isLeadColumn(col: DrillColumn, index: number) {
 
 export function DrilldownTable({ data }: { data: ResolvedDrilldown }) {
   const [query, setQuery] = useState('');
+  const [sort, setSort] = useState<SortState | null>(null);
   const filteredRows = useMemo(
     () => filterDrillRows(data.columns, data.rows, query),
     [data.columns, data.rows, query],
+  );
+  const displayRows = useMemo(
+    () => sortDrillRows(data.columns, filteredRows, sort),
+    [data.columns, filteredRows, sort],
   );
   const totals = sumDrillColumns(data.columns, filteredRows);
   const hasTotals = Object.keys(totals).length > 0;
@@ -68,13 +75,20 @@ export function DrilldownTable({ data }: { data: ResolvedDrilldown }) {
                       .filter(Boolean)
                       .join(' ')}
                   >
-                    {col.label}
+                    <button
+                      type="button"
+                      className="dash-sort"
+                      onClick={() => setSort((prev) => toggleSort(prev, col.key))}
+                    >
+                      {col.label}
+                      {sortIndicator(sort, col.key)}
+                    </button>
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {filteredRows.map((row: DrillRow, index) => (
+              {displayRows.map((row: DrillRow, index) => (
                 <tr key={index}>
                   <td className="is-num dash-drill-index dash-drill-sticky">{index + 1}</td>
                   {data.columns.map((col, colIndex) => (
