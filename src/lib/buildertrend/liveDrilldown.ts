@@ -8,7 +8,7 @@ import type { LiveDrilldown } from '../dashboard/drilldownTypes';
  * Daily logs = user×job rows from the rolling 4-week window.
  */
 export const LIVE_DRILLDOWN: LiveDrilldown = {
-  "generatedAt": "2026-08-25T12:26:20.522Z",
+  "generatedAt": "2026-08-27T12:31:41.055Z",
   "dealsByStage": {
     "pd-1": [
       {
@@ -212,16 +212,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "status": "open"
       },
       {
-        "id": 908,
-        "title": "Andrea Sandler Svetly",
-        "value": 1500000,
-        "stageName": "First Contact",
-        "probabilityPct": 10,
-        "weightedValue": 150000,
-        "expectedCloseDate": "",
-        "status": "open"
-      },
-      {
         "id": 910,
         "title": "Lee and Carrie Cherian",
         "value": 1200000,
@@ -248,6 +238,16 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "stageName": "First Contact",
         "probabilityPct": 10,
         "weightedValue": 120000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 931,
+        "title": "Chris Mitchell and Cheryl",
+        "value": 0,
+        "stageName": "First Contact",
+        "probabilityPct": 10,
+        "weightedValue": 0,
         "expectedCloseDate": "",
         "status": "open"
       }
@@ -8197,24 +8197,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
     ],
     "42673665": [
       {
-        "taskId": 50037673,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Insulation Install",
-        "endDate": "2026-08-18",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 50037674,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Insulation Inspection",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
         "taskId": 50037692,
         "jobId": 42673665,
         "jobName": "Veranda Bay Model 2",
@@ -8242,24 +8224,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "assignedTo": "James Manford"
       },
       {
-        "taskId": 50037709,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Measure Mirrors, Shelving, Glass",
-        "endDate": "2026-08-10",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 50037711,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Template Countertops",
-        "endDate": "2026-08-12",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
         "taskId": 50037712,
         "jobId": 42673665,
         "jobName": "Veranda Bay Model 2",
@@ -8278,47 +8242,11 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "assignedTo": "James Manford"
       },
       {
-        "taskId": 50037714,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Plumbing Trim-Out",
-        "endDate": "2026-07-09",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 50037717,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Electrical Trim-Out",
-        "endDate": "2026-07-09",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 50037718,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Low Voltage Trim-Out",
-        "endDate": "2026-07-09",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
         "taskId": 50037719,
         "jobId": 42673665,
         "jobName": "Veranda Bay Model 2",
         "title": "Gas Trim-Out",
         "endDate": "2026-07-09",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 50037722,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Paint Doors & Trim",
-        "endDate": "2026-04-10",
         "status": 0,
         "assignedTo": "James Manford"
       },
@@ -8332,55 +8260,10 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "assignedTo": "James Manford"
       },
       {
-        "taskId": 50037730,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Install Gutters",
-        "endDate": "2026-04-13",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 50037732,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Install Foam Banding/Corbels",
-        "endDate": "2026-04-13",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 50037737,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Install Summer Kitchen Granite",
-        "endDate": "2026-06-15",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
         "taskId": 50037738,
         "jobId": 42673665,
         "jobName": "Veranda Bay Model 2",
         "title": "Install Summer Kitchen Appliances",
-        "endDate": "2026-06-15",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 50037739,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Plumbing Trim Summer Kitchen",
-        "endDate": "2026-06-15",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 50037740,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Electrical Trim Summer Kitchen",
         "endDate": "2026-06-15",
         "status": 0,
         "assignedTo": "James Manford"
@@ -8408,15 +8291,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 42673665,
         "jobName": "Veranda Bay Model 2",
         "title": "Drywall Bump",
-        "endDate": "2026-08-14",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 50038257,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Blown Insulation Install",
         "endDate": "2026-08-14",
         "status": 0,
         "assignedTo": "James Manford"
@@ -8476,69 +8350,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "assignedTo": "James Manford"
       },
       {
-        "taskId": 50038278,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Final Exterior Grade",
-        "endDate": "2026-08-11",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 50038285,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Final Survey",
-        "endDate": "2026-08-11",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 50038286,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Final Termite Treatment",
-        "endDate": "2026-08-11",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 50038288,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Irrigation Install",
-        "endDate": "2026-08-11",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 50038289,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Shrub and Tree Install",
-        "endDate": "2026-08-11",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 50038291,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Sod Install",
-        "endDate": "2026-08-11",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 50038293,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Landscape Final Inspection",
-        "endDate": "2026-08-11",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
         "taskId": 50038295,
         "jobId": 42673665,
         "jobName": "Veranda Bay Model 2",
@@ -8562,15 +8373,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobName": "Veranda Bay Model 2",
         "title": "Install Screens and Window Trim",
         "endDate": "2026-08-18",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 50038304,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Deliver & Install Hot Water Heater",
-        "endDate": "2026-07-09",
         "status": 0,
         "assignedTo": "James Manford"
       },
@@ -13411,16 +13213,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "completed": false
       },
       {
-        "title": "Generator",
-        "endDateSlip": 166,
-        "durationSlip": 0,
-        "expectedStartDate": "2025-12-23",
-        "actualStartDate": "2026-08-18",
-        "expectedEndDate": "2026-01-06",
-        "actualEndDate": "2026-08-31",
-        "completed": false
-      },
-      {
         "title": "Garage Door",
         "endDateSlip": 198,
         "durationSlip": 0,
@@ -13478,6 +13270,16 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "actualStartDate": "2026-09-08",
         "expectedEndDate": "2025-11-25",
         "actualEndDate": "2026-09-14",
+        "completed": false
+      },
+      {
+        "title": "Generator",
+        "endDateSlip": 183,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-12-23",
+        "actualStartDate": "2026-09-11",
+        "expectedEndDate": "2026-01-06",
+        "actualEndDate": "2026-09-24",
         "completed": false
       },
       {
@@ -15222,7 +15024,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "actualStartDate": "2026-07-09",
         "expectedEndDate": "2026-05-06",
         "actualEndDate": "2026-08-26",
-        "completed": false
+        "completed": true
       },
       {
         "title": "Landscaping",
@@ -15978,7 +15780,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "actualStartDate": "2026-08-18",
         "expectedEndDate": "2026-08-26",
         "actualEndDate": "2026-08-26",
-        "completed": false
+        "completed": true
       },
       {
         "title": "Selection Phase 3 Due",
