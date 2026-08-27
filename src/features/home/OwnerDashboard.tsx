@@ -339,7 +339,11 @@ export function OwnerDashboard() {
                   <td>{formatPct(row.pctComplete, 0)}</td>
                   <td>{formatCloseDate(row.estCloseDate)}</td>
                   <td className="is-notes">{row.notes || '—'}</td>
-                  <td className={row.totalSlip > 0 ? 'is-alert' : 'is-ok'}>{formatDays(row.totalSlip)}</td>
+                  <td className={row.totalSlip > 0 ? 'is-alert' : 'is-ok'}>
+                    <DrillLink to={href({ type: 'job-slip', jobId: row.id, jobName: row.name })}>
+                      {formatDays(row.totalSlip)}
+                    </DrillLink>
+                  </td>
                   <td>
                     <DrillLink to={href({ type: 'job-logs', jobId: row.id, jobName: row.name })}>
                       {formatRecentLogs(row.dailyLogsRecentDone, row.dailyLogsRecentExpected)}

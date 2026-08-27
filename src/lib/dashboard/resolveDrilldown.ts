@@ -229,6 +229,34 @@ export function resolveDrilldown(
     };
   }
 
+  if (kind.type === 'job-slip') {
+    const entries = [...(detail?.baselineSlipByJobId?.[numericJobId(kind.jobId)] ?? [])].sort(
+      (a, b) => Math.abs(b.endDateSlip) - Math.abs(a.endDateSlip) || a.title.localeCompare(b.title),
+    );
+    const positive = entries.filter((r) => r.endDateSlip > 0).reduce((s, r) => s + r.endDateSlip, 0);
+    const negative = entries.filter((r) => r.endDateSlip < 0).reduce((s, r) => s + r.endDateSlip, 0);
+    return {
+      title: `Schedule slip · ${kind.jobName}`,
+      subtitle: `${entries.length} OCH MASTER 2026 schedule items · +${positive} / ${negative} end-date workdays (ad-hoc items excluded)`,
+      columns: [
+        { key: 'title', label: 'Schedule item' },
+        { key: 'endDateSlip', label: 'End date slip', align: 'right', sum: 'number' },
+        { key: 'durationSlip', label: 'Duration slip', align: 'right', sum: 'number' },
+        { key: 'expectedEndDate', label: 'Expected end' },
+        { key: 'actualEndDate', label: 'Actual end' },
+        { key: 'completed', label: 'Complete' },
+      ],
+      rows: entries.map((row) => ({
+        title: row.title,
+        endDateSlip: row.endDateSlip,
+        durationSlip: row.durationSlip,
+        expectedEndDate: row.expectedEndDate || '—',
+        actualEndDate: row.actualEndDate || '—',
+        completed: row.completed ? 'Yes' : 'No',
+      })),
+    };
+  }
+
   if (kind.type === 'wip-breakdown') {
     const list = [...projects].sort((a, b) => b.wip - a.wip || a.name.localeCompare(b.name));
     const totalWip = list.reduce((s, p) => s + p.wip, 0);

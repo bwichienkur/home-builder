@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+  compactBaselineSlipRow,
   contractPriceFromJobInfo,
+  filterBaselineRowsToTemplate,
   INCOMPLETE_TASKS_FILTERS,
   isSiteWorkScheduleTitle,
   mergeTasksListResponses,
+  normalizeScheduleTitle,
   pickCurrentScheduleItem,
   scheduleMilestonesFromGantt,
   selectionsGridBody,
@@ -194,6 +197,25 @@ describe('slipBucketsFromBaselineItems', () => {
       { title: 'Closing', endDateSlip: 130 },
     ]);
     expect(slip).toEqual({ permit: 28, selections: 30, construction: 30 });
+  });
+});
+
+describe('filterBaselineRowsToTemplate', () => {
+  it('keeps OCH MASTER titles and drops ad-hoc items, deduping by title', () => {
+    const allow = new Set(['framing', 'site work', 'closing'].map(normalizeScheduleTitle));
+    const filtered = filterBaselineRowsToTemplate(
+      [
+        { title: 'Framing', endDateSlip: 10, durationSlip: 2 },
+        { title: 'Framing', endDateSlip: 25, durationSlip: 5 },
+        { title: 'Site Work', endDateSlip: 0, durationSlip: 0 },
+        { title: 'HVAC Rough', endDateSlip: 40, durationSlip: 3 },
+        { title: 'Closing', endDateSlip: -2, durationSlip: 0 },
+      ],
+      allow,
+    );
+    expect(filtered.map((row) => row.title).sort()).toEqual(['Closing', 'Framing', 'Site Work']);
+    expect(filtered.find((row) => row.title === 'Framing')?.endDateSlip).toBe(25);
+    expect(compactBaselineSlipRow(filtered.find((row) => row.title === 'Framing')).durationSlip).toBe(5);
   });
 });
 

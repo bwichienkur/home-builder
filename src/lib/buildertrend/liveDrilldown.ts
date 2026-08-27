@@ -10569,5 +10569,7145 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "lastLogDate": "2026-08-21"
       }
     ]
+  },
+  "baselineSlipByJobId": {
+    "35764730": [
+      {
+        "title": "Sale/Contract Deposit",
+        "endDateSlip": 0,
+        "durationSlip": 1,
+        "expectedStartDate": "2025-10-09",
+        "actualStartDate": "2025-10-09",
+        "expectedEndDate": "2025-10-09",
+        "actualEndDate": "2025-10-09",
+        "completed": true
+      },
+      {
+        "title": "Draft Plans",
+        "endDateSlip": 0,
+        "durationSlip": 30,
+        "expectedStartDate": "2025-10-10",
+        "actualStartDate": "2025-10-10",
+        "expectedEndDate": "2025-11-20",
+        "actualEndDate": "2025-11-20",
+        "completed": true
+      },
+      {
+        "title": "Bid Period",
+        "endDateSlip": 0,
+        "durationSlip": 305,
+        "expectedStartDate": "2025-10-21",
+        "actualStartDate": "2025-10-21",
+        "expectedEndDate": "2026-12-31",
+        "actualEndDate": "2026-12-31",
+        "completed": false
+      },
+      {
+        "title": "Permitting",
+        "endDateSlip": 0,
+        "durationSlip": 278,
+        "expectedStartDate": "2025-11-28",
+        "actualStartDate": "2025-11-28",
+        "expectedEndDate": "2027-01-04",
+        "actualEndDate": "2027-01-04",
+        "completed": false
+      },
+      {
+        "title": "Selection Phase 1 Due",
+        "endDateSlip": 0,
+        "durationSlip": 7,
+        "expectedStartDate": "2026-12-30",
+        "actualStartDate": "2026-12-30",
+        "expectedEndDate": "2027-01-08",
+        "actualEndDate": "2027-01-08",
+        "completed": false
+      },
+      {
+        "title": "Selection Phase 2 Due",
+        "endDateSlip": 0,
+        "durationSlip": 7,
+        "expectedStartDate": "2027-01-07",
+        "actualStartDate": "2027-01-07",
+        "expectedEndDate": "2027-01-15",
+        "actualEndDate": "2027-01-15",
+        "completed": false
+      },
+      {
+        "title": "Selection Phase 3 Due",
+        "endDateSlip": 0,
+        "durationSlip": 7,
+        "expectedStartDate": "2027-01-14",
+        "actualStartDate": "2027-01-14",
+        "expectedEndDate": "2027-01-22",
+        "actualEndDate": "2027-01-22",
+        "completed": false
+      },
+      {
+        "title": "Site Work",
+        "endDateSlip": 0,
+        "durationSlip": 3,
+        "expectedStartDate": "2027-01-19",
+        "actualStartDate": "2027-01-19",
+        "expectedEndDate": "2027-01-21",
+        "actualEndDate": "2027-01-21",
+        "completed": false
+      },
+      {
+        "title": "Foundation",
+        "endDateSlip": 0,
+        "durationSlip": 4,
+        "expectedStartDate": "2027-01-22",
+        "actualStartDate": "2027-01-22",
+        "expectedEndDate": "2027-01-27",
+        "actualEndDate": "2027-01-27",
+        "completed": false
+      },
+      {
+        "title": "Block Walls",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2027-01-28",
+        "actualStartDate": "2027-01-28",
+        "expectedEndDate": "2027-02-03",
+        "actualEndDate": "2027-02-03",
+        "completed": false
+      },
+      {
+        "title": "Framing",
+        "endDateSlip": 0,
+        "durationSlip": 12,
+        "expectedStartDate": "2027-02-04",
+        "actualStartDate": "2027-02-04",
+        "expectedEndDate": "2027-02-19",
+        "actualEndDate": "2027-02-19",
+        "completed": false
+      },
+      {
+        "title": "Doors & Windows",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2027-02-22",
+        "actualStartDate": "2027-02-22",
+        "expectedEndDate": "2027-02-26",
+        "actualEndDate": "2027-02-26",
+        "completed": false
+      },
+      {
+        "title": "MEP Rough-Ins",
+        "endDateSlip": 0,
+        "durationSlip": 13,
+        "expectedStartDate": "2027-02-22",
+        "actualStartDate": "2027-02-22",
+        "expectedEndDate": "2027-03-10",
+        "actualEndDate": "2027-03-10",
+        "completed": false
+      },
+      {
+        "title": "Pool",
+        "endDateSlip": 0,
+        "durationSlip": 67,
+        "expectedStartDate": "2027-03-04",
+        "actualStartDate": "2027-03-04",
+        "expectedEndDate": "2027-06-04",
+        "actualEndDate": "2027-06-04",
+        "completed": false
+      },
+      {
+        "title": "FMEP Inspection",
+        "endDateSlip": 0,
+        "durationSlip": 2,
+        "expectedStartDate": "2027-03-11",
+        "actualStartDate": "2027-03-11",
+        "expectedEndDate": "2027-03-12",
+        "actualEndDate": "2027-03-12",
+        "completed": false
+      },
+      {
+        "title": "Drywall & Insulation",
+        "endDateSlip": 0,
+        "durationSlip": 10,
+        "expectedStartDate": "2027-03-15",
+        "actualStartDate": "2027-03-15",
+        "expectedEndDate": "2027-03-26",
+        "actualEndDate": "2027-03-26",
+        "completed": false
+      },
+      {
+        "title": "Roofing",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2027-03-22",
+        "actualStartDate": "2027-03-22",
+        "expectedEndDate": "2027-03-26",
+        "actualEndDate": "2027-03-26",
+        "completed": false
+      },
+      {
+        "title": "Stucco & Siding",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2027-03-22",
+        "actualStartDate": "2027-03-22",
+        "expectedEndDate": "2027-03-26",
+        "actualEndDate": "2027-03-26",
+        "completed": false
+      },
+      {
+        "title": "Exterior Paint",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2027-03-29",
+        "actualStartDate": "2027-03-29",
+        "expectedEndDate": "2027-04-02",
+        "actualEndDate": "2027-04-02",
+        "completed": false
+      },
+      {
+        "title": "Interior Paint",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2027-03-29",
+        "actualStartDate": "2027-03-29",
+        "expectedEndDate": "2027-04-02",
+        "actualEndDate": "2027-04-02",
+        "completed": false
+      },
+      {
+        "title": "Tile & Flooring",
+        "endDateSlip": 0,
+        "durationSlip": 8,
+        "expectedStartDate": "2027-04-05",
+        "actualStartDate": "2027-04-05",
+        "expectedEndDate": "2027-04-14",
+        "actualEndDate": "2027-04-14",
+        "completed": false
+      },
+      {
+        "title": "Garage Door",
+        "endDateSlip": 0,
+        "durationSlip": 2,
+        "expectedStartDate": "2027-04-08",
+        "actualStartDate": "2027-04-08",
+        "expectedEndDate": "2027-04-09",
+        "actualEndDate": "2027-04-09",
+        "completed": false
+      },
+      {
+        "title": "Driveway",
+        "endDateSlip": 0,
+        "durationSlip": 4,
+        "expectedStartDate": "2027-04-16",
+        "actualStartDate": "2027-04-16",
+        "expectedEndDate": "2027-04-21",
+        "actualEndDate": "2027-04-21",
+        "completed": false
+      },
+      {
+        "title": "Interior Doors/Trim",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2027-04-16",
+        "actualStartDate": "2027-04-16",
+        "expectedEndDate": "2027-04-22",
+        "actualEndDate": "2027-04-22",
+        "completed": false
+      },
+      {
+        "title": "MEP Trim-Outs",
+        "endDateSlip": 0,
+        "durationSlip": 7,
+        "expectedStartDate": "2027-04-19",
+        "actualStartDate": "2027-04-19",
+        "expectedEndDate": "2027-04-27",
+        "actualEndDate": "2027-04-27",
+        "completed": false
+      },
+      {
+        "title": "Appliances",
+        "endDateSlip": 0,
+        "durationSlip": 4,
+        "expectedStartDate": "2027-04-30",
+        "actualStartDate": "2027-04-30",
+        "expectedEndDate": "2027-05-05",
+        "actualEndDate": "2027-05-05",
+        "completed": false
+      },
+      {
+        "title": "Summer Kitchen",
+        "endDateSlip": 0,
+        "durationSlip": 12,
+        "expectedStartDate": "2027-05-06",
+        "actualStartDate": "2027-05-06",
+        "expectedEndDate": "2027-05-21",
+        "actualEndDate": "2027-05-21",
+        "completed": false
+      },
+      {
+        "title": "Generator",
+        "endDateSlip": 0,
+        "durationSlip": 10,
+        "expectedStartDate": "2027-05-10",
+        "actualStartDate": "2027-05-10",
+        "expectedEndDate": "2027-05-21",
+        "actualEndDate": "2027-05-21",
+        "completed": false
+      },
+      {
+        "title": "Interior Specialties",
+        "endDateSlip": 0,
+        "durationSlip": 10,
+        "expectedStartDate": "2027-05-10",
+        "actualStartDate": "2027-05-10",
+        "expectedEndDate": "2027-05-21",
+        "actualEndDate": "2027-05-21",
+        "completed": false
+      },
+      {
+        "title": "Final Trim Out",
+        "endDateSlip": 0,
+        "durationSlip": 3,
+        "expectedStartDate": "2027-05-12",
+        "actualStartDate": "2027-05-12",
+        "expectedEndDate": "2027-05-14",
+        "actualEndDate": "2027-05-14",
+        "completed": false
+      },
+      {
+        "title": "Landscaping",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2027-05-17",
+        "actualStartDate": "2027-05-17",
+        "expectedEndDate": "2027-05-21",
+        "actualEndDate": "2027-05-21",
+        "completed": false
+      },
+      {
+        "title": "Final Inspections",
+        "endDateSlip": 0,
+        "durationSlip": 6,
+        "expectedStartDate": "2027-05-21",
+        "actualStartDate": "2027-05-21",
+        "expectedEndDate": "2027-05-28",
+        "actualEndDate": "2027-05-28",
+        "completed": false
+      },
+      {
+        "title": "Closing",
+        "endDateSlip": 0,
+        "durationSlip": 3,
+        "expectedStartDate": "2027-06-02",
+        "actualStartDate": "2027-06-02",
+        "expectedEndDate": "2027-06-04",
+        "actualEndDate": "2027-06-04",
+        "completed": false
+      }
+    ],
+    "35918575": [
+      {
+        "title": "Sale/Contract Deposit",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-04-09",
+        "actualStartDate": "2025-04-09",
+        "expectedEndDate": "2025-04-09",
+        "actualEndDate": "2025-04-09",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 1 Due",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-04-10",
+        "actualStartDate": "2025-04-10",
+        "expectedEndDate": "2026-01-23",
+        "actualEndDate": "2026-01-23",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 2 Due",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-04-21",
+        "actualStartDate": "2025-04-21",
+        "expectedEndDate": "2026-01-23",
+        "actualEndDate": "2026-01-23",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 3 Due",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-04-30",
+        "actualStartDate": "2025-04-30",
+        "expectedEndDate": "2026-02-13",
+        "actualEndDate": "2026-02-13",
+        "completed": true
+      },
+      {
+        "title": "Permitting",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-05-23",
+        "actualStartDate": "2025-05-23",
+        "expectedEndDate": "2025-06-19",
+        "actualEndDate": "2025-06-19",
+        "completed": true
+      },
+      {
+        "title": "Site Work",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-06-04",
+        "actualStartDate": "2025-06-04",
+        "expectedEndDate": "2025-06-17",
+        "actualEndDate": "2025-06-17",
+        "completed": true
+      },
+      {
+        "title": "Foundation",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-06-18",
+        "actualStartDate": "2025-06-18",
+        "expectedEndDate": "2025-10-16",
+        "actualEndDate": "2025-10-16",
+        "completed": true
+      },
+      {
+        "title": "Pool",
+        "endDateSlip": 43,
+        "durationSlip": 43,
+        "expectedStartDate": "2025-08-28",
+        "actualStartDate": "2025-08-28",
+        "expectedEndDate": "2026-04-17",
+        "actualEndDate": "2026-06-18",
+        "completed": true
+      },
+      {
+        "title": "Block Walls",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-10-17",
+        "actualStartDate": "2025-10-17",
+        "expectedEndDate": "2025-10-23",
+        "actualEndDate": "2025-10-23",
+        "completed": true
+      },
+      {
+        "title": "Framing",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-10-24",
+        "actualStartDate": "2025-10-24",
+        "expectedEndDate": "2025-12-08",
+        "actualEndDate": "2025-12-08",
+        "completed": true
+      },
+      {
+        "title": "Doors & Windows",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-12-09",
+        "actualStartDate": "2025-12-09",
+        "expectedEndDate": "2026-02-12",
+        "actualEndDate": "2026-02-12",
+        "completed": true
+      },
+      {
+        "title": "MEP Rough-Ins",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-12-09",
+        "actualStartDate": "2025-12-09",
+        "expectedEndDate": "2026-01-30",
+        "actualEndDate": "2026-01-30",
+        "completed": true
+      },
+      {
+        "title": "FMEP Inspection",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-02-03",
+        "actualStartDate": "2026-02-03",
+        "expectedEndDate": "2026-02-04",
+        "actualEndDate": "2026-02-04",
+        "completed": true
+      },
+      {
+        "title": "Drywall & Insulation",
+        "endDateSlip": 5,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-02-24",
+        "actualStartDate": "2026-02-24",
+        "expectedEndDate": "2026-03-11",
+        "actualEndDate": "2026-03-18",
+        "completed": true
+      },
+      {
+        "title": "Roofing",
+        "endDateSlip": 15,
+        "durationSlip": 15,
+        "expectedStartDate": "2026-03-02",
+        "actualStartDate": "2026-03-02",
+        "expectedEndDate": "2026-03-06",
+        "actualEndDate": "2026-03-27",
+        "completed": true
+      },
+      {
+        "title": "Stucco & Siding",
+        "endDateSlip": 8,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-02-23",
+        "actualStartDate": "2026-03-05",
+        "expectedEndDate": "2026-03-05",
+        "actualEndDate": "2026-03-17",
+        "completed": true
+      },
+      {
+        "title": "Tile & Flooring",
+        "endDateSlip": 23,
+        "durationSlip": 28,
+        "expectedStartDate": "2026-03-19",
+        "actualStartDate": "2026-03-12",
+        "expectedEndDate": "2026-03-30",
+        "actualEndDate": "2026-05-01",
+        "completed": true
+      },
+      {
+        "title": "Exterior Paint",
+        "endDateSlip": 1,
+        "durationSlip": 2,
+        "expectedStartDate": "2026-03-20",
+        "actualStartDate": "2026-03-19",
+        "expectedEndDate": "2026-03-26",
+        "actualEndDate": "2026-03-27",
+        "completed": true
+      },
+      {
+        "title": "Interior Paint",
+        "endDateSlip": 2,
+        "durationSlip": -3,
+        "expectedStartDate": "2026-03-12",
+        "actualStartDate": "2026-03-19",
+        "expectedEndDate": "2026-03-18",
+        "actualEndDate": "2026-03-20",
+        "completed": true
+      },
+      {
+        "title": "Driveway",
+        "endDateSlip": 19,
+        "durationSlip": 24,
+        "expectedStartDate": "2026-04-10",
+        "actualStartDate": "2026-04-02",
+        "expectedEndDate": "2026-04-15",
+        "actualEndDate": "2026-05-12",
+        "completed": true
+      },
+      {
+        "title": "Interior Doors/Trim",
+        "endDateSlip": 11,
+        "durationSlip": 1,
+        "expectedStartDate": "2026-04-01",
+        "actualStartDate": "2026-04-16",
+        "expectedEndDate": "2026-04-08",
+        "actualEndDate": "2026-04-23",
+        "completed": true
+      },
+      {
+        "title": "Interior Specialties",
+        "endDateSlip": 2,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-04-24",
+        "actualStartDate": "2026-04-28",
+        "expectedEndDate": "2026-05-07",
+        "actualEndDate": "2026-05-11",
+        "completed": true
+      },
+      {
+        "title": "MEP Trim-Outs",
+        "endDateSlip": 26,
+        "durationSlip": 9,
+        "expectedStartDate": "2026-04-15",
+        "actualStartDate": "2026-05-08",
+        "expectedEndDate": "2026-04-23",
+        "actualEndDate": "2026-06-01",
+        "completed": true
+      },
+      {
+        "title": "Garage Door",
+        "endDateSlip": 31,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-04-01",
+        "actualStartDate": "2026-05-15",
+        "expectedEndDate": "2026-04-02",
+        "actualEndDate": "2026-05-18",
+        "completed": true
+      },
+      {
+        "title": "Final Trim Out",
+        "endDateSlip": 53,
+        "durationSlip": 44,
+        "expectedStartDate": "2026-05-13",
+        "actualStartDate": "2026-05-27",
+        "expectedEndDate": "2026-05-15",
+        "actualEndDate": "2026-07-31",
+        "completed": true
+      },
+      {
+        "title": "Final Inspections",
+        "endDateSlip": 42,
+        "durationSlip": 12,
+        "expectedStartDate": "2026-05-18",
+        "actualStartDate": "2026-06-30",
+        "expectedEndDate": "2026-05-26",
+        "actualEndDate": "2026-07-24",
+        "completed": true
+      },
+      {
+        "title": "Landscaping",
+        "endDateSlip": 62,
+        "durationSlip": 3,
+        "expectedStartDate": "2026-05-07",
+        "actualStartDate": "2026-07-31",
+        "expectedEndDate": "2026-05-13",
+        "actualEndDate": "2026-08-11",
+        "completed": true
+      },
+      {
+        "title": "Closing",
+        "endDateSlip": 72,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-05-27",
+        "actualStartDate": "2026-09-08",
+        "expectedEndDate": "2026-05-29",
+        "actualEndDate": "2026-09-10",
+        "completed": false
+      }
+    ],
+    "38215830": [
+      {
+        "title": "Sale/Contract Deposit",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-02-17",
+        "actualStartDate": "2025-02-17",
+        "expectedEndDate": "2025-02-17",
+        "actualEndDate": "2025-02-17",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 1 Due",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-02-18",
+        "actualStartDate": "2025-02-18",
+        "expectedEndDate": "2026-01-08",
+        "actualEndDate": "2026-01-08",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 2 Due",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-02-27",
+        "actualStartDate": "2025-02-27",
+        "expectedEndDate": "2026-03-03",
+        "actualEndDate": "2026-03-03",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 3 Due",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-03-10",
+        "actualStartDate": "2025-03-10",
+        "expectedEndDate": "2026-01-06",
+        "actualEndDate": "2026-01-06",
+        "completed": true
+      },
+      {
+        "title": "Permitting",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-04-11",
+        "actualStartDate": "2025-04-11",
+        "expectedEndDate": "2025-06-24",
+        "actualEndDate": "2025-06-24",
+        "completed": true
+      },
+      {
+        "title": "Site Work",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-07-15",
+        "actualStartDate": "2025-07-15",
+        "expectedEndDate": "2025-07-31",
+        "actualEndDate": "2025-07-31",
+        "completed": true
+      },
+      {
+        "title": "Foundation",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-08-01",
+        "actualStartDate": "2025-08-01",
+        "expectedEndDate": "2025-08-26",
+        "actualEndDate": "2025-08-26",
+        "completed": true
+      },
+      {
+        "title": "Block Walls",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-08-28",
+        "actualStartDate": "2025-08-28",
+        "expectedEndDate": "2025-09-30",
+        "actualEndDate": "2025-09-30",
+        "completed": true
+      },
+      {
+        "title": "Framing",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-10-07",
+        "actualStartDate": "2025-10-07",
+        "expectedEndDate": "2025-10-22",
+        "actualEndDate": "2025-10-22",
+        "completed": true
+      },
+      {
+        "title": "Doors & Windows",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-10-20",
+        "actualStartDate": "2025-10-20",
+        "expectedEndDate": "2025-10-24",
+        "actualEndDate": "2025-10-24",
+        "completed": true
+      },
+      {
+        "title": "MEP Rough-Ins",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-10-24",
+        "actualStartDate": "2025-10-24",
+        "expectedEndDate": "2026-01-21",
+        "actualEndDate": "2026-01-21",
+        "completed": true
+      },
+      {
+        "title": "Pool",
+        "endDateSlip": 27,
+        "durationSlip": 27,
+        "expectedStartDate": "2025-12-19",
+        "actualStartDate": "2025-12-19",
+        "expectedEndDate": "2026-03-24",
+        "actualEndDate": "2026-05-01",
+        "completed": true
+      },
+      {
+        "title": "Stucco & Siding",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-01-09",
+        "actualStartDate": "2026-01-09",
+        "expectedEndDate": "2026-02-20",
+        "actualEndDate": "2026-02-20",
+        "completed": true
+      },
+      {
+        "title": "FMEP Inspection",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-02-04",
+        "actualStartDate": "2026-02-04",
+        "expectedEndDate": "2026-02-05",
+        "actualEndDate": "2026-02-05",
+        "completed": true
+      },
+      {
+        "title": "Drywall & Insulation",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-02-16",
+        "actualStartDate": "2026-02-16",
+        "expectedEndDate": "2026-02-27",
+        "actualEndDate": "2026-02-27",
+        "completed": true
+      },
+      {
+        "title": "Exterior Paint",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-02-20",
+        "actualStartDate": "2026-02-20",
+        "expectedEndDate": "2026-03-10",
+        "actualEndDate": "2026-03-10",
+        "completed": true
+      },
+      {
+        "title": "Interior Paint",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-03-02",
+        "actualStartDate": "2026-03-02",
+        "expectedEndDate": "2026-03-03",
+        "actualEndDate": "2026-03-03",
+        "completed": true
+      },
+      {
+        "title": "Roofing",
+        "endDateSlip": 111,
+        "durationSlip": 24,
+        "expectedStartDate": "2025-11-20",
+        "actualStartDate": "2026-03-24",
+        "expectedEndDate": "2025-11-26",
+        "actualEndDate": "2026-05-04",
+        "completed": true
+      },
+      {
+        "title": "Driveway",
+        "endDateSlip": 13,
+        "durationSlip": 11,
+        "expectedStartDate": "2026-04-23",
+        "actualStartDate": "2026-04-27",
+        "expectedEndDate": "2026-04-28",
+        "actualEndDate": "2026-05-15",
+        "completed": true
+      },
+      {
+        "title": "MEP Trim-Outs",
+        "endDateSlip": 40,
+        "durationSlip": 10,
+        "expectedStartDate": "2026-04-22",
+        "actualStartDate": "2026-06-04",
+        "expectedEndDate": "2026-04-30",
+        "actualEndDate": "2026-06-26",
+        "completed": true
+      },
+      {
+        "title": "Interior Doors/Trim",
+        "endDateSlip": 82,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-03-20",
+        "actualStartDate": "2026-07-17",
+        "expectedEndDate": "2026-03-26",
+        "actualEndDate": "2026-07-23",
+        "completed": true
+      },
+      {
+        "title": "Final Trim Out",
+        "endDateSlip": 83,
+        "durationSlip": 17,
+        "expectedStartDate": "2026-05-11",
+        "actualStartDate": "2026-08-13",
+        "expectedEndDate": "2026-05-13",
+        "actualEndDate": "2026-09-10",
+        "completed": false
+      },
+      {
+        "title": "Interior Specialties",
+        "endDateSlip": 102,
+        "durationSlip": 6,
+        "expectedStartDate": "2026-03-27",
+        "actualStartDate": "2026-08-13",
+        "expectedEndDate": "2026-04-10",
+        "actualEndDate": "2026-09-03",
+        "completed": false
+      },
+      {
+        "title": "Landscaping",
+        "endDateSlip": 60,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-05-21",
+        "actualStartDate": "2026-08-17",
+        "expectedEndDate": "2026-05-28",
+        "actualEndDate": "2026-08-21",
+        "completed": true
+      },
+      {
+        "title": "Final Inspections",
+        "endDateSlip": 49,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-06-15",
+        "actualStartDate": "2026-08-24",
+        "expectedEndDate": "2026-06-22",
+        "actualEndDate": "2026-08-31",
+        "completed": false
+      },
+      {
+        "title": "Closing",
+        "endDateSlip": 60,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-06-26",
+        "actualStartDate": "2026-09-22",
+        "expectedEndDate": "2026-06-30",
+        "actualEndDate": "2026-09-24",
+        "completed": false
+      }
+    ],
+    "38319441": [
+      {
+        "title": "Sale/Contract Deposit",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-09-18",
+        "actualStartDate": "2025-09-18",
+        "expectedEndDate": "2025-09-18",
+        "actualEndDate": "2025-09-18",
+        "completed": true
+      },
+      {
+        "title": "Draft Plans",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-09-19",
+        "actualStartDate": "2025-09-19",
+        "expectedEndDate": "2025-10-30",
+        "actualEndDate": "2025-10-30",
+        "completed": true
+      },
+      {
+        "title": "Bid Period",
+        "endDateSlip": 186,
+        "durationSlip": 186,
+        "expectedStartDate": "2025-09-30",
+        "actualStartDate": "2025-09-30",
+        "expectedEndDate": "2025-12-18",
+        "actualEndDate": "2026-09-11",
+        "completed": false
+      },
+      {
+        "title": "Permitting",
+        "endDateSlip": 159,
+        "durationSlip": 159,
+        "expectedStartDate": "2025-11-07",
+        "actualStartDate": "2025-11-07",
+        "expectedEndDate": "2025-12-04",
+        "actualEndDate": "2026-07-21",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 1 Due",
+        "endDateSlip": 201,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-10-31",
+        "actualStartDate": "2026-08-14",
+        "expectedEndDate": "2025-11-10",
+        "actualEndDate": "2026-08-24",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 2 Due",
+        "endDateSlip": 200,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-11-11",
+        "actualStartDate": "2026-08-24",
+        "expectedEndDate": "2025-11-19",
+        "actualEndDate": "2026-09-01",
+        "completed": false
+      },
+      {
+        "title": "Site Work",
+        "endDateSlip": 176,
+        "durationSlip": 4,
+        "expectedStartDate": "2025-12-19",
+        "actualStartDate": "2026-08-24",
+        "expectedEndDate": "2025-12-23",
+        "actualEndDate": "2026-09-01",
+        "completed": false
+      },
+      {
+        "title": "Selection Phase 3 Due",
+        "endDateSlip": 195,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-11-25",
+        "actualStartDate": "2026-08-31",
+        "expectedEndDate": "2025-12-03",
+        "actualEndDate": "2026-09-09",
+        "completed": false
+      },
+      {
+        "title": "Foundation",
+        "endDateSlip": 179,
+        "durationSlip": 3,
+        "expectedStartDate": "2025-12-24",
+        "actualStartDate": "2026-09-02",
+        "expectedEndDate": "2025-12-29",
+        "actualEndDate": "2026-09-11",
+        "completed": false
+      },
+      {
+        "title": "Block Walls",
+        "endDateSlip": 179,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-12-30",
+        "actualStartDate": "2026-09-14",
+        "expectedEndDate": "2026-01-06",
+        "actualEndDate": "2026-09-18",
+        "completed": false
+      },
+      {
+        "title": "Framing",
+        "endDateSlip": 179,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-01-07",
+        "actualStartDate": "2026-09-21",
+        "expectedEndDate": "2026-01-22",
+        "actualEndDate": "2026-10-06",
+        "completed": false
+      },
+      {
+        "title": "Doors & Windows",
+        "endDateSlip": 179,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-01-23",
+        "actualStartDate": "2026-10-07",
+        "expectedEndDate": "2026-01-29",
+        "actualEndDate": "2026-10-13",
+        "completed": false
+      },
+      {
+        "title": "MEP Rough-Ins",
+        "endDateSlip": 179,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-01-23",
+        "actualStartDate": "2026-10-07",
+        "expectedEndDate": "2026-02-10",
+        "actualEndDate": "2026-10-23",
+        "completed": false
+      },
+      {
+        "title": "FMEP Inspection",
+        "endDateSlip": 179,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-02-11",
+        "actualStartDate": "2026-10-26",
+        "expectedEndDate": "2026-02-12",
+        "actualEndDate": "2026-10-27",
+        "completed": false
+      },
+      {
+        "title": "Drywall & Insulation",
+        "endDateSlip": 179,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-02-13",
+        "actualStartDate": "2026-10-28",
+        "expectedEndDate": "2026-02-26",
+        "actualEndDate": "2026-11-10",
+        "completed": false
+      },
+      {
+        "title": "Pool",
+        "endDateSlip": 179,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-02-16",
+        "actualStartDate": "2026-10-29",
+        "expectedEndDate": "2026-05-20",
+        "actualEndDate": "2027-02-04",
+        "completed": false
+      },
+      {
+        "title": "Roofing",
+        "endDateSlip": 179,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-02-20",
+        "actualStartDate": "2026-11-04",
+        "expectedEndDate": "2026-02-26",
+        "actualEndDate": "2026-11-10",
+        "completed": false
+      },
+      {
+        "title": "Stucco & Siding",
+        "endDateSlip": 179,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-02-20",
+        "actualStartDate": "2026-11-04",
+        "expectedEndDate": "2026-02-26",
+        "actualEndDate": "2026-11-10",
+        "completed": false
+      },
+      {
+        "title": "Exterior Paint",
+        "endDateSlip": 179,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-02-27",
+        "actualStartDate": "2026-11-11",
+        "expectedEndDate": "2026-03-05",
+        "actualEndDate": "2026-11-17",
+        "completed": false
+      },
+      {
+        "title": "Interior Paint",
+        "endDateSlip": 179,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-02-27",
+        "actualStartDate": "2026-11-11",
+        "expectedEndDate": "2026-03-05",
+        "actualEndDate": "2026-11-17",
+        "completed": false
+      },
+      {
+        "title": "Tile & Flooring",
+        "endDateSlip": 179,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-03-06",
+        "actualStartDate": "2026-11-18",
+        "expectedEndDate": "2026-03-17",
+        "actualEndDate": "2026-12-01",
+        "completed": false
+      },
+      {
+        "title": "Garage Door",
+        "endDateSlip": 179,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-03-11",
+        "actualStartDate": "2026-11-23",
+        "expectedEndDate": "2026-03-12",
+        "actualEndDate": "2026-11-24",
+        "completed": false
+      },
+      {
+        "title": "Driveway",
+        "endDateSlip": 179,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-03-19",
+        "actualStartDate": "2026-12-03",
+        "expectedEndDate": "2026-03-24",
+        "actualEndDate": "2026-12-08",
+        "completed": false
+      },
+      {
+        "title": "Interior Doors/Trim",
+        "endDateSlip": 179,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-03-19",
+        "actualStartDate": "2026-12-03",
+        "expectedEndDate": "2026-03-25",
+        "actualEndDate": "2026-12-09",
+        "completed": false
+      },
+      {
+        "title": "MEP Trim-Outs",
+        "endDateSlip": 179,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-04-01",
+        "actualStartDate": "2026-12-16",
+        "expectedEndDate": "2026-04-10",
+        "actualEndDate": "2026-12-24",
+        "completed": false
+      },
+      {
+        "title": "Interior Specialties",
+        "endDateSlip": 179,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-04-13",
+        "actualStartDate": "2026-12-28",
+        "expectedEndDate": "2026-04-24",
+        "actualEndDate": "2027-01-11",
+        "completed": false
+      },
+      {
+        "title": "Summer Kitchen",
+        "endDateSlip": 179,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-04-21",
+        "actualStartDate": "2027-01-06",
+        "expectedEndDate": "2026-05-06",
+        "actualEndDate": "2027-01-21",
+        "completed": false
+      },
+      {
+        "title": "Appliances",
+        "endDateSlip": 179,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-04-23",
+        "actualStartDate": "2027-01-08",
+        "expectedEndDate": "2026-04-28",
+        "actualEndDate": "2027-01-13",
+        "completed": false
+      },
+      {
+        "title": "Generator",
+        "endDateSlip": 179,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-04-23",
+        "actualStartDate": "2027-01-08",
+        "expectedEndDate": "2026-05-06",
+        "actualEndDate": "2027-01-21",
+        "completed": false
+      },
+      {
+        "title": "Final Trim Out",
+        "endDateSlip": 179,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-04-27",
+        "actualStartDate": "2027-01-12",
+        "expectedEndDate": "2026-04-29",
+        "actualEndDate": "2027-01-14",
+        "completed": false
+      },
+      {
+        "title": "Landscaping",
+        "endDateSlip": 179,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-04-30",
+        "actualStartDate": "2027-01-15",
+        "expectedEndDate": "2026-05-06",
+        "actualEndDate": "2027-01-21",
+        "completed": false
+      },
+      {
+        "title": "Final Inspections",
+        "endDateSlip": 179,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-05-06",
+        "actualStartDate": "2027-01-21",
+        "expectedEndDate": "2026-05-13",
+        "actualEndDate": "2027-01-28",
+        "completed": false
+      },
+      {
+        "title": "Closing",
+        "endDateSlip": 179,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-05-18",
+        "actualStartDate": "2027-02-02",
+        "expectedEndDate": "2026-05-20",
+        "actualEndDate": "2027-02-04",
+        "completed": false
+      }
+    ],
+    "38397739": [
+      {
+        "title": "Permitting",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-06-09",
+        "actualStartDate": "2025-06-09",
+        "expectedEndDate": "2025-07-04",
+        "actualEndDate": "2025-07-04",
+        "completed": true
+      },
+      {
+        "title": "Site Work",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-07-07",
+        "actualStartDate": "2025-07-07",
+        "expectedEndDate": "2025-07-21",
+        "actualEndDate": "2025-07-21",
+        "completed": true
+      },
+      {
+        "title": "Sale/Contract Deposit",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-07-08",
+        "actualStartDate": "2025-07-08",
+        "expectedEndDate": "2025-07-08",
+        "actualEndDate": "2025-07-08",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 1 Due",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-07-09",
+        "actualStartDate": "2025-07-09",
+        "expectedEndDate": "2025-07-17",
+        "actualEndDate": "2025-07-17",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 2 Due",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-07-18",
+        "actualStartDate": "2025-07-18",
+        "expectedEndDate": "2025-07-28",
+        "actualEndDate": "2025-07-28",
+        "completed": true
+      },
+      {
+        "title": "Foundation",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-07-22",
+        "actualStartDate": "2025-07-22",
+        "expectedEndDate": "2025-08-04",
+        "actualEndDate": "2025-08-04",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 3 Due",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-07-29",
+        "actualStartDate": "2025-07-29",
+        "expectedEndDate": "2025-08-06",
+        "actualEndDate": "2025-08-06",
+        "completed": true
+      },
+      {
+        "title": "Block Walls",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-08-05",
+        "actualStartDate": "2025-08-05",
+        "expectedEndDate": "2025-08-25",
+        "actualEndDate": "2025-08-25",
+        "completed": true
+      },
+      {
+        "title": "Framing",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-08-26",
+        "actualStartDate": "2025-08-26",
+        "expectedEndDate": "2025-09-18",
+        "actualEndDate": "2025-09-18",
+        "completed": true
+      },
+      {
+        "title": "MEP Rough-Ins",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-09-19",
+        "actualStartDate": "2025-09-19",
+        "expectedEndDate": "2025-11-03",
+        "actualEndDate": "2025-11-03",
+        "completed": true
+      },
+      {
+        "title": "Doors & Windows",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-09-22",
+        "actualStartDate": "2025-09-22",
+        "expectedEndDate": "2025-09-26",
+        "actualEndDate": "2025-09-26",
+        "completed": true
+      },
+      {
+        "title": "FMEP Inspection",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-11-04",
+        "actualStartDate": "2025-11-04",
+        "expectedEndDate": "2025-11-05",
+        "actualEndDate": "2025-11-05",
+        "completed": true
+      },
+      {
+        "title": "Drywall & Insulation",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-11-10",
+        "actualStartDate": "2025-11-10",
+        "expectedEndDate": "2025-11-21",
+        "actualEndDate": "2025-11-21",
+        "completed": true
+      },
+      {
+        "title": "Stucco & Siding",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-11-17",
+        "actualStartDate": "2025-11-17",
+        "expectedEndDate": "2025-11-21",
+        "actualEndDate": "2025-11-21",
+        "completed": true
+      },
+      {
+        "title": "Exterior Paint",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-11-24",
+        "actualStartDate": "2025-11-24",
+        "expectedEndDate": "2025-11-25",
+        "actualEndDate": "2025-11-25",
+        "completed": true
+      },
+      {
+        "title": "Interior Paint",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-11-24",
+        "actualStartDate": "2025-11-24",
+        "expectedEndDate": "2025-12-02",
+        "actualEndDate": "2025-12-02",
+        "completed": true
+      },
+      {
+        "title": "Roofing",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-11-25",
+        "actualStartDate": "2025-11-25",
+        "expectedEndDate": "2025-12-01",
+        "actualEndDate": "2025-12-01",
+        "completed": true
+      },
+      {
+        "title": "Tile & Flooring",
+        "endDateSlip": 12,
+        "durationSlip": 12,
+        "expectedStartDate": "2025-12-04",
+        "actualStartDate": "2025-12-04",
+        "expectedEndDate": "2026-03-25",
+        "actualEndDate": "2026-04-13",
+        "completed": true
+      },
+      {
+        "title": "MEP Trim-Outs",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-12-16",
+        "actualStartDate": "2025-12-16",
+        "expectedEndDate": "2026-01-13",
+        "actualEndDate": "2026-01-13",
+        "completed": true
+      },
+      {
+        "title": "Garage Door",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-12-17",
+        "actualStartDate": "2025-12-17",
+        "expectedEndDate": "2025-12-18",
+        "actualEndDate": "2025-12-18",
+        "completed": true
+      },
+      {
+        "title": "Driveway",
+        "endDateSlip": 22,
+        "durationSlip": 22,
+        "expectedStartDate": "2025-12-19",
+        "actualStartDate": "2025-12-19",
+        "expectedEndDate": "2026-03-12",
+        "actualEndDate": "2026-04-14",
+        "completed": true
+      },
+      {
+        "title": "Interior Doors/Trim",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-01-12",
+        "actualStartDate": "2026-01-12",
+        "expectedEndDate": "2026-01-16",
+        "actualEndDate": "2026-01-16",
+        "completed": true
+      },
+      {
+        "title": "Landscaping",
+        "endDateSlip": 48,
+        "durationSlip": 48,
+        "expectedStartDate": "2026-01-30",
+        "actualStartDate": "2026-01-30",
+        "expectedEndDate": "2026-03-20",
+        "actualEndDate": "2026-05-29",
+        "completed": true
+      },
+      {
+        "title": "Interior Specialties",
+        "endDateSlip": 15,
+        "durationSlip": 15,
+        "expectedStartDate": "2026-04-09",
+        "actualStartDate": "2026-04-09",
+        "expectedEndDate": "2026-04-22",
+        "actualEndDate": "2026-05-13",
+        "completed": true
+      },
+      {
+        "title": "Final Trim Out",
+        "endDateSlip": 19,
+        "durationSlip": 19,
+        "expectedStartDate": "2026-04-23",
+        "actualStartDate": "2026-04-23",
+        "expectedEndDate": "2026-04-27",
+        "actualEndDate": "2026-05-22",
+        "completed": true
+      },
+      {
+        "title": "Final Inspections",
+        "endDateSlip": 12,
+        "durationSlip": 3,
+        "expectedStartDate": "2026-04-30",
+        "actualStartDate": "2026-05-13",
+        "expectedEndDate": "2026-05-07",
+        "actualEndDate": "2026-05-26",
+        "completed": true
+      },
+      {
+        "title": "Gutters",
+        "endDateSlip": 18,
+        "durationSlip": 7,
+        "expectedStartDate": "2026-06-24",
+        "actualStartDate": "2026-07-10",
+        "expectedEndDate": "2026-06-24",
+        "actualEndDate": "2026-07-21",
+        "completed": true
+      },
+      {
+        "title": "Closing",
+        "endDateSlip": 87,
+        "durationSlip": -1,
+        "expectedStartDate": "2026-05-12",
+        "actualStartDate": "2026-09-16",
+        "expectedEndDate": "2026-05-14",
+        "actualEndDate": "2026-09-17",
+        "completed": false
+      }
+    ],
+    "38901121": [
+      {
+        "title": "Sale/Contract Deposit",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-01-17",
+        "actualStartDate": "2025-01-17",
+        "expectedEndDate": "2025-01-17",
+        "actualEndDate": "2025-01-17",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 1 Due",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-04-21",
+        "actualStartDate": "2025-04-21",
+        "expectedEndDate": "2025-06-19",
+        "actualEndDate": "2025-06-19",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 2 Due",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-04-30",
+        "actualStartDate": "2025-04-30",
+        "expectedEndDate": "2026-01-07",
+        "actualEndDate": "2026-01-07",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 3 Due",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-05-09",
+        "actualStartDate": "2025-05-09",
+        "expectedEndDate": "2026-02-05",
+        "actualEndDate": "2026-02-05",
+        "completed": true
+      },
+      {
+        "title": "Permitting",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-09-01",
+        "actualStartDate": "2025-09-01",
+        "expectedEndDate": "2025-09-26",
+        "actualEndDate": "2025-09-26",
+        "completed": true
+      },
+      {
+        "title": "Site Work",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-10-14",
+        "actualStartDate": "2025-10-14",
+        "expectedEndDate": "2025-11-14",
+        "actualEndDate": "2025-11-14",
+        "completed": true
+      },
+      {
+        "title": "Foundation",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-11-17",
+        "actualStartDate": "2025-11-17",
+        "expectedEndDate": "2025-11-25",
+        "actualEndDate": "2025-11-25",
+        "completed": true
+      },
+      {
+        "title": "Block Walls",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-12-02",
+        "actualStartDate": "2025-12-02",
+        "expectedEndDate": "2025-12-11",
+        "actualEndDate": "2025-12-11",
+        "completed": true
+      },
+      {
+        "title": "Framing",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-12-12",
+        "actualStartDate": "2025-12-12",
+        "expectedEndDate": "2026-01-15",
+        "actualEndDate": "2026-01-15",
+        "completed": true
+      },
+      {
+        "title": "Doors & Windows",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-01-16",
+        "actualStartDate": "2026-01-16",
+        "expectedEndDate": "2026-02-25",
+        "actualEndDate": "2026-02-25",
+        "completed": true
+      },
+      {
+        "title": "MEP Rough-Ins",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-01-20",
+        "actualStartDate": "2026-01-20",
+        "expectedEndDate": "2026-02-05",
+        "actualEndDate": "2026-02-05",
+        "completed": true
+      },
+      {
+        "title": "FMEP Inspection",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-01-28",
+        "actualStartDate": "2026-01-28",
+        "expectedEndDate": "2026-01-29",
+        "actualEndDate": "2026-01-29",
+        "completed": true
+      },
+      {
+        "title": "Stucco & Siding",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-02-09",
+        "actualStartDate": "2026-02-09",
+        "expectedEndDate": "2026-02-17",
+        "actualEndDate": "2026-02-17",
+        "completed": true
+      },
+      {
+        "title": "Drywall & Insulation",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-02-18",
+        "actualStartDate": "2026-02-18",
+        "expectedEndDate": "2026-03-03",
+        "actualEndDate": "2026-03-03",
+        "completed": true
+      },
+      {
+        "title": "Exterior Paint",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-02-27",
+        "actualStartDate": "2026-02-27",
+        "expectedEndDate": "2026-03-02",
+        "actualEndDate": "2026-03-02",
+        "completed": true
+      },
+      {
+        "title": "Interior Paint",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-03-04",
+        "actualStartDate": "2026-03-04",
+        "expectedEndDate": "2026-03-10",
+        "actualEndDate": "2026-03-10",
+        "completed": true
+      },
+      {
+        "title": "Roofing",
+        "endDateSlip": 5,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-03-06",
+        "actualStartDate": "2026-03-06",
+        "expectedEndDate": "2026-03-12",
+        "actualEndDate": "2026-03-19",
+        "completed": true
+      },
+      {
+        "title": "Tile & Flooring",
+        "endDateSlip": 4,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-03-11",
+        "actualStartDate": "2026-03-10",
+        "expectedEndDate": "2026-03-20",
+        "actualEndDate": "2026-03-26",
+        "completed": true
+      },
+      {
+        "title": "Garage Door",
+        "endDateSlip": -11,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-03-30",
+        "actualStartDate": "2026-03-13",
+        "expectedEndDate": "2026-03-31",
+        "actualEndDate": "2026-03-16",
+        "completed": true
+      },
+      {
+        "title": "Driveway",
+        "endDateSlip": 45,
+        "durationSlip": 50,
+        "expectedStartDate": "2026-03-26",
+        "actualStartDate": "2026-03-19",
+        "expectedEndDate": "2026-03-31",
+        "actualEndDate": "2026-06-04",
+        "completed": true
+      },
+      {
+        "title": "Interior Doors/Trim",
+        "endDateSlip": -7,
+        "durationSlip": 2,
+        "expectedStartDate": "2026-04-01",
+        "actualStartDate": "2026-03-19",
+        "expectedEndDate": "2026-04-08",
+        "actualEndDate": "2026-03-27",
+        "completed": true
+      },
+      {
+        "title": "Pool",
+        "endDateSlip": 50,
+        "durationSlip": 37,
+        "expectedStartDate": "2026-03-02",
+        "actualStartDate": "2026-03-19",
+        "expectedEndDate": "2026-06-04",
+        "actualEndDate": "2026-08-14",
+        "completed": true
+      },
+      {
+        "title": "MEP Trim-Outs",
+        "endDateSlip": 7,
+        "durationSlip": 4,
+        "expectedStartDate": "2026-04-07",
+        "actualStartDate": "2026-04-10",
+        "expectedEndDate": "2026-04-15",
+        "actualEndDate": "2026-04-24",
+        "completed": true
+      },
+      {
+        "title": "Final Trim Out",
+        "endDateSlip": 22,
+        "durationSlip": 20,
+        "expectedStartDate": "2026-04-30",
+        "actualStartDate": "2026-05-04",
+        "expectedEndDate": "2026-05-04",
+        "actualEndDate": "2026-06-04",
+        "completed": true
+      },
+      {
+        "title": "Final Inspections",
+        "endDateSlip": 59,
+        "durationSlip": 19,
+        "expectedStartDate": "2026-05-11",
+        "actualStartDate": "2026-07-08",
+        "expectedEndDate": "2026-05-18",
+        "actualEndDate": "2026-08-11",
+        "completed": true
+      },
+      {
+        "title": "Landscaping",
+        "endDateSlip": 59,
+        "durationSlip": 18,
+        "expectedStartDate": "2026-05-11",
+        "actualStartDate": "2026-07-09",
+        "expectedEndDate": "2026-05-15",
+        "actualEndDate": "2026-08-10",
+        "completed": true
+      },
+      {
+        "title": "Interior Specialties",
+        "endDateSlip": 65,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-04-16",
+        "actualStartDate": "2026-07-13",
+        "expectedEndDate": "2026-04-29",
+        "actualEndDate": "2026-07-31",
+        "completed": true
+      },
+      {
+        "title": "Closing",
+        "endDateSlip": 70,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-05-28",
+        "actualStartDate": "2026-09-04",
+        "expectedEndDate": "2026-06-01",
+        "actualEndDate": "2026-09-09",
+        "completed": false
+      }
+    ],
+    "40214880": [
+      {
+        "title": "Sale/Contract Deposit",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-05-09",
+        "actualStartDate": "2025-05-09",
+        "expectedEndDate": "2025-05-09",
+        "actualEndDate": "2025-05-09",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 1 Due",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-05-12",
+        "actualStartDate": "2025-05-12",
+        "expectedEndDate": "2026-03-31",
+        "actualEndDate": "2026-03-31",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 2 Due",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-05-21",
+        "actualStartDate": "2025-05-21",
+        "expectedEndDate": "2026-03-31",
+        "actualEndDate": "2026-03-31",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 3 Due",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-05-30",
+        "actualStartDate": "2025-05-30",
+        "expectedEndDate": "2026-03-31",
+        "actualEndDate": "2026-03-31",
+        "completed": true
+      },
+      {
+        "title": "Permitting",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-06-30",
+        "actualStartDate": "2025-06-30",
+        "expectedEndDate": "2026-01-15",
+        "actualEndDate": "2026-01-15",
+        "completed": true
+      },
+      {
+        "title": "Site Work",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-02-02",
+        "actualStartDate": "2026-02-02",
+        "expectedEndDate": "2026-02-04",
+        "actualEndDate": "2026-02-04",
+        "completed": true
+      },
+      {
+        "title": "Foundation",
+        "endDateSlip": 2,
+        "durationSlip": 2,
+        "expectedStartDate": "2026-02-05",
+        "actualStartDate": "2026-02-05",
+        "expectedEndDate": "2026-03-17",
+        "actualEndDate": "2026-03-19",
+        "completed": true
+      },
+      {
+        "title": "Block Walls",
+        "endDateSlip": 3,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-03-18",
+        "actualStartDate": "2026-03-23",
+        "expectedEndDate": "2026-03-24",
+        "actualEndDate": "2026-03-27",
+        "completed": true
+      },
+      {
+        "title": "Framing",
+        "endDateSlip": 39,
+        "durationSlip": 33,
+        "expectedStartDate": "2026-03-25",
+        "actualStartDate": "2026-04-02",
+        "expectedEndDate": "2026-04-10",
+        "actualEndDate": "2026-06-05",
+        "completed": true
+      },
+      {
+        "title": "Doors & Windows",
+        "endDateSlip": 42,
+        "durationSlip": 3,
+        "expectedStartDate": "2026-04-13",
+        "actualStartDate": "2026-06-08",
+        "expectedEndDate": "2026-04-17",
+        "actualEndDate": "2026-06-17",
+        "completed": true
+      },
+      {
+        "title": "MEP Rough-Ins",
+        "endDateSlip": 67,
+        "durationSlip": 25,
+        "expectedStartDate": "2026-04-13",
+        "actualStartDate": "2026-06-11",
+        "expectedEndDate": "2026-04-29",
+        "actualEndDate": "2026-08-04",
+        "completed": true
+      },
+      {
+        "title": "Pool",
+        "endDateSlip": 60,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-05-14",
+        "actualStartDate": "2026-08-10",
+        "expectedEndDate": "2026-08-18",
+        "actualEndDate": "2026-11-11",
+        "completed": false
+      },
+      {
+        "title": "Stucco & Siding",
+        "endDateSlip": 73,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-05-11",
+        "actualStartDate": "2026-08-17",
+        "expectedEndDate": "2026-05-15",
+        "actualEndDate": "2026-08-28",
+        "completed": false
+      },
+      {
+        "title": "FMEP Inspection",
+        "endDateSlip": 83,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-04-30",
+        "actualStartDate": "2026-08-27",
+        "expectedEndDate": "2026-05-01",
+        "actualEndDate": "2026-08-28",
+        "completed": false
+      },
+      {
+        "title": "Drywall & Insulation",
+        "endDateSlip": 85,
+        "durationSlip": 2,
+        "expectedStartDate": "2026-05-04",
+        "actualStartDate": "2026-08-31",
+        "expectedEndDate": "2026-05-15",
+        "actualEndDate": "2026-09-16",
+        "completed": false
+      },
+      {
+        "title": "Exterior Paint",
+        "endDateSlip": 73,
+        "durationSlip": -1,
+        "expectedStartDate": "2026-05-18",
+        "actualStartDate": "2026-09-01",
+        "expectedEndDate": "2026-05-22",
+        "actualEndDate": "2026-09-04",
+        "completed": false
+      },
+      {
+        "title": "Roofing",
+        "endDateSlip": 83,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-05-11",
+        "actualStartDate": "2026-09-08",
+        "expectedEndDate": "2026-05-15",
+        "actualEndDate": "2026-09-14",
+        "completed": false
+      },
+      {
+        "title": "Garage Door",
+        "endDateSlip": 73,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-05-29",
+        "actualStartDate": "2026-09-11",
+        "expectedEndDate": "2026-06-01",
+        "actualEndDate": "2026-09-14",
+        "completed": false
+      },
+      {
+        "title": "Interior Paint",
+        "endDateSlip": 82,
+        "durationSlip": -3,
+        "expectedStartDate": "2026-05-18",
+        "actualStartDate": "2026-09-17",
+        "expectedEndDate": "2026-05-22",
+        "actualEndDate": "2026-09-18",
+        "completed": false
+      },
+      {
+        "title": "Driveway",
+        "endDateSlip": 73,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-06-08",
+        "actualStartDate": "2026-09-21",
+        "expectedEndDate": "2026-06-11",
+        "actualEndDate": "2026-09-24",
+        "completed": false
+      },
+      {
+        "title": "Tile & Flooring",
+        "endDateSlip": 82,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-05-26",
+        "actualStartDate": "2026-09-21",
+        "expectedEndDate": "2026-06-04",
+        "actualEndDate": "2026-09-30",
+        "completed": false
+      },
+      {
+        "title": "Summer Kitchen",
+        "endDateSlip": 47,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-07-20",
+        "actualStartDate": "2026-09-24",
+        "expectedEndDate": "2026-08-04",
+        "actualEndDate": "2026-10-09",
+        "completed": false
+      },
+      {
+        "title": "Landscaping",
+        "endDateSlip": 41,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-07-29",
+        "actualStartDate": "2026-09-25",
+        "expectedEndDate": "2026-08-04",
+        "actualEndDate": "2026-10-01",
+        "completed": false
+      },
+      {
+        "title": "Generator",
+        "endDateSlip": 47,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-07-22",
+        "actualStartDate": "2026-09-28",
+        "expectedEndDate": "2026-08-04",
+        "actualEndDate": "2026-10-09",
+        "completed": false
+      },
+      {
+        "title": "Interior Doors/Trim",
+        "endDateSlip": 87,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-06-08",
+        "actualStartDate": "2026-10-09",
+        "expectedEndDate": "2026-06-12",
+        "actualEndDate": "2026-10-15",
+        "completed": false
+      },
+      {
+        "title": "MEP Trim-Outs",
+        "endDateSlip": 85,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-06-19",
+        "actualStartDate": "2026-10-20",
+        "expectedEndDate": "2026-06-29",
+        "actualEndDate": "2026-10-28",
+        "completed": false
+      },
+      {
+        "title": "Interior Specialties",
+        "endDateSlip": 81,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-06-30",
+        "actualStartDate": "2026-10-23",
+        "expectedEndDate": "2026-07-14",
+        "actualEndDate": "2026-11-05",
+        "completed": false
+      },
+      {
+        "title": "Final Trim Out",
+        "endDateSlip": 79,
+        "durationSlip": 2,
+        "expectedStartDate": "2026-07-15",
+        "actualStartDate": "2026-11-02",
+        "expectedEndDate": "2026-07-17",
+        "actualEndDate": "2026-11-06",
+        "completed": false
+      },
+      {
+        "title": "Final Inspections",
+        "endDateSlip": 75,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-07-24",
+        "actualStartDate": "2026-11-09",
+        "expectedEndDate": "2026-07-31",
+        "actualEndDate": "2026-11-16",
+        "completed": false
+      },
+      {
+        "title": "Closing",
+        "endDateSlip": 66,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-08-14",
+        "actualStartDate": "2026-11-17",
+        "expectedEndDate": "2026-08-18",
+        "actualEndDate": "2026-11-19",
+        "completed": false
+      }
+    ],
+    "40228562": [
+      {
+        "title": "Sale/Contract Deposit",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-05-14",
+        "actualStartDate": "2025-05-14",
+        "expectedEndDate": "2025-05-14",
+        "actualEndDate": "2025-05-14",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 1 Due",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-05-15",
+        "actualStartDate": "2025-05-15",
+        "expectedEndDate": "2025-08-08",
+        "actualEndDate": "2025-08-08",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 2 Due",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-05-26",
+        "actualStartDate": "2025-05-26",
+        "expectedEndDate": "2026-02-16",
+        "actualEndDate": "2026-02-16",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 3 Due",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-06-04",
+        "actualStartDate": "2025-06-04",
+        "expectedEndDate": "2026-02-13",
+        "actualEndDate": "2026-02-13",
+        "completed": true
+      },
+      {
+        "title": "Permitting",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-07-29",
+        "actualStartDate": "2025-07-29",
+        "expectedEndDate": "2025-08-25",
+        "actualEndDate": "2025-08-25",
+        "completed": true
+      },
+      {
+        "title": "Site Work",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-08-28",
+        "actualStartDate": "2025-08-28",
+        "expectedEndDate": "2025-09-01",
+        "actualEndDate": "2025-09-01",
+        "completed": true
+      },
+      {
+        "title": "Foundation",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-09-02",
+        "actualStartDate": "2025-09-02",
+        "expectedEndDate": "2025-09-12",
+        "actualEndDate": "2025-09-12",
+        "completed": true
+      },
+      {
+        "title": "Block Walls",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-09-15",
+        "actualStartDate": "2025-09-15",
+        "expectedEndDate": "2025-09-19",
+        "actualEndDate": "2025-09-19",
+        "completed": true
+      },
+      {
+        "title": "Framing",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-09-23",
+        "actualStartDate": "2025-09-23",
+        "expectedEndDate": "2025-10-20",
+        "actualEndDate": "2025-10-20",
+        "completed": true
+      },
+      {
+        "title": "MEP Rough-Ins",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-10-21",
+        "actualStartDate": "2025-10-21",
+        "expectedEndDate": "2025-11-06",
+        "actualEndDate": "2025-11-06",
+        "completed": true
+      },
+      {
+        "title": "Doors & Windows",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-10-27",
+        "actualStartDate": "2025-10-27",
+        "expectedEndDate": "2025-10-31",
+        "actualEndDate": "2025-10-31",
+        "completed": true
+      },
+      {
+        "title": "FMEP Inspection",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-02-20",
+        "actualStartDate": "2026-02-20",
+        "expectedEndDate": "2026-02-23",
+        "actualEndDate": "2026-02-23",
+        "completed": true
+      },
+      {
+        "title": "Stucco & Siding",
+        "endDateSlip": 3,
+        "durationSlip": 3,
+        "expectedStartDate": "2026-03-06",
+        "actualStartDate": "2026-03-06",
+        "expectedEndDate": "2026-03-12",
+        "actualEndDate": "2026-03-17",
+        "completed": true
+      },
+      {
+        "title": "Drywall & Insulation",
+        "endDateSlip": 13,
+        "durationSlip": 9,
+        "expectedStartDate": "2026-03-09",
+        "actualStartDate": "2026-03-13",
+        "expectedEndDate": "2026-03-20",
+        "actualEndDate": "2026-04-09",
+        "completed": true
+      },
+      {
+        "title": "Exterior Paint",
+        "endDateSlip": 17,
+        "durationSlip": 7,
+        "expectedStartDate": "2026-03-13",
+        "actualStartDate": "2026-03-27",
+        "expectedEndDate": "2026-03-19",
+        "actualEndDate": "2026-04-14",
+        "completed": true
+      },
+      {
+        "title": "Driveway",
+        "endDateSlip": 22,
+        "durationSlip": 25,
+        "expectedStartDate": "2026-04-02",
+        "actualStartDate": "2026-03-30",
+        "expectedEndDate": "2026-04-08",
+        "actualEndDate": "2026-05-08",
+        "completed": true
+      },
+      {
+        "title": "Garage Door",
+        "endDateSlip": 12,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-03-25",
+        "actualStartDate": "2026-04-13",
+        "expectedEndDate": "2026-03-26",
+        "actualEndDate": "2026-04-14",
+        "completed": true
+      },
+      {
+        "title": "Interior Paint",
+        "endDateSlip": 22,
+        "durationSlip": 7,
+        "expectedStartDate": "2026-03-23",
+        "actualStartDate": "2026-04-14",
+        "expectedEndDate": "2026-03-27",
+        "actualEndDate": "2026-04-29",
+        "completed": true
+      },
+      {
+        "title": "Pool",
+        "endDateSlip": -6,
+        "durationSlip": -26,
+        "expectedStartDate": "2026-03-31",
+        "actualStartDate": "2026-04-29",
+        "expectedEndDate": "2026-07-06",
+        "actualEndDate": "2026-06-25",
+        "completed": true
+      },
+      {
+        "title": "Tile & Flooring",
+        "endDateSlip": 26,
+        "durationSlip": 4,
+        "expectedStartDate": "2026-03-30",
+        "actualStartDate": "2026-04-30",
+        "expectedEndDate": "2026-04-09",
+        "actualEndDate": "2026-05-15",
+        "completed": true
+      },
+      {
+        "title": "Interior Doors/Trim",
+        "endDateSlip": 25,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-04-13",
+        "actualStartDate": "2026-05-18",
+        "expectedEndDate": "2026-04-17",
+        "actualEndDate": "2026-05-22",
+        "completed": true
+      },
+      {
+        "title": "Roofing",
+        "endDateSlip": 37,
+        "durationSlip": -2,
+        "expectedStartDate": "2026-03-23",
+        "actualStartDate": "2026-05-18",
+        "expectedEndDate": "2026-03-27",
+        "actualEndDate": "2026-05-20",
+        "completed": true
+      },
+      {
+        "title": "MEP Trim-Outs",
+        "endDateSlip": 66,
+        "durationSlip": 24,
+        "expectedStartDate": "2026-04-24",
+        "actualStartDate": "2026-06-24",
+        "expectedEndDate": "2026-05-04",
+        "actualEndDate": "2026-08-06",
+        "completed": true
+      },
+      {
+        "title": "Interior Specialties",
+        "endDateSlip": 57,
+        "durationSlip": 6,
+        "expectedStartDate": "2026-05-05",
+        "actualStartDate": "2026-07-17",
+        "expectedEndDate": "2026-05-18",
+        "actualEndDate": "2026-08-07",
+        "completed": true
+      },
+      {
+        "title": "Appliances",
+        "endDateSlip": 10,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-07-27",
+        "actualStartDate": "2026-08-10",
+        "expectedEndDate": "2026-07-27",
+        "actualEndDate": "2026-08-10",
+        "completed": true
+      },
+      {
+        "title": "Final Trim Out",
+        "endDateSlip": 70,
+        "durationSlip": 13,
+        "expectedStartDate": "2026-05-19",
+        "actualStartDate": "2026-08-10",
+        "expectedEndDate": "2026-05-21",
+        "actualEndDate": "2026-08-31",
+        "completed": false
+      },
+      {
+        "title": "Final Inspections",
+        "endDateSlip": 55,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-06-05",
+        "actualStartDate": "2026-08-17",
+        "expectedEndDate": "2026-06-12",
+        "actualEndDate": "2026-08-31",
+        "completed": false
+      },
+      {
+        "title": "Landscaping",
+        "endDateSlip": 52,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-06-22",
+        "actualStartDate": "2026-09-03",
+        "expectedEndDate": "2026-06-26",
+        "actualEndDate": "2026-09-10",
+        "completed": false
+      },
+      {
+        "title": "Closing",
+        "endDateSlip": 60,
+        "durationSlip": -2,
+        "expectedStartDate": "2026-07-01",
+        "actualStartDate": "2026-09-29",
+        "expectedEndDate": "2026-07-06",
+        "actualEndDate": "2026-09-29",
+        "completed": false
+      }
+    ],
+    "40351917": [
+      {
+        "title": "Sale/Contract Deposit",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-05-27",
+        "actualStartDate": "2025-05-27",
+        "expectedEndDate": "2025-05-27",
+        "actualEndDate": "2025-05-27",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 1 Due",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-05-28",
+        "actualStartDate": "2025-05-28",
+        "expectedEndDate": "2025-11-26",
+        "actualEndDate": "2025-11-26",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 2 Due",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-06-06",
+        "actualStartDate": "2025-06-06",
+        "expectedEndDate": "2026-02-19",
+        "actualEndDate": "2026-02-19",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 3 Due",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-06-17",
+        "actualStartDate": "2025-06-17",
+        "expectedEndDate": "2026-03-03",
+        "actualEndDate": "2026-03-03",
+        "completed": true
+      },
+      {
+        "title": "Permitting",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-09-23",
+        "actualStartDate": "2025-09-23",
+        "expectedEndDate": "2025-10-20",
+        "actualEndDate": "2025-10-20",
+        "completed": true
+      },
+      {
+        "title": "Site Work",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-10-27",
+        "actualStartDate": "2025-10-27",
+        "expectedEndDate": "2025-10-29",
+        "actualEndDate": "2025-10-29",
+        "completed": true
+      },
+      {
+        "title": "Foundation",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-10-30",
+        "actualStartDate": "2025-10-30",
+        "expectedEndDate": "2025-11-12",
+        "actualEndDate": "2025-11-12",
+        "completed": true
+      },
+      {
+        "title": "Block Walls",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-11-13",
+        "actualStartDate": "2025-11-13",
+        "expectedEndDate": "2025-11-19",
+        "actualEndDate": "2025-11-19",
+        "completed": true
+      },
+      {
+        "title": "Framing",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-11-20",
+        "actualStartDate": "2025-11-20",
+        "expectedEndDate": "2025-12-05",
+        "actualEndDate": "2025-12-05",
+        "completed": true
+      },
+      {
+        "title": "Doors & Windows",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-01-09",
+        "actualStartDate": "2026-01-09",
+        "expectedEndDate": "2026-01-15",
+        "actualEndDate": "2026-01-15",
+        "completed": true
+      },
+      {
+        "title": "MEP Rough-Ins",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-01-13",
+        "actualStartDate": "2026-01-13",
+        "expectedEndDate": "2026-03-11",
+        "actualEndDate": "2026-03-11",
+        "completed": true
+      },
+      {
+        "title": "FMEP Inspection",
+        "endDateSlip": 16,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-03-11",
+        "actualStartDate": "2026-04-02",
+        "expectedEndDate": "2026-03-12",
+        "actualEndDate": "2026-04-06",
+        "completed": true
+      },
+      {
+        "title": "Stucco & Siding",
+        "endDateSlip": 47,
+        "durationSlip": 46,
+        "expectedStartDate": "2026-04-13",
+        "actualStartDate": "2026-04-14",
+        "expectedEndDate": "2026-04-17",
+        "actualEndDate": "2026-06-24",
+        "completed": true
+      },
+      {
+        "title": "Pool",
+        "endDateSlip": 30,
+        "durationSlip": 12,
+        "expectedStartDate": "2026-03-30",
+        "actualStartDate": "2026-04-24",
+        "expectedEndDate": "2026-07-02",
+        "actualEndDate": "2026-08-14",
+        "completed": true
+      },
+      {
+        "title": "Drywall & Insulation",
+        "endDateSlip": 44,
+        "durationSlip": 1,
+        "expectedStartDate": "2026-03-16",
+        "actualStartDate": "2026-05-15",
+        "expectedEndDate": "2026-03-27",
+        "actualEndDate": "2026-06-01",
+        "completed": true
+      },
+      {
+        "title": "Exterior Paint",
+        "endDateSlip": 34,
+        "durationSlip": 9,
+        "expectedStartDate": "2026-04-27",
+        "actualStartDate": "2026-06-02",
+        "expectedEndDate": "2026-05-01",
+        "actualEndDate": "2026-06-19",
+        "completed": true
+      },
+      {
+        "title": "Interior Paint",
+        "endDateSlip": 24,
+        "durationSlip": -1,
+        "expectedStartDate": "2026-04-27",
+        "actualStartDate": "2026-06-02",
+        "expectedEndDate": "2026-05-01",
+        "actualEndDate": "2026-06-05",
+        "completed": true
+      },
+      {
+        "title": "Garage Door",
+        "endDateSlip": 29,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-05-07",
+        "actualStartDate": "2026-06-18",
+        "expectedEndDate": "2026-05-08",
+        "actualEndDate": "2026-06-19",
+        "completed": true
+      },
+      {
+        "title": "Tile & Flooring",
+        "endDateSlip": 95,
+        "durationSlip": 42,
+        "expectedStartDate": "2026-04-07",
+        "actualStartDate": "2026-06-22",
+        "expectedEndDate": "2026-04-16",
+        "actualEndDate": "2026-08-31",
+        "completed": false
+      },
+      {
+        "title": "Roofing",
+        "endDateSlip": 82,
+        "durationSlip": 6,
+        "expectedStartDate": "2026-03-09",
+        "actualStartDate": "2026-06-25",
+        "expectedEndDate": "2026-03-13",
+        "actualEndDate": "2026-07-10",
+        "completed": true
+      },
+      {
+        "title": "MEP Trim-Outs",
+        "endDateSlip": 89,
+        "durationSlip": 32,
+        "expectedStartDate": "2026-05-05",
+        "actualStartDate": "2026-07-27",
+        "expectedEndDate": "2026-05-13",
+        "actualEndDate": "2026-09-18",
+        "completed": false
+      },
+      {
+        "title": "Driveway",
+        "endDateSlip": 73,
+        "durationSlip": 6,
+        "expectedStartDate": "2026-05-12",
+        "actualStartDate": "2026-08-17",
+        "expectedEndDate": "2026-05-15",
+        "actualEndDate": "2026-08-28",
+        "completed": false
+      },
+      {
+        "title": "Landscaping",
+        "endDateSlip": 48,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-06-16",
+        "actualStartDate": "2026-08-24",
+        "expectedEndDate": "2026-06-22",
+        "actualEndDate": "2026-08-28",
+        "completed": false
+      },
+      {
+        "title": "Interior Doors/Trim",
+        "endDateSlip": 97,
+        "durationSlip": 4,
+        "expectedStartDate": "2026-04-20",
+        "actualStartDate": "2026-08-31",
+        "expectedEndDate": "2026-04-24",
+        "actualEndDate": "2026-09-11",
+        "completed": false
+      },
+      {
+        "title": "Interior Specialties",
+        "endDateSlip": 74,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-05-19",
+        "actualStartDate": "2026-09-02",
+        "expectedEndDate": "2026-06-02",
+        "actualEndDate": "2026-09-16",
+        "completed": false
+      },
+      {
+        "title": "Final Inspections",
+        "endDateSlip": 67,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-06-09",
+        "actualStartDate": "2026-09-14",
+        "expectedEndDate": "2026-06-16",
+        "actualEndDate": "2026-09-21",
+        "completed": false
+      },
+      {
+        "title": "Final Trim Out",
+        "endDateSlip": 71,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-06-03",
+        "actualStartDate": "2026-09-14",
+        "expectedEndDate": "2026-06-05",
+        "actualEndDate": "2026-09-16",
+        "completed": false
+      },
+      {
+        "title": "Closing",
+        "endDateSlip": 63,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-06-30",
+        "actualStartDate": "2026-09-29",
+        "expectedEndDate": "2026-07-02",
+        "actualEndDate": "2026-10-01",
+        "completed": false
+      }
+    ],
+    "40497055": [
+      {
+        "title": "Sale/Contract Deposit",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-06-05",
+        "actualStartDate": "2025-06-05",
+        "expectedEndDate": "2025-06-05",
+        "actualEndDate": "2025-06-05",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 1 Due",
+        "endDateSlip": 131,
+        "durationSlip": 131,
+        "expectedStartDate": "2025-06-06",
+        "actualStartDate": "2025-06-06",
+        "expectedEndDate": "2025-06-16",
+        "actualEndDate": "2025-12-16",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 2 Due",
+        "endDateSlip": 124,
+        "durationSlip": 124,
+        "expectedStartDate": "2025-06-17",
+        "actualStartDate": "2025-06-17",
+        "expectedEndDate": "2025-06-25",
+        "actualEndDate": "2025-12-16",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 3 Due",
+        "endDateSlip": 76,
+        "durationSlip": 76,
+        "expectedStartDate": "2025-06-26",
+        "actualStartDate": "2025-06-26",
+        "expectedEndDate": "2025-07-04",
+        "actualEndDate": "2025-10-20",
+        "completed": true
+      },
+      {
+        "title": "Permitting",
+        "endDateSlip": 28,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-07-25",
+        "actualStartDate": "2025-09-03",
+        "expectedEndDate": "2025-08-21",
+        "actualEndDate": "2025-09-30",
+        "completed": true
+      },
+      {
+        "title": "Site Work",
+        "endDateSlip": 55,
+        "durationSlip": 11,
+        "expectedStartDate": "2025-08-22",
+        "actualStartDate": "2025-10-23",
+        "expectedEndDate": "2025-08-26",
+        "actualEndDate": "2025-11-11",
+        "completed": true
+      },
+      {
+        "title": "Foundation",
+        "endDateSlip": 77,
+        "durationSlip": 18,
+        "expectedStartDate": "2025-08-27",
+        "actualStartDate": "2025-11-18",
+        "expectedEndDate": "2025-09-01",
+        "actualEndDate": "2025-12-17",
+        "completed": true
+      },
+      {
+        "title": "Block Walls",
+        "endDateSlip": 135,
+        "durationSlip": 50,
+        "expectedStartDate": "2025-09-02",
+        "actualStartDate": "2025-12-30",
+        "expectedEndDate": "2025-09-08",
+        "actualEndDate": "2026-03-17",
+        "completed": true
+      },
+      {
+        "title": "Framing",
+        "endDateSlip": 135,
+        "durationSlip": 36,
+        "expectedStartDate": "2025-09-09",
+        "actualStartDate": "2026-01-27",
+        "expectedEndDate": "2025-09-24",
+        "actualEndDate": "2026-04-02",
+        "completed": true
+      },
+      {
+        "title": "Doors & Windows",
+        "endDateSlip": 150,
+        "durationSlip": 19,
+        "expectedStartDate": "2025-09-25",
+        "actualStartDate": "2026-03-30",
+        "expectedEndDate": "2025-10-01",
+        "actualEndDate": "2026-05-01",
+        "completed": true
+      },
+      {
+        "title": "Electrical Walk",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-03-30",
+        "actualStartDate": "2026-03-30",
+        "expectedEndDate": "2026-03-30",
+        "actualEndDate": "2026-03-30",
+        "completed": true
+      },
+      {
+        "title": "MEP Rough-Ins",
+        "endDateSlip": 147,
+        "durationSlip": 15,
+        "expectedStartDate": "2025-09-25",
+        "actualStartDate": "2026-03-31",
+        "expectedEndDate": "2025-10-13",
+        "actualEndDate": "2026-05-08",
+        "completed": true
+      },
+      {
+        "title": "Exterior Paint",
+        "endDateSlip": 198,
+        "durationSlip": 57,
+        "expectedStartDate": "2025-10-30",
+        "actualStartDate": "2026-05-19",
+        "expectedEndDate": "2025-11-05",
+        "actualEndDate": "2026-08-14",
+        "completed": true
+      },
+      {
+        "title": "Stucco & Siding",
+        "endDateSlip": 194,
+        "durationSlip": 48,
+        "expectedStartDate": "2025-10-23",
+        "actualStartDate": "2026-05-19",
+        "expectedEndDate": "2025-10-29",
+        "actualEndDate": "2026-08-03",
+        "completed": true
+      },
+      {
+        "title": "FMEP Inspection",
+        "endDateSlip": 157,
+        "durationSlip": -1,
+        "expectedStartDate": "2025-10-14",
+        "actualStartDate": "2026-05-27",
+        "expectedEndDate": "2025-10-15",
+        "actualEndDate": "2026-05-27",
+        "completed": true
+      },
+      {
+        "title": "Drywall & Insulation",
+        "endDateSlip": 192,
+        "durationSlip": 33,
+        "expectedStartDate": "2025-10-16",
+        "actualStartDate": "2026-06-01",
+        "expectedEndDate": "2025-10-29",
+        "actualEndDate": "2026-07-30",
+        "completed": true
+      },
+      {
+        "title": "Roofing",
+        "endDateSlip": 178,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-10-23",
+        "actualStartDate": "2026-07-06",
+        "expectedEndDate": "2025-10-29",
+        "actualEndDate": "2026-07-10",
+        "completed": true
+      },
+      {
+        "title": "Interior Paint",
+        "endDateSlip": 200,
+        "durationSlip": 12,
+        "expectedStartDate": "2025-10-30",
+        "actualStartDate": "2026-07-27",
+        "expectedEndDate": "2025-11-05",
+        "actualEndDate": "2026-08-18",
+        "completed": true
+      },
+      {
+        "title": "Tile & Flooring",
+        "endDateSlip": 205,
+        "durationSlip": 12,
+        "expectedStartDate": "2025-11-06",
+        "actualStartDate": "2026-08-10",
+        "expectedEndDate": "2025-11-17",
+        "actualEndDate": "2026-09-04",
+        "completed": false
+      },
+      {
+        "title": "Generator",
+        "endDateSlip": 166,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-12-23",
+        "actualStartDate": "2026-08-18",
+        "expectedEndDate": "2026-01-06",
+        "actualEndDate": "2026-08-31",
+        "completed": false
+      },
+      {
+        "title": "Garage Door",
+        "endDateSlip": 198,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-11-11",
+        "actualStartDate": "2026-08-20",
+        "expectedEndDate": "2025-11-12",
+        "actualEndDate": "2026-08-21",
+        "completed": true
+      },
+      {
+        "title": "Landscaping",
+        "endDateSlip": 169,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-12-30",
+        "actualStartDate": "2026-08-28",
+        "expectedEndDate": "2026-01-06",
+        "actualEndDate": "2026-09-03",
+        "completed": false
+      },
+      {
+        "title": "Pool",
+        "endDateSlip": 212,
+        "durationSlip": -10,
+        "expectedStartDate": "2025-10-17",
+        "actualStartDate": "2026-08-31",
+        "expectedEndDate": "2026-01-20",
+        "actualEndDate": "2026-11-18",
+        "completed": false
+      },
+      {
+        "title": "Interior Specialties",
+        "endDateSlip": 187,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-12-11",
+        "actualStartDate": "2026-09-04",
+        "expectedEndDate": "2025-12-24",
+        "actualEndDate": "2026-09-18",
+        "completed": false
+      },
+      {
+        "title": "Driveway",
+        "endDateSlip": 204,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-11-19",
+        "actualStartDate": "2026-09-08",
+        "expectedEndDate": "2025-11-24",
+        "actualEndDate": "2026-09-11",
+        "completed": false
+      },
+      {
+        "title": "Interior Doors/Trim",
+        "endDateSlip": 204,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-11-19",
+        "actualStartDate": "2026-09-08",
+        "expectedEndDate": "2025-11-25",
+        "actualEndDate": "2026-09-14",
+        "completed": false
+      },
+      {
+        "title": "MEP Trim-Outs",
+        "endDateSlip": 204,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-12-02",
+        "actualStartDate": "2026-09-21",
+        "expectedEndDate": "2025-12-10",
+        "actualEndDate": "2026-09-29",
+        "completed": false
+      },
+      {
+        "title": "Final Inspections",
+        "endDateSlip": 185,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-01-06",
+        "actualStartDate": "2026-09-28",
+        "expectedEndDate": "2026-01-13",
+        "actualEndDate": "2026-10-05",
+        "completed": false
+      },
+      {
+        "title": "Final Trim Out",
+        "endDateSlip": 197,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-12-25",
+        "actualStartDate": "2026-10-05",
+        "expectedEndDate": "2025-12-29",
+        "actualEndDate": "2026-10-07",
+        "completed": false
+      },
+      {
+        "title": "Closing",
+        "endDateSlip": 184,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-01-16",
+        "actualStartDate": "2026-10-07",
+        "expectedEndDate": "2026-01-20",
+        "actualEndDate": "2026-10-09",
+        "completed": false
+      }
+    ],
+    "40596161": [
+      {
+        "title": "Framing",
+        "endDateSlip": -13,
+        "durationSlip": -13,
+        "expectedStartDate": "2025-05-05",
+        "actualStartDate": "2025-05-05",
+        "expectedEndDate": "2025-06-05",
+        "actualEndDate": "2025-05-19",
+        "completed": true
+      },
+      {
+        "title": "Closing",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-11-03",
+        "actualStartDate": "2025-11-03",
+        "expectedEndDate": "2025-11-03",
+        "actualEndDate": "2025-11-03",
+        "completed": true
+      }
+    ],
+    "41118068": [
+      {
+        "title": "Sale/Contract Deposit",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-07-07",
+        "actualStartDate": "2025-07-07",
+        "expectedEndDate": "2025-07-07",
+        "actualEndDate": "2025-07-07",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 1 Due",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-07-08",
+        "actualStartDate": "2025-07-08",
+        "expectedEndDate": "2025-12-02",
+        "actualEndDate": "2025-12-02",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 2 Due",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-07-21",
+        "actualStartDate": "2025-07-21",
+        "expectedEndDate": "2026-01-09",
+        "actualEndDate": "2026-01-09",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 3 Due",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-07-28",
+        "actualStartDate": "2025-07-28",
+        "expectedEndDate": "2025-11-11",
+        "actualEndDate": "2025-11-11",
+        "completed": true
+      },
+      {
+        "title": "Permitting",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-01-02",
+        "actualStartDate": "2026-01-02",
+        "expectedEndDate": "2026-01-29",
+        "actualEndDate": "2026-01-29",
+        "completed": true
+      },
+      {
+        "title": "Site Work",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-02-05",
+        "actualStartDate": "2026-02-05",
+        "expectedEndDate": "2026-02-13",
+        "actualEndDate": "2026-02-13",
+        "completed": true
+      },
+      {
+        "title": "Foundation",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-02-16",
+        "actualStartDate": "2026-02-16",
+        "expectedEndDate": "2026-02-27",
+        "actualEndDate": "2026-02-27",
+        "completed": true
+      },
+      {
+        "title": "Block Walls",
+        "endDateSlip": 2,
+        "durationSlip": 2,
+        "expectedStartDate": "2026-03-03",
+        "actualStartDate": "2026-03-03",
+        "expectedEndDate": "2026-03-09",
+        "actualEndDate": "2026-03-11",
+        "completed": true
+      },
+      {
+        "title": "Framing",
+        "endDateSlip": 21,
+        "durationSlip": 17,
+        "expectedStartDate": "2026-03-10",
+        "actualStartDate": "2026-03-16",
+        "expectedEndDate": "2026-03-25",
+        "actualEndDate": "2026-04-24",
+        "completed": true
+      },
+      {
+        "title": "Doors & Windows",
+        "endDateSlip": 56,
+        "durationSlip": 41,
+        "expectedStartDate": "2026-03-26",
+        "actualStartDate": "2026-04-17",
+        "expectedEndDate": "2026-04-01",
+        "actualEndDate": "2026-06-22",
+        "completed": true
+      },
+      {
+        "title": "MEP Rough-Ins",
+        "endDateSlip": 32,
+        "durationSlip": 11,
+        "expectedStartDate": "2026-03-26",
+        "actualStartDate": "2026-04-27",
+        "expectedEndDate": "2026-04-14",
+        "actualEndDate": "2026-05-29",
+        "completed": true
+      },
+      {
+        "title": "Electrical Walk",
+        "endDateSlip": 24,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-04-21",
+        "actualStartDate": "2026-05-26",
+        "expectedEndDate": "2026-04-21",
+        "actualEndDate": "2026-05-26",
+        "completed": true
+      },
+      {
+        "title": "FMEP Inspection",
+        "endDateSlip": 48,
+        "durationSlip": -1,
+        "expectedStartDate": "2026-04-15",
+        "actualStartDate": "2026-06-24",
+        "expectedEndDate": "2026-04-16",
+        "actualEndDate": "2026-06-24",
+        "completed": true
+      },
+      {
+        "title": "Stucco & Siding",
+        "endDateSlip": 55,
+        "durationSlip": 10,
+        "expectedStartDate": "2026-04-24",
+        "actualStartDate": "2026-06-29",
+        "expectedEndDate": "2026-04-30",
+        "actualEndDate": "2026-07-20",
+        "completed": true
+      },
+      {
+        "title": "Drywall & Insulation",
+        "endDateSlip": 64,
+        "durationSlip": 3,
+        "expectedStartDate": "2026-04-17",
+        "actualStartDate": "2026-07-15",
+        "expectedEndDate": "2026-04-30",
+        "actualEndDate": "2026-07-31",
+        "completed": true
+      },
+      {
+        "title": "Exterior Paint",
+        "endDateSlip": 62,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-05-01",
+        "actualStartDate": "2026-07-30",
+        "expectedEndDate": "2026-05-07",
+        "actualEndDate": "2026-08-05",
+        "completed": true
+      },
+      {
+        "title": "Interior Paint",
+        "endDateSlip": 64,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-05-01",
+        "actualStartDate": "2026-08-03",
+        "expectedEndDate": "2026-05-07",
+        "actualEndDate": "2026-08-07",
+        "completed": true
+      },
+      {
+        "title": "Roofing",
+        "endDateSlip": 73,
+        "durationSlip": -1,
+        "expectedStartDate": "2026-04-24",
+        "actualStartDate": "2026-08-10",
+        "expectedEndDate": "2026-04-30",
+        "actualEndDate": "2026-08-13",
+        "completed": true
+      },
+      {
+        "title": "Garage Door",
+        "endDateSlip": 62,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-05-13",
+        "actualStartDate": "2026-08-11",
+        "expectedEndDate": "2026-05-14",
+        "actualEndDate": "2026-08-12",
+        "completed": true
+      },
+      {
+        "title": "Tile & Flooring",
+        "endDateSlip": 71,
+        "durationSlip": 1,
+        "expectedStartDate": "2026-05-08",
+        "actualStartDate": "2026-08-18",
+        "expectedEndDate": "2026-05-19",
+        "actualEndDate": "2026-08-28",
+        "completed": false
+      },
+      {
+        "title": "Interior Doors/Trim",
+        "endDateSlip": 74,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-05-21",
+        "actualStartDate": "2026-09-04",
+        "expectedEndDate": "2026-05-28",
+        "actualEndDate": "2026-09-11",
+        "completed": false
+      },
+      {
+        "title": "Driveway",
+        "endDateSlip": 80,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-05-21",
+        "actualStartDate": "2026-09-08",
+        "expectedEndDate": "2026-05-27",
+        "actualEndDate": "2026-09-18",
+        "completed": false
+      },
+      {
+        "title": "Interior Specialties",
+        "endDateSlip": 64,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-06-15",
+        "actualStartDate": "2026-09-15",
+        "expectedEndDate": "2026-06-26",
+        "actualEndDate": "2026-09-28",
+        "completed": false
+      },
+      {
+        "title": "MEP Trim-Outs",
+        "endDateSlip": 74,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-06-04",
+        "actualStartDate": "2026-09-18",
+        "expectedEndDate": "2026-06-12",
+        "actualEndDate": "2026-09-28",
+        "completed": false
+      },
+      {
+        "title": "Landscaping",
+        "endDateSlip": 53,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-07-10",
+        "actualStartDate": "2026-09-24",
+        "expectedEndDate": "2026-07-16",
+        "actualEndDate": "2026-09-30",
+        "completed": false
+      },
+      {
+        "title": "Final Trim Out",
+        "endDateSlip": 64,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-06-29",
+        "actualStartDate": "2026-09-29",
+        "expectedEndDate": "2026-07-01",
+        "actualEndDate": "2026-10-01",
+        "completed": false
+      },
+      {
+        "title": "Final Inspections",
+        "endDateSlip": 62,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-07-09",
+        "actualStartDate": "2026-10-06",
+        "expectedEndDate": "2026-07-16",
+        "actualEndDate": "2026-10-13",
+        "completed": false
+      },
+      {
+        "title": "Closing",
+        "endDateSlip": 51,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-07-31",
+        "actualStartDate": "2026-10-13",
+        "expectedEndDate": "2026-08-04",
+        "actualEndDate": "2026-10-15",
+        "completed": false
+      }
+    ],
+    "41200140": [
+      {
+        "title": "Sale/Contract Deposit",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-07-15",
+        "actualStartDate": "2025-07-15",
+        "expectedEndDate": "2025-07-15",
+        "actualEndDate": "2025-07-15",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 1 Due",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-07-16",
+        "actualStartDate": "2025-07-16",
+        "expectedEndDate": "2025-10-17",
+        "actualEndDate": "2025-10-17",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 2 Due",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-07-25",
+        "actualStartDate": "2025-07-25",
+        "expectedEndDate": "2026-02-23",
+        "actualEndDate": "2026-02-23",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 3 Due",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-08-05",
+        "actualStartDate": "2025-08-05",
+        "expectedEndDate": "2026-01-15",
+        "actualEndDate": "2026-01-15",
+        "completed": true
+      },
+      {
+        "title": "Permitting",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-09-30",
+        "actualStartDate": "2025-09-30",
+        "expectedEndDate": "2025-11-26",
+        "actualEndDate": "2025-11-26",
+        "completed": true
+      },
+      {
+        "title": "Site Work",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-11-27",
+        "actualStartDate": "2025-11-27",
+        "expectedEndDate": "2025-12-12",
+        "actualEndDate": "2025-12-12",
+        "completed": true
+      },
+      {
+        "title": "Foundation",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-12-15",
+        "actualStartDate": "2025-12-15",
+        "expectedEndDate": "2025-12-18",
+        "actualEndDate": "2025-12-18",
+        "completed": true
+      },
+      {
+        "title": "Block Walls",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-12-29",
+        "actualStartDate": "2025-12-29",
+        "expectedEndDate": "2026-01-05",
+        "actualEndDate": "2026-01-05",
+        "completed": true
+      },
+      {
+        "title": "Framing",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-01-06",
+        "actualStartDate": "2026-01-06",
+        "expectedEndDate": "2026-02-10",
+        "actualEndDate": "2026-02-10",
+        "completed": true
+      },
+      {
+        "title": "Doors & Windows",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-01-30",
+        "actualStartDate": "2026-01-30",
+        "expectedEndDate": "2026-02-05",
+        "actualEndDate": "2026-02-05",
+        "completed": true
+      },
+      {
+        "title": "MEP Rough-Ins",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-01-30",
+        "actualStartDate": "2026-01-30",
+        "expectedEndDate": "2026-02-17",
+        "actualEndDate": "2026-02-17",
+        "completed": true
+      },
+      {
+        "title": "FMEP Inspection",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-02-17",
+        "actualStartDate": "2026-02-17",
+        "expectedEndDate": "2026-02-18",
+        "actualEndDate": "2026-02-18",
+        "completed": true
+      },
+      {
+        "title": "Roofing",
+        "endDateSlip": 27,
+        "durationSlip": 27,
+        "expectedStartDate": "2026-02-24",
+        "actualStartDate": "2026-02-24",
+        "expectedEndDate": "2026-03-17",
+        "actualEndDate": "2026-04-24",
+        "completed": true
+      },
+      {
+        "title": "Driveway",
+        "endDateSlip": 53,
+        "durationSlip": 44,
+        "expectedStartDate": "2026-03-18",
+        "actualStartDate": "2026-03-31",
+        "expectedEndDate": "2026-03-23",
+        "actualEndDate": "2026-06-08",
+        "completed": true
+      },
+      {
+        "title": "Interior Paint",
+        "endDateSlip": 18,
+        "durationSlip": -2,
+        "expectedStartDate": "2026-03-11",
+        "actualStartDate": "2026-04-09",
+        "expectedEndDate": "2026-03-17",
+        "actualEndDate": "2026-04-13",
+        "completed": true
+      },
+      {
+        "title": "Exterior Paint",
+        "endDateSlip": 21,
+        "durationSlip": -3,
+        "expectedStartDate": "2026-03-06",
+        "actualStartDate": "2026-04-10",
+        "expectedEndDate": "2026-03-13",
+        "actualEndDate": "2026-04-14",
+        "completed": true
+      },
+      {
+        "title": "Tile & Flooring",
+        "endDateSlip": 66,
+        "durationSlip": 25,
+        "expectedStartDate": "2026-02-26",
+        "actualStartDate": "2026-04-27",
+        "expectedEndDate": "2026-03-24",
+        "actualEndDate": "2026-06-26",
+        "completed": true
+      },
+      {
+        "title": "Garage Door",
+        "endDateSlip": 10,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-04-23",
+        "actualStartDate": "2026-05-07",
+        "expectedEndDate": "2026-04-24",
+        "actualEndDate": "2026-05-08",
+        "completed": true
+      },
+      {
+        "title": "MEP Trim-Outs",
+        "endDateSlip": 56,
+        "durationSlip": 19,
+        "expectedStartDate": "2026-03-17",
+        "actualStartDate": "2026-05-08",
+        "expectedEndDate": "2026-03-25",
+        "actualEndDate": "2026-06-15",
+        "completed": true
+      },
+      {
+        "title": "Interior Specialties",
+        "endDateSlip": 82,
+        "durationSlip": 44,
+        "expectedStartDate": "2026-04-07",
+        "actualStartDate": "2026-06-01",
+        "expectedEndDate": "2026-04-20",
+        "actualEndDate": "2026-08-14",
+        "completed": true
+      },
+      {
+        "title": "Interior Doors/Trim",
+        "endDateSlip": 47,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-03-30",
+        "actualStartDate": "2026-06-05",
+        "expectedEndDate": "2026-04-06",
+        "actualEndDate": "2026-06-11",
+        "completed": true
+      },
+      {
+        "title": "Final Trim Out",
+        "endDateSlip": 72,
+        "durationSlip": 11,
+        "expectedStartDate": "2026-04-06",
+        "actualStartDate": "2026-07-01",
+        "expectedEndDate": "2026-04-08",
+        "actualEndDate": "2026-07-21",
+        "completed": true
+      },
+      {
+        "title": "Landscaping",
+        "endDateSlip": 77,
+        "durationSlip": 1,
+        "expectedStartDate": "2026-03-20",
+        "actualStartDate": "2026-07-09",
+        "expectedEndDate": "2026-03-26",
+        "actualEndDate": "2026-07-16",
+        "completed": true
+      },
+      {
+        "title": "Final Inspections",
+        "endDateSlip": 89,
+        "durationSlip": 7,
+        "expectedStartDate": "2026-04-06",
+        "actualStartDate": "2026-07-31",
+        "expectedEndDate": "2026-04-13",
+        "actualEndDate": "2026-08-18",
+        "completed": true
+      },
+      {
+        "title": "Closing",
+        "endDateSlip": 96,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-04-16",
+        "actualStartDate": "2026-09-01",
+        "expectedEndDate": "2026-04-20",
+        "actualEndDate": "2026-09-03",
+        "completed": false
+      }
+    ],
+    "41776958": [
+      {
+        "title": "Sale/Contract Deposit",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-08-21",
+        "actualStartDate": "2025-08-21",
+        "expectedEndDate": "2025-08-21",
+        "actualEndDate": "2025-08-21",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 1 Due",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-08-22",
+        "actualStartDate": "2025-08-22",
+        "expectedEndDate": "2026-02-24",
+        "actualEndDate": "2026-02-24",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 2 Due",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-09-02",
+        "actualStartDate": "2025-09-02",
+        "expectedEndDate": "2026-02-24",
+        "actualEndDate": "2026-02-24",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 3 Due",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-09-11",
+        "actualStartDate": "2025-09-11",
+        "expectedEndDate": "2026-03-10",
+        "actualEndDate": "2026-03-10",
+        "completed": true
+      },
+      {
+        "title": "Permitting",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-01-30",
+        "actualStartDate": "2026-01-30",
+        "expectedEndDate": "2026-02-26",
+        "actualEndDate": "2026-02-26",
+        "completed": true
+      },
+      {
+        "title": "Site Work",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-02-27",
+        "actualStartDate": "2026-02-27",
+        "expectedEndDate": "2026-03-03",
+        "actualEndDate": "2026-03-03",
+        "completed": true
+      },
+      {
+        "title": "Foundation",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-03-04",
+        "actualStartDate": "2026-03-04",
+        "expectedEndDate": "2026-03-11",
+        "actualEndDate": "2026-03-11",
+        "completed": true
+      },
+      {
+        "title": "Block Walls",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-03-12",
+        "actualStartDate": "2026-03-12",
+        "expectedEndDate": "2026-03-25",
+        "actualEndDate": "2026-03-25",
+        "completed": true
+      },
+      {
+        "title": "Framing",
+        "endDateSlip": -1,
+        "durationSlip": -1,
+        "expectedStartDate": "2026-03-30",
+        "actualStartDate": "2026-03-30",
+        "expectedEndDate": "2026-04-20",
+        "actualEndDate": "2026-04-17",
+        "completed": true
+      },
+      {
+        "title": "Doors & Windows",
+        "endDateSlip": -1,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-04-21",
+        "actualStartDate": "2026-04-20",
+        "expectedEndDate": "2026-04-27",
+        "actualEndDate": "2026-04-24",
+        "completed": true
+      },
+      {
+        "title": "MEP Rough-Ins",
+        "endDateSlip": -7,
+        "durationSlip": -6,
+        "expectedStartDate": "2026-04-21",
+        "actualStartDate": "2026-04-20",
+        "expectedEndDate": "2026-05-07",
+        "actualEndDate": "2026-04-28",
+        "completed": true
+      },
+      {
+        "title": "FMEP Inspection",
+        "endDateSlip": -7,
+        "durationSlip": -1,
+        "expectedStartDate": "2026-05-08",
+        "actualStartDate": "2026-04-30",
+        "expectedEndDate": "2026-05-11",
+        "actualEndDate": "2026-04-30",
+        "completed": true
+      },
+      {
+        "title": "Drywall & Insulation",
+        "endDateSlip": 0,
+        "durationSlip": 3,
+        "expectedStartDate": "2026-05-12",
+        "actualStartDate": "2026-05-07",
+        "expectedEndDate": "2026-05-26",
+        "actualEndDate": "2026-05-26",
+        "completed": true
+      },
+      {
+        "title": "Stucco & Siding",
+        "endDateSlip": 2,
+        "durationSlip": 8,
+        "expectedStartDate": "2026-05-19",
+        "actualStartDate": "2026-05-11",
+        "expectedEndDate": "2026-05-26",
+        "actualEndDate": "2026-05-28",
+        "completed": true
+      },
+      {
+        "title": "Exterior Paint",
+        "endDateSlip": -2,
+        "durationSlip": -3,
+        "expectedStartDate": "2026-05-27",
+        "actualStartDate": "2026-05-28",
+        "expectedEndDate": "2026-06-02",
+        "actualEndDate": "2026-05-29",
+        "completed": true
+      },
+      {
+        "title": "Interior Paint",
+        "endDateSlip": -2,
+        "durationSlip": -4,
+        "expectedStartDate": "2026-05-27",
+        "actualStartDate": "2026-05-29",
+        "expectedEndDate": "2026-06-02",
+        "actualEndDate": "2026-05-29",
+        "completed": true
+      },
+      {
+        "title": "Garage Door",
+        "endDateSlip": -6,
+        "durationSlip": -1,
+        "expectedStartDate": "2026-06-08",
+        "actualStartDate": "2026-06-01",
+        "expectedEndDate": "2026-06-09",
+        "actualEndDate": "2026-06-01",
+        "completed": true
+      },
+      {
+        "title": "Roofing",
+        "endDateSlip": 8,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-05-19",
+        "actualStartDate": "2026-06-01",
+        "expectedEndDate": "2026-05-26",
+        "actualEndDate": "2026-06-05",
+        "completed": true
+      },
+      {
+        "title": "Tile & Flooring",
+        "endDateSlip": 0,
+        "durationSlip": 1,
+        "expectedStartDate": "2026-06-03",
+        "actualStartDate": "2026-06-02",
+        "expectedEndDate": "2026-06-12",
+        "actualEndDate": "2026-06-12",
+        "completed": true
+      },
+      {
+        "title": "Interior Doors/Trim",
+        "endDateSlip": -3,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-06-16",
+        "actualStartDate": "2026-06-11",
+        "expectedEndDate": "2026-06-22",
+        "actualEndDate": "2026-06-17",
+        "completed": true
+      },
+      {
+        "title": "MEP Trim-Outs",
+        "endDateSlip": 3,
+        "durationSlip": 4,
+        "expectedStartDate": "2026-06-29",
+        "actualStartDate": "2026-06-26",
+        "expectedEndDate": "2026-07-08",
+        "actualEndDate": "2026-07-13",
+        "completed": true
+      },
+      {
+        "title": "Pool",
+        "endDateSlip": 9,
+        "durationSlip": -22,
+        "expectedStartDate": "2026-05-13",
+        "actualStartDate": "2026-06-26",
+        "expectedEndDate": "2026-08-17",
+        "actualEndDate": "2026-08-28",
+        "completed": false
+      },
+      {
+        "title": "Driveway",
+        "endDateSlip": 12,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-06-16",
+        "actualStartDate": "2026-07-02",
+        "expectedEndDate": "2026-06-19",
+        "actualEndDate": "2026-07-08",
+        "completed": true
+      },
+      {
+        "title": "Interior Specialties",
+        "endDateSlip": -1,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-07-09",
+        "actualStartDate": "2026-07-08",
+        "expectedEndDate": "2026-07-22",
+        "actualEndDate": "2026-07-21",
+        "completed": true
+      },
+      {
+        "title": "Summer Kitchen",
+        "endDateSlip": -6,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-07-17",
+        "actualStartDate": "2026-07-09",
+        "expectedEndDate": "2026-08-03",
+        "actualEndDate": "2026-07-24",
+        "completed": true
+      },
+      {
+        "title": "Final Inspections",
+        "endDateSlip": -1,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-08-03",
+        "actualStartDate": "2026-07-31",
+        "expectedEndDate": "2026-08-10",
+        "actualEndDate": "2026-08-07",
+        "completed": true
+      },
+      {
+        "title": "Final Trim Out",
+        "endDateSlip": 12,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-07-23",
+        "actualStartDate": "2026-08-03",
+        "expectedEndDate": "2026-07-27",
+        "actualEndDate": "2026-08-12",
+        "completed": true
+      },
+      {
+        "title": "Landscaping",
+        "endDateSlip": 11,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-07-28",
+        "actualStartDate": "2026-08-12",
+        "expectedEndDate": "2026-08-03",
+        "actualEndDate": "2026-08-18",
+        "completed": true
+      },
+      {
+        "title": "Closing",
+        "endDateSlip": 13,
+        "durationSlip": -2,
+        "expectedStartDate": "2026-08-13",
+        "actualStartDate": "2026-09-03",
+        "expectedEndDate": "2026-08-17",
+        "actualEndDate": "2026-09-03",
+        "completed": false
+      }
+    ],
+    "42083349": [
+      {
+        "title": "Sale/Contract Deposit",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-09-29",
+        "actualStartDate": "2025-09-29",
+        "expectedEndDate": "2025-09-29",
+        "actualEndDate": "2025-09-29",
+        "completed": true
+      },
+      {
+        "title": "Draft Plans",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-09-30",
+        "actualStartDate": "2025-09-30",
+        "expectedEndDate": "2025-11-10",
+        "actualEndDate": "2025-11-10",
+        "completed": true
+      },
+      {
+        "title": "Bid Period",
+        "endDateSlip": 102,
+        "durationSlip": 102,
+        "expectedStartDate": "2025-10-09",
+        "actualStartDate": "2025-10-09",
+        "expectedEndDate": "2025-12-29",
+        "actualEndDate": "2026-05-22",
+        "completed": true
+      },
+      {
+        "title": "Permitting",
+        "endDateSlip": 109,
+        "durationSlip": 109,
+        "expectedStartDate": "2025-11-18",
+        "actualStartDate": "2025-11-18",
+        "expectedEndDate": "2025-12-15",
+        "actualEndDate": "2026-05-19",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 1 Due",
+        "endDateSlip": 115,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-11-11",
+        "actualStartDate": "2026-04-23",
+        "expectedEndDate": "2025-11-19",
+        "actualEndDate": "2026-05-01",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 2 Due",
+        "endDateSlip": 113,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-11-20",
+        "actualStartDate": "2026-04-30",
+        "expectedEndDate": "2025-11-28",
+        "actualEndDate": "2026-05-08",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 3 Due",
+        "endDateSlip": 108,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-12-04",
+        "actualStartDate": "2026-05-07",
+        "expectedEndDate": "2025-12-12",
+        "actualEndDate": "2026-05-15",
+        "completed": true
+      },
+      {
+        "title": "Site Work",
+        "endDateSlip": 119,
+        "durationSlip": 8,
+        "expectedStartDate": "2025-12-30",
+        "actualStartDate": "2026-06-08",
+        "expectedEndDate": "2026-01-02",
+        "actualEndDate": "2026-06-22",
+        "completed": true
+      },
+      {
+        "title": "Foundation",
+        "endDateSlip": 138,
+        "durationSlip": 19,
+        "expectedStartDate": "2026-01-05",
+        "actualStartDate": "2026-06-23",
+        "expectedEndDate": "2026-01-08",
+        "actualEndDate": "2026-07-24",
+        "completed": true
+      },
+      {
+        "title": "Block Walls",
+        "endDateSlip": 147,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-01-09",
+        "actualStartDate": "2026-07-31",
+        "expectedEndDate": "2026-01-15",
+        "actualEndDate": "2026-08-13",
+        "completed": true
+      },
+      {
+        "title": "Framing",
+        "endDateSlip": 155,
+        "durationSlip": 8,
+        "expectedStartDate": "2026-01-16",
+        "actualStartDate": "2026-08-14",
+        "expectedEndDate": "2026-02-02",
+        "actualEndDate": "2026-09-11",
+        "completed": false
+      },
+      {
+        "title": "Doors & Windows",
+        "endDateSlip": 152,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-02-03",
+        "actualStartDate": "2026-09-09",
+        "expectedEndDate": "2026-02-09",
+        "actualEndDate": "2026-09-15",
+        "completed": false
+      },
+      {
+        "title": "MEP Rough-Ins",
+        "endDateSlip": 147,
+        "durationSlip": -8,
+        "expectedStartDate": "2026-02-03",
+        "actualStartDate": "2026-09-14",
+        "expectedEndDate": "2026-02-19",
+        "actualEndDate": "2026-09-18",
+        "completed": false
+      },
+      {
+        "title": "FMEP Inspection",
+        "endDateSlip": 147,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-02-20",
+        "actualStartDate": "2026-09-21",
+        "expectedEndDate": "2026-02-23",
+        "actualEndDate": "2026-09-22",
+        "completed": false
+      },
+      {
+        "title": "Drywall & Insulation",
+        "endDateSlip": 150,
+        "durationSlip": 3,
+        "expectedStartDate": "2026-02-24",
+        "actualStartDate": "2026-09-23",
+        "expectedEndDate": "2026-03-09",
+        "actualEndDate": "2026-10-09",
+        "completed": false
+      },
+      {
+        "title": "Interior Paint",
+        "endDateSlip": 150,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-03-10",
+        "actualStartDate": "2026-10-12",
+        "expectedEndDate": "2026-03-16",
+        "actualEndDate": "2026-10-16",
+        "completed": false
+      },
+      {
+        "title": "Roofing",
+        "endDateSlip": 155,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-03-03",
+        "actualStartDate": "2026-10-12",
+        "expectedEndDate": "2026-03-09",
+        "actualEndDate": "2026-10-16",
+        "completed": false
+      },
+      {
+        "title": "Stucco & Siding",
+        "endDateSlip": 155,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-03-03",
+        "actualStartDate": "2026-10-12",
+        "expectedEndDate": "2026-03-09",
+        "actualEndDate": "2026-10-16",
+        "completed": false
+      },
+      {
+        "title": "Exterior Paint",
+        "endDateSlip": 155,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-03-10",
+        "actualStartDate": "2026-10-19",
+        "expectedEndDate": "2026-03-16",
+        "actualEndDate": "2026-10-23",
+        "completed": false
+      },
+      {
+        "title": "Tile & Flooring",
+        "endDateSlip": 150,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-03-17",
+        "actualStartDate": "2026-10-19",
+        "expectedEndDate": "2026-03-26",
+        "actualEndDate": "2026-10-28",
+        "completed": false
+      },
+      {
+        "title": "Garage Door",
+        "endDateSlip": 155,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-03-20",
+        "actualStartDate": "2026-10-29",
+        "expectedEndDate": "2026-03-23",
+        "actualEndDate": "2026-10-30",
+        "completed": false
+      },
+      {
+        "title": "Interior Doors/Trim",
+        "endDateSlip": 150,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-03-30",
+        "actualStartDate": "2026-10-30",
+        "expectedEndDate": "2026-04-06",
+        "actualEndDate": "2026-11-05",
+        "completed": false
+      },
+      {
+        "title": "Driveway",
+        "endDateSlip": 155,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-03-30",
+        "actualStartDate": "2026-11-06",
+        "expectedEndDate": "2026-04-02",
+        "actualEndDate": "2026-11-11",
+        "completed": false
+      },
+      {
+        "title": "Landscaping",
+        "endDateSlip": 127,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-05-11",
+        "actualStartDate": "2026-11-09",
+        "expectedEndDate": "2026-05-15",
+        "actualEndDate": "2026-11-13",
+        "completed": false
+      },
+      {
+        "title": "MEP Trim-Outs",
+        "endDateSlip": 150,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-04-13",
+        "actualStartDate": "2026-11-12",
+        "expectedEndDate": "2026-04-21",
+        "actualEndDate": "2026-11-20",
+        "completed": false
+      },
+      {
+        "title": "Interior Specialties",
+        "endDateSlip": 150,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-04-22",
+        "actualStartDate": "2026-11-23",
+        "expectedEndDate": "2026-05-05",
+        "actualEndDate": "2026-12-08",
+        "completed": false
+      },
+      {
+        "title": "Closing",
+        "endDateSlip": 127,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-05-28",
+        "actualStartDate": "2026-11-25",
+        "expectedEndDate": "2026-06-01",
+        "actualEndDate": "2026-12-01",
+        "completed": false
+      },
+      {
+        "title": "Appliances",
+        "endDateSlip": 150,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-05-04",
+        "actualStartDate": "2026-12-07",
+        "expectedEndDate": "2026-05-07",
+        "actualEndDate": "2026-12-10",
+        "completed": false
+      },
+      {
+        "title": "Final Trim Out",
+        "endDateSlip": 150,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-05-06",
+        "actualStartDate": "2026-12-09",
+        "expectedEndDate": "2026-05-08",
+        "actualEndDate": "2026-12-11",
+        "completed": false
+      },
+      {
+        "title": "Final Inspections",
+        "endDateSlip": 150,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-05-15",
+        "actualStartDate": "2026-12-18",
+        "expectedEndDate": "2026-05-22",
+        "actualEndDate": "2026-12-28",
+        "completed": false
+      }
+    ],
+    "42615310": [
+      {
+        "title": "Sale/Contract Deposit",
+        "endDateSlip": 0,
+        "durationSlip": 1,
+        "expectedStartDate": "2026-03-25",
+        "actualStartDate": "2026-03-25",
+        "expectedEndDate": "2026-03-25",
+        "actualEndDate": "2026-03-25",
+        "completed": true
+      },
+      {
+        "title": "Draft Plans",
+        "endDateSlip": 0,
+        "durationSlip": 30,
+        "expectedStartDate": "2026-03-26",
+        "actualStartDate": "2026-03-26",
+        "expectedEndDate": "2026-05-07",
+        "actualEndDate": "2026-05-07",
+        "completed": true
+      },
+      {
+        "title": "Bid Period",
+        "endDateSlip": 0,
+        "durationSlip": 116,
+        "expectedStartDate": "2026-04-07",
+        "actualStartDate": "2026-04-07",
+        "expectedEndDate": "2026-09-18",
+        "actualEndDate": "2026-09-18",
+        "completed": false
+      },
+      {
+        "title": "Selection Phase 1 Due",
+        "endDateSlip": 0,
+        "durationSlip": 7,
+        "expectedStartDate": "2026-05-14",
+        "actualStartDate": "2026-05-14",
+        "expectedEndDate": "2026-05-22",
+        "actualEndDate": "2026-05-22",
+        "completed": true
+      },
+      {
+        "title": "Permitting",
+        "endDateSlip": 0,
+        "durationSlip": 83,
+        "expectedStartDate": "2026-05-15",
+        "actualStartDate": "2026-05-15",
+        "expectedEndDate": "2026-09-11",
+        "actualEndDate": "2026-09-11",
+        "completed": false
+      },
+      {
+        "title": "Selection Phase 2 Due",
+        "endDateSlip": 0,
+        "durationSlip": 7,
+        "expectedStartDate": "2026-08-24",
+        "actualStartDate": "2026-08-24",
+        "expectedEndDate": "2026-09-01",
+        "actualEndDate": "2026-09-01",
+        "completed": false
+      },
+      {
+        "title": "Selection Phase 3 Due",
+        "endDateSlip": 0,
+        "durationSlip": 7,
+        "expectedStartDate": "2026-09-02",
+        "actualStartDate": "2026-09-02",
+        "expectedEndDate": "2026-09-11",
+        "actualEndDate": "2026-09-11",
+        "completed": false
+      },
+      {
+        "title": "Site Work",
+        "endDateSlip": 0,
+        "durationSlip": 3,
+        "expectedStartDate": "2026-09-21",
+        "actualStartDate": "2026-09-21",
+        "expectedEndDate": "2026-09-23",
+        "actualEndDate": "2026-09-23",
+        "completed": false
+      },
+      {
+        "title": "Foundation",
+        "endDateSlip": 0,
+        "durationSlip": 4,
+        "expectedStartDate": "2026-09-24",
+        "actualStartDate": "2026-09-24",
+        "expectedEndDate": "2026-09-29",
+        "actualEndDate": "2026-09-29",
+        "completed": false
+      },
+      {
+        "title": "Block Walls",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-09-30",
+        "actualStartDate": "2026-09-30",
+        "expectedEndDate": "2026-10-06",
+        "actualEndDate": "2026-10-06",
+        "completed": false
+      },
+      {
+        "title": "Framing",
+        "endDateSlip": 0,
+        "durationSlip": 12,
+        "expectedStartDate": "2026-10-07",
+        "actualStartDate": "2026-10-07",
+        "expectedEndDate": "2026-10-22",
+        "actualEndDate": "2026-10-22",
+        "completed": false
+      },
+      {
+        "title": "Doors & Windows",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-10-23",
+        "actualStartDate": "2026-10-23",
+        "expectedEndDate": "2026-10-29",
+        "actualEndDate": "2026-10-29",
+        "completed": false
+      },
+      {
+        "title": "MEP Rough-Ins",
+        "endDateSlip": 0,
+        "durationSlip": 13,
+        "expectedStartDate": "2026-10-23",
+        "actualStartDate": "2026-10-23",
+        "expectedEndDate": "2026-11-10",
+        "actualEndDate": "2026-11-10",
+        "completed": false
+      },
+      {
+        "title": "FMEP Inspection",
+        "endDateSlip": 0,
+        "durationSlip": 2,
+        "expectedStartDate": "2026-11-11",
+        "actualStartDate": "2026-11-11",
+        "expectedEndDate": "2026-11-12",
+        "actualEndDate": "2026-11-12",
+        "completed": false
+      },
+      {
+        "title": "Drywall & Insulation",
+        "endDateSlip": 0,
+        "durationSlip": 10,
+        "expectedStartDate": "2026-11-13",
+        "actualStartDate": "2026-11-13",
+        "expectedEndDate": "2026-11-30",
+        "actualEndDate": "2026-11-30",
+        "completed": false
+      },
+      {
+        "title": "Pool",
+        "endDateSlip": 0,
+        "durationSlip": 67,
+        "expectedStartDate": "2026-11-16",
+        "actualStartDate": "2026-11-16",
+        "expectedEndDate": "2027-02-22",
+        "actualEndDate": "2027-02-22",
+        "completed": false
+      },
+      {
+        "title": "Roofing",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-11-20",
+        "actualStartDate": "2026-11-20",
+        "expectedEndDate": "2026-11-30",
+        "actualEndDate": "2026-11-30",
+        "completed": false
+      },
+      {
+        "title": "Stucco & Siding",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-11-20",
+        "actualStartDate": "2026-11-20",
+        "expectedEndDate": "2026-11-30",
+        "actualEndDate": "2026-11-30",
+        "completed": false
+      },
+      {
+        "title": "Exterior Paint",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-12-01",
+        "actualStartDate": "2026-12-01",
+        "expectedEndDate": "2026-12-07",
+        "actualEndDate": "2026-12-07",
+        "completed": false
+      },
+      {
+        "title": "Interior Paint",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-12-01",
+        "actualStartDate": "2026-12-01",
+        "expectedEndDate": "2026-12-07",
+        "actualEndDate": "2026-12-07",
+        "completed": false
+      },
+      {
+        "title": "Tile & Flooring",
+        "endDateSlip": 0,
+        "durationSlip": 8,
+        "expectedStartDate": "2026-12-08",
+        "actualStartDate": "2026-12-08",
+        "expectedEndDate": "2026-12-17",
+        "actualEndDate": "2026-12-17",
+        "completed": false
+      },
+      {
+        "title": "Garage Door",
+        "endDateSlip": 0,
+        "durationSlip": 2,
+        "expectedStartDate": "2026-12-11",
+        "actualStartDate": "2026-12-11",
+        "expectedEndDate": "2026-12-14",
+        "actualEndDate": "2026-12-14",
+        "completed": false
+      },
+      {
+        "title": "Driveway",
+        "endDateSlip": 0,
+        "durationSlip": 4,
+        "expectedStartDate": "2026-12-21",
+        "actualStartDate": "2026-12-21",
+        "expectedEndDate": "2026-12-24",
+        "actualEndDate": "2026-12-24",
+        "completed": false
+      },
+      {
+        "title": "Interior Doors/Trim",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-12-21",
+        "actualStartDate": "2026-12-21",
+        "expectedEndDate": "2026-12-28",
+        "actualEndDate": "2026-12-28",
+        "completed": false
+      },
+      {
+        "title": "MEP Trim-Outs",
+        "endDateSlip": 0,
+        "durationSlip": 7,
+        "expectedStartDate": "2027-01-05",
+        "actualStartDate": "2027-01-05",
+        "expectedEndDate": "2027-01-13",
+        "actualEndDate": "2027-01-13",
+        "completed": false
+      },
+      {
+        "title": "Interior Specialties",
+        "endDateSlip": 0,
+        "durationSlip": 10,
+        "expectedStartDate": "2027-01-14",
+        "actualStartDate": "2027-01-14",
+        "expectedEndDate": "2027-01-27",
+        "actualEndDate": "2027-01-27",
+        "completed": false
+      },
+      {
+        "title": "Summer Kitchen",
+        "endDateSlip": 0,
+        "durationSlip": 12,
+        "expectedStartDate": "2027-01-22",
+        "actualStartDate": "2027-01-22",
+        "expectedEndDate": "2027-02-08",
+        "actualEndDate": "2027-02-08",
+        "completed": false
+      },
+      {
+        "title": "Appliances",
+        "endDateSlip": 0,
+        "durationSlip": 4,
+        "expectedStartDate": "2027-01-26",
+        "actualStartDate": "2027-01-26",
+        "expectedEndDate": "2027-01-29",
+        "actualEndDate": "2027-01-29",
+        "completed": false
+      },
+      {
+        "title": "Generator",
+        "endDateSlip": 0,
+        "durationSlip": 10,
+        "expectedStartDate": "2027-01-26",
+        "actualStartDate": "2027-01-26",
+        "expectedEndDate": "2027-02-08",
+        "actualEndDate": "2027-02-08",
+        "completed": false
+      },
+      {
+        "title": "Final Trim Out",
+        "endDateSlip": 0,
+        "durationSlip": 3,
+        "expectedStartDate": "2027-01-28",
+        "actualStartDate": "2027-01-28",
+        "expectedEndDate": "2027-02-01",
+        "actualEndDate": "2027-02-01",
+        "completed": false
+      },
+      {
+        "title": "Landscaping",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2027-02-02",
+        "actualStartDate": "2027-02-02",
+        "expectedEndDate": "2027-02-08",
+        "actualEndDate": "2027-02-08",
+        "completed": false
+      },
+      {
+        "title": "Final Inspections",
+        "endDateSlip": 0,
+        "durationSlip": 6,
+        "expectedStartDate": "2027-02-08",
+        "actualStartDate": "2027-02-08",
+        "expectedEndDate": "2027-02-15",
+        "actualEndDate": "2027-02-15",
+        "completed": false
+      },
+      {
+        "title": "Closing",
+        "endDateSlip": 0,
+        "durationSlip": 3,
+        "expectedStartDate": "2027-02-18",
+        "actualStartDate": "2027-02-18",
+        "expectedEndDate": "2027-02-22",
+        "actualEndDate": "2027-02-22",
+        "completed": false
+      }
+    ],
+    "42673665": [
+      {
+        "title": "Sale/Contract Deposit",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-01-02",
+        "actualStartDate": "2026-01-02",
+        "expectedEndDate": "2026-01-02",
+        "actualEndDate": "2026-01-02",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 1 Due",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-01-05",
+        "actualStartDate": "2026-01-05",
+        "expectedEndDate": "2026-01-13",
+        "actualEndDate": "2026-01-13",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 2 Due",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-01-12",
+        "actualStartDate": "2026-01-12",
+        "expectedEndDate": "2026-01-20",
+        "actualEndDate": "2026-01-20",
+        "completed": true
+      },
+      {
+        "title": "Permitting",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-01-19",
+        "actualStartDate": "2026-01-19",
+        "expectedEndDate": "2026-02-03",
+        "actualEndDate": "2026-02-03",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 3 Due",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-01-19",
+        "actualStartDate": "2026-01-19",
+        "expectedEndDate": "2026-01-27",
+        "actualEndDate": "2026-01-27",
+        "completed": true
+      },
+      {
+        "title": "Site Work",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-02-06",
+        "actualStartDate": "2026-02-06",
+        "expectedEndDate": "2026-02-10",
+        "actualEndDate": "2026-02-10",
+        "completed": true
+      },
+      {
+        "title": "Foundation",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-02-12",
+        "actualStartDate": "2026-02-12",
+        "expectedEndDate": "2026-02-17",
+        "actualEndDate": "2026-02-17",
+        "completed": true
+      },
+      {
+        "title": "Block Walls",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-02-18",
+        "actualStartDate": "2026-02-18",
+        "expectedEndDate": "2026-02-27",
+        "actualEndDate": "2026-02-27",
+        "completed": true
+      },
+      {
+        "title": "Framing",
+        "endDateSlip": 8,
+        "durationSlip": 8,
+        "expectedStartDate": "2026-03-02",
+        "actualStartDate": "2026-03-02",
+        "expectedEndDate": "2026-03-17",
+        "actualEndDate": "2026-03-27",
+        "completed": true
+      },
+      {
+        "title": "MEP Rough-Ins",
+        "endDateSlip": -3,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-03-18",
+        "actualStartDate": "2026-03-13",
+        "expectedEndDate": "2026-04-06",
+        "actualEndDate": "2026-03-31",
+        "completed": true
+      },
+      {
+        "title": "Doors & Windows",
+        "endDateSlip": 8,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-03-18",
+        "actualStartDate": "2026-03-30",
+        "expectedEndDate": "2026-03-24",
+        "actualEndDate": "2026-04-06",
+        "completed": true
+      },
+      {
+        "title": "FMEP Inspection",
+        "endDateSlip": -1,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-04-02",
+        "actualStartDate": "2026-04-01",
+        "expectedEndDate": "2026-04-06",
+        "actualEndDate": "2026-04-02",
+        "completed": true
+      },
+      {
+        "title": "Pool",
+        "endDateSlip": -35,
+        "durationSlip": -35,
+        "expectedStartDate": "2026-05-13",
+        "actualStartDate": "2026-05-13",
+        "expectedEndDate": "2026-08-17",
+        "actualEndDate": "2026-06-26",
+        "completed": true
+      },
+      {
+        "title": "Exterior Paint",
+        "endDateSlip": 22,
+        "durationSlip": -1,
+        "expectedStartDate": "2026-04-16",
+        "actualStartDate": "2026-05-19",
+        "expectedEndDate": "2026-04-22",
+        "actualEndDate": "2026-05-22",
+        "completed": true
+      },
+      {
+        "title": "Interior Paint",
+        "endDateSlip": 20,
+        "durationSlip": -3,
+        "expectedStartDate": "2026-04-21",
+        "actualStartDate": "2026-05-22",
+        "expectedEndDate": "2026-04-27",
+        "actualEndDate": "2026-05-26",
+        "completed": true
+      },
+      {
+        "title": "Garage Door",
+        "endDateSlip": 21,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-04-24",
+        "actualStartDate": "2026-05-26",
+        "expectedEndDate": "2026-04-27",
+        "actualEndDate": "2026-05-27",
+        "completed": true
+      },
+      {
+        "title": "Roofing",
+        "endDateSlip": 34,
+        "durationSlip": 7,
+        "expectedStartDate": "2026-04-16",
+        "actualStartDate": "2026-05-26",
+        "expectedEndDate": "2026-04-22",
+        "actualEndDate": "2026-06-10",
+        "completed": true
+      },
+      {
+        "title": "Tile & Flooring",
+        "endDateSlip": 32,
+        "durationSlip": 6,
+        "expectedStartDate": "2026-04-24",
+        "actualStartDate": "2026-06-02",
+        "expectedEndDate": "2026-05-05",
+        "actualEndDate": "2026-06-19",
+        "completed": true
+      },
+      {
+        "title": "Interior Doors/Trim",
+        "endDateSlip": 23,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-05-11",
+        "actualStartDate": "2026-06-12",
+        "expectedEndDate": "2026-05-15",
+        "actualEndDate": "2026-06-18",
+        "completed": true
+      },
+      {
+        "title": "Summer Kitchen",
+        "endDateSlip": -45,
+        "durationSlip": -8,
+        "expectedStartDate": "2026-08-06",
+        "actualStartDate": "2026-06-15",
+        "expectedEndDate": "2026-08-21",
+        "actualEndDate": "2026-06-18",
+        "completed": true
+      },
+      {
+        "title": "Driveway",
+        "endDateSlip": 54,
+        "durationSlip": 11,
+        "expectedStartDate": "2026-04-28",
+        "actualStartDate": "2026-06-29",
+        "expectedEndDate": "2026-05-01",
+        "actualEndDate": "2026-07-20",
+        "completed": true
+      },
+      {
+        "title": "MEP Trim-Outs",
+        "endDateSlip": 78,
+        "durationSlip": 28,
+        "expectedStartDate": "2026-04-28",
+        "actualStartDate": "2026-07-09",
+        "expectedEndDate": "2026-05-06",
+        "actualEndDate": "2026-08-26",
+        "completed": false
+      },
+      {
+        "title": "Landscaping",
+        "endDateSlip": 69,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-05-04",
+        "actualStartDate": "2026-08-11",
+        "expectedEndDate": "2026-05-08",
+        "actualEndDate": "2026-08-17",
+        "completed": true
+      },
+      {
+        "title": "Final Trim Out",
+        "endDateSlip": 63,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-05-15",
+        "actualStartDate": "2026-08-14",
+        "expectedEndDate": "2026-05-19",
+        "actualEndDate": "2026-08-18",
+        "completed": true
+      },
+      {
+        "title": "Final Inspections",
+        "endDateSlip": 64,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-05-15",
+        "actualStartDate": "2026-08-17",
+        "expectedEndDate": "2026-05-22",
+        "actualEndDate": "2026-08-24",
+        "completed": true
+      },
+      {
+        "title": "Interior Specialties",
+        "endDateSlip": 67,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-05-18",
+        "actualStartDate": "2026-08-21",
+        "expectedEndDate": "2026-06-01",
+        "actualEndDate": "2026-09-03",
+        "completed": false
+      },
+      {
+        "title": "Closing",
+        "endDateSlip": 76,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-05-28",
+        "actualStartDate": "2026-09-15",
+        "expectedEndDate": "2026-06-01",
+        "actualEndDate": "2026-09-17",
+        "completed": false
+      }
+    ],
+    "42790290": [
+      {
+        "title": "Sale/Contract Deposit",
+        "endDateSlip": 0,
+        "durationSlip": 1,
+        "expectedStartDate": "2026-06-04",
+        "actualStartDate": "2026-06-04",
+        "expectedEndDate": "2026-06-04",
+        "actualEndDate": "2026-06-04",
+        "completed": true
+      },
+      {
+        "title": "Draft Plans",
+        "endDateSlip": 0,
+        "durationSlip": 30,
+        "expectedStartDate": "2026-06-05",
+        "actualStartDate": "2026-06-05",
+        "expectedEndDate": "2026-07-17",
+        "actualEndDate": "2026-07-17",
+        "completed": true
+      },
+      {
+        "title": "Bid Period",
+        "endDateSlip": 0,
+        "durationSlip": 77,
+        "expectedStartDate": "2026-06-16",
+        "actualStartDate": "2026-06-16",
+        "expectedEndDate": "2026-10-02",
+        "actualEndDate": "2026-10-02",
+        "completed": false
+      },
+      {
+        "title": "Permitting",
+        "endDateSlip": 0,
+        "durationSlip": 49,
+        "expectedStartDate": "2026-07-27",
+        "actualStartDate": "2026-07-27",
+        "expectedEndDate": "2026-10-02",
+        "actualEndDate": "2026-10-02",
+        "completed": false
+      },
+      {
+        "title": "Selection Phase 1 Due",
+        "endDateSlip": 0,
+        "durationSlip": 7,
+        "expectedStartDate": "2026-08-31",
+        "actualStartDate": "2026-08-31",
+        "expectedEndDate": "2026-09-09",
+        "actualEndDate": "2026-09-09",
+        "completed": false
+      },
+      {
+        "title": "Selection Phase 2 Due",
+        "endDateSlip": 0,
+        "durationSlip": 7,
+        "expectedStartDate": "2026-09-14",
+        "actualStartDate": "2026-09-14",
+        "expectedEndDate": "2026-09-22",
+        "actualEndDate": "2026-09-22",
+        "completed": false
+      },
+      {
+        "title": "Selection Phase 3 Due",
+        "endDateSlip": 0,
+        "durationSlip": 7,
+        "expectedStartDate": "2026-09-24",
+        "actualStartDate": "2026-09-24",
+        "expectedEndDate": "2026-10-02",
+        "actualEndDate": "2026-10-02",
+        "completed": false
+      },
+      {
+        "title": "Site Work",
+        "endDateSlip": 0,
+        "durationSlip": 3,
+        "expectedStartDate": "2026-10-19",
+        "actualStartDate": "2026-10-19",
+        "expectedEndDate": "2026-10-21",
+        "actualEndDate": "2026-10-21",
+        "completed": false
+      },
+      {
+        "title": "Foundation",
+        "endDateSlip": 0,
+        "durationSlip": 4,
+        "expectedStartDate": "2026-10-22",
+        "actualStartDate": "2026-10-22",
+        "expectedEndDate": "2026-10-27",
+        "actualEndDate": "2026-10-27",
+        "completed": false
+      },
+      {
+        "title": "Block Walls",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-10-28",
+        "actualStartDate": "2026-10-28",
+        "expectedEndDate": "2026-11-03",
+        "actualEndDate": "2026-11-03",
+        "completed": false
+      },
+      {
+        "title": "Framing",
+        "endDateSlip": 0,
+        "durationSlip": 12,
+        "expectedStartDate": "2026-11-04",
+        "actualStartDate": "2026-11-04",
+        "expectedEndDate": "2026-11-19",
+        "actualEndDate": "2026-11-19",
+        "completed": false
+      },
+      {
+        "title": "Doors & Windows",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-11-20",
+        "actualStartDate": "2026-11-20",
+        "expectedEndDate": "2026-11-30",
+        "actualEndDate": "2026-11-30",
+        "completed": false
+      },
+      {
+        "title": "MEP Rough-Ins",
+        "endDateSlip": 0,
+        "durationSlip": 13,
+        "expectedStartDate": "2026-11-20",
+        "actualStartDate": "2026-11-20",
+        "expectedEndDate": "2026-12-10",
+        "actualEndDate": "2026-12-10",
+        "completed": false
+      },
+      {
+        "title": "FMEP Inspection",
+        "endDateSlip": 0,
+        "durationSlip": 2,
+        "expectedStartDate": "2026-12-11",
+        "actualStartDate": "2026-12-11",
+        "expectedEndDate": "2026-12-14",
+        "actualEndDate": "2026-12-14",
+        "completed": false
+      },
+      {
+        "title": "Drywall & Insulation",
+        "endDateSlip": 0,
+        "durationSlip": 10,
+        "expectedStartDate": "2026-12-15",
+        "actualStartDate": "2026-12-15",
+        "expectedEndDate": "2026-12-29",
+        "actualEndDate": "2026-12-29",
+        "completed": false
+      },
+      {
+        "title": "Pool",
+        "endDateSlip": 0,
+        "durationSlip": 67,
+        "expectedStartDate": "2026-12-16",
+        "actualStartDate": "2026-12-16",
+        "expectedEndDate": "2027-03-22",
+        "actualEndDate": "2027-03-22",
+        "completed": false
+      },
+      {
+        "title": "Roofing",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-12-22",
+        "actualStartDate": "2026-12-22",
+        "expectedEndDate": "2026-12-29",
+        "actualEndDate": "2026-12-29",
+        "completed": false
+      },
+      {
+        "title": "Stucco & Siding",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-12-22",
+        "actualStartDate": "2026-12-22",
+        "expectedEndDate": "2026-12-29",
+        "actualEndDate": "2026-12-29",
+        "completed": false
+      },
+      {
+        "title": "Exterior Paint",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-12-30",
+        "actualStartDate": "2026-12-30",
+        "expectedEndDate": "2027-01-06",
+        "actualEndDate": "2027-01-06",
+        "completed": false
+      },
+      {
+        "title": "Interior Paint",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-12-30",
+        "actualStartDate": "2026-12-30",
+        "expectedEndDate": "2027-01-06",
+        "actualEndDate": "2027-01-06",
+        "completed": false
+      },
+      {
+        "title": "Tile & Flooring",
+        "endDateSlip": 0,
+        "durationSlip": 8,
+        "expectedStartDate": "2027-01-07",
+        "actualStartDate": "2027-01-07",
+        "expectedEndDate": "2027-01-18",
+        "actualEndDate": "2027-01-18",
+        "completed": false
+      },
+      {
+        "title": "Garage Door",
+        "endDateSlip": 0,
+        "durationSlip": 2,
+        "expectedStartDate": "2027-01-12",
+        "actualStartDate": "2027-01-12",
+        "expectedEndDate": "2027-01-13",
+        "actualEndDate": "2027-01-13",
+        "completed": false
+      },
+      {
+        "title": "Driveway",
+        "endDateSlip": 0,
+        "durationSlip": 4,
+        "expectedStartDate": "2027-01-20",
+        "actualStartDate": "2027-01-20",
+        "expectedEndDate": "2027-01-25",
+        "actualEndDate": "2027-01-25",
+        "completed": false
+      },
+      {
+        "title": "Interior Doors/Trim",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2027-01-20",
+        "actualStartDate": "2027-01-20",
+        "expectedEndDate": "2027-01-26",
+        "actualEndDate": "2027-01-26",
+        "completed": false
+      },
+      {
+        "title": "MEP Trim-Outs",
+        "endDateSlip": 0,
+        "durationSlip": 7,
+        "expectedStartDate": "2027-02-02",
+        "actualStartDate": "2027-02-02",
+        "expectedEndDate": "2027-02-10",
+        "actualEndDate": "2027-02-10",
+        "completed": false
+      },
+      {
+        "title": "Interior Specialties",
+        "endDateSlip": 0,
+        "durationSlip": 10,
+        "expectedStartDate": "2027-02-11",
+        "actualStartDate": "2027-02-11",
+        "expectedEndDate": "2027-02-24",
+        "actualEndDate": "2027-02-24",
+        "completed": false
+      },
+      {
+        "title": "Summer Kitchen",
+        "endDateSlip": 0,
+        "durationSlip": 12,
+        "expectedStartDate": "2027-02-19",
+        "actualStartDate": "2027-02-19",
+        "expectedEndDate": "2027-03-08",
+        "actualEndDate": "2027-03-08",
+        "completed": false
+      },
+      {
+        "title": "Appliances",
+        "endDateSlip": 0,
+        "durationSlip": 4,
+        "expectedStartDate": "2027-02-23",
+        "actualStartDate": "2027-02-23",
+        "expectedEndDate": "2027-02-26",
+        "actualEndDate": "2027-02-26",
+        "completed": false
+      },
+      {
+        "title": "Generator",
+        "endDateSlip": 0,
+        "durationSlip": 10,
+        "expectedStartDate": "2027-02-23",
+        "actualStartDate": "2027-02-23",
+        "expectedEndDate": "2027-03-08",
+        "actualEndDate": "2027-03-08",
+        "completed": false
+      },
+      {
+        "title": "Final Trim Out",
+        "endDateSlip": 0,
+        "durationSlip": 3,
+        "expectedStartDate": "2027-02-25",
+        "actualStartDate": "2027-02-25",
+        "expectedEndDate": "2027-03-01",
+        "actualEndDate": "2027-03-01",
+        "completed": false
+      },
+      {
+        "title": "Landscaping",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2027-03-02",
+        "actualStartDate": "2027-03-02",
+        "expectedEndDate": "2027-03-08",
+        "actualEndDate": "2027-03-08",
+        "completed": false
+      },
+      {
+        "title": "Final Inspections",
+        "endDateSlip": 0,
+        "durationSlip": 6,
+        "expectedStartDate": "2027-03-08",
+        "actualStartDate": "2027-03-08",
+        "expectedEndDate": "2027-03-15",
+        "actualEndDate": "2027-03-15",
+        "completed": false
+      },
+      {
+        "title": "Closing",
+        "endDateSlip": 0,
+        "durationSlip": 3,
+        "expectedStartDate": "2027-03-18",
+        "actualStartDate": "2027-03-18",
+        "expectedEndDate": "2027-03-22",
+        "actualEndDate": "2027-03-22",
+        "completed": false
+      }
+    ],
+    "42969582": [
+      {
+        "title": "Sale/Contract Deposit",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-03-12",
+        "actualStartDate": "2026-03-12",
+        "expectedEndDate": "2026-03-12",
+        "actualEndDate": "2026-03-12",
+        "completed": true
+      },
+      {
+        "title": "Draft Plans",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-03-13",
+        "actualStartDate": "2026-03-13",
+        "expectedEndDate": "2026-04-24",
+        "actualEndDate": "2026-04-24",
+        "completed": true
+      },
+      {
+        "title": "Bid Period",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-03-24",
+        "actualStartDate": "2026-03-24",
+        "expectedEndDate": "2026-06-15",
+        "actualEndDate": "2026-06-15",
+        "completed": true
+      },
+      {
+        "title": "Permitting",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-04-08",
+        "actualStartDate": "2026-04-08",
+        "expectedEndDate": "2026-05-05",
+        "actualEndDate": "2026-05-05",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 1 Due",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-04-27",
+        "actualStartDate": "2026-04-27",
+        "expectedEndDate": "2026-05-05",
+        "actualEndDate": "2026-05-05",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 2 Due",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-05-06",
+        "actualStartDate": "2026-05-06",
+        "expectedEndDate": "2026-05-14",
+        "actualEndDate": "2026-05-14",
+        "completed": true
+      },
+      {
+        "title": "Selection Phase 3 Due",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-05-14",
+        "actualStartDate": "2026-05-14",
+        "expectedEndDate": "2026-05-22",
+        "actualEndDate": "2026-05-22",
+        "completed": true
+      },
+      {
+        "title": "Site Work",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-05-20",
+        "actualStartDate": "2026-05-20",
+        "expectedEndDate": "2026-05-29",
+        "actualEndDate": "2026-05-29",
+        "completed": true
+      },
+      {
+        "title": "Foundation",
+        "endDateSlip": 4,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-06-23",
+        "actualStartDate": "2026-06-29",
+        "expectedEndDate": "2026-07-01",
+        "actualEndDate": "2026-07-08",
+        "completed": true
+      },
+      {
+        "title": "Block Walls",
+        "endDateSlip": 10,
+        "durationSlip": 4,
+        "expectedStartDate": "2026-07-02",
+        "actualStartDate": "2026-07-13",
+        "expectedEndDate": "2026-07-09",
+        "actualEndDate": "2026-07-23",
+        "completed": true
+      },
+      {
+        "title": "Framing",
+        "endDateSlip": 11,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-07-10",
+        "actualStartDate": "2026-07-27",
+        "expectedEndDate": "2026-07-27",
+        "actualEndDate": "2026-08-11",
+        "completed": true
+      },
+      {
+        "title": "MEP Rough-Ins",
+        "endDateSlip": 7,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-07-28",
+        "actualStartDate": "2026-08-06",
+        "expectedEndDate": "2026-08-13",
+        "actualEndDate": "2026-08-24",
+        "completed": true
+      },
+      {
+        "title": "Doors & Windows",
+        "endDateSlip": 11,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-07-28",
+        "actualStartDate": "2026-08-12",
+        "expectedEndDate": "2026-08-03",
+        "actualEndDate": "2026-08-18",
+        "completed": true
+      },
+      {
+        "title": "Electrical Walk",
+        "endDateSlip": 17,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-07-22",
+        "actualStartDate": "2026-08-14",
+        "expectedEndDate": "2026-07-22",
+        "actualEndDate": "2026-08-14",
+        "completed": true
+      },
+      {
+        "title": "FMEP Inspection",
+        "endDateSlip": 5,
+        "durationSlip": -1,
+        "expectedStartDate": "2026-08-14",
+        "actualStartDate": "2026-08-24",
+        "expectedEndDate": "2026-08-17",
+        "actualEndDate": "2026-08-24",
+        "completed": true
+      },
+      {
+        "title": "Drywall & Insulation",
+        "endDateSlip": 3,
+        "durationSlip": -2,
+        "expectedStartDate": "2026-08-18",
+        "actualStartDate": "2026-08-25",
+        "expectedEndDate": "2026-09-02",
+        "actualEndDate": "2026-09-08",
+        "completed": false
+      },
+      {
+        "title": "Stucco & Siding",
+        "endDateSlip": 1,
+        "durationSlip": 1,
+        "expectedStartDate": "2026-08-25",
+        "actualStartDate": "2026-08-25",
+        "expectedEndDate": "2026-08-31",
+        "actualEndDate": "2026-09-01",
+        "completed": false
+      },
+      {
+        "title": "Interior Paint",
+        "endDateSlip": -1,
+        "durationSlip": -4,
+        "expectedStartDate": "2026-09-03",
+        "actualStartDate": "2026-09-09",
+        "expectedEndDate": "2026-09-10",
+        "actualEndDate": "2026-09-09",
+        "completed": false
+      },
+      {
+        "title": "Exterior Paint",
+        "endDateSlip": 3,
+        "durationSlip": -3,
+        "expectedStartDate": "2026-09-01",
+        "actualStartDate": "2026-09-10",
+        "expectedEndDate": "2026-09-08",
+        "actualEndDate": "2026-09-11",
+        "completed": false
+      },
+      {
+        "title": "Tile & Flooring",
+        "endDateSlip": 0,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-09-11",
+        "actualStartDate": "2026-09-11",
+        "expectedEndDate": "2026-09-22",
+        "actualEndDate": "2026-09-22",
+        "completed": false
+      },
+      {
+        "title": "Roofing",
+        "endDateSlip": -5,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-09-24",
+        "actualStartDate": "2026-09-17",
+        "expectedEndDate": "2026-09-30",
+        "actualEndDate": "2026-09-23",
+        "completed": false
+      },
+      {
+        "title": "Garage Door",
+        "endDateSlip": 5,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-09-14",
+        "actualStartDate": "2026-09-21",
+        "expectedEndDate": "2026-09-15",
+        "actualEndDate": "2026-09-22",
+        "completed": false
+      },
+      {
+        "title": "Interior Doors/Trim",
+        "endDateSlip": -20,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-10-19",
+        "actualStartDate": "2026-09-21",
+        "expectedEndDate": "2026-10-23",
+        "actualEndDate": "2026-09-25",
+        "completed": false
+      },
+      {
+        "title": "Driveway",
+        "endDateSlip": -11,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-10-08",
+        "actualStartDate": "2026-09-23",
+        "expectedEndDate": "2026-10-13",
+        "actualEndDate": "2026-09-28",
+        "completed": false
+      },
+      {
+        "title": "MEP Trim-Outs",
+        "endDateSlip": 3,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-10-19",
+        "actualStartDate": "2026-10-22",
+        "expectedEndDate": "2026-10-27",
+        "actualEndDate": "2026-10-30",
+        "completed": false
+      },
+      {
+        "title": "Interior Specialties",
+        "endDateSlip": 3,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-10-22",
+        "actualStartDate": "2026-10-27",
+        "expectedEndDate": "2026-11-04",
+        "actualEndDate": "2026-11-09",
+        "completed": false
+      },
+      {
+        "title": "Appliances",
+        "endDateSlip": 3,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-11-09",
+        "actualStartDate": "2026-11-12",
+        "expectedEndDate": "2026-11-12",
+        "actualEndDate": "2026-11-17",
+        "completed": false
+      },
+      {
+        "title": "Final Trim Out",
+        "endDateSlip": 3,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-11-11",
+        "actualStartDate": "2026-11-16",
+        "expectedEndDate": "2026-11-13",
+        "actualEndDate": "2026-11-18",
+        "completed": false
+      },
+      {
+        "title": "Final Inspections",
+        "endDateSlip": 3,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-11-20",
+        "actualStartDate": "2026-11-25",
+        "expectedEndDate": "2026-12-01",
+        "actualEndDate": "2026-12-04",
+        "completed": false
+      },
+      {
+        "title": "Landscaping",
+        "endDateSlip": 11,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-11-16",
+        "actualStartDate": "2026-12-03",
+        "expectedEndDate": "2026-11-20",
+        "actualEndDate": "2026-12-09",
+        "completed": false
+      },
+      {
+        "title": "Closing",
+        "endDateSlip": 11,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-12-04",
+        "actualStartDate": "2026-12-21",
+        "expectedEndDate": "2026-12-08",
+        "actualEndDate": "2026-12-23",
+        "completed": false
+      }
+    ],
+    "43331519": [
+      {
+        "title": "Sale/Contract Deposit",
+        "endDateSlip": 0,
+        "durationSlip": 1,
+        "expectedStartDate": "2026-06-24",
+        "actualStartDate": "2026-06-24",
+        "expectedEndDate": "2026-06-24",
+        "actualEndDate": "2026-06-24",
+        "completed": true
+      },
+      {
+        "title": "Draft Plans",
+        "endDateSlip": 0,
+        "durationSlip": 30,
+        "expectedStartDate": "2026-06-25",
+        "actualStartDate": "2026-06-25",
+        "expectedEndDate": "2026-08-06",
+        "actualEndDate": "2026-08-06",
+        "completed": true
+      },
+      {
+        "title": "Bid Period",
+        "endDateSlip": 0,
+        "durationSlip": 63,
+        "expectedStartDate": "2026-07-07",
+        "actualStartDate": "2026-07-07",
+        "expectedEndDate": "2026-10-02",
+        "actualEndDate": "2026-10-02",
+        "completed": false
+      },
+      {
+        "title": "Selection Phase 1 Due",
+        "endDateSlip": 0,
+        "durationSlip": 7,
+        "expectedStartDate": "2026-08-07",
+        "actualStartDate": "2026-08-07",
+        "expectedEndDate": "2026-08-17",
+        "actualEndDate": "2026-08-17",
+        "completed": true
+      },
+      {
+        "title": "Permitting",
+        "endDateSlip": 0,
+        "durationSlip": 35,
+        "expectedStartDate": "2026-08-14",
+        "actualStartDate": "2026-08-14",
+        "expectedEndDate": "2026-10-02",
+        "actualEndDate": "2026-10-02",
+        "completed": false
+      },
+      {
+        "title": "Selection Phase 2 Due",
+        "endDateSlip": 0,
+        "durationSlip": 7,
+        "expectedStartDate": "2026-08-18",
+        "actualStartDate": "2026-08-18",
+        "expectedEndDate": "2026-08-26",
+        "actualEndDate": "2026-08-26",
+        "completed": false
+      },
+      {
+        "title": "Selection Phase 3 Due",
+        "endDateSlip": 0,
+        "durationSlip": 7,
+        "expectedStartDate": "2026-09-01",
+        "actualStartDate": "2026-09-01",
+        "expectedEndDate": "2026-09-10",
+        "actualEndDate": "2026-09-10",
+        "completed": false
+      },
+      {
+        "title": "Site Work",
+        "endDateSlip": 0,
+        "durationSlip": 3,
+        "expectedStartDate": "2026-10-19",
+        "actualStartDate": "2026-10-19",
+        "expectedEndDate": "2026-10-21",
+        "actualEndDate": "2026-10-21",
+        "completed": false
+      },
+      {
+        "title": "Foundation",
+        "endDateSlip": 0,
+        "durationSlip": 4,
+        "expectedStartDate": "2026-10-22",
+        "actualStartDate": "2026-10-22",
+        "expectedEndDate": "2026-10-27",
+        "actualEndDate": "2026-10-27",
+        "completed": false
+      },
+      {
+        "title": "Block Walls",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-10-28",
+        "actualStartDate": "2026-10-28",
+        "expectedEndDate": "2026-11-03",
+        "actualEndDate": "2026-11-03",
+        "completed": false
+      },
+      {
+        "title": "Framing",
+        "endDateSlip": 0,
+        "durationSlip": 12,
+        "expectedStartDate": "2026-11-04",
+        "actualStartDate": "2026-11-04",
+        "expectedEndDate": "2026-11-19",
+        "actualEndDate": "2026-11-19",
+        "completed": false
+      },
+      {
+        "title": "Doors & Windows",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-11-20",
+        "actualStartDate": "2026-11-20",
+        "expectedEndDate": "2026-11-30",
+        "actualEndDate": "2026-11-30",
+        "completed": false
+      },
+      {
+        "title": "MEP Rough-Ins",
+        "endDateSlip": 0,
+        "durationSlip": 13,
+        "expectedStartDate": "2026-11-20",
+        "actualStartDate": "2026-11-20",
+        "expectedEndDate": "2026-12-10",
+        "actualEndDate": "2026-12-10",
+        "completed": false
+      },
+      {
+        "title": "FMEP Inspection",
+        "endDateSlip": 0,
+        "durationSlip": 2,
+        "expectedStartDate": "2026-12-11",
+        "actualStartDate": "2026-12-11",
+        "expectedEndDate": "2026-12-14",
+        "actualEndDate": "2026-12-14",
+        "completed": false
+      },
+      {
+        "title": "Drywall & Insulation",
+        "endDateSlip": 0,
+        "durationSlip": 10,
+        "expectedStartDate": "2026-12-15",
+        "actualStartDate": "2026-12-15",
+        "expectedEndDate": "2026-12-29",
+        "actualEndDate": "2026-12-29",
+        "completed": false
+      },
+      {
+        "title": "Pool",
+        "endDateSlip": 0,
+        "durationSlip": 67,
+        "expectedStartDate": "2026-12-16",
+        "actualStartDate": "2026-12-16",
+        "expectedEndDate": "2027-03-22",
+        "actualEndDate": "2027-03-22",
+        "completed": false
+      },
+      {
+        "title": "Roofing",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-12-22",
+        "actualStartDate": "2026-12-22",
+        "expectedEndDate": "2026-12-29",
+        "actualEndDate": "2026-12-29",
+        "completed": false
+      },
+      {
+        "title": "Stucco & Siding",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-12-22",
+        "actualStartDate": "2026-12-22",
+        "expectedEndDate": "2026-12-29",
+        "actualEndDate": "2026-12-29",
+        "completed": false
+      },
+      {
+        "title": "Exterior Paint",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-12-30",
+        "actualStartDate": "2026-12-30",
+        "expectedEndDate": "2027-01-06",
+        "actualEndDate": "2027-01-06",
+        "completed": false
+      },
+      {
+        "title": "Interior Paint",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-12-30",
+        "actualStartDate": "2026-12-30",
+        "expectedEndDate": "2027-01-06",
+        "actualEndDate": "2027-01-06",
+        "completed": false
+      },
+      {
+        "title": "Tile & Flooring",
+        "endDateSlip": 0,
+        "durationSlip": 8,
+        "expectedStartDate": "2027-01-07",
+        "actualStartDate": "2027-01-07",
+        "expectedEndDate": "2027-01-18",
+        "actualEndDate": "2027-01-18",
+        "completed": false
+      },
+      {
+        "title": "Garage Door",
+        "endDateSlip": 0,
+        "durationSlip": 2,
+        "expectedStartDate": "2027-01-12",
+        "actualStartDate": "2027-01-12",
+        "expectedEndDate": "2027-01-13",
+        "actualEndDate": "2027-01-13",
+        "completed": false
+      },
+      {
+        "title": "Driveway",
+        "endDateSlip": 0,
+        "durationSlip": 4,
+        "expectedStartDate": "2027-01-20",
+        "actualStartDate": "2027-01-20",
+        "expectedEndDate": "2027-01-25",
+        "actualEndDate": "2027-01-25",
+        "completed": false
+      },
+      {
+        "title": "Interior Doors/Trim",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2027-01-20",
+        "actualStartDate": "2027-01-20",
+        "expectedEndDate": "2027-01-26",
+        "actualEndDate": "2027-01-26",
+        "completed": false
+      },
+      {
+        "title": "MEP Trim-Outs",
+        "endDateSlip": 0,
+        "durationSlip": 7,
+        "expectedStartDate": "2027-02-02",
+        "actualStartDate": "2027-02-02",
+        "expectedEndDate": "2027-02-10",
+        "actualEndDate": "2027-02-10",
+        "completed": false
+      },
+      {
+        "title": "Interior Specialties",
+        "endDateSlip": 0,
+        "durationSlip": 10,
+        "expectedStartDate": "2027-02-11",
+        "actualStartDate": "2027-02-11",
+        "expectedEndDate": "2027-02-24",
+        "actualEndDate": "2027-02-24",
+        "completed": false
+      },
+      {
+        "title": "Summer Kitchen",
+        "endDateSlip": 0,
+        "durationSlip": 12,
+        "expectedStartDate": "2027-02-19",
+        "actualStartDate": "2027-02-19",
+        "expectedEndDate": "2027-03-08",
+        "actualEndDate": "2027-03-08",
+        "completed": false
+      },
+      {
+        "title": "Appliances",
+        "endDateSlip": 0,
+        "durationSlip": 4,
+        "expectedStartDate": "2027-02-23",
+        "actualStartDate": "2027-02-23",
+        "expectedEndDate": "2027-02-26",
+        "actualEndDate": "2027-02-26",
+        "completed": false
+      },
+      {
+        "title": "Generator",
+        "endDateSlip": 0,
+        "durationSlip": 10,
+        "expectedStartDate": "2027-02-23",
+        "actualStartDate": "2027-02-23",
+        "expectedEndDate": "2027-03-08",
+        "actualEndDate": "2027-03-08",
+        "completed": false
+      },
+      {
+        "title": "Final Trim Out",
+        "endDateSlip": 0,
+        "durationSlip": 3,
+        "expectedStartDate": "2027-02-25",
+        "actualStartDate": "2027-02-25",
+        "expectedEndDate": "2027-03-01",
+        "actualEndDate": "2027-03-01",
+        "completed": false
+      },
+      {
+        "title": "Landscaping",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2027-03-02",
+        "actualStartDate": "2027-03-02",
+        "expectedEndDate": "2027-03-08",
+        "actualEndDate": "2027-03-08",
+        "completed": false
+      },
+      {
+        "title": "Final Inspections",
+        "endDateSlip": 0,
+        "durationSlip": 6,
+        "expectedStartDate": "2027-03-08",
+        "actualStartDate": "2027-03-08",
+        "expectedEndDate": "2027-03-15",
+        "actualEndDate": "2027-03-15",
+        "completed": false
+      },
+      {
+        "title": "Closing",
+        "endDateSlip": 0,
+        "durationSlip": 3,
+        "expectedStartDate": "2027-03-18",
+        "actualStartDate": "2027-03-18",
+        "expectedEndDate": "2027-03-22",
+        "actualEndDate": "2027-03-22",
+        "completed": false
+      }
+    ],
+    "44516256": [
+      {
+        "title": "Sale/Contract Deposit",
+        "endDateSlip": 0,
+        "durationSlip": 1,
+        "expectedStartDate": "2026-04-10",
+        "actualStartDate": "2026-04-10",
+        "expectedEndDate": "2026-04-10",
+        "actualEndDate": "2026-04-10",
+        "completed": true
+      },
+      {
+        "title": "Draft Plans",
+        "endDateSlip": 0,
+        "durationSlip": 30,
+        "expectedStartDate": "2026-04-13",
+        "actualStartDate": "2026-04-13",
+        "expectedEndDate": "2026-05-22",
+        "actualEndDate": "2026-05-22",
+        "completed": true
+      },
+      {
+        "title": "Bid Period",
+        "endDateSlip": 0,
+        "durationSlip": 177,
+        "expectedStartDate": "2026-04-22",
+        "actualStartDate": "2026-04-22",
+        "expectedEndDate": "2027-01-04",
+        "actualEndDate": "2027-01-04",
+        "completed": false
+      },
+      {
+        "title": "Permitting",
+        "endDateSlip": 0,
+        "durationSlip": 149,
+        "expectedStartDate": "2026-06-02",
+        "actualStartDate": "2026-06-02",
+        "expectedEndDate": "2027-01-04",
+        "actualEndDate": "2027-01-04",
+        "completed": false
+      },
+      {
+        "title": "Selection Phase 1 Due",
+        "endDateSlip": 0,
+        "durationSlip": 7,
+        "expectedStartDate": "2026-12-07",
+        "actualStartDate": "2026-12-07",
+        "expectedEndDate": "2026-12-15",
+        "actualEndDate": "2026-12-15",
+        "completed": false
+      },
+      {
+        "title": "Selection Phase 2 Due",
+        "endDateSlip": 0,
+        "durationSlip": 7,
+        "expectedStartDate": "2026-12-14",
+        "actualStartDate": "2026-12-14",
+        "expectedEndDate": "2026-12-22",
+        "actualEndDate": "2026-12-22",
+        "completed": false
+      },
+      {
+        "title": "Selection Phase 3 Due",
+        "endDateSlip": 0,
+        "durationSlip": 7,
+        "expectedStartDate": "2026-12-23",
+        "actualStartDate": "2026-12-23",
+        "expectedEndDate": "2027-01-04",
+        "actualEndDate": "2027-01-04",
+        "completed": false
+      },
+      {
+        "title": "Site Work",
+        "endDateSlip": 0,
+        "durationSlip": 3,
+        "expectedStartDate": "2027-01-19",
+        "actualStartDate": "2027-01-19",
+        "expectedEndDate": "2027-01-21",
+        "actualEndDate": "2027-01-21",
+        "completed": false
+      },
+      {
+        "title": "Foundation",
+        "endDateSlip": 0,
+        "durationSlip": 4,
+        "expectedStartDate": "2027-01-22",
+        "actualStartDate": "2027-01-22",
+        "expectedEndDate": "2027-01-27",
+        "actualEndDate": "2027-01-27",
+        "completed": false
+      },
+      {
+        "title": "Block Walls",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2027-01-28",
+        "actualStartDate": "2027-01-28",
+        "expectedEndDate": "2027-02-03",
+        "actualEndDate": "2027-02-03",
+        "completed": false
+      },
+      {
+        "title": "Framing",
+        "endDateSlip": 0,
+        "durationSlip": 12,
+        "expectedStartDate": "2027-02-04",
+        "actualStartDate": "2027-02-04",
+        "expectedEndDate": "2027-02-19",
+        "actualEndDate": "2027-02-19",
+        "completed": false
+      },
+      {
+        "title": "Doors & Windows",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2027-02-22",
+        "actualStartDate": "2027-02-22",
+        "expectedEndDate": "2027-02-26",
+        "actualEndDate": "2027-02-26",
+        "completed": false
+      },
+      {
+        "title": "MEP Rough-Ins",
+        "endDateSlip": 0,
+        "durationSlip": 13,
+        "expectedStartDate": "2027-02-22",
+        "actualStartDate": "2027-02-22",
+        "expectedEndDate": "2027-03-10",
+        "actualEndDate": "2027-03-10",
+        "completed": false
+      },
+      {
+        "title": "FMEP Inspection",
+        "endDateSlip": 0,
+        "durationSlip": 2,
+        "expectedStartDate": "2027-03-11",
+        "actualStartDate": "2027-03-11",
+        "expectedEndDate": "2027-03-12",
+        "actualEndDate": "2027-03-12",
+        "completed": false
+      },
+      {
+        "title": "Drywall & Insulation",
+        "endDateSlip": 0,
+        "durationSlip": 10,
+        "expectedStartDate": "2027-03-15",
+        "actualStartDate": "2027-03-15",
+        "expectedEndDate": "2027-03-26",
+        "actualEndDate": "2027-03-26",
+        "completed": false
+      },
+      {
+        "title": "Pool",
+        "endDateSlip": 0,
+        "durationSlip": 67,
+        "expectedStartDate": "2027-03-16",
+        "actualStartDate": "2027-03-16",
+        "expectedEndDate": "2027-06-16",
+        "actualEndDate": "2027-06-16",
+        "completed": false
+      },
+      {
+        "title": "Roofing",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2027-03-22",
+        "actualStartDate": "2027-03-22",
+        "expectedEndDate": "2027-03-26",
+        "actualEndDate": "2027-03-26",
+        "completed": false
+      },
+      {
+        "title": "Stucco & Siding",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2027-03-22",
+        "actualStartDate": "2027-03-22",
+        "expectedEndDate": "2027-03-26",
+        "actualEndDate": "2027-03-26",
+        "completed": false
+      },
+      {
+        "title": "Exterior Paint",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2027-03-29",
+        "actualStartDate": "2027-03-29",
+        "expectedEndDate": "2027-04-02",
+        "actualEndDate": "2027-04-02",
+        "completed": false
+      },
+      {
+        "title": "Interior Paint",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2027-03-29",
+        "actualStartDate": "2027-03-29",
+        "expectedEndDate": "2027-04-02",
+        "actualEndDate": "2027-04-02",
+        "completed": false
+      },
+      {
+        "title": "Tile & Flooring",
+        "endDateSlip": 0,
+        "durationSlip": 8,
+        "expectedStartDate": "2027-04-05",
+        "actualStartDate": "2027-04-05",
+        "expectedEndDate": "2027-04-14",
+        "actualEndDate": "2027-04-14",
+        "completed": false
+      },
+      {
+        "title": "Garage Door",
+        "endDateSlip": 0,
+        "durationSlip": 2,
+        "expectedStartDate": "2027-04-08",
+        "actualStartDate": "2027-04-08",
+        "expectedEndDate": "2027-04-09",
+        "actualEndDate": "2027-04-09",
+        "completed": false
+      },
+      {
+        "title": "Driveway",
+        "endDateSlip": 0,
+        "durationSlip": 4,
+        "expectedStartDate": "2027-04-16",
+        "actualStartDate": "2027-04-16",
+        "expectedEndDate": "2027-04-21",
+        "actualEndDate": "2027-04-21",
+        "completed": false
+      },
+      {
+        "title": "Interior Doors/Trim",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2027-04-16",
+        "actualStartDate": "2027-04-16",
+        "expectedEndDate": "2027-04-22",
+        "actualEndDate": "2027-04-22",
+        "completed": false
+      },
+      {
+        "title": "MEP Trim-Outs",
+        "endDateSlip": 0,
+        "durationSlip": 7,
+        "expectedStartDate": "2027-04-29",
+        "actualStartDate": "2027-04-29",
+        "expectedEndDate": "2027-05-07",
+        "actualEndDate": "2027-05-07",
+        "completed": false
+      },
+      {
+        "title": "Interior Specialties",
+        "endDateSlip": 0,
+        "durationSlip": 10,
+        "expectedStartDate": "2027-05-10",
+        "actualStartDate": "2027-05-10",
+        "expectedEndDate": "2027-05-21",
+        "actualEndDate": "2027-05-21",
+        "completed": false
+      },
+      {
+        "title": "Summer Kitchen",
+        "endDateSlip": 0,
+        "durationSlip": 12,
+        "expectedStartDate": "2027-05-18",
+        "actualStartDate": "2027-05-18",
+        "expectedEndDate": "2027-06-02",
+        "actualEndDate": "2027-06-02",
+        "completed": false
+      },
+      {
+        "title": "Appliances",
+        "endDateSlip": 0,
+        "durationSlip": 4,
+        "expectedStartDate": "2027-05-20",
+        "actualStartDate": "2027-05-20",
+        "expectedEndDate": "2027-05-25",
+        "actualEndDate": "2027-05-25",
+        "completed": false
+      },
+      {
+        "title": "Generator",
+        "endDateSlip": 0,
+        "durationSlip": 10,
+        "expectedStartDate": "2027-05-20",
+        "actualStartDate": "2027-05-20",
+        "expectedEndDate": "2027-06-02",
+        "actualEndDate": "2027-06-02",
+        "completed": false
+      },
+      {
+        "title": "Final Trim Out",
+        "endDateSlip": 0,
+        "durationSlip": 3,
+        "expectedStartDate": "2027-05-24",
+        "actualStartDate": "2027-05-24",
+        "expectedEndDate": "2027-05-26",
+        "actualEndDate": "2027-05-26",
+        "completed": false
+      },
+      {
+        "title": "Landscaping",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2027-05-27",
+        "actualStartDate": "2027-05-27",
+        "expectedEndDate": "2027-06-02",
+        "actualEndDate": "2027-06-02",
+        "completed": false
+      },
+      {
+        "title": "Final Inspections",
+        "endDateSlip": 0,
+        "durationSlip": 6,
+        "expectedStartDate": "2027-06-02",
+        "actualStartDate": "2027-06-02",
+        "expectedEndDate": "2027-06-09",
+        "actualEndDate": "2027-06-09",
+        "completed": false
+      },
+      {
+        "title": "Closing",
+        "endDateSlip": 0,
+        "durationSlip": 3,
+        "expectedStartDate": "2027-06-14",
+        "actualStartDate": "2027-06-14",
+        "expectedEndDate": "2027-06-16",
+        "actualEndDate": "2027-06-16",
+        "completed": false
+      }
+    ],
+    "45118977": [
+      {
+        "title": "Sale/Contract Deposit",
+        "endDateSlip": 0,
+        "durationSlip": 1,
+        "expectedStartDate": "2026-06-03",
+        "actualStartDate": "2026-06-03",
+        "expectedEndDate": "2026-06-03",
+        "actualEndDate": "2026-06-03",
+        "completed": true
+      },
+      {
+        "title": "Draft Plans",
+        "endDateSlip": 0,
+        "durationSlip": 30,
+        "expectedStartDate": "2026-06-04",
+        "actualStartDate": "2026-06-04",
+        "expectedEndDate": "2026-07-16",
+        "actualEndDate": "2026-07-16",
+        "completed": true
+      },
+      {
+        "title": "Bid Period",
+        "endDateSlip": 0,
+        "durationSlip": 78,
+        "expectedStartDate": "2026-06-15",
+        "actualStartDate": "2026-06-15",
+        "expectedEndDate": "2026-10-02",
+        "actualEndDate": "2026-10-02",
+        "completed": false
+      },
+      {
+        "title": "Permitting",
+        "endDateSlip": 0,
+        "durationSlip": 50,
+        "expectedStartDate": "2026-07-24",
+        "actualStartDate": "2026-07-24",
+        "expectedEndDate": "2026-10-02",
+        "actualEndDate": "2026-10-02",
+        "completed": false
+      },
+      {
+        "title": "Selection Phase 1 Due",
+        "endDateSlip": 0,
+        "durationSlip": 7,
+        "expectedStartDate": "2026-09-03",
+        "actualStartDate": "2026-09-03",
+        "expectedEndDate": "2026-09-14",
+        "actualEndDate": "2026-09-14",
+        "completed": false
+      },
+      {
+        "title": "Selection Phase 2 Due",
+        "endDateSlip": 0,
+        "durationSlip": 7,
+        "expectedStartDate": "2026-09-15",
+        "actualStartDate": "2026-09-15",
+        "expectedEndDate": "2026-09-23",
+        "actualEndDate": "2026-09-23",
+        "completed": false
+      },
+      {
+        "title": "Selection Phase 3 Due",
+        "endDateSlip": 0,
+        "durationSlip": 7,
+        "expectedStartDate": "2026-09-24",
+        "actualStartDate": "2026-09-24",
+        "expectedEndDate": "2026-10-02",
+        "actualEndDate": "2026-10-02",
+        "completed": false
+      },
+      {
+        "title": "Site Work",
+        "endDateSlip": 0,
+        "durationSlip": 3,
+        "expectedStartDate": "2026-10-19",
+        "actualStartDate": "2026-10-19",
+        "expectedEndDate": "2026-10-21",
+        "actualEndDate": "2026-10-21",
+        "completed": false
+      },
+      {
+        "title": "Foundation",
+        "endDateSlip": 0,
+        "durationSlip": 4,
+        "expectedStartDate": "2026-10-22",
+        "actualStartDate": "2026-10-22",
+        "expectedEndDate": "2026-10-27",
+        "actualEndDate": "2026-10-27",
+        "completed": false
+      },
+      {
+        "title": "Block Walls",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-10-28",
+        "actualStartDate": "2026-10-28",
+        "expectedEndDate": "2026-11-03",
+        "actualEndDate": "2026-11-03",
+        "completed": false
+      },
+      {
+        "title": "Framing",
+        "endDateSlip": 0,
+        "durationSlip": 12,
+        "expectedStartDate": "2026-11-04",
+        "actualStartDate": "2026-11-04",
+        "expectedEndDate": "2026-11-19",
+        "actualEndDate": "2026-11-19",
+        "completed": false
+      },
+      {
+        "title": "Doors & Windows",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-11-20",
+        "actualStartDate": "2026-11-20",
+        "expectedEndDate": "2026-11-30",
+        "actualEndDate": "2026-11-30",
+        "completed": false
+      },
+      {
+        "title": "MEP Rough-Ins",
+        "endDateSlip": 0,
+        "durationSlip": 13,
+        "expectedStartDate": "2026-11-20",
+        "actualStartDate": "2026-11-20",
+        "expectedEndDate": "2026-12-10",
+        "actualEndDate": "2026-12-10",
+        "completed": false
+      },
+      {
+        "title": "FMEP Inspection",
+        "endDateSlip": 0,
+        "durationSlip": 2,
+        "expectedStartDate": "2026-12-11",
+        "actualStartDate": "2026-12-11",
+        "expectedEndDate": "2026-12-14",
+        "actualEndDate": "2026-12-14",
+        "completed": false
+      },
+      {
+        "title": "Drywall & Insulation",
+        "endDateSlip": 0,
+        "durationSlip": 10,
+        "expectedStartDate": "2026-12-15",
+        "actualStartDate": "2026-12-15",
+        "expectedEndDate": "2026-12-29",
+        "actualEndDate": "2026-12-29",
+        "completed": false
+      },
+      {
+        "title": "Pool",
+        "endDateSlip": 0,
+        "durationSlip": 67,
+        "expectedStartDate": "2026-12-16",
+        "actualStartDate": "2026-12-16",
+        "expectedEndDate": "2027-03-22",
+        "actualEndDate": "2027-03-22",
+        "completed": false
+      },
+      {
+        "title": "Roofing",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-12-22",
+        "actualStartDate": "2026-12-22",
+        "expectedEndDate": "2026-12-29",
+        "actualEndDate": "2026-12-29",
+        "completed": false
+      },
+      {
+        "title": "Stucco & Siding",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-12-22",
+        "actualStartDate": "2026-12-22",
+        "expectedEndDate": "2026-12-29",
+        "actualEndDate": "2026-12-29",
+        "completed": false
+      },
+      {
+        "title": "Exterior Paint",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-12-30",
+        "actualStartDate": "2026-12-30",
+        "expectedEndDate": "2027-01-06",
+        "actualEndDate": "2027-01-06",
+        "completed": false
+      },
+      {
+        "title": "Interior Paint",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-12-30",
+        "actualStartDate": "2026-12-30",
+        "expectedEndDate": "2027-01-06",
+        "actualEndDate": "2027-01-06",
+        "completed": false
+      },
+      {
+        "title": "Tile & Flooring",
+        "endDateSlip": 0,
+        "durationSlip": 8,
+        "expectedStartDate": "2027-01-07",
+        "actualStartDate": "2027-01-07",
+        "expectedEndDate": "2027-01-18",
+        "actualEndDate": "2027-01-18",
+        "completed": false
+      },
+      {
+        "title": "Garage Door",
+        "endDateSlip": 0,
+        "durationSlip": 2,
+        "expectedStartDate": "2027-01-12",
+        "actualStartDate": "2027-01-12",
+        "expectedEndDate": "2027-01-13",
+        "actualEndDate": "2027-01-13",
+        "completed": false
+      },
+      {
+        "title": "Driveway",
+        "endDateSlip": 0,
+        "durationSlip": 4,
+        "expectedStartDate": "2027-01-20",
+        "actualStartDate": "2027-01-20",
+        "expectedEndDate": "2027-01-25",
+        "actualEndDate": "2027-01-25",
+        "completed": false
+      },
+      {
+        "title": "Interior Doors/Trim",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2027-01-20",
+        "actualStartDate": "2027-01-20",
+        "expectedEndDate": "2027-01-26",
+        "actualEndDate": "2027-01-26",
+        "completed": false
+      },
+      {
+        "title": "MEP Trim-Outs",
+        "endDateSlip": 0,
+        "durationSlip": 7,
+        "expectedStartDate": "2027-02-02",
+        "actualStartDate": "2027-02-02",
+        "expectedEndDate": "2027-02-10",
+        "actualEndDate": "2027-02-10",
+        "completed": false
+      },
+      {
+        "title": "Interior Specialties",
+        "endDateSlip": 0,
+        "durationSlip": 10,
+        "expectedStartDate": "2027-02-11",
+        "actualStartDate": "2027-02-11",
+        "expectedEndDate": "2027-02-24",
+        "actualEndDate": "2027-02-24",
+        "completed": false
+      },
+      {
+        "title": "Summer Kitchen",
+        "endDateSlip": 0,
+        "durationSlip": 12,
+        "expectedStartDate": "2027-02-19",
+        "actualStartDate": "2027-02-19",
+        "expectedEndDate": "2027-03-08",
+        "actualEndDate": "2027-03-08",
+        "completed": false
+      },
+      {
+        "title": "Appliances",
+        "endDateSlip": 0,
+        "durationSlip": 4,
+        "expectedStartDate": "2027-02-23",
+        "actualStartDate": "2027-02-23",
+        "expectedEndDate": "2027-02-26",
+        "actualEndDate": "2027-02-26",
+        "completed": false
+      },
+      {
+        "title": "Generator",
+        "endDateSlip": 0,
+        "durationSlip": 10,
+        "expectedStartDate": "2027-02-23",
+        "actualStartDate": "2027-02-23",
+        "expectedEndDate": "2027-03-08",
+        "actualEndDate": "2027-03-08",
+        "completed": false
+      },
+      {
+        "title": "Final Trim Out",
+        "endDateSlip": 0,
+        "durationSlip": 3,
+        "expectedStartDate": "2027-02-25",
+        "actualStartDate": "2027-02-25",
+        "expectedEndDate": "2027-03-01",
+        "actualEndDate": "2027-03-01",
+        "completed": false
+      },
+      {
+        "title": "Landscaping",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2027-03-02",
+        "actualStartDate": "2027-03-02",
+        "expectedEndDate": "2027-03-08",
+        "actualEndDate": "2027-03-08",
+        "completed": false
+      },
+      {
+        "title": "Final Inspections",
+        "endDateSlip": 0,
+        "durationSlip": 6,
+        "expectedStartDate": "2027-03-08",
+        "actualStartDate": "2027-03-08",
+        "expectedEndDate": "2027-03-15",
+        "actualEndDate": "2027-03-15",
+        "completed": false
+      },
+      {
+        "title": "Closing",
+        "endDateSlip": 0,
+        "durationSlip": 3,
+        "expectedStartDate": "2027-03-18",
+        "actualStartDate": "2027-03-18",
+        "expectedEndDate": "2027-03-22",
+        "actualEndDate": "2027-03-22",
+        "completed": false
+      }
+    ],
+    "45275922": [
+      {
+        "title": "Sale/Contract Deposit",
+        "endDateSlip": 0,
+        "durationSlip": 1,
+        "expectedStartDate": "2026-06-05",
+        "actualStartDate": "2026-06-05",
+        "expectedEndDate": "2026-06-05",
+        "actualEndDate": "2026-06-05",
+        "completed": true
+      },
+      {
+        "title": "Draft Plans",
+        "endDateSlip": 0,
+        "durationSlip": 30,
+        "expectedStartDate": "2026-06-08",
+        "actualStartDate": "2026-06-08",
+        "expectedEndDate": "2026-07-20",
+        "actualEndDate": "2026-07-20",
+        "completed": true
+      },
+      {
+        "title": "Bid Period",
+        "endDateSlip": 0,
+        "durationSlip": 75,
+        "expectedStartDate": "2026-06-17",
+        "actualStartDate": "2026-06-17",
+        "expectedEndDate": "2026-10-01",
+        "actualEndDate": "2026-10-01",
+        "completed": false
+      },
+      {
+        "title": "Permitting",
+        "endDateSlip": 0,
+        "durationSlip": 47,
+        "expectedStartDate": "2026-07-28",
+        "actualStartDate": "2026-07-28",
+        "expectedEndDate": "2026-10-01",
+        "actualEndDate": "2026-10-01",
+        "completed": false
+      },
+      {
+        "title": "Selection Phase 1 Due",
+        "endDateSlip": 0,
+        "durationSlip": 7,
+        "expectedStartDate": "2026-09-01",
+        "actualStartDate": "2026-09-01",
+        "expectedEndDate": "2026-09-10",
+        "actualEndDate": "2026-09-10",
+        "completed": false
+      },
+      {
+        "title": "Selection Phase 2 Due",
+        "endDateSlip": 0,
+        "durationSlip": 7,
+        "expectedStartDate": "2026-09-14",
+        "actualStartDate": "2026-09-14",
+        "expectedEndDate": "2026-09-22",
+        "actualEndDate": "2026-09-22",
+        "completed": false
+      },
+      {
+        "title": "Selection Phase 3 Due",
+        "endDateSlip": 0,
+        "durationSlip": 7,
+        "expectedStartDate": "2026-09-23",
+        "actualStartDate": "2026-09-23",
+        "expectedEndDate": "2026-10-01",
+        "actualEndDate": "2026-10-01",
+        "completed": false
+      },
+      {
+        "title": "Site Work",
+        "endDateSlip": 0,
+        "durationSlip": 3,
+        "expectedStartDate": "2026-10-16",
+        "actualStartDate": "2026-10-16",
+        "expectedEndDate": "2026-10-20",
+        "actualEndDate": "2026-10-20",
+        "completed": false
+      },
+      {
+        "title": "Foundation",
+        "endDateSlip": 0,
+        "durationSlip": 4,
+        "expectedStartDate": "2026-10-21",
+        "actualStartDate": "2026-10-21",
+        "expectedEndDate": "2026-10-26",
+        "actualEndDate": "2026-10-26",
+        "completed": false
+      },
+      {
+        "title": "Block Walls",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-10-27",
+        "actualStartDate": "2026-10-27",
+        "expectedEndDate": "2026-11-02",
+        "actualEndDate": "2026-11-02",
+        "completed": false
+      },
+      {
+        "title": "Framing",
+        "endDateSlip": 0,
+        "durationSlip": 12,
+        "expectedStartDate": "2026-11-03",
+        "actualStartDate": "2026-11-03",
+        "expectedEndDate": "2026-11-18",
+        "actualEndDate": "2026-11-18",
+        "completed": false
+      },
+      {
+        "title": "Doors & Windows",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-11-19",
+        "actualStartDate": "2026-11-19",
+        "expectedEndDate": "2026-11-25",
+        "actualEndDate": "2026-11-25",
+        "completed": false
+      },
+      {
+        "title": "MEP Rough-Ins",
+        "endDateSlip": 0,
+        "durationSlip": 13,
+        "expectedStartDate": "2026-11-19",
+        "actualStartDate": "2026-11-19",
+        "expectedEndDate": "2026-12-09",
+        "actualEndDate": "2026-12-09",
+        "completed": false
+      },
+      {
+        "title": "FMEP Inspection",
+        "endDateSlip": 0,
+        "durationSlip": 2,
+        "expectedStartDate": "2026-12-10",
+        "actualStartDate": "2026-12-10",
+        "expectedEndDate": "2026-12-11",
+        "actualEndDate": "2026-12-11",
+        "completed": false
+      },
+      {
+        "title": "Drywall & Insulation",
+        "endDateSlip": 0,
+        "durationSlip": 10,
+        "expectedStartDate": "2026-12-14",
+        "actualStartDate": "2026-12-14",
+        "expectedEndDate": "2026-12-28",
+        "actualEndDate": "2026-12-28",
+        "completed": false
+      },
+      {
+        "title": "Pool",
+        "endDateSlip": 0,
+        "durationSlip": 67,
+        "expectedStartDate": "2026-12-15",
+        "actualStartDate": "2026-12-15",
+        "expectedEndDate": "2027-03-19",
+        "actualEndDate": "2027-03-19",
+        "completed": false
+      },
+      {
+        "title": "Roofing",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-12-21",
+        "actualStartDate": "2026-12-21",
+        "expectedEndDate": "2026-12-28",
+        "actualEndDate": "2026-12-28",
+        "completed": false
+      },
+      {
+        "title": "Stucco & Siding",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-12-21",
+        "actualStartDate": "2026-12-21",
+        "expectedEndDate": "2026-12-28",
+        "actualEndDate": "2026-12-28",
+        "completed": false
+      },
+      {
+        "title": "Exterior Paint",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-12-29",
+        "actualStartDate": "2026-12-29",
+        "expectedEndDate": "2027-01-05",
+        "actualEndDate": "2027-01-05",
+        "completed": false
+      },
+      {
+        "title": "Interior Paint",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-12-29",
+        "actualStartDate": "2026-12-29",
+        "expectedEndDate": "2027-01-05",
+        "actualEndDate": "2027-01-05",
+        "completed": false
+      },
+      {
+        "title": "Tile & Flooring",
+        "endDateSlip": 0,
+        "durationSlip": 8,
+        "expectedStartDate": "2027-01-06",
+        "actualStartDate": "2027-01-06",
+        "expectedEndDate": "2027-01-15",
+        "actualEndDate": "2027-01-15",
+        "completed": false
+      },
+      {
+        "title": "Garage Door",
+        "endDateSlip": 0,
+        "durationSlip": 2,
+        "expectedStartDate": "2027-01-11",
+        "actualStartDate": "2027-01-11",
+        "expectedEndDate": "2027-01-12",
+        "actualEndDate": "2027-01-12",
+        "completed": false
+      },
+      {
+        "title": "Driveway",
+        "endDateSlip": 0,
+        "durationSlip": 4,
+        "expectedStartDate": "2027-01-19",
+        "actualStartDate": "2027-01-19",
+        "expectedEndDate": "2027-01-22",
+        "actualEndDate": "2027-01-22",
+        "completed": false
+      },
+      {
+        "title": "Interior Doors/Trim",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2027-01-19",
+        "actualStartDate": "2027-01-19",
+        "expectedEndDate": "2027-01-25",
+        "actualEndDate": "2027-01-25",
+        "completed": false
+      },
+      {
+        "title": "MEP Trim-Outs",
+        "endDateSlip": 0,
+        "durationSlip": 7,
+        "expectedStartDate": "2027-02-01",
+        "actualStartDate": "2027-02-01",
+        "expectedEndDate": "2027-02-09",
+        "actualEndDate": "2027-02-09",
+        "completed": false
+      },
+      {
+        "title": "Interior Specialties",
+        "endDateSlip": 0,
+        "durationSlip": 10,
+        "expectedStartDate": "2027-02-10",
+        "actualStartDate": "2027-02-10",
+        "expectedEndDate": "2027-02-23",
+        "actualEndDate": "2027-02-23",
+        "completed": false
+      },
+      {
+        "title": "Summer Kitchen",
+        "endDateSlip": 0,
+        "durationSlip": 12,
+        "expectedStartDate": "2027-02-18",
+        "actualStartDate": "2027-02-18",
+        "expectedEndDate": "2027-03-05",
+        "actualEndDate": "2027-03-05",
+        "completed": false
+      },
+      {
+        "title": "Appliances",
+        "endDateSlip": 0,
+        "durationSlip": 4,
+        "expectedStartDate": "2027-02-22",
+        "actualStartDate": "2027-02-22",
+        "expectedEndDate": "2027-02-25",
+        "actualEndDate": "2027-02-25",
+        "completed": false
+      },
+      {
+        "title": "Generator",
+        "endDateSlip": 0,
+        "durationSlip": 10,
+        "expectedStartDate": "2027-02-22",
+        "actualStartDate": "2027-02-22",
+        "expectedEndDate": "2027-03-05",
+        "actualEndDate": "2027-03-05",
+        "completed": false
+      },
+      {
+        "title": "Final Trim Out",
+        "endDateSlip": 0,
+        "durationSlip": 3,
+        "expectedStartDate": "2027-02-24",
+        "actualStartDate": "2027-02-24",
+        "expectedEndDate": "2027-02-26",
+        "actualEndDate": "2027-02-26",
+        "completed": false
+      },
+      {
+        "title": "Landscaping",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2027-03-01",
+        "actualStartDate": "2027-03-01",
+        "expectedEndDate": "2027-03-05",
+        "actualEndDate": "2027-03-05",
+        "completed": false
+      },
+      {
+        "title": "Final Inspections",
+        "endDateSlip": 0,
+        "durationSlip": 6,
+        "expectedStartDate": "2027-03-05",
+        "actualStartDate": "2027-03-05",
+        "expectedEndDate": "2027-03-12",
+        "actualEndDate": "2027-03-12",
+        "completed": false
+      },
+      {
+        "title": "Closing",
+        "endDateSlip": 0,
+        "durationSlip": 3,
+        "expectedStartDate": "2027-03-17",
+        "actualStartDate": "2027-03-17",
+        "expectedEndDate": "2027-03-19",
+        "actualEndDate": "2027-03-19",
+        "completed": false
+      }
+    ],
+    "45667667": [
+      {
+        "title": "Sale/Contract Deposit",
+        "endDateSlip": 0,
+        "durationSlip": 1,
+        "expectedStartDate": "2026-07-07",
+        "actualStartDate": "2026-07-07",
+        "expectedEndDate": "2026-07-07",
+        "actualEndDate": "2026-07-07",
+        "completed": true
+      },
+      {
+        "title": "Draft Plans",
+        "endDateSlip": 0,
+        "durationSlip": 30,
+        "expectedStartDate": "2026-07-08",
+        "actualStartDate": "2026-07-08",
+        "expectedEndDate": "2026-08-18",
+        "actualEndDate": "2026-08-18",
+        "completed": true
+      },
+      {
+        "title": "Bid Period",
+        "endDateSlip": 0,
+        "durationSlip": 58,
+        "expectedStartDate": "2026-07-17",
+        "actualStartDate": "2026-07-17",
+        "expectedEndDate": "2026-10-07",
+        "actualEndDate": "2026-10-07",
+        "completed": false
+      },
+      {
+        "title": "Selection Phase 1 Due",
+        "endDateSlip": 0,
+        "durationSlip": 7,
+        "expectedStartDate": "2026-08-19",
+        "actualStartDate": "2026-08-19",
+        "expectedEndDate": "2026-08-27",
+        "actualEndDate": "2026-08-27",
+        "completed": false
+      },
+      {
+        "title": "Permitting",
+        "endDateSlip": 0,
+        "durationSlip": 20,
+        "expectedStartDate": "2026-08-26",
+        "actualStartDate": "2026-08-26",
+        "expectedEndDate": "2026-09-23",
+        "actualEndDate": "2026-09-23",
+        "completed": false
+      },
+      {
+        "title": "Selection Phase 2 Due",
+        "endDateSlip": 0,
+        "durationSlip": 7,
+        "expectedStartDate": "2026-08-28",
+        "actualStartDate": "2026-08-28",
+        "expectedEndDate": "2026-09-08",
+        "actualEndDate": "2026-09-08",
+        "completed": false
+      },
+      {
+        "title": "Selection Phase 3 Due",
+        "endDateSlip": 0,
+        "durationSlip": 7,
+        "expectedStartDate": "2026-09-14",
+        "actualStartDate": "2026-09-14",
+        "expectedEndDate": "2026-09-22",
+        "actualEndDate": "2026-09-22",
+        "completed": false
+      },
+      {
+        "title": "Site Work",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-10-05",
+        "actualStartDate": "2026-10-05",
+        "expectedEndDate": "2026-10-09",
+        "actualEndDate": "2026-10-09",
+        "completed": false
+      },
+      {
+        "title": "Foundation",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-10-12",
+        "actualStartDate": "2026-10-12",
+        "expectedEndDate": "2026-10-16",
+        "actualEndDate": "2026-10-16",
+        "completed": false
+      },
+      {
+        "title": "Block Walls",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-10-19",
+        "actualStartDate": "2026-10-19",
+        "expectedEndDate": "2026-10-23",
+        "actualEndDate": "2026-10-23",
+        "completed": false
+      },
+      {
+        "title": "Framing",
+        "endDateSlip": 0,
+        "durationSlip": 12,
+        "expectedStartDate": "2026-10-26",
+        "actualStartDate": "2026-10-26",
+        "expectedEndDate": "2026-11-10",
+        "actualEndDate": "2026-11-10",
+        "completed": false
+      },
+      {
+        "title": "Doors & Windows",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-11-09",
+        "actualStartDate": "2026-11-09",
+        "expectedEndDate": "2026-11-13",
+        "actualEndDate": "2026-11-13",
+        "completed": false
+      },
+      {
+        "title": "MEP Rough-Ins",
+        "endDateSlip": 0,
+        "durationSlip": 13,
+        "expectedStartDate": "2026-11-11",
+        "actualStartDate": "2026-11-11",
+        "expectedEndDate": "2026-12-01",
+        "actualEndDate": "2026-12-01",
+        "completed": false
+      },
+      {
+        "title": "Electrical Walk",
+        "endDateSlip": 0,
+        "durationSlip": 1,
+        "expectedStartDate": "2026-11-24",
+        "actualStartDate": "2026-11-24",
+        "expectedEndDate": "2026-11-24",
+        "actualEndDate": "2026-11-24",
+        "completed": false
+      },
+      {
+        "title": "FMEP Inspection",
+        "endDateSlip": 0,
+        "durationSlip": 1,
+        "expectedStartDate": "2026-12-02",
+        "actualStartDate": "2026-12-02",
+        "expectedEndDate": "2026-12-02",
+        "actualEndDate": "2026-12-02",
+        "completed": false
+      },
+      {
+        "title": "Drywall & Insulation",
+        "endDateSlip": 0,
+        "durationSlip": 10,
+        "expectedStartDate": "2026-12-03",
+        "actualStartDate": "2026-12-03",
+        "expectedEndDate": "2026-12-16",
+        "actualEndDate": "2026-12-16",
+        "completed": false
+      },
+      {
+        "title": "Pool",
+        "endDateSlip": 0,
+        "durationSlip": 67,
+        "expectedStartDate": "2026-12-04",
+        "actualStartDate": "2026-12-04",
+        "expectedEndDate": "2027-03-10",
+        "actualEndDate": "2027-03-10",
+        "completed": false
+      },
+      {
+        "title": "Stucco & Siding",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-12-04",
+        "actualStartDate": "2026-12-04",
+        "expectedEndDate": "2026-12-10",
+        "actualEndDate": "2026-12-10",
+        "completed": false
+      },
+      {
+        "title": "Soffit & Corbels",
+        "endDateSlip": 0,
+        "durationSlip": 4,
+        "expectedStartDate": "2026-12-11",
+        "actualStartDate": "2026-12-11",
+        "expectedEndDate": "2026-12-16",
+        "actualEndDate": "2026-12-16",
+        "completed": false
+      },
+      {
+        "title": "Interior Paint",
+        "endDateSlip": 0,
+        "durationSlip": 3,
+        "expectedStartDate": "2026-12-17",
+        "actualStartDate": "2026-12-17",
+        "expectedEndDate": "2026-12-21",
+        "actualEndDate": "2026-12-21",
+        "completed": false
+      },
+      {
+        "title": "Exterior Paint",
+        "endDateSlip": 0,
+        "durationSlip": 3,
+        "expectedStartDate": "2026-12-18",
+        "actualStartDate": "2026-12-18",
+        "expectedEndDate": "2026-12-22",
+        "actualEndDate": "2026-12-22",
+        "completed": false
+      },
+      {
+        "title": "HVAC Trim-Out",
+        "endDateSlip": 0,
+        "durationSlip": 2,
+        "expectedStartDate": "2026-12-22",
+        "actualStartDate": "2026-12-22",
+        "expectedEndDate": "2026-12-23",
+        "actualEndDate": "2026-12-23",
+        "completed": false
+      },
+      {
+        "title": "Garage Door",
+        "endDateSlip": 0,
+        "durationSlip": 1,
+        "expectedStartDate": "2026-12-23",
+        "actualStartDate": "2026-12-23",
+        "expectedEndDate": "2026-12-23",
+        "actualEndDate": "2026-12-23",
+        "completed": false
+      },
+      {
+        "title": "Tile & Flooring",
+        "endDateSlip": 0,
+        "durationSlip": 8,
+        "expectedStartDate": "2026-12-23",
+        "actualStartDate": "2026-12-23",
+        "expectedEndDate": "2027-01-05",
+        "actualEndDate": "2027-01-05",
+        "completed": false
+      },
+      {
+        "title": "Roofing",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-12-24",
+        "actualStartDate": "2026-12-24",
+        "expectedEndDate": "2026-12-31",
+        "actualEndDate": "2026-12-31",
+        "completed": false
+      },
+      {
+        "title": "Gutters",
+        "endDateSlip": 0,
+        "durationSlip": 2,
+        "expectedStartDate": "2027-01-04",
+        "actualStartDate": "2027-01-04",
+        "expectedEndDate": "2027-01-05",
+        "actualEndDate": "2027-01-05",
+        "completed": false
+      },
+      {
+        "title": "Cabinets",
+        "endDateSlip": 0,
+        "durationSlip": 4,
+        "expectedStartDate": "2027-01-06",
+        "actualStartDate": "2027-01-06",
+        "expectedEndDate": "2027-01-11",
+        "actualEndDate": "2027-01-11",
+        "completed": false
+      },
+      {
+        "title": "Driveway",
+        "endDateSlip": 0,
+        "durationSlip": 4,
+        "expectedStartDate": "2027-01-07",
+        "actualStartDate": "2027-01-07",
+        "expectedEndDate": "2027-01-12",
+        "actualEndDate": "2027-01-12",
+        "completed": false
+      },
+      {
+        "title": "Interior Doors/Trim",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2027-01-07",
+        "actualStartDate": "2027-01-07",
+        "expectedEndDate": "2027-01-13",
+        "actualEndDate": "2027-01-13",
+        "completed": false
+      },
+      {
+        "title": "Countertop Template & Install",
+        "endDateSlip": 0,
+        "durationSlip": 8,
+        "expectedStartDate": "2027-01-12",
+        "actualStartDate": "2027-01-12",
+        "expectedEndDate": "2027-01-21",
+        "actualEndDate": "2027-01-21",
+        "completed": false
+      },
+      {
+        "title": "Backsplash Template & Install",
+        "endDateSlip": 0,
+        "durationSlip": 7,
+        "expectedStartDate": "2027-01-21",
+        "actualStartDate": "2027-01-21",
+        "expectedEndDate": "2027-01-29",
+        "actualEndDate": "2027-01-29",
+        "completed": false
+      },
+      {
+        "title": "MEP Trim-Outs",
+        "endDateSlip": 0,
+        "durationSlip": 7,
+        "expectedStartDate": "2027-01-21",
+        "actualStartDate": "2027-01-21",
+        "expectedEndDate": "2027-01-29",
+        "actualEndDate": "2027-01-29",
+        "completed": false
+      },
+      {
+        "title": "Appliances",
+        "endDateSlip": 0,
+        "durationSlip": 2,
+        "expectedStartDate": "2027-01-22",
+        "actualStartDate": "2027-01-22",
+        "expectedEndDate": "2027-01-25",
+        "actualEndDate": "2027-01-25",
+        "completed": false
+      },
+      {
+        "title": "Interior Specialties",
+        "endDateSlip": 0,
+        "durationSlip": 10,
+        "expectedStartDate": "2027-01-22",
+        "actualStartDate": "2027-01-22",
+        "expectedEndDate": "2027-02-04",
+        "actualEndDate": "2027-02-04",
+        "completed": false
+      },
+      {
+        "title": "Plumbing Trim-Out",
+        "endDateSlip": 0,
+        "durationSlip": 3,
+        "expectedStartDate": "2027-01-25",
+        "actualStartDate": "2027-01-25",
+        "expectedEndDate": "2027-01-27",
+        "actualEndDate": "2027-01-27",
+        "completed": false
+      },
+      {
+        "title": "Corporate Inspection",
+        "endDateSlip": 0,
+        "durationSlip": 1,
+        "expectedStartDate": "2027-01-26",
+        "actualStartDate": "2027-01-26",
+        "expectedEndDate": "2027-01-26",
+        "actualEndDate": "2027-01-26",
+        "completed": false
+      },
+      {
+        "title": "Gas Trim-Out",
+        "endDateSlip": 0,
+        "durationSlip": 1,
+        "expectedStartDate": "2027-01-26",
+        "actualStartDate": "2027-01-26",
+        "expectedEndDate": "2027-01-26",
+        "actualEndDate": "2027-01-26",
+        "completed": false
+      },
+      {
+        "title": "Electrical Trim-Out",
+        "endDateSlip": 0,
+        "durationSlip": 2,
+        "expectedStartDate": "2027-01-27",
+        "actualStartDate": "2027-01-27",
+        "expectedEndDate": "2027-01-28",
+        "actualEndDate": "2027-01-28",
+        "completed": false
+      },
+      {
+        "title": "Summer Kitchen",
+        "endDateSlip": 0,
+        "durationSlip": 12,
+        "expectedStartDate": "2027-02-09",
+        "actualStartDate": "2027-02-09",
+        "expectedEndDate": "2027-02-24",
+        "actualEndDate": "2027-02-24",
+        "completed": false
+      },
+      {
+        "title": "Final Drywall & Paint Bump",
+        "endDateSlip": 0,
+        "durationSlip": 1,
+        "expectedStartDate": "2027-02-10",
+        "actualStartDate": "2027-02-10",
+        "expectedEndDate": "2027-02-10",
+        "actualEndDate": "2027-02-10",
+        "completed": false
+      },
+      {
+        "title": "Generator",
+        "endDateSlip": 0,
+        "durationSlip": 10,
+        "expectedStartDate": "2027-02-11",
+        "actualStartDate": "2027-02-11",
+        "expectedEndDate": "2027-02-24",
+        "actualEndDate": "2027-02-24",
+        "completed": false
+      },
+      {
+        "title": "Final Trim Out",
+        "endDateSlip": 0,
+        "durationSlip": 3,
+        "expectedStartDate": "2027-02-15",
+        "actualStartDate": "2027-02-15",
+        "expectedEndDate": "2027-02-17",
+        "actualEndDate": "2027-02-17",
+        "completed": false
+      },
+      {
+        "title": "Landscaping",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2027-02-18",
+        "actualStartDate": "2027-02-18",
+        "expectedEndDate": "2027-02-24",
+        "actualEndDate": "2027-02-24",
+        "completed": false
+      },
+      {
+        "title": "Low Voltage Trim-Out",
+        "endDateSlip": 0,
+        "durationSlip": 1,
+        "expectedStartDate": "2027-02-23",
+        "actualStartDate": "2027-02-23",
+        "expectedEndDate": "2027-02-23",
+        "actualEndDate": "2027-02-23",
+        "completed": false
+      },
+      {
+        "title": "Final Inspections",
+        "endDateSlip": 0,
+        "durationSlip": 6,
+        "expectedStartDate": "2027-02-24",
+        "actualStartDate": "2027-02-24",
+        "expectedEndDate": "2027-03-03",
+        "actualEndDate": "2027-03-03",
+        "completed": false
+      },
+      {
+        "title": "Closing",
+        "endDateSlip": 0,
+        "durationSlip": 3,
+        "expectedStartDate": "2027-03-08",
+        "actualStartDate": "2027-03-08",
+        "expectedEndDate": "2027-03-10",
+        "actualEndDate": "2027-03-10",
+        "completed": false
+      }
+    ]
   }
 };

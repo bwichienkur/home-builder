@@ -357,6 +357,58 @@ function endDateSlipDays(row) {
   return 0;
 }
 
+function durationSlipDays(row) {
+  const raw = row?.durationSlip;
+  if (typeof raw === 'number' && Number.isFinite(raw)) return Math.round(raw);
+  if (raw && typeof raw === 'object') {
+    const nested = Number(raw.workdays ?? raw.days ?? raw.value);
+    if (Number.isFinite(nested)) return Math.round(nested);
+  }
+  return 0;
+}
+
+/** Normalize schedule titles for OCH MASTER template matching. */
+export function normalizeScheduleTitle(title) {
+  return String(title || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+}
+
+export const OCH_MASTER_TEMPLATE_NAME = /^och\s*master\s*2026$/i;
+
+/**
+ * Keep Baseline rows whose title matches OCH MASTER 2026 (or provided allowlist).
+ * Drops ad-hoc / non-template schedule items PMs add during construction.
+ * Dedupes identical titles by keeping the row with the largest |endDateSlip|.
+ */
+export function filterBaselineRowsToTemplate(rows, templateTitles) {
+  const allow = templateTitles instanceof Set ? templateTitles : new Set([...(templateTitles || [])].map(normalizeScheduleTitle));
+  const bestByTitle = new Map();
+  for (const row of Array.isArray(rows) ? rows : []) {
+    const title = String(row?.title || '').trim();
+    const key = normalizeScheduleTitle(title);
+    if (!key || !allow.has(key)) continue;
+    const endSlip = endDateSlipDays(row);
+    const prev = bestByTitle.get(key);
+    if (!prev || Math.abs(endSlip) > Math.abs(endDateSlipDays(prev))) bestByTitle.set(key, row);
+  }
+  return [...bestByTitle.values()];
+}
+
+export function compactBaselineSlipRow(row) {
+  return {
+    title: String(row?.title || '').trim(),
+    endDateSlip: endDateSlipDays(row),
+    durationSlip: durationSlipDays(row),
+    expectedStartDate: row?.expectedStartDate ? String(row.expectedStartDate).slice(0, 10) : '',
+    actualStartDate: row?.actualStartDate ? String(row.actualStartDate).slice(0, 10) : '',
+    expectedEndDate: row?.expectedEndDate ? String(row.expectedEndDate).slice(0, 10) : '',
+    actualEndDate: row?.actualEndDate ? String(row.actualEndDate).slice(0, 10) : '',
+    completed: Boolean(row?.completed),
+  };
+}
+
 /**
  * Permit / Selections / Construction slip from Schedule → Baseline item rows.
  * - Permit: Permitting endDateSlip
@@ -571,27 +623,52 @@ async function fetchBaselineGridForJob(session, jobId) {
   };
 }
 
+async function fetchOchMasterTemplateTitles(session) {
+  const list = await getJson(session, '/api/Templates/List');
+  if (!list.ok) return { ok: false, status: list.status, titles: new Set(), templateId: null };
+  const templates = list.data?.data?.templates?.value ?? list.data?.templates?.value ?? [];
+  const match = (Array.isArray(templates) ? templates : []).find((row) =>
+    OCH_MASTER_TEMPLATE_NAME.test(String(row?.name || '').trim()),
+  );
+  const templateId = Number(match?.id);
+  if (!templateId) return { ok: true, status: list.status, titles: new Set(), templateId: null };
+  const gantt = await postJson(session, '/api/Calendar/GanttChart', { jobIds: [templateId] });
+  if (!gantt.ok) return { ok: false, status: gantt.status, titles: new Set(), templateId };
+  const items = gantt.data?.data?.items ?? gantt.data?.items ?? [];
+  const titles = new Set(
+    (Array.isArray(items) ? items : [])
+      .map((item) => normalizeScheduleTitle(item?.title))
+      .filter(Boolean),
+  );
+  return { ok: true, status: gantt.status, titles, templateId };
+}
+
 /**
- * Per open job: Permit / Selections / Construction slip from Schedule → Baseline.
+ * Per open job: Permit / Selections / Construction slip from Schedule → Baseline,
+ * plus template-filtered item rows for Total Slip drill-down.
  * Fetches one job at a time (BaselineGrid ignores extra jobIds beyond the first).
  */
-async function fetchBaselineSlipByJob(session, jobIds, { concurrency = 5 } = {}) {
-  if (!jobIds.length) return { ok: true, status: 200, data: {} };
+async function fetchBaselineSlipByJob(session, jobIds, { concurrency = 5, templateTitles = new Set() } = {}) {
+  if (!jobIds.length) return { ok: true, status: 200, data: {}, itemsByJob: {} };
   const unique = [...new Set(jobIds.map(Number).filter(Boolean))];
   const parts = await mapPool(unique, concurrency, async (jobId) => {
     const result = await fetchBaselineGridForJob(session, jobId);
     return { jobId, ...result };
   });
   const data = {};
+  const itemsByJob = {};
   let lastStatus = 200;
   let anyOk = false;
   for (const part of parts) {
     lastStatus = part.status || lastStatus;
     if (!part.ok) continue;
     anyOk = true;
-    data[String(part.jobId)] = slipBucketsFromBaselineItems(part.rows);
+    const filtered =
+      templateTitles.size > 0 ? filterBaselineRowsToTemplate(part.rows, templateTitles) : part.rows;
+    data[String(part.jobId)] = slipBucketsFromBaselineItems(filtered);
+    itemsByJob[String(part.jobId)] = filtered.map(compactBaselineSlipRow);
   }
-  return { ok: anyOk || !unique.length, status: lastStatus, data };
+  return { ok: anyOk || !unique.length, status: lastStatus, data, itemsByJob };
 }
 
 function closedWarrantyJobIdsFromReports(...payloads) {
@@ -786,6 +863,7 @@ export async function fetchReports(session) {
   const jobIds = openJobIdsFromPicker(jobs.data);
   const closedWarrantyIds = closedWarrantyJobIdsFromReports(schedulePercentComplete.data, dailyLogs.data);
   const scheduleJobIds = [...new Set([...jobIds, ...closedWarrantyIds])];
+  const masterTemplate = await fetchOchMasterTemplateTitles(session);
   const [tasks, actionItemsByJob, selectionsByJob, scheduleByJob, baselineSlipByJob, jobInfoContractByJob] =
     await Promise.all([
     fetchTasksForOpenJobs(session, jobIds),
@@ -795,8 +873,8 @@ export async function fetchReports(session) {
       ? fetchScheduleMilestonesByJob(session, scheduleJobIds)
       : Promise.resolve({ ok: true, status: 200, data: {} }),
     jobIds.length
-      ? fetchBaselineSlipByJob(session, jobIds)
-      : Promise.resolve({ ok: true, status: 200, data: {} }),
+      ? fetchBaselineSlipByJob(session, jobIds, { templateTitles: masterTemplate.titles })
+      : Promise.resolve({ ok: true, status: 200, data: {}, itemsByJob: {} }),
     jobIds.length ? fetchJobInfoContractByJob(session, jobIds) : Promise.resolve({}),
   ]);
 
@@ -836,6 +914,8 @@ export async function fetchReports(session) {
     scheduleByJob: scheduleData,
     siteWorkByJob,
     baselineSlipByJob: baselineSlipByJob.data ?? {},
+    baselineItemsByJob: baselineSlipByJob.itemsByJob ?? {},
+    ochMasterTemplateId: masterTemplate.templateId,
   };
   const failed = [
     ['work-in-progress', wip],
@@ -866,6 +946,7 @@ export async function fetchReports(session) {
       scheduleByJob: scheduleByJob.status ?? 0,
       siteWorkByJob: scheduleByJob.status ?? 0,
       baselineSlipByJob: baselineSlipByJob.status ?? 0,
+      ochMasterTemplate: masterTemplate.status ?? 0,
     },
   };
 }

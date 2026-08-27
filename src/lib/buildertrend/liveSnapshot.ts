@@ -568,4 +568,4 @@ export const LIVE_PROJECTED_MARGIN_PCT = 33.3;
 export const LIVE_ROLLING_REVENUE_12MO = 16404188.42;
 /** Weighted pipeline: Pipedrive value × stage probability when PD cache present. */
 export const LIVE_WEIGHTED_PIPELINE = 10610650;
-export const LIVE_SNAPSHOT_AT = '2026-08-27T00:03:13.424Z';
+export const LIVE_SNAPSHOT_AT = '2026-08-27T01:00:51.889Z';
