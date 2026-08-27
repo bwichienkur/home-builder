@@ -15,6 +15,7 @@ import type { DrilldownKind } from '../../lib/dashboard/drilldownTypes';
 import { drilldownHref } from '../../lib/dashboard/drilldownPath';
 import { sortByKey, sortIndicator, toggleSort, type SortState } from '../../lib/dashboard/sortGrid';
 import { DrillLink } from './DrilldownPanel';
+import { BtCookieDialog } from './BtCookieDialog';
 import { PerformanceBars, PipelineFunnel, Sparkline, StatusDonut } from './dashboardCharts';
 import { useOwnerDashboardData } from './useOwnerDashboardData';
 import './dashboard.css';
@@ -143,7 +144,8 @@ export function OwnerDashboard() {
   const [dateRange, setDateRange] = useState<DateRangeId>('all');
   const [sort, setSort] = useState<SortState<SortKey>>({ key: 'name', dir: 'asc' });
   const [pmSort, setPmSort] = useState<SortState<PmSortKey>>({ key: 'pm', dir: 'asc' });
-  const { dash, error, refreshing, livePull, onRefresh } = useOwnerDashboardData(status, dateRange);
+  const { dash, error, refreshing, livePull, cookiePrompt, resolveCookiePrompt, onRefresh } =
+    useOwnerDashboardData(status, dateRange);
 
   const filters = useMemo(() => ({ status, dateRange }), [status, dateRange]);
   const href = (kind: DrilldownKind) => drilldownHref(kind, filters);
@@ -209,18 +211,26 @@ export function OwnerDashboard() {
             type="button"
             className="dash-refresh"
             onClick={() => void onRefresh()}
-            disabled={refreshing}
+            disabled={refreshing || Boolean(cookiePrompt)}
             aria-busy={refreshing}
           >
             {refreshing ? 'Pulling…' : 'Refresh from Buildertrend'}
           </button>
           <p className="dash-refresh-help">
-            Refresh reuses cookies saved in this browser. When prompted, paste only the{' '}
-            <strong>Value</strong> for <code>.AspNet.Auth0</code>, <code>ASP.NET_SessionId</code>, and{' '}
-            <code>GAESA</code> (Chrome → Buildertrend tab → F12 → Application → Cookies → https://buildertrend.net).
+            Refresh reuses cookies saved in this browser. When needed, a dialog asks for the{' '}
+            <strong>Value</strong> of <code>.AspNet.Auth0</code>, <code>ASP.NET_SessionId</code>, and{' '}
+            <code>GAESA</code> from Chrome → Application → Cookies → https://buildertrend.net.
           </p>
         </div>
       </header>
+
+      {cookiePrompt ? (
+        <BtCookieDialog
+          reason={cookiePrompt.reason}
+          onSubmit={(cookie) => resolveCookiePrompt(cookie)}
+          onCancel={() => resolveCookiePrompt(null)}
+        />
+      ) : null}
 
       <p className="dash-source">{sourceLine(dash.source, dash.refreshedAt, Boolean(livePull), error)}</p>
 

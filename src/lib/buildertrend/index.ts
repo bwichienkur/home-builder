@@ -43,7 +43,6 @@ export {
   storeBtCookie,
   clearStoredBtCookie,
   buildCookieHeader,
-  promptForBtCookieValues,
   isAuthRefreshFailure,
 } from './cookieSession';
 export type { RequiredBtCookieName } from './cookieSession';

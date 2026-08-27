@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   clearStoredLivePull,
   fetchCachedBuildertrendPull,
@@ -16,7 +16,6 @@ import {
   clearStoredBtCookie,
   isAuthRefreshFailure,
   loadStoredBtCookie,
-  promptForBtCookieValues,
   storeBtCookie,
 } from '../../lib/buildertrend/cookieSession';
 import { LIVE_DRILLDOWN } from '../../lib/buildertrend/liveDrilldown';
@@ -37,12 +36,18 @@ function errorCode(reason: unknown): string | undefined {
   return (reason as { code?: string })?.code;
 }
 
+export type BtCookiePromptState = {
+  reason?: string;
+};
+
 export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId) {
   const [dash, setDash] = useState<OwnerDashboard | null>(null);
   const [error, setError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [livePull, setLivePull] = useState<BuildertrendLivePull | null>(() => loadStoredLivePull());
   const [liveDetail, setLiveDetail] = useState<LiveDrilldown | null>(null);
+  const [cookiePrompt, setCookiePrompt] = useState<BtCookiePromptState | null>(null);
+  const cookieResolverRef = useRef<((cookie: string | null) => void) | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -100,8 +105,29 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
     };
   }, []);
 
+  useEffect(() => {
+    return () => {
+      cookieResolverRef.current?.(null);
+      cookieResolverRef.current = null;
+    };
+  }, []);
+
+  const requestCookieValues = useCallback((reason?: string) => {
+    cookieResolverRef.current?.(null);
+    return new Promise<string | null>((resolve) => {
+      cookieResolverRef.current = resolve;
+      setCookiePrompt({ reason });
+    });
+  }, []);
+
+  const resolveCookiePrompt = useCallback((cookie: string | null) => {
+    const resolve = cookieResolverRef.current;
+    cookieResolverRef.current = null;
+    setCookiePrompt(null);
+    resolve?.(cookie);
+  }, []);
+
   const onRefresh = async () => {
-    setRefreshing(true);
     setError('');
 
     const applyPull = (pull: BuildertrendLivePull) => {
@@ -110,13 +136,18 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
     };
 
     const pullWithCookie = async (cookie: string) => {
-      const pull = await refreshBuildertrendPull(cookie);
-      storeBtCookie(cookie);
-      applyPull(pull);
+      setRefreshing(true);
+      try {
+        const pull = await refreshBuildertrendPull(cookie);
+        storeBtCookie(cookie);
+        applyPull(pull);
+      } finally {
+        setRefreshing(false);
+      }
     };
 
     const collectAndPull = async (reason?: string) => {
-      const cookie = promptForBtCookieValues(reason);
+      const cookie = await requestCookieValues(reason);
       if (!cookie) {
         setError(reason || 'Refresh cancelled — paste the three Buildertrend cookie values to continue.');
         return false;
@@ -145,7 +176,7 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
       }
 
       // No saved browser cookie yet — collect values, then fall back to server env if cancelled.
-      const cookie = promptForBtCookieValues(
+      const cookie = await requestCookieValues(
         'Enter Buildertrend cookie values once. They are saved in this browser and reused until they stop working.',
       );
       if (cookie) {
@@ -153,11 +184,13 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
         return;
       }
 
+      setRefreshing(true);
       try {
         const pull = await refreshBuildertrendPull();
         applyPull(pull);
       } catch (reason: unknown) {
         if (isAuthRefreshFailure(errorCode(reason))) {
+          setRefreshing(false);
           await collectAndPull(
             reason instanceof Error
               ? reason.message
@@ -166,10 +199,11 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
           return;
         }
         setError(reason instanceof Error ? reason.message : 'Buildertrend refresh failed.');
+      } finally {
+        setRefreshing(false);
       }
     } catch (reason: unknown) {
       setError(reason instanceof Error ? reason.message : 'Buildertrend refresh failed.');
-    } finally {
       setRefreshing(false);
     }
   };
@@ -182,6 +216,8 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
     refreshing,
     livePull,
     detail,
+    cookiePrompt,
+    resolveCookiePrompt,
     onRefresh,
   };
 }
