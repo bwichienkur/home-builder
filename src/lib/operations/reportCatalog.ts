@@ -8,6 +8,8 @@ export type OpsReportId =
   | 'selections'
   | 'daily-logs'
   | 'schedule-slip'
+  | 'job-schedule'
+  | 'time-metrics'
   | 'pipeline';
 
 export type OpsReportDef = {
@@ -44,7 +46,7 @@ export const OPS_REPORTS: OpsReportDef[] = [
   {
     id: 'past-due',
     title: 'Past-due tasks',
-    lede: 'Incomplete tasks with due dates before today.',
+    lede: 'Incomplete tasks with due dates before today. Add other tasks under All tasks.',
     sourceReport: 'Buildertrend · Tasks',
     manageTo: '/ops/tasks',
   },
@@ -58,8 +60,8 @@ export const OPS_REPORTS: OpsReportDef[] = [
   {
     id: 'daily-logs',
     title: 'Daily logs',
-    lede: 'Daily log rows used for PM attendance and job activity.',
-    sourceReport: 'Buildertrend · User daily logs',
+    lede: 'Rolling-window log rows for PM attendance; lifetime counts live on each job.',
+    sourceReport: 'Buildertrend · User daily logs / Daily log creation by job',
     manageTo: '/ops/logs',
   },
   {
@@ -67,6 +69,19 @@ export const OPS_REPORTS: OpsReportDef[] = [
     title: 'Baseline schedule slip',
     lede: 'Schedule line items with end-date / duration slip (Total Slip drilldown).',
     sourceReport: 'Buildertrend · Baseline vs actual duration',
+  },
+  {
+    id: 'job-schedule',
+    title: 'Job schedule milestones',
+    lede: 'Contract / Permit / Foundation / Closing dates used for estimated time metrics.',
+    sourceReport: 'Buildertrend · Gantt / Schedule milestones',
+    manageTo: '/ops/jobs',
+  },
+  {
+    id: 'time-metrics',
+    title: 'Average time metrics',
+    lede: 'Portfolio Contract / Permit / Slab → Close averages (from closed jobs or baked BT values).',
+    sourceReport: 'Buildertrend · Closed/Warranty Gantt milestones',
   },
   {
     id: 'pipeline',

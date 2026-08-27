@@ -45,6 +45,19 @@ describe('operations seed + map', () => {
     expect(mapped.jobs.length).toBe(seeded.jobs.filter((j) => !j.archived).length);
     expect(mapped.pipeline.some((p) => (p.dealCount ?? 0) > 0)).toBe(true);
     expect(mapped.targetMarginPct).toBe(seeded.settings.targetMarginPct);
+    expect(mapped.timeMetrics.length).toBe(3);
+    expect(mapped.timeMetrics.map((m) => m.id)).toEqual(['contract-close', 'permit-close', 'slab-close']);
+    expect(mapped.salesPerformance.map((b) => b.id)).toEqual(['backlog', 'closings', 'signing']);
+  });
+
+  it('preserves lifetime daily log totals from LIVE_JOBS on map', () => {
+    const seeded = seedOpsFromLiveSnapshot();
+    const mapped = mapOpsSnapshotToDashboardInputs(seeded, new Date('2030-01-15T12:00:00Z'));
+    for (const live of LIVE_JOBS) {
+      const mappedJob = mapped.jobs.find((j) => j.id === live.id);
+      expect(mappedJob?.dailyLogsTotal).toBe(live.dailyLogsTotal ?? 0);
+    }
+    expect(seeded.settings.timeMetrics?.length).toBe(3);
   });
 
   it('ensureOpsSeeded persists once', () => {

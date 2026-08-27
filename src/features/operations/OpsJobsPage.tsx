@@ -199,6 +199,54 @@ export function OpsJobsPage() {
               </label>
             </fieldset>
             <fieldset className="data-form-section">
+              <legend>Schedule milestones (time metrics)</legend>
+              <div className="data-form-row">
+                <label>
+                  First schedule start
+                  <input
+                    type="date"
+                    value={(draft.estFirstScheduleStart || '').slice(0, 10)}
+                    onChange={(e) => setDraft({ ...draft, estFirstScheduleStart: e.target.value })}
+                  />
+                </label>
+                <label>
+                  Permitting end
+                  <input
+                    type="date"
+                    value={(draft.estPermittingEnd || '').slice(0, 10)}
+                    onChange={(e) => setDraft({ ...draft, estPermittingEnd: e.target.value })}
+                  />
+                </label>
+              </div>
+              <div className="data-form-row">
+                <label>
+                  Foundation start
+                  <input
+                    type="date"
+                    value={(draft.estFoundationStart || '').slice(0, 10)}
+                    onChange={(e) => setDraft({ ...draft, estFoundationStart: e.target.value })}
+                  />
+                </label>
+                <label>
+                  Closing end
+                  <input
+                    type="date"
+                    value={(draft.estClosingEnd || '').slice(0, 10)}
+                    onChange={(e) => setDraft({ ...draft, estClosingEnd: e.target.value })}
+                  />
+                </label>
+              </div>
+              <label>
+                Lifetime daily logs (BT total)
+                <input
+                  type="number"
+                  min={0}
+                  value={draft.lifetimeDailyLogCount ?? 0}
+                  onChange={(e) => setDraft({ ...draft, lifetimeDailyLogCount: Number(e.target.value) || 0 })}
+                />
+              </label>
+            </fieldset>
+            <fieldset className="data-form-section">
               <legend>Financials (USD)</legend>
               <div className="data-form-row">
                 <label>

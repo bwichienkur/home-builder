@@ -22,6 +22,10 @@ export function OpsReportsHubPage() {
     selections: ops.selections.filter((s) => s.status === 'pending').length,
     'daily-logs': ops.logs.length,
     'schedule-slip': ops.scheduleItems.length,
+    'job-schedule': ops.jobs.filter(
+      (j) => j.estFirstScheduleStart || j.estPermittingEnd || j.estFoundationStart || j.estClosingEnd,
+    ).length,
+    'time-metrics': ops.settings.timeMetrics?.length || 3,
     pipeline: ops.deals.length,
   };
 
@@ -338,6 +342,14 @@ function ReportBody({ reportId }: { reportId: OpsReportId }) {
     return <ScheduleSlipReport />;
   }
 
+  if (reportId === 'job-schedule') {
+    return <JobScheduleReport />;
+  }
+
+  if (reportId === 'time-metrics') {
+    return <TimeMetricsReport />;
+  }
+
   return null;
 }
 
@@ -610,6 +622,122 @@ function ScheduleSlipReport() {
           </form>
         ) : null}
       </EntityDrawer>
+    </>
+  );
+}
+
+function JobScheduleReport() {
+  const ops = useOpsStore();
+  return (
+    <OpsDataGrid
+      rows={ops.jobs}
+      getRowId={(j) => j.id}
+      searchPlaceholder="Search jobs…"
+      empty="No jobs."
+      initialSort={{ key: 'name', dir: 'asc' }}
+      columns={[
+        {
+          key: 'name',
+          label: 'Job',
+          getValue: (j) => j.name,
+          render: (j) => (
+            <Link to={`/ops/jobs/${encodeURIComponent(j.id)}`} className="ops-link">
+              {j.name}
+            </Link>
+          ),
+        },
+        {
+          key: 'estFirstScheduleStart',
+          label: 'Contract start',
+          getValue: (j) => j.estFirstScheduleStart || '',
+          render: (j) => j.estFirstScheduleStart || '—',
+        },
+        {
+          key: 'estPermittingEnd',
+          label: 'Permit end',
+          getValue: (j) => j.estPermittingEnd || '',
+          render: (j) => j.estPermittingEnd || '—',
+        },
+        {
+          key: 'estFoundationStart',
+          label: 'Foundation',
+          getValue: (j) => j.estFoundationStart || '',
+          render: (j) => j.estFoundationStart || '—',
+        },
+        {
+          key: 'estClosingEnd',
+          label: 'Closing end',
+          getValue: (j) => j.estClosingEnd || '',
+          render: (j) => j.estClosingEnd || '—',
+        },
+        {
+          key: 'lifetimeDailyLogCount',
+          label: 'Lifetime logs',
+          align: 'right',
+          getValue: (j) => j.lifetimeDailyLogCount ?? 0,
+          render: (j) => j.lifetimeDailyLogCount ?? 0,
+        },
+      ]}
+    />
+  );
+}
+
+function TimeMetricsReport() {
+  const ops = useOpsStore();
+  const rows = ops.settings.timeMetrics?.length
+    ? ops.settings.timeMetrics
+    : [
+        { id: 'contract-close', label: 'Contract to Close', days: 0, deltaDays: 0 },
+        { id: 'permit-close', label: 'Permit to Close', days: 0, deltaDays: 0 },
+        { id: 'slab-close', label: 'Slab Pour to Close', days: 0, deltaDays: 0 },
+      ];
+  const [draft, setDraft] = useState(rows.map((r) => ({ ...r })));
+
+  return (
+    <>
+      <p className="muted" style={{ marginBottom: 12 }}>
+        Portfolio averages used on the Owner Dashboard. Seeded from the BT bake; override here, or add
+        closed/warranty jobs with milestones to recompute on next native dashboard load.
+      </p>
+      <OpsDataGrid
+        rows={draft}
+        getRowId={(r) => r.id}
+        searchPlaceholder="Search metrics…"
+        empty="No time metrics."
+        pageSize={10}
+        columns={[
+          { key: 'label', label: 'Metric', getValue: (r) => r.label, render: (r) => r.label },
+          {
+            key: 'days',
+            label: 'Days',
+            align: 'right',
+            getValue: (r) => r.days,
+            render: (r) => (
+              <input
+                type="number"
+                className="ops-inline-input"
+                value={r.days}
+                onChange={(e) => {
+                  const days = Number(e.target.value) || 0;
+                  setDraft((prev) => prev.map((row) => (row.id === r.id ? { ...row, days } : row)));
+                }}
+              />
+            ),
+          },
+          {
+            key: 'deltaDays',
+            label: 'Δ days',
+            align: 'right',
+            getValue: (r) => r.deltaDays,
+            render: (r) => r.deltaDays,
+          },
+        ]}
+      />
+      <div className="data-page-actions" style={{ marginTop: 12 }}>
+        <button type="button" className="ops-btn primary" onClick={() => ops.saveTimeMetrics(draft)}>
+          Save time metrics
+        </button>
+      </div>
     </>
   );
 }

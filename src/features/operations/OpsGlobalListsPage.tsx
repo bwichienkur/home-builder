@@ -14,11 +14,21 @@ export function OpsTasksPage() {
   const ops = useOpsStore();
   const [draft, setDraft] = useState<OpsTask | null>(null);
   const [statusFilter, setStatusFilter] = useState('');
+  const [dueFilter, setDueFilter] = useState('');
+  const today = new Date().toISOString().slice(0, 10);
 
   const rows = useMemo(() => {
-    if (!statusFilter) return ops.tasks;
-    return ops.tasks.filter((t) => t.status === statusFilter);
-  }, [ops.tasks, statusFilter]);
+    return ops.tasks.filter((t) => {
+      if (statusFilter && t.status !== statusFilter) return false;
+      if (dueFilter === 'past-due') {
+        return t.status === 'incomplete' && t.dueDate && t.dueDate < today;
+      }
+      if (dueFilter === 'upcoming') {
+        return t.status === 'incomplete' && t.dueDate && t.dueDate >= today;
+      }
+      return true;
+    });
+  }, [ops.tasks, statusFilter, dueFilter, today]);
 
   return (
     <>
@@ -27,7 +37,10 @@ export function OpsTasksPage() {
           <div>
             <p className="eyebrow">operations</p>
             <h1>All tasks</h1>
-            <p className="muted">Past-due and open tasks across every job (seeded from BT drilldown rows).</p>
+            <p className="muted">
+              Tasks across every job. Seed imports BT past-due incomplete rows; add any other tasks here for native
+              dashboard use.
+            </p>
           </div>
           <div className="data-page-actions">
             <Link to="/ops" className="ops-btn">
@@ -69,6 +82,17 @@ export function OpsTasksPage() {
                 { value: '', label: 'All' },
                 { value: 'incomplete', label: 'incomplete' },
                 { value: 'complete', label: 'complete' },
+              ],
+            },
+            {
+              id: 'due',
+              label: 'Due',
+              value: dueFilter,
+              onChange: setDueFilter,
+              options: [
+                { value: '', label: 'All' },
+                { value: 'past-due', label: 'Past due' },
+                { value: 'upcoming', label: 'Due today / future' },
               ],
             },
           ]}

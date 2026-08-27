@@ -33,10 +33,11 @@ export {
   deleteOpsScheduleItem,
   upsertOpsCashflow,
   deleteOpsCashflow,
+  upsertOpsSettings,
   newOpsId,
 } from './store';
 export { seedOpsFromLiveSnapshot, mapExternalDealStage } from './seed';
-export { mapOpsSnapshotToDashboardInputs } from './mapToDashboard';
+export { mapOpsSnapshotToDashboardInputs, timeMetricsFromOpsJobs } from './mapToDashboard';
 export { buildOpsDrilldown } from './buildDrilldown';
 export { nativeOwnerDashboardProvider } from './nativeProvider';
 export { isOpsHttpProvider, pullOpsFromServer, pushOpsToServer } from './remote';
