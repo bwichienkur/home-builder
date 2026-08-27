@@ -90,18 +90,18 @@ export function StatusDonut({
         </text>
       </svg>
       <ul className="dash-legend">
-        {slices.map((slice, index) => {
+        {slices.map((slice) => {
           const href = hrefForSlice?.(slice);
           return (
             <li key={slice.phase}>
               <span className="dash-swatch" style={{ background: PHASE_COLOR[slice.phase] }} />
               {href ? (
                 <Link to={href} className="dash-drill-link">
-                  {index + 1}. {slice.label} · {slice.count}
+                  ({slice.count}) {slice.label.replace(/\s*\/\s*/g, ' ')}
                 </Link>
               ) : (
                 <span>
-                  {index + 1}. {slice.label} · {slice.count}
+                  ({slice.count}) {slice.label.replace(/\s*\/\s*/g, ' ')}
                 </span>
               )}
               <strong>{Math.round(slice.pct)}%</strong>
