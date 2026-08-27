@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   compactBaselineSlipRow,
   contractPriceFromJobInfo,
@@ -7,6 +7,7 @@ import {
   isSiteWorkScheduleTitle,
   mergeTasksListResponses,
   normalizeScheduleTitle,
+  payloadForServerlessCache,
   pickCurrentScheduleItem,
   scheduleMilestonesFromGantt,
   selectionsGridBody,
@@ -227,5 +228,28 @@ describe('contractPriceFromJobInfo', () => {
       }),
     ).toBe(1_204_751);
     expect(contractPriceFromJobInfo({ data: { jobInfo: { contractPrice: { value: 0 } } } })).toBe(0);
+  });
+});
+
+describe('payloadForServerlessCache', () => {
+  it('passes through locally and slims on Vercel', () => {
+    const payload = {
+      pulledAt: '2026-01-01T00:00:00.000Z',
+      reports: {
+        tasks: {
+          tasks: [
+            { taskId: 1, status: 0, isDeleted: false, endDate: '2020-01-01', title: 'Past due' },
+            { taskId: 2, status: 0, isDeleted: false, endDate: '2099-01-01', title: 'Future' },
+          ],
+        },
+      },
+    };
+    vi.stubEnv('VERCEL', '');
+    expect(payloadForServerlessCache(payload)).toBe(payload);
+    vi.stubEnv('VERCEL', '1');
+    const slim = payloadForServerlessCache(payload);
+    expect(slim.reports.tasks.tasks).toHaveLength(1);
+    expect(slim.reports.tasks.tasks[0].title).toBe('Past due');
+    vi.unstubAllEnvs();
   });
 });
