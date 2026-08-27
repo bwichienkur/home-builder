@@ -27,10 +27,10 @@ export function compareForSort(a: unknown, b: unknown): number {
   return String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: 'base' });
 }
 
-export function sortByKey<T>(
+export function sortByKey<T, K extends string = string>(
   rows: T[],
-  getValue: (row: T, key: string) => unknown,
-  sort: SortState | null,
+  getValue: (row: T, key: K) => unknown,
+  sort: SortState<K> | null,
 ): T[] {
   if (!sort) return rows;
   const dir = sort.dir === 'asc' ? 1 : -1;
