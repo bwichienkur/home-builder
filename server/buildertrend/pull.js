@@ -117,7 +117,8 @@ function parseCookieEnv(raw) {
 }
 
 async function loginWithCookie(cookieOverride) {
-  const raw = cookieOverride ?? env('BUILDERTREND_COOKIE');
+  const provided = cookieOverride != null && String(cookieOverride).trim() !== '';
+  const raw = provided ? String(cookieOverride).trim() : env('BUILDERTREND_COOKIE');
   if (!raw) return null;
   const session = newSession({
     jar: parseCookieEnv(raw),
@@ -125,8 +126,18 @@ async function loginWithCookie(cookieOverride) {
     userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
   });
   const probe = await btFetch(session, 'GET', '/apix/v3/Reporting/work-in-progress', { query: { openJobLimit: 1 } });
-  if (!probe.ok) return null;
-  return session;
+  if (probe.ok) return session;
+
+  // Pasted/overridden cookies must fail loudly — do not silently fall back to username/password.
+  if (provided) {
+    throw Object.assign(
+      new Error(
+        `Buildertrend rejected the pasted cookies (HTTP ${probe.status}). Re-copy .AspNet.Auth0, ASP.NET_SessionId, and GAESA from a logged-in buildertrend.net tab (Value column only).`,
+      ),
+      { status: 401, code: 'cookie_rejected' },
+    );
+  }
+  return null;
 }
 
 async function loginMobile(username, password) {

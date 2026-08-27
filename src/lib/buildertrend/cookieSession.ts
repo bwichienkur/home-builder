@@ -32,13 +32,32 @@ export function clearStoredBtCookie() {
 /** Build `name=value; name=value` from a name→value map (skips empty values). */
 export function buildCookieHeader(values: Partial<Record<RequiredBtCookieName, string>>): string {
   return REQUIRED_BT_COOKIE_NAMES.map((name) => {
-    const value = values[name]?.trim();
+    const value = sanitizeCookieValue(name, values[name]);
     return value ? `${name}=${value}` : '';
   })
     .filter(Boolean)
     .join('; ');
 }
 
+/**
+ * Normalize a pasted cookie value: trim, strip wrapping quotes, and drop a
+ * duplicated `Name=` prefix if the user pasted name+value together.
+ */
+export function sanitizeCookieValue(name: RequiredBtCookieName, raw: string | undefined): string {
+  let value = String(raw ?? '').trim();
+  if (
+    (value.startsWith('"') && value.endsWith('"')) ||
+    (value.startsWith("'") && value.endsWith("'"))
+  ) {
+    value = value.slice(1, -1).trim();
+  }
+  const prefix = `${name}=`;
+  if (value.toLowerCase().startsWith(prefix.toLowerCase())) {
+    value = value.slice(prefix.length).trim();
+  }
+  return value;
+}
+
 export function isAuthRefreshFailure(code: string | undefined) {
-  return code === 'credentials_missing' || code === 'login_failed';
+  return code === 'credentials_missing' || code === 'login_failed' || code === 'cookie_rejected';
 }

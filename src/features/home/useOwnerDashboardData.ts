@@ -113,6 +113,7 @@ function detailFromLive(bt: BuildertrendLivePull | null, pd: PipedriveLivePull |
 
 export type BtCookiePromptState = {
   reason?: string;
+  error?: string;
 };
 
 export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId) {
@@ -125,7 +126,8 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
   const [livePdPull, setLivePdPull] = useState<PipedriveLivePull | null>(() => loadStoredPipedrivePull());
   const [liveDetail, setLiveDetail] = useState<LiveDrilldown | null>(null);
   const [cookiePrompt, setCookiePrompt] = useState<BtCookiePromptState | null>(null);
-  const cookieResolverRef = useRef<((cookie: string | null) => void) | null>(null);
+  const [cookieBusy, setCookieBusy] = useState(false);
+  const cookieWaiterRef = useRef<((ok: boolean) => void) | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -204,24 +206,52 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
 
   useEffect(() => {
     return () => {
-      cookieResolverRef.current?.(null);
-      cookieResolverRef.current = null;
+      cookieWaiterRef.current?.(false);
+      cookieWaiterRef.current = null;
     };
   }, []);
 
-  const requestCookieValues = useCallback((reason?: string) => {
-    cookieResolverRef.current?.(null);
-    return new Promise<string | null>((resolve) => {
-      cookieResolverRef.current = resolve;
-      setCookiePrompt({ reason });
+  const openCookieDialog = useCallback((reason?: string, error?: string) => {
+    cookieWaiterRef.current?.(false);
+    return new Promise<boolean>((resolve) => {
+      cookieWaiterRef.current = resolve;
+      setCookieBusy(false);
+      setCookiePrompt({ reason, error });
     });
   }, []);
 
-  const resolveCookiePrompt = useCallback((cookie: string | null) => {
-    const resolve = cookieResolverRef.current;
-    cookieResolverRef.current = null;
+  const cancelCookiePrompt = useCallback(() => {
+    if (cookieBusy) return;
+    const settle = cookieWaiterRef.current;
+    cookieWaiterRef.current = null;
     setCookiePrompt(null);
-    resolve?.(cookie);
+    setCookieBusy(false);
+    settle?.(false);
+  }, [cookieBusy]);
+
+  const submitCookiePrompt = useCallback(async (cookie: string) => {
+    setCookieBusy(true);
+    setCookiePrompt((prev) => (prev ? { ...prev, error: undefined } : prev));
+    setError('');
+    try {
+      const pull = await refreshBuildertrendPull(cookie);
+      storeBtCookie(cookie);
+      setLivePull(pull);
+      setError('');
+      const settle = cookieWaiterRef.current;
+      cookieWaiterRef.current = null;
+      setCookiePrompt(null);
+      setCookieBusy(false);
+      settle?.(true);
+    } catch (reason: unknown) {
+      const message = reason instanceof Error ? reason.message : 'Buildertrend refresh failed.';
+      setError(message);
+      setCookiePrompt((prev) => ({
+        reason: prev?.reason,
+        error: message,
+      }));
+      setCookieBusy(false);
+    }
   }, []);
 
   const onRefresh = async () => {
@@ -243,14 +273,12 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
       }
     };
 
-    const collectAndPull = async (reason?: string) => {
-      const cookie = await requestCookieValues(reason);
-      if (!cookie) {
-        setError(reason || 'Refresh cancelled — paste the three Buildertrend cookie values to continue.');
-        return false;
+    const collectAndPull = async (reason?: string, initialError?: string) => {
+      const ok = await openCookieDialog(reason, initialError);
+      if (!ok) {
+        setError(initialError || reason || 'Refresh cancelled — paste the three Buildertrend cookie values to continue.');
       }
-      await pullWithCookie(cookie);
-      return true;
+      return ok;
     };
 
     try {
@@ -260,41 +288,40 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
           await pullWithCookie(stored);
           return;
         } catch (reason: unknown) {
+          const message = reason instanceof Error ? reason.message : 'Buildertrend refresh failed.';
           if (!isAuthRefreshFailure(errorCode(reason))) {
-            setError(reason instanceof Error ? reason.message : 'Buildertrend refresh failed.');
+            setError(message);
             return;
           }
           clearStoredBtCookie();
           await collectAndPull(
             'Saved Buildertrend cookies expired or were rejected. Enter fresh values from your logged-in tab.',
+            message,
           );
           return;
         }
       }
 
-      const cookie = await requestCookieValues(
+      const collected = await openCookieDialog(
         'Enter Buildertrend cookie values once. They are saved in this browser and reused until they stop working.',
       );
-      if (cookie) {
-        await pullWithCookie(cookie);
-        return;
-      }
+      if (collected) return;
 
       setRefreshing(true);
       try {
         const pull = await refreshBuildertrendPull();
         applyPull(pull);
       } catch (reason: unknown) {
+        const message = reason instanceof Error ? reason.message : 'Buildertrend refresh failed.';
         if (isAuthRefreshFailure(errorCode(reason))) {
           setRefreshing(false);
           await collectAndPull(
-            reason instanceof Error
-              ? reason.message
-              : 'Server has no Buildertrend cookie. Paste values from your logged-in tab.',
+            'Server has no working Buildertrend cookie. Paste values from your logged-in tab.',
+            message,
           );
           return;
         }
-        setError(reason instanceof Error ? reason.message : 'Buildertrend refresh failed.');
+        setError(message);
       } finally {
         setRefreshing(false);
       }
@@ -332,7 +359,9 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
     pipedriveRefreshedAt,
     detail,
     cookiePrompt,
-    resolveCookiePrompt,
+    cookieBusy,
+    submitCookiePrompt,
+    cancelCookiePrompt,
     onRefresh,
     onRefreshPipedrive,
   };
