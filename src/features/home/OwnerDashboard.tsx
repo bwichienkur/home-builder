@@ -164,7 +164,9 @@ export function OwnerDashboard() {
     livePdPull,
     pipedriveRefreshedAt,
     cookiePrompt,
-    resolveCookiePrompt,
+    cookieBusy,
+    submitCookiePrompt,
+    cancelCookiePrompt,
     onRefresh,
     onRefreshPipedrive,
   } = useOwnerDashboardData(status, dateRange);
@@ -237,7 +239,7 @@ export function OwnerDashboard() {
               type="button"
               className="dash-refresh"
               onClick={() => void onRefresh()}
-              disabled={refreshing || Boolean(cookiePrompt)}
+              disabled={refreshing || Boolean(cookiePrompt) || cookieBusy}
               aria-busy={refreshing}
             >
               {refreshing ? 'Pulling…' : 'Refresh from Buildertrend'}
@@ -264,14 +266,27 @@ export function OwnerDashboard() {
       {cookiePrompt ? (
         <BtCookieDialog
           reason={cookiePrompt.reason}
-          onSubmit={(cookie) => resolveCookiePrompt(cookie)}
-          onCancel={() => resolveCookiePrompt(null)}
+          error={cookiePrompt.error}
+          busy={cookieBusy}
+          onSubmit={(cookie) => void submitCookiePrompt(cookie)}
+          onCancel={cancelCookiePrompt}
         />
       ) : null}
 
-      <p className="dash-source">{sourceLine(dash.source, dash.refreshedAt, Boolean(livePull), error)}</p>
+      {error ? (
+        <p className="dash-error" role="alert">
+          Buildertrend: {error}
+        </p>
+      ) : null}
+      {pipedriveError ? (
+        <p className="dash-error" role="alert">
+          Pipedrive: {pipedriveError}
+        </p>
+      ) : null}
+
+      <p className="dash-source">{sourceLine(dash.source, dash.refreshedAt, Boolean(livePull), '')}</p>
       <p className="dash-source">
-        {pipedriveSourceLine(Boolean(livePdPull), pipedriveRefreshedAt, pipedriveError)}
+        {pipedriveSourceLine(Boolean(livePdPull), pipedriveRefreshedAt, '')}
       </p>
 
       <div className="dash-kpis">

@@ -24,10 +24,14 @@ function emptyValues(): Values {
 
 export function BtCookieDialog({
   reason,
+  error,
+  busy,
   onSubmit,
   onCancel,
 }: {
   reason?: string;
+  error?: string;
+  busy?: boolean;
   onSubmit: (cookieHeader: string) => void;
   onCancel: () => void;
 }) {
@@ -42,11 +46,11 @@ export function BtCookieDialog({
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onCancel();
+      if (event.key === 'Escape' && !busy) onCancel();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onCancel]);
+  }, [onCancel, busy]);
 
   const setValue = (name: RequiredBtCookieName, value: string) => {
     setValues((prev) => ({ ...prev, [name]: value }));
@@ -55,6 +59,7 @@ export function BtCookieDialog({
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
+    if (busy) return;
     const nextMissing: Partial<Record<RequiredBtCookieName, boolean>> = {};
     let ok = true;
     for (const name of REQUIRED_BT_COOKIE_NAMES) {
@@ -71,20 +76,32 @@ export function BtCookieDialog({
   };
 
   return (
-    <div className="dash-cookie-backdrop" role="presentation" onMouseDown={onCancel}>
+    <div
+      className="dash-cookie-backdrop"
+      role="presentation"
+      onClick={() => {
+        if (!busy) onCancel();
+      }}
+    >
       <section
         className="dash-cookie-dialog"
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        onMouseDown={(event) => event.stopPropagation()}
+        onClick={(event) => event.stopPropagation()}
       >
         <header className="dash-cookie-head">
           <div>
             <p className="eyebrow">Buildertrend refresh</p>
             <h2 id={titleId}>Paste cookie values</h2>
           </div>
-          <button type="button" className="dash-cookie-close" onClick={onCancel} aria-label="Cancel">
+          <button
+            type="button"
+            className="dash-cookie-close"
+            onClick={onCancel}
+            aria-label="Cancel"
+            disabled={busy}
+          >
             ×
           </button>
         </header>
@@ -94,13 +111,21 @@ export function BtCookieDialog({
             'Enter these once. They are saved in this browser and reused until Buildertrend rejects them.'}
         </p>
 
+        {error ? (
+          <p className="dash-cookie-error" role="alert">
+            {error}
+          </p>
+        ) : null}
+
         <ol className="dash-cookie-steps">
           <li>Open your logged-in Buildertrend tab</li>
           <li>
             Press <kbd>F12</kbd> → <strong>Application</strong> → <strong>Cookies</strong> →{' '}
             <code>https://buildertrend.net</code>
           </li>
-          <li>Click each cookie name below and copy only the <strong>Value</strong> column</li>
+          <li>
+            Click each cookie name below and copy only the <strong>Value</strong> column (not the name)
+          </li>
         </ol>
 
         <form className="dash-cookie-form" onSubmit={handleSubmit}>
@@ -120,6 +145,7 @@ export function BtCookieDialog({
                   spellCheck={false}
                   placeholder="Paste value only"
                   value={values[name]}
+                  disabled={busy}
                   aria-invalid={missing[name] ? true : undefined}
                   onChange={(event) => setValue(name, event.target.value)}
                 />
@@ -129,11 +155,11 @@ export function BtCookieDialog({
           })}
 
           <footer className="dash-cookie-actions">
-            <button type="button" className="dash-cookie-secondary" onClick={onCancel}>
+            <button type="button" className="dash-cookie-secondary" onClick={onCancel} disabled={busy}>
               Cancel
             </button>
-            <button type="submit" className="dash-cookie-primary">
-              Save & refresh
+            <button type="submit" className="dash-cookie-primary" disabled={busy} aria-busy={busy}>
+              {busy ? 'Pulling…' : 'Save & refresh'}
             </button>
           </footer>
         </form>

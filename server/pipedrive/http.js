@@ -1,4 +1,5 @@
 import { pullPipedrive, readCache } from './pull.js';
+import { readJsonBody } from '../buildertrend/http.js';
 
 function sendError(res, err) {
   const status = Number(err?.status) || 500;
@@ -15,7 +16,8 @@ export async function handleRefresh(req, res) {
     return res.status(405).json({ ok: false, error: 'Use POST to refresh.' });
   }
   try {
-    const token = typeof req.body?.token === 'string' ? req.body.token : undefined;
+    const body = await readJsonBody(req);
+    const token = typeof body?.token === 'string' ? body.token : undefined;
     const payload = await pullPipedrive({ token });
     res.json({ ok: true, ...payload });
   } catch (err) {

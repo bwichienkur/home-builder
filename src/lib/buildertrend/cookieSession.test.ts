@@ -5,6 +5,7 @@ import {
   clearStoredBtCookie,
   isAuthRefreshFailure,
   loadStoredBtCookie,
+  sanitizeCookieValue,
   storeBtCookie,
 } from './cookieSession';
 
@@ -51,6 +52,13 @@ describe('cookieSession', () => {
   it('detects auth refresh failure codes', () => {
     expect(isAuthRefreshFailure('credentials_missing')).toBe(true);
     expect(isAuthRefreshFailure('login_failed')).toBe(true);
+    expect(isAuthRefreshFailure('cookie_rejected')).toBe(true);
     expect(isAuthRefreshFailure('not_running')).toBe(false);
+  });
+
+  it('sanitizes pasted cookie values', () => {
+    expect(sanitizeCookieValue('GAESA', '  "abc"  ')).toBe('abc');
+    expect(sanitizeCookieValue('.AspNet.Auth0', '.AspNet.Auth0=token-value')).toBe('token-value');
+    expect(sanitizeCookieValue('ASP.NET_SessionId', 'ASP.NET_SessionId=sess')).toBe('sess');
   });
 });
