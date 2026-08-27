@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { mapBuildertrendReports } from '../src/lib/buildertrend/mapReports';
 import { LIVE_TARGET_MARGIN_PCT } from '../src/lib/buildertrend/liveSnapshot';
 import { buildLiveDrilldown } from '../src/lib/dashboard/buildDrilldown';
+import { buildOpsBtImport } from '../src/lib/operations/buildOpsBtImport';
 import { mapPipedriveDeals, mergeSalesFromPipedrive } from '../src/lib/pipedrive/mapDeals';
 
 function jobToTs(job: Record<string, unknown>, indent: string) {
@@ -129,6 +130,19 @@ export const LIVE_DRILLDOWN: LiveDrilldown = ${JSON.stringify(drilldown, null, 2
     writeFileSync(path.join(process.cwd(), 'src/lib/buildertrend/liveDrilldown.ts'), drillFile);
     expect(Object.keys(drilldown.selectionsByJobId).length).toBeGreaterThan(0);
     expect(Object.values(drilldown.dealsByStage).some((rows) => rows.length > 0)).toBe(true);
+
+    // Ops-only richer import (all incomplete tasks). Does NOT change Home LIVE_* artifacts above.
+    const opsImport = buildOpsBtImport({
+      reports: cache.reports,
+      pulledAt: cache.pulledAt,
+      now: new Date(cache.pulledAt),
+    });
+    writeFileSync(
+      path.join(process.cwd(), 'src/lib/operations/liveOpsImport.json'),
+      `${JSON.stringify(opsImport)}\n`,
+    );
+    expect(opsImport.meta.incompleteTaskCount).toBeGreaterThan(opsImport.meta.pastDueTaskCount);
+    expect(opsImport.meta.logBodiesUnavailable).toBe(true);
 
     expect(mapped.weightedPipeline ?? 0).toBeGreaterThan(0);
     expect(mapped.jobs.some((j) => j.pastDueTasks > 0 || j.pendingSelections > 0)).toBe(true);

@@ -42,3 +42,6 @@ export { buildOpsDrilldown } from './buildDrilldown';
 export { nativeOwnerDashboardProvider } from './nativeProvider';
 export { isOpsHttpProvider, pullOpsFromServer, pushOpsToServer } from './remote';
 export { OPS_REPORTS, opsReportById, type OpsReportId, type OpsReportDef } from './reportCatalog';
+export type { OpsBtImport, OpsBtImportTask } from './opsBtImportTypes';
+export { buildOpsBtImport } from './buildOpsBtImport';
+/** Prefer importing `./liveOpsImport` directly so Home/snapshot does not pull the large bake. */

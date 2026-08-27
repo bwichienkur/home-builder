@@ -63,8 +63,11 @@ export type OpsTask = {
   assignee: string;
   dueDate: string;
   status: 'incomplete' | 'complete';
-  /** Seed currently imports BT past-due incomplete; CRUD accepts any. */
-  source?: 'bt-past-due' | 'manual';
+  startDate?: string;
+  /** Optional task description / notes from BT. */
+  note?: string;
+  /** Seed currently imports BT incomplete (or past-due fallback); CRUD accepts any. */
+  source?: 'bt-past-due' | 'bt-incomplete' | 'manual';
   updatedAt: string;
 };
 

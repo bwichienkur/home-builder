@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { LIVE_JOBS } from '../buildertrend/liveSnapshot';
+import { LIVE_JOBS, LIVE_SNAPSHOT_AT } from '../buildertrend/liveSnapshot';
 import { LIVE_DRILLDOWN } from '../buildertrend/liveDrilldown';
 import { OPS_STORAGE_KEY } from './types';
 import { mapExternalDealStage, seedOpsFromLiveSnapshot } from './seed';
@@ -7,6 +7,8 @@ import { mapOpsSnapshotToDashboardInputs } from './mapToDashboard';
 import { nativeOwnerDashboardProvider } from './nativeProvider';
 import { buildOpsDrilldown } from './buildDrilldown';
 import { clearOpsStore, ensureOpsSeeded, loadOpsSnapshot, wipeOpsStoreForTests } from './store';
+import { LIVE_OPS_IMPORT } from './liveOpsImport';
+import { buildOpsBtImport } from './buildOpsBtImport';
 
 function drillCount(map: Record<string, unknown[]>) {
   return Object.values(map).reduce((sum, rows) => sum + rows.length, 0);
@@ -22,7 +24,9 @@ describe('operations seed + map', () => {
     expect(seeded.jobs.length).toBe(LIVE_JOBS.length);
     expect(seeded.jobs[0]?.id).toBe(LIVE_JOBS[0]?.id);
     expect(seeded.selections.length).toBe(drillCount(LIVE_DRILLDOWN.selectionsByJobId));
-    expect(seeded.tasks.length).toBe(drillCount(LIVE_DRILLDOWN.pastDueByJobId));
+    // Ops-only import prefers all incomplete BT tasks when LIVE_OPS_IMPORT is present.
+    expect(seeded.tasks.length).toBeGreaterThan(drillCount(LIVE_DRILLDOWN.pastDueByJobId));
+    expect(seeded.tasks.every((t) => t.source === 'bt-incomplete' || t.source === 'bt-past-due')).toBe(true);
     expect(seeded.deals.length).toBe(drillCount(LIVE_DRILLDOWN.dealsByStage));
     expect(seeded.logs.length).toBeGreaterThanOrEqual(drillCount(LIVE_DRILLDOWN.logsByJobId));
     expect(seeded.scheduleItems?.length).toBe(drillCount(LIVE_DRILLDOWN.baselineSlipByJobId));
@@ -31,6 +35,17 @@ describe('operations seed + map', () => {
     );
     expect(seeded.selections[0]?.title).not.toMatch(/^Pending selection \d+$/);
     expect(seeded.tasks[0]?.title).not.toMatch(/^Past-due task \d+$/);
+  });
+
+  it('maps past-due counts from incomplete Ops tasks to match LIVE_JOBS', () => {
+    const seeded = seedOpsFromLiveSnapshot();
+    const pullDay = (LIVE_SNAPSHOT_AT || LIVE_DRILLDOWN.generatedAt || '2026-08-27').slice(0, 10);
+    for (const live of LIVE_JOBS) {
+      const pastDue = seeded.tasks.filter(
+        (t) => t.jobId === live.id && t.status === 'incomplete' && t.dueDate && t.dueDate < pullDay,
+      ).length;
+      expect(pastDue).toBe(live.pastDueTasks);
+    }
   });
 
   it('maps Pipedrive stage labels into OpsDealStage buckets', () => {
@@ -99,5 +114,34 @@ describe('operations seed + map', () => {
     if (!first) return;
     const key = first.jobId.replace(/^bt-/, '');
     expect(detail.baselineSlipByJobId[key]?.length).toBeGreaterThan(0);
+  });
+
+  it('LIVE_OPS_IMPORT carries all incomplete tasks without changing Home past-due drilldown', () => {
+    expect(LIVE_OPS_IMPORT.meta.incompleteTaskCount).toBeGreaterThan(LIVE_OPS_IMPORT.meta.pastDueTaskCount);
+    expect(LIVE_OPS_IMPORT.meta.logBodiesUnavailable).toBe(true);
+    expect(drillCount(LIVE_DRILLDOWN.pastDueByJobId)).toBe(LIVE_OPS_IMPORT.meta.pastDueTaskCount);
+  });
+
+  it('buildOpsBtImport keeps incomplete ≫ past-due', () => {
+    const built = buildOpsBtImport({
+      reports: {
+        tasks: {
+          tasks: [
+            { taskId: 1, jobId: 10, status: 0, title: 'Past', endDate: '2020-01-01', isDeleted: false, assignments: [] },
+            { taskId: 2, jobId: 10, status: 0, title: 'Future', endDate: '2099-01-01', isDeleted: false, assignments: [] },
+            { taskId: 3, jobId: 10, status: 0, title: 'No due', isDeleted: false, assignments: [] },
+            { taskId: 4, jobId: 10, status: 1, title: 'Done', endDate: '2020-01-01', isDeleted: false, assignments: [] },
+          ],
+        },
+        userDailyLogsRecent: {
+          rowData: [{ userName: 'Ada', jobID: 10, jobName: 'Job', dailyLogCount: 2, lastLogDate: '2026-01-10' }],
+        },
+      },
+      pulledAt: '2026-08-27T12:00:00.000Z',
+      now: new Date('2026-08-27T12:00:00.000Z'),
+    });
+    expect(built.meta.incompleteTaskCount).toBe(3);
+    expect(built.meta.pastDueTaskCount).toBe(1);
+    expect(built.logsByJobId['10']).toHaveLength(1);
   });
 });

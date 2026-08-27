@@ -35,7 +35,6 @@ import {
 import { LIVE_DRILLDOWN } from '../../lib/buildertrend/liveDrilldown';
 import { buildLiveDrilldown } from '../../lib/dashboard/buildDrilldown';
 import type { LiveDrilldown } from '../../lib/dashboard/drilldownTypes';
-import { buildOpsDrilldown, ensureOpsSeeded } from '../../lib/operations';
 import { mapPipedriveDeals, mergeSalesFromPipedrive } from '../../lib/pipedrive/mapDeals';
 import {
   fetchCachedPipedrivePull,
@@ -145,9 +144,11 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
       void getOwnerDashboardProvider()
         .getDashboard(filters)
         .then(
-          (next) => {
+          async (next) => {
             if (cancelled) return;
             setDash(next);
+            const { buildOpsDrilldown, ensureOpsSeeded } = await import('../../lib/operations');
+            if (cancelled) return;
             setLiveDetail(buildOpsDrilldown(ensureOpsSeeded()));
             setError('');
           },
@@ -293,6 +294,7 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
       try {
         const next = await getOwnerDashboardProvider().getDashboard({ status, dateRange });
         setDash(next);
+        const { buildOpsDrilldown, ensureOpsSeeded } = await import('../../lib/operations');
         setLiveDetail(buildOpsDrilldown(ensureOpsSeeded()));
       } catch (reason: unknown) {
         setError(formatUnknownError(reason, 'Native operations dashboard failed to reload.'));
