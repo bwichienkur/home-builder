@@ -1,4 +1,5 @@
 import { pullBuildertrend, readCache } from './pull.js';
+import { estimateJsonBytes, MAX_CLIENT_PAYLOAD_BYTES, slimReportsForClient } from './slim.js';
 
 function sendError(res, err) {
   const status = Number(err?.status) || 500;
@@ -51,6 +52,23 @@ export async function readJsonBody(req) {
   return {};
 }
 
+function clientPayload(payload) {
+  const slimmed = {
+    ...payload,
+    reports: slimReportsForClient(payload.reports),
+  };
+  const bytes = estimateJsonBytes({ ok: true, ...slimmed });
+  if (bytes > MAX_CLIENT_PAYLOAD_BYTES) {
+    throw Object.assign(
+      new Error(
+        `Buildertrend refresh payload is too large for this host (${Math.round(bytes / 1_000_000)}MB). Use a local pull + snapshot bake, or contact support.`,
+      ),
+      { status: 413, code: 'payload_too_large' },
+    );
+  }
+  return slimmed;
+}
+
 export async function handleRefresh(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
@@ -60,7 +78,7 @@ export async function handleRefresh(req, res) {
     const body = await readJsonBody(req);
     const cookie = typeof body?.cookie === 'string' ? body.cookie : undefined;
     const payload = await pullBuildertrend({ cookie });
-    res.json({ ok: true, ...payload });
+    res.json({ ok: true, ...clientPayload(payload) });
   } catch (err) {
     sendError(res, err);
   }
@@ -73,7 +91,11 @@ export async function handleDashboard(req, res) {
   }
   const cache = readCache();
   if (!cache) return res.status(404).json({ ok: false, error: 'No live Buildertrend pull yet.' });
-  res.json({ ok: true, ...cache });
+  try {
+    res.json({ ok: true, ...clientPayload(cache) });
+  } catch (err) {
+    sendError(res, err);
+  }
 }
 
 export function mountBuildertrendRoutes(app) {
