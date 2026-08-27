@@ -693,6 +693,20 @@
   line-height: 1.4;
 }
 
+.dash-drill-metrics-card {
+  margin-bottom: 12px;
+}
+
+.dash-drill-metrics li {
+  grid-template-columns: 1fr auto;
+}
+
+.dash-drill-metrics li strong {
+  grid-column: 2;
+  grid-row: 1;
+  text-align: right;
+}
+
 .dash-drill-page-card {
   padding: 0;
   overflow: hidden;

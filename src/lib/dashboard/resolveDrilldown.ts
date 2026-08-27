@@ -1,4 +1,5 @@
 import { formatCompactUsd, formatUsd, phaseLabel } from '../buildertrend/format';
+import { estimatedTimeMetricsForJob } from '../buildertrend/estimatedTimeMetrics';
 import { CONTRACT_SENT_STAGE_ID, isPipedriveStageKey, pipedriveStageKey } from '../pipedrive/stageMap';
 import type { OwnerPhase, ProjectSnapshot } from '../buildertrend/types';
 import { overviewPhase } from '../buildertrend/summarize';
@@ -29,6 +30,8 @@ export type ResolvedDrilldown = {
   subtitle: string;
   columns: DrillColumn[];
   rows: DrillRow[];
+  /** Optional header metrics (e.g. estimated schedule durations on job slip). */
+  metrics?: Array<{ id: string; label: string; days: number }>;
 };
 
 function projectsFor(projects: ProjectSnapshot[], kind: DrilldownKind): ProjectSnapshot[] {
@@ -258,11 +261,21 @@ export function resolveDrilldown(
       (a, b) =>
         compareIsoDates(a.expectedEndDate, b.expectedEndDate) || a.title.localeCompare(b.title),
     );
+    const project = projects.find((p) => p.id === kind.jobId);
+    const metrics = project
+      ? estimatedTimeMetricsForJob({
+          firstScheduleStart: project.estFirstScheduleStart,
+          permittingEndDate: project.estPermittingEnd,
+          foundationStartDate: project.estFoundationStart,
+          closingEndDate: project.estClosingEnd,
+        })
+      : [];
     const positive = entries.filter((r) => r.endDateSlip > 0).reduce((s, r) => s + r.endDateSlip, 0);
     const negative = entries.filter((r) => r.endDateSlip < 0).reduce((s, r) => s + r.endDateSlip, 0);
     return {
       title: `Schedule slip · ${kind.jobName}`,
       subtitle: `${entries.length} OCH MASTER 2026 schedule items · +${positive} / ${negative} end-date workdays (ad-hoc items excluded)`,
+      metrics: metrics.length ? metrics : undefined,
       columns: [
         { key: 'title', label: 'Schedule item' },
         { key: 'endDateSlip', label: 'End date slip', align: 'right', sum: 'number' },

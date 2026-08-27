@@ -333,6 +333,28 @@ describe('Buildertrend report mapper', () => {
     expect(mapped.jobs.find((job) => job.name === 'Closed A')?.foundationStarted).toBe(true);
   });
 
+  it('stores Gantt milestone dates on jobs for estimated time metrics', () => {
+    const mapped = mapBuildertrendReports({
+      jobs: [{ jobID: 40497055, jobName: 'Ahigian - Habashi', jobStatus: 'Open' }],
+      scheduleByJob: {
+        '40497055': {
+          firstItemStartDate: '2024-09-01',
+          permitting: { endDate: '2025-06-01' },
+          foundation: { startDate: '2025-08-01' },
+          closing: { endDate: '2027-06-04' },
+          foundationStarted: true,
+          siteWorkStarted: true,
+        },
+      },
+    });
+    expect(mapped.jobs[0]).toMatchObject({
+      estFirstScheduleStart: '2024-09-01',
+      estPermittingEnd: '2025-06-01',
+      estFoundationStart: '2025-08-01',
+      estClosingEnd: '2027-06-04',
+    });
+  });
+
   it('sets foundationStarted from scheduleByJob for open jobs', () => {
     const mapped = mapBuildertrendReports({
       jobs: [

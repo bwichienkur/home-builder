@@ -47,6 +47,11 @@ export type OwnerJob = {
    * null/undefined = unknown (treat as required for mock / legacy snapshots).
    */
   foundationStarted?: boolean | null;
+  /** Gantt milestone dates for estimated contract/permit/slab → close durations. */
+  estFirstScheduleStart?: string;
+  estPermittingEnd?: string;
+  estFoundationStart?: string;
+  estClosingEnd?: string;
   /** USD */
   contractPrice: number;
   revenueToDate: number;
@@ -154,6 +159,11 @@ export type ProjectSnapshot = {
   changeOrderProfit?: number;
   pctComplete: number;
   estCloseDate: string;
+  /** Gantt milestone dates for estimated duration metrics on slip drill-down. */
+  estFirstScheduleStart?: string;
+  estPermittingEnd?: string;
+  estFoundationStart?: string;
+  estClosingEnd?: string;
   phase: OwnerPhase;
   slip: SlipBuckets;
   totalSlip: number;
