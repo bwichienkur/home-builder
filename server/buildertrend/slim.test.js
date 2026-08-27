@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { estimateJsonBytes, slimReportsForClient } from './slim.js';
+import { estimateJsonBytes, slimCoreReportRows, slimReportsForClient } from './slim.js';
 
 describe('slimReportsForClient', () => {
   it('keeps only past-due incomplete tasks and strips bulky fields', () => {
@@ -52,5 +52,31 @@ describe('slimReportsForClient', () => {
 
   it('estimates JSON byte size', () => {
     expect(estimateJsonBytes({ a: 1 })).toBeGreaterThan(0);
+  });
+});
+
+describe('slimCoreReportRows', () => {
+  it('keeps only mapper fields from wip rows', () => {
+    const slim = slimCoreReportRows('wip', [
+      {
+        jobID: 1,
+        jobName: 'Alpha',
+        contractPrice: 100,
+        amountInvoiced: 40,
+        giantUnusedBlob: { a: 1 },
+      },
+    ]);
+    expect(slim).toHaveLength(1);
+    expect(slim[0]).toMatchObject({ jobID: 1, jobName: 'Alpha', contractPrice: 100, amountInvoiced: 40 });
+    expect(slim[0].giantUnusedBlob).toBeUndefined();
+  });
+
+  it('normalizes job picker shape', () => {
+    const slim = slimCoreReportRows('jobs', {
+      data: { jobs: [{ jobID: 9, jobName: 'Beta', jobStatus: 1, extra: true }] },
+    });
+    expect(slim.data.jobs).toEqual([
+      { jobID: 9, jobName: 'Beta', jobStatus: 1, projectManagers: undefined },
+    ]);
   });
 });

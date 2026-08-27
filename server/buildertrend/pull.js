@@ -6,7 +6,7 @@ import 'dotenv/config';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { slimReportsForClient } from './slim.js';
+import { slimCoreReportRows } from './slim.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ORIGIN = 'https://buildertrend.net';
@@ -87,12 +87,22 @@ async function btFetch(session, method, urlPath, { json, query, headers } = {}) 
   }
   const response = await fetch(url, { method: methodUpper, headers: reqHeaders, body, redirect: 'manual' });
   collectCookies(session.jar, readSetCookies(response.headers));
-  const text = await response.text();
+  const contentType = response.headers.get('content-type') || '';
   let data = null;
-  try {
-    data = text ? JSON.parse(text) : null;
-  } catch {
-    data = text;
+  if (/json/i.test(contentType)) {
+    // Prefer .json() so we don't hold both raw text and parsed object in memory.
+    try {
+      data = await response.json();
+    } catch {
+      data = null;
+    }
+  } else {
+    const text = await response.text();
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      data = text;
+    }
   }
   return { ok: response.ok, status: response.status, data, location: response.headers.get('location') };
 }
@@ -914,12 +924,138 @@ function leadsGridBody() {
   };
 }
 
+async function fetchAndSlim(session, kind, fetcher) {
+  const result = await fetcher();
+  if (!result.ok) return { ...result, data: null };
+  return {
+    ...result,
+    data: slimCoreReportRows(kind, result.data),
+  };
+}
+
+/**
+ * Ultra-minimal Buildertrend pull for Vercel: sequential small reports only.
+ * Skips cashflow, user-daily-logs, gantt, tasks, selections, baseline grid —
+ * those payloads (or N× round-trips) crash serverless hosts.
+ */
+export async function fetchReportsServerless(session) {
+  const stages = [];
+  const run = async (name, fn) => {
+    stages.push(name);
+    try {
+      return await fn();
+    } catch (err) {
+      throw Object.assign(
+        new Error(`Buildertrend refresh failed during "${name}": ${err?.message || err}`),
+        { status: 502, code: 'refresh_stage_failed', stage: name },
+      );
+    }
+  };
+
+  const jobs = await run('jobpicker', () =>
+    fetchAndSlim(session, 'jobs', () => getJson(session, '/api/jobpicker/GetExistingJobList')),
+  );
+  const wip = await run('work-in-progress', () =>
+    fetchAndSlim(session, 'wip', () =>
+      getJson(session, '/apix/v3/Reporting/work-in-progress', { openJobLimit: 500 }),
+    ),
+  );
+  const dailyLogs = await run('daily-logs', () =>
+    fetchAndSlim(session, 'dailyLogs', () =>
+      getJson(session, '/apix/v3/Reporting/daily-log-creation-by-job'),
+    ),
+  );
+  const profitability = await run('profitability', () =>
+    fetchAndSlim(session, 'profitability', () =>
+      getJson(session, '/apix/v3/Reporting/profitability', {
+        openJobLimit: 500,
+        closedJobLimit: 100,
+        warrantyJobLimit: 100,
+      }),
+    ),
+  );
+  const changeOrderProfit = await run('change-order-profit', () =>
+    fetchAndSlim(session, 'changeOrderProfit', () =>
+      getJson(session, '/apix/v3/Reporting/change-order-profit', { openJobLimit: 500 }),
+    ),
+  );
+  const schedulePercentComplete = await run('schedule-percent-complete', () =>
+    fetchAndSlim(session, 'schedulePercentComplete', () =>
+      getJson(session, '/apix/v3/Reporting/schedule-percent-complete-by-job'),
+    ),
+  );
+  const baselineDuration = await run('baseline-duration', () =>
+    fetchAndSlim(session, 'baselineDuration', () =>
+      getJson(session, '/apix/v3/Reporting/baseline-vs-actual-duration-by-job'),
+    ),
+  );
+
+  const failed = [
+    ['work-in-progress', wip],
+    ['daily-log-creation-by-job', dailyLogs],
+    ['jobpicker', jobs],
+  ].filter(([, result]) => !result.ok);
+  if (failed.length === 3) {
+    throw Object.assign(new Error(`Buildertrend reports returned HTTP ${failed[0][1].status}. Session may have expired.`), {
+      status: 502,
+      code: 'reports_failed',
+    });
+  }
+
+  return {
+    reports: {
+      wip: wip.data,
+      profitability: profitability.data,
+      changeOrderProfit: changeOrderProfit.data,
+      cashflow: null,
+      jobInfoContractByJob: {},
+      dailyLogs: dailyLogs.data,
+      userDailyLogsRecent: null,
+      schedulePercentComplete: schedulePercentComplete.data,
+      baselineDuration: baselineDuration.data,
+      leadStatus: null,
+      jobs: jobs.data,
+      leads: null,
+      jobsites: null,
+      tasks: { tasks: [] },
+      actionItemsByJob: {},
+      selectionsByJob: {},
+      scheduleByJob: {},
+      siteWorkByJob: {},
+      baselineSlipByJob: {},
+      baselineItemsByJob: {},
+      ochMasterTemplateId: null,
+    },
+    statuses: {
+      wip: wip.status,
+      profitability: profitability.status,
+      changeOrderProfit: changeOrderProfit.status,
+      cashflow: 0,
+      dailyLogs: dailyLogs.status,
+      userDailyLogsRecent: 0,
+      schedulePercentComplete: schedulePercentComplete.status,
+      baselineDuration: baselineDuration.status,
+      leadStatus: 0,
+      jobs: jobs.status,
+      leads: 0,
+      jobsites: 0,
+      tasks: 0,
+      scheduleByJob: 0,
+      siteWorkByJob: 0,
+      baselineSlipByJob: 0,
+      ochMasterTemplate: 0,
+      stages,
+    },
+  };
+}
+
 export async function fetchReports(session, options = {}) {
   const serverless = Boolean(options.serverless ?? process.env.VERCEL);
-  const perJobConcurrency = serverless ? 2 : 5;
+  if (serverless) return fetchReportsServerless(session);
+
+  const perJobConcurrency = 5;
   const { start: logStart, end: logEnd } = rollingLogWindow();
 
-  // On Vercel, fetch core reports in two waves to reduce peak memory vs 12 parallel payloads.
   const wave1 = await Promise.all([
     getJson(session, '/apix/v3/Reporting/work-in-progress', { openJobLimit: 500 }),
     getJson(session, '/apix/v3/Reporting/profitability', {
@@ -936,15 +1072,9 @@ export async function fetchReports(session, options = {}) {
     getJson(session, '/apix/v3/Reporting/user-daily-logs', { startDate: logStart, endDate: logEnd }),
     getJson(session, '/apix/v3/Reporting/schedule-percent-complete-by-job'),
     getJson(session, '/apix/v3/Reporting/baseline-vs-actual-duration-by-job'),
-    serverless
-      ? Promise.resolve({ ok: true, status: 0, data: null })
-      : getJson(session, '/apix/v3/Reporting/lead-status-by-source'),
-    serverless
-      ? Promise.resolve({ ok: true, status: 0, data: null })
-      : postJson(session, '/api/Leads/Grid', leadsGridBody()),
-    serverless
-      ? Promise.resolve({ ok: true, status: 0, data: null })
-      : getJson(session, '/apix/v3/Jobsites'),
+    getJson(session, '/apix/v3/Reporting/lead-status-by-source'),
+    postJson(session, '/api/Leads/Grid', leadsGridBody()),
+    getJson(session, '/apix/v3/Jobsites'),
   ]);
 
   const [wip, profitability, changeOrderProfit, jobs] = wave1;
@@ -961,51 +1091,24 @@ export async function fetchReports(session, options = {}) {
 
   const jobIds = openJobIdsFromPicker(jobs.data);
   const closedWarrantyIds = closedWarrantyJobIdsFromReports(schedulePercentComplete.data, dailyLogs.data);
-  const scheduleJobIds = serverless ? jobIds : [...new Set([...jobIds, ...closedWarrantyIds])];
+  const scheduleJobIds = [...new Set([...jobIds, ...closedWarrantyIds])];
 
-  let masterTemplate = { ok: true, status: 0, titles: new Set(), templateId: null };
-  let tasks;
-  let actionItemsByJob;
-  let selectionsByJob;
-  let scheduleByJob;
-  let baselineSlipByJob;
-  let jobInfoContractByJob;
-
-  if (serverless) {
-    // Core-only on Vercel: N× Tasks/list + Selections/Grid still downloads huge
-    // payloads (even when we slim after). Keep KPIs + schedule milestones only.
-    try {
-      scheduleByJob = scheduleJobIds.length
-        ? await fetchScheduleMilestonesByJob(session, scheduleJobIds)
-        : { ok: true, status: 200, data: {} };
-    } catch (err) {
-      console.error('serverless gantt fetch failed', err);
-      scheduleByJob = { ok: false, status: 500, data: {} };
-    }
-    tasks = { ok: true, status: 0, data: { tasks: [] } };
-    selectionsByJob = {};
-    actionItemsByJob = {};
-    baselineSlipByJob = { ok: true, status: 0, data: {}, itemsByJob: {} };
-    jobInfoContractByJob = {};
-  } else {
-    masterTemplate = await fetchOchMasterTemplateTitles(session);
-    [tasks, actionItemsByJob, selectionsByJob, scheduleByJob, baselineSlipByJob, jobInfoContractByJob] =
-      await Promise.all([
-        fetchTasksForOpenJobs(session, jobIds, { concurrency: perJobConcurrency }),
-        jobIds.length ? fetchActionItemsByJob(session, jobIds) : Promise.resolve({}),
-        jobIds.length ? fetchSelectionsForOpenJobs(session, jobIds, { concurrency: perJobConcurrency }) : Promise.resolve({}),
-        scheduleJobIds.length
-          ? fetchScheduleMilestonesByJob(session, scheduleJobIds)
-          : Promise.resolve({ ok: true, status: 200, data: {} }),
-        jobIds.length
-          ? fetchBaselineSlipByJob(session, jobIds, { templateTitles: masterTemplate.titles })
-          : Promise.resolve({ ok: true, status: 200, data: {}, itemsByJob: {} }),
-        jobIds.length ? fetchJobInfoContractByJob(session, jobIds) : Promise.resolve({}),
-      ]);
-  }
+  const masterTemplate = await fetchOchMasterTemplateTitles(session);
+  const [tasks, actionItemsByJob, selectionsByJob, scheduleByJob, baselineSlipByJob, jobInfoContractByJob] =
+    await Promise.all([
+      fetchTasksForOpenJobs(session, jobIds, { concurrency: perJobConcurrency }),
+      jobIds.length ? fetchActionItemsByJob(session, jobIds) : Promise.resolve({}),
+      jobIds.length ? fetchSelectionsForOpenJobs(session, jobIds, { concurrency: perJobConcurrency }) : Promise.resolve({}),
+      scheduleJobIds.length
+        ? fetchScheduleMilestonesByJob(session, scheduleJobIds)
+        : Promise.resolve({ ok: true, status: 200, data: {} }),
+      jobIds.length
+        ? fetchBaselineSlipByJob(session, jobIds, { templateTitles: masterTemplate.titles })
+        : Promise.resolve({ ok: true, status: 200, data: {}, itemsByJob: {} }),
+      jobIds.length ? fetchJobInfoContractByJob(session, jobIds) : Promise.resolve({}),
+    ]);
 
   const scheduleData = scheduleByJob.data ?? {};
-  // Back-compat: Site Work–only map used by older snapshot/tests.
   const siteWorkByJob = Object.fromEntries(
     Object.entries(scheduleData)
       .filter(([, row]) => row?.siteWork)
@@ -1021,7 +1124,7 @@ export async function fetchReports(session, options = {}) {
       ]),
   );
 
-  let reports = {
+  const reports = {
     wip: wip.data,
     profitability: profitability.data,
     changeOrderProfit: changeOrderProfit.data,
@@ -1045,9 +1148,6 @@ export async function fetchReports(session, options = {}) {
     ochMasterTemplateId: masterTemplate.templateId,
   };
 
-  if (serverless) {
-    reports = slimReportsForClient(reports);
-  }
   const failed = [
     ['work-in-progress', wip],
     ['daily-log-creation-by-job', dailyLogs],
@@ -1098,8 +1198,8 @@ export function writeCache(payload) {
   fs.writeFileSync(file, JSON.stringify(payload));
 }
 
-export async function pullBuildertrend({ cookie } = {}) {
-  const serverless = Boolean(process.env.VERCEL);
+export async function pullBuildertrend({ cookie, serverless: serverlessOpt } = {}) {
+  const serverless = serverlessOpt === true || Boolean(process.env.VERCEL);
   const { session } = await authenticate({ cookie });
   const { reports, statuses } = await fetchReports(session, { serverless });
   const payload = {
@@ -1107,7 +1207,7 @@ export async function pullBuildertrend({ cookie } = {}) {
     authMethod: session.method,
     readonly: true,
     serverless,
-    /** Core KPIs + schedule only — tasks/selections/baseline omitted to fit Vercel limits. */
+    /** Core KPIs only — tasks/selections/baseline/gantt/cashflow omitted to fit Vercel limits. */
     enrichment: serverless ? 'core' : 'full',
     statuses,
     reports,
