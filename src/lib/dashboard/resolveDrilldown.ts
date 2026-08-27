@@ -276,6 +276,37 @@ export function resolveDrilldown(
     };
   }
 
+  if (kind.type === 'change-order-breakdown') {
+    const list = projects
+      .filter((p) => (p.changeOrderRevenue ?? 0) !== 0)
+      .sort((a, b) => (b.changeOrderRevenue ?? 0) - (a.changeOrderRevenue ?? 0) || a.name.localeCompare(b.name));
+    const totalRevenue = list.reduce((s, p) => s + (p.changeOrderRevenue ?? 0), 0);
+    const totalProfit = list.reduce((s, p) => s + (p.changeOrderProfit ?? 0), 0);
+    const profitPct = totalRevenue > 0 ? Math.round((totalProfit / totalRevenue) * 1000) / 10 : 0;
+    return {
+      title: 'Change order revenue',
+      subtitle: `${list.length} open projects with change orders · ${formatCompactUsd(totalRevenue)} revenue · ${profitPct}% CO profit`,
+      columns: [
+        { key: 'name', label: 'Project' },
+        { key: 'pm', label: 'PM' },
+        { key: 'revenue', label: 'CO revenue', align: 'right', sum: 'usd' },
+        { key: 'profit', label: 'CO profit', align: 'right', sum: 'usd' },
+        { key: 'margin', label: 'CO profit %', align: 'right' },
+      ],
+      rows: list.map((p) => {
+        const revenue = p.changeOrderRevenue ?? 0;
+        const profit = p.changeOrderProfit ?? 0;
+        return {
+          name: p.name,
+          pm: p.pm,
+          revenue,
+          profit,
+          margin: revenue ? `${Math.round((profit / revenue) * 1000) / 10}%` : '—',
+        };
+      }),
+    };
+  }
+
   const list = projectsFor(projects, kind);
   const title =
     kind.type === 'phase-projects'

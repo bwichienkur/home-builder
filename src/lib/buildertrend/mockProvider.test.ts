@@ -14,7 +14,8 @@ describe('owner dashboard mock', () => {
     expect(dash.kpis.find((k) => k.id === 'active')?.display).toBe('24');
     expect(dash.kpis.find((k) => k.id === 'wip')?.display).toBe('$18.74M');
     expect(dash.kpis.find((k) => k.id === 'revenue')?.display).toBe('$15.11M');
-    expect(dash.kpis.find((k) => k.id === 'contract')?.display).toBe('$25.65M');
+    expect(dash.kpis.find((k) => k.id === 'change-order')?.display).toBe('$964K');
+    expect(dash.kpis.find((k) => k.id === 'change-order')?.detail).toBe('33.0% CO profit');
     expect(dash.kpis.find((k) => k.id === 'pipeline')?.display).toBe('$22.65M');
     expect(dash.kpis.find((k) => k.id === 'rolling')?.display).toBe('$42.82M');
     expect(dash.kpis.find((k) => k.id === 'margin')?.detail).toContain('15.0% target vs 18.6% projected');
@@ -22,7 +23,8 @@ describe('owner dashboard mock', () => {
     expect(dash.totals.jobCount).toBe(24);
     expect(dash.totals.totalWip).toBe(18_740_000);
     expect(dash.totals.totalRevenueToDate).toBe(15_110_000);
-    expect(dash.totals.totalContract).toBe(25_650_000);
+    expect(dash.totals.totalChangeOrderRevenue).toBe(964_000);
+    expect(dash.totals.changeOrderProfitPct).toBe(33);
   });
 
   it('splits the 24 open jobs into Design/Permitting vs Construction', async () => {

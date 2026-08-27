@@ -9391,6 +9391,294 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "assignedTo": ""
       },
       {
+        "taskId": 176494993,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Appliance Selection",
+        "endDate": "2026-08-26",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176494994,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Cabinet Selection",
+        "endDate": "2026-08-26",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176494995,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Countertop - Interior Selection",
+        "endDate": "2026-08-26",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176494996,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Countertop - Summer Kitchen Selection",
+        "endDate": "2026-08-26",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176494997,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Doors - Interior Selection",
+        "endDate": "2026-08-26",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176494998,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Drywall Selection",
+        "endDate": "2026-08-26",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176494999,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Electrical - Lighting Interior selection",
+        "endDate": "2026-08-26",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176495000,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Elevator Selection",
+        "endDate": "2026-08-26",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176495001,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Fireplace - Interior Selection",
+        "endDate": "2026-08-26",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176495002,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Framing Selection",
+        "endDate": "2026-08-26",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176495003,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Paint - Interior Selection",
+        "endDate": "2026-08-26",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176495004,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Paint - Stain Selection",
+        "endDate": "2026-08-26",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176495005,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Plumbing - Bathroom Accessories Selection",
+        "endDate": "2026-08-26",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176495006,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Plumbing - Disposal Selection",
+        "endDate": "2026-08-26",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176495007,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Plumbing - Faucet Selection",
+        "endDate": "2026-08-26",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176495008,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Plumbing - Locations Selection",
+        "endDate": "2026-08-26",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176495009,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Plumbing - Showers Selection",
+        "endDate": "2026-08-26",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176495010,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Plumbing - Sinks Selction",
+        "endDate": "2026-08-26",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176495011,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Plumbing - Toilets Selection",
+        "endDate": "2026-08-26",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176495012,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Plumbing - Tubs Selection",
+        "endDate": "2026-08-26",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176495013,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Railing - Interior Selection",
+        "endDate": "2026-08-26",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176495014,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Sills Selection",
+        "endDate": "2026-08-26",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176495015,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Slab Pour Selection",
+        "endDate": "2026-08-26",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176495016,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Specialties - Glass Shelving Selection",
+        "endDate": "2026-08-26",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176495017,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Specialties - Glass Shower Enclosure Selection",
+        "endDate": "2026-08-26",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176495018,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Stone - Interior Selection",
+        "endDate": "2026-08-26",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176495019,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Tile & Flooring Selection",
+        "endDate": "2026-08-26",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176495020,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Trim Carpentry - Mantel Selection",
+        "endDate": "2026-08-26",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176495021,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Trim Carpentry - Moulding Selection",
+        "endDate": "2026-08-26",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176495022,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Trim Carpentry - Stairs Selection",
+        "endDate": "2026-08-26",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176495023,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Trim Carpentry - T&G Selection",
+        "endDate": "2026-08-26",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176495024,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Trim Carpentry - Wood Shelving Selection",
+        "endDate": "2026-08-26",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
         "taskId": 176495029,
         "jobId": 43331519,
         "jobName": "Shagnea",
@@ -9896,6 +10184,13 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
       {
         "jobId": 35918575,
         "jobName": "Nagle",
+        "userName": "Brian Dye",
+        "dailyLogCount": 1,
+        "lastLogDate": "2026-08-26"
+      },
+      {
+        "jobId": 35918575,
+        "jobName": "Nagle",
         "userName": "Rob Dougherty",
         "dailyLogCount": 7,
         "lastLogDate": "2026-08-17"
@@ -9947,8 +10242,8 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 38319441,
         "jobName": "Moura",
         "userName": "Richard Linck",
-        "dailyLogCount": 1,
-        "lastLogDate": "2026-08-25"
+        "dailyLogCount": 2,
+        "lastLogDate": "2026-08-26"
       },
       {
         "jobId": 38319441,
@@ -9986,8 +10281,8 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 38690567,
         "jobName": "DuRant",
         "userName": "Paul Dimeglio",
-        "dailyLogCount": 3,
-        "lastLogDate": "2026-08-18"
+        "dailyLogCount": 4,
+        "lastLogDate": "2026-08-26"
       }
     ],
     "38901121": [
@@ -10011,8 +10306,8 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 39142734,
         "jobName": "Karas",
         "userName": "Paul Dimeglio",
-        "dailyLogCount": 8,
-        "lastLogDate": "2026-08-18"
+        "dailyLogCount": 7,
+        "lastLogDate": "2026-08-26"
       }
     ],
     "39819357": [
@@ -10020,7 +10315,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 39819357,
         "jobName": "Henry",
         "userName": "Richard Linck",
-        "dailyLogCount": 7,
+        "dailyLogCount": 3,
         "lastLogDate": "2026-08-04"
       },
       {
@@ -10053,7 +10348,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobName": "Emerson",
         "userName": "Paul Dimeglio",
         "dailyLogCount": 15,
-        "lastLogDate": "2026-08-21"
+        "lastLogDate": "2026-08-26"
       },
       {
         "jobId": 40214880,
@@ -10068,8 +10363,8 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 40228562,
         "jobName": "Blandford",
         "userName": "Paul Dimeglio",
-        "dailyLogCount": 16,
-        "lastLogDate": "2026-08-21"
+        "dailyLogCount": 15,
+        "lastLogDate": "2026-08-26"
       },
       {
         "jobId": 40228562,
@@ -10114,7 +10409,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 40497055,
         "jobName": "Ahigian - Habashi",
         "userName": "Richard Linck",
-        "dailyLogCount": 16,
+        "dailyLogCount": 12,
         "lastLogDate": "2026-08-25"
       },
       {
@@ -10130,8 +10425,8 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 41118068,
         "jobName": "Lois",
         "userName": "Paul Dimeglio",
-        "dailyLogCount": 13,
-        "lastLogDate": "2026-08-20"
+        "dailyLogCount": 14,
+        "lastLogDate": "2026-08-26"
       },
       {
         "jobId": 41118068,
@@ -10146,15 +10441,15 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 41200140,
         "jobName": "Youngs/Wolfe",
         "userName": "Paul Dimeglio",
-        "dailyLogCount": 13,
-        "lastLogDate": "2026-08-20"
+        "dailyLogCount": 14,
+        "lastLogDate": "2026-08-26"
       },
       {
         "jobId": 41200140,
         "jobName": "Youngs/Wolfe",
         "userName": "Rob Dougherty",
-        "dailyLogCount": 3,
-        "lastLogDate": "2026-08-18"
+        "dailyLogCount": 4,
+        "lastLogDate": "2026-08-26"
       }
     ],
     "41776958": [
@@ -10162,8 +10457,8 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 41776958,
         "jobName": "Pierami",
         "userName": "Richard Linck",
-        "dailyLogCount": 14,
-        "lastLogDate": "2026-08-25"
+        "dailyLogCount": 12,
+        "lastLogDate": "2026-08-26"
       },
       {
         "jobId": 41776958,
@@ -10192,8 +10487,8 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 42083349,
         "jobName": "Norris",
         "userName": "Richard Linck",
-        "dailyLogCount": 11,
-        "lastLogDate": "2026-08-25"
+        "dailyLogCount": 10,
+        "lastLogDate": "2026-08-26"
       },
       {
         "jobId": 42083349,

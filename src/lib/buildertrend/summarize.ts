@@ -1,5 +1,6 @@
 import { formatCompactUsd, formatPct, phaseLabel, totalSlipDays } from './format';
 import { enrichOwnerJobs, type DailyLogJobMetrics } from './dailyLogStandards';
+import { openChangeOrderMetrics } from './mapReports';
 import type {
   DateRangeId,
   KpiCard,
@@ -96,9 +97,11 @@ export function summarizeOwnerDashboard(input: {
     now,
   );
   const jobCount = jobs.length;
-  const totalContract = jobs.reduce((s, j) => s + j.contractPrice, 0);
   const totalRevenue = jobs.reduce((s, j) => s + j.revenueToDate, 0);
   const totalWip = jobs.reduce((s, j) => s + j.wip, 0);
+  const openChangeOrders = openChangeOrderMetrics(input.jobs);
+  const totalChangeOrderRevenue = openChangeOrders.revenue;
+  const changeOrderProfitPct = openChangeOrders.profitPct;
   const pendingSelections = jobs.reduce((s, j) => s + j.pendingSelections, 0);
   const pastDueTasks = jobs.reduce((s, j) => s + j.pastDueTasks, 0);
   const logRecentDone = jobs.reduce(
@@ -152,7 +155,7 @@ export function summarizeOwnerDashboard(input: {
   const activeTrend = trend(9.1, [18, 19, 20, 20, 21, 22, 23, 24], jobCount);
   const wipTrend = trend(7.2, [14.2, 15.1, 15.8, 16.4, 16.9, 17.4, 18.1, 18.74], totalWip);
   const revenueTrend = trend(8.6, [11.2, 12.0, 12.6, 13.1, 13.7, 14.2, 14.7, 15.11], totalRevenue);
-  const contractTrend = trend(6.3, [20.4, 21.2, 22.0, 22.8, 23.5, 24.2, 24.9, 25.65], totalContract);
+  const changeOrderTrend = trend(5.4, [0.72, 0.78, 0.81, 0.86, 0.9, 0.92, 0.95, 0.964], totalChangeOrderRevenue);
   const pipelineTrend = trend(10.4, [16.8, 17.5, 18.4, 19.2, 20.1, 20.9, 21.8, 22.65], weighted);
   const marginTrend = live
     ? { sparkline: [input.projectedMarginPct, input.projectedMarginPct] }
@@ -169,8 +172,9 @@ export function summarizeOwnerDashboard(input: {
     kpi('revenue', 'Revenue to Date', totalRevenue, formatCompactUsd(totalRevenue), revenueTrend.delta, {
       sparkline: revenueTrend.sparkline,
     }),
-    kpi('contract', 'Total Contract Value', totalContract, formatCompactUsd(totalContract), contractTrend.delta, {
-      sparkline: contractTrend.sparkline,
+    kpi('change-order', 'Change Order Revenue', totalChangeOrderRevenue, formatCompactUsd(totalChangeOrderRevenue), changeOrderTrend.delta, {
+      sparkline: changeOrderTrend.sparkline,
+      detail: `${formatPct(changeOrderProfitPct)} CO profit`,
     }),
     kpi('pipeline', 'Weighted Pipeline', weighted, formatCompactUsd(weighted), pipelineTrend.delta, {
       sparkline: pipelineTrend.sparkline,
@@ -210,6 +214,8 @@ export function summarizeOwnerDashboard(input: {
         contractPrice: job.contractPrice,
         revenueToDate: job.revenueToDate,
         wip: job.wip,
+        changeOrderRevenue: job.changeOrderRevenue,
+        changeOrderProfit: job.changeOrderProfit,
         pctComplete: job.contractPrice ? (job.revenueToDate / job.contractPrice) * 100 : 0,
         estCloseDate: job.estCloseDate,
         phase: job.phase,
@@ -222,8 +228,9 @@ export function summarizeOwnerDashboard(input: {
       jobCount,
       avgTotalSlipDays: jobCount ? slipSum / jobCount : 0,
       totalRevenueToDate: totalRevenue,
-      totalContract,
       totalWip,
+      totalChangeOrderRevenue,
+      changeOrderProfitPct,
       pendingSelections,
       pastDueTasks,
       avgDailyLogPct: logRecentExp ? (logRecentDone / logRecentExp) * 100 : 0,

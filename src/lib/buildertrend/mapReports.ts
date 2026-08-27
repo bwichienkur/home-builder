@@ -51,6 +51,8 @@ export type BuildertrendReports = {
   profitability?: unknown;
   /** jobId → contract price from Jobs → Job Info (fallback when not sent to budget). */
   jobInfoContractByJob?: Record<string, number>;
+  /** Change order profit report — CO revenue and profit per job. */
+  changeOrderProfit?: unknown;
 };
 
 export type MappedBuildertrendPull = {
@@ -257,6 +259,8 @@ type JobDraft = {
   contractPrice: number;
   revenueToDate: number;
   wip: number;
+  changeOrderRevenue: number;
+  changeOrderProfit: number;
   pctComplete: number;
   earnedRevenue: number;
   projectedProfit: number;
@@ -355,6 +359,8 @@ function ingest(jobs: Map<string, JobDraft>, row: Record<string, unknown>, kind:
       contractPrice: 0,
       revenueToDate: 0,
       wip: 0,
+      changeOrderRevenue: 0,
+      changeOrderProfit: 0,
       pctComplete: 0,
       earnedRevenue: 0,
       projectedProfit: 0,
@@ -592,6 +598,36 @@ function baselineTotalSlipByJob(reports: BuildertrendReports) {
   return byJob;
 }
 
+function changeOrderByJob(reports: BuildertrendReports) {
+  const byJob = new Map<number, { revenue: number; profit: number }>();
+  for (const row of asArray(reports.changeOrderProfit)) {
+    const rec = asRecord(row);
+    if (!rec) continue;
+    const name = str(pick(rec, 'jobName', 'name'));
+    if (TEST_JOB.test(name) || /template/i.test(name)) continue;
+    const jobId = num(pick(rec, 'jobID', 'jobId'));
+    if (!jobId) continue;
+    byJob.set(jobId, {
+      revenue: num(pick(rec, 'price', 'changeOrderPrice', 'revenue')),
+      profit: num(pick(rec, 'profit', 'changeOrderProfit')),
+    });
+  }
+  return byJob;
+}
+
+/** Open-job change order revenue and portfolio profit % from the BT Change order profit report. */
+export function openChangeOrderMetrics(jobs: Iterable<JobDraft | OwnerJob>) {
+  let revenue = 0;
+  let profit = 0;
+  for (const job of jobs) {
+    if (job.status !== 'open') continue;
+    revenue += job.changeOrderRevenue ?? 0;
+    profit += job.changeOrderProfit ?? 0;
+  }
+  const profitPct = revenue > 0 ? Math.round((profit / revenue) * 1000) / 10 : 0;
+  return { revenue, profitPct };
+}
+
 function applyJobEnrichment(jobs: Map<string, JobDraft>, reports: BuildertrendReports, now: Date) {
   const recent = recentDailyLogsByJob(reports);
   const pastDue = pastDueTasksByJob(reports, now);
@@ -601,6 +637,7 @@ function applyJobEnrichment(jobs: Map<string, JobDraft>, reports: BuildertrendRe
   const siteWork = reports.siteWorkByJob ?? {};
   const baselineSlip = reports.baselineSlipByJob ?? {};
   const totalSlipByJob = baselineTotalSlipByJob(reports);
+  const changeOrders = changeOrderByJob(reports);
   for (const draft of jobs.values()) {
     if (!draft.jobId) continue;
     if (recent.has(draft.jobId)) draft.dailyLogsRecentDone = recent.get(draft.jobId)!;
@@ -636,6 +673,11 @@ function applyJobEnrichment(jobs: Map<string, JobDraft>, reports: BuildertrendRe
       };
     }
     if (totalSlipByJob.has(draft.jobId)) draft.totalSlip = totalSlipByJob.get(draft.jobId)!;
+    const co = changeOrders.get(draft.jobId);
+    if (co) {
+      draft.changeOrderRevenue = co.revenue;
+      draft.changeOrderProfit = co.profit;
+    }
   }
 }
 
@@ -662,6 +704,8 @@ function ingestSchedule(jobs: Map<string, JobDraft>, row: Record<string, unknown
       contractPrice: 0,
       revenueToDate: 0,
       wip: 0,
+      changeOrderRevenue: 0,
+      changeOrderProfit: 0,
       pctComplete: num(pick(row, 'percentComplete', 'jobCompletionPercentage')),
       earnedRevenue: 0,
       projectedProfit: 0,
@@ -752,6 +796,8 @@ function toOwnerJob(draft: JobDraft, now: Date): OwnerJob {
     contractPrice: draft.contractPrice,
     revenueToDate: draft.revenueToDate,
     wip: draft.wip,
+    changeOrderRevenue: draft.changeOrderRevenue || undefined,
+    changeOrderProfit: draft.changeOrderProfit || undefined,
     estCloseDate: inferCloseDate({
       completion: draft.completion,
       openedAt,

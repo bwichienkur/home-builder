@@ -69,12 +69,38 @@ function scaleOpenJobs(jobs: OwnerJob[]) {
   const contracts = scaleInt(jobs.map((j) => j.contractPrice), 25_650_000);
   const revenues = scaleInt(jobs.map((j) => j.revenueToDate), 15_110_000);
   const wips = scaleInt(jobs.map((j) => j.wip), 18_740_000);
-  return jobs.map((job, i) => ({
+  const scaled = jobs.map((job, i) => ({
     ...job,
     contractPrice: contracts[i]!,
     revenueToDate: revenues[i]!,
     wip: wips[i]!,
   }));
+  const coNames = new Set([
+    'Bennett',
+    'Blandford',
+    'Calder',
+    'Hayes',
+    'Ingram',
+    'Lopez',
+    'Rivera',
+    'Shaw',
+    'Turner',
+  ]);
+  const coJobs = scaled.filter((job) => coNames.has(job.name));
+  const coRevenues = scaleInt(
+    coJobs.map((job) => job.contractPrice),
+    964_000,
+  );
+  const coProfits = coRevenues.map((revenue) => Math.round(revenue * 0.33));
+  let coIndex = 0;
+  return scaled.map((job) => {
+    if (!coNames.has(job.name)) return job;
+    return {
+      ...job,
+      changeOrderRevenue: coRevenues[coIndex]!,
+      changeOrderProfit: coProfits[coIndex++]!,
+    };
+  });
 }
 
 /** Mock sales pipeline mirrors Pipedrive Sales stages (weighted $). */

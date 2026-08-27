@@ -6,6 +6,7 @@ import {
   pendingSelectionsByJob,
   pickProjectManager,
   resolveJobContractPrice,
+  openChangeOrderMetrics,
   weekdaysElapsedInMonth,
 } from './mapReports';
 
@@ -450,5 +451,36 @@ describe('Buildertrend report mapper', () => {
       wip: 0,
     });
     expect(mapped.salesPerformance[0]?.value).toBe(1_402_571.9 + 1_204_751);
+  });
+
+  it('maps change order revenue and profit from the change-order-profit report', () => {
+    const mapped = mapBuildertrendReports(
+      {
+        jobs: [
+          { jobID: 1, jobName: 'Blandford', jobStatus: 'Open' },
+          { jobID: 2, jobName: 'Graham', jobStatus: 'Open' },
+        ],
+        changeOrderProfit: {
+          data: {
+            rowData: [
+              { jobID: 1, jobName: 'Blandford', jobStatus: 'Open', price: 88461.45, profit: 13993.01 },
+            ],
+          },
+        },
+        scheduleByJob: {
+          '1': { siteWorkStarted: true },
+          '2': { siteWorkStarted: false },
+        },
+      },
+      { now },
+    );
+    expect(mapped.jobs.find((j) => j.name === 'Blandford')).toMatchObject({
+      changeOrderRevenue: 88461.45,
+      changeOrderProfit: 13993.01,
+    });
+    expect(openChangeOrderMetrics(mapped.jobs)).toMatchObject({
+      revenue: 88461.45,
+      profitPct: 15.8,
+    });
   });
 });

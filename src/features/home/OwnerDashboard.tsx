@@ -145,15 +145,17 @@ export function OwnerDashboard() {
           <article key={card.id} className="dash-kpi">
             <p className="dash-kpi-title">{card.title}</p>
             <p className="dash-kpi-value">
-              {card.id === 'active' || card.id === 'contract' ? (
+              {card.id === 'active' ? (
                 <DrillLink
                   to={href({
                     type: 'all-projects',
-                    label: card.id === 'active' ? 'Active projects' : 'Projects · contract value',
+                    label: 'Active projects',
                   })}
                 >
                   {card.display}
                 </DrillLink>
+              ) : card.id === 'change-order' ? (
+                <DrillLink to={href({ type: 'change-order-breakdown' })}>{card.display}</DrillLink>
               ) : card.id === 'wip' ? (
                 <DrillLink to={href({ type: 'wip-breakdown' })}>{card.display}</DrillLink>
               ) : card.id === 'revenue' ? (
@@ -336,7 +338,13 @@ export function OwnerDashboard() {
           </span>
           <span>Avg. total slip {formatDays(dash.totals.avgTotalSlipDays)}</span>
           <span>Revenue to date {formatCompactUsd(dash.totals.totalRevenueToDate)}</span>
-          <span>Contract {formatCompactUsd(dash.totals.totalContract)}</span>
+          <span>
+            <DrillLink to={href({ type: 'change-order-breakdown' })}>
+              Change orders {formatCompactUsd(dash.totals.totalChangeOrderRevenue)}
+            </DrillLink>
+            {' '}
+            ({formatPct(dash.totals.changeOrderProfitPct)} profit)
+          </span>
           <span>WIP {formatCompactUsd(dash.totals.totalWip)}</span>
           <span>
             <DrillLink to={href({ type: 'all-pending-selections' })}>
