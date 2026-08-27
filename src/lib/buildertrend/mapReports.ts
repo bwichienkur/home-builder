@@ -48,6 +48,8 @@ export type BuildertrendReports = {
   baselineDuration?: unknown;
   /** jobId → Permit / Selections / Construction slip from Schedule → Baseline. */
   baselineSlipByJob?: Record<string, { permit?: number; selections?: number; construction?: number }>;
+  /** Per-job compact baseline rows for Total Slip drill-down. */
+  baselineItemsByJob?: Record<string, unknown[]>;
   /** Profitability report (Open + Closed + Warranty) — revised client price per job. */
   profitability?: unknown;
   /** jobId → contract price from Jobs → Job Info (fallback when not sent to budget). */
