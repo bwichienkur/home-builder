@@ -33,6 +33,7 @@ export function drilldownHref(kind: DrilldownKind, filters?: Partial<DrilldownFi
     case 'pm-projects':
     case 'pm-logs':
     case 'pm-past-due':
+    case 'pm-revenue':
       params.set('pm', kind.pm);
       break;
     case 'phase-projects':
@@ -74,6 +75,7 @@ export function parseDrilldownKind(params: URLSearchParams): DrilldownKind | nul
     case 'pm-projects':
     case 'pm-logs':
     case 'pm-past-due':
+    case 'pm-revenue':
       if (!pm) return null;
       return { type, pm };
     case 'phase-projects': {

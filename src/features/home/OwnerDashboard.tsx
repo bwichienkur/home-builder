@@ -10,6 +10,7 @@ import {
   formatUsd,
 } from '../../lib/buildertrend';
 import type { DateRangeId, JobStatus, ProjectSnapshot } from '../../lib/buildertrend/types';
+import { PM_REVENUE_LAST_30D_GOAL } from '../../lib/buildertrend/types';
 import type { DrilldownKind } from '../../lib/dashboard/drilldownTypes';
 import { drilldownHref } from '../../lib/dashboard/drilldownPath';
 import { DrillLink } from './DrilldownPanel';
@@ -228,6 +229,9 @@ export function OwnerDashboard() {
                   <th>Projects</th>
                   <th>Total WIP</th>
                   <th>
+                    <ThLabel text={'Revenue\n(30d)'} />
+                  </th>
+                  <th>
                     <ThLabel text={'Daily logs\n(4 wk)'} />
                   </th>
                   <th>
@@ -244,6 +248,11 @@ export function OwnerDashboard() {
                       <DrillLink to={href({ type: 'pm-projects', pm: row.pm })}>{row.projects}</DrillLink>
                     </td>
                     <td>{formatCompactUsd(row.wip)}</td>
+                    <td className={row.revenueLast30d >= PM_REVENUE_LAST_30D_GOAL ? 'is-ok' : 'is-alert'}>
+                      <DrillLink to={href({ type: 'pm-revenue', pm: row.pm })}>
+                        {formatCompactUsd(row.revenueLast30d)}
+                      </DrillLink>
+                    </td>
                     <td>
                       <DrillLink to={href({ type: 'pm-logs', pm: row.pm })}>
                         {row.dailyLogsRecentDone}/{row.dailyLogsRecentExpected}

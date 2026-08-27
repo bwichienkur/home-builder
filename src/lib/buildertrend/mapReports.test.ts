@@ -484,6 +484,63 @@ describe('Buildertrend report mapper', () => {
     });
   });
 
+  it('maps trailing-30d Money In from the cashflow report onto jobs', () => {
+    const mapped = mapBuildertrendReports(
+      {
+        jobs: [
+          { jobID: 1, jobName: 'Kinney', jobStatus: 'Open', projectManagers: 'James Manford' },
+          { jobID: 2, jobName: 'Norris', jobStatus: 'Open', projectManagers: 'Richard Linck' },
+          { jobID: 3, jobName: 'Emerson', jobStatus: 'Open', projectManagers: 'Paul Dimeglio' },
+        ],
+        cashflow: {
+          rowData: [
+            {
+              jobID: 1,
+              jobName: 'Kinney',
+              cashflowType: 1,
+              trailing30: 151340,
+              trailing14: null,
+              trailing7: null,
+              trailing30Cumulative: 151340,
+            },
+            {
+              jobID: 1,
+              jobName: 'Kinney',
+              cashflowType: 2,
+              trailing30: 134025.38,
+              trailing30Cumulative: 193986.96,
+            },
+            {
+              jobID: 2,
+              jobName: 'Norris',
+              cashflowType: 1,
+              trailing30: 127468.3,
+              trailing30Cumulative: 127468.3,
+            },
+            {
+              jobID: 3,
+              jobName: 'Emerson',
+              cashflowType: 1,
+              trailing30: 151005.33,
+              trailing14: 141823.79,
+              trailing7: null,
+              trailing30Cumulative: 292829.12,
+            },
+          ],
+        },
+        scheduleByJob: {
+          '1': { siteWorkStarted: true },
+          '2': { siteWorkStarted: true },
+          '3': { siteWorkStarted: true },
+        },
+      },
+      { now },
+    );
+    expect(mapped.jobs.find((j) => j.name === 'Kinney')?.revenueLast30d).toBe(151340);
+    expect(mapped.jobs.find((j) => j.name === 'Norris')?.revenueLast30d).toBe(127468.3);
+    expect(mapped.jobs.find((j) => j.name === 'Emerson')?.revenueLast30d).toBe(292829.12);
+  });
+
   it('splits recent daily logs into all-user vs PM-authored counts', () => {
     const mapped = mapBuildertrendReports(
       {

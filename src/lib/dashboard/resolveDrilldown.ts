@@ -30,7 +30,12 @@ export type ResolvedDrilldown = {
 };
 
 function projectsFor(projects: ProjectSnapshot[], kind: DrilldownKind): ProjectSnapshot[] {
-  if (kind.type === 'pm-projects' || kind.type === 'pm-logs' || kind.type === 'pm-past-due') {
+  if (
+    kind.type === 'pm-projects' ||
+    kind.type === 'pm-logs' ||
+    kind.type === 'pm-past-due' ||
+    kind.type === 'pm-revenue'
+  ) {
     return projects.filter((p) => p.pm === kind.pm);
   }
   if (kind.type === 'phase-projects') {
@@ -335,6 +340,29 @@ export function resolveDrilldown(
           margin: revenue ? `${Math.round((profit / revenue) * 1000) / 10}%` : '—',
         };
       }),
+    };
+  }
+
+  if (kind.type === 'pm-revenue') {
+    const list = [...projectsFor(projects, kind)].sort(
+      (a, b) => (b.revenueLast30d ?? 0) - (a.revenueLast30d ?? 0) || a.name.localeCompare(b.name),
+    );
+    const total = list.reduce((s, p) => s + (p.revenueLast30d ?? 0), 0);
+    return {
+      title: `Revenue (30d) · ${kind.pm}`,
+      subtitle: `Trailing 30-day Buildertrend Cash flow Money In (draws) · ${formatCompactUsd(total)} · goal $500k/PM`,
+      columns: [
+        { key: 'name', label: 'Project' },
+        { key: 'revenue30d', label: 'Revenue (30d)', align: 'right', sum: 'usd' },
+        { key: 'revenue', label: 'Lifetime invoiced', align: 'right', sum: 'usd' },
+        { key: 'wip', label: 'Revised contract', align: 'right', sum: 'usd' },
+      ],
+      rows: list.map((p) => ({
+        name: p.name,
+        revenue30d: p.revenueLast30d ?? 0,
+        revenue: p.revenueToDate,
+        wip: p.wip,
+      })),
     };
   }
 

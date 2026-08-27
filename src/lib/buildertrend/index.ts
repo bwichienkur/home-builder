@@ -36,6 +36,7 @@ export {
   clearStoredLivePull,
 } from './refreshClient';
 export { formatCompactUsd, formatUsd, formatPct, formatDelta, formatRefreshedAt, formatCloseDate, formatDays, formatMonthsDays, splitMonthsDays, totalSlipDays, phaseLabel } from './format';
+export { PM_REVENUE_LAST_30D_GOAL } from './types';
 export type * from './types';
 export type { BuildertrendLivePull } from './refreshClient';
 export type { BuildertrendReports, MappedBuildertrendPull } from './mapReports';

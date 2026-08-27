@@ -26,5 +26,10 @@ describe('drilldownPath', () => {
     });
     const pm = drilldownHref({ type: 'pm-logs', pm: 'James' });
     expect(parseDrilldownKind(new URLSearchParams(pm.split('?')[1]))).toEqual({ type: 'pm-logs', pm: 'James' });
+    const rev = drilldownHref({ type: 'pm-revenue', pm: 'Paul Dimeglio' });
+    expect(parseDrilldownKind(new URLSearchParams(rev.split('?')[1]))).toEqual({
+      type: 'pm-revenue',
+      pm: 'Paul Dimeglio',
+    });
   });
 });

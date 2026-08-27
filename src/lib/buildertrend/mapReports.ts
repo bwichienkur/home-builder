@@ -53,6 +53,11 @@ export type BuildertrendReports = {
   jobInfoContractByJob?: Record<string, number>;
   /** Change order profit report — CO revenue and profit per job. */
   changeOrderProfit?: unknown;
+  /**
+   * Cash flow report — trailing/leading 7/14/30 inflows & outflows per job.
+   * `cashflowType` 1 = Money In (owner draws / receivables), 2 = Money Out.
+   */
+  cashflow?: unknown;
 };
 
 export type MappedBuildertrendPull = {
@@ -258,6 +263,8 @@ type JobDraft = {
   workDays: number;
   contractPrice: number;
   revenueToDate: number;
+  /** Trailing 30d Money In from Cash flow report. */
+  revenueLast30d: number;
   wip: number;
   changeOrderRevenue: number;
   changeOrderProfit: number;
@@ -361,6 +368,7 @@ function ingest(jobs: Map<string, JobDraft>, row: Record<string, unknown>, kind:
       workDays: 0,
       contractPrice: 0,
       revenueToDate: 0,
+      revenueLast30d: 0,
       wip: 0,
       changeOrderRevenue: 0,
       changeOrderProfit: 0,
@@ -644,6 +652,29 @@ function changeOrderByJob(reports: BuildertrendReports) {
   return byJob;
 }
 
+/** BT Cash flow Money In (`cashflowType` 1) trailing-30-day total per job. */
+function cashflowMoneyInLast30dByJob(reports: BuildertrendReports) {
+  const byJob = new Map<number, number>();
+  for (const row of asArray(reports.cashflow)) {
+    const rec = asRecord(row);
+    if (!rec) continue;
+    const cashflowType = num(pick(rec, 'cashflowType', 'cashFlowType', 'type'));
+    // 1 = Money In (owner draws / receivables); 2 = Money Out (payables).
+    if (cashflowType !== 1) continue;
+    const name = str(pick(rec, 'jobName', 'name'));
+    if (TEST_JOB.test(name) || /template/i.test(name)) continue;
+    const jobId = num(pick(rec, 'jobID', 'jobId'));
+    if (!jobId) continue;
+    const cumulative = pick(rec, 'trailing30Cumulative', 'trailingThirtyCumulative');
+    const amount =
+      cumulative != null
+        ? num(cumulative)
+        : num(pick(rec, 'trailing30')) + num(pick(rec, 'trailing14')) + num(pick(rec, 'trailing7'));
+    byJob.set(jobId, amount);
+  }
+  return byJob;
+}
+
 /** Open-job change order revenue and portfolio profit % from the BT Change order profit report. */
 export function openChangeOrderMetrics(jobs: Iterable<JobDraft | OwnerJob>) {
   let revenue = 0;
@@ -668,6 +699,7 @@ function applyJobEnrichment(jobs: Map<string, JobDraft>, reports: BuildertrendRe
   const baselineSlip = reports.baselineSlipByJob ?? {};
   const totalSlipByJob = baselineTotalSlipByJob(reports);
   const changeOrders = changeOrderByJob(reports);
+  const revenueLast30d = cashflowMoneyInLast30dByJob(reports);
   for (const draft of jobs.values()) {
     if (!draft.jobId) continue;
     if (recent.has(draft.jobId)) draft.dailyLogsRecentDone = recent.get(draft.jobId)!;
@@ -712,6 +744,7 @@ function applyJobEnrichment(jobs: Map<string, JobDraft>, reports: BuildertrendRe
       draft.changeOrderRevenue = co.revenue;
       draft.changeOrderProfit = co.profit;
     }
+    if (revenueLast30d.has(draft.jobId)) draft.revenueLast30d = revenueLast30d.get(draft.jobId)!;
   }
 }
 
@@ -737,6 +770,7 @@ function ingestSchedule(jobs: Map<string, JobDraft>, row: Record<string, unknown
       workDays: 0,
       contractPrice: 0,
       revenueToDate: 0,
+      revenueLast30d: 0,
       wip: 0,
       changeOrderRevenue: 0,
       changeOrderProfit: 0,
@@ -831,6 +865,7 @@ function toOwnerJob(draft: JobDraft, now: Date): OwnerJob {
     foundationStarted: draft.foundationStarted,
     contractPrice: draft.contractPrice,
     revenueToDate: draft.revenueToDate,
+    revenueLast30d: draft.revenueLast30d,
     wip: draft.wip,
     changeOrderRevenue: draft.changeOrderRevenue || undefined,
     changeOrderProfit: draft.changeOrderProfit || undefined,

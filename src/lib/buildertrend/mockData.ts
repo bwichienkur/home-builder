@@ -134,7 +134,13 @@ export const MOCK_ROLLING_REVENUE_12MO = 42_820_000;
 export const MOCK_WEIGHTED_PIPELINE = 22_650_000;
 
 export const MOCK_JOBS: OwnerJob[] = [
-  ...scaleOpenJobs(withIds('open', OPEN_SEEDS)),
+  ...scaleOpenJobs(withIds('open', OPEN_SEEDS)).map((job, index) => ({
+    ...job,
+    // Spread demo 30d draws so scorecard shows vs $500k goal (Paul over, others under).
+    revenueLast30d: [180_000, 95_000, 40_000, 220_000, 60_000, 175_000, 110_000, 85_000, 205_000, 70_000, 55_000, 90_000, 125_000, 160_000, 45_000, 130_000, 35_000, 100_000, 150_000, 80_000, 140_000, 75_000, 115_000, 50_000][
+      index % 24
+    ],
+  })),
   ...withIds('closed', CLOSED_SEEDS),
   ...withIds('warranty', WARRANTY_SEEDS),
 ];

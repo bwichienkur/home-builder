@@ -72,6 +72,7 @@ export type DrilldownKind =
   | { type: 'pm-projects'; pm: string }
   | { type: 'pm-logs'; pm: string }
   | { type: 'pm-past-due'; pm: string }
+  | { type: 'pm-revenue'; pm: string }
   | { type: 'phase-projects'; phase: OwnerPhase; label: string }
   | { type: 'all-pending-selections' }
   | { type: 'all-past-due' }
