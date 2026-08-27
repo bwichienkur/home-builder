@@ -17,13 +17,7 @@ export async function handleRefresh(req, res) {
   try {
     const token = typeof req.body?.token === 'string' ? req.body.token : undefined;
     const payload = await pullPipedrive({ token });
-    res.json({
-      ok: true,
-      pulledAt: payload.pulledAt,
-      company: payload.reports.company,
-      openDealCount: payload.reports.openDeals?.length ?? 0,
-      wonDealCount: payload.reports.wonDeals?.length ?? 0,
-    });
+    res.json({ ok: true, ...payload });
   } catch (err) {
     sendError(res, err);
   }
