@@ -1,4 +1,5 @@
 import { seedOpsFromLiveSnapshot, newOpsId } from './seed';
+import { isOpsHttpProvider, pushOpsToServer, pullOpsFromServer } from './remote';
 import type {
   OpsDailyLog,
   OpsDeal,
@@ -12,6 +13,7 @@ import { OPS_STORAGE_KEY } from './types';
 
 /** In-memory fallback when localStorage is unavailable (SSR / Vitest). */
 let memoryRaw: string | null = null;
+let remotePushTimer: ReturnType<typeof setTimeout> | null = null;
 
 function storageGet(): string | null {
   if (typeof localStorage !== 'undefined') return localStorage.getItem(OPS_STORAGE_KEY);
@@ -53,12 +55,23 @@ export function loadOpsSnapshot(): OpsSnapshot {
   }
 }
 
+function scheduleRemotePush(snapshot: OpsSnapshot) {
+  if (!isOpsHttpProvider()) return;
+  if (remotePushTimer) clearTimeout(remotePushTimer);
+  remotePushTimer = setTimeout(() => {
+    void pushOpsToServer(snapshot).catch((err) => {
+      console.warn('[ops] remote save failed', err);
+    });
+  }, 250);
+}
+
 export function saveOpsSnapshot(snapshot: OpsSnapshot) {
   const next = {
     ...snapshot,
     settings: { ...snapshot.settings, refreshedAt: new Date().toISOString() },
   };
   storageSet(JSON.stringify(next));
+  scheduleRemotePush(next);
 }
 
 export function ensureOpsSeeded(): OpsSnapshot {
@@ -68,6 +81,38 @@ export function ensureOpsSeeded(): OpsSnapshot {
     return seeded;
   }
   return loadOpsSnapshot();
+}
+
+/**
+ * When VITE_OPS_PROVIDER=http: pull shared snapshot from API.
+ * Empty server → seed from LIVE_DRILLDOWN and push.
+ */
+export async function hydrateOpsFromRemote(): Promise<OpsSnapshot> {
+  if (!isOpsHttpProvider()) return ensureOpsSeeded();
+  try {
+    const remote = await pullOpsFromServer();
+    if (remote && !remote.empty && remote.snapshot.jobs.length > 0) {
+      // Write without re-push loop noise: set storage then one push is fine.
+      storageSet(JSON.stringify(remote.snapshot));
+      return remote.snapshot;
+    }
+    if (storageGet() == null) {
+      const seeded = seedOpsFromLiveSnapshot();
+      saveOpsSnapshot(seeded);
+      return seeded;
+    }
+    const local = loadOpsSnapshot();
+    if (local.jobs.length) {
+      await pushOpsToServer(local);
+      return local;
+    }
+    const seeded = seedOpsFromLiveSnapshot();
+    saveOpsSnapshot(seeded);
+    return seeded;
+  } catch (err) {
+    console.warn('[ops] remote hydrate failed; using local', err);
+    return ensureOpsSeeded();
+  }
 }
 
 export function resetOpsFromSnapshot(): OpsSnapshot {

@@ -1,6 +1,6 @@
 # Native Operations data
 
-In-app CRUD for Owner Dashboard datapoints (jobs, daily logs, tasks, selections, deals, people). Data lives in browser `localStorage` (`mahnikka-ops-v1`). There is **no** write-back to Buildertrend or Pipedrive.
+In-app CRUD for Owner Dashboard datapoints (jobs, daily logs, tasks, selections, deals, people). There is **no** write-back to Buildertrend or Pipedrive.
 
 ## Default behavior (unchanged)
 
@@ -12,7 +12,7 @@ In-app CRUD for Owner Dashboard datapoints (jobs, daily logs, tasks, selections,
 VITE_BUILDERTREND_PROVIDER=native
 ```
 
-Then restart Vite. Home loads `nativeOwnerDashboardProvider`, which seeds from the live snapshot on first open and maps the store through `summarizeOwnerDashboard`. Live BT/PD pull + cookie refresh are skipped in this mode.
+Then restart Vite. Home loads `nativeOwnerDashboardProvider`. Live BT/PD pull + cookie refresh are skipped in this mode.
 
 ## UI
 
@@ -20,11 +20,27 @@ Then restart Vite. Home loads `nativeOwnerDashboardProvider`, which seeds from t
 |------|---------|
 | `/ops` | Hub, counts, reset from snapshot / clear store |
 | `/ops/jobs` | Job list + edit |
-| `/ops/jobs/:jobId` | Logs / tasks / selections tabs |
+| `/ops/jobs/:jobId` | Per-job logs / tasks / selections tabs |
+| `/ops/tasks` | **All** tasks across jobs |
+| `/ops/logs` | **All** daily logs across jobs |
+| `/ops/selections` | **All** selections across jobs |
 | `/ops/deals` | Pipeline deals |
 | `/ops/people` | PMs / owners |
 
-## Seed / reset
+## Seed / reset (full BT row import)
 
-- First load with an empty store: `ensureOpsSeeded()` copies `LIVE_JOBS` + synthetic child rows from snapshot counts.
+- First load with an empty store: `seedOpsFromLiveSnapshot()` copies `LIVE_JOBS` and imports **`LIVE_DRILLDOWN`** rows:
+  - pending selections (full titles/categories/deadlines)
+  - past-due tasks (full titles/assignees/due dates)
+  - Pipedrive open deals (mapped into Ops stages)
+  - daily logs expanded from BT user×job aggregates in the rolling window
 - **Reset from snapshot** on the hub replaces the store with a fresh seed.
+
+## Storage (shared vs browser)
+
+| Mode | Env | Backend |
+|------|-----|---------|
+| local (default) | `VITE_OPS_PROVIDER=local` | Browser `localStorage` (`mahnikka-ops-v1`) — per device |
+| http | `VITE_OPS_PROVIDER=http` + `VITE_API_URL` (or same-origin `/api/ops`) | Shared: **Postgres** when `DATABASE_URL` is set, else `data/ops-store.json` via `npm run server`. On Vercel, Postgres is required. |
+
+Schema: `server/db/003_ops_snapshot.sql` (`ops_snapshots` jsonb).

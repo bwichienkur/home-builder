@@ -1,27 +1,38 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { LIVE_JOBS } from '../buildertrend/liveSnapshot';
+import { LIVE_DRILLDOWN } from '../buildertrend/liveDrilldown';
 import { OPS_STORAGE_KEY } from './types';
-import { seedOpsFromLiveSnapshot } from './seed';
+import { mapExternalDealStage, seedOpsFromLiveSnapshot } from './seed';
 import { mapOpsSnapshotToDashboardInputs } from './mapToDashboard';
 import { nativeOwnerDashboardProvider } from './nativeProvider';
 import { buildOpsDrilldown } from './buildDrilldown';
 import { clearOpsStore, ensureOpsSeeded, loadOpsSnapshot, wipeOpsStoreForTests } from './store';
+
+function drillCount(map: Record<string, unknown[]>) {
+  return Object.values(map).reduce((sum, rows) => sum + rows.length, 0);
+}
 
 describe('operations seed + map', () => {
   beforeEach(() => {
     wipeOpsStoreForTests();
   });
 
-  it('seeds jobs from the live snapshot with child rows from OwnerJob counts', () => {
+  it('seeds full LIVE_DRILLDOWN rows (not synthetic capped counts)', () => {
     const seeded = seedOpsFromLiveSnapshot();
     expect(seeded.jobs.length).toBe(LIVE_JOBS.length);
     expect(seeded.jobs[0]?.id).toBe(LIVE_JOBS[0]?.id);
-    const expectedLogs = LIVE_JOBS.reduce((sum, j) => sum + Math.min(j.dailyLogsRecentDone ?? 0, 8), 0);
-    const expectedTasks = LIVE_JOBS.reduce((sum, j) => sum + Math.min(j.pastDueTasks, 5), 0);
-    const expectedSels = LIVE_JOBS.reduce((sum, j) => sum + Math.min(j.pendingSelections, 5), 0);
-    expect(seeded.logs.length).toBe(expectedLogs);
-    expect(seeded.tasks.length).toBe(expectedTasks);
-    expect(seeded.selections.length).toBe(expectedSels);
+    expect(seeded.selections.length).toBe(drillCount(LIVE_DRILLDOWN.selectionsByJobId));
+    expect(seeded.tasks.length).toBe(drillCount(LIVE_DRILLDOWN.pastDueByJobId));
+    expect(seeded.deals.length).toBe(drillCount(LIVE_DRILLDOWN.dealsByStage));
+    expect(seeded.logs.length).toBeGreaterThanOrEqual(drillCount(LIVE_DRILLDOWN.logsByJobId));
+    expect(seeded.selections[0]?.title).not.toMatch(/^Pending selection \d+$/);
+    expect(seeded.tasks[0]?.title).not.toMatch(/^Past-due task \d+$/);
+  });
+
+  it('maps Pipedrive stage labels into OpsDealStage buckets', () => {
+    expect(mapExternalDealStage('pd-1', 'First Contact')).toBe('lead');
+    expect(mapExternalDealStage('pd-5', 'Pricing Proposal')).toBe('proposal');
+    expect(mapExternalDealStage('pd-6', 'Contract Sent')).toBe('contract');
   });
 
   it('maps store into OwnerDashboard summarize inputs', () => {

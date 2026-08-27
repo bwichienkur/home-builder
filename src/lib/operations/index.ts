@@ -13,6 +13,7 @@ export {
   loadOpsSnapshot,
   saveOpsSnapshot,
   ensureOpsSeeded,
+  hydrateOpsFromRemote,
   resetOpsFromSnapshot,
   clearOpsStore,
   upsertOpsJob,
@@ -28,7 +29,8 @@ export {
   upsertOpsPerson,
   newOpsId,
 } from './store';
-export { seedOpsFromLiveSnapshot } from './seed';
+export { seedOpsFromLiveSnapshot, mapExternalDealStage } from './seed';
 export { mapOpsSnapshotToDashboardInputs } from './mapToDashboard';
 export { buildOpsDrilldown } from './buildDrilldown';
 export { nativeOwnerDashboardProvider } from './nativeProvider';
+export { isOpsHttpProvider, pullOpsFromServer, pushOpsToServer } from './remote';

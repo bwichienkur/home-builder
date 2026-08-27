@@ -1,13 +1,15 @@
 import 'dotenv/config'; import express from 'express'; import cors from 'cors'; import pg from 'pg'; import { z } from 'zod';
 import { mountCrmRoutes } from './crmRoutes.js';
+import { mountOpsRoutes } from './opsRoutes.js';
 import { mountAuthRoutes } from './authRoutes.js';
 import { mountPublicApiRoutes } from './publicApiRoutes.js';
 import { mountBuildertrendRoutes } from './buildertrend/http.js';
 import { mountPipedriveRoutes } from './pipedrive/http.js';
-const app=express(),pool=process.env.DATABASE_URL?new pg.Pool({connectionString:process.env.DATABASE_URL}):null;app.use(cors({origin:process.env.CLIENT_ORIGIN??'http://localhost:5173'}));app.use(express.json({limit:'2mb'}));
+const app=express(),pool=process.env.DATABASE_URL?new pg.Pool({connectionString:process.env.DATABASE_URL}):null;app.use(cors({origin:process.env.CLIENT_ORIGIN??'http://localhost:5173'}));app.use(express.json({limit:'8mb'}));
 app.get('/api/health',(_req,res)=>res.json({ok:true}));
 mountAuthRoutes(app);
 mountCrmRoutes(app);
+mountOpsRoutes(app);
 mountPublicApiRoutes(app);
 mountBuildertrendRoutes(app);
 mountPipedriveRoutes(app);

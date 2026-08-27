@@ -9,6 +9,9 @@
     },
     "api/buildertrend/ping.js": {
       "maxDuration": 10
+    },
+    "api/ops.js": {
+      "maxDuration": 30
     }
   },
   "rewrites": [
