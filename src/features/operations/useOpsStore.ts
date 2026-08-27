@@ -19,6 +19,7 @@ import {
   upsertOpsPerson,
   upsertOpsScheduleItem,
   upsertOpsSelection,
+  upsertOpsSettings,
   upsertOpsTask,
   type OpsCashflowEntry,
   type OpsDailyLog,
@@ -30,6 +31,7 @@ import {
   type OpsSnapshot,
   type OpsTask,
 } from '../../lib/operations';
+import type { TimeMetric } from '../../lib/buildertrend/types';
 
 /** Reactive handle over the Operations store (localStorage and/or shared HTTP API). */
 export function useOpsStore() {
@@ -85,6 +87,7 @@ export function useOpsStore() {
     people: snapshot.people,
     scheduleItems: snapshot.scheduleItems ?? [],
     cashflow: snapshot.cashflow ?? [],
+    settings: snapshot.settings,
     jobName,
     saveJob: (job: OpsJob) => {
       upsertOpsJob(job);
@@ -144,6 +147,10 @@ export function useOpsStore() {
     },
     removeCashflow: (id: string) => {
       deleteOpsCashflow(id);
+      reload();
+    },
+    saveTimeMetrics: (timeMetrics: TimeMetric[]) => {
+      upsertOpsSettings({ timeMetrics });
       reload();
     },
     resetFromSnapshot: () => {

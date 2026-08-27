@@ -1,11 +1,18 @@
 import { FormEvent, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { EntityDrawer } from '../crm/EntityCrmPage';
-import { newOpsId, type OpsDailyLog, type OpsSelection, type OpsTask } from '../../lib/operations';
+import {
+  newOpsId,
+  type OpsCashflowEntry,
+  type OpsDailyLog,
+  type OpsScheduleItem,
+  type OpsSelection,
+  type OpsTask,
+} from '../../lib/operations';
 import { OpsDataGrid, OpsRowActions } from './OpsDataGrid';
 import { useOpsStore } from './useOpsStore';
 
-type Tab = 'logs' | 'tasks' | 'selections';
+type Tab = 'logs' | 'tasks' | 'selections' | 'schedule' | 'cashflow';
 
 export function OpsJobDetailPage() {
   const { jobId = '' } = useParams();
@@ -16,6 +23,8 @@ export function OpsJobDetailPage() {
   const [logDraft, setLogDraft] = useState<OpsDailyLog | null>(null);
   const [taskDraft, setTaskDraft] = useState<OpsTask | null>(null);
   const [selDraft, setSelDraft] = useState<OpsSelection | null>(null);
+  const [schedDraft, setSchedDraft] = useState<OpsScheduleItem | null>(null);
+  const [cfDraft, setCfDraft] = useState<OpsCashflowEntry | null>(null);
   const [taskStatus, setTaskStatus] = useState('');
   const [selStatus, setSelStatus] = useState('');
 
@@ -28,6 +37,11 @@ export function OpsJobDetailPage() {
     const list = ops.selections.filter((s) => s.jobId === id);
     return selStatus ? list.filter((s) => s.status === selStatus) : list;
   }, [ops.selections, id, selStatus]);
+  const scheduleItems = useMemo(
+    () => ops.scheduleItems.filter((r) => r.jobId === id),
+    [ops.scheduleItems, id],
+  );
+  const cashflow = useMemo(() => ops.cashflow.filter((r) => r.jobId === id), [ops.cashflow, id]);
 
   if (!job) {
     return (
@@ -48,6 +62,7 @@ export function OpsJobDetailPage() {
           <h1>{job.name}</h1>
           <p className="muted">
             {job.pm || 'Unassigned'} · {job.status} · {job.phase}
+            {job.lifetimeDailyLogCount != null ? ` · ${job.lifetimeDailyLogCount} lifetime logs` : ''}
           </p>
         </div>
         <div className="data-page-actions">
@@ -63,6 +78,8 @@ export function OpsJobDetailPage() {
             ['logs', `Logs (${logs.length})`],
             ['tasks', `Tasks (${ops.tasks.filter((t) => t.jobId === id).length})`],
             ['selections', `Selections (${ops.selections.filter((s) => s.jobId === id).length})`],
+            ['schedule', `Schedule (${scheduleItems.length})`],
+            ['cashflow', `Cashflow (${cashflow.length})`],
           ] as const
         ).map(([key, label]) => (
           <button
@@ -92,6 +109,7 @@ export function OpsJobDetailPage() {
                   author: job.pm || '',
                   isPm: true,
                   note: '',
+                  source: 'manual',
                   updatedAt: new Date().toISOString(),
                 })
               }
@@ -142,6 +160,7 @@ export function OpsJobDetailPage() {
                   assignee: job.pm || '',
                   dueDate: new Date().toISOString().slice(0, 10),
                   status: 'incomplete',
+                  source: 'manual',
                   updatedAt: new Date().toISOString(),
                 })
               }
@@ -231,6 +250,116 @@ export function OpsJobDetailPage() {
             ]}
             actions={(row) => (
               <OpsRowActions onEdit={() => setSelDraft({ ...row })} onDelete={() => ops.removeSelection(row.id)} />
+            )}
+          />
+        </>
+      ) : null}
+
+      {tab === 'schedule' ? (
+        <>
+          <div className="data-page-actions" style={{ marginBottom: 12 }}>
+            <button
+              type="button"
+              className="ops-btn primary"
+              onClick={() =>
+                setSchedDraft({
+                  id: newOpsId('sched'),
+                  jobId: id,
+                  title: '',
+                  endDateSlip: 0,
+                  durationSlip: 0,
+                  expectedStartDate: '',
+                  actualStartDate: '',
+                  expectedEndDate: '',
+                  actualEndDate: '',
+                  completed: false,
+                  updatedAt: new Date().toISOString(),
+                })
+              }
+            >
+              Add schedule item
+            </button>
+          </div>
+          <OpsDataGrid
+            rows={scheduleItems}
+            getRowId={(r) => r.id}
+            searchPlaceholder="Search schedule…"
+            empty="No schedule slip rows for this job."
+            initialSort={{ key: 'endDateSlip', dir: 'desc' }}
+            columns={[
+              { key: 'title', label: 'Item', getValue: (r) => r.title, render: (r) => r.title },
+              {
+                key: 'endDateSlip',
+                label: 'End slip',
+                align: 'right',
+                getValue: (r) => r.endDateSlip,
+                render: (r) => r.endDateSlip,
+              },
+              {
+                key: 'durationSlip',
+                label: 'Duration slip',
+                align: 'right',
+                getValue: (r) => r.durationSlip,
+                render: (r) => r.durationSlip,
+              },
+              {
+                key: 'completed',
+                label: 'Done',
+                getValue: (r) => (r.completed ? 1 : 0),
+                render: (r) => (r.completed ? 'Yes' : 'No'),
+              },
+            ]}
+            actions={(row) => (
+              <OpsRowActions
+                onEdit={() => setSchedDraft({ ...row })}
+                onDelete={() => ops.removeScheduleItem(row.id)}
+              />
+            )}
+          />
+        </>
+      ) : null}
+
+      {tab === 'cashflow' ? (
+        <>
+          <div className="data-page-actions" style={{ marginBottom: 12 }}>
+            <button
+              type="button"
+              className="ops-btn primary"
+              onClick={() =>
+                setCfDraft({
+                  id: newOpsId('cf'),
+                  jobId: id,
+                  date: new Date().toISOString().slice(0, 10),
+                  amount: 0,
+                  type: 'money_in',
+                  note: '',
+                  updatedAt: new Date().toISOString(),
+                })
+              }
+            >
+              Add cashflow entry
+            </button>
+          </div>
+          <OpsDataGrid
+            rows={cashflow}
+            getRowId={(r) => r.id}
+            searchPlaceholder="Search cashflow…"
+            empty="No cashflow entries for this job."
+            initialSort={{ key: 'date', dir: 'desc' }}
+            columns={[
+              { key: 'date', label: 'Date', getValue: (r) => r.date, render: (r) => r.date },
+              { key: 'type', label: 'Type', getValue: (r) => r.type, render: (r) => r.type },
+              {
+                key: 'amount',
+                label: 'Amount',
+                align: 'right',
+                getValue: (r) => r.amount,
+                render: (r) => `$${Math.round(r.amount).toLocaleString()}`,
+              },
+              { key: 'note', label: 'Note', getValue: (r) => r.note || '', render: (r) => r.note || '—' },
+            ]}
+            actions={(row) => (
+              <OpsRowActions onEdit={() => setCfDraft({ ...row })} onDelete={() => ops.removeCashflow(row.id)} />
             )}
           />
         </>
@@ -397,6 +526,115 @@ export function OpsJobDetailPage() {
             </label>
             <div className="data-form-actions">
               <button type="button" className="ops-btn" onClick={() => setSelDraft(null)}>
+                Cancel
+              </button>
+              <button type="submit" className="ops-btn primary">
+                Save
+              </button>
+            </div>
+          </form>
+        ) : null}
+      </EntityDrawer>
+
+      <EntityDrawer title="Schedule item" open={!!schedDraft} onClose={() => setSchedDraft(null)} fullscreen={false}>
+        {schedDraft ? (
+          <form
+            className="data-form"
+            onSubmit={(e: FormEvent) => {
+              e.preventDefault();
+              if (!schedDraft.title.trim()) return;
+              ops.saveScheduleItem(schedDraft);
+              setSchedDraft(null);
+            }}
+          >
+            <label>
+              Title
+              <input
+                value={schedDraft.title}
+                onChange={(e) => setSchedDraft({ ...schedDraft, title: e.target.value })}
+                required
+              />
+            </label>
+            <div className="data-form-row">
+              <label>
+                End date slip
+                <input
+                  type="number"
+                  value={schedDraft.endDateSlip}
+                  onChange={(e) => setSchedDraft({ ...schedDraft, endDateSlip: Number(e.target.value) || 0 })}
+                />
+              </label>
+              <label>
+                Duration slip
+                <input
+                  type="number"
+                  value={schedDraft.durationSlip}
+                  onChange={(e) => setSchedDraft({ ...schedDraft, durationSlip: Number(e.target.value) || 0 })}
+                />
+              </label>
+            </div>
+            <label className="data-form-check">
+              <input
+                type="checkbox"
+                checked={schedDraft.completed}
+                onChange={(e) => setSchedDraft({ ...schedDraft, completed: e.target.checked })}
+              />
+              Completed
+            </label>
+            <div className="data-form-actions">
+              <button type="button" className="ops-btn" onClick={() => setSchedDraft(null)}>
+                Cancel
+              </button>
+              <button type="submit" className="ops-btn primary">
+                Save
+              </button>
+            </div>
+          </form>
+        ) : null}
+      </EntityDrawer>
+
+      <EntityDrawer title="Cashflow entry" open={!!cfDraft} onClose={() => setCfDraft(null)} fullscreen={false}>
+        {cfDraft ? (
+          <form
+            className="data-form"
+            onSubmit={(e: FormEvent) => {
+              e.preventDefault();
+              ops.saveCashflow(cfDraft);
+              setCfDraft(null);
+            }}
+          >
+            <label>
+              Date
+              <input
+                type="date"
+                value={cfDraft.date.slice(0, 10)}
+                onChange={(e) => setCfDraft({ ...cfDraft, date: e.target.value })}
+              />
+            </label>
+            <label>
+              Type
+              <select
+                value={cfDraft.type}
+                onChange={(e) => setCfDraft({ ...cfDraft, type: e.target.value as OpsCashflowEntry['type'] })}
+              >
+                <option value="money_in">money_in</option>
+                <option value="money_out">money_out</option>
+              </select>
+            </label>
+            <label>
+              Amount
+              <input
+                type="number"
+                value={cfDraft.amount}
+                onChange={(e) => setCfDraft({ ...cfDraft, amount: Number(e.target.value) || 0 })}
+              />
+            </label>
+            <label>
+              Note
+              <input value={cfDraft.note || ''} onChange={(e) => setCfDraft({ ...cfDraft, note: e.target.value })} />
+            </label>
+            <div className="data-form-actions">
+              <button type="button" className="ops-btn" onClick={() => setCfDraft(null)}>
                 Cancel
               </button>
               <button type="submit" className="ops-btn primary">

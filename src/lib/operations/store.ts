@@ -34,6 +34,8 @@ function emptySnapshot(): OpsSnapshot {
       targetMarginPct: 15,
       projectedMarginPct: 0,
       rollingRevenue12Mo: 0,
+      timeMetrics: [],
+      salesPerformance: [],
       refreshedAt: new Date().toISOString(),
     },
     jobs: [],
@@ -50,6 +52,13 @@ function emptySnapshot(): OpsSnapshot {
 function normalizeSnapshot(parsed: OpsSnapshot): OpsSnapshot {
   return {
     ...parsed,
+    settings: {
+      ...parsed.settings,
+      timeMetrics: Array.isArray(parsed.settings?.timeMetrics) ? parsed.settings.timeMetrics : [],
+      salesPerformance: Array.isArray(parsed.settings?.salesPerformance)
+        ? parsed.settings.salesPerformance
+        : [],
+    },
     scheduleItems: Array.isArray(parsed.scheduleItems) ? parsed.scheduleItems : [],
     cashflow: Array.isArray(parsed.cashflow) ? parsed.cashflow : [],
   };
@@ -272,6 +281,20 @@ export function upsertOpsCashflow(row: OpsCashflowEntry) {
 export function deleteOpsCashflow(id: string) {
   const snap = ensureOpsSeeded();
   saveOpsSnapshot(touch({ ...snap, cashflow: (snap.cashflow ?? []).filter((r) => r.id !== id) }));
+}
+
+export function upsertOpsSettings(patch: Partial<OpsSnapshot['settings']>) {
+  const snap = ensureOpsSeeded();
+  saveOpsSnapshot(
+    touch({
+      ...snap,
+      settings: {
+        ...snap.settings,
+        ...patch,
+        refreshedAt: patch.refreshedAt || snap.settings.refreshedAt,
+      },
+    }),
+  );
 }
 
 export { newOpsId };

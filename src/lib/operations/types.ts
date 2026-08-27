@@ -1,6 +1,12 @@
 /** Native operations entities — mirror Owner Dashboard datapoints without BT/PD sync. */
 
-import type { JobStatus, OwnerPhase, SlipBuckets } from '../buildertrend/types';
+import type {
+  JobStatus,
+  OwnerPhase,
+  SalesPerformanceBar,
+  SlipBuckets,
+  TimeMetric,
+} from '../buildertrend/types';
 
 export type OpsJob = {
   id: string;
@@ -12,12 +18,17 @@ export type OpsJob = {
   estCloseDate: string;
   notes: string;
   foundationStarted: boolean | null;
-  /** Schedule milestones (ISO dates). */
+  /** Schedule milestones (ISO dates) — Contract/Permit/Slab → Close. */
   estFirstScheduleStart?: string;
   estPermittingEnd?: string;
   estFoundationStart?: string;
   estClosingEnd?: string;
   currentScheduleItem?: string;
+  /**
+   * Lifetime daily-log count from BT Daily Log creation by job.
+   * Kept separately because Ops log rows may only cover the rolling 4-week window.
+   */
+  lifetimeDailyLogCount?: number;
   /** Financials (USD). */
   contractPrice: number;
   revenueToDate: number;
@@ -40,6 +51,8 @@ export type OpsDailyLog = {
   /** When true, counts toward PM attendance scorecard. */
   isPm: boolean;
   note?: string;
+  /** bt-aggregate = expanded from BT user×job window counts. */
+  source?: 'bt-aggregate' | 'manual' | 'bt-entry';
   updatedAt: string;
 };
 
@@ -50,6 +63,8 @@ export type OpsTask = {
   assignee: string;
   dueDate: string;
   status: 'incomplete' | 'complete';
+  /** Seed currently imports BT past-due incomplete; CRUD accepts any. */
+  source?: 'bt-past-due' | 'manual';
   updatedAt: string;
 };
 
@@ -120,6 +135,13 @@ export type OpsSettings = {
   targetMarginPct: number;
   projectedMarginPct: number;
   rollingRevenue12Mo: number;
+  /**
+   * Portfolio average time metrics (Contract/Permit/Slab → Close).
+   * Seeded from LIVE_TIME_METRICS; recomputed when closed/warranty jobs have milestones.
+   */
+  timeMetrics?: TimeMetric[];
+  /** Signed backlog / projected closings / expected signing — seeded from LIVE_SALES_PERFORMANCE. */
+  salesPerformance?: SalesPerformanceBar[];
   /** ISO when store was last seeded or touched. */
   refreshedAt: string;
 };

@@ -1,6 +1,6 @@
 # Native Operations data
 
-In-app CRUD for Owner Dashboard datapoints (jobs, daily logs, tasks, selections, deals, people, schedule slip, cashflow) plus **Operations Reports** that mirror Buildertrend / Pipedrive report views. There is **no** write-back to Buildertrend or Pipedrive.
+In-app CRUD for Owner Dashboard datapoints (jobs, daily logs, tasks, selections, deals, people, schedule slip, cashflow, schedule milestones, time metrics) plus **Operations Reports** that mirror Buildertrend / Pipedrive report views. There is **no** write-back to Buildertrend or Pipedrive.
 
 ## Default behavior (unchanged)
 
@@ -19,26 +19,43 @@ Then restart Vite. Home loads `nativeOwnerDashboardProvider`. Live BT/PD pull + 
 | Path | Purpose |
 |------|---------|
 | `/ops` | Hub, counts, reset from snapshot / clear store |
-| `/ops/jobs` | Job list + edit |
-| `/ops/jobs/:jobId` | Per-job logs / tasks / selections tabs |
-| `/ops/tasks` | **All** tasks across jobs |
+| `/ops/jobs` | Job list + edit (financials, slip, **schedule milestones**, lifetime log count) |
+| `/ops/jobs/:jobId` | Per-job **logs / tasks / selections / schedule / cashflow** tabs |
+| `/ops/tasks` | **All** tasks across jobs (past-due seed + any manual tasks) |
 | `/ops/logs` | **All** daily logs across jobs |
 | `/ops/selections` | **All** selections across jobs |
 | `/ops/deals` | Pipeline deals |
 | `/ops/people` | PMs / owners |
-| `/ops/reports` | Report hub (WIP, CO profit, cashflow, past-due, selections, logs, schedule slip, pipeline) |
-| `/ops/reports/:reportId` | Individual report grid (+ edit for cashflow / schedule slip) |
+| `/ops/reports` | Report hub (WIP, CO, cashflow, tasks, selections, logs, schedule slip, milestones, time metrics, pipeline) |
+| `/ops/reports/:reportId` | Individual report grid (+ edit for cashflow / schedule slip / time metrics) |
 
-## Seed / reset (full BT row import)
+## Seed / reset (BT bake import)
 
 - First load with an empty store: `seedOpsFromLiveSnapshot()` copies `LIVE_JOBS` and imports **`LIVE_DRILLDOWN`** rows:
+  - jobs with WIP/CO/slip + **Gantt milestone dates** + **lifetime daily log totals**
   - pending selections (full titles/categories/deadlines)
-  - past-due tasks (full titles/assignees/due dates)
+  - past-due tasks (full titles/assignees/due dates) — bake is past-due only; add other tasks in Ops
   - Pipedrive open deals (mapped into Ops stages, including expected close when present)
-  - daily logs expanded from BT user×job aggregates in the rolling window
+  - daily logs expanded from BT user×job **rolling-window aggregates** (not full lifetime entry bodies)
   - baseline schedule slip items (`baselineSlipByJobId`)
   - cashflow Money In stubs from each job’s trailing-30d revenue
+  - portfolio **time metrics** + sales-performance seed from `LIVE_TIME_METRICS` / `LIVE_SALES_PERFORMANCE`
 - **Reset from snapshot** on the hub replaces the store with a fresh seed.
+
+Live BT/PD refresh on Home **does not** update the Ops store.
+
+## Dashboard mapping (native)
+
+`mapOpsSnapshotToDashboardInputs` builds Owner Dashboard inputs from Ops:
+
+| Dashboard need | Ops source |
+|----------------|------------|
+| Past-due / pending selections | Tasks + selections entities |
+| Rolling 4-week logs / PM attendance | Log rows in window |
+| Lifetime daily log % | `OpsJob.lifetimeDailyLogCount` (not just row count) |
+| Contract/Permit/Slab → Close | Job milestones; portfolio averages from closed/warranty jobs or settings `timeMetrics` |
+| Revenue last 30d | Cashflow Money In in window, else job field |
+| Sales performance bars | Recomputed from WIP + deals (backlog / closings / signing) |
 
 ## Reports vs Buildertrend
 
@@ -47,11 +64,20 @@ Then restart Vite. Home loads `nativeOwnerDashboardProvider`. Live BT/PD pull + 
 | WIP & contracts | BT Work in progress / Profitability |
 | Change order profit | BT Change order profit |
 | Cash flow (Money In) | BT Cash flow |
-| Past-due tasks | BT Tasks |
+| Past-due tasks | BT Tasks (past-due slice) |
 | Pending selections | BT Selections |
 | Daily logs | BT User daily logs |
 | Baseline schedule slip | BT Baseline vs actual duration |
+| Job schedule milestones | BT Gantt milestone dates |
+| Average time metrics | BT Closed/Warranty Contract/Permit/Slab → Close |
 | Sales pipeline | Pipedrive Sales pipeline (BT Lead Opportunities fallback) |
+
+## Known bake gaps (need richer BT pull to auto-import)
+
+- Full incomplete (non-past-due) task list — slim bake keeps past-due only
+- Individual daily-log entry bodies / lifetime log rows — bake has aggregates + lifetime counts
+- Closed/warranty jobs as Ops rows — only open jobs in `LIVE_JOBS`; time metrics are seeded as portfolio averages
+- Full cashflow Money Out ledger
 
 ## Storage (shared vs browser)
 

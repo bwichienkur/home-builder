@@ -36,9 +36,9 @@ export function OpsHubPage() {
           <p className="eyebrow">operations</p>
           <h1>Operations data</h1>
           <p className="muted">
-            In-app jobs, logs, tasks, selections, deals, people, and BT-style reports. No Buildertrend or
-            Pipedrive write-back. Owner Dashboard uses this store only when{' '}
-            <code>VITE_BUILDERTREND_PROVIDER=native</code>.
+            In-app jobs, logs, tasks, selections, deals, people, schedule, cashflow, and BT-style reports
+            (including time metrics). No Buildertrend or Pipedrive write-back. Owner Dashboard uses this store
+            only when <code>VITE_BUILDERTREND_PROVIDER=native</code>.
           </p>
         </div>
         <div className="data-page-actions">

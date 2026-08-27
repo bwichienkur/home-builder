@@ -2,8 +2,10 @@ import {
   LIVE_JOBS,
   LIVE_PROJECTED_MARGIN_PCT,
   LIVE_ROLLING_REVENUE_12MO,
+  LIVE_SALES_PERFORMANCE,
   LIVE_SNAPSHOT_AT,
   LIVE_TARGET_MARGIN_PCT,
+  LIVE_TIME_METRICS,
   LIVE_WEIGHTED_PIPELINE,
 } from '../buildertrend/liveSnapshot';
 import { LIVE_DRILLDOWN } from '../buildertrend/liveDrilldown';
@@ -79,6 +81,7 @@ export function seedOpsFromLiveSnapshot(): OpsSnapshot {
     estFoundationStart: job.estFoundationStart,
     estClosingEnd: job.estClosingEnd,
     currentScheduleItem: job.notes || undefined,
+    lifetimeDailyLogCount: job.dailyLogsTotal ?? 0,
     contractPrice: job.contractPrice,
     revenueToDate: job.revenueToDate,
     revenueLast30d: job.revenueLast30d ?? 0,
@@ -136,6 +139,7 @@ export function seedOpsFromLiveSnapshot(): OpsSnapshot {
         assignee: row.assignedTo || '',
         dueDate: row.endDate || '',
         status: 'incomplete',
+        source: 'bt-past-due',
         updatedAt,
       });
     }
@@ -157,6 +161,7 @@ export function seedOpsFromLiveSnapshot(): OpsSnapshot {
           author: row.userName || 'User',
           isPm: Boolean(jobs.find((j) => j.id === jobId)?.pm === row.userName),
           note: i === 0 ? `Imported from BT user×job log aggregate (${row.dailyLogCount} in window)` : undefined,
+          source: 'bt-aggregate',
           updatedAt,
         });
       }
@@ -221,6 +226,8 @@ export function seedOpsFromLiveSnapshot(): OpsSnapshot {
       targetMarginPct: LIVE_TARGET_MARGIN_PCT,
       projectedMarginPct: LIVE_PROJECTED_MARGIN_PCT,
       rollingRevenue12Mo: LIVE_ROLLING_REVENUE_12MO || LIVE_WEIGHTED_PIPELINE,
+      timeMetrics: LIVE_TIME_METRICS.map((m) => ({ ...m })),
+      salesPerformance: LIVE_SALES_PERFORMANCE.map((b) => ({ ...b })),
       refreshedAt: LIVE_SNAPSHOT_AT || LIVE_DRILLDOWN.generatedAt,
     },
     jobs,
