@@ -68,6 +68,7 @@ export type DrilldownKind =
   | { type: 'open-deals'; label?: string }
   | { type: 'wip-breakdown' }
   | { type: 'revenue-breakdown' }
+  | { type: 'change-order-breakdown' }
   | { type: 'all-projects'; label?: string };
 
 export type LiveDrilldown = {

@@ -756,6 +756,7 @@ export async function fetchReports(session) {
   const [
     wip,
     profitability,
+    changeOrderProfit,
     dailyLogs,
     userDailyLogsRecent,
     schedulePercentComplete,
@@ -771,6 +772,7 @@ export async function fetchReports(session) {
         closedJobLimit: 500,
         warrantyJobLimit: 500,
       }),
+      getJson(session, '/apix/v3/Reporting/change-order-profit', { openJobLimit: 500 }),
       getJson(session, '/apix/v3/Reporting/daily-log-creation-by-job'),
       getJson(session, '/apix/v3/Reporting/user-daily-logs', { startDate: logStart, endDate: logEnd }),
       getJson(session, '/apix/v3/Reporting/schedule-percent-complete-by-job'),
@@ -818,6 +820,7 @@ export async function fetchReports(session) {
   const reports = {
     wip: wip.data,
     profitability: profitability.data,
+    changeOrderProfit: changeOrderProfit.data,
     jobInfoContractByJob,
     dailyLogs: dailyLogs.data,
     userDailyLogsRecent: userDailyLogsRecent.data,
@@ -850,6 +853,7 @@ export async function fetchReports(session) {
     statuses: {
       wip: wip.status,
       profitability: profitability.status,
+      changeOrderProfit: changeOrderProfit.status,
       dailyLogs: dailyLogs.status,
       userDailyLogsRecent: userDailyLogsRecent.status,
       schedulePercentComplete: schedulePercentComplete.status,

@@ -47,6 +47,10 @@ export type OwnerJob = {
   revenueToDate: number;
   /** USD revised contract (original + change orders) for WIP totals. */
   wip: number;
+  /** Change order revenue from BT Change order profit report (open jobs). */
+  changeOrderRevenue?: number;
+  /** Change order profit dollars from BT Change order profit report. */
+  changeOrderProfit?: number;
   /** ISO date */
   estCloseDate: string;
   openedAt: string;
@@ -126,6 +130,8 @@ export type ProjectSnapshot = {
   revenueToDate: number;
   /** Revised contract (original + change orders) for WIP totals. */
   wip: number;
+  changeOrderRevenue?: number;
+  changeOrderProfit?: number;
   pctComplete: number;
   estCloseDate: string;
   phase: OwnerPhase;
@@ -138,8 +144,11 @@ export type DashboardTotals = {
   jobCount: number;
   avgTotalSlipDays: number;
   totalRevenueToDate: number;
-  totalContract: number;
   totalWip: number;
+  /** Sum of change order revenue on open jobs (BT Change order profit report). */
+  totalChangeOrderRevenue: number;
+  /** Portfolio change order profit % on open jobs (profit ÷ revenue). */
+  changeOrderProfitPct: number;
   pendingSelections: number;
   pastDueTasks: number;
   avgDailyLogPct: number;
