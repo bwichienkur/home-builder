@@ -9,10 +9,11 @@ import {
   formatRefreshedAt,
   formatUsd,
 } from '../../lib/buildertrend';
-import type { DateRangeId, JobStatus, ProjectSnapshot } from '../../lib/buildertrend/types';
+import type { DateRangeId, JobStatus, PmScorecardRow, ProjectSnapshot } from '../../lib/buildertrend/types';
 import { PM_REVENUE_LAST_30D_GOAL } from '../../lib/buildertrend/types';
 import type { DrilldownKind } from '../../lib/dashboard/drilldownTypes';
 import { drilldownHref } from '../../lib/dashboard/drilldownPath';
+import { sortByKey, sortIndicator, toggleSort, type SortState } from '../../lib/dashboard/sortGrid';
 import { DrillLink } from './DrilldownPanel';
 import { PerformanceBars, PipelineFunnel, Sparkline, StatusDonut } from './dashboardCharts';
 import { useOwnerDashboardData } from './useOwnerDashboardData';
@@ -44,10 +45,72 @@ const RANGES: { id: DateRangeId; label: string }[] = [
   { id: '12mo', label: 'Last 12 months' },
 ];
 
-type SortKey = keyof Pick<
-  ProjectSnapshot,
-  'name' | 'pm' | 'pendingSelections' | 'pastDueTasks' | 'contractPrice' | 'revenueToDate' | 'pctComplete' | 'estCloseDate' | 'totalSlip'
+type SortKey =
+  | 'name'
+  | 'pm'
+  | 'pendingSelections'
+  | 'pastDueTasks'
+  | 'contractPrice'
+  | 'revenueToDate'
+  | 'pctComplete'
+  | 'estCloseDate'
+  | 'notes'
+  | 'totalSlip'
+  | 'dailyLogsRecentDone'
+  | 'dailyLogLifetimePct'
+  | 'slipPermit'
+  | 'slipSelections'
+  | 'slipConstruction';
+
+type PmSortKey = keyof Pick<
+  PmScorecardRow,
+  'pm' | 'projects' | 'wip' | 'revenueLast30d' | 'dailyLogsRecentDone' | 'dailyLogLifetimePct' | 'pastDueTasks'
 >;
+
+const PM_SCORECARD_COLUMNS: { key: PmSortKey; label: string }[] = [
+  { key: 'pm', label: 'PM' },
+  { key: 'projects', label: 'Projects' },
+  { key: 'wip', label: 'Total WIP' },
+  { key: 'revenueLast30d', label: 'Revenue\n(30d)' },
+  { key: 'dailyLogsRecentDone', label: 'Daily logs\n(4 wk)' },
+  { key: 'dailyLogLifetimePct', label: 'Daily log %\n(life)' },
+  { key: 'pastDueTasks', label: 'Past Due\nTasks' },
+];
+
+const SNAPSHOT_COLUMNS: { key: SortKey; label: string }[] = [
+  { key: 'name', label: 'Project' },
+  { key: 'pm', label: 'PM' },
+  { key: 'pendingSelections', label: 'Pending\nsel.' },
+  { key: 'pastDueTasks', label: 'Past Due\nTasks' },
+  { key: 'contractPrice', label: 'Contract' },
+  { key: 'revenueToDate', label: 'Revenue' },
+  { key: 'pctComplete', label: '%\ncomplete' },
+  { key: 'estCloseDate', label: 'Est.\nclose' },
+  { key: 'notes', label: 'Current\nschedule' },
+  { key: 'totalSlip', label: 'Total\nslip' },
+  { key: 'dailyLogsRecentDone', label: 'Logs\n(4 wk)' },
+  { key: 'dailyLogLifetimePct', label: 'Log %\n(life)' },
+  { key: 'slipPermit', label: 'Permit' },
+  { key: 'slipSelections', label: 'Sel.' },
+  { key: 'slipConstruction', label: 'Const.' },
+];
+
+function projectSortValue(row: ProjectSnapshot, key: SortKey): unknown {
+  switch (key) {
+    case 'notes':
+      return row.notes || '';
+    case 'dailyLogsRecentDone':
+      return row.dailyLogsRecentDone ?? -1;
+    case 'slipPermit':
+      return row.slip.permit;
+    case 'slipSelections':
+      return row.slip.selections;
+    case 'slipConstruction':
+      return row.slip.construction;
+    default:
+      return row[key as keyof ProjectSnapshot];
+  }
+}
 
 function formatRecentLogs(done: number | null, expected: number) {
   if (done == null) return `—/${expected}`;
@@ -78,25 +141,29 @@ function deltaClass(delta: number, invert = false) {
 export function OwnerDashboard() {
   const [status, setStatus] = useState<JobStatus>('open');
   const [dateRange, setDateRange] = useState<DateRangeId>('all');
-  const [sort, setSort] = useState<{ key: SortKey; dir: 'asc' | 'desc' }>({ key: 'name', dir: 'asc' });
+  const [sort, setSort] = useState<SortState<SortKey>>({ key: 'name', dir: 'asc' });
+  const [pmSort, setPmSort] = useState<SortState<PmSortKey>>({ key: 'pm', dir: 'asc' });
   const { dash, error, refreshing, livePull, onRefresh } = useOwnerDashboardData(status, dateRange);
 
   const filters = useMemo(() => ({ status, dateRange }), [status, dateRange]);
   const href = (kind: DrilldownKind) => drilldownHref(kind, filters);
 
-  const rows = useMemo(() => {
-    const list = dash?.projects ?? [];
-    const dir = sort.dir === 'asc' ? 1 : -1;
-    return [...list].sort((a, b) => {
-      const av = a[sort.key];
-      const bv = b[sort.key];
-      if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * dir;
-      return String(av).localeCompare(String(bv)) * dir;
-    });
-  }, [dash, sort]);
+  const rows = useMemo(
+    () => sortByKey(dash?.projects ?? [], projectSortValue, sort),
+    [dash, sort],
+  );
 
-  const toggleSort = (key: SortKey) => {
-    setSort((prev) => (prev.key === key ? { key, dir: prev.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' }));
+  const pmRows = useMemo(
+    () => sortByKey(dash?.pmScorecard ?? [], (row, key) => row[key as PmSortKey], pmSort),
+    [dash, pmSort],
+  );
+
+  const toggleProjectSort = (key: SortKey) => {
+    setSort((prev) => toggleSort(prev, key));
+  };
+
+  const togglePmSort = (key: PmSortKey) => {
+    setPmSort((prev) => toggleSort(prev, key));
   };
 
   if (!dash) {
@@ -225,25 +292,18 @@ export function OwnerDashboard() {
             <table className="dash-table dash-table-pm dash-table-wrap-headers">
               <thead>
                 <tr>
-                  <th>PM</th>
-                  <th>Projects</th>
-                  <th>Total WIP</th>
-                  <th>
-                    <ThLabel text={'Revenue\n(30d)'} />
-                  </th>
-                  <th>
-                    <ThLabel text={'Daily logs\n(4 wk)'} />
-                  </th>
-                  <th>
-                    <ThLabel text={'Daily log %\n(life)'} />
-                  </th>
-                  <th>
-                    <ThLabel text={'Past Due\nTasks'} />
-                  </th>
+                  {PM_SCORECARD_COLUMNS.map(({ key, label }) => (
+                    <th key={key}>
+                      <button type="button" className="dash-sort" onClick={() => togglePmSort(key)}>
+                        <ThLabel text={label} />
+                        {sortIndicator(pmSort, key)}
+                      </button>
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                {dash.pmScorecard.map((row) => (
+                {pmRows.map((row) => (
                   <tr key={row.pm}>
                     <td>{row.pm}</td>
                     <td>
@@ -289,43 +349,14 @@ export function OwnerDashboard() {
           <table className="dash-table dash-table-dense dash-table-wrap-headers">
             <thead>
               <tr>
-                {(
-                  [
-                    ['name', 'Project'],
-                    ['pm', 'PM'],
-                    ['pendingSelections', 'Pending\nsel.'],
-                    ['pastDueTasks', 'Past Due\nTasks'],
-                    ['contractPrice', 'Contract'],
-                    ['revenueToDate', 'Revenue'],
-                    ['pctComplete', '%\ncomplete'],
-                    ['estCloseDate', 'Est.\nclose'],
-                  ] as [SortKey, string][]
-                ).map(([key, label]) => (
+                {SNAPSHOT_COLUMNS.map(({ key, label }) => (
                   <th key={key}>
-                    <button type="button" className="dash-sort" onClick={() => toggleSort(key)}>
+                    <button type="button" className="dash-sort" onClick={() => toggleProjectSort(key)}>
                       <ThLabel text={label} />
-                      {sort.key === key ? (sort.dir === 'asc' ? ' ↑' : ' ↓') : ''}
+                      {sortIndicator(sort, key)}
                     </button>
                   </th>
                 ))}
-                <th>
-                  <ThLabel text={'Current\nschedule'} />
-                </th>
-                <th>
-                  <button type="button" className="dash-sort" onClick={() => toggleSort('totalSlip')}>
-                    <ThLabel text={'Total\nslip'} />
-                    {sort.key === 'totalSlip' ? (sort.dir === 'asc' ? ' ↑' : ' ↓') : ''}
-                  </button>
-                </th>
-                <th>
-                  <ThLabel text={'Logs\n(4 wk)'} />
-                </th>
-                <th>
-                  <ThLabel text={'Log %\n(life)'} />
-                </th>
-                <th>Permit</th>
-                <th>Sel.</th>
-                <th>Const.</th>
               </tr>
             </thead>
             <tbody>
