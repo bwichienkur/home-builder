@@ -189,7 +189,10 @@ export function resolveDrilldown(
       entries = detail?.logsByJobId[numericJobId(kind.jobId)] ?? [];
     } else if (kind.type === 'pm-logs') {
       const ids = new Set(projects.filter((p) => p.pm === kind.pm).map((p) => numericJobId(p.id)));
-      entries = entries.filter((l) => ids.has(String(l.jobId)));
+      const pmKey = kind.pm.trim().toLowerCase().replace(/\s+/g, ' ');
+      entries = entries.filter(
+        (l) => ids.has(String(l.jobId)) && l.userName.trim().toLowerCase().replace(/\s+/g, ' ') === pmKey,
+      );
     }
     const pmByJob = new Map(projects.map((p) => [numericJobId(p.id), p.pm]));
     entries = [...entries].sort((a, b) => {
@@ -207,7 +210,7 @@ export function resolveDrilldown(
           : 'Daily logs (4 wk · all jobs)';
     const subtitle =
       kind.type === 'pm-logs'
-        ? `${total} logs on ${projectCount} projects · each row is one person’s logs on one project in the rolling 4-week window (scorecard total = sum of Logs)`
+        ? `${total} logs by ${kind.pm} on ${projectCount} projects · scorecard counts only when Logged by = PM`
         : `${total} logs across ${entries.length} user×project rows in the rolling 4-week window`;
     return {
       title,
