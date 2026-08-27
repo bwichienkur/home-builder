@@ -483,4 +483,25 @@ describe('Buildertrend report mapper', () => {
       profitPct: 15.8,
     });
   });
+
+  it('splits recent daily logs into all-user vs PM-authored counts', () => {
+    const mapped = mapBuildertrendReports(
+      {
+        jobs: [{ jobID: 1, jobName: 'Etienne', jobStatus: 'Open', projectManagers: 'Adam Horseman' }],
+        userDailyLogsRecent: {
+          rowData: [
+            { jobID: 1, jobName: 'Etienne', userName: 'Adam Horseman', dailyLogCount: 14 },
+            { jobID: 1, jobName: 'Etienne', userName: 'Rob Dougherty', dailyLogCount: 5 },
+            { jobID: 1, jobName: 'Etienne', userName: 'Brian Dye', dailyLogCount: 1 },
+          ],
+        },
+        scheduleByJob: { '1': { siteWorkStarted: true, foundationStarted: true } },
+      },
+      { now },
+    );
+    expect(mapped.jobs.find((j) => j.name === 'Etienne')).toMatchObject({
+      dailyLogsRecentDone: 20,
+      dailyLogsRecentPmDone: 14,
+    });
+  });
 });

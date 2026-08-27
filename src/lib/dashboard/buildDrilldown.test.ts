@@ -196,10 +196,12 @@ describe('dashboard drilldown', () => {
         baselineSlipByJobId: {},
       },
     );
-    expect(resolved.rows).toHaveLength(2);
+    expect(resolved.rows).toHaveLength(1);
     expect(resolved.rows.every((r) => r.jobName === 'Bennett')).toBe(true);
-    expect(resolved.rows.map((r) => r.userName)).toEqual(['James Manford', 'Rob Dougherty']);
+    expect(resolved.rows.map((r) => r.userName)).toEqual(['James Manford']);
+    expect(resolved.rows[0]?.dailyLogCount).toBe(4);
     expect(resolved.columns.map((c) => c.key)).toContain('pm');
+    expect(resolved.subtitle).toContain('Logged by = PM');
   });
 
   it('filters detail rows by search query', () => {

@@ -38,6 +38,11 @@ export type OwnerJob = {
   /** Past 4 weeks from BT user-daily-logs when available. */
   dailyLogsRecentDone?: number | null;
   /**
+   * Past 4 weeks logs authored by this job’s PM only (PM attendance metric).
+   * Used by the PM scorecard numerator.
+   */
+  dailyLogsRecentPmDone?: number | null;
+  /**
    * When false, daily logs are not required yet (Foundation schedule item not started).
    * null/undefined = unknown (treat as required for mock / legacy snapshots).
    */

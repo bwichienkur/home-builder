@@ -94,4 +94,43 @@ describe('summarizeOwnerDashboard PM scorecard', () => {
     expect(adam).toMatchObject({ projects: 2, dailyLogsRecentDone: 8, dailyLogsRecentExpected: 16 });
     expect(james).toMatchObject({ projects: 1, dailyLogsRecentDone: 4, dailyLogsRecentExpected: 16 });
   });
+
+  it('counts only PM-authored recent logs on the scorecard numerator', () => {
+    const dash = summarizeOwnerDashboard({
+      source: 'buildertrend',
+      refreshedAt: '2026-08-24T00:00:00.000Z',
+      filters: { status: 'open', dateRange: 'all' },
+      jobs: [
+        baseJob({
+          id: '1',
+          name: 'Etienne',
+          pm: 'Adam Horseman',
+          foundationStarted: true,
+          dailyLogsRecentDone: 20,
+          dailyLogsRecentPmDone: 14,
+        }),
+        baseJob({
+          id: '2',
+          name: 'Jimenez',
+          pm: 'Adam Horseman',
+          foundationStarted: true,
+          dailyLogsRecentDone: 17,
+          dailyLogsRecentPmDone: 13,
+        }),
+      ],
+      pipeline: [],
+      salesPerformance: [],
+      timeMetrics: [],
+      targetMarginPct: 15,
+      projectedMarginPct: 18,
+      rollingRevenue12Mo: 0,
+      now: new Date('2026-08-24T12:00:00'),
+    });
+
+    expect(dash.pmScorecard[0]).toMatchObject({
+      pm: 'Adam Horseman',
+      dailyLogsRecentDone: 27,
+      dailyLogsRecentExpected: 32,
+    });
+  });
 });

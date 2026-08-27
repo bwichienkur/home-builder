@@ -128,10 +128,11 @@ export function summarizeOwnerDashboard(input: {
   const pmScorecard = pms
     .map((pm) => {
       const rows = openForScorecard.filter((j) => j.pm === pm);
-      const recentDone = rows.reduce(
-        (s, j) => s + (j.requiresDailyLogs ? (j.dailyLogsRecentDone ?? 0) : 0),
-        0,
-      );
+      const recentDone = rows.reduce((s, j) => {
+        if (!j.requiresDailyLogs) return s;
+        const pmOnly = j.dailyLogsRecentPmDone;
+        return s + (pmOnly != null ? pmOnly : (j.dailyLogsRecentDone ?? 0));
+      }, 0);
       const recentExp = rows.reduce((s, j) => s + j.dailyLogsRecentExpected, 0);
       const lifetimeDone = rows.reduce((s, j) => s + (j.requiresDailyLogs ? j.dailyLogsTotal : 0), 0);
       const lifetimeExp = rows.reduce((s, j) => s + j.dailyLogsLifetimeDue, 0);

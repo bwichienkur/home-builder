@@ -18,6 +18,7 @@ function jobToTs(job: Record<string, unknown>, indent: string) {
     ['pastDueTasks', job.pastDueTasks],
   ];
   if (job.dailyLogsRecentDone != null) fields.push(['dailyLogsRecentDone', job.dailyLogsRecentDone]);
+  if (job.dailyLogsRecentPmDone != null) fields.push(['dailyLogsRecentPmDone', job.dailyLogsRecentPmDone]);
   if (job.dailyLogsTotal != null) fields.push(['dailyLogsTotal', job.dailyLogsTotal]);
   if (job.foundationStarted != null) fields.push(['foundationStarted', job.foundationStarted]);
   if (job.totalSlip != null) fields.push(['totalSlip', job.totalSlip]);

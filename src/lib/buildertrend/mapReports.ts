@@ -268,6 +268,8 @@ type JobDraft = {
   pendingSelections: number;
   pastDueTasks: number;
   dailyLogsRecentDone: number | null;
+  /** Logs in the rolling window authored by this job’s assigned PM. */
+  dailyLogsRecentPmDone: number | null;
   /** null = no Site Work schedule item (or schedule not pulled). */
   siteWorkStarted: boolean | null;
   /** null = no Foundation schedule item (or schedule not pulled). */
@@ -320,6 +322,7 @@ function mergeJob(target: JobDraft, patch: Partial<JobDraft> & { fromPicker?: bo
   if ((patch.pendingSelections ?? 0) > target.pendingSelections) target.pendingSelections = patch.pendingSelections ?? 0;
   if ((patch.pastDueTasks ?? 0) > target.pastDueTasks) target.pastDueTasks = patch.pastDueTasks ?? 0;
   if (patch.dailyLogsRecentDone != null) target.dailyLogsRecentDone = patch.dailyLogsRecentDone;
+  if (patch.dailyLogsRecentPmDone != null) target.dailyLogsRecentPmDone = patch.dailyLogsRecentPmDone;
   if (patch.siteWorkStarted != null) target.siteWorkStarted = patch.siteWorkStarted;
   if (patch.foundationStarted != null) target.foundationStarted = patch.foundationStarted;
   if (patch.firstScheduleStart) target.firstScheduleStart = patch.firstScheduleStart;
@@ -368,6 +371,7 @@ function ingest(jobs: Map<string, JobDraft>, row: Record<string, unknown>, kind:
       pendingSelections: 0,
       pastDueTasks: 0,
       dailyLogsRecentDone: null,
+      dailyLogsRecentPmDone: null,
       siteWorkStarted: null,
       foundationStarted: null,
       firstScheduleStart: '',
@@ -500,6 +504,31 @@ function recentDailyLogsByJob(reports: BuildertrendReports) {
   return counts;
 }
 
+/** Normalize person names for PM ↔ Logged-by matching. */
+export function normalizePersonName(name: string) {
+  return String(name || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+}
+
+/** jobId → (normalized userName → log count) from the rolling user-daily-logs report. */
+export function recentDailyLogsByJobAndUser(reports: BuildertrendReports) {
+  const byJob = new Map<number, Map<string, number>>();
+  for (const row of asArray(reports.userDailyLogsRecent)) {
+    const rec = asRecord(row);
+    if (!rec) continue;
+    const jobId = num(pick(rec, 'jobID', 'jobId'));
+    const user = normalizePersonName(str(pick(rec, 'userName', 'name', 'fullName')));
+    const count = num(pick(rec, 'dailyLogCount', 'logCount'));
+    if (!jobId || !user) continue;
+    const users = byJob.get(jobId) ?? new Map<string, number>();
+    users.set(user, (users.get(user) ?? 0) + count);
+    byJob.set(jobId, users);
+  }
+  return byJob;
+}
+
 /** BT green (success) tags: Selected (2) and BuilderOverride (3) — UI label "Selected" or "Completed". */
 export function isSelectionGreenStatus(status: unknown): boolean {
   const rec = asRecord(status);
@@ -630,6 +659,7 @@ export function openChangeOrderMetrics(jobs: Iterable<JobDraft | OwnerJob>) {
 
 function applyJobEnrichment(jobs: Map<string, JobDraft>, reports: BuildertrendReports, now: Date) {
   const recent = recentDailyLogsByJob(reports);
+  const recentByUser = recentDailyLogsByJobAndUser(reports);
   const pastDue = pastDueTasksByJob(reports, now);
   const selections = pendingSelectionsByJob(reports);
   const schedule = scheduleRowsByJob(reports);
@@ -641,6 +671,10 @@ function applyJobEnrichment(jobs: Map<string, JobDraft>, reports: BuildertrendRe
   for (const draft of jobs.values()) {
     if (!draft.jobId) continue;
     if (recent.has(draft.jobId)) draft.dailyLogsRecentDone = recent.get(draft.jobId)!;
+    const pmKey = normalizePersonName(draft.pm);
+    if (pmKey && recentByUser.has(draft.jobId)) {
+      draft.dailyLogsRecentPmDone = recentByUser.get(draft.jobId)!.get(pmKey) ?? 0;
+    }
     if (pastDue.has(draft.jobId)) draft.pastDueTasks = pastDue.get(draft.jobId)!;
     if (selections.has(draft.jobId)) draft.pendingSelections = selections.get(draft.jobId)!;
     const sched = schedule.get(draft.jobId);
@@ -713,6 +747,7 @@ function ingestSchedule(jobs: Map<string, JobDraft>, row: Record<string, unknown
       pendingSelections: 0,
       pastDueTasks: 0,
       dailyLogsRecentDone: null,
+      dailyLogsRecentPmDone: null,
       siteWorkStarted: null,
       foundationStarted: null,
       firstScheduleStart: '',
@@ -792,6 +827,7 @@ function toOwnerJob(draft: JobDraft, now: Date): OwnerJob {
     pastDueTasks: draft.pastDueTasks,
     dailyLogsTotal: draft.logCount || undefined,
     dailyLogsRecentDone: draft.dailyLogsRecentDone,
+    dailyLogsRecentPmDone: draft.dailyLogsRecentPmDone,
     foundationStarted: draft.foundationStarted,
     contractPrice: draft.contractPrice,
     revenueToDate: draft.revenueToDate,
