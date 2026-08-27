@@ -27,9 +27,22 @@ const EMPTY = {
 };
 
 let pool = null;
+
+/** Neon Vercel integration sets DATABASE_URL (pooled); also accept common aliases. */
+function databaseUrl() {
+  return (
+    process.env.DATABASE_URL ||
+    process.env.POSTGRES_URL ||
+    process.env.DATABASE_URL_UNPOOLED ||
+    process.env.POSTGRES_URL_NON_POOLING ||
+    ''
+  ).trim();
+}
+
 function getPool() {
-  if (!process.env.DATABASE_URL) return null;
-  if (!pool) pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+  const url = databaseUrl();
+  if (!url) return null;
+  if (!pool) pool = new pg.Pool({ connectionString: url });
   return pool;
 }
 
