@@ -2,9 +2,17 @@ import { pullBuildertrend, readCache } from './pull.js';
 
 function sendError(res, err) {
   const status = Number(err?.status) || 500;
+  const message =
+    typeof err?.message === 'string' && err.message.trim()
+      ? err.message
+      : typeof err === 'string'
+        ? err
+        : err?.message != null
+          ? JSON.stringify(err.message)
+          : 'Buildertrend refresh failed';
   res.status(status).json({
     ok: false,
-    error: err?.message || 'Buildertrend refresh failed',
+    error: message,
     code: err?.code || 'refresh_failed',
   });
 }

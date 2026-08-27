@@ -2,6 +2,7 @@
  * Client for the local/Vercel read-only Buildertrend refresh API.
  * Mapping happens in the browser so tests can run without hitting Buildertrend.
  */
+import { errorCodeFromUnknown, formatUnknownError } from '../httpError';
 import { platformConfig } from '../platform/config';
 import type { BuildertrendReports } from './mapReports';
 
@@ -19,13 +20,24 @@ function apiBase() {
 
 async function parseError(response: Response) {
   try {
-    const body = (await response.json()) as { error?: string; code?: string };
-    if (body?.error) return { message: body.error, code: body.code };
+    const body = (await response.json()) as { error?: unknown; code?: unknown; message?: unknown };
+    const message = formatUnknownError(
+      body?.error ?? body?.message,
+      `Buildertrend refresh failed (HTTP ${response.status}).`,
+    );
+    const code =
+      (typeof body?.code === 'string' && body.code) ||
+      errorCodeFromUnknown(body?.error) ||
+      (response.status === 404 ? 'not_running' : 'refresh_failed');
+    return { message, code };
   } catch {
     /* ignore */
   }
   if (response.status === 404) {
-    return { message: 'Refresh API is not running. Start `npm run server` locally, or deploy the /api/buildertrend functions.', code: 'not_running' };
+    return {
+      message: 'Refresh API is not running. Start `npm run server` locally, or deploy the /api/buildertrend functions.',
+      code: 'not_running',
+    };
   }
   return { message: `Buildertrend refresh failed (HTTP ${response.status}).`, code: 'refresh_failed' };
 }
@@ -80,13 +92,15 @@ export async function refreshBuildertrendPull(cookie?: string): Promise<Buildert
     throw new Error('Could not reach the refresh API. Start `npm run server` (it proxies /api) and try again.');
   }
   if (!response.ok) {
-    const info = (await parseError(response)) as { message: string; code?: string };
+    const info = await parseError(response);
     const err = new Error(info.message);
-    (err as any).code = info.code;
+    (err as { code?: string }).code = info.code;
     throw err;
   }
-  const body = (await response.json()) as BuildertrendLivePull & { ok?: boolean; error?: string };
-  if (!body?.reports) throw new Error(body.error || 'Buildertrend refresh returned no reports.');
+  const body = (await response.json()) as BuildertrendLivePull & { ok?: boolean; error?: unknown };
+  if (!body?.reports) {
+    throw new Error(formatUnknownError(body.error, 'Buildertrend refresh returned no reports.'));
+  }
   const pull = { pulledAt: body.pulledAt, authMethod: body.authMethod, reports: body.reports };
   storeLivePull(pull);
   return pull;
