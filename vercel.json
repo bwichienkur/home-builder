@@ -3,6 +3,16 @@
   "framework": "vite",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "functions": {
+    "api/buildertrend/refresh.js": {
+      "maxDuration": 300,
+      "memory": 1024
+    },
+    "api/buildertrend/dashboard.js": {
+      "maxDuration": 60,
+      "memory": 1024
+    }
+  },
   "rewrites": [
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]

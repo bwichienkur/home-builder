@@ -368,7 +368,13 @@ async function fetchTasksForOpenJobs(session, jobIds, { concurrency = 5, pastDue
       filters: INCOMPLETE_TASKS_FILTERS,
       includeDeleted: false,
     });
-    return { jobId, ok: result.ok, status: result.status, data: result.ok ? result.data : null };
+    if (!result.ok) return { jobId, ok: false, status: result.status, data: null };
+    // Slim immediately so the full per-job payload can be GC'd before the next job.
+    if (pastDueOnly) {
+      const slim = mergeTasksListResponses([{ jobId, data: result.data }], { pastDueOnly: true });
+      return { jobId, ok: true, status: result.status, data: { tasks: slim.tasks } };
+    }
+    return { jobId, ok: true, status: result.status, data: result.data };
   });
 
   const succeeded = parts.filter((part) => part.ok && part.data);
@@ -913,7 +919,8 @@ export async function fetchReports(session, options = {}) {
   const perJobConcurrency = serverless ? 2 : 5;
   const { start: logStart, end: logEnd } = rollingLogWindow();
 
-  const phase1 = await Promise.all([
+  // On Vercel, fetch core reports in two waves to reduce peak memory vs 12 parallel payloads.
+  const wave1 = await Promise.all([
     getJson(session, '/apix/v3/Reporting/work-in-progress', { openJobLimit: 500 }),
     getJson(session, '/apix/v3/Reporting/profitability', {
       openJobLimit: 500,
@@ -921,12 +928,14 @@ export async function fetchReports(session, options = {}) {
       warrantyJobLimit: 500,
     }),
     getJson(session, '/apix/v3/Reporting/change-order-profit', { openJobLimit: 500 }),
+    getJson(session, '/api/jobpicker/GetExistingJobList'),
+  ]);
+  const wave2 = await Promise.all([
     getJson(session, '/apix/v3/Reporting/cashflow'),
     getJson(session, '/apix/v3/Reporting/daily-log-creation-by-job'),
     getJson(session, '/apix/v3/Reporting/user-daily-logs', { startDate: logStart, endDate: logEnd }),
     getJson(session, '/apix/v3/Reporting/schedule-percent-complete-by-job'),
     getJson(session, '/apix/v3/Reporting/baseline-vs-actual-duration-by-job'),
-    getJson(session, '/api/jobpicker/GetExistingJobList'),
     serverless
       ? Promise.resolve({ ok: true, status: 0, data: null })
       : getJson(session, '/apix/v3/Reporting/lead-status-by-source'),
@@ -938,20 +947,17 @@ export async function fetchReports(session, options = {}) {
       : getJson(session, '/apix/v3/Jobsites'),
   ]);
 
+  const [wip, profitability, changeOrderProfit, jobs] = wave1;
   const [
-    wip,
-    profitability,
-    changeOrderProfit,
     cashflow,
     dailyLogs,
     userDailyLogsRecent,
     schedulePercentComplete,
     baselineDuration,
-    jobs,
     leadStatus,
     leadsGrid,
     jobsites,
-  ] = phase1;
+  ] = wave2;
 
   const jobIds = openJobIdsFromPicker(jobs.data);
   const closedWarrantyIds = closedWarrantyJobIdsFromReports(schedulePercentComplete.data, dailyLogs.data);
@@ -966,15 +972,18 @@ export async function fetchReports(session, options = {}) {
   let jobInfoContractByJob;
 
   if (serverless) {
-    [tasks, selectionsByJob, scheduleByJob] = await Promise.all([
-      fetchTasksForOpenJobs(session, jobIds, { concurrency: perJobConcurrency, pastDueOnly: true }),
-      jobIds.length
-        ? fetchSelectionsForOpenJobs(session, jobIds, { concurrency: perJobConcurrency, pendingOnly: true })
-        : Promise.resolve({}),
-      scheduleJobIds.length
-        ? fetchScheduleMilestonesByJob(session, scheduleJobIds)
-        : Promise.resolve({ ok: true, status: 200, data: {} }),
-    ]);
+    // Core-only on Vercel: N× Tasks/list + Selections/Grid still downloads huge
+    // payloads (even when we slim after). Keep KPIs + schedule milestones only.
+    try {
+      scheduleByJob = scheduleJobIds.length
+        ? await fetchScheduleMilestonesByJob(session, scheduleJobIds)
+        : { ok: true, status: 200, data: {} };
+    } catch (err) {
+      console.error('serverless gantt fetch failed', err);
+      scheduleByJob = { ok: false, status: 500, data: {} };
+    }
+    tasks = { ok: true, status: 0, data: { tasks: [] } };
+    selectionsByJob = {};
     actionItemsByJob = {};
     baselineSlipByJob = { ok: true, status: 0, data: {}, itemsByJob: {} };
     jobInfoContractByJob = {};
@@ -1098,6 +1107,8 @@ export async function pullBuildertrend({ cookie } = {}) {
     authMethod: session.method,
     readonly: true,
     serverless,
+    /** Core KPIs + schedule only — tasks/selections/baseline omitted to fit Vercel limits. */
+    enrichment: serverless ? 'core' : 'full',
     statuses,
     reports,
   };
