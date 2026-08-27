@@ -261,7 +261,35 @@ export const INCOMPLETE_TASKS_FILTERS = {
   ],
 };
 
-export function mergeTasksListResponses(parts) {
+function taskDueDayValue(task) {
+  const raw = task?.endDate ?? task?.endDateTimeCalculated ?? task?.baseEndDate;
+  if (raw == null || raw === '') return '';
+  return String(raw).slice(0, 10);
+}
+
+function compactPastDueTask(task) {
+  return {
+    taskId: task?.taskId,
+    jobId: task?.jobId,
+    title: task?.title,
+    name: task?.name,
+    status: task?.status,
+    isDeleted: task?.isDeleted,
+    endDate: task?.endDate,
+    endDateTimeCalculated: task?.endDateTimeCalculated,
+    baseEndDate: task?.baseEndDate,
+    assignments: (Array.isArray(task?.assignments) ? task.assignments : [])
+      .map((row) => {
+        const name = row?.name || row?.fullName || '';
+        return name ? { name } : null;
+      })
+      .filter(Boolean),
+  };
+}
+
+export function mergeTasksListResponses(parts, options = {}) {
+  const pastDueOnly = Boolean(options.pastDueOnly);
+  const today = (options.now ?? new Date()).toISOString().slice(0, 10);
   const tasksById = new Map();
   const jobsById = new Map();
   const dependencies = [];
@@ -275,15 +303,32 @@ export function mergeTasksListResponses(parts) {
     const taskList = Array.isArray(data.tasks) ? data.tasks : [];
     if (taskList.length >= TASKS_LIST_ROW_CAP && part.jobId != null) cappedJobIds.push(part.jobId);
     for (const task of taskList) {
+      if (pastDueOnly) {
+        if (task?.isDeleted || Number(task?.status) !== 0) continue;
+        const due = taskDueDayValue(task);
+        if (!due || due >= today) continue;
+      }
       const key = task?.taskId ?? `${task?.jobId ?? part.jobId}-${tasksById.size}`;
-      if (!tasksById.has(key)) tasksById.set(key, task);
+      if (!tasksById.has(key)) tasksById.set(key, pastDueOnly ? compactPastDueTask(task) : task);
     }
-    for (const job of data.jobs ?? []) {
-      if (job?.jobId != null) jobsById.set(job.jobId, job);
+    if (!pastDueOnly) {
+      for (const job of data.jobs ?? []) {
+        if (job?.jobId != null) jobsById.set(job.jobId, job);
+      }
+      if (Array.isArray(data.dependencies)) dependencies.push(...data.dependencies);
+      if (Array.isArray(data.taskComments)) taskComments.push(...data.taskComments);
+      if (Array.isArray(data.watchers)) watchers.push(...data.watchers);
     }
-    if (Array.isArray(data.dependencies)) dependencies.push(...data.dependencies);
-    if (Array.isArray(data.taskComments)) taskComments.push(...data.taskComments);
-    if (Array.isArray(data.watchers)) watchers.push(...data.watchers);
+  }
+
+  if (pastDueOnly) {
+    return {
+      tasks: [...tasksById.values()],
+      meta: {
+        jobPullCount: parts.length,
+        cappedJobIds,
+      },
+    };
   }
 
   return {
@@ -314,7 +359,7 @@ async function mapPool(items, concurrency, mapper) {
   return results;
 }
 
-async function fetchTasksForOpenJobs(session, jobIds, { concurrency = 5 } = {}) {
+async function fetchTasksForOpenJobs(session, jobIds, { concurrency = 5, pastDueOnly = false } = {}) {
   if (!jobIds.length) return { ok: false, status: 0, data: null };
 
   const parts = await mapPool(jobIds, concurrency, async (jobId) => {
@@ -332,10 +377,12 @@ async function fetchTasksForOpenJobs(session, jobIds, { concurrency = 5 } = {}) 
     return { ok: false, status: firstFailure?.status ?? 502, data: null };
   }
 
+  const merged = mergeTasksListResponses(succeeded, { pastDueOnly });
+
   return {
     ok: true,
     status: parts.every((part) => part.ok) ? 200 : 207,
-    data: mergeTasksListResponses(succeeded),
+    data: merged,
   };
 }
 
@@ -731,7 +778,7 @@ async function fetchSelectionsPage(session, jobId, pageNumber) {
   );
 }
 
-async function fetchSelectionsForJob(session, jobId) {
+async function fetchSelectionsForJob(session, jobId, { pendingOnly = false } = {}) {
   const rows = [];
   let pageNumber = 1;
   let totalRecords = null;
@@ -744,7 +791,28 @@ async function fetchSelectionsForJob(session, jobId) {
     const pageRows = Array.isArray(payload.data) ? payload.data : [];
     if (totalRecords == null) totalRecords = Number(payload.records ?? pageRows.length);
 
-    rows.push(...pageRows);
+    if (pendingOnly) {
+      rows.push(...pageRows.map((row) => {
+        const rec = row && typeof row === 'object' ? row : null;
+        if (!rec) return null;
+        const status = rec.status && typeof rec.status === 'object' ? rec.status.status : rec.status;
+        const code = Number(status);
+        if (code === 2 || code === 3) return null;
+        const titleRec = rec.title && typeof rec.title === 'object' ? rec.title : null;
+        const deadlineRec = rec.deadline && typeof rec.deadline === 'object' ? rec.deadline : null;
+        const statusRec = rec.status && typeof rec.status === 'object' ? rec.status : null;
+        return {
+          id: rec.id,
+          title: titleRec ? { title: titleRec.title } : rec.title,
+          category: rec.category,
+          location: rec.location,
+          status: statusRec ? { status: statusRec.status } : rec.status,
+          deadline: deadlineRec ? { deadline: deadlineRec.deadline } : rec.deadline,
+        };
+      }).filter(Boolean));
+    } else {
+      rows.push(...pageRows);
+    }
     if (!pageRows.length || rows.length >= totalRecords || pageRows.length < SELECTIONS_GRID_PAGE_SIZE) break;
     pageNumber += 1;
   }
@@ -752,11 +820,11 @@ async function fetchSelectionsForJob(session, jobId) {
   return { ok: true, status: 200, rows };
 }
 
-async function fetchSelectionsForOpenJobs(session, jobIds, { concurrency = 5 } = {}) {
+async function fetchSelectionsForOpenJobs(session, jobIds, { concurrency = 5, pendingOnly = false } = {}) {
   if (!jobIds.length) return {};
 
   const parts = await mapPool(jobIds, concurrency, async (jobId) => {
-    const result = await fetchSelectionsForJob(session, jobId);
+    const result = await fetchSelectionsForJob(session, jobId, { pendingOnly });
     return { jobId, ...result };
   });
 
@@ -840,8 +908,36 @@ function leadsGridBody() {
   };
 }
 
-export async function fetchReports(session) {
+export async function fetchReports(session, options = {}) {
+  const serverless = Boolean(options.serverless ?? process.env.VERCEL);
+  const perJobConcurrency = serverless ? 2 : 5;
   const { start: logStart, end: logEnd } = rollingLogWindow();
+
+  const phase1 = await Promise.all([
+    getJson(session, '/apix/v3/Reporting/work-in-progress', { openJobLimit: 500 }),
+    getJson(session, '/apix/v3/Reporting/profitability', {
+      openJobLimit: 500,
+      closedJobLimit: 500,
+      warrantyJobLimit: 500,
+    }),
+    getJson(session, '/apix/v3/Reporting/change-order-profit', { openJobLimit: 500 }),
+    getJson(session, '/apix/v3/Reporting/cashflow'),
+    getJson(session, '/apix/v3/Reporting/daily-log-creation-by-job'),
+    getJson(session, '/apix/v3/Reporting/user-daily-logs', { startDate: logStart, endDate: logEnd }),
+    getJson(session, '/apix/v3/Reporting/schedule-percent-complete-by-job'),
+    getJson(session, '/apix/v3/Reporting/baseline-vs-actual-duration-by-job'),
+    getJson(session, '/api/jobpicker/GetExistingJobList'),
+    serverless
+      ? Promise.resolve({ ok: true, status: 0, data: null })
+      : getJson(session, '/apix/v3/Reporting/lead-status-by-source'),
+    serverless
+      ? Promise.resolve({ ok: true, status: 0, data: null })
+      : postJson(session, '/api/Leads/Grid', leadsGridBody()),
+    serverless
+      ? Promise.resolve({ ok: true, status: 0, data: null })
+      : getJson(session, '/apix/v3/Jobsites'),
+  ]);
+
   const [
     wip,
     profitability,
@@ -851,46 +947,53 @@ export async function fetchReports(session) {
     userDailyLogsRecent,
     schedulePercentComplete,
     baselineDuration,
-    leadStatus,
     jobs,
+    leadStatus,
     leadsGrid,
     jobsites,
-  ] = await Promise.all([
-      getJson(session, '/apix/v3/Reporting/work-in-progress', { openJobLimit: 500 }),
-      getJson(session, '/apix/v3/Reporting/profitability', {
-        openJobLimit: 500,
-        closedJobLimit: 500,
-        warrantyJobLimit: 500,
-      }),
-      getJson(session, '/apix/v3/Reporting/change-order-profit', { openJobLimit: 500 }),
-      getJson(session, '/apix/v3/Reporting/cashflow'),
-      getJson(session, '/apix/v3/Reporting/daily-log-creation-by-job'),
-      getJson(session, '/apix/v3/Reporting/user-daily-logs', { startDate: logStart, endDate: logEnd }),
-      getJson(session, '/apix/v3/Reporting/schedule-percent-complete-by-job'),
-      getJson(session, '/apix/v3/Reporting/baseline-vs-actual-duration-by-job'),
-      getJson(session, '/apix/v3/Reporting/lead-status-by-source'),
-      getJson(session, '/api/jobpicker/GetExistingJobList'),
-      postJson(session, '/api/Leads/Grid', leadsGridBody()),
-      getJson(session, '/apix/v3/Jobsites'),
-    ]);
+  ] = phase1;
 
   const jobIds = openJobIdsFromPicker(jobs.data);
   const closedWarrantyIds = closedWarrantyJobIdsFromReports(schedulePercentComplete.data, dailyLogs.data);
-  const scheduleJobIds = [...new Set([...jobIds, ...closedWarrantyIds])];
-  const masterTemplate = await fetchOchMasterTemplateTitles(session);
-  const [tasks, actionItemsByJob, selectionsByJob, scheduleByJob, baselineSlipByJob, jobInfoContractByJob] =
-    await Promise.all([
-    fetchTasksForOpenJobs(session, jobIds),
-    jobIds.length ? fetchActionItemsByJob(session, jobIds) : Promise.resolve({}),
-    jobIds.length ? fetchSelectionsForOpenJobs(session, jobIds) : Promise.resolve({}),
-    scheduleJobIds.length
-      ? fetchScheduleMilestonesByJob(session, scheduleJobIds)
-      : Promise.resolve({ ok: true, status: 200, data: {} }),
-    jobIds.length
-      ? fetchBaselineSlipByJob(session, jobIds, { templateTitles: masterTemplate.titles })
-      : Promise.resolve({ ok: true, status: 200, data: {}, itemsByJob: {} }),
-    jobIds.length ? fetchJobInfoContractByJob(session, jobIds) : Promise.resolve({}),
-  ]);
+  const scheduleJobIds = serverless ? jobIds : [...new Set([...jobIds, ...closedWarrantyIds])];
+
+  let masterTemplate = { ok: true, status: 0, titles: new Set(), templateId: null };
+  let tasks;
+  let actionItemsByJob;
+  let selectionsByJob;
+  let scheduleByJob;
+  let baselineSlipByJob;
+  let jobInfoContractByJob;
+
+  if (serverless) {
+    [tasks, selectionsByJob, scheduleByJob] = await Promise.all([
+      fetchTasksForOpenJobs(session, jobIds, { concurrency: perJobConcurrency, pastDueOnly: true }),
+      jobIds.length
+        ? fetchSelectionsForOpenJobs(session, jobIds, { concurrency: perJobConcurrency, pendingOnly: true })
+        : Promise.resolve({}),
+      scheduleJobIds.length
+        ? fetchScheduleMilestonesByJob(session, scheduleJobIds)
+        : Promise.resolve({ ok: true, status: 200, data: {} }),
+    ]);
+    actionItemsByJob = {};
+    baselineSlipByJob = { ok: true, status: 0, data: {}, itemsByJob: {} };
+    jobInfoContractByJob = {};
+  } else {
+    masterTemplate = await fetchOchMasterTemplateTitles(session);
+    [tasks, actionItemsByJob, selectionsByJob, scheduleByJob, baselineSlipByJob, jobInfoContractByJob] =
+      await Promise.all([
+        fetchTasksForOpenJobs(session, jobIds, { concurrency: perJobConcurrency }),
+        jobIds.length ? fetchActionItemsByJob(session, jobIds) : Promise.resolve({}),
+        jobIds.length ? fetchSelectionsForOpenJobs(session, jobIds, { concurrency: perJobConcurrency }) : Promise.resolve({}),
+        scheduleJobIds.length
+          ? fetchScheduleMilestonesByJob(session, scheduleJobIds)
+          : Promise.resolve({ ok: true, status: 200, data: {} }),
+        jobIds.length
+          ? fetchBaselineSlipByJob(session, jobIds, { templateTitles: masterTemplate.titles })
+          : Promise.resolve({ ok: true, status: 200, data: {}, itemsByJob: {} }),
+        jobIds.length ? fetchJobInfoContractByJob(session, jobIds) : Promise.resolve({}),
+      ]);
+  }
 
   const scheduleData = scheduleByJob.data ?? {};
   // Back-compat: Site Work–only map used by older snapshot/tests.
@@ -909,7 +1012,7 @@ export async function fetchReports(session) {
       ]),
   );
 
-  const reports = {
+  let reports = {
     wip: wip.data,
     profitability: profitability.data,
     changeOrderProfit: changeOrderProfit.data,
@@ -932,6 +1035,10 @@ export async function fetchReports(session) {
     baselineItemsByJob: baselineSlipByJob.itemsByJob ?? {},
     ochMasterTemplateId: masterTemplate.templateId,
   };
+
+  if (serverless) {
+    reports = slimReportsForClient(reports);
+  }
   const failed = [
     ['work-in-progress', wip],
     ['daily-log-creation-by-job', dailyLogs],
@@ -982,26 +1089,22 @@ export function writeCache(payload) {
   fs.writeFileSync(file, JSON.stringify(payload));
 }
 
-/** On Vercel, keep only client-safe report slices — full pulls are ~100MB and OOM small hosts. */
-export function payloadForServerlessCache(payload) {
-  if (!process.env.VERCEL) return payload;
-  return {
-    ...payload,
-    reports: slimReportsForClient(payload.reports),
-  };
-}
-
 export async function pullBuildertrend({ cookie } = {}) {
+  const serverless = Boolean(process.env.VERCEL);
   const { session } = await authenticate({ cookie });
-  const { reports, statuses } = await fetchReports(session);
+  const { reports, statuses } = await fetchReports(session, { serverless });
   const payload = {
     pulledAt: new Date().toISOString(),
     authMethod: session.method,
     readonly: true,
+    serverless,
     statuses,
     reports,
   };
-  const cached = payloadForServerlessCache(payload);
-  writeCache(cached);
-  return cached;
+  if (serverless) {
+    // Browser stores the pull in localStorage; skip /tmp write to save memory/time.
+    return payload;
+  }
+  writeCache(payload);
+  return payload;
 }

@@ -94,14 +94,10 @@ function slimBaselineItem(row) {
   };
 }
 
-/**
- * @param {Record<string, unknown>} reports
- * @param {{ now?: Date }} [options]
- */
-export function slimReportsForClient(reports, options = {}) {
-  if (!reports || typeof reports !== 'object') return reports;
+export function slimPastDueTasksFromEnvelope(tasksEnvelope, options = {}) {
+  if (!tasksEnvelope) return { tasks: [] };
   const today = (options.now ?? new Date()).toISOString().slice(0, 10);
-  const rawTasks = asArray(asRecord(reports.tasks)?.tasks ?? reports.tasks);
+  const rawTasks = asArray(asRecord(tasksEnvelope)?.tasks ?? tasksEnvelope);
   const pastDueTasks = rawTasks
     .map(slimTask)
     .filter((task) => {
@@ -110,13 +106,29 @@ export function slimReportsForClient(reports, options = {}) {
       const due = taskDueDay(task);
       return Boolean(due && due < today);
     });
+  return {
+    tasks: pastDueTasks,
+    meta: asRecord(tasksEnvelope)?.meta,
+  };
+}
 
-  const selectionsByJob = {};
-  for (const [jobId, rows] of Object.entries(reports.selectionsByJob ?? {})) {
+export function slimSelectionsByJob(selectionsByJob) {
+  const out = {};
+  for (const [jobId, rows] of Object.entries(selectionsByJob ?? {})) {
     if (!Array.isArray(rows)) continue;
     const pending = rows.map(slimSelection).filter(Boolean);
-    if (pending.length) selectionsByJob[jobId] = pending;
+    if (pending.length) out[jobId] = pending;
   }
+  return out;
+}
+
+/**
+ * @param {Record<string, unknown>} reports
+ * @param {{ now?: Date }} [options]
+ */
+export function slimReportsForClient(reports, options = {}) {
+  if (!reports || typeof reports !== 'object') return reports;
+  const pastDueEnvelope = slimPastDueTasksFromEnvelope(reports.tasks, options);
 
   const baselineItemsByJob = {};
   for (const [jobId, rows] of Object.entries(reports.baselineItemsByJob ?? {})) {
@@ -127,10 +139,9 @@ export function slimReportsForClient(reports, options = {}) {
 
   return {
     ...reports,
-    tasks: { tasks: pastDueTasks },
-    selectionsByJob,
+    tasks: pastDueEnvelope,
+    selectionsByJob: slimSelectionsByJob(reports.selectionsByJob),
     baselineItemsByJob,
-    // Drop bulky unused bags when present on the tasks envelope.
     actionItemsByJob: reports.actionItemsByJob ?? {},
   };
 }
