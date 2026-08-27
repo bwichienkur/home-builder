@@ -40,6 +40,17 @@ export type DrillLogRow = {
   lastLogDate: string;
 };
 
+export type DrillBaselineSlipRow = {
+  title: string;
+  endDateSlip: number;
+  durationSlip: number;
+  expectedStartDate: string;
+  actualStartDate: string;
+  expectedEndDate: string;
+  actualEndDate: string;
+  completed: boolean;
+};
+
 export type DrillProjectRow = {
   id: string;
   name: string;
@@ -57,6 +68,7 @@ export type DrilldownKind =
   | { type: 'job-selections'; jobId: string; jobName: string }
   | { type: 'job-past-due'; jobId: string; jobName: string }
   | { type: 'job-logs'; jobId: string; jobName: string }
+  | { type: 'job-slip'; jobId: string; jobName: string }
   | { type: 'pm-projects'; pm: string }
   | { type: 'pm-logs'; pm: string }
   | { type: 'pm-past-due'; pm: string }
@@ -77,4 +89,6 @@ export type LiveDrilldown = {
   selectionsByJobId: Record<string, DrillSelectionRow[]>;
   pastDueByJobId: Record<string, DrillTaskRow[]>;
   logsByJobId: Record<string, DrillLogRow[]>;
+  /** OCH MASTER 2026–filtered Baseline schedule rows for Total Slip drill-down. */
+  baselineSlipByJobId: Record<string, DrillBaselineSlipRow[]>;
 };

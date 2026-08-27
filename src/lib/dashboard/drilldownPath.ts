@@ -26,6 +26,7 @@ export function drilldownHref(kind: DrilldownKind, filters?: Partial<DrilldownFi
     case 'job-selections':
     case 'job-past-due':
     case 'job-logs':
+    case 'job-slip':
       params.set('jobId', kind.jobId);
       setOpt(params, 'jobName', kind.jobName);
       break;
@@ -67,6 +68,7 @@ export function parseDrilldownKind(params: URLSearchParams): DrilldownKind | nul
     case 'job-selections':
     case 'job-past-due':
     case 'job-logs':
+    case 'job-slip':
       if (!jobId) return null;
       return { type, jobId, jobName };
     case 'pm-projects':

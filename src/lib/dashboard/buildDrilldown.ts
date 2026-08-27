@@ -1,6 +1,7 @@
 import { isSelectionGreenStatus } from '../buildertrend/mapReports';
 import { pipedriveStageKey, SALES_PIPELINE_ID } from '../pipedrive/stageMap';
 import type {
+  DrillBaselineSlipRow,
   DrillDealRow,
   DrillLogRow,
   DrillSelectionRow,
@@ -167,6 +168,24 @@ export function buildLiveDrilldown(input: {
     });
   }
 
+  const baselineSlipByJobId: Record<string, DrillBaselineSlipRow[]> = {};
+  for (const [jobId, rows] of Object.entries(bt.baselineItemsByJob ?? {})) {
+    if (!Array.isArray(rows) || !rows.length) continue;
+    baselineSlipByJobId[String(jobId)] = rows.map((row) => {
+      const rec = asRecord(row) ?? {};
+      return {
+        title: str(rec.title),
+        endDateSlip: Math.round(num(rec.endDateSlip)),
+        durationSlip: Math.round(num(rec.durationSlip)),
+        expectedStartDate: isoDate(rec.expectedStartDate),
+        actualStartDate: isoDate(rec.actualStartDate),
+        expectedEndDate: isoDate(rec.expectedEndDate),
+        actualEndDate: isoDate(rec.actualEndDate),
+        completed: Boolean(rec.completed),
+      };
+    });
+  }
+
   const dealsByStage: Record<string, DrillDealRow[]> = {};
   const pd = input.pipedrive?.reports;
   if (pd) {
@@ -208,6 +227,7 @@ export function buildLiveDrilldown(input: {
     selectionsByJobId,
     pastDueByJobId,
     logsByJobId,
+    baselineSlipByJobId,
   };
 }
 

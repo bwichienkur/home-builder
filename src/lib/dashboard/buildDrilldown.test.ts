@@ -87,6 +87,48 @@ describe('dashboard drilldown', () => {
     expect(detail.logsByJobId['1']).toHaveLength(1);
   });
 
+  it('builds OCH MASTER–filtered baseline slip rows for Total Slip drill-down', () => {
+    const detail = buildLiveDrilldown({
+      buildertrend: {
+        pulledAt: '2026-08-22T12:00:00.000Z',
+        reports: {
+          jobs: [{ jobID: 40228562, jobName: 'Blandford', jobStatus: 'Open' }],
+          baselineItemsByJob: {
+            '40228562': [
+              {
+                title: 'Driveway',
+                endDateSlip: 25,
+                durationSlip: 9,
+                expectedEndDate: '2026-07-01',
+                actualEndDate: '2026-08-05',
+                completed: false,
+              },
+              {
+                title: 'Pool',
+                endDateSlip: -26,
+                durationSlip: -26,
+                expectedEndDate: '2026-08-01',
+                actualEndDate: '2026-07-01',
+                completed: true,
+              },
+            ],
+          },
+        },
+      },
+    });
+    expect(detail.baselineSlipByJobId['40228562']).toHaveLength(2);
+
+    const resolved = resolveDrilldown(
+      { type: 'job-slip', jobId: 'bt-40228562', jobName: 'Blandford' },
+      sampleProjects,
+      detail,
+    );
+    expect(resolved.title).toContain('Blandford');
+    expect(resolved.subtitle).toContain('OCH MASTER 2026');
+    expect(resolved.rows.map((r) => r.title)).toEqual(['Pool', 'Driveway']);
+    expect(resolved.rows.find((r) => r.title === 'Driveway')?.endDateSlip).toBe(25);
+  });
+
   it('resolves pipeline stage drilldown rows', () => {
     const resolved = resolveDrilldown(
       { type: 'pipeline-stage', stageId: pipedriveStageKey(1), label: 'First Contact' },
@@ -110,6 +152,7 @@ describe('dashboard drilldown', () => {
         selectionsByJobId: {},
         pastDueByJobId: {},
         logsByJobId: {},
+        baselineSlipByJobId: {},
       },
     );
     expect(resolved.rows).toHaveLength(1);
@@ -150,6 +193,7 @@ describe('dashboard drilldown', () => {
           ],
           '2': [{ jobId: 2, jobName: 'Ahigian', userName: 'Richard Linck', dailyLogCount: 8, lastLogDate: '2026-08-21' }],
         },
+        baselineSlipByJobId: {},
       },
     );
     expect(resolved.rows).toHaveLength(2);
