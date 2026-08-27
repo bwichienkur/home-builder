@@ -237,7 +237,9 @@ export function OwnerDashboard() {
                   <th>
                     <ThLabel text={'Daily log %\n(life)'} />
                   </th>
-                  <th>Past due</th>
+                  <th>
+                    <ThLabel text={'Past Due\nTasks'} />
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -292,7 +294,7 @@ export function OwnerDashboard() {
                     ['name', 'Project'],
                     ['pm', 'PM'],
                     ['pendingSelections', 'Pending\nsel.'],
-                    ['pastDueTasks', 'Past due'],
+                    ['pastDueTasks', 'Past due\ntasks'],
                     ['contractPrice', 'Contract'],
                     ['revenueToDate', 'Revenue'],
                     ['pctComplete', '%\ncomplete'],
