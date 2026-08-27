@@ -72,6 +72,7 @@ const OPEN_JOBS: OwnerJob[] = [
     totalSlip: 60,
     changeOrderRevenue: 88461.45,
     changeOrderProfit: 13993.01,
+    revenueLast30d: 121550,
     contractPrice: 1402571.9,
     revenueToDate: 1289596.45,
     wip: 1402571.9,
@@ -131,6 +132,7 @@ const OPEN_JOBS: OwnerJob[] = [
     dailyLogsTotal: 116,
     foundationStarted: true,
     totalSlip: 66,
+    revenueLast30d: 292829.12,
     contractPrice: 1555553,
     revenueToDate: 955406.37,
     wip: 1555553,
@@ -233,6 +235,7 @@ const OPEN_JOBS: OwnerJob[] = [
     totalSlip: 64,
     changeOrderRevenue: 263907.46,
     changeOrderProfit: 86631.45,
+    revenueLast30d: 151340,
     contractPrice: 1513789.57,
     revenueToDate: 995399.09,
     wip: 1513789.57,
@@ -256,6 +259,7 @@ const OPEN_JOBS: OwnerJob[] = [
     totalSlip: 51,
     changeOrderRevenue: 103105.48,
     changeOrderProfit: 22142.4,
+    revenueLast30d: 101455.96,
     contractPrice: 1189213.88,
     revenueToDate: 798730.97,
     wip: 1189213.88,
@@ -317,6 +321,7 @@ const OPEN_JOBS: OwnerJob[] = [
     totalSlip: 313,
     changeOrderRevenue: 214343.13,
     changeOrderProfit: 62545.73,
+    revenueLast30d: 7135.85,
     contractPrice: 1373646.79,
     revenueToDate: 1377463.99,
     wip: 1373646.79,
@@ -338,6 +343,7 @@ const OPEN_JOBS: OwnerJob[] = [
     dailyLogsTotal: 58,
     foundationStarted: true,
     totalSlip: 0,
+    revenueLast30d: 127468.3,
     contractPrice: 1290391.99,
     revenueToDate: 539665.65,
     wip: 1290391.99,
@@ -460,6 +466,7 @@ const OPEN_JOBS: OwnerJob[] = [
     totalSlip: 91,
     changeOrderRevenue: 193363.44,
     changeOrderProfit: 39147.38,
+    revenueLast30d: 2838.85,
     contractPrice: 1078675,
     revenueToDate: 1164852.51,
     wip: 1078675,
@@ -585,4 +592,4 @@ export const LIVE_PROJECTED_MARGIN_PCT = 33.3;
 export const LIVE_ROLLING_REVENUE_12MO = 16404188.42;
 /** Weighted pipeline: Pipedrive value × stage probability when PD cache present. */
 export const LIVE_WEIGHTED_PIPELINE = 10610650;
-export const LIVE_SNAPSHOT_AT = '2026-08-27T01:00:51.889Z';
+export const LIVE_SNAPSHOT_AT = '2026-08-27T01:16:49.519Z';

@@ -50,6 +50,11 @@ export type OwnerJob = {
   /** USD */
   contractPrice: number;
   revenueToDate: number;
+  /**
+   * Trailing 30-day owner inflow (draws / revenue received) from BT Cash flow
+   * (`cashflowType` Money In). Used for the PM $500k/mo staffing metric.
+   */
+  revenueLast30d?: number;
   /** USD revised contract (original + change orders) for WIP totals. */
   wip: number;
   /** Change order revenue from BT Change order profit report (open jobs). */
@@ -94,10 +99,18 @@ export type TimeMetric = {
   deltaDays: number;
 };
 
+/** Leadership goal: $500k draws / revenue received per PM per trailing ~30 days. */
+export const PM_REVENUE_LAST_30D_GOAL = 500_000;
+
 export type PmScorecardRow = {
   pm: string;
   projects: number;
   wip: number;
+  /**
+   * Sum of trailing-30-day BT Cash flow Money In across this PM’s open jobs.
+   * Goal: {@link PM_REVENUE_LAST_30D_GOAL}.
+   */
+  revenueLast30d: number;
   /** Rolling 4-week window (4 logs/week × 4 weeks × project count). */
   dailyLogsRecentDone: number;
   dailyLogsRecentExpected: number;
@@ -133,6 +146,8 @@ export type ProjectSnapshot = {
   dailyLogLifetimePct: number;
   contractPrice: number;
   revenueToDate: number;
+  /** Trailing 30-day BT Cash flow Money In (draws / revenue received). */
+  revenueLast30d?: number;
   /** Revised contract (original + change orders) for WIP totals. */
   wip: number;
   changeOrderRevenue?: number;

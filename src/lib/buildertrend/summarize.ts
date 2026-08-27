@@ -11,7 +11,9 @@ import type {
   SalesPerformanceBar,
   TimeMetric,
 } from './types';
-import { PIPELINE_WEIGHTS } from './types';
+import { PIPELINE_WEIGHTS, PM_REVENUE_LAST_30D_GOAL } from './types';
+
+export { PM_REVENUE_LAST_30D_GOAL };
 
 export const PHASE_ORDER = ['design', 'construction'] as const;
 
@@ -141,6 +143,7 @@ export function summarizeOwnerDashboard(input: {
         pm,
         projects: rows.length,
         wip: rows.reduce((s, j) => s + j.wip, 0),
+        revenueLast30d: rows.reduce((s, j) => s + (j.revenueLast30d ?? 0), 0),
         dailyLogsRecentDone: recentDone,
         dailyLogsRecentExpected: recentExp,
         dailyLogRecentPct: recentExp ? (recentDone / recentExp) * 100 : 0,
@@ -214,6 +217,7 @@ export function summarizeOwnerDashboard(input: {
         dailyLogLifetimePct: job.dailyLogLifetimePct,
         contractPrice: job.contractPrice,
         revenueToDate: job.revenueToDate,
+        revenueLast30d: job.revenueLast30d,
         wip: job.wip,
         changeOrderRevenue: job.changeOrderRevenue,
         changeOrderProfit: job.changeOrderProfit,

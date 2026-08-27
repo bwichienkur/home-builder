@@ -133,4 +133,45 @@ describe('summarizeOwnerDashboard PM scorecard', () => {
       dailyLogsRecentExpected: 32,
     });
   });
+
+  it('sums trailing-30d revenue on the PM scorecard', () => {
+    const dash = summarizeOwnerDashboard({
+      source: 'buildertrend',
+      refreshedAt: '2026-08-24T00:00:00.000Z',
+      filters: { status: 'open', dateRange: 'all' },
+      jobs: [
+        baseJob({
+          id: '1',
+          name: 'Emerson',
+          pm: 'Paul Dimeglio',
+          foundationStarted: true,
+          revenueLast30d: 292829.12,
+        }),
+        baseJob({
+          id: '2',
+          name: 'Lois',
+          pm: 'Paul Dimeglio',
+          foundationStarted: true,
+          revenueLast30d: 101455.96,
+        }),
+        baseJob({
+          id: '3',
+          name: 'Kinney',
+          pm: 'James Manford',
+          foundationStarted: true,
+          revenueLast30d: 151340,
+        }),
+      ],
+      pipeline: [],
+      salesPerformance: [],
+      timeMetrics: [],
+      targetMarginPct: 15,
+      projectedMarginPct: 18,
+      rollingRevenue12Mo: 0,
+      now: new Date('2026-08-24T12:00:00'),
+    });
+
+    expect(dash.pmScorecard.find((r) => r.pm === 'Paul Dimeglio')?.revenueLast30d).toBeCloseTo(394285.08);
+    expect(dash.pmScorecard.find((r) => r.pm === 'James Manford')?.revenueLast30d).toBe(151340);
+  });
 });

@@ -601,6 +601,15 @@
   font-weight: 700;
 }
 
+/* Goal / alert cells keep semantic color on linked values */
+.is-alert .dash-drill-link {
+  color: var(--danger);
+}
+
+.is-ok .dash-drill-link {
+  color: #1f7a4d;
+}
+
 .dash-drill-link:hover,
 .dash-funnel-btn:hover {
   opacity: 0.85;
