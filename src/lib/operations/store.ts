@@ -1,10 +1,12 @@
 import { seedOpsFromLiveSnapshot, newOpsId } from './seed';
 import { isOpsHttpProvider, pushOpsToServer, pullOpsFromServer } from './remote';
 import type {
+  OpsCashflowEntry,
   OpsDailyLog,
   OpsDeal,
   OpsJob,
   OpsPerson,
+  OpsScheduleItem,
   OpsSelection,
   OpsSnapshot,
   OpsTask,
@@ -40,6 +42,16 @@ function emptySnapshot(): OpsSnapshot {
     selections: [],
     deals: [],
     people: [],
+    scheduleItems: [],
+    cashflow: [],
+  };
+}
+
+function normalizeSnapshot(parsed: OpsSnapshot): OpsSnapshot {
+  return {
+    ...parsed,
+    scheduleItems: Array.isArray(parsed.scheduleItems) ? parsed.scheduleItems : [],
+    cashflow: Array.isArray(parsed.cashflow) ? parsed.cashflow : [],
   };
 }
 
@@ -49,7 +61,7 @@ export function loadOpsSnapshot(): OpsSnapshot {
     if (!raw) return emptySnapshot();
     const parsed = JSON.parse(raw) as OpsSnapshot;
     if (parsed?.version !== 1 || !Array.isArray(parsed.jobs)) return emptySnapshot();
-    return parsed;
+    return normalizeSnapshot(parsed);
   } catch {
     return emptySnapshot();
   }
@@ -226,6 +238,40 @@ export function upsertOpsPerson(person: OpsPerson) {
   else people.push(next);
   saveOpsSnapshot(touch({ ...snap, people }));
   return next;
+}
+
+export function upsertOpsScheduleItem(row: OpsScheduleItem) {
+  const snap = ensureOpsSeeded();
+  const scheduleItems = [...(snap.scheduleItems ?? [])];
+  const idx = scheduleItems.findIndex((r) => r.id === row.id);
+  const next = { ...row, updatedAt: new Date().toISOString() };
+  if (idx >= 0) scheduleItems[idx] = next;
+  else scheduleItems.push(next);
+  saveOpsSnapshot(touch({ ...snap, scheduleItems }));
+  return next;
+}
+
+export function deleteOpsScheduleItem(id: string) {
+  const snap = ensureOpsSeeded();
+  saveOpsSnapshot(
+    touch({ ...snap, scheduleItems: (snap.scheduleItems ?? []).filter((r) => r.id !== id) }),
+  );
+}
+
+export function upsertOpsCashflow(row: OpsCashflowEntry) {
+  const snap = ensureOpsSeeded();
+  const cashflow = [...(snap.cashflow ?? [])];
+  const idx = cashflow.findIndex((r) => r.id === row.id);
+  const next = { ...row, updatedAt: new Date().toISOString() };
+  if (idx >= 0) cashflow[idx] = next;
+  else cashflow.push(next);
+  saveOpsSnapshot(touch({ ...snap, cashflow }));
+  return next;
+}
+
+export function deleteOpsCashflow(id: string) {
+  const snap = ensureOpsSeeded();
+  saveOpsSnapshot(touch({ ...snap, cashflow: (snap.cashflow ?? []).filter((r) => r.id !== id) }));
 }
 
 export { newOpsId };

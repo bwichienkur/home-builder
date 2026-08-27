@@ -25,6 +25,10 @@ describe('operations seed + map', () => {
     expect(seeded.tasks.length).toBe(drillCount(LIVE_DRILLDOWN.pastDueByJobId));
     expect(seeded.deals.length).toBe(drillCount(LIVE_DRILLDOWN.dealsByStage));
     expect(seeded.logs.length).toBeGreaterThanOrEqual(drillCount(LIVE_DRILLDOWN.logsByJobId));
+    expect(seeded.scheduleItems?.length).toBe(drillCount(LIVE_DRILLDOWN.baselineSlipByJobId));
+    expect(seeded.cashflow?.length).toBe(
+      LIVE_JOBS.filter((j) => (j.revenueLast30d ?? 0) > 0).length,
+    );
     expect(seeded.selections[0]?.title).not.toMatch(/^Pending selection \d+$/);
     expect(seeded.tasks[0]?.title).not.toMatch(/^Past-due task \d+$/);
   });
@@ -73,5 +77,14 @@ describe('operations seed + map', () => {
     if (!firstSel) return;
     const key = firstSel.jobId.replace(/^bt-/, '');
     expect(detail.selectionsByJobId[key]?.length).toBeGreaterThan(0);
+  });
+
+  it('buildOpsDrilldown includes baseline slip from schedule items', () => {
+    const seeded = seedOpsFromLiveSnapshot();
+    const detail = buildOpsDrilldown(seeded);
+    const first = seeded.scheduleItems?.[0];
+    if (!first) return;
+    const key = first.jobId.replace(/^bt-/, '');
+    expect(detail.baselineSlipByJobId[key]?.length).toBeGreaterThan(0);
   });
 });

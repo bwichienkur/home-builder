@@ -7,7 +7,18 @@ import {
   LIVE_WEIGHTED_PIPELINE,
 } from '../buildertrend/liveSnapshot';
 import { LIVE_DRILLDOWN } from '../buildertrend/liveDrilldown';
-import type { OpsDailyLog, OpsDeal, OpsDealStage, OpsJob, OpsPerson, OpsSelection, OpsSnapshot, OpsTask } from './types';
+import type {
+  OpsCashflowEntry,
+  OpsDailyLog,
+  OpsDeal,
+  OpsDealStage,
+  OpsJob,
+  OpsPerson,
+  OpsScheduleItem,
+  OpsSelection,
+  OpsSnapshot,
+  OpsTask,
+} from './types';
 
 function nowIso() {
   return new Date().toISOString();
@@ -163,13 +174,46 @@ export function seedOpsFromLiveSnapshot(): OpsSnapshot {
         value: row.value || 0,
         confidence: Math.round(row.probabilityPct || 0),
         owner: 'Sales',
+        expectedCloseDate: row.expectedCloseDate || '',
         updatedAt,
       });
-      if (row.stageName) {
-        // keep people list for sales later if needed
-      }
     }
   }
+
+  const scheduleItems: OpsScheduleItem[] = [];
+  for (const [numericId, rows] of Object.entries(LIVE_DRILLDOWN.baselineSlipByJobId)) {
+    const jobId = ownerJobId(numericId);
+    let i = 0;
+    for (const row of rows) {
+      i += 1;
+      scheduleItems.push({
+        id: `sched-${numericId}-${i}`,
+        jobId,
+        title: row.title || `Schedule item ${i}`,
+        endDateSlip: row.endDateSlip || 0,
+        durationSlip: row.durationSlip || 0,
+        expectedStartDate: row.expectedStartDate || '',
+        actualStartDate: row.actualStartDate || '',
+        expectedEndDate: row.expectedEndDate || '',
+        actualEndDate: row.actualEndDate || '',
+        completed: Boolean(row.completed),
+        updatedAt,
+      });
+    }
+  }
+
+  // One Money In stub per job from trailing-30d revenue (editable cashflow ledger).
+  const cashflow: OpsCashflowEntry[] = jobs
+    .filter((j) => j.revenueLast30d > 0)
+    .map((j) => ({
+      id: id('cf'),
+      jobId: j.id,
+      date: updatedAt.slice(0, 10),
+      amount: j.revenueLast30d,
+      type: 'money_in' as const,
+      note: 'Seeded from BT Cash flow trailing 30d Money In',
+      updatedAt,
+    }));
 
   return {
     version: 1,
@@ -185,6 +229,8 @@ export function seedOpsFromLiveSnapshot(): OpsSnapshot {
     selections,
     deals,
     people: [...peopleMap.values()],
+    scheduleItems,
+    cashflow,
   };
 }
 

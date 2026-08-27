@@ -1,5 +1,6 @@
 import { numericJobId } from '../dashboard/buildDrilldown';
 import type {
+  DrillBaselineSlipRow,
   DrillDealRow,
   DrillLogRow,
   DrillSelectionRow,
@@ -85,8 +86,24 @@ export function buildOpsDrilldown(snapshot: OpsSnapshot, now = new Date()): Live
       stageName: deal.stage,
       probabilityPct: deal.confidence,
       weightedValue: Math.round(deal.value * (deal.confidence / 100)),
-      expectedCloseDate: '',
+      expectedCloseDate: deal.expectedCloseDate || '',
       status: deal.stage === 'closed' ? 'won' : 'open',
+    });
+  }
+
+  const baselineSlipByJobId: Record<string, DrillBaselineSlipRow[]> = {};
+  for (const row of snapshot.scheduleItems ?? []) {
+    const key = numericJobId(row.jobId);
+    const list = baselineSlipByJobId[key] ?? (baselineSlipByJobId[key] = []);
+    list.push({
+      title: row.title,
+      endDateSlip: row.endDateSlip,
+      durationSlip: row.durationSlip,
+      expectedStartDate: row.expectedStartDate,
+      actualStartDate: row.actualStartDate,
+      expectedEndDate: row.expectedEndDate,
+      actualEndDate: row.actualEndDate,
+      completed: row.completed,
     });
   }
 
@@ -96,7 +113,7 @@ export function buildOpsDrilldown(snapshot: OpsSnapshot, now = new Date()): Live
     selectionsByJobId,
     pastDueByJobId,
     logsByJobId,
-    baselineSlipByJobId: {},
+    baselineSlipByJobId,
   };
 }
 

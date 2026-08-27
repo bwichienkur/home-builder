@@ -14,6 +14,7 @@ const emptyDeal = (): OpsDeal => ({
   value: 0,
   confidence: 10,
   owner: '',
+  expectedCloseDate: '',
   updatedAt: new Date().toISOString(),
 });
 
@@ -79,6 +80,12 @@ export function OpsDealsPage() {
               render: (d) => `${d.confidence}%`,
             },
             { key: 'owner', label: 'Owner', getValue: (d) => d.owner, render: (d) => d.owner || '—' },
+            {
+              key: 'expectedCloseDate',
+              label: 'Expected close',
+              getValue: (d) => d.expectedCloseDate || '',
+              render: (d) => d.expectedCloseDate || '—',
+            },
           ]}
           actions={(deal) => (
             <OpsRowActions onEdit={() => setDraft({ ...deal })} onArchive={() => ops.archiveDeal(deal.id)} />
@@ -135,6 +142,14 @@ export function OpsDealsPage() {
             <label>
               Owner
               <input value={draft.owner} onChange={(e) => setDraft({ ...draft, owner: e.target.value })} />
+            </label>
+            <label>
+              Expected close
+              <input
+                type="date"
+                value={(draft.expectedCloseDate || '').slice(0, 10)}
+                onChange={(e) => setDraft({ ...draft, expectedCloseDate: e.target.value })}
+              />
             </label>
             <div className="data-form-actions">
               <button type="button" className="ops-btn" onClick={() => setDraft(null)}>

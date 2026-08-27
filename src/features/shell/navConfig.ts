@@ -6,6 +6,7 @@ import {
   Briefcase,
   CheckSquare,
   ClipboardList,
+  FileBarChart,
   Handshake,
   House,
   LayoutTemplate,
@@ -61,6 +62,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { to: '/ops/selections', label: 'Selections', icon: ListChecks },
       { to: '/ops/deals', label: 'Deals', icon: Handshake },
       { to: '/ops/people', label: 'People', icon: Users },
+      { to: '/ops/reports', label: 'Reports', icon: FileBarChart },
     ],
   },
   {
@@ -86,6 +88,7 @@ export const PAGE_TITLES: { path: string; end?: boolean; title: string }[] = [
   { path: '/ops/selections', title: 'Selections' },
   { path: '/ops/deals', title: 'Deals' },
   { path: '/ops/people', title: 'People' },
+  { path: '/ops/reports', title: 'Reports' },
   { path: '/ops', title: 'Operations' },
   { path: '/plans', title: 'Plans' },
   { path: '/settings', title: 'Settings' },

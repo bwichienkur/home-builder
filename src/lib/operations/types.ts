@@ -76,6 +76,8 @@ export type OpsDeal = {
   /** 0–100. */
   confidence: number;
   owner: string;
+  /** ISO date — used for expected-signing reports. */
+  expectedCloseDate?: string;
   updatedAt: string;
   archived?: boolean;
 };
@@ -84,6 +86,33 @@ export type OpsPerson = {
   id: string;
   name: string;
   role: 'pm' | 'sales' | 'other';
+  updatedAt: string;
+};
+
+/** Baseline / schedule line item (BT Baseline vs actual duration drilldown). */
+export type OpsScheduleItem = {
+  id: string;
+  jobId: string;
+  title: string;
+  endDateSlip: number;
+  durationSlip: number;
+  expectedStartDate: string;
+  actualStartDate: string;
+  expectedEndDate: string;
+  actualEndDate: string;
+  completed: boolean;
+  updatedAt: string;
+};
+
+/** Cash movement row (BT Cash flow Money In / Out). */
+export type OpsCashflowEntry = {
+  id: string;
+  jobId: string;
+  date: string;
+  /** Positive = money in, negative = money out. */
+  amount: number;
+  type: 'money_in' | 'money_out';
+  note?: string;
   updatedAt: string;
 };
 
@@ -104,6 +133,9 @@ export type OpsSnapshot = {
   selections: OpsSelection[];
   deals: OpsDeal[];
   people: OpsPerson[];
+  /** Optional for older local stores — normalized on load. */
+  scheduleItems?: OpsScheduleItem[];
+  cashflow?: OpsCashflowEntry[];
 };
 
 export const OPS_STORAGE_KEY = 'mahnikka-ops-v1';
