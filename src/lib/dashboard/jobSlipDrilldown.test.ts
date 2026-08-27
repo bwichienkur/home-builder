@@ -32,8 +32,8 @@ describe('job-slip drill-down', () => {
   };
 
   it('highlights positive duration slip red and negative green', () => {
-    expect(drillCellClassName(slipCol, 12)).toBe('dash-slip-duration-pos');
-    expect(drillCellClassName(slipCol, -10)).toBe('dash-slip-duration-neg');
+    expect(drillCellClassName(slipCol, 12)).toBe('dash-cell-highlight dash-slip-duration-pos');
+    expect(drillCellClassName(slipCol, -10)).toBe('dash-cell-highlight dash-slip-duration-neg');
     expect(drillCellClassName(slipCol, 0)).toBeUndefined();
   });
 
