@@ -34,7 +34,9 @@ describe('handleVercelRefresh', () => {
     expect(res.body.ok).toBe(false);
   });
 
-  it('rejects missing cookie', async () => {
+  it('rejects missing cookie when env is unset', async () => {
+    const prev = process.env.BUILDERTREND_COOKIE;
+    delete process.env.BUILDERTREND_COOKIE;
     const res = {
       headersSent: false,
       statusCode: 0,
@@ -49,8 +51,12 @@ describe('handleVercelRefresh', () => {
         return this;
       },
     };
-    await handleVercelRefresh({ method: 'POST', body: {} }, res);
-    expect(res.statusCode).toBe(400);
-    expect(res.body.code).toBe('credentials_missing');
+    try {
+      await handleVercelRefresh({ method: 'POST', body: {} }, res);
+      expect(res.statusCode).toBe(400);
+      expect(res.body.code).toBe('credentials_missing');
+    } finally {
+      if (prev != null) process.env.BUILDERTREND_COOKIE = prev;
+    }
   });
 });
