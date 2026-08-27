@@ -294,7 +294,7 @@ export function OwnerDashboard() {
                     ['name', 'Project'],
                     ['pm', 'PM'],
                     ['pendingSelections', 'Pending\nsel.'],
-                    ['pastDueTasks', 'Past due\ntasks'],
+                    ['pastDueTasks', 'Past Due\nTasks'],
                     ['contractPrice', 'Contract'],
                     ['revenueToDate', 'Revenue'],
                     ['pctComplete', '%\ncomplete'],
