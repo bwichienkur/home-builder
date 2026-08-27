@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { formatMonthsDays } from '../../lib/buildertrend';
 import { parseDrilldownFilters, parseDrilldownKind } from '../../lib/dashboard/drilldownPath';
 import { resolveDrilldown } from '../../lib/dashboard/resolveDrilldown';
 import { DrilldownTable } from './DrilldownPanel';
@@ -52,6 +53,19 @@ export function DrilldownPage() {
             {error ? <p className="dash-source">{error}</p> : null}
           </div>
         </header>
+        {data.metrics?.length ? (
+          <article className="dash-card dash-drill-metrics-card">
+            <h2>Estimated time metrics</h2>
+            <ul className="dash-metrics dash-drill-metrics">
+              {data.metrics.map((metric) => (
+                <li key={metric.id}>
+                  <span>{metric.label}</span>
+                  <strong>{formatMonthsDays(metric.days)}</strong>
+                </li>
+              ))}
+            </ul>
+          </article>
+        ) : null}
         <article className="dash-card dash-drill-page-card">
           <DrilldownTable data={data} />
         </article>

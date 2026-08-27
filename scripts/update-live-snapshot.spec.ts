@@ -25,6 +25,10 @@ function jobToTs(job: Record<string, unknown>, indent: string) {
   if (job.changeOrderRevenue != null) fields.push(['changeOrderRevenue', job.changeOrderRevenue]);
   if (job.changeOrderProfit != null) fields.push(['changeOrderProfit', job.changeOrderProfit]);
   if (job.revenueLast30d != null && job.revenueLast30d !== 0) fields.push(['revenueLast30d', job.revenueLast30d]);
+  if (job.estFirstScheduleStart) fields.push(['estFirstScheduleStart', job.estFirstScheduleStart]);
+  if (job.estPermittingEnd) fields.push(['estPermittingEnd', job.estPermittingEnd]);
+  if (job.estFoundationStart) fields.push(['estFoundationStart', job.estFoundationStart]);
+  if (job.estClosingEnd) fields.push(['estClosingEnd', job.estClosingEnd]);
   fields.push(
     ['contractPrice', job.contractPrice],
     ['revenueToDate', job.revenueToDate],

@@ -3,6 +3,7 @@ import {
   LIVE_TARGET_MARGIN_PCT,
   LIVE_TIME_METRICS,
 } from './liveSnapshot';
+import { calendarDaysBetween } from './estimatedTimeMetrics';
 import type { OwnerJob, OwnerPhase, PipelineStage, SalesPerformanceBar, TimeMetric } from './types';
 
 const DESIGNER = /monique\s+lumley/i;
@@ -875,6 +876,10 @@ function toOwnerJob(draft: JobDraft, now: Date): OwnerJob {
       pctComplete: draft.pctComplete,
       now,
     }),
+    estFirstScheduleStart: draft.firstScheduleStart || undefined,
+    estPermittingEnd: draft.permittingEndDate || undefined,
+    estFoundationStart: draft.foundationStartDate || undefined,
+    estClosingEnd: draft.closingEndDate || undefined,
     openedAt,
     slip: draft.slip,
     totalSlip: draft.totalSlip ?? undefined,
@@ -882,12 +887,8 @@ function toOwnerJob(draft: JobDraft, now: Date): OwnerJob {
   };
 }
 
-function calendarDaysBetween(start: string, end: string): number | null {
-  if (!start || !end) return null;
-  const a = new Date(`${start}T12:00:00`).getTime();
-  const b = new Date(`${end}T12:00:00`).getTime();
-  if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
-  return Math.round((b - a) / 86_400_000);
+function calendarDaysBetweenLocal(start: string, end: string): number | null {
+  return calendarDaysBetween(start, end);
 }
 
 function averageDays(values: number[]): number | null {
@@ -908,11 +909,11 @@ function timeMetricsFrom(jobs: JobDraft[], fallback: TimeMetric[]): TimeMetric[]
   const slab: number[] = [];
   for (const job of closed) {
     if (!job.closingEndDate) continue;
-    const contractDays = calendarDaysBetween(job.firstScheduleStart, job.closingEndDate);
+    const contractDays = calendarDaysBetweenLocal(job.firstScheduleStart, job.closingEndDate);
     if (contractDays != null && contractDays >= 0) contract.push(contractDays);
-    const permitDays = calendarDaysBetween(job.permittingEndDate, job.closingEndDate);
+    const permitDays = calendarDaysBetweenLocal(job.permittingEndDate, job.closingEndDate);
     if (permitDays != null && permitDays >= 0) permit.push(permitDays);
-    const slabDays = calendarDaysBetween(job.foundationStartDate, job.closingEndDate);
+    const slabDays = calendarDaysBetweenLocal(job.foundationStartDate, job.closingEndDate);
     if (slabDays != null && slabDays >= 0) slab.push(slabDays);
   }
   const fallbackById = Object.fromEntries(fallback.map((row) => [row.id, row]));
