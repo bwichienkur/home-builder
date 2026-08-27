@@ -9,6 +9,7 @@ import {
   LIVE_WEIGHTED_PIPELINE,
 } from '../buildertrend/liveSnapshot';
 import { LIVE_DRILLDOWN } from '../buildertrend/liveDrilldown';
+import { hasLiveOpsImport, LIVE_OPS_IMPORT } from './liveOpsImport';
 import type {
   OpsCashflowEntry,
   OpsDailyLog,
@@ -129,24 +130,45 @@ export function seedOpsFromLiveSnapshot(): OpsSnapshot {
   }
 
   const tasks: OpsTask[] = [];
-  for (const rows of Object.values(LIVE_DRILLDOWN.pastDueByJobId)) {
-    for (const row of rows) {
-      const jobId = ownerJobId(row.jobId);
-      tasks.push({
-        id: `task-${row.taskId}`,
-        jobId,
-        title: row.title || `Task ${row.taskId}`,
-        assignee: row.assignedTo || '',
-        dueDate: row.endDate || '',
-        status: 'incomplete',
-        source: 'bt-past-due',
-        updatedAt,
-      });
+  if (hasLiveOpsImport()) {
+    for (const rows of Object.values(LIVE_OPS_IMPORT.tasksByJobId)) {
+      for (const row of rows) {
+        const jobId = ownerJobId(row.jobId);
+        tasks.push({
+          id: `task-${row.taskId}`,
+          jobId,
+          title: row.title || `Task ${row.taskId}`,
+          assignee: row.assignee || '',
+          dueDate: row.dueDate || '',
+          startDate: row.startDate || '',
+          note: row.note,
+          status: 'incomplete',
+          source: 'bt-incomplete',
+          updatedAt,
+        });
+      }
+    }
+  } else {
+    for (const rows of Object.values(LIVE_DRILLDOWN.pastDueByJobId)) {
+      for (const row of rows) {
+        const jobId = ownerJobId(row.jobId);
+        tasks.push({
+          id: `task-${row.taskId}`,
+          jobId,
+          title: row.title || `Task ${row.taskId}`,
+          assignee: row.assignedTo || '',
+          dueDate: row.endDate || '',
+          status: 'incomplete',
+          source: 'bt-past-due',
+          updatedAt,
+        });
+      }
     }
   }
 
+  const logSource = hasLiveOpsImport() ? LIVE_OPS_IMPORT.logsByJobId : LIVE_DRILLDOWN.logsByJobId;
   const logs: OpsDailyLog[] = [];
-  for (const rows of Object.values(LIVE_DRILLDOWN.logsByJobId)) {
+  for (const rows of Object.values(logSource)) {
     for (const row of rows) {
       const jobId = ownerJobId(row.jobId);
       const count = Math.max(1, Math.min(row.dailyLogCount || 1, 28));
@@ -160,7 +182,10 @@ export function seedOpsFromLiveSnapshot(): OpsSnapshot {
           date: day.toISOString().slice(0, 10),
           author: row.userName || 'User',
           isPm: Boolean(jobs.find((j) => j.id === jobId)?.pm === row.userName),
-          note: i === 0 ? `Imported from BT user×job log aggregate (${row.dailyLogCount} in window)` : undefined,
+          note:
+            i === 0
+              ? `Imported from BT user×job log aggregate (${row.dailyLogCount} in window; entry bodies not in BT reports API)`
+              : undefined,
           source: 'bt-aggregate',
           updatedAt,
         });

@@ -1,8 +1,7 @@
 import { apiOwnerDashboardProvider } from './apiProvider';
 import { mockOwnerDashboardProvider } from './mockProvider';
 import { snapshotOwnerDashboardProvider } from './snapshotProvider';
-import { nativeOwnerDashboardProvider } from '../operations/nativeProvider';
-import type { OwnerDashboardProvider } from './types';
+import type { OwnerDashboardFilters, OwnerDashboardProvider } from './types';
 
 export type BuildertrendProviderId = 'mock' | 'api' | 'snapshot' | 'native';
 
@@ -21,12 +20,24 @@ export function isNativeOwnerDashboard(): boolean {
   return envProvider() === 'native';
 }
 
+/**
+ * Lazy native provider so the Ops BT import (~1.4MB incomplete tasks) is not in the
+ * default Home/snapshot client bundle.
+ */
+const nativeOwnerDashboardProviderLazy: OwnerDashboardProvider = {
+  id: 'native',
+  async getDashboard(filters: OwnerDashboardFilters) {
+    const { nativeOwnerDashboardProvider } = await import('../operations/nativeProvider');
+    return nativeOwnerDashboardProvider.getDashboard(filters);
+  },
+};
+
 /** UI talks only to this port. Default is the baked Buildertrend read-only snapshot. */
 export function getOwnerDashboardProvider(): OwnerDashboardProvider {
   const id = envProvider();
   if (id === 'api') return apiOwnerDashboardProvider;
   if (id === 'mock') return mockOwnerDashboardProvider;
-  if (id === 'native') return nativeOwnerDashboardProvider;
+  if (id === 'native') return nativeOwnerDashboardProviderLazy;
   return snapshotOwnerDashboardProvider;
 }
 

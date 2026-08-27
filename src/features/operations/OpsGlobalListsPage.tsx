@@ -38,8 +38,8 @@ export function OpsTasksPage() {
             <p className="eyebrow">operations</p>
             <h1>All tasks</h1>
             <p className="muted">
-              Tasks across every job. Seed imports BT past-due incomplete rows; add any other tasks here for native
-              dashboard use.
+              Tasks across every job. Seed imports <strong>all incomplete</strong> Buildertrend tasks when
+              LIVE_OPS_IMPORT is present (past-due + future + no due date); Home snapshot stays past-due-only.
             </p>
           </div>
           <div className="data-page-actions">

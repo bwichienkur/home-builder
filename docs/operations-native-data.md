@@ -31,18 +31,38 @@ Then restart Vite. Home loads `nativeOwnerDashboardProvider`. Live BT/PD pull + 
 
 ## Seed / reset (BT bake import)
 
-- First load with an empty store: `seedOpsFromLiveSnapshot()` copies `LIVE_JOBS` and imports **`LIVE_DRILLDOWN`** rows:
+- First load with an empty store: `seedOpsFromLiveSnapshot()` copies `LIVE_JOBS` and imports:
+  - **`LIVE_OPS_IMPORT`** (Ops-only bake from the full local BT cache): **all incomplete tasks** (+ optional start dates / truncated descriptions)
+  - **`LIVE_DRILLDOWN`** for selections, deals, baseline slip (same as Home drilldown; unchanged)
   - jobs with WIP/CO/slip + **Gantt milestone dates** + **lifetime daily log totals**
-  - pending selections (full titles/categories/deadlines)
-  - past-due tasks (full titles/assignees/due dates) — bake is past-due only; add other tasks in Ops
-  - Pipedrive open deals (mapped into Ops stages, including expected close when present)
-  - daily logs expanded from BT user×job **rolling-window aggregates** (not full lifetime entry bodies)
-  - baseline schedule slip items (`baselineSlipByJobId`)
+  - daily logs expanded from BT user×job **rolling-window aggregates** (entry **bodies are not in the BT reports API**)
   - cashflow Money In stubs from each job’s trailing-30d revenue
   - portfolio **time metrics** + sales-performance seed from `LIVE_TIME_METRICS` / `LIVE_SALES_PERFORMANCE`
+- If `LIVE_OPS_IMPORT` is missing, tasks fall back to `LIVE_DRILLDOWN.pastDueByJobId` (past-due only).
 - **Reset from snapshot** on the hub replaces the store with a fresh seed.
 
-Live BT/PD refresh on Home **does not** update the Ops store.
+### Home snapshot isolation
+
+| Artifact | Used by | Notes |
+|----------|---------|-------|
+| `LIVE_JOBS` / `LIVE_*` in `liveSnapshot.ts` | Home dashboard | Unchanged |
+| `LIVE_DRILLDOWN` | Home drilldowns (+ Ops fallback) | Still past-due-only tasks + log aggregates |
+| `LIVE_OPS_IMPORT` (`liveOpsImport.json`) | Operations seed only | All incomplete tasks; not imported by Home |
+
+Regenerate both Home bake and Ops import from the same cache (Home files stay past-due/compact):
+
+```bash
+BUILDERTREND_COOKIE=… npm run buildertrend:pull
+npm run buildertrend:update-snapshot
+```
+
+Then **Reset from snapshot** on the Ops hub (or clear Neon ops store) to load the richer task list.
+
+Live BT/PD refresh on Home **does not** update the Ops store, and Vercel refresh stays slim (does not carry full incomplete tasks).
+
+### Daily log bodies
+
+BT Reporting only exposes **counts** (`user-daily-logs`, `daily-log-creation-by-job`). There is no wired per-entry list/detail API in this repo yet, so Ops cannot auto-import log notes/bodies. `LIVE_OPS_IMPORT.meta.logBodiesUnavailable` is always `true` until a new probe lands.
 
 ## Dashboard mapping (native)
 
@@ -74,8 +94,8 @@ Live BT/PD refresh on Home **does not** update the Ops store.
 
 ## Known bake gaps (need richer BT pull to auto-import)
 
-- Full incomplete (non-past-due) task list — slim bake keeps past-due only
-- Individual daily-log entry bodies / lifetime log rows — bake has aggregates + lifetime counts
+- ~~Full incomplete (non-past-due) task list~~ — **Ops** now seeds all incomplete via `LIVE_OPS_IMPORT` (Home drilldown still past-due-only)
+- Individual daily-log entry bodies / lifetime log rows — bake has aggregates + lifetime counts only (no BT reports API for bodies yet)
 - Closed/warranty jobs as Ops rows — only open jobs in `LIVE_JOBS`; time metrics are seeded as portfolio averages
 - Full cashflow Money Out ledger
 
