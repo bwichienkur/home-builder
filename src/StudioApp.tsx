@@ -66,12 +66,14 @@ export default function StudioApp() {
   const customCatalog = useInventoryStore((s) => s.items);
   const hydrateCatalog = useCatalogStore((s) => s.hydrate);
   const hydrateConfigurator = useConfiguratorStore((s) => s.hydrate);
+  const syncConfigurator = useConfiguratorStore((s) => s.syncFromApi);
   const allCatalog = useBuildCatalog(customCatalog);
 
   useEffect(() => {
     void hydrateCatalog();
     hydrateConfigurator();
-  }, [hydrateCatalog, hydrateConfigurator]);
+    void syncConfigurator();
+  }, [hydrateCatalog, hydrateConfigurator, syncConfigurator]);
   const {
     walls,
     openings,

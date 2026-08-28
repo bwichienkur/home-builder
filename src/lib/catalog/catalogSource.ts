@@ -1,4 +1,5 @@
 import type { CatalogItem, CatalogPlacementMode, PriceUnit } from '../../components/catalog/catalogData';
+import { enrichOlsenCatalog } from './olsenHeroModels';
 import olsenSeed from './olsenCatalogSeed.json';
 
 export type ApiCatalogProduct = {
@@ -100,7 +101,7 @@ export function mapApiProductToCatalogItem(row: ApiCatalogProduct): CatalogItem 
 
 /** Baked Olsen selections from Cost Library (offline / no DATABASE_URL). */
 export function getOlsenCatalogSeed(): CatalogItem[] {
-  return olsenSeed as CatalogItem[];
+  return enrichOlsenCatalog(olsenSeed as CatalogItem[]);
 }
 
 export function mergeCatalogItems(base: CatalogItem[], overlay: CatalogItem[]): CatalogItem[] {
