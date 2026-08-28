@@ -13,11 +13,7 @@ import {
 import { useAppNav } from './features/shell/AppNavContext';
 import { CatalogPanel } from './components/catalog/CatalogPanel';
 import { ConfiguratorBar } from './components/configurator/ConfiguratorBar';
-import { PlanVerificationPanel } from './components/configurator/PlanVerificationPanel';
-import { ProjectSetupPanel } from './components/configurator/ProjectSetupPanel';
-import { RoomSelectionNav } from './components/configurator/RoomSelectionNav';
-import { ClientSurveyPanel } from './components/configurator/ClientSurveyPanel';
-import { SignOffPanel } from './components/configurator/SignOffPanel';
+import { ConfiguratorDock } from './components/configurator/ConfiguratorDock';
 import { useBuildCatalog, useCatalogStore } from './store/catalogStore';
 import { useConfiguratorStore } from './store/configuratorStore';
 import { BomDialog } from './components/ui/BomDialog';
@@ -657,15 +653,7 @@ export default function StudioApp() {
       />
 
       {workflowStage !== 'start' && <ConfiguratorBar />}
-      {workflowStage !== 'start' && (
-        <div className="configurator-stack">
-          <ProjectSetupPanel />
-          <PlanVerificationPanel />
-          <ClientSurveyPanel />
-          <RoomSelectionNav />
-          <SignOffPanel />
-        </div>
-      )}
+      {workflowStage !== 'start' && <ConfiguratorDock />}
 
       <ElevationPreview open={elevationOpen} onClose={() => setElevationOpen(false)} />
 

@@ -1,11 +1,17 @@
 import { useMemo, useRef } from 'react';
 import { useConfiguratorStore } from '../../store/configuratorStore';
-import { PLAN_VERIFICATION_LABEL, WORKFLOW_LABEL } from '../../store/configuratorStore';
+import { PLAN_VERIFICATION_LABEL } from '../../store/configuratorStore';
 import { reconcileTakeoffWithGeometry, importedLinesSummary } from '../../lib/configurator/planReconciliation';
 import { usePlannerStore } from '../../store/plannerStore';
 import { computeProjectRollup } from '../../lib/configurator/roomRollups';
 import { useBuildCatalog } from '../../store/catalogStore';
 import { useInventoryStore } from '../../store/inventoryStore';
+
+function statusClass(status: string) {
+  if (status === 'match') return 'is-success';
+  if (status === 'review') return 'is-warn';
+  return 'is-neutral';
+}
 
 export function PlanVerificationPanel() {
   const project = useConfiguratorStore((s) => s.project);
@@ -40,17 +46,42 @@ export function PlanVerificationPanel() {
 
   if (!project || (role !== 'designer' && role !== 'admin')) return null;
 
+  const approved = project.planVerification === 'approved_for_selections';
+
   return (
     <section className="configurator-panel plan-verification-panel" aria-label="Plan verification">
-      <header>
-        <strong>Plan verification</strong>
-        <span className="configurator-status-chip">{PLAN_VERIFICATION_LABEL[project.planVerification]}</span>
-        <span className="configurator-status-chip">{WORKFLOW_LABEL[project.workflowStatus]}</span>
+      <header className="configurator-panel-header">
+        <div>
+          <p className="configurator-eyebrow">Estimator</p>
+          <strong>Plan verification</strong>
+        </div>
+        <span className={`configurator-status-chip ${approved ? 'is-success' : 'is-warn'}`}>
+          {PLAN_VERIFICATION_LABEL[project.planVerification]}
+        </span>
       </header>
 
-      <div className="configurator-panel-actions">
-        <label>
-          House plan template
+      {rollup && (
+        <div className="configurator-kpi-row">
+          <div className="configurator-kpi">
+            <span className="configurator-eyebrow">Live job delta</span>
+            <strong className={rollup.jobDelta > 0 ? 'is-upgrade' : rollup.jobDelta < 0 ? 'is-credit' : ''}>
+              {rollup.jobDelta >= 0 ? '+' : ''}${rollup.jobDelta.toLocaleString()}
+            </strong>
+          </div>
+          <div className="configurator-kpi">
+            <span className="configurator-eyebrow">Rooms</span>
+            <strong>{planRooms.length || '—'}</strong>
+          </div>
+          <div className="configurator-kpi">
+            <span className="configurator-eyebrow">Takeoff lines</span>
+            <strong>{project.takeoff?.lines.length ?? 0}</strong>
+          </div>
+        </div>
+      )}
+
+      <div className="configurator-field-grid">
+        <label className="configurator-field">
+          <span>House plan template</span>
           <select
             value={project.housePlanId ?? 'stillwater-183'}
             onChange={(e) => setHousePlanId(e.target.value)}
@@ -61,6 +92,9 @@ export function PlanVerificationPanel() {
             <option value="custom">Custom / imported</option>
           </select>
         </label>
+      </div>
+
+      <div className="configurator-panel-actions">
         <input
           ref={inputRef}
           type="file"
@@ -72,21 +106,22 @@ export function PlanVerificationPanel() {
             e.target.value = '';
           }}
         />
-        <button type="button" onClick={() => inputRef.current?.click()}>
+        <button type="button" className="configurator-btn" onClick={() => inputRef.current?.click()}>
           Import takeoff / COF qty
         </button>
         <button
           type="button"
-          disabled={project.planVerification === 'approved_for_selections'}
+          className="configurator-btn primary"
+          disabled={approved}
           onClick={() => setPlanVerification('approved_for_selections')}
         >
-          Approve for selections
+          {approved ? 'Approved for selections' : 'Approve for selections'}
         </button>
       </div>
 
       {project.takeoff && (
         <p className="muted">
-          Imported {project.takeoff.lines.length} takeoff lines from {project.takeoff.sourceFile ?? 'workbook'} ·{' '}
+          Imported from {project.takeoff.sourceFile ?? 'workbook'} ·{' '}
           {importedLinesSummary(project.takeoff)
             .slice(0, 4)
             .map((s) => `${s.sheet} (${s.count})`)
@@ -94,35 +129,33 @@ export function PlanVerificationPanel() {
         </p>
       )}
 
-      {rollup && (
-        <p className="configurator-live-pricing">
-          Live job delta: <strong>${rollup.jobDelta.toLocaleString()}</strong>
-        </p>
-      )}
-
       {reconciliation.length > 0 && (
-        <table className="configurator-mini-table">
-          <thead>
-            <tr>
-              <th>Room</th>
-              <th>Category</th>
-              <th>Imported</th>
-              <th>Geometry</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {reconciliation.slice(0, 8).map((row) => (
-              <tr key={`${row.roomName}-${row.category}`}>
-                <td>{row.roomName}</td>
-                <td>{row.category}</td>
-                <td>{row.importedQty ?? '—'}</td>
-                <td>{row.geometryQty ?? '—'}</td>
-                <td>{row.status}</td>
+        <div className="configurator-table-wrap">
+          <table className="configurator-mini-table">
+            <thead>
+              <tr>
+                <th>Room</th>
+                <th>Category</th>
+                <th>Imported</th>
+                <th>Geometry</th>
+                <th>Status</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {reconciliation.slice(0, 8).map((row) => (
+                <tr key={`${row.roomName}-${row.category}`}>
+                  <td>{row.roomName}</td>
+                  <td>{row.category}</td>
+                  <td>{row.importedQty ?? '—'}</td>
+                  <td>{row.geometryQty ?? '—'}</td>
+                  <td>
+                    <span className={`configurator-status-chip ${statusClass(row.status)}`}>{row.status}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </section>
   );

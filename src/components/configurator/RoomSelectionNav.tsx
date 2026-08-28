@@ -38,7 +38,7 @@ export function RoomSelectionNav() {
   return (
     <nav className="room-selection-nav" aria-label="Room selections">
       <button type="button" className={!activeRoomFilter ? 'active' : ''} onClick={() => setActiveRoomFilter(null)}>
-        All rooms
+        <span>All rooms</span>
         {rollup && <small>${rollup.jobDelta.toLocaleString()}</small>}
       </button>
       {rooms.map((room) => {
@@ -50,8 +50,12 @@ export function RoomSelectionNav() {
             className={activeRoomFilter === room ? 'active' : ''}
             onClick={() => setActiveRoomFilter(room)}
           >
-            {room}
-            {role !== 'client' && <small>{total >= 0 ? '+' : ''}${total.toLocaleString()}</small>}
+            <span>{room}</span>
+            {role !== 'client' && (
+              <small className={total > 0 ? 'is-upgrade' : total < 0 ? 'is-credit' : ''}>
+                {total >= 0 ? '+' : ''}${total.toLocaleString()}
+              </small>
+            )}
           </button>
         );
       })}

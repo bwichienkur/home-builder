@@ -3,7 +3,7 @@ import type { ConfiguratorRole } from '../../lib/configurator/contractTypes';
 import { PLAN_VERIFICATION_LABEL } from '../../store/configuratorStore';
 
 const ROLE_LABEL: Record<ConfiguratorRole, string> = {
-  client: 'Client survey',
+  client: 'Client',
   designer: 'Designer',
   admin: 'Admin',
 };
@@ -16,20 +16,27 @@ export function ConfiguratorBar() {
 
   if (!project) return null;
 
-  const ext = project;
+  const approved = project.planVerification === 'approved_for_selections';
 
   return (
     <div className="configurator-bar" role="region" aria-label="Selection project">
       <div className="configurator-bar-main">
-        <strong>{project.name}</strong>
-        <span>{project.planRef}</span>
-        {project.lotRef && <span>{project.lotRef}</span>}
-        <span className="configurator-status-chip">{WORKFLOW_LABEL[ext.workflowStatus]}</span>
-        <span className="configurator-status-chip">{PLAN_VERIFICATION_LABEL[ext.planVerification]}</span>
+        <div>
+          <p className="configurator-eyebrow">Selection project</p>
+          <strong>{project.name}</strong>
+        </div>
+        <div className="configurator-bar-meta">
+          <span>{project.planRef}</span>
+          {project.lotRef && <span>{project.lotRef}</span>}
+          <span className="configurator-status-chip is-info">{WORKFLOW_LABEL[project.workflowStatus]}</span>
+          <span className={`configurator-status-chip ${approved ? 'is-success' : 'is-warn'}`}>
+            {PLAN_VERIFICATION_LABEL[project.planVerification]}
+          </span>
+        </div>
       </div>
       <div className="configurator-bar-controls">
-        <label>
-          View as
+        <label className="configurator-field inline">
+          <span>View as</span>
           <select value={role} onChange={(e) => setRole(e.target.value as ConfiguratorRole)} aria-label="Configurator role">
             {(['client', 'designer', 'admin'] as ConfiguratorRole[]).map((value) => (
               <option key={value} value={value}>

@@ -5,6 +5,12 @@ import { usePlannerStore } from '../../store/plannerStore';
 import { useBuildCatalog } from '../../store/catalogStore';
 import { useInventoryStore } from '../../store/inventoryStore';
 
+function signClass(status: string) {
+  if (status === 'approved') return 'is-success';
+  if (status === 'declined') return 'is-danger';
+  return 'is-warn';
+}
+
 export function SignOffPanel() {
   const project = useConfiguratorStore((s) => s.project);
   const role = useConfiguratorStore((s) => s.role);
@@ -22,14 +28,28 @@ export function SignOffPanel() {
 
   return (
     <section className="configurator-panel signoff-panel" aria-label="Sign-off and export">
-      <header>
-        <strong>Sign-off</strong>
-        <span>COF: {project.signOff.cof}</span>
-        <span>BT: {project.signOff.buildertrend}</span>
+      <header className="configurator-panel-header">
+        <div>
+          <p className="configurator-eyebrow">Close-out</p>
+          <strong>Sign-off &amp; export</strong>
+        </div>
       </header>
 
+      <div className="configurator-sign-row">
+        <div className="configurator-sign-card">
+          <span className="configurator-eyebrow">Customer Option Form</span>
+          <span className={`configurator-status-chip ${signClass(project.signOff.cof)}`}>{project.signOff.cof}</span>
+        </div>
+        <div className="configurator-sign-card">
+          <span className="configurator-eyebrow">Buildertrend</span>
+          <span className={`configurator-status-chip ${signClass(project.signOff.buildertrend)}`}>
+            {project.signOff.buildertrend}
+          </span>
+        </div>
+      </div>
+
       {role === 'client' && project.workflowStatus === 'client_configurator' && (
-        <button type="button" onClick={() => markClientFinished()}>
+        <button type="button" className="configurator-btn primary full" onClick={() => markClientFinished()}>
           Finish remote selections — schedule meeting
         </button>
       )}
@@ -38,6 +58,7 @@ export function SignOffPanel() {
         <div className="configurator-panel-actions">
           <button
             type="button"
+            className="configurator-btn primary"
             onClick={() =>
               downloadCofExcel({
                 project,
@@ -52,13 +73,13 @@ export function SignOffPanel() {
           >
             Export COF Excel
           </button>
-          <button type="button" onClick={() => downloadBtSelectionsCsv(btRows)}>
+          <button type="button" className="configurator-btn" onClick={() => downloadBtSelectionsCsv(btRows)}>
             Export BT selections CSV
           </button>
-          <button type="button" onClick={() => setSignOff('cof', 'approved')}>
+          <button type="button" className="configurator-btn" onClick={() => setSignOff('cof', 'approved')}>
             Mark COF signed
           </button>
-          <button type="button" onClick={() => setSignOff('buildertrend', 'approved')}>
+          <button type="button" className="configurator-btn" onClick={() => setSignOff('buildertrend', 'approved')}>
             Mark BT approved
           </button>
         </div>
@@ -68,7 +89,10 @@ export function SignOffPanel() {
         <ul className="configurator-trade-summary">
           {trades.map((t) => (
             <li key={t.trade}>
-              {t.trade}: {t.count} items · upgrades ${t.upgradeTotal.toLocaleString()}
+              <strong>{t.trade}</strong>
+              <span>
+                {t.count} items · upgrades ${t.upgradeTotal.toLocaleString()}
+              </span>
             </li>
           ))}
         </ul>

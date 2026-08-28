@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useConfiguratorStore, createBlankSelectionProject } from '../../store/configuratorStore';
 import { WORKFLOW_LABEL } from '../../store/configuratorStore';
 import type { ProjectWorkflowStatus, TeamMember, TeamRole } from '../../lib/configurator/projectTypes';
@@ -12,34 +13,58 @@ export function ProjectSetupPanel() {
   const setWorkflowStatus = useConfiguratorStore((s) => s.setWorkflowStatus);
   const importContractPricingFile = useConfiguratorStore((s) => s.importContractPricingFile);
 
+  const [projectName, setProjectName] = useState('');
+  const [memberName, setMemberName] = useState('');
+  const [memberEmail, setMemberEmail] = useState('');
+  const [memberRole, setMemberRole] = useState<TeamRole>('designer');
+
   if (role !== 'admin') return null;
 
-  const addTeamMember = (teamRole: TeamRole) => {
-    const name = window.prompt(`Name for ${teamRole}?`);
-    if (!name?.trim()) return;
-    const email = window.prompt('Email (optional)?') ?? undefined;
-    const next: TeamMember[] = [...(project?.team ?? []), { role: teamRole, name: name.trim(), email: email?.trim() || undefined }];
+  const addTeamMember = () => {
+    if (!memberName.trim()) return;
+    const next: TeamMember[] = [
+      ...(project?.team ?? []),
+      { role: memberRole, name: memberName.trim(), email: memberEmail.trim() || undefined },
+    ];
     setTeam(next);
+    setMemberName('');
+    setMemberEmail('');
   };
 
   return (
     <section className="configurator-panel project-setup-panel" aria-label="Project setup">
-      <header>
-        <strong>Project admin</strong>
+      <header className="configurator-panel-header">
+        <div>
+          <p className="configurator-eyebrow">Admin</p>
+          <strong>Project setup</strong>
+        </div>
       </header>
-      <div className="configurator-panel-actions">
-        <button
-          type="button"
-          onClick={() => {
-            const name = window.prompt('Project name?');
-            if (!name?.trim()) return;
-            loadProject(createBlankSelectionProject(name.trim()));
-          }}
-        >
-          New client project
-        </button>
-        <label>
-          Workflow
+
+      <div className="configurator-field-grid">
+        <label className="configurator-field">
+          <span>New project name</span>
+          <div className="configurator-inline-row">
+            <input
+              value={projectName}
+              onChange={(e) => setProjectName(e.target.value)}
+              placeholder="e.g. 48 Hammock Beach Cir"
+            />
+            <button
+              type="button"
+              className="configurator-btn primary"
+              onClick={() => {
+                if (!projectName.trim()) return;
+                loadProject(createBlankSelectionProject(projectName.trim()));
+                setProjectName('');
+              }}
+            >
+              Create
+            </button>
+          </div>
+        </label>
+
+        <label className="configurator-field">
+          <span>Workflow stage</span>
           <select
             value={project?.workflowStatus ?? 'draft'}
             onChange={(e) => setWorkflowStatus(e.target.value as ProjectWorkflowStatus)}
@@ -52,11 +77,12 @@ export function ProjectSetupPanel() {
             ))}
           </select>
         </label>
-        <label>
-          Import contract pricing page
+
+        <label className="configurator-field">
+          <span>Contract pricing page</span>
           <input
             type="file"
-            accept=".xlsx,.xls,.pdf"
+            accept=".xlsx,.xls"
             disabled={!project}
             onChange={(e) => {
               const file = e.target.files?.[0];
@@ -66,31 +92,56 @@ export function ProjectSetupPanel() {
           />
         </label>
       </div>
+
       {project && (
-        <>
-          <div className="configurator-team-list">
+        <div className="configurator-section">
+          <div className="configurator-section-title">
             <strong>Team</strong>
-            {project.team.length === 0 && <p className="muted">No team assigned yet.</p>}
-            <ul>
+            {project.levelOverrides.length > 0 && (
+              <span className="configurator-status-chip is-info">{project.levelOverrides.length} pricing overrides</span>
+            )}
+          </div>
+
+          {project.team.length === 0 ? (
+            <p className="muted">Assign estimator, designer, PM, and client.</p>
+          ) : (
+            <ul className="configurator-team-list">
               {project.team.map((m, i) => (
                 <li key={`${m.role}-${i}`}>
-                  {m.name} · {m.role}
-                  {m.email ? ` · ${m.email}` : ''}
+                  <span className="configurator-status-chip is-neutral">{m.role}</span>
+                  <span>
+                    {m.name}
+                    {m.email ? <small className="muted"> · {m.email}</small> : null}
+                  </span>
                 </li>
               ))}
             </ul>
-            <div className="configurator-panel-actions">
-              {TEAM_ROLES.map((teamRole) => (
-                <button key={teamRole} type="button" onClick={() => addTeamMember(teamRole)}>
-                  + {teamRole}
-                </button>
-              ))}
-            </div>
-          </div>
-          {project.levelOverrides.length > 0 && (
-            <p className="muted">{project.levelOverrides.length} contract pricing override(s) loaded.</p>
           )}
-        </>
+
+          <div className="configurator-field-grid compact">
+            <label className="configurator-field">
+              <span>Name</span>
+              <input value={memberName} onChange={(e) => setMemberName(e.target.value)} placeholder="Full name" />
+            </label>
+            <label className="configurator-field">
+              <span>Role</span>
+              <select value={memberRole} onChange={(e) => setMemberRole(e.target.value as TeamRole)}>
+                {TEAM_ROLES.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="configurator-field">
+              <span>Email</span>
+              <input value={memberEmail} onChange={(e) => setMemberEmail(e.target.value)} placeholder="optional" />
+            </label>
+            <button type="button" className="configurator-btn" onClick={addTeamMember} disabled={!memberName.trim()}>
+              Add teammate
+            </button>
+          </div>
+        </div>
       )}
     </section>
   );
