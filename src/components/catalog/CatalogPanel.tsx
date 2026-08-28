@@ -6,6 +6,8 @@ import { useInventoryStore } from '../../store/inventoryStore';
 import { useBuildCatalog, useCatalogStore } from '../../store/catalogStore';
 import { CATALOG_CATEGORIES } from '../../lib/catalog/catalogSource';
 import { catalogCardImage } from '../../lib/catalog/catalogCardImage';
+import { formatCatalogPrice } from '../../lib/configurator/deltaPricing';
+import { useConfiguratorStore } from '../../store/configuratorStore';
 
 const categories = CATALOG_CATEGORIES.filter((c) => c !== 'All');
 export const roomCategories: Record<RoomType, string[]> = {
@@ -21,7 +23,6 @@ export const roomCategories: Record<RoomType, string[]> = {
   'Storage / wardrobe': ['Flooring', 'Storage', 'Cabinetry', 'Lighting', 'Decor', 'Trim'],
   Outdoor: ['Flooring', 'Seating', 'Tables', 'Lighting', 'Decor', 'Surfaces', 'Trim', 'Exterior', 'Appliances'],
 };
-const money = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
 const PAGE = 36;
 
 export const CatalogPanel = memo(function CatalogPanel({
@@ -38,6 +39,8 @@ export const CatalogPanel = memo(function CatalogPanel({
   const hydrateCatalog = useCatalogStore((s) => s.hydrate);
   const catalogLoading = useCatalogStore((s) => s.loading);
   const catalogSource = useCatalogStore((s) => s.source);
+  const role = useConfiguratorStore((s) => s.role);
+  const contract = useConfiguratorStore((s) => s.contract);
   const [q, setQ] = useState('');
   const [category, setCategory] = useState('All');
   const [vendor, setVendor] = useState('All');
@@ -201,6 +204,7 @@ export const CatalogPanel = memo(function CatalogPanel({
         <div className="catalog-grid">
           {shown.map((i) => {
             const img = catalogCardImage(i);
+            const priceView = formatCatalogPrice(i, all, contract, role);
             return (
             <article key={i.id} draggable onDragStart={(e) => e.dataTransfer.setData('catalogId', i.id)}>
               <div className="thumb" style={{ '--product-color': i.color } as CSSProperties}>
@@ -218,7 +222,10 @@ export const CatalogPanel = memo(function CatalogPanel({
               {i.level && <small className="mount-badge">{i.level}</small>}
               {i.modelUrl && <small className="mount-badge model">3D model</small>}
               {i.sku && <small>SKU {i.sku}</small>}
-              <span>{i.price !== undefined ? `${money.format(i.price)} / ${i.priceUnit ?? 'each'}` : 'Price by dealer/design'}</span>
+              <span className={priceView.included ? 'catalog-price included' : priceView.delta ? 'catalog-price delta' : 'catalog-price'}>
+                {priceView.label}
+              </span>
+              {priceView.detail && <small>{priceView.detail}</small>}
               {i.placeholderOnly && <small>Dimensionally accurate placeholder</small>}
               {i.note && <small>{i.note}</small>}
               {i.sourceUrl && (

@@ -12,7 +12,9 @@ import {
 } from 'lucide-react';
 import { useAppNav } from './features/shell/AppNavContext';
 import { CatalogPanel } from './components/catalog/CatalogPanel';
+import { ConfiguratorBar } from './components/configurator/ConfiguratorBar';
 import { useBuildCatalog, useCatalogStore } from './store/catalogStore';
+import { useConfiguratorStore } from './store/configuratorStore';
 import { BomDialog } from './components/ui/BomDialog';
 import { SelectionInspector } from './components/ui/SelectionInspector';
 import { ElevationPreview } from './components/ui/ElevationPreview';
@@ -63,11 +65,13 @@ export default function StudioApp() {
   const { closeNav } = useAppNav();
   const customCatalog = useInventoryStore((s) => s.items);
   const hydrateCatalog = useCatalogStore((s) => s.hydrate);
+  const hydrateConfigurator = useConfiguratorStore((s) => s.hydrate);
   const allCatalog = useBuildCatalog(customCatalog);
 
   useEffect(() => {
     void hydrateCatalog();
-  }, [hydrateCatalog]);
+    hydrateConfigurator();
+  }, [hydrateCatalog, hydrateConfigurator]);
   const {
     walls,
     openings,
@@ -633,6 +637,8 @@ export default function StudioApp() {
           closeProjectMenu();
         }}
       />
+
+      {workflowStage !== 'start' && <ConfiguratorBar />}
 
       <ElevationPreview open={elevationOpen} onClose={() => setElevationOpen(false)} />
 

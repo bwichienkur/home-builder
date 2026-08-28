@@ -2062,6 +2062,10 @@
   border-color: var(--accent, #0058a3);
   outline: none;
 }
+.design-start-choice-featured {
+  border-color: rgba(0, 88, 163, 0.35);
+  background: linear-gradient(180deg, rgba(0, 88, 163, 0.06), rgba(255, 255, 255, 0.98));
+}
 .design-start-back {
   justify-self: start;
   display: inline-flex;
