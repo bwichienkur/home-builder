@@ -3,7 +3,7 @@ import { Bvh, Environment, Html, Line, OrbitControls, OrthographicCamera, Perspe
 import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { usePlannerStore } from '../../store/plannerStore';
-import { catalog } from '../catalog/catalogData';
+import { useCatalogById } from '../../store/catalogStore';
 import type { FurnitureItem, Opening } from '../../types';
 import { detectRoomPolygons, roomShape, roomShapeWithHoles } from '../../lib/geometry/rooms';
 import { alignmentGuides, clampWallMountY, constrainPlacement, pointOnWall, roomFloorCenter, wallFrame, WORLD_ORIGIN } from '../../lib/geometry/placement';
@@ -595,10 +595,11 @@ function FloorMaterial({
   worldSpan?: number;
 }) {
   const inventory = useInventoryStore((s) => s.items);
+  const catalogById = useCatalogById();
   const product = useMemo(() => {
     if (!catalogId) return undefined;
-    return inventory.find((i) => i.id === catalogId) || catalog.find((i) => i.id === catalogId);
-  }, [catalogId, inventory]);
+    return catalogById.get(catalogId);
+  }, [catalogId, catalogById]);
   const textureUrl = product?.textureUrl;
   if (!textureUrl) {
     return (
@@ -1841,7 +1842,7 @@ function Furniture() {
   const update = usePlannerStore((s) => s.updateFurniture);
   const updateLive = usePlannerStore((s) => s.updateFurnitureLive);
   const custom = useInventoryStore((s) => s.items);
-  const catalogById = useMemo(() => new Map([...catalog, ...custom].map((c) => [c.id, c])), [custom]);
+  const catalogById = useCatalogById();
   const selected = items.find((i) => i.id === selectedId);
   const pending = useRef<Partial<FurnitureItem> | null>(null);
   const { gl, camera } = useThree();
@@ -2811,10 +2812,11 @@ export function Scene3D() {
   const selectSurface = usePlannerStore((s) => s.selectSurface);
   const selectRoom = usePlannerStore((s) => s.selectRoom);
   const custom = useInventoryStore((s) => s.items);
+  const catalogById = useCatalogById();
   const drop = (e: React.DragEvent) => {
     e.preventDefault();
     const id = e.dataTransfer.getData('catalogId');
-    const item = [...catalog, ...custom].find((i) => i.id === id);
+    const item = catalogById.get(id);
     if (!item) return;
     if (item.placementMode === 'ceiling-perimeter' || item.placementMode === 'floor-perimeter') {
       usePlannerStore.getState().applyPerimeterTrim(

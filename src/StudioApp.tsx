@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { useAppNav } from './features/shell/AppNavContext';
 import { CatalogPanel } from './components/catalog/CatalogPanel';
-import { catalog as catalogItems } from './components/catalog/catalogData';
+import { useBuildCatalog, useCatalogStore } from './store/catalogStore';
 import { BomDialog } from './components/ui/BomDialog';
 import { SelectionInspector } from './components/ui/SelectionInspector';
 import { ElevationPreview } from './components/ui/ElevationPreview';
@@ -62,6 +62,12 @@ export default function StudioApp() {
   const store = usePlannerStore();
   const { closeNav } = useAppNav();
   const customCatalog = useInventoryStore((s) => s.items);
+  const hydrateCatalog = useCatalogStore((s) => s.hydrate);
+  const allCatalog = useBuildCatalog(customCatalog);
+
+  useEffect(() => {
+    void hydrateCatalog();
+  }, [hydrateCatalog]);
   const {
     walls,
     openings,
@@ -117,11 +123,6 @@ export default function StudioApp() {
     window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 0);
   }, [store, closeProjectMenu]);
 
-  const allCatalog = useMemo(() => {
-    const byId = new Map(catalogItems.map((i) => [i.id, i]));
-    for (const item of customCatalog) byId.set(item.id, item);
-    return Array.from(byId.values());
-  }, [customCatalog]);
   const validation = validatePlan(walls);
   const area = validation.rooms.reduce((sum, r) => sum + roomArea(r), 0);
   const total = furniture

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { catalog } from '../../components/catalog/catalogData';
+import { residentialFlooring } from '../../components/catalog/residentialFlooring';
 import {
   clipCellToRoom,
   floorPieceSpec,
@@ -53,7 +53,7 @@ function interiorCovered(
 
 describe('floor fill layout', () => {
   it('treats oak hardwood as staggered 3D planks', () => {
-    const oak = catalog.find((i) => i.id === 'floor-oak-hardwood')!;
+    const oak = residentialFlooring.find((i) => i.id === 'floor-oak-hardwood')!;
     const spec = floorPieceSpec(oak);
     expect(spec.kind).toBe('running-bond');
     expect(spec.width).toBeCloseTo(0.127);
@@ -67,7 +67,7 @@ describe('floor fill layout', () => {
   });
 
   it('clips walnut planks to the room — no overflow, no interior gaps', () => {
-    const walnut = catalog.find((i) => i.id === 'floor-walnut-hardwood')!;
+    const walnut = residentialFlooring.find((i) => i.id === 'floor-walnut-hardwood')!;
     const spec = floorPieceSpec(walnut);
     const poses = layoutFloorPieces({ polygon: rect, spec });
     expect(poses.length).toBeGreaterThan(8);
@@ -83,7 +83,7 @@ describe('floor fill layout', () => {
   });
 
   it('lays subway as running-bond 3×6 tiles', () => {
-    const subway = catalog.find((i) => i.id === 'floor-subway-tile')!;
+    const subway = residentialFlooring.find((i) => i.id === 'floor-subway-tile')!;
     const spec = floorPieceSpec(subway);
     expect(spec.kind).toBe('running-bond');
     expect(spec.width).toBeCloseTo(0.076);
@@ -91,7 +91,7 @@ describe('floor fill layout', () => {
   });
 
   it('staggers rectangular planks along the long edge, not the short', () => {
-    const oak = catalog.find((i) => i.id === 'floor-oak-hardwood')!;
+    const oak = residentialFlooring.find((i) => i.id === 'floor-oak-hardwood')!;
     const spec = floorPieceSpec(oak);
     const poses = layoutFloorPieces({ polygon: rect, spec });
     const full = poses.filter((p) => p.sx > 0.92 && p.sz > 0.92);
@@ -119,7 +119,7 @@ describe('floor fill layout', () => {
   });
 
   it('treats 12×24 porcelain as staggered rectangles', () => {
-    const plank = catalog.find((i) => i.id === 'floor-tile-porcelain-gray')!;
+    const plank = residentialFlooring.find((i) => i.id === 'floor-tile-porcelain-gray')!;
     const spec = floorPieceSpec(plank);
     expect(spec.kind).toBe('running-bond');
     const poses = layoutFloorPieces({ polygon: rect, spec });
@@ -128,7 +128,7 @@ describe('floor fill layout', () => {
   });
 
   it('treats ceramic as a grouted grid of tiles', () => {
-    const tile = catalog.find((i) => i.id === 'floor-tile-ceramic-white')!;
+    const tile = residentialFlooring.find((i) => i.id === 'floor-tile-ceramic-white')!;
     const spec = floorPieceSpec(tile);
     const poses = layoutFloorPieces({ polygon: rect, spec });
     expect(spec.grout).toBeGreaterThan(0.002);
@@ -138,7 +138,7 @@ describe('floor fill layout', () => {
   });
 
   it('packs hex mosaic as hex pieces inside the room', () => {
-    const hex = catalog.find((i) => i.id === 'floor-tile-hex-stone')!;
+    const hex = residentialFlooring.find((i) => i.id === 'floor-tile-hex-stone')!;
     const spec = floorPieceSpec(hex);
     expect(spec.kind).toBe('hex');
     const poses = layoutFloorPieces({ polygon: rect, spec });
@@ -147,8 +147,8 @@ describe('floor fill layout', () => {
   });
 
   it('keeps carpet and concrete as a single slab', () => {
-    const carpet = catalog.find((i) => i.id === 'floor-carpet-beige')!;
-    const concrete = catalog.find((i) => i.id === 'floor-concrete-polished')!;
+    const carpet = residentialFlooring.find((i) => i.id === 'floor-carpet-beige')!;
+    const concrete = residentialFlooring.find((i) => i.id === 'floor-concrete-polished')!;
     expect(floorPieceSpec(carpet).kind).toBe('slab');
     expect(floorPieceSpec(concrete).kind).toBe('slab');
     expect(layoutFloorPieces({ polygon: rect, spec: floorPieceSpec(carpet) })).toEqual([]);

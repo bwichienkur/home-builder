@@ -178,9 +178,10 @@ describe('inventoryCatalogBridge', () => {
     expect(merged[0].archived).toBe(true);
   });
 
-  it('seeds the built-in Build catalog into Materials', () => {
+  it('seeds the built-in Olsen catalog into Materials', () => {
     const merged = mergeMissingCatalogIntoInventory([], catalog);
     expect(merged.length).toBe(catalog.length);
-    expect(merged.some((row) => row.name === 'Nord Dining Chair')).toBe(true);
+    expect(merged.some((row) => row.sku?.startsWith('C'))).toBe(true);
+    expect(merged.some((row) => row.category === 'Tile' || row.category === 'Surfaces')).toBe(true);
   });
 });

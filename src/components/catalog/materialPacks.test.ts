@@ -9,9 +9,9 @@ describe('materialPacks / realistic inventory', () => {
     expect(MODEL_PACKS.sofa.modelUrl).toMatch(/\/catalog\/models\/sofa\//);
   });
 
-  it('attaches painted PBR maps to crown and baseboard', () => {
-    const crown = catalog.find((i) => i.id === 'crown-molding-classic' || i.id === 'crown-molding');
-    const base = catalog.find((i) => i.id === 'baseboard' || i.id === 'baseboard-tall');
+  it('attaches painted PBR maps to crown and baseboard in residential pack', () => {
+    const crown = residentialFurniture.find((i) => i.id === 'crown-molding-classic' || i.id === 'crown-molding');
+    const base = residentialFurniture.find((i) => i.id === 'baseboard' || i.id === 'baseboard-tall');
     expect(crown?.textureUrl).toContain('/catalog/materials/pbr/painted/');
     expect(base?.roughnessMapUrl).toContain('painted');
   });
@@ -57,9 +57,9 @@ describe('materialPacks / realistic inventory', () => {
     expect(item.textureUrl).toBe('/custom/keep.jpg');
   });
 
-  it('keeps a photo thumbnail that matches the Khronos chair GLB', () => {
-    const chair = catalog.find((i) => i.id === 'nord-chair');
-    expect(chair?.modelUrl).toMatch(/SheenChair/);
-    expect(chair?.thumbnailUrl).toMatch(/screenshot/);
+  it('keeps Olsen tile items with PBR floor textures', () => {
+    const tile = catalog.find((i) => i.sourceTab === 'Tile-Floor' && i.textureUrl);
+    expect(tile?.textureUrl).toMatch(/^\/catalog\/floors\/pbr\//);
+    expect(tile?.priceUnit).toBe('sq ft');
   });
 });
