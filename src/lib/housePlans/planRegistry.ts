@@ -1,11 +1,12 @@
 import type { HousePlan } from './buildPlan';
 import { olsenHousePlans } from './olsenPlans';
 import { sampleHousePlans } from './samplePlans';
+import { stillwater183Plan } from './stillwater183Plan';
 import { useCrmStore } from '../../store/crmStore';
 
 /** Olsen flyer layouts plus measured open samples. */
 export function listBuiltinHousePlans(): HousePlan[] {
-  return [...olsenHousePlans, ...sampleHousePlans];
+  return [...olsenHousePlans, stillwater183Plan, ...sampleHousePlans];
 }
 
 export function getBuiltinHousePlan(id: string) {

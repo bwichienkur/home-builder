@@ -13,6 +13,9 @@ olson-data/
 .DS_Store
 *.log
 
+# Generated CAD conversions (keep source DWG only)
+plans/source/**/*.dxf
+
 data/*.json
 
 # CRM file store

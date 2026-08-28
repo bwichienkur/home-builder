@@ -52,12 +52,12 @@ export function PlanVerificationPanel() {
         <label>
           House plan template
           <select
-            value={project.housePlanId ?? 'granada'}
+            value={project.housePlanId ?? 'stillwater-183'}
             onChange={(e) => setHousePlanId(e.target.value)}
             aria-label="House plan template"
           >
-            <option value="granada">Granada (Stillwater proxy)</option>
-            <option value="stillwater">Stillwater 183</option>
+            <option value="stillwater-183">183 Stillwater (from MODEL.dwg)</option>
+            <option value="granada">Granada (flyer proxy)</option>
             <option value="custom">Custom / imported</option>
           </select>
         </label>
