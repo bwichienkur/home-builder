@@ -21,6 +21,8 @@ import {
 } from '../../lib/bidPackage';
 import { canEditTradeRates, canManageEstimates } from '../../lib/platform/roles';
 import { useAuthStore } from '../../store/authStore';
+import { useConfiguratorStore } from '../../store/configuratorStore';
+import { downloadCofExcel } from '../../lib/configurator/exportCof';
 
 const M_TO_FT = 1 / 0.3048;
 const M2_TO_SQFT = M_TO_FT * M_TO_FT;
@@ -209,6 +211,8 @@ export function BomDialog({
   const role = useAuthStore((s) => s.user?.role);
   const canEditRates = canEditTradeRates(role);
   const canEstimate = canManageEstimates(role);
+  const cofProject = useConfiguratorStore((s) => s.project);
+  const cofContract = useConfiguratorStore((s) => s.contract);
   const [quoteVendor, setQuoteVendor] = useState('');
   const [quoteLabel, setQuoteLabel] = useState('');
   const [quoteAmount, setQuoteAmount] = useState('');
@@ -882,6 +886,25 @@ export function BomDialog({
             : ESTIMATE_DISCLAIMER}
         </p>
         <footer>
+          {cofProject && cofContract && (
+            <button
+              type="button"
+              onClick={() =>
+                downloadCofExcel(
+                  {
+                    project: cofProject,
+                    contract: cofContract,
+                    catalog,
+                    furniture: items,
+                    planRooms,
+                  },
+                  `${cofProject.name.replace(/[^\w.-]+/g, '-').slice(0, 40)}-cof.xlsx`,
+                )
+              }
+            >
+              <Download size={16} /> Export COF Excel
+            </button>
+          )}
           <button onClick={download}>
             <Download size={16} /> Export CSV
           </button>

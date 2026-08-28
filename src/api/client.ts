@@ -62,3 +62,62 @@ export async function getProjectVersions(id: string) {
   if (!response.ok) throw new Error('Version history could not be loaded');
   return response.json() as Promise<{ items: { version: number; createdAt: string; note?: string }[] }>;
 }
+
+export type ApiSelectionProject = {
+  id: string;
+  name: string;
+  planRef: string;
+  lotRef?: string;
+  contract: import('../lib/configurator/contractTypes').ContractSnapshot;
+  sceneProjectId?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export async function listSelectionProjects(): Promise<ApiSelectionProject[]> {
+  const response = await fetch(`${API_URL}/api/selection-projects`, { headers: headers() });
+  if (!response.ok) throw new Error('Selection projects could not be listed');
+  const data = await response.json();
+  return data.items ?? [];
+}
+
+export async function getSelectionProject(id: string): Promise<ApiSelectionProject> {
+  const response = await fetch(`${API_URL}/api/selection-projects/${id}`, { headers: headers() });
+  if (!response.ok) throw new Error('Selection project could not be loaded');
+  return response.json();
+}
+
+export async function createSelectionProject(body: {
+  name: string;
+  planRef?: string;
+  lotRef?: string;
+  contract: ApiSelectionProject['contract'];
+  sceneProjectId?: string | null;
+}): Promise<ApiSelectionProject> {
+  const response = await fetch(`${API_URL}/api/selection-projects`, {
+    method: 'POST',
+    headers: headers(),
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) throw new Error('Selection project could not be created');
+  return response.json();
+}
+
+export async function updateSelectionProject(
+  id: string,
+  body: Partial<{
+    name: string;
+    planRef: string;
+    lotRef: string;
+    contract: ApiSelectionProject['contract'];
+    sceneProjectId: string | null;
+  }>,
+): Promise<ApiSelectionProject> {
+  const response = await fetch(`${API_URL}/api/selection-projects/${id}`, {
+    method: 'PUT',
+    headers: headers(),
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) throw new Error('Selection project could not be saved');
+  return response.json();
+}

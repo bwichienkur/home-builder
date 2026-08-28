@@ -23,6 +23,19 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const xlsxPath = join(root, 'Olsen_Cost_Library_All_Tabs_Reformatted_2026.xlsx');
 const outPath = join(root, 'src/lib/catalog/olsenCatalogSeed.json');
 const metaPath = join(root, 'src/lib/catalog/olsenCatalogMeta.json');
+const lookbookPath = join(root, 'src/lib/catalog/lookbookThumbs.json');
+
+function loadLookbookThumbs() {
+  if (!existsSync(lookbookPath)) return {};
+  try {
+    const data = JSON.parse(readFileSync(lookbookPath, 'utf8'));
+    return data.skuToThumbnail ?? {};
+  } catch {
+    return {};
+  }
+}
+
+const lookbookThumbs = loadLookbookThumbs();
 
 if (!existsSync(xlsxPath)) {
   console.error(`Missing workbook: ${xlsxPath}`);
@@ -97,6 +110,7 @@ for (const raw of rows) {
     placementSurfaces: placement.surfaces ?? ['floor'],
     ...(placement.placementMode ? { placementMode: placement.placementMode } : {}),
     ...(texturePack ?? {}),
+    ...(lookbookThumbs[costId] ? { thumbnailUrl: lookbookThumbs[costId], placeholderOnly: false } : {}),
     level,
     sourceTab: tab,
     section: row.Section ? String(row.Section) : undefined,
@@ -115,6 +129,8 @@ const meta = {
   sourceFile: 'Olsen_Cost_Library_All_Tabs_Reformatted_2026.xlsx',
   rowCount: items.length,
   tabs: [...new Set(items.map((i) => i.sourceTab))].sort(),
+  lookbookThumbs: Object.keys(lookbookThumbs).length,
+  withPhotoThumb: items.filter((i) => i.thumbnailUrl?.includes('/lookbook/')).length,
 };
 
 writeFileSync(outPath, `${JSON.stringify(items, null, 2)}\n`);

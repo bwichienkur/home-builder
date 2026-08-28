@@ -1,8 +1,9 @@
 import { useMemo } from 'react';
-import { Home, Ruler } from 'lucide-react';
+import { ClipboardList, Home, Ruler } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { listBuiltinHousePlans } from '../../lib/housePlans/planRegistry';
 import { usePlannerStore } from '../../store/plannerStore';
+import { useConfiguratorStore } from '../../store/configuratorStore';
 import { HousePlanCard } from './HousePlanThumb';
 
 /**
@@ -15,6 +16,7 @@ export function DesignStart({ onBegan }: { onBegan?: () => void }) {
   const enterHouse = usePlannerStore((s) => s.enterHouse);
   const setStudioMode = usePlannerStore((s) => s.setStudioMode);
   const setUnit = usePlannerStore((s) => s.setUnitSystem);
+  const loadStillwater183 = useConfiguratorStore((s) => s.loadStillwater183);
   const plans = useMemo(() => listBuiltinHousePlans(), []);
 
   const finish = () => {
@@ -43,6 +45,17 @@ export function DesignStart({ onBegan }: { onBegan?: () => void }) {
     finish();
   };
 
+  const startStillwater183 = () => {
+    loadStillwater183();
+    if (!applyHousePlan('granada')) {
+      applyRoomTemplate('rectangle');
+      enterHouse();
+    }
+    setStudioMode('furnish');
+    setUnit('imperial');
+    finish();
+  };
+
   return (
     <section className="design-start" aria-label="Start a job">
       <div className="design-start-panel">
@@ -53,6 +66,13 @@ export function DesignStart({ onBegan }: { onBegan?: () => void }) {
           <Link to="/plans">House plans</Link>.
         </p>
         <div className="design-start-choices">
+          <button type="button" className="design-start-choice design-start-choice-featured" onClick={startStillwater183}>
+            <ClipboardList size={28} strokeWidth={1.6} />
+            <div>
+              <strong>183 Stillwater · Veranda Bay</strong>
+              <span>Platinum contract + Olsen catalog + delta pricing</span>
+            </div>
+          </button>
           <button type="button" className="design-start-choice" onClick={startRoom}>
             <Home size={28} strokeWidth={1.6} />
             <div>

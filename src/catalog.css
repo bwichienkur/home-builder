@@ -704,3 +704,71 @@
     text-align: right;
   }
 }
+
+.catalog-price.included {
+  color: #1f6b42;
+  font-weight: 700;
+}
+.catalog-price.delta {
+  color: #9a4d00;
+  font-weight: 800;
+}
+
+.configurator-bar {
+  position: absolute;
+  z-index: 70;
+  left: 12px;
+  right: 12px;
+  top: calc(56px + env(safe-area-inset-top));
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 8px 24px rgba(17, 24, 32, 0.08);
+  border: 1px solid rgba(17, 24, 32, 0.08);
+}
+.configurator-bar-main {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  align-items: baseline;
+}
+.configurator-bar-main strong {
+  font-size: 14px;
+}
+.configurator-bar-main span {
+  font-size: 12px;
+  color: #5c6770;
+  font-weight: 600;
+}
+.configurator-bar-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.configurator-bar-controls label {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+.configurator-bar-controls select {
+  min-height: 34px;
+  border-radius: 8px;
+  border: 1px solid rgba(17, 24, 32, 0.12);
+  padding: 0 10px;
+}
+.configurator-contract-chip {
+  font-size: 12px;
+  font-weight: 700;
+  color: #0058a3;
+  background: rgba(0, 88, 163, 0.08);
+  padding: 6px 10px;
+  border-radius: 999px;
+}

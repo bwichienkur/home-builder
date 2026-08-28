@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-28T19:42:20.995Z",
+  "generatedAt": "2026-08-28T19:54:43.622Z",
   "sourceFile": "Olsen_Cost_Library_All_Tabs_Reformatted_2026.xlsx",
   "rowCount": 722,
   "tabs": [
@@ -20,5 +20,7 @@
     "Tile - Pan",
     "Tile-Floor",
     "Tile-Wall"
-  ]
+  ],
+  "lookbookThumbs": 467,
+  "withPhotoThumb": 467
 }

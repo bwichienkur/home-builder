@@ -1,4 +1,5 @@
 import type { CatalogItem, CatalogPlacementMode, PriceUnit } from '../../components/catalog/catalogData';
+import { enrichOlsenCatalog } from './olsenHeroModels';
 import olsenSeed from './olsenCatalogSeed.json';
 
 export type ApiCatalogProduct = {
@@ -17,6 +18,15 @@ export type ApiCatalogProduct = {
   placeholderOnly?: boolean;
   mountingType?: string;
   placementSurfaces?: string[];
+  placementMode?: string;
+  level?: string;
+  sourceTab?: string;
+  section?: string;
+  textureUrl?: string;
+  roughnessMapUrl?: string;
+  normalMapUrl?: string;
+  textureRepeat?: number;
+  roughness?: number;
   sourceUrl?: string;
   price?: number;
   currency?: string;
@@ -70,6 +80,15 @@ export function mapApiProductToCatalogItem(row: ApiCatalogProduct): CatalogItem 
     placeholderOnly: row.placeholderOnly ?? !row.modelUrl,
     mountingType: row.mountingType ?? 'floor',
     placementSurfaces: row.placementSurfaces ?? ['floor'],
+    placementMode: row.placementMode as CatalogItem['placementMode'],
+    level: row.level,
+    sourceTab: row.sourceTab,
+    section: row.section,
+    textureUrl: row.textureUrl,
+    roughnessMapUrl: row.roughnessMapUrl,
+    normalMapUrl: row.normalMapUrl,
+    textureRepeat: row.textureRepeat,
+    roughness: row.roughness,
     finish: row.finish,
     material: row.material,
     thumbnailUrl: row.thumbnailUrl,
@@ -82,7 +101,7 @@ export function mapApiProductToCatalogItem(row: ApiCatalogProduct): CatalogItem 
 
 /** Baked Olsen selections from Cost Library (offline / no DATABASE_URL). */
 export function getOlsenCatalogSeed(): CatalogItem[] {
-  return olsenSeed as CatalogItem[];
+  return enrichOlsenCatalog(olsenSeed as CatalogItem[]);
 }
 
 export function mergeCatalogItems(base: CatalogItem[], overlay: CatalogItem[]): CatalogItem[] {
