@@ -3,7 +3,9 @@ import type { CatalogItem } from '../../components/catalog/catalogData';
 import type { FurnitureItem, PlanRoomLabel } from '../../types';
 import { roomArea } from '../geometry/rooms';
 import type { ContractSnapshot, SelectionProject } from './contractTypes';
-import { baseItemName, formatCatalogPrice } from './deltaPricing';
+import { baseItemName, formatCatalogPrice, pricingCategoryForItem } from './deltaPricing';
+import type { ContractLevelOverride, TakeoffSnapshot } from './projectTypes';
+import { takeoffQtyForCategory } from './importTakeoff';
 
 const M2_TO_SQFT = (1 / 0.3048) ** 2;
 
@@ -30,6 +32,8 @@ export type CofExportInput = {
   catalog: CatalogItem[];
   furniture: FurnitureItem[];
   planRooms: PlanRoomLabel[];
+  takeoff?: TakeoffSnapshot;
+  levelOverrides?: ContractLevelOverride[];
 };
 
 function tabToCofSheet(sourceTab?: string): string | null {
@@ -57,14 +61,18 @@ function aggregateProductRows(
   furniture: FurnitureItem[],
   catalog: CatalogItem[],
   contract: ContractSnapshot,
+  takeoff?: TakeoffSnapshot,
+  levelOverrides: ContractLevelOverride[] = [],
 ): CofSelectionRow[] {
   const byKey = new Map<string, CofSelectionRow>();
   for (const item of furniture.filter((f) => f.placementKind !== 'stair')) {
     const product = catalog.find((p) => p.id === item.catalogId);
     if (!product) continue;
     const key = product.id;
-    const qty = 1;
-    const priceView = formatCatalogPrice(product, catalog, contract, 'designer');
+    const cat = pricingCategoryForItem(product);
+    const importedQty = cat ? takeoffQtyForCategory(takeoff, cat, product.roomTypes?.[0]) : 0;
+    const qty = importedQty > 0 ? importedQty : 1;
+    const priceView = formatCatalogPrice(product, catalog, contract, 'designer', levelOverrides);
     const unitPrice = product.price ?? product.cost;
     const existing = byKey.get(key);
     if (existing) {
@@ -92,14 +100,22 @@ function aggregateProductRows(
   return Array.from(byKey.values());
 }
 
-function floorRows(planRooms: PlanRoomLabel[], catalog: CatalogItem[], contract: ContractSnapshot): CofSelectionRow[] {
+function floorRows(
+  planRooms: PlanRoomLabel[],
+  catalog: CatalogItem[],
+  contract: ContractSnapshot,
+  takeoff?: TakeoffSnapshot,
+  levelOverrides: ContractLevelOverride[] = [],
+): CofSelectionRow[] {
   const rows: CofSelectionRow[] = [];
   for (const room of planRooms) {
     if (!room.floorCatalogId) continue;
     const product = catalog.find((p) => p.id === room.floorCatalogId);
     if (!product) continue;
-    const qty = roomArea(room.points) * M2_TO_SQFT;
-    const priceView = formatCatalogPrice(product, catalog, contract, 'designer');
+    const cat = pricingCategoryForItem(product) ?? 'floor-tile';
+    const importedQty = takeoffQtyForCategory(takeoff, cat, room.name || room.roomType);
+    const qty = importedQty > 0 ? importedQty : roomArea(room.points) * M2_TO_SQFT;
+    const priceView = formatCatalogPrice(product, catalog, contract, 'designer', levelOverrides);
     const unitPrice = product.price ?? product.cost;
     rows.push({
       area: room.name || room.roomType || 'Room',
@@ -120,8 +136,14 @@ function floorRows(planRooms: PlanRoomLabel[], catalog: CatalogItem[], contract:
 }
 
 export function buildCofRows(input: CofExportInput): Record<string, CofSelectionRow[]> {
-  const productRows = aggregateProductRows(input.furniture, input.catalog, input.contract);
-  const floors = floorRows(input.planRooms, input.catalog, input.contract);
+  const productRows = aggregateProductRows(
+    input.furniture,
+    input.catalog,
+    input.contract,
+    input.takeoff,
+    input.levelOverrides,
+  );
+  const floors = floorRows(input.planRooms, input.catalog, input.contract, input.takeoff, input.levelOverrides);
   const sheets: Record<string, CofSelectionRow[]> = {};
 
   for (const row of [...productRows, ...floors]) {
@@ -185,6 +207,16 @@ export function buildCofWorkbook(input: CofExportInput): XLSX.WorkBook {
 
   addSheet('Countertops', countertopsHeader(), rowToCountertops);
   addSheet('Tile-Floor', tileFloorHeader(), rowToTileFloor);
+  addSheet('Tile-Wall', tileFloorHeader(), rowToTileFloor);
+  addSheet('Plumbing', optionsHeader(), rowToOptions);
+  addSheet('Cabinets', optionsHeader(), rowToOptions);
+  addSheet('Trim', optionsHeader(), rowToOptions);
+  addSheet('Allowances', ['Category', 'Budget', 'Spent', 'Remaining'], (row) => [
+    row.type,
+    '',
+    row.total ?? '',
+    row.difference ?? '',
+  ]);
   addSheet('Options', optionsHeader(), rowToOptions);
 
   for (const [name, rows] of Object.entries(sheets)) {

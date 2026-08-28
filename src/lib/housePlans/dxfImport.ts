@@ -156,13 +156,23 @@ export function importDxfHousePlan(dxfText: string, name = 'Imported DXF plan'):
   if (!segments.length) {
     warnings.push('No LINE/LWPOLYLINE geometry found.');
   }
-  // Heuristic: values in the tens of thousands are often millimeters.
+  // Heuristic: values in the tens of thousands are often millimeters → convert to feet.
   const sample = segments.slice(0, 40).flatMap((s) => [s.x1, s.y1, s.x2, s.y2]);
   const maxAbs = sample.reduce((m, v) => Math.max(m, Math.abs(v)), 0);
+  let scaled = segments;
   if (maxAbs > 500) {
+    const MM_TO_FT = 1 / 304.8;
+    scaled = segments.map((s) => ({
+      x1: s.x1 * MM_TO_FT,
+      y1: s.y1 * MM_TO_FT,
+      x2: s.x2 * MM_TO_FT,
+      y2: s.y2 * MM_TO_FT,
+    }));
+    warnings.push('Converted coordinates from mm to feet.');
+  } else if (maxAbs > 50) {
     warnings.push('Coordinates look large (possibly mm). Review room sizes after import.');
   }
-  const { rooms, warnings: w2 } = segmentsToOrthogonalRooms(segments);
+  const { rooms, warnings: w2 } = segmentsToOrthogonalRooms(scaled);
   warnings.push(...w2);
   const maxX = Math.max(...rooms.map((r) => r.x + r.w), 0);
   const maxY = Math.max(...rooms.map((r) => r.y + r.h), 0);

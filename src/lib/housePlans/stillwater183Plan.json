@@ -1,0 +1,29 @@
+{
+  "id": "stillwater-183",
+  "name": "183 Stillwater · Veranda Model 183",
+  "stories": 1,
+  "beds": 0,
+  "baths": 0,
+  "livingSqFt": 2720,
+  "totalUnderRoofSqFt": 295,
+  "sourceUrl": "",
+  "note": "Imported from DXF (LINE/LWPOLYLINE). Orthogonal cell detection; review walls in Build.",
+  "floors": [
+    {
+      "id": "dxf-floor-1",
+      "name": "First story",
+      "rooms": [
+        {
+          "id": "imported-space--831--134",
+          "name": "Imported space",
+          "roomType": "Living room",
+          "x": -83.066,
+          "y": -13.43,
+          "w": 108.374,
+          "h": 25.101,
+          "ceilingFt": 9
+        }
+      ]
+    }
+  ]
+}

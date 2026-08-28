@@ -11,42 +11,83 @@ import {
   listSelectionProjects,
   updateSelectionProject,
 } from '../api/client';
+import type {
+  ExtendedSelectionProject,
+  PlanVerificationStatus,
+  ProjectWorkflowStatus,
+  SelectionSnapshot,
+  SignOffStatus,
+  SurveyResponse,
+  TakeoffSnapshot,
+  TeamMember,
+} from '../lib/configurator/projectTypes';
+import {
+  createEmptyExtendedProject,
+  PLAN_VERIFICATION_LABEL,
+  WORKFLOW_LABEL,
+} from '../lib/configurator/projectTypes';
+import { loadTakeoffFromFile } from '../lib/configurator/importTakeoff';
+import { loadContractPricingFromFile } from '../lib/configurator/importContractPricing';
+import type { FurnitureItem, PlanRoomLabel } from '../types';
 
-const STORAGE = 'roomcraft-configurator-v1';
+const STORAGE = 'roomcraft-configurator-v2';
 
 type ConfiguratorState = {
   role: ConfiguratorRole;
-  project: SelectionProject | null;
+  project: ExtendedSelectionProject | null;
   contract: ContractSnapshot | null;
   remoteId: string | null;
   syncing: boolean;
   syncError: string | null;
+  activeRoomFilter: string | null;
   hydrate: () => void;
   syncFromApi: () => Promise<void>;
   setRole: (role: ConfiguratorRole) => void;
-  loadProject: (project: SelectionProject, remoteId?: string | null) => void;
+  loadProject: (project: ExtendedSelectionProject, remoteId?: string | null) => void;
   loadStillwater183: () => void;
   setContract: (contract: ContractSnapshot) => void;
   clearProject: () => void;
   persistProject: () => Promise<void>;
+  setWorkflowStatus: (status: ProjectWorkflowStatus) => void;
+  setPlanVerification: (status: PlanVerificationStatus) => void;
+  setHousePlanId: (planId: string) => void;
+  setTeam: (team: TeamMember[]) => void;
+  importTakeoffFile: (file: File) => Promise<void>;
+  importContractPricingFile: (file: File) => Promise<void>;
+  saveSelections: (furniture: FurnitureItem[], planRooms: PlanRoomLabel[]) => void;
+  setSurvey: (survey: SurveyResponse) => void;
+  markClientFinished: () => void;
+  setSignOff: (target: 'cof' | 'buildertrend', status: SignOffStatus) => void;
+  setActiveRoomFilter: (room: string | null) => void;
 };
 
-function readState(): Pick<ConfiguratorState, 'role' | 'project' | 'contract' | 'remoteId'> {
-  if (typeof window === 'undefined') return { role: 'designer', project: null, contract: null, remoteId: null };
+function toExtended(project: SelectionProject | ExtendedSelectionProject): ExtendedSelectionProject {
+  if ('workflowStatus' in project) return project;
+  return createEmptyExtendedProject(project);
+}
+
+function readState(): Pick<ConfiguratorState, 'role' | 'project' | 'contract' | 'remoteId' | 'activeRoomFilter'> {
+  if (typeof window === 'undefined') {
+    return { role: 'designer', project: null, contract: null, remoteId: null, activeRoomFilter: null };
+  }
   try {
-    const raw = JSON.parse(localStorage.getItem(STORAGE) ?? '{}') as Partial<ConfiguratorState>;
+    const raw = JSON.parse(localStorage.getItem(STORAGE) ?? localStorage.getItem('roomcraft-configurator-v1') ?? '{}') as Partial<
+      ConfiguratorState & { project?: ExtendedSelectionProject }
+    >;
+    const project = raw.project ? toExtended(raw.project) : null;
     return {
       role: raw.role ?? 'designer',
-      project: raw.project ?? null,
-      contract: raw.contract ?? raw.project?.contract ?? null,
+      project,
+      contract: raw.contract ?? project?.contract ?? null,
       remoteId: raw.remoteId ?? null,
+      activeRoomFilter: raw.activeRoomFilter ?? null,
     };
   } catch {
-    return { role: 'designer', project: null, contract: null, remoteId: null };
+    return { role: 'designer', project: null, contract: null, remoteId: null, activeRoomFilter: null };
   }
 }
 
-function persist(state: Pick<ConfiguratorState, 'role' | 'project' | 'contract' | 'remoteId'>) {
+function persist(state: Pick<ConfiguratorState, 'role' | 'project' | 'contract' | 'remoteId' | 'activeRoomFilter'>) {
   if (typeof window === 'undefined') return;
   localStorage.setItem(STORAGE, JSON.stringify(state));
 }
@@ -55,6 +96,19 @@ const initial = readState();
 
 function isUuid(id: string) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+}
+
+function patchProject(
+  get: () => ConfiguratorState,
+  set: (partial: Partial<ConfiguratorState>) => void,
+  patch: Partial<ExtendedSelectionProject>,
+) {
+  const project = get().project;
+  if (!project) return;
+  const next = { ...project, ...patch };
+  persist({ role: get().role, project: next, contract: next.contract, remoteId: get().remoteId, activeRoomFilter: get().activeRoomFilter });
+  set({ project: next, contract: next.contract });
+  void get().persistProject();
 }
 
 export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
@@ -72,24 +126,33 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
         (remoteId && items.find((p) => p.id === remoteId)) ??
         (current && items.find((p) => p.planRef === current.planRef && p.name === current.name));
       if (match) {
-        const project: SelectionProject = {
+        const extended = (match.extended ?? {}) as Partial<ExtendedSelectionProject>;
+        const project = toExtended({
           id: match.id,
           name: match.name,
           planRef: match.planRef,
           lotRef: match.lotRef,
           contract: match.contract,
           createdAt: match.createdAt,
-        };
-        persist({ role: get().role, project, contract: match.contract, remoteId: match.id });
+          workflowStatus: extended.workflowStatus,
+          planVerification: extended.planVerification,
+          housePlanId: extended.housePlanId,
+          team: extended.team,
+          allowances: extended.allowances,
+          levelOverrides: extended.levelOverrides,
+          takeoff: extended.takeoff ?? (extended as { takeoff?: TakeoffSnapshot }).takeoff,
+          selections: extended.selections,
+          survey: extended.survey,
+          signOff: extended.signOff,
+          sceneProjectId: match.sceneProjectId,
+        } as ExtendedSelectionProject);
+        persist({ role: get().role, project, contract: match.contract, remoteId: match.id, activeRoomFilter: get().activeRoomFilter });
         set({ project, contract: match.contract, remoteId: match.id, syncing: false });
       } else {
         set({ syncing: false });
       }
     } catch (err) {
-      set({
-        syncing: false,
-        syncError: err instanceof Error ? err.message : 'Selection project sync failed',
-      });
+      set({ syncing: false, syncError: err instanceof Error ? err.message : 'Selection project sync failed' });
     }
   },
   setRole: (role) => {
@@ -97,72 +160,142 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
     set({ role });
   },
   loadProject: (project, remoteId = null) => {
-    const next = { role: get().role, project, contract: project.contract, remoteId };
+    const nextProject = toExtended(project);
+    const next = { role: get().role, project: nextProject, contract: nextProject.contract, remoteId, activeRoomFilter: get().activeRoomFilter };
     persist(next);
     set(next);
     void get().persistProject();
   },
   loadStillwater183: () => {
-    get().loadProject(STILLWATER_183_PROJECT);
+    get().loadProject(createEmptyExtendedProject(STILLWATER_183_PROJECT));
   },
   setContract: (contract) => {
-    const project = get().project;
-    const nextProject = project ? { ...project, contract } : null;
-    persist({ role: get().role, project: nextProject, contract, remoteId: get().remoteId });
-    set({ contract, project: nextProject });
-    void get().persistProject();
+    patchProject(get, set, { contract });
   },
   clearProject: () => {
-    persist({ role: get().role, project: null, contract: null, remoteId: null });
-    set({ project: null, contract: null, remoteId: null });
+    persist({ role: get().role, project: null, contract: null, remoteId: null, activeRoomFilter: null });
+    set({ project: null, contract: null, remoteId: null, activeRoomFilter: null });
   },
   persistProject: async () => {
-    const { project, contract, remoteId } = get();
-    if (!project || !contract) return;
+    const { project, remoteId } = get();
+    if (!project) return;
     try {
       const payload = {
         name: project.name,
         planRef: project.planRef,
         lotRef: project.lotRef,
-        contract,
+        contract: project.contract,
+        sceneProjectId: project.sceneProjectId ?? null,
+        extended: {
+          workflowStatus: project.workflowStatus,
+          planVerification: project.planVerification,
+          housePlanId: project.housePlanId,
+          team: project.team,
+          allowances: project.allowances,
+          levelOverrides: project.levelOverrides,
+          takeoff: project.takeoff,
+          selections: project.selections,
+          survey: project.survey,
+          signOff: project.signOff,
+        },
       };
       if (remoteId && isUuid(remoteId)) {
         const saved = await updateSelectionProject(remoteId, payload);
-        const nextProject: SelectionProject = {
-          id: saved.id,
-          name: saved.name,
-          planRef: saved.planRef,
-          lotRef: saved.lotRef,
-          contract: saved.contract,
-          createdAt: saved.createdAt,
-        };
-        persist({ role: get().role, project: nextProject, contract: saved.contract, remoteId: saved.id });
-        set({ project: nextProject, contract: saved.contract, remoteId: saved.id, syncError: null });
+        get().loadProject(
+          {
+            ...project,
+            id: saved.id,
+            createdAt: saved.createdAt,
+            ...(saved.extended ?? {}),
+          } as ExtendedSelectionProject,
+          saved.id,
+        );
       } else {
         const saved = await createSelectionProject(payload);
-        const nextProject: SelectionProject = {
-          id: saved.id,
-          name: saved.name,
-          planRef: saved.planRef,
-          lotRef: saved.lotRef,
-          contract: saved.contract,
-          createdAt: saved.createdAt,
-        };
-        persist({ role: get().role, project: nextProject, contract: saved.contract, remoteId: saved.id });
-        set({ project: nextProject, contract: saved.contract, remoteId: saved.id, syncError: null });
+        get().loadProject(
+          {
+            ...project,
+            id: saved.id,
+            createdAt: saved.createdAt,
+            ...(saved.extended ?? {}),
+          } as ExtendedSelectionProject,
+          saved.id,
+        );
       }
+      set({ syncError: null });
     } catch {
-      // Offline / no DATABASE_URL — localStorage remains source of truth.
+      // Offline fallback — localStorage remains source of truth.
     }
+  },
+  setWorkflowStatus: (workflowStatus) => patchProject(get, set, { workflowStatus }),
+  setPlanVerification: (planVerification) => {
+    patchProject(get, set, {
+      planVerification,
+      workflowStatus:
+        planVerification === 'approved_for_selections' ? 'ready_for_client_survey' : get().project?.workflowStatus ?? 'plan_verification',
+    });
+  },
+  setHousePlanId: (housePlanId) => patchProject(get, set, { housePlanId }),
+  setTeam: (team) => patchProject(get, set, { team }),
+  importTakeoffFile: async (file) => {
+    const takeoff = await loadTakeoffFromFile(file);
+    patchProject(get, set, { takeoff, workflowStatus: 'plan_verification' });
+  },
+  importContractPricingFile: async (file) => {
+    const parsed = await loadContractPricingFromFile(file);
+    const project = get().project;
+    if (!project) return;
+    patchProject(get, set, {
+      allowances: [...project.allowances, ...parsed.allowances],
+      levelOverrides: [...project.levelOverrides, ...parsed.levelOverrides],
+    });
+  },
+  saveSelections: (furniture, planRooms) => {
+    const snapshot: SelectionSnapshot = {
+      savedAt: new Date().toISOString(),
+      items: furniture
+        .filter((f) => f.placementKind !== 'stair')
+        .map((f) => ({
+          catalogId: f.catalogId,
+          qty: 1,
+          signOff: 'pending' as SignOffStatus,
+        })),
+      floorFinishes: planRooms
+        .filter((r) => r.floorCatalogId)
+        .map((r) => ({ roomId: r.id, catalogId: r.floorCatalogId!, roomName: r.name || r.roomType })),
+    };
+    patchProject(get, set, { selections: snapshot });
+  },
+  setSurvey: (survey) => patchProject(get, set, { survey, workflowStatus: 'client_configurator' }),
+  markClientFinished: () => patchProject(get, set, { workflowStatus: 'client_finished' }),
+  setSignOff: (target, status) => {
+    const project = get().project;
+    if (!project) return;
+    const signOff = { ...project.signOff, [target]: status };
+    if (target === 'cof' && status === 'approved') signOff.cofSignedAt = new Date().toISOString();
+    if (target === 'buildertrend' && status === 'approved') signOff.btSubmittedAt = new Date().toISOString();
+    const workflowStatus: ProjectWorkflowStatus =
+      status === 'approved' && target === 'cof'
+        ? 'cof_signed'
+        : status === 'approved' && target === 'buildertrend'
+          ? 'approved'
+          : project.workflowStatus;
+    patchProject(get, set, { signOff, workflowStatus });
+  },
+  setActiveRoomFilter: (activeRoomFilter) => {
+    persist({ ...get(), activeRoomFilter });
+    set({ activeRoomFilter });
   },
 }));
 
-export function createBlankSelectionProject(name: string, planRef?: string): SelectionProject {
-  return {
+export function createBlankSelectionProject(name: string, planRef?: string): ExtendedSelectionProject {
+  return createEmptyExtendedProject({
     id: `project-${Date.now()}`,
     name,
     planRef: planRef ?? name,
     contract: createPlatinumContract(name, planRef),
     createdAt: new Date().toISOString(),
-  };
+  });
 }
+
+export { WORKFLOW_LABEL, PLAN_VERIFICATION_LABEL };

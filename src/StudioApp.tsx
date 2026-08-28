@@ -13,6 +13,11 @@ import {
 import { useAppNav } from './features/shell/AppNavContext';
 import { CatalogPanel } from './components/catalog/CatalogPanel';
 import { ConfiguratorBar } from './components/configurator/ConfiguratorBar';
+import { PlanVerificationPanel } from './components/configurator/PlanVerificationPanel';
+import { ProjectSetupPanel } from './components/configurator/ProjectSetupPanel';
+import { RoomSelectionNav } from './components/configurator/RoomSelectionNav';
+import { ClientSurveyPanel } from './components/configurator/ClientSurveyPanel';
+import { SignOffPanel } from './components/configurator/SignOffPanel';
 import { useBuildCatalog, useCatalogStore } from './store/catalogStore';
 import { useConfiguratorStore } from './store/configuratorStore';
 import { BomDialog } from './components/ui/BomDialog';
@@ -67,6 +72,8 @@ export default function StudioApp() {
   const hydrateCatalog = useCatalogStore((s) => s.hydrate);
   const hydrateConfigurator = useConfiguratorStore((s) => s.hydrate);
   const syncConfigurator = useConfiguratorStore((s) => s.syncFromApi);
+  const saveConfiguratorSelections = useConfiguratorStore((s) => s.saveSelections);
+  const configuratorProject = useConfiguratorStore((s) => s.project);
   const allCatalog = useBuildCatalog(customCatalog);
 
   useEffect(() => {
@@ -74,6 +81,7 @@ export default function StudioApp() {
     hydrateConfigurator();
     void syncConfigurator();
   }, [hydrateCatalog, hydrateConfigurator, syncConfigurator]);
+
   const {
     walls,
     openings,
@@ -84,6 +92,14 @@ export default function StudioApp() {
     cameraMode,
     roomType,
   } = store;
+
+  useEffect(() => {
+    if (!configuratorProject) return;
+    const t = window.setTimeout(() => {
+      saveConfiguratorSelections(furniture, store.planRooms);
+    }, 800);
+    return () => window.clearTimeout(t);
+  }, [configuratorProject, furniture, store.planRooms, saveConfiguratorSelections]);
 
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -641,6 +657,15 @@ export default function StudioApp() {
       />
 
       {workflowStage !== 'start' && <ConfiguratorBar />}
+      {workflowStage !== 'start' && (
+        <div className="configurator-stack">
+          <ProjectSetupPanel />
+          <PlanVerificationPanel />
+          <ClientSurveyPanel />
+          <RoomSelectionNav />
+          <SignOffPanel />
+        </div>
+      )}
 
       <ElevationPreview open={elevationOpen} onClose={() => setElevationOpen(false)} />
 

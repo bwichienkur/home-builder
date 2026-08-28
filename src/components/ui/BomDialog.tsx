@@ -897,6 +897,8 @@ export function BomDialog({
                     catalog,
                     furniture: items,
                     planRooms,
+                    takeoff: cofProject.takeoff,
+                    levelOverrides: cofProject.levelOverrides,
                   },
                   `${cofProject.name.replace(/[^\w.-]+/g, '-').slice(0, 40)}-cof.xlsx`,
                 )
