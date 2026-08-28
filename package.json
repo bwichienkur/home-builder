@@ -12,6 +12,7 @@
     "catalog:extract-lookbook": "python3 scripts/extract-lookbook-thumbs.py && node scripts/build-olsen-catalog.mjs",
     "catalog:weekly-refresh": "node scripts/catalog-weekly-refresh.mjs",
     "plan:import-stillwater": "node scripts/import-stillwater-dwg.mjs",
+    "db:migrate": "node scripts/migrate-db.mjs",
     "catalog:export-vendor-import": "node scripts/export-olsen-vendor-import.mjs",
     "pipedrive:pull": "node -e \"import('./server/pipedrive/pull.js').then((m) => m.pullPipedrive().then((p) => { console.log(JSON.stringify({ ok: true, pulledAt: p.pulledAt, company: p.reports.company, openDeals: p.reports.openDeals.length, wonDeals: p.reports.wonDeals.length }, null, 2)); }).catch((e) => { console.error(e.message); process.exit(1); }))\"",
     "dashboard:update-snapshot": "vitest run scripts/update-live-snapshot.spec.ts",

@@ -7,6 +7,7 @@ import { useBuildCatalog, useCatalogStore } from '../../store/catalogStore';
 import { CATALOG_CATEGORIES } from '../../lib/catalog/catalogSource';
 import { catalogCardImage } from '../../lib/catalog/catalogCardImage';
 import { formatCatalogPrice } from '../../lib/configurator/deltaPricing';
+import { expandCatalogSelection } from '../../lib/configurator/selectionKits';
 import { useConfiguratorStore } from '../../store/configuratorStore';
 
 const categories = CATALOG_CATEGORIES.filter((c) => c !== 'All');
@@ -81,8 +82,10 @@ export const CatalogPanel = memo(function CatalogPanel({
   }, [visibleCategories]);
 
   const items = useMemo(
-    () =>
-      all
+    () => {
+      const curatedIds = new Set(project?.curatedOptions?.map((c) => c.catalogId) ?? []);
+      const clientPlatinumOnly = role === 'client';
+      return all
         .filter((i) => {
           const haystack = `${i.brand ?? ''} ${i.model ?? ''} ${i.sku ?? ''} ${i.name} ${i.category} ${i.tags?.join(' ') ?? ''}`.toLowerCase();
           const roomMatch = i.roomTypes?.length ? i.roomTypes.includes(roomType) : relevant.includes(i.category);
@@ -90,9 +93,14 @@ export const CatalogPanel = memo(function CatalogPanel({
             !activeRoomFilter ||
             i.roomTypes?.some((rt) => activeRoomFilter.toLowerCase().includes(rt.toLowerCase())) ||
             i.name.toLowerCase().includes(activeRoomFilter.toLowerCase());
+          const curatedMatch = !clientPlatinumOnly || curatedIds.size === 0 || curatedIds.has(i.id);
+          const platinumMatch =
+            !clientPlatinumOnly || !i.level || /level\s*[1-5]/i.test(i.level) || curatedIds.has(i.id);
           return (
             (!recommended || roomMatch) &&
             roomFilterMatch &&
+            curatedMatch &&
+            platinumMatch &&
             (category === 'All' || i.category === category) &&
             (vendor === 'All' || i.brand === vendor) &&
             haystack.includes(q.toLowerCase())
@@ -104,8 +112,9 @@ export const CatalogPanel = memo(function CatalogPanel({
             : sort === 'price-high'
               ? (b.price ?? -1) - (a.price ?? -1)
               : a.name.localeCompare(b.name),
-        ),
-    [all, q, category, vendor, sort, recommended, relevant, roomType, activeRoomFilter],
+        );
+    },
+    [all, q, category, vendor, sort, recommended, relevant, roomType, activeRoomFilter, role, project?.curatedOptions],
   );
 
   useEffect(() => {
@@ -141,15 +150,25 @@ export const CatalogPanel = memo(function CatalogPanel({
       onAdd?.();
       return;
     }
-    // Omit x/z so the ghost starts at the room center (visible immediately).
-    begin(i.id, i.name, i.category, i.dims, i.color, undefined, undefined, {
-      mountingType: i.mountingType,
+
+    const expanded = expandCatalogSelection(i, all);
+    const primary = expanded.items[0] ?? i;
+    begin(primary.id, primary.name, primary.category, primary.dims, primary.color, undefined, undefined, {
+      mountingType: primary.mountingType,
       clearance:
-        i.category === 'Bedroom'
+        primary.category === 'Bedroom'
           ? { front: 0.7, back: 0.05, left: 0.3, right: 0.3 }
-          : i.mountingType === 'wall'
+          : primary.mountingType === 'wall'
             ? { front: 0.05, back: 0, left: 0.05, right: 0.05 }
             : { front: 0.45, back: 0.05, left: 0.1, right: 0.1 },
+    });
+    // Auto-add behind-wall kit companions so valves/hoses aren't forgotten.
+    expanded.items.slice(1).forEach((part, idx) => {
+      usePlannerStore
+        .getState()
+        .addFurniture(part.id, part.name, part.category, part.dims, part.color, 0.4 + idx * 0.35, 0.4, {
+          mountingType: part.mountingType,
+        });
     });
     onAdd?.();
   };

@@ -1,16 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import * as XLSX from 'xlsx';
-import { parseTakeoffWorkbook } from './importTakeoff';
+import { parseTakeoffWorkbook, effectiveQty } from './importTakeoff';
 import { parseContractPricingWorkbook } from './importContractPricing';
 import { formatCatalogPrice } from './deltaPricing';
 import { catalog } from '../../components/catalog/catalogData';
-import { createPlatinumContract } from './contractTypes';
+import { createPlatinumContract, STILLWATER_183_PROJECT } from './contractTypes';
 import { computeProjectRollup } from './roomRollups';
 import { expandCatalogSelection } from './selectionKits';
 import { curateFromSurvey } from './surveyCurations';
 import { buildBtSelectionRows } from './exportBtSelections';
 import { createEmptyExtendedProject } from './projectTypes';
-import { STILLWATER_183_PROJECT } from './contractTypes';
+import stillwaterTakeoff from './stillwater183Takeoff.json';
+import { stillwater183Plan } from '../housePlans/stillwater183Plan';
 
 function sheetBuffer(rows: unknown[][]): ArrayBuffer {
   const wb = XLSX.utils.book_new();
@@ -29,6 +30,16 @@ describe('importTakeoff', () => {
     const snap = parseTakeoffWorkbook(buf, 'test.xlsx');
     expect(snap.lines.length).toBeGreaterThan(0);
     expect(snap.lines.some((l) => l.unit === 'sq ft')).toBe(true);
+  });
+
+  it('skips bare dollar budget rows without units', () => {
+    const buf = sheetBuffer([
+      ['Tile Floors matl', 23688],
+      ['Walls to 8\'', 244, 'sf'],
+    ]);
+    const snap = parseTakeoffWorkbook(buf, 'cof-tile.xlsx');
+    expect(snap.lines.some((l) => l.qty === 23688)).toBe(false);
+    expect(snap.lines.some((l) => l.qty === 244 && l.unit === 'sq ft')).toBe(true);
   });
 });
 
@@ -96,5 +107,51 @@ describe('bt export', () => {
     const project = createEmptyExtendedProject(STILLWATER_183_PROJECT);
     const rows = buildBtSelectionRows({ project, catalog, furniture: [], planRooms: [] });
     expect(Array.isArray(rows)).toBe(true);
+  });
+});
+
+describe('qty source of truth', () => {
+  it('prefers takeoff after approval when lines exist', () => {
+    const takeoff = {
+      importedAt: new Date().toISOString(),
+      qtySource: 'takeoff' as const,
+      lines: [
+        {
+          id: '1',
+          sheet: 'Tile',
+          room: "Owner's Bath",
+          category: 'shower-pan',
+          description: 'Shower Floor',
+          qty: 55,
+          unit: 'sq ft',
+          source: 'cof_xlsx' as const,
+        },
+      ],
+    };
+    expect(
+      effectiveQty({
+        planVerification: 'approved_for_selections',
+        takeoff,
+        category: 'shower-pan',
+        room: "Owner's Bath",
+        geometryQty: 40,
+      }),
+    ).toBe(55);
+  });
+});
+
+describe('stillwater pilot seed', () => {
+  it('has named rooms for COF categories', () => {
+    const names = stillwater183Plan.floors[0]!.rooms.map((r) => r.name);
+    expect(names).toEqual(
+      expect.arrayContaining(['Kitchen', "Owner's Bath", 'Bath 2', 'Bath 3', 'Laundry', 'Great Room']),
+    );
+    expect(stillwater183Plan.floors[0]!.rooms.length).toBeGreaterThanOrEqual(12);
+  });
+
+  it('seeds takeoff with COF tile/granite qty', () => {
+    expect(stillwaterTakeoff.lines.length).toBeGreaterThan(20);
+    expect(stillwaterTakeoff.lines.some((l) => l.category === 'floor-tile' && l.qty >= 2000)).toBe(true);
+    expect(stillwaterTakeoff.lines.some((l) => l.category === 'shower-pan' && l.room === "Owner's Bath")).toBe(true);
   });
 });

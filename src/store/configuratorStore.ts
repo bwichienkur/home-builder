@@ -29,6 +29,10 @@ import {
 import { loadTakeoffFromFile } from '../lib/configurator/importTakeoff';
 import { loadContractPricingFromFile } from '../lib/configurator/importContractPricing';
 import type { FurnitureItem, PlanRoomLabel } from '../types';
+import stillwaterTakeoffSeed from '../lib/configurator/stillwater183Takeoff.json';
+import type { CuratedSelectionOption } from '../lib/configurator/projectTypes';
+import { usePlannerStore } from './plannerStore';
+import { getHousePlan } from '../lib/housePlans/planRegistry';
 
 const STORAGE = 'roomcraft-configurator-v2';
 
@@ -56,6 +60,7 @@ type ConfiguratorState = {
   importContractPricingFile: (file: File) => Promise<void>;
   saveSelections: (furniture: FurnitureItem[], planRooms: PlanRoomLabel[]) => void;
   setSurvey: (survey: SurveyResponse) => void;
+  setCuratedOptions: (options: CuratedSelectionOption[]) => void;
   markClientFinished: () => void;
   setSignOff: (target: 'cof' | 'buildertrend', status: SignOffStatus) => void;
   setActiveRoomFilter: (room: string | null) => void;
@@ -167,7 +172,19 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
     void get().persistProject();
   },
   loadStillwater183: () => {
-    get().loadProject(createEmptyExtendedProject(STILLWATER_183_PROJECT));
+    const base = createEmptyExtendedProject(STILLWATER_183_PROJECT);
+    get().loadProject({
+      ...base,
+      housePlanId: 'stillwater-183',
+      workflowStatus: 'plan_verification',
+      planVerification: 'in_review',
+      takeoff: {
+        ...(stillwaterTakeoffSeed as TakeoffSnapshot),
+        importedAt: new Date().toISOString(),
+      },
+    });
+    const plan = getHousePlan('stillwater-183');
+    if (plan) usePlannerStore.getState().applyHousePlanObject(plan);
   },
   setContract: (contract) => {
     patchProject(get, set, { contract });
@@ -196,6 +213,7 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
           takeoff: project.takeoff,
           selections: project.selections,
           survey: project.survey,
+          curatedOptions: project.curatedOptions,
           signOff: project.signOff,
         },
       };
@@ -229,13 +247,29 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
   },
   setWorkflowStatus: (workflowStatus) => patchProject(get, set, { workflowStatus }),
   setPlanVerification: (planVerification) => {
+    const project = get().project;
+    const takeoff = project?.takeoff
+      ? {
+          ...project.takeoff,
+          qtySource:
+            planVerification === 'approved_for_selections' && project.takeoff.lines.length > 0
+              ? ('takeoff' as const)
+              : project.takeoff.qtySource ?? ('auto' as const),
+        }
+      : undefined;
     patchProject(get, set, {
       planVerification,
+      takeoff,
       workflowStatus:
-        planVerification === 'approved_for_selections' ? 'ready_for_client_survey' : get().project?.workflowStatus ?? 'plan_verification',
+        planVerification === 'approved_for_selections' ? 'ready_for_client_survey' : project?.workflowStatus ?? 'plan_verification',
     });
   },
-  setHousePlanId: (housePlanId) => patchProject(get, set, { housePlanId }),
+  setHousePlanId: (housePlanId) => {
+    patchProject(get, set, { housePlanId });
+    if (housePlanId === 'custom') return;
+    const plan = getHousePlan(housePlanId);
+    if (plan) usePlannerStore.getState().applyHousePlanObject(plan);
+  },
   setTeam: (team) => patchProject(get, set, { team }),
   importTakeoffFile: async (file) => {
     const takeoff = await loadTakeoffFromFile(file);
@@ -267,6 +301,7 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
     patchProject(get, set, { selections: snapshot });
   },
   setSurvey: (survey) => patchProject(get, set, { survey, workflowStatus: 'client_configurator' }),
+  setCuratedOptions: (curatedOptions) => patchProject(get, set, { curatedOptions }),
   markClientFinished: () => patchProject(get, set, { workflowStatus: 'client_finished' }),
   setSignOff: (target, status) => {
     const project = get().project;

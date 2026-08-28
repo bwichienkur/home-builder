@@ -1,9 +1,5 @@
 import type { HousePlan } from './buildPlan';
-import stillwaterSeed from './stillwater183Plan.json';
+import planJson from './stillwater183Plan.json';
 
-/** Baked house plan from Olsen MODEL.dwg (wall-layer import). Regenerate via npm run plan:import-stillwater */
-export const stillwater183Plan: HousePlan = {
-  ...(stillwaterSeed as HousePlan),
-  id: 'stillwater-183',
-  name: '183 Stillwater · Veranda Model 183',
-};
+/** Baked Stillwater 183 house plan. Regenerate JSON when rooms change. */
+export const stillwater183Plan = planJson as HousePlan;
