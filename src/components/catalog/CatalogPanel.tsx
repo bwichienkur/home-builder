@@ -1,24 +1,25 @@
 import { ExternalLink, Search, X } from 'lucide-react';
 import { memo, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { usePlannerStore } from '../../store/plannerStore';
-import { catalog } from './catalogData';
 import type { RoomType } from '../../types';
 import { useInventoryStore } from '../../store/inventoryStore';
+import { useBuildCatalog, useCatalogStore } from '../../store/catalogStore';
+import { CATALOG_CATEGORIES } from '../../lib/catalog/catalogSource';
 import { catalogCardImage } from '../../lib/catalog/catalogCardImage';
 
-const categories = ['All', 'Flooring', 'Appliances', 'Cabinetry', 'Surfaces', 'Tile', 'Plumbing', 'Paneling', 'Trim', 'Seating', 'Tables', 'Storage', 'Bedroom', 'Lighting', 'Decor', 'Textiles'];
+const categories = CATALOG_CATEGORIES.filter((c) => c !== 'All');
 export const roomCategories: Record<RoomType, string[]> = {
-  Bedroom: ['Flooring', 'Bedroom', 'Storage', 'Lighting', 'Decor', 'Textiles', 'Trim'],
-  'Living room': ['Flooring', 'Seating', 'Tables', 'Storage', 'Lighting', 'Decor', 'Textiles', 'Paneling', 'Trim'],
-  Bathroom: ['Flooring', 'Plumbing', 'Cabinetry', 'Tile', 'Surfaces', 'Lighting', 'Trim'],
-  Kitchen: ['Flooring', 'Appliances', 'Cabinetry', 'Surfaces', 'Plumbing', 'Tile', 'Seating', 'Lighting', 'Trim'],
-  'Dining room': ['Flooring', 'Seating', 'Tables', 'Storage', 'Lighting', 'Decor', 'Textiles', 'Trim'],
-  Office: ['Flooring', 'Tables', 'Seating', 'Storage', 'Lighting', 'Decor', 'Textiles', 'Trim'],
-  'Children’s room': ['Flooring', 'Bedroom', 'Storage', 'Lighting', 'Decor', 'Textiles', 'Trim'],
+  Bedroom: ['Flooring', 'Tile', 'Bedroom', 'Storage', 'Lighting', 'Decor', 'Textiles', 'Trim', 'Doors', 'Windows'],
+  'Living room': ['Flooring', 'Seating', 'Tables', 'Storage', 'Lighting', 'Decor', 'Textiles', 'Paneling', 'Trim', 'Doors', 'Windows', 'Surfaces'],
+  Bathroom: ['Flooring', 'Plumbing', 'Cabinetry', 'Tile', 'Surfaces', 'Lighting', 'Trim', 'Doors'],
+  Kitchen: ['Flooring', 'Appliances', 'Cabinetry', 'Surfaces', 'Plumbing', 'Tile', 'Seating', 'Lighting', 'Trim', 'Doors', 'Windows'],
+  'Dining room': ['Flooring', 'Seating', 'Tables', 'Storage', 'Lighting', 'Decor', 'Textiles', 'Trim', 'Doors'],
+  Office: ['Flooring', 'Tables', 'Seating', 'Storage', 'Lighting', 'Decor', 'Textiles', 'Trim', 'Doors', 'Windows'],
+  'Children’s room': ['Flooring', 'Bedroom', 'Storage', 'Lighting', 'Decor', 'Textiles', 'Trim', 'Doors'],
   Laundry: ['Flooring', 'Appliances', 'Cabinetry', 'Storage', 'Surfaces', 'Plumbing', 'Lighting', 'Trim'],
-  Hallway: ['Flooring', 'Storage', 'Tables', 'Lighting', 'Decor', 'Textiles', 'Trim'],
+  Hallway: ['Flooring', 'Storage', 'Tables', 'Lighting', 'Decor', 'Textiles', 'Trim', 'Doors'],
   'Storage / wardrobe': ['Flooring', 'Storage', 'Cabinetry', 'Lighting', 'Decor', 'Trim'],
-  Outdoor: ['Flooring', 'Seating', 'Tables', 'Lighting', 'Decor', 'Surfaces', 'Trim'],
+  Outdoor: ['Flooring', 'Seating', 'Tables', 'Lighting', 'Decor', 'Surfaces', 'Trim', 'Exterior', 'Appliances'],
 };
 const money = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
 const PAGE = 36;
@@ -34,6 +35,9 @@ export const CatalogPanel = memo(function CatalogPanel({
 }) {
   const begin = usePlannerStore((s) => s.beginPlacement);
   const custom = useInventoryStore((s) => s.items);
+  const hydrateCatalog = useCatalogStore((s) => s.hydrate);
+  const catalogLoading = useCatalogStore((s) => s.loading);
+  const catalogSource = useCatalogStore((s) => s.source);
   const [q, setQ] = useState('');
   const [category, setCategory] = useState('All');
   const [vendor, setVendor] = useState('All');
@@ -43,12 +47,12 @@ export const CatalogPanel = memo(function CatalogPanel({
   const [visibleCount, setVisibleCount] = useState(PAGE);
   const listRef = useRef<HTMLDivElement>(null);
   const relevant = roomCategories[roomType];
-  const all = useMemo(() => {
-    // Inventory can mirror catalog starter SKUs — keep one row per id (inventory wins).
-    const byId = new Map(catalog.map((i) => [i.id, i]));
-    for (const item of custom) byId.set(item.id, item);
-    return Array.from(byId.values());
-  }, [custom]);
+  const baseCatalog = useBuildCatalog(custom);
+  const all = useMemo(() => baseCatalog, [baseCatalog]);
+
+  useEffect(() => {
+    void hydrateCatalog();
+  }, [hydrateCatalog]);
   const vendors = useMemo(() => ['All', ...Array.from(new Set(all.map((i) => i.brand).filter(Boolean) as string[])).sort()], [all]);
   const visibleCategories = recommended
     ? ['All', ...Array.from(new Set([...relevant, ...custom.filter((i) => i.roomTypes?.includes(roomType)).map((i) => i.category)]))]
@@ -164,7 +168,10 @@ export const CatalogPanel = memo(function CatalogPanel({
           />
           Recommended for this room
         </label>
-        <p className="catalog-disclaimer">Reference prices and dimensions help you plan — not a final quote.</p>
+        <p className="catalog-disclaimer">
+          Olsen Cost Library reference pricing — not a final quote.
+          {catalogSource === 'seed+api' ? ' Live catalog synced.' : catalogLoading ? ' Syncing…' : ''}
+        </p>
         <div className="search">
           <Search size={15} />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search products, SKU, or brands" />
@@ -208,6 +215,7 @@ export const CatalogPanel = memo(function CatalogPanel({
               {i.placementMode === 'floor-fill' && (
                 <small className="mount-badge">3D floor fill</small>
               )}
+              {i.level && <small className="mount-badge">{i.level}</small>}
               {i.modelUrl && <small className="mount-badge model">3D model</small>}
               {i.sku && <small>SKU {i.sku}</small>}
               <span>{i.price !== undefined ? `${money.format(i.price)} / ${i.priceUnit ?? 'each'}` : 'Price by dealer/design'}</span>

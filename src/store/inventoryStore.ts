@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { starterInventoryItems, type CatalogItem } from '../components/catalog/catalogData';
+import type { CatalogItem } from '../components/catalog/catalogData';
 
 type ImportMode = 'create-update' | 'create-only' | 'replace-vendor';
 type InventoryState = {
@@ -12,8 +12,6 @@ type InventoryState = {
 };
 
 const STORAGE = 'roomcraft-vendor-inventory-v1';
-const STARTER_FLAG = 'roomcraft-starter-furniture-v1';
-
 const read = () => {
   try {
     return JSON.parse(localStorage.getItem(STORAGE) ?? '[]') as CatalogItem[];
@@ -24,27 +22,7 @@ const read = () => {
 
 const persist = (items: CatalogItem[]) => localStorage.setItem(STORAGE, JSON.stringify(items));
 
-/** One-time seed of realistic residential furnishings into local inventory. */
-function seedStarterInventory(existing: CatalogItem[]): CatalogItem[] {
-  if (typeof window === 'undefined') return existing;
-  if (localStorage.getItem(STARTER_FLAG) === '1') return existing;
-  const starter = starterInventoryItems();
-  const byKey = new Set(existing.map((i) => `${i.vendorId ?? i.brand}|${i.sku ?? i.id}`));
-  const merged = [...existing];
-  for (const item of starter) {
-    const key = `${item.vendorId ?? item.brand}|${item.sku ?? item.id}`;
-    if (byKey.has(key)) continue;
-    merged.push(item);
-    byKey.add(key);
-  }
-  persist(merged);
-  localStorage.setItem(STARTER_FLAG, '1');
-  localStorage.setItem(`${STORAGE}-date`, new Date().toISOString());
-  return merged;
-}
-
-const initialItems =
-  typeof window === 'undefined' ? [] : seedStarterInventory(read());
+const initialItems = typeof window === 'undefined' ? [] : read();
 
 export const useInventoryStore = create<InventoryState>((set, get) => ({
   items: initialItems,

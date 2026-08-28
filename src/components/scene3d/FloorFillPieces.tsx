@@ -1,8 +1,7 @@
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import type { Point } from '../../types';
-import { catalog } from '../catalog/catalogData';
-import { useInventoryStore } from '../../store/inventoryStore';
+import { useCatalogById } from '../../store/catalogStore';
 import { roomPolygonWorld, roomShapeWithHoles } from '../../lib/geometry/rooms';
 import {
   FLOOR_FILL_TOP_Y,
@@ -98,10 +97,10 @@ export function FloorFillPieces({
   userData?: Record<string, unknown>;
   onClick?: (e: any) => void;
 }) {
-  const inventory = useInventoryStore((s) => s.items);
+  const catalogById = useCatalogById();
   const product = useMemo(
-    () => inventory.find((i) => i.id === catalogId) || catalog.find((i) => i.id === catalogId),
-    [catalogId, inventory],
+    () => catalogById.get(catalogId),
+    [catalogId, catalogById],
   );
   const polygon = useMemo(() => roomPolygonWorld(points), [points]);
   const spec = useMemo(

@@ -1,118 +1,62 @@
-import { residentialFlooring } from './residentialFlooring';
-import { residentialFurniture } from './residentialFurniture';
-import { enrichCatalogSurfaces } from './materialPacks';
+import type { CatalogPlacementMode, PriceUnit } from './catalogTypes';
+import { getOlsenCatalogSeed } from '../../lib/catalog/catalogSource';
 
-export type PriceUnit='each'|'set'|'box'|'sq ft'|'linear ft'|'allowance';
-export type CatalogPlacementMode = 'wall-art' | 'ceiling-perimeter' | 'floor-perimeter' | 'floor-fill';
-export type CatalogItem={id:string;sku?:string;vendorId?:string;name:string;brand?:string;model?:string;category:string;subcategory?:string;roomTypes?:string[];tags?:string[];dims:[number,number,number];color:string;price?:number;msrp?:number;cost?:number;laborCost?:number;currency?:string;priceUnit?:PriceUnit;priceVerifiedAt?:string;sellable?:boolean;placeholderOnly?:boolean;mountingType?:string;placementSurfaces?:string[];placementMode?:CatalogPlacementMode;finish?:string;material?:string;variantGroup?:string;variantName?:string;availability?:string;leadTimeDays?:number;thumbnailUrl?:string;/** Albedo / pattern map shown on room floors (floor-fill) or product faces. */textureUrl?:string;/** Optional roughness map (linear) for floor-fill / surface PBR. */roughnessMapUrl?:string;/** Optional normal map for floor-fill / surface PBR. */normalMapUrl?:string;/** Optional metalness map for appliance / metal surfaces. */metalnessMapUrl?:string;/** World meters covered by one texture repeat (smaller = denser pattern). */textureRepeat?:number;roughness?:number;modelUrl?:string;lowPolyModelUrl?:string;emoji:string;sourceUrl?:string;sourceLabel?:string;note?:string};
+export type { CatalogPlacementMode, PriceUnit } from './catalogTypes';
 
-const SAMPLE={
- chair:'https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/SheenChair/glTF-Binary/SheenChair.glb',
- lamp:'https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/Lantern/glTF-Binary/Lantern.glb',
- box:'https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/Box/glTF-Binary/Box.glb',
- chairShot:'https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/SheenChair/screenshot/screenshot.jpg',
+export type CatalogItem = {
+  id: string;
+  sku?: string;
+  vendorId?: string;
+  name: string;
+  brand?: string;
+  model?: string;
+  category: string;
+  subcategory?: string;
+  roomTypes?: string[];
+  tags?: string[];
+  dims: [number, number, number];
+  color: string;
+  price?: number;
+  msrp?: number;
+  cost?: number;
+  laborCost?: number;
+  currency?: string;
+  priceUnit?: PriceUnit;
+  priceVerifiedAt?: string;
+  sellable?: boolean;
+  placeholderOnly?: boolean;
+  mountingType?: string;
+  placementSurfaces?: string[];
+  placementMode?: CatalogPlacementMode;
+  finish?: string;
+  material?: string;
+  variantGroup?: string;
+  variantName?: string;
+  availability?: string;
+  leadTimeDays?: number;
+  thumbnailUrl?: string;
+  textureUrl?: string;
+  roughnessMapUrl?: string;
+  normalMapUrl?: string;
+  metalnessMapUrl?: string;
+  textureRepeat?: number;
+  roughness?: number;
+  modelUrl?: string;
+  lowPolyModelUrl?: string;
+  emoji: string;
+  sourceUrl?: string;
+  sourceLabel?: string;
+  note?: string;
+  /** Olsen tier e.g. "Level 5" — used for contract delta pricing. */
+  level?: string;
+  sourceTab?: string;
+  section?: string;
 };
 
-const legacyCatalog: CatalogItem[] = [
- {id:'nord-chair',name:'Nord Dining Chair',category:'Seating',dims:[.52,.56,.82],color:'#b26c45',price:129,emoji:'🪑',mountingType:'floor',placementSurfaces:['floor'],modelUrl:SAMPLE.chair,lowPolyModelUrl:SAMPLE.chair,thumbnailUrl:SAMPLE.chairShot,roomTypes:['Dining room','Living room','Office']},
- {id:'linen-sofa',name:'Linen Modular Sofa',category:'Seating',dims:[2.2,.88,.78],color:'#b8b1a3',price:1299,emoji:'🛋️',mountingType:'floor',placementSurfaces:['floor'],roomTypes:['Living room']},
- {id:'oak-table',name:'Solid Oak Table',category:'Tables',dims:[1.8,.9,.76],color:'#9a7048',price:699,emoji:'▰',mountingType:'floor',placementSurfaces:['floor']},
- {id:'side-table',name:'Pebble Side Table',category:'Tables',dims:[.48,.48,.5],color:'#6e746e',price:189,emoji:'●',mountingType:'floor',placementSurfaces:['floor']},
- {id:'bookcase',name:'Arch Bookcase',category:'Storage',dims:[1.1,.34,2],color:'#7e5f45',price:549,emoji:'▥',mountingType:'floor',placementSurfaces:['floor'],roomTypes:['Bedroom','Living room','Office','Storage / wardrobe']},
- {id:'queen-bed',name:'Cloud Platform Bed',category:'Bedroom',dims:[1.7,2.1,.55],color:'#d2c5b4',price:899,emoji:'▭',mountingType:'floor',placementSurfaces:['floor'],roomTypes:['Bedroom','Children’s room']},
- // Proxy only — Khronos Lantern GLB is street-scale and previously blew up when fit re-ran.
- {id:'floor-lamp',name:'Arc Floor Lamp',category:'Lighting',dims:[.45,.45,1.75],color:'#333a36',price:219,emoji:'◉',mountingType:'floor',placementSurfaces:['floor'],roomTypes:['Bedroom','Living room','Office']},
- {id:'wall-sconce',name:'Halo Wall Sconce',category:'Lighting',dims:[.18,.12,.28],color:'#d9dde2',price:79,emoji:'☼',mountingType:'wall',placementSurfaces:['wall'],roomTypes:['Bedroom','Hallway','Bathroom','Living room']},
- {id:'wall-art',name:'Canvas Print Set',category:'Decor',dims:[1.2,.04,.8],color:'#e7e2d8',price:149,emoji:'▦',mountingType:'wall',placementSurfaces:['wall'],roomTypes:['Bedroom','Living room','Hallway']},
- // Generic test products — local SVG “pictures” + simple proxies (no proprietary assets).
- {id:'test-mirror',name:'Oval Wall Mirror',category:'Decor',dims:[.7,.04,1.1],color:'#c5ccd2',price:79,emoji:'◯',mountingType:'wall',placementSurfaces:['wall'],thumbnailUrl:'/catalog/mirror-oval.svg',tags:['mirror','wall','test'],roomTypes:['Bedroom','Bathroom','Hallway','Living room']},
- {id:'test-picture-landscape',name:'Landscape Picture',category:'Decor',dims:[1.0,.03,.72],color:'#5c6670',price:49,emoji:'🖼',mountingType:'wall',placementSurfaces:['wall'],thumbnailUrl:'/catalog/picture-landscape.svg',tags:['picture','frame','wall','test'],roomTypes:['Bedroom','Living room','Hallway','Office']},
- {id:'test-picture-abstract',name:'Abstract Picture',category:'Decor',dims:[.72,.03,.96],color:'#1f2a28',price:59,emoji:'🖼',mountingType:'wall',placementSurfaces:['wall'],thumbnailUrl:'/catalog/picture-abstract.svg',tags:['picture','frame','wall','test'],roomTypes:['Living room','Office','Hallway']},
- {id:'test-picture-botanical',name:'Botanical Picture',category:'Decor',dims:[.64,.03,.84],color:'#6b4f36',price:45,emoji:'🖼',mountingType:'wall',placementSurfaces:['wall'],thumbnailUrl:'/catalog/picture-botanical.svg',tags:['picture','frame','wall','test'],roomTypes:['Bedroom','Living room','Hallway']},
- {id:'test-window-panel',name:'Window Panel Accent',category:'Decor',dims:[1.2,.05,1.0],color:'#bce4ec',price:119,emoji:'▦',mountingType:'wall',placementSurfaces:['wall'],tags:['window','panel','wall','test'],roomTypes:['Bedroom','Living room','Hallway']},
- {id:'test-dresser',name:'Simple Dresser',category:'Storage',dims:[1.2,.45,.8],color:'#8b7355',price:299,emoji:'▥',mountingType:'floor',placementSurfaces:['floor'],tags:['test','storage'],roomTypes:['Bedroom','Hallway']},
- {id:'test-wardrobe',name:'Simple Wardrobe',category:'Storage',dims:[1.0,.58,2.1],color:'#6e5a45',price:449,emoji:'▥',mountingType:'floor',placementSurfaces:['floor'],tags:['test','wardrobe'],roomTypes:['Bedroom','Storage / wardrobe']},
- {id:'test-rug',name:'Wool Area Rug',category:'Textiles',dims:[2.0,1.4,.02],color:'#8c5a4a',price:179,emoji:'▭',mountingType:'floor',placementSurfaces:['floor'],tags:['test','rug'],roomTypes:['Bedroom','Living room','Office']},
- {id:'test-coffee-table',name:'Low Coffee Table',category:'Tables',dims:[1.1,.6,.4],color:'#4a4540',price:159,emoji:'●',mountingType:'floor',placementSurfaces:['floor'],tags:['test'],roomTypes:['Living room']},
- {id:'plant',name:'Olive Tree',category:'Decor',dims:[.65,.65,1.65],color:'#65765d',price:89,emoji:'♧',mountingType:'floor',placementSurfaces:['floor']},
- // Architectural trim — applied as a full perimeter run (not free-floor ghost place).
- {id:'crown-molding',name:'Crown Molding',category:'Trim',dims:[1,.05,.09],color:'#f4f1ea',price:4.5,priceUnit:'linear ft',emoji:'⌐',mountingType:'ceiling',placementSurfaces:['ceiling'],placementMode:'ceiling-perimeter',tags:['trim','crown','molding'],roomTypes:['Bedroom','Living room','Dining room','Office','Hallway','Children’s room','Bathroom','Kitchen','Laundry'],note:'Applies along the ceiling–wall junction of the focused room'},
- {id:'baseboard',name:'Baseboard',category:'Trim',dims:[1,.015,.09],color:'#f7f4ed',price:2.75,priceUnit:'linear ft',emoji:'▬',mountingType:'floor',placementSurfaces:['floor'],placementMode:'floor-perimeter',tags:['trim','baseboard','molding'],roomTypes:['Bedroom','Living room','Dining room','Office','Hallway','Children’s room','Bathroom','Kitchen','Laundry'],note:'Applies along the floor–wall junction of the focused room'},
- // Brands publicly shown in Olsen projects. MSRP is a manufacturer reference,
- // never an Olsen installed-price quote.
- {id:'subzero-cl3650u-panel-ready',name:'36” Classic Over-and-Under Refrigerator',brand:'Sub-Zero',model:'CL3650U/O',category:'Appliances',dims:[.9144,.6096,2.1336],color:'#d8d9d7',price:12575,emoji:'▣',sourceUrl:'https://www.subzero-wolf.com/products/36-classic-over-and-under-refrigerator-freezer-panel-ready-5310972-2748e1850fe070a9bdc4d6ef599ec165/5310972-2748e1850fe070a9bdc4d6ef599ec165',sourceLabel:'Official Sub-Zero page',note:'Panel ready · 36” W × 24” D × 84” H'},
- {id:'wolf-gr366',name:'36” Gas Range — 6 Burners',brand:'Wolf',model:'GR366',category:'Appliances',dims:[.9112,.7207,.9398],color:'#aeb2b3',price:8955,emoji:'▤',sourceUrl:'https://www.subzero-wolf.com/products/36-gas-range-6-burners-5610212-00a3f3e6a569206f40d97c0fbf15aa2d/5610212-00a3f3e6a569206f40d97c0fbf15aa2d',sourceLabel:'Official Wolf page',note:'35⅞” W × 28⅜” D × 37” H'},
- {id:'uline-hbv524',name:'24” Beverage Center',brand:'U-Line',model:'HBV524',category:'Appliances',dims:[.6001,.5953,.8557],color:'#252827',price:5289,emoji:'▥',sourceUrl:'https://www.u-line.com/hbv524.html',sourceLabel:'Official U-Line page',note:'5.1 cu. ft. · 23⅝” W × 23⁷⁄₁₆” D × 33¹¹⁄₁₆” H'},
- {id:'schrock-steam-base-module',name:'Steam Maple Base Cabinet Module',brand:'Schrock Cabinetry',model:'Steam on Maple',category:'Cabinetry',dims:[.9144,.6096,.8763],color:'#eeeae0',emoji:'▦',sourceUrl:'https://www.schrock.com/products/finishes/steam/maple',sourceLabel:'Official Schrock finish',note:'Representative 36” base module · final design and price required'},
- {id:'pompeii-coastal-island',name:'Coastal Quartz Island Surface',brand:'Pompeii Quartz',model:'Coastal',category:'Surfaces',dims:[3.302,1.016,.03],color:'#c7cdd0',emoji:'▰',sourceUrl:'https://pompeiiquartz.com/product/coastal/',sourceLabel:'Official Pompeii page',note:'Representative island cut from a 2 cm or 3 cm slab'},
- {id:'woodtone-fineline-smokey-bourbon',name:'FineLine Panel — Smokey Bourbon',brand:'Woodtone',model:'FineLine 1×6',category:'Paneling',dims:[1.2192,.0175,2.4384],color:'#705344',emoji:'▥',sourceUrl:'https://woodtone.com/product/wall-ceiling/fineline-paneling/',sourceLabel:'Official Woodtone page',note:'Representative 4′ × 8′ panel assembled from FineLine boards'}
- ,
- // Skyline publishes relative price levels rather than dollar pricing. These
- // countertop objects use a representative 10' × 25.5" × 3 cm installed shape.
- {id:'skyline-dallas-white',name:'Dallas White Granite Countertop',brand:'Skyline Surfaces',model:'Level 1 · Dallas White',category:'Surfaces',dims:[3.048,.6477,.03],color:'#dedbd3',emoji:'▰',sourceUrl:'https://www.skylinesurfaces.com/colors',sourceLabel:'Skyline colors',note:'Price level 1 of 14 · fabrication/installation quote required'},
- {id:'skyline-iced-white',name:'Iced White Quartz Countertop',brand:'Skyline Surfaces',model:'Level 2 · Iced White',category:'Surfaces',dims:[3.048,.6477,.03],color:'#ecebe7',emoji:'▰',sourceUrl:'https://www.skylinesurfaces.com/colors',sourceLabel:'Skyline colors',note:'Price level 2 of 14 · fabrication/installation quote required'},
- {id:'skyline-carrara-oro',name:'Carrara Oro Quartz Countertop',brand:'Skyline Surfaces',model:'Level 3 · Carrara Oro',category:'Surfaces',dims:[3.048,.6477,.03],color:'#dddcd7',emoji:'▰',sourceUrl:'https://www.skylinesurfaces.com/colors',sourceLabel:'Skyline colors',note:'Price level 3 of 14 · fabrication/installation quote required'},
- {id:'skyline-calacatta-laza',name:'Calacatta Laza Quartz Countertop',brand:'Skyline Surfaces',model:'Level 4 · Calacatta Laza',category:'Surfaces',dims:[3.048,.6477,.03],color:'#e5e2dc',emoji:'▰',sourceUrl:'https://www.skylinesurfaces.com/colors',sourceLabel:'Skyline colors',note:'Price level 4 of 14 · fabrication/installation quote required'},
- {id:'skyline-calacatta-milano',name:'Calacatta Milano Quartz Countertop',brand:'Skyline Surfaces',model:'Level 5 · Calacatta Milano',category:'Surfaces',dims:[3.048,.6477,.03],color:'#e4dfd6',emoji:'▰',sourceUrl:'https://www.skylinesurfaces.com/colors',sourceLabel:'Skyline colors',note:'Price level 5 of 14 · fabrication/installation quote required'},
- {id:'skyline-misterio-gold',name:'Misterio Gold Quartz Countertop',brand:'Skyline Surfaces',model:'Level 6 · Misterio Gold',category:'Surfaces',dims:[3.048,.6477,.03],color:'#d7d0c4',emoji:'▰',sourceUrl:'https://www.skylinesurfaces.com/colors',sourceLabel:'Skyline colors',note:'Price level 6 of 14 · fabrication/installation quote required'},
- {id:'skyline-coastal',name:'Coastal Quartz Countertop',brand:'Skyline Surfaces',model:'Level 7 · Coastal',category:'Surfaces',dims:[3.048,.6477,.03],color:'#cfd4d5',emoji:'▰',sourceUrl:'https://www.skylinesurfaces.com/colors',sourceLabel:'Skyline colors',note:'Price level 7 of 14 · fabrication/installation quote required'},
- {id:'skyline-nashville',name:'Nashville Quartz Countertop',brand:'Skyline Surfaces',model:'Level 8 · Nashville',category:'Surfaces',dims:[3.048,.6477,.03],color:'#dad7d0',emoji:'▰',sourceUrl:'https://www.skylinesurfaces.com/colors',sourceLabel:'Skyline colors',note:'Price level 8 of 14 · fabrication/installation quote required'},
- {id:'skyline-hermitage',name:'Hermitage Quartz Countertop',brand:'Skyline Surfaces',model:'Level 9 · Hermitage',category:'Surfaces',dims:[3.048,.6477,.03],color:'#d6d1c8',emoji:'▰',sourceUrl:'https://www.skylinesurfaces.com/colors',sourceLabel:'Skyline colors',note:'Price level 9 of 14 · fabrication/installation quote required'},
- {id:'skyline-brava-blue',name:'Brava Blue Quartzite Countertop',brand:'Skyline Surfaces',model:'Level 10 · Brava Blue',category:'Surfaces',dims:[3.048,.6477,.03],color:'#7d9096',emoji:'▰',sourceUrl:'https://www.skylinesurfaces.com/colors',sourceLabel:'Skyline colors',note:'Price level 10 of 14 · polished or leathered · quote required'},
- {id:'skyline-calacatta-borghini',name:'Calacatta Borghini Porcelain Countertop',brand:'Skyline Surfaces',model:'Level 11 · 2 cm',category:'Surfaces',dims:[3.048,.6477,.02],color:'#e7e3dc',emoji:'▰',sourceUrl:'https://www.skylinesurfaces.com/colors',sourceLabel:'Skyline colors',note:'Price level 11 of 14 · fabrication/installation quote required'},
- {id:'skyline-portrush',name:'Portrush Quartz Countertop',brand:'Skyline Surfaces',model:'Level 12 · Portrush',category:'Surfaces',dims:[3.048,.6477,.03],color:'#e1ddd5',emoji:'▰',sourceUrl:'https://www.skylinesurfaces.com/colors',sourceLabel:'Skyline colors',note:'Price level 12 of 14 · fabrication/installation quote required'},
- {id:'skyline-infinity-white',name:'Infinity White Honed Quartzite Countertop',brand:'Skyline Surfaces',model:'Level 13 · Infinity White',category:'Surfaces',dims:[3.048,.6477,.03],color:'#e8e5df',emoji:'▰',sourceUrl:'https://www.skylinesurfaces.com/colors',sourceLabel:'Skyline colors',note:'Price level 13 of 14 · fabrication/installation quote required'},
- {id:'skyline-taj-mahal',name:'Taj Mahal Quartzite Countertop',brand:'Skyline Surfaces',model:'Level 14 · Taj Mahal',category:'Surfaces',dims:[3.048,.6477,.03],color:'#d8cdbd',emoji:'▰',sourceUrl:'https://www.skylinesurfaces.com/colors',sourceLabel:'Skyline colors',note:'Price level 14 of 14 · polished or leathered · quote required'},
+/** Default catalog: baked Olsen Cost Library selections (~800 SKUs). */
+export const catalog: CatalogItem[] = getOlsenCatalogSeed();
 
- // International Tile & Stone's public product page lists collections and
- // formats, but no retail prices. Dimensions below match the named formats.
- {id:'its-afyon-gold-18',name:'Afyon Gold Filled & Honed Travertine',brand:'International Tile & Stone',model:'18×18 Classic Collection',category:'Tile',dims:[.4572,.012,.4572],color:'#cdb58d',emoji:'▦',price:12.5,priceUnit:'sq ft',placementMode:'floor-fill',mountingType:'floor',placementSurfaces:['floor'],textureUrl:'/catalog/floors/pbr/stone-tile-color.jpg',roughnessMapUrl:'/catalog/floors/pbr/stone-tile-rough.jpg',normalMapUrl:'/catalog/floors/pbr/stone-tile-normal.jpg',textureRepeat:0.9,roughness:0.82,thumbnailUrl:'/catalog/thumbs/floor-tile.svg',sourceUrl:'https://internationaltileandstone.com/products/',sourceLabel:'Official ITS products',note:'18×18 in tile · tap tile then tap a room to fill the floor'},
- {id:'its-afyon-gold-french',name:'Afyon Gold Travertine French Pattern',brand:'International Tile & Stone',model:'Four-size French Pattern',category:'Tile',dims:[.4572,.012,.4572],color:'#c4aa7e',emoji:'▦',price:14,priceUnit:'sq ft',placementMode:'floor-fill',mountingType:'floor',placementSurfaces:['floor'],textureUrl:'/catalog/floors/pbr/stone-tile-color.jpg',roughnessMapUrl:'/catalog/floors/pbr/stone-tile-rough.jpg',normalMapUrl:'/catalog/floors/pbr/stone-tile-normal.jpg',textureRepeat:1.0,roughness:0.85,thumbnailUrl:'/catalog/thumbs/floor-tile.svg',sourceUrl:'https://internationaltileandstone.com/products/',sourceLabel:'Official ITS products',note:'Tap tile then tap a room to fill the floor'},
- {id:'its-rope-molding-noce',name:'Rope Molding Noce',brand:'International Tile & Stone',model:'Noce molding',category:'Tile',dims:[.305,.025,.05],color:'#9a7655',emoji:'▬',sourceUrl:'https://internationaltileandstone.com/products/',sourceLabel:'Official ITS products',note:'Decorative stone molding · dealer quote'},
- {id:'its-light-travertine-mosaic',name:'Light Travertine Mosaic',brand:'International Tile & Stone',model:'2×4 straight-edge mosaic',category:'Tile',dims:[.305,.012,.305],color:'#d8c5a5',emoji:'▦',price:11,priceUnit:'sq ft',placementMode:'floor-fill',mountingType:'floor',placementSurfaces:['floor'],textureUrl:'/catalog/floors/pbr/ceramic-color.jpg',roughnessMapUrl:'/catalog/floors/pbr/ceramic-rough.jpg',textureRepeat:0.35,roughness:0.55,thumbnailUrl:'/catalog/thumbs/floor-tile.svg',sourceUrl:'https://internationaltileandstone.com/products/',sourceLabel:'Official ITS products',note:'Tap tile then tap a room to fill the floor'},
- {id:'its-crema-beige-marble',name:'Crema Beige Polished Marble',brand:'International Tile & Stone',model:'18×18 marble tile',category:'Tile',dims:[.4572,.012,.4572],color:'#d8c3a2',emoji:'▦',price:16,priceUnit:'sq ft',placementMode:'floor-fill',mountingType:'floor',placementSurfaces:['floor'],textureUrl:'/catalog/floors/pbr/ceramic-color.jpg',roughnessMapUrl:'/catalog/floors/pbr/ceramic-rough.jpg',textureRepeat:0.9,roughness:0.35,thumbnailUrl:'/catalog/thumbs/floor-tile.svg',sourceUrl:'https://internationaltileandstone.com/products/',sourceLabel:'Official ITS products',note:'Tap tile then tap a room to fill the floor'},
- {id:'its-bianco-carrera-12x24',name:'Bianco Carrera Porcelain Tile',brand:'International Tile & Stone',model:'12×24 porcelain',category:'Tile',dims:[.3048,.01,.6096],color:'#dedede',emoji:'▦',price:9.5,priceUnit:'sq ft',placementMode:'floor-fill',mountingType:'floor',placementSurfaces:['floor'],textureUrl:'/catalog/floors/pbr/porcelain-color.jpg',roughnessMapUrl:'/catalog/floors/pbr/porcelain-rough.jpg',normalMapUrl:'/catalog/floors/pbr/porcelain-normal.jpg',textureRepeat:0.75,roughness:0.55,thumbnailUrl:'/catalog/thumbs/floor-tile.svg',sourceUrl:'https://internationaltileandstone.com/products/',sourceLabel:'Official ITS products',note:'Tap tile then tap a room to fill the floor'},
- // Wall finish — BOM uses net wall area after openings are subtracted.
- {id:'interior-paint',name:'Interior Wall Paint',brand:'Roomcraft',model:'Eggshell',category:'Surfaces',dims:[1,.001,1],color:'#f4f6f8',price:0.85,priceUnit:'sq ft',emoji:'▦',placeholderOnly:true,note:'Reference coverage price · quantity is net wall area after openings'},
-
- // Schrock sells configurable cabinetry through dealers. Each item is a
- // representative 36" base module carrying the selected official door style.
- {id:'schrock-elston-sahara',name:'Elston Shaker Base Cabinet',brand:'Schrock Cabinetry',model:'Elston · Maple · Sahara',category:'Cabinetry',dims:[.9144,.6096,.8763],color:'#d8c5a7',emoji:'▦',sourceUrl:'https://www.schrock.com/products/elston',sourceLabel:'Official Schrock style',note:'Full overlay · 5-piece · dealer design and quote required'},
- {id:'schrock-francesca-sahara',name:'Francesca Base Cabinet',brand:'Schrock Cabinetry',model:'Francesca · Maple · Sahara',category:'Cabinetry',dims:[.9144,.6096,.8763],color:'#d6c3a4',emoji:'▦',sourceUrl:'https://www.schrock.com/products/Francesca',sourceLabel:'Official Schrock style',note:'Full overlay · 5-piece · dealer design and quote required'},
- {id:'schrock-willet-sahara',name:'Willet Base Cabinet',brand:'Schrock Cabinetry',model:'Willet · Maple · Sahara',category:'Cabinetry',dims:[.9144,.6096,.8763],color:'#d3c09f',emoji:'▦',sourceUrl:'https://www.schrock.com/products/willet',sourceLabel:'Official Schrock style',note:'Full overlay · 5-piece · dealer design and quote required'},
- {id:'schrock-benner-sahara',name:'Benner Neo-Shaker Base Cabinet',brand:'Schrock Cabinetry',model:'Benner · Maple · Sahara',category:'Cabinetry',dims:[.9144,.6096,.8763],color:'#cfbb9b',emoji:'▦',sourceUrl:'https://www.schrock.com/products/benner',sourceLabel:'Official Schrock style',note:'Full overlay · 5-piece · dealer design and quote required'},
- {id:'schrock-kayes-sahara',name:'Kayes Base Cabinet',brand:'Schrock Cabinetry',model:'Kayes · Maple · Sahara',category:'Cabinetry',dims:[.9144,.6096,.8763],color:'#d1bea0',emoji:'▦',sourceUrl:'https://www.schrock.com/products/kayes',sourceLabel:'Official Schrock style',note:'Full overlay · 5-piece · dealer design and quote required'},
- {id:'schrock-plymouth-colt',name:'Plymouth Raised-Panel Base Cabinet',brand:'Schrock Cabinetry',model:'Plymouth · Cherry · Colt',category:'Cabinetry',dims:[.9144,.6096,.8763],color:'#80523b',emoji:'▦',sourceUrl:'https://www.schrock.com/products/plymouth',sourceLabel:'Official Schrock style',note:'Full overlay · 5-piece · dealer design and quote required'},
- {id:'schrock-lormand-sahara',name:'Lormand Shaker Base Cabinet',brand:'Schrock Cabinetry',model:'Lormand · Maple · Sahara',category:'Cabinetry',dims:[.9144,.6096,.8763],color:'#d4c1a3',emoji:'▦',sourceUrl:'https://www.schrock.com/products/lormand',sourceLabel:'Official Schrock style',note:'Partial overlay · 5-piece · dealer design and quote required'},
- {id:'schrock-racine-sahara',name:'Racine Base Cabinet',brand:'Schrock Cabinetry',model:'Racine · Maple · Sahara',category:'Cabinetry',dims:[.9144,.6096,.8763],color:'#d2bea0',emoji:'▦',sourceUrl:'https://www.schrock.com/products/racine',sourceLabel:'Official Schrock style',note:'Partial overlay · square · dealer design and quote required'},
-
- // Prices below are public Moen web prices observed on official collection
- // pages; they are product-only references and can change independently.
- {id:'moen-adler-ws84500',name:'Adler One-Handle Low-Arc Bathroom Faucet',brand:'Moen',model:'WS84500 · Chrome',category:'Plumbing',dims:[.16,.15,.14],color:'#c7c9c9',price:95,emoji:'⌁',sourceUrl:'https://shop.moen.com/collections/centerset',sourceLabel:'Official Moen shop',note:'Public product price · installation and supply lines excluded'},
- {id:'moen-graeden-84138',name:'Graeden Two-Handle Widespread Bathroom Faucet',brand:'Moen',model:'84138',category:'Plumbing',dims:[.30,.18,.20],color:'#c3c5c5',price:159,emoji:'⌁',sourceUrl:'https://shop.moen.com/collections/widespread',sourceLabel:'Official Moen shop',note:'Public product price · installation excluded'},
- {id:'moen-smart-87869srs',name:'Smart Pulldown Touchless Kitchen Faucet',brand:'Moen',model:'87869SRS · Spot Resist Stainless',category:'Plumbing',dims:[.25,.25,.43],color:'#aeb2b1',price:444.60,emoji:'⌁',sourceUrl:'https://shop.moen.com/collections/smart-faucets',sourceLabel:'Official Moen shop',note:'Public product price · installation excluded'},
- {id:'moen-positemp-2570',name:'Posi-Temp Shower Valve',brand:'Moen',model:'2570',category:'Plumbing',dims:[.18,.10,.18],color:'#b0b1ad',price:145.01,emoji:'⊕',sourceUrl:'https://shop.moen.com/collections/valves',sourceLabel:'Official Moen shop',note:'Unfinished rough-in valve · trim and installation excluded'},
- {id:'moen-wynford-t2312',name:'Wynford Shower-Only Trim',brand:'Moen',model:'T2312 · Chrome',category:'Plumbing',dims:[.20,.12,.25],color:'#c4c6c6',price:206.05,emoji:'◉',sourceUrl:'https://shop.moen.com/collections/shower-only',sourceLabel:'Official Moen shop',note:'Starting public price · required valve/installation may be separate'},
- {id:'moen-eva-t62133ep',name:'Eva Eco-Performance Tub/Shower Trim',brand:'Moen',model:'T62133EP · Chrome',category:'Plumbing',dims:[.22,.18,.25],color:'#c6c7c5',price:167.82,emoji:'◉',sourceUrl:'https://shop.moen.com/collections/eva-collection',sourceLabel:'Official Moen shop',note:'Starting public price · required valve/installation may be separate'},
- {id:'moen-cia-ut4362ep',name:'Cia M-CORE 4-Series Shower Trim',brand:'Moen',model:'UT4362EP · Brushed Nickel',category:'Plumbing',dims:[.22,.12,.26],color:'#aaa9a3',price:653.12,emoji:'◉',sourceUrl:'https://shop.moen.com/collections/cia-collection',sourceLabel:'Official Moen shop',note:'Starting public price · required valve/installation may be separate'}
-];
-
-/** Built-in catalog: legacy brand samples + residential furnishings + flooring. */
-export const catalog: CatalogItem[] = [
-  ...enrichCatalogSurfaces(legacyCatalog as CatalogItem[]),
-  ...(residentialFurniture as CatalogItem[]),
-  ...(residentialFlooring as CatalogItem[]),
-];
-
-/** Starter pack mirrored into local vendor inventory (Advanced inventory). */
+/** Legacy starter inventory seeding removed — Olsen catalog is the source of truth. */
 export function starterInventoryItems(): CatalogItem[] {
-  const pack = [...residentialFurniture, ...residentialFlooring] as CatalogItem[];
-  return pack.map((item, index) => ({
-    ...item,
-    vendorId: 'roomcraft-home',
-    brand: item.brand ?? 'Roomcraft Home',
-    sku: item.sku ?? `RH-${String(index + 1).padStart(3, '0')}`,
-    placeholderOnly: !item.modelUrl,
-    sellable: true,
-  }));
+  return [];
 }

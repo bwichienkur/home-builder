@@ -7,11 +7,12 @@ describe('complementary products', () => {
     expect(complementCategories('Bedroom')).toEqual(expect.arrayContaining(['Lighting', 'Storage']));
   });
 
-  it('suggests other catalog items for a bed in a bedroom', () => {
-    const bed = catalog.find((i) => i.id === 'queen-bed')!;
-    const suggestions = complementaryProducts(bed, catalog, 'Bedroom', 4);
+  it('suggests other catalog items for bathroom tile in a bathroom', () => {
+    const tile = catalog.find((i) => i.category === 'Tile' && i.roomTypes?.includes('Bathroom'));
+    expect(tile).toBeTruthy();
+    const suggestions = complementaryProducts(tile!, catalog, 'Bathroom', 4);
     expect(suggestions.length).toBeGreaterThan(0);
-    expect(suggestions.every((s) => s.id !== bed.id)).toBe(true);
-    expect(suggestions.some((s) => s.category === 'Lighting' || s.category === 'Storage' || s.category === 'Decor')).toBe(true);
+    expect(suggestions.every((s) => s.id !== tile!.id)).toBe(true);
+    expect(suggestions.some((s) => s.category === 'Plumbing' || s.category === 'Surfaces' || s.category === 'Trim')).toBe(true);
   });
 });
