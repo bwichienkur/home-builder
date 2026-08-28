@@ -1,5 +1,7 @@
 import type { CatalogItem, PriceUnit } from '../../components/catalog/catalogData';
 import type { ConfiguratorRole, ContractIncludedLevel, ContractSnapshot, PricingCategory } from './contractTypes';
+import type { ContractLevelOverride } from './projectTypes';
+import { effectiveIncludedLevel } from './projectTypes';
 
 const LEVEL_NUM = /level\s*(\d+)/i;
 
@@ -35,23 +37,35 @@ export function pricingCategoryForItem(item: Pick<CatalogItem, 'sourceTab' | 'ca
   return null;
 }
 
-export function includedLevelForItem(contract: ContractSnapshot | null | undefined, item: CatalogItem): ContractIncludedLevel | undefined {
+export function includedLevelForItem(
+  contract: ContractSnapshot | null | undefined,
+  item: CatalogItem,
+  levelOverrides: ContractLevelOverride[] = [],
+): ContractIncludedLevel | undefined {
   if (!contract) return undefined;
   const category = pricingCategoryForItem(item);
   if (!category) return undefined;
-  return contract.includedLevels.find((row) => {
+  const base = contract.includedLevels.find((row) => {
     if (row.pricingCategory !== category) return false;
     if (row.sourceTab && item.sourceTab && row.sourceTab !== item.sourceTab) return false;
     return true;
   });
+  if (!base) return undefined;
+  const overrideLevel = effectiveIncludedLevel(contract, category, levelOverrides);
+  return overrideLevel ? { ...base, includedLevel: overrideLevel } : base;
 }
 
 export function baseItemName(name: string): string {
   return name.replace(/\s·\sLevel\s*\d+.*$/i, '').trim();
 }
 
-export function findIncludedPriceRow(item: CatalogItem, catalog: CatalogItem[], contract: ContractSnapshot): CatalogItem | undefined {
-  const included = includedLevelForItem(contract, item);
+export function findIncludedPriceRow(
+  item: CatalogItem,
+  catalog: CatalogItem[],
+  contract: ContractSnapshot,
+  levelOverrides: ContractLevelOverride[] = [],
+): CatalogItem | undefined {
+  const included = includedLevelForItem(contract, item, levelOverrides);
   if (!included) return undefined;
   const base = baseItemName(item.name).toLowerCase();
   const tab = item.sourceTab;
@@ -79,6 +93,7 @@ export function formatCatalogPrice(
   catalog: CatalogItem[],
   contract: ContractSnapshot | null | undefined,
   role: ConfiguratorRole,
+  levelOverrides: ContractLevelOverride[] = [],
 ): CatalogPriceView {
   const unit = item.priceUnit ?? 'each';
   const price = item.price ?? item.cost;
@@ -99,10 +114,10 @@ export function formatCatalogPrice(
     return { showPrice: true, label: `$${price.toLocaleString()} / ${unit}`, included: false, priceUnit: unit };
   }
 
-  const includedRow = includedLevelForItem(contract, item);
+  const includedRow = includedLevelForItem(contract, item, levelOverrides);
   const selectedLevel = parseLevelNumber(item.level);
   const includedLevelNum = parseLevelNumber(includedRow?.includedLevel);
-  const includedPriceRow = findIncludedPriceRow(item, catalog, contract);
+  const includedPriceRow = findIncludedPriceRow(item, catalog, contract, levelOverrides);
   const includedPrice = includedPriceRow?.price ?? includedPriceRow?.cost;
 
   if (includedRow && selectedLevel != null && includedLevelNum != null && selectedLevel <= includedLevelNum) {
@@ -115,14 +130,33 @@ export function formatCatalogPrice(
     };
   }
 
-  if (includedPrice != null && price > includedPrice) {
+  if (includedPrice != null) {
     const delta = Math.round((price - includedPrice) * 100) / 100;
+    if (delta > 0) {
+      return {
+        showPrice: true,
+        label: `+$${delta.toLocaleString()} / ${unit}`,
+        detail: `Above ${includedRow?.includedLevel ?? 'contract'} (${includedPrice.toLocaleString()} / ${unit})`,
+        delta,
+        included: false,
+        priceUnit: unit,
+      };
+    }
+    if (delta < 0) {
+      return {
+        showPrice: true,
+        label: `−$${Math.abs(delta).toLocaleString()} / ${unit} credit`,
+        detail: `Below ${includedRow?.includedLevel ?? 'contract'} (${includedPrice.toLocaleString()} / ${unit})`,
+        delta,
+        included: false,
+        priceUnit: unit,
+      };
+    }
     return {
       showPrice: true,
-      label: `+$${delta.toLocaleString()} / ${unit}`,
-      detail: `Above ${includedRow?.includedLevel ?? 'contract'} (${includedPrice.toLocaleString()} / ${unit})`,
-      delta,
-      included: false,
+      label: 'Included',
+      detail: `Matches ${includedRow?.includedLevel ?? 'contract'} price`,
+      included: true,
       priceUnit: unit,
     };
   }

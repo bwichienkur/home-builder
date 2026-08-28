@@ -1,5 +1,6 @@
-import { useConfiguratorStore } from '../../store/configuratorStore';
+import { useConfiguratorStore, WORKFLOW_LABEL } from '../../store/configuratorStore';
 import type { ConfiguratorRole } from '../../lib/configurator/contractTypes';
+import { PLAN_VERIFICATION_LABEL } from '../../store/configuratorStore';
 
 const ROLE_LABEL: Record<ConfiguratorRole, string> = {
   client: 'Client survey',
@@ -15,12 +16,16 @@ export function ConfiguratorBar() {
 
   if (!project) return null;
 
+  const ext = project;
+
   return (
     <div className="configurator-bar" role="region" aria-label="Selection project">
       <div className="configurator-bar-main">
         <strong>{project.name}</strong>
         <span>{project.planRef}</span>
         {project.lotRef && <span>{project.lotRef}</span>}
+        <span className="configurator-status-chip">{WORKFLOW_LABEL[ext.workflowStatus]}</span>
+        <span className="configurator-status-chip">{PLAN_VERIFICATION_LABEL[ext.planVerification]}</span>
       </div>
       <div className="configurator-bar-controls">
         <label>

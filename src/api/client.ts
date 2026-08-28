@@ -70,6 +70,7 @@ export type ApiSelectionProject = {
   lotRef?: string;
   contract: import('../lib/configurator/contractTypes').ContractSnapshot;
   sceneProjectId?: string;
+  extended?: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
 };
@@ -93,6 +94,7 @@ export async function createSelectionProject(body: {
   lotRef?: string;
   contract: ApiSelectionProject['contract'];
   sceneProjectId?: string | null;
+  extended?: Record<string, unknown>;
 }): Promise<ApiSelectionProject> {
   const response = await fetch(`${API_URL}/api/selection-projects`, {
     method: 'POST',
@@ -111,6 +113,7 @@ export async function updateSelectionProject(
     lotRef: string;
     contract: ApiSelectionProject['contract'];
     sceneProjectId: string | null;
+    extended: Record<string, unknown>;
   }>,
 ): Promise<ApiSelectionProject> {
   const response = await fetch(`${API_URL}/api/selection-projects/${id}`, {

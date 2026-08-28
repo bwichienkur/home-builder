@@ -772,3 +772,102 @@
   padding: 6px 10px;
   border-radius: 999px;
 }
+
+.configurator-stack {
+  position: absolute;
+  z-index: 65;
+  left: 12px;
+  right: 12px;
+  top: calc(118px + env(safe-area-inset-top));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 960px;
+  pointer-events: none;
+}
+.configurator-panel {
+  pointer-events: auto;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(17, 24, 32, 0.08);
+  border-radius: 12px;
+  padding: 10px 12px;
+  box-shadow: 0 6px 18px rgba(17, 24, 32, 0.06);
+}
+.configurator-panel header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.configurator-panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: end;
+}
+.configurator-panel-actions label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+}
+.configurator-status-chip {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(17, 24, 32, 0.06);
+}
+.configurator-live-pricing strong {
+  color: #9a4d00;
+}
+.configurator-mini-table {
+  width: 100%;
+  font-size: 12px;
+  border-collapse: collapse;
+}
+.configurator-mini-table th,
+.configurator-mini-table td {
+  border-bottom: 1px solid rgba(17, 24, 32, 0.08);
+  padding: 4px 6px;
+  text-align: left;
+}
+.room-selection-nav {
+  pointer-events: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.room-selection-nav button {
+  border: 1px solid rgba(17, 24, 32, 0.1);
+  background: #fff;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+.room-selection-nav button.active {
+  background: rgba(0, 88, 163, 0.1);
+  border-color: rgba(0, 88, 163, 0.25);
+}
+.room-selection-nav small {
+  opacity: 0.75;
+}
+.configurator-trade-summary {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-size: 12px;
+}
+.client-survey-panel form {
+  display: grid;
+  gap: 8px;
+}
+.client-survey-panel label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+}

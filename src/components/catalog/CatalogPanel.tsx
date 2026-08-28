@@ -41,6 +41,8 @@ export const CatalogPanel = memo(function CatalogPanel({
   const catalogSource = useCatalogStore((s) => s.source);
   const role = useConfiguratorStore((s) => s.role);
   const contract = useConfiguratorStore((s) => s.contract);
+  const project = useConfiguratorStore((s) => s.project);
+  const activeRoomFilter = useConfiguratorStore((s) => s.activeRoomFilter);
   const [q, setQ] = useState('');
   const [category, setCategory] = useState('All');
   const [vendor, setVendor] = useState('All');
@@ -84,8 +86,13 @@ export const CatalogPanel = memo(function CatalogPanel({
         .filter((i) => {
           const haystack = `${i.brand ?? ''} ${i.model ?? ''} ${i.sku ?? ''} ${i.name} ${i.category} ${i.tags?.join(' ') ?? ''}`.toLowerCase();
           const roomMatch = i.roomTypes?.length ? i.roomTypes.includes(roomType) : relevant.includes(i.category);
+          const roomFilterMatch =
+            !activeRoomFilter ||
+            i.roomTypes?.some((rt) => activeRoomFilter.toLowerCase().includes(rt.toLowerCase())) ||
+            i.name.toLowerCase().includes(activeRoomFilter.toLowerCase());
           return (
             (!recommended || roomMatch) &&
+            roomFilterMatch &&
             (category === 'All' || i.category === category) &&
             (vendor === 'All' || i.brand === vendor) &&
             haystack.includes(q.toLowerCase())
@@ -98,7 +105,7 @@ export const CatalogPanel = memo(function CatalogPanel({
               ? (b.price ?? -1) - (a.price ?? -1)
               : a.name.localeCompare(b.name),
         ),
-    [all, q, category, vendor, sort, recommended, relevant, roomType],
+    [all, q, category, vendor, sort, recommended, relevant, roomType, activeRoomFilter],
   );
 
   useEffect(() => {
@@ -204,7 +211,7 @@ export const CatalogPanel = memo(function CatalogPanel({
         <div className="catalog-grid">
           {shown.map((i) => {
             const img = catalogCardImage(i);
-            const priceView = formatCatalogPrice(i, all, contract, role);
+            const priceView = formatCatalogPrice(i, all, contract, role, project?.levelOverrides);
             return (
             <article key={i.id} draggable onDragStart={(e) => e.dataTransfer.setData('catalogId', i.id)}>
               <div className="thumb" style={{ '--product-color': i.color } as CSSProperties}>
