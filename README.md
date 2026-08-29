@@ -65,6 +65,16 @@ npm run server
 
 Set `VITE_API_URL=http://localhost:4000` when using the API. Copy `.env.example` to `.env` for server configuration. PostgreSQL powers catalog/projects when `DATABASE_URL` is set.
 
+### Load Olsen catalog into Postgres
+
+```bash
+# After DATABASE_URL points at your DB (local or Neon):
+npm run db:migrate
+npm run catalog:seed-db -- --replace-olsen
+```
+
+This upserts vendors / products / prices / thumbnails from `src/lib/catalog/olsenCatalogSeed.json` (Master Catalog inventory + Cost Library COF tabs). Rebuild the JSON first with `npm run catalog:build-olsen` when the package workbook changes.
+
 ## Validation
 
 ```bash
