@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Cloud, FolderOpen, Plus } from 'lucide-react';
 import { fetchCloudProjects } from '../../lib/cloudProjects';
-import { listSharedDesigns } from '../../lib/designShare';
+import { hydrateDesignsFromRemote, listSharedDesigns } from '../../lib/designShare';
 import { platformConfig } from '../../lib/platform/config';
 import { listHomeProjects, type HomeProject } from './homeProjects';
 import { OwnerDashboard } from './OwnerDashboard';
@@ -38,12 +38,16 @@ export function HomePage() {
   const [cloudLoading, setCloudLoading] = useState(platformConfig.cloudConfigured());
 
   useEffect(() => {
-    setLocalDesigns(listSharedDesigns());
+    let cancelled = false;
+    void hydrateDesignsFromRemote().then((items) => {
+      if (!cancelled) setLocalDesigns(items);
+    });
     if (!platformConfig.cloudConfigured()) {
       setCloudLoading(false);
-      return;
+      return () => {
+        cancelled = true;
+      };
     }
-    let cancelled = false;
     void fetchCloudProjects().then((items) => {
       if (cancelled) return;
       setCloudProjects(items);

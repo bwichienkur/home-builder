@@ -12,6 +12,31 @@
     },
     "api/ops.js": {
       "maxDuration": 30
+    },
+    "api/org-config.js": {
+      "maxDuration": 30
+    },
+    "api/trade-rates.js": {
+      "maxDuration": 30
+    },
+    "api/crm/[collection].js": {
+      "maxDuration": 30
+    },
+    "api/auth/[...path].js": {
+      "maxDuration": 30
+    },
+    "api/admin/[...path].js": {
+      "maxDuration": 30
+    },
+    "api/designs/index.js": {
+      "maxDuration": 30
+    },
+    "api/designs/[code].js": {
+      "maxDuration": 30
+    },
+    "api/drawing-packages/[id].js": {
+      "maxDuration": 60,
+      "memory": 1024
     }
   },
   "rewrites": [

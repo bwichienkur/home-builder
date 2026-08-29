@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import type { Client } from '../../lib/crm/types';
-import { listSharedDesigns, type SharedDesign } from '../../lib/designShare';
+import { hydrateDesignsFromRemote, listSharedDesigns, type SharedDesign } from '../../lib/designShare';
 import { useCrmStore } from '../../store/crmStore';
 import { CustomFieldsInputs, EntityCrmPage, EntityDrawer } from './EntityCrmPage';
 
@@ -24,7 +24,9 @@ export function ClientsPage() {
   const [designs, setDesigns] = useState<SharedDesign[]>(() => listSharedDesigns());
 
   useEffect(() => {
-    const refresh = () => setDesigns(listSharedDesigns());
+    const refresh = () => {
+      void hydrateDesignsFromRemote().then(setDesigns);
+    };
     refresh();
     window.addEventListener('focus', refresh);
     document.addEventListener('visibilitychange', refresh);
