@@ -25,6 +25,12 @@ Crops each paper-space layout viewport from `MODEL.dxf` into `public/plan-sheets
 ## Tips for best import quality
 
 - In AutoCAD, confirm **Model Space** floor plan is active (not paperspace sheet).
+- The in-app importer crops to the **floor-plan paper viewport** when present, then:
+  - keeps wall layers (not doors)
+  - collapses double-line walls to centerlines
+  - closes small door gaps
+  - flood-fills enclosed rooms and applies room-name labels
 - If import footprint looks wrong, export a **simplified DXF** with only interior wall layers.
-- Our importer expects **feet**; mm coordinates are auto-converted.
+- Units follow `$INSUNITS` when set (inches/mm/feet); otherwise a magnitude heuristic is used.
 - Optional: also drop the architect PDF plan set when creating a project for sharper sheet reading.
+- Always review room names/sizes in **Plan verification** after import — messy CAD still needs a human pass.
