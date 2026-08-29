@@ -327,11 +327,19 @@ export function cropSegmentsToViewport<T extends { x1: number; y1: number; x2: n
   vp: Viewport,
   pad = 0.05,
 ): T[] {
-  return segs.filter((s) => segHitsView(s as Seg, vp, pad));
+  return segs.filter((s) => segHitsView(s, vp, pad));
 }
 
-function segHitsView(s: Seg, vp: Viewport, pad = 0.02): boolean {
-  return inView(s.x1, s.y1, vp, pad) || inView(s.x2, s.y2, vp, pad) || inView((s.x1 + s.x2) / 2, (s.y1 + s.y2) / 2, vp, pad);
+function segHitsView(
+  s: { x1: number; y1: number; x2: number; y2: number },
+  vp: Viewport,
+  pad = 0.02,
+): boolean {
+  return (
+    inView(s.x1, s.y1, vp, pad) ||
+    inView(s.x2, s.y2, vp, pad) ||
+    inView((s.x1 + s.x2) / 2, (s.y1 + s.y2) / 2, vp, pad)
+  );
 }
 
 /** Collect model-space geometry for sheet crops + wall filter in one pass. */
