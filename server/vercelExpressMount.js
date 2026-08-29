@@ -1,6 +1,5 @@
 /**
  * Run an Express mount helper as a Vercel serverless request listener.
- * Used for auth/admin and designs/drawing-packages path trees.
  */
 import express from 'express';
 

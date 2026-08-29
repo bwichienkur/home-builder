@@ -1,8 +1,8 @@
 /**
  * Vercel serverless: GET/PUT /api/crm/:collection
  */
-import { CRM_COLLECTIONS, loadCrm, saveCrm } from '../../server/crmRoutes.js';
-import { applyCors, hasDatabaseUrl } from '../_cors.js';
+import { CRM_COLLECTIONS, loadCrm, saveCrm } from '../server/crmRoutes.js';
+import { applyCors, hasDatabaseUrl } from '../server/vercelCors.js';
 
 export default async function handler(req, res) {
   applyCors(res, 'GET, PUT, OPTIONS');

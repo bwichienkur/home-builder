@@ -2,7 +2,7 @@
  * Vercel serverless: GET/PUT /api/trade-rates
  */
 import { loadTradeRatesPayload, saveTradeRatesPayload } from '../server/tradeRatesRoutes.js';
-import { applyCors, hasDatabaseUrl } from './_cors.js';
+import { applyCors, hasDatabaseUrl } from '../server/vercelCors.js';
 
 export default async function handler(req, res) {
   applyCors(res, 'GET, PUT, OPTIONS');

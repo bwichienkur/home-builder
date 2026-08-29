@@ -2,7 +2,7 @@
  * Vercel serverless: GET/PUT /api/org-config
  */
 import { loadOrgConfigPayload, saveOrgConfigPayload } from '../server/orgConfigRoutes.js';
-import { applyCors, hasDatabaseUrl } from './_cors.js';
+import { applyCors, hasDatabaseUrl } from '../server/vercelCors.js';
 
 export default async function handler(req, res) {
   applyCors(res, 'GET, PUT, OPTIONS');
