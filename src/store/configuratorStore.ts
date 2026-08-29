@@ -1,8 +1,10 @@
 import { create } from 'zustand';
 import {
   createPlatinumContract,
+  PLATINUM_INCLUDED_LEVELS,
   STILLWATER_183_PROJECT,
   type ConfiguratorRole,
+  type ContractIncludedLevel,
   type ContractSnapshot,
   type SelectionProject,
 } from '../lib/configurator/contractTypes';
@@ -14,6 +16,8 @@ import {
   getSharedSelectionProject,
 } from '../api/client';
 import type {
+  AllowanceBudget,
+  ContractLevelOverride,
   ExtendedSelectionProject,
   PlanVerificationStatus,
   ProjectWorkflowStatus,
@@ -64,6 +68,12 @@ type ConfiguratorState = {
   loadProject: (project: ExtendedSelectionProject, remoteId?: string | null) => void;
   loadStillwater183: () => void;
   setContract: (contract: ContractSnapshot) => void;
+  setAllowances: (allowances: AllowanceBudget[]) => void;
+  upsertAllowance: (allowance: AllowanceBudget, index?: number) => void;
+  removeAllowance: (index: number) => void;
+  setLevelOverrides: (overrides: ContractLevelOverride[]) => void;
+  setIncludedLevel: (row: ContractIncludedLevel) => void;
+  resetIncludedLevelsToPlatinum: () => void;
   clearProject: () => void;
   persistProject: () => Promise<void>;
   setWorkflowStatus: (status: ProjectWorkflowStatus) => void;
@@ -385,6 +395,64 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
   },
   setContract: (contract) => {
     patchProject(get, set, { contract });
+  },
+  setAllowances: (allowances) => patchProject(get, set, { allowances }),
+  upsertAllowance: (allowance, index) => {
+    const project = get().project;
+    if (!project) return;
+    const next = [...project.allowances];
+    if (index != null && index >= 0 && index < next.length) next[index] = allowance;
+    else next.push(allowance);
+    patchProject(get, set, { allowances: next });
+  },
+  removeAllowance: (index) => {
+    const project = get().project;
+    if (!project) return;
+    patchProject(get, set, { allowances: project.allowances.filter((_, i) => i !== index) });
+  },
+  setLevelOverrides: (levelOverrides) => patchProject(get, set, { levelOverrides }),
+  setIncludedLevel: (row) => {
+    const project = get().project;
+    if (!project?.contract) return;
+    const existing = project.contract.includedLevels;
+    const idx = existing.findIndex((r) => r.pricingCategory === row.pricingCategory);
+    const includedLevels =
+      idx >= 0
+        ? existing.map((r, i) => (i === idx ? { ...r, ...row } : r))
+        : [...existing, row];
+    // Keep a manual override so delta pricing / COF prefer the edited tier.
+    const without = project.levelOverrides.filter((o) => o.pricingCategory !== row.pricingCategory);
+    const levelOverrides: ContractLevelOverride[] = [
+      ...without,
+      {
+        pricingCategory: row.pricingCategory,
+        includedLevel: row.includedLevel,
+        label: row.label,
+        source: 'manual',
+      },
+    ];
+    patchProject(get, set, {
+      contract: {
+        ...project.contract,
+        includedLevels,
+        verifiedAt: new Date().toISOString().slice(0, 10),
+      },
+      levelOverrides,
+    });
+  },
+  resetIncludedLevelsToPlatinum: () => {
+    const project = get().project;
+    if (!project?.contract) return;
+    patchProject(get, set, {
+      contract: {
+        ...project.contract,
+        includedLevels: PLATINUM_INCLUDED_LEVELS.map((r) => ({ ...r })),
+        baseline: 'platinum',
+        verifiedAt: new Date().toISOString().slice(0, 10),
+        notes: 'Platinum Features baseline — delta pricing shows upgrade above included tier.',
+      },
+      levelOverrides: project.levelOverrides.filter((o) => o.source !== 'manual'),
+    });
   },
   clearProject: () => {
     persist({

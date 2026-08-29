@@ -8,7 +8,7 @@ import {
   useConfiguratorStore,
 } from '../../store/configuratorStore';
 import { usePlannerStore } from '../../store/plannerStore';
-import { PLATINUM_INCLUDED_LEVELS } from '../../lib/configurator/contractTypes';
+import { ContractConfigPanel } from '../../components/configurator/ContractConfigPanel';
 
 const STEPS = [
   { id: 'details', label: 'Project' },
@@ -44,7 +44,6 @@ export function ProjectWizard({ onComplete, onCancel }: Props) {
   const setPlanVerification = useConfiguratorStore((s) => s.setPlanVerification);
   const setWorkflowStatus = useConfiguratorStore((s) => s.setWorkflowStatus);
   const importProjectDrawing = useConfiguratorStore((s) => s.importProjectDrawing);
-  const importContractPricingFile = useConfiguratorStore((s) => s.importContractPricingFile);
   const createClientInvite = useConfiguratorStore((s) => s.createClientInvite);
   const lastInviteUrl = useConfiguratorStore((s) => s.lastInviteUrl);
   const setRole = useConfiguratorStore((s) => s.setRole);
@@ -307,7 +306,7 @@ export function ProjectWizard({ onComplete, onCancel }: Props) {
         {step === 'estimator' && (
           <div className="configurator-field-grid">
             <p className="muted full">
-              Select the floorplan template, verify Platinum contract allowances, then sign off for the designer.
+              Select the floorplan template, configure COF included tiers and allowances, then sign off for the designer.
             </p>
             <label className="configurator-field full">
               <span>Floorplan template</span>
@@ -324,43 +323,19 @@ export function ProjectWizard({ onComplete, onCancel }: Props) {
               </select>
               <small className="muted">More templates will be uploaded later.</small>
             </label>
-            <label className="configurator-field full">
-              <span>Contract pricing page (optional XLSX)</span>
-              <input
-                type="file"
-                accept=".xlsx,.xls"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) void importContractPricingFile(file);
-                  e.target.value = '';
-                }}
-              />
-            </label>
             <div className="configurator-section full">
-              <div className="configurator-section-title">
-                <strong>Contract allowances (Platinum)</strong>
-              </div>
-              <ul className="configurator-trade-summary">
-                {(project?.contract?.includedLevels ?? PLATINUM_INCLUDED_LEVELS).slice(0, 8).map((row) => (
-                  <li key={row.pricingCategory}>
-                    <strong>{row.label}</strong>
-                    <span>{row.includedLevel}</span>
-                  </li>
-                ))}
-                {(project?.allowances ?? []).map((a) => (
-                  <li key={`${a.pricingCategory}-${a.label}`}>
-                    <strong>{a.label}</strong>
-                    <span>${a.budgetAmount.toLocaleString()}</span>
-                  </li>
-                ))}
-              </ul>
+              {project ? (
+                <ContractConfigPanel embedded />
+              ) : (
+                <p className="muted">Import drawings first so a contract exists to edit.</p>
+              )}
               <label className="configurator-check">
                 <input
                   type="checkbox"
                   checked={allowancesConfirmed}
                   onChange={(e) => setAllowancesConfirmed(e.target.checked)}
                 />
-                <span>I verified allowances are correctly assigned for this contract.</span>
+                <span>I verified COF tiers and allowances are correctly assigned for this contract.</span>
               </label>
             </div>
           </div>

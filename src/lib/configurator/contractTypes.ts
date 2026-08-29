@@ -64,6 +64,19 @@ export const PLATINUM_INCLUDED_LEVELS: ContractIncludedLevel[] = [
   { pricingCategory: 'pavers', sourceTab: 'Pavers', includedLevel: 'Level 2', label: 'Paver hardscape', priceUnit: 'sq ft' },
 ];
 
+export const PRICING_CATEGORIES: PricingCategory[] = PLATINUM_INCLUDED_LEVELS.map((r) => r.pricingCategory);
+
+export const INCLUDED_LEVEL_OPTIONS = ['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5', 'Allowance'] as const;
+
+export const PRICE_UNIT_OPTIONS: PriceUnit[] = ['each', 'set', 'box', 'sq ft', 'linear ft', 'allowance'];
+
+export function platinumLabelForCategory(category: PricingCategory): string {
+  return PLATINUM_INCLUDED_LEVELS.find((r) => r.pricingCategory === category)?.label ?? category;
+}
+
+export function platinumSourceTabForCategory(category: PricingCategory): string | undefined {
+  return PLATINUM_INCLUDED_LEVELS.find((r) => r.pricingCategory === category)?.sourceTab;
+}
 export function createPlatinumContract(name: string, planRef?: string, lotRef?: string): ContractSnapshot {
   return {
     id: `contract-${slug(name)}`,

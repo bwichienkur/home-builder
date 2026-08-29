@@ -1109,6 +1109,39 @@
   border-bottom: 0;
 }
 
+.contract-config-table select,
+.contract-config-table input {
+  width: 100%;
+  min-width: 0;
+  font: inherit;
+  font-size: 12px;
+  padding: 6px 8px;
+  border: 1px solid var(--line, #cbd5e1);
+  border-radius: 8px;
+  background: #fff;
+}
+.contract-config-table input[type='number'] {
+  max-width: 7.5rem;
+}
+.contract-config-cat {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted, #5c6770);
+  word-break: break-word;
+}
+.contract-config-add {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line, #e2e8f0);
+}
+.contract-config-embedded .configurator-section {
+  margin-top: 8px;
+}
+.contract-config-panel .configurator-section-title {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .room-selection-nav {
   display: flex;
   flex-wrap: wrap;
