@@ -541,11 +541,11 @@ export default function StudioApp() {
     if (snapshot && (!saved || snapshot.savedAt > (JSON.parse(saved).savedAt ?? ''))) {
       setRecovery(snapshot);
     } else if (saved) {
+      // Load scene into memory but stay on Build hub so the user can Continue or create new.
       store.load();
-      if (usePlannerStore.getState().walls.length) {
-        enterHouse();
-        window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 0);
-      }
+      store.showStart();
+    } else {
+      store.showStart();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

@@ -92,6 +92,7 @@ export function BuildHub({ onBegan }: Props) {
     setRole('admin');
     setStudioMode('furnish');
     setUnit('imperial');
+    enterHouse();
     finish();
   };
 
