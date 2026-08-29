@@ -27,9 +27,9 @@ Crops each paper-space layout viewport from `MODEL.dxf` into `public/plan-sheets
 - In AutoCAD, confirm **Model Space** floor plan is active (not paperspace sheet).
 - The in-app importer crops to the **floor-plan paper viewport** when present, then:
   - keeps wall layers (not doors)
-  - collapses double-line walls to centerlines
-  - closes small door gaps
-  - flood-fills enclosed rooms and applies room-name labels
+  - keeps dense double-line walls (gap-close + morphological envelope seal)
+  - flood-fills the building interior and splits open-plan areas by room labels
+  - decodes underlined MTEXT room names (`\LKITCHEN` → `KITCHEN`)
 - If import footprint looks wrong, export a **simplified DXF** with only interior wall layers.
 - Units follow `$INSUNITS` when set (inches/mm/feet); otherwise a magnitude heuristic is used.
 - Optional: also drop the architect PDF plan set when creating a project for sharper sheet reading.

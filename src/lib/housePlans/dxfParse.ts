@@ -9,7 +9,10 @@ function decodeMtext(raw: string): string {
     .replace(/\\p[^\s\\;]*/gi, ' ')
     .replace(/\{\\[^;]*;/g, '')
     .replace(/\}/g, '')
-    .replace(/\\[A-Za-z][^;\\]*;?/g, '')
+    // Formatting codes terminated by ';' (e.g. \H1.333x; \fArial;)
+    .replace(/\\[A-Za-z][^;\\]*;/g, '')
+    // Single-char toggles (\L underline, \O overline, \K strike) — must not eat following text
+    .replace(/\\[LlOoKkAa]/g, '')
     .replace(/%%[Uu]/g, '')
     .replace(/^t[\d.,]+;/i, '')
     .replace(/\s+/g, ' ')
@@ -24,14 +27,23 @@ export function looksLikeRoomName(text: string): boolean {
   if (/,$/.test(t)) return false;
   if (/^\d/.test(t) && !/\b(CAR|BED|BATH)/i.test(t)) return false;
   if (
-    /CLG|PCK|RECESS|ELLIPSE|ARCH|DRAIN|AREA\b|FALSE WALL|HOLD ABOVE|TYP\.|SEE NOTE|UNDER ROOF|SQ\.?\s*FT|TOTAL\b|POT FILLER|GAS\s*F\.?P|ACCESS|SEAT\b|STONE\b/i.test(
+    /CLG|PCK|RECESS|ELLIPSE|ARCH|DRAIN|AREA\b|FALSE WALL|HOLD ABOVE|TYP\.|SEE NOTE|UNDER ROOF|SQ\.?\s*FT|TOTAL\b|POT FILLER|GAS\s*F\.?P|BRG\.?\s*WALL|BRACING|LEGEND|SCALE:|FLOOR PLAN|VERIFY|OUTLET|SOFFIT|LANDSCAPE|WINDOW|DORMER|AHU|ICE\b|BEV\.|REF\.|TRASH|CRATE|WASH\.|DRY\.|TANKLESS|MID-POINT|OPEN TO|SEAT|ACCESS|TECH\.?\s*CAB|CABINET|SHELF|SHELV|COUNTER|ISLAND|SINK|RANGE|HOOD|VANITY|TOILET|TUB\b|SHOWER|FIXTURE|NOTE\b|DETAIL|ELEVATION|SECTION/i.test(
       t,
     )
   ) {
     return false;
   }
-  if (!/[A-Za-z]{3,}/.test(t)) return false;
-  return true;
+  // Strong room vocabulary — prefer these even if short.
+  if (
+    /GARAGE|KITCHEN|BED|BATH|SUITE|GREAT|LIVING|DINING|FOYER|PANTRY|LAUNDRY|OFFICE|STUDY|FAMILY|OWNER|MUD|CLOSET|HALL|ENTRY|NOOK|BONUS|FLEX|POWDER|MASTER|W\.?I\.?C|LANAI|PORCH|PATIO|UTILITY|MECH|LOFT|LIBRARY|MEDIA|THEATER|GYM|WORKSHOP|STORAGE|VESTIBULE|GALLERY|COURTYARD|WET\s*BAR|STOP\s*&\s*DROP/i.test(
+      t,
+    )
+  ) {
+    return true;
+  }
+  if (/^ROOM\s*#?\s*\d+/i.test(t)) return true;
+  if (/^BED(ROOM)?\s*#?\s*\d+/i.test(t)) return true;
+  return false;
 }
 
 /**

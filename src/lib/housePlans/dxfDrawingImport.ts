@@ -101,7 +101,10 @@ function decodeMtext(raw: string): string {
     .replace(/\\p[^\s\\;]*/gi, ' ')
     .replace(/\{\\[^;]*;/g, '')
     .replace(/\}/g, '')
-    .replace(/\\[A-Za-z][^;\\]*;?/g, '')
+    // Formatting codes terminated by ';' (e.g. \H1.333x; \fArial;)
+    .replace(/\\[A-Za-z][^;\\]*;/g, '')
+    // Single-char toggles (\L underline, \O overline, \K strike) — must not eat following text
+    .replace(/\\[LlOoKkAa]/g, '')
     .replace(/%%[Uu]/g, '')
     .replace(/^t[\d.,]+;/i, '')
     .replace(/\s+/g, ' ')
@@ -628,7 +631,7 @@ export function importDxfDrawingPackage(
 
   const plan: HousePlan = {
     ...imported.plan,
-    note: 'Imported from DWG/DXF (floor viewport crop + wall centerlines + flood-fill). Review rooms in Plan verification.',
+    note: 'Imported from DWG/DXF (floor viewport crop + sealed envelope flood-fill). Review rooms in Plan verification.',
     sourceUrl: sourceFileName,
   };
 

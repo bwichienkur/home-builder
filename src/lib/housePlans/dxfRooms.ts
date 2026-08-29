@@ -16,8 +16,6 @@ const MIN_ROOM_FT = 3;
 const MIN_ROOM_AREA = 20; // sq ft
 const WALL_THICK_MIN = 0.2; // ft (~2.5")
 const WALL_THICK_MAX = 1.2; // ft (~14")
-const RASTER_RES = 0.35; // ft per cell (~4")
-
 export function isNearOrtho(s: Seg): boolean {
   const dx = Math.abs(s.x1 - s.x2);
   const dy = Math.abs(s.y1 - s.y2);
@@ -278,6 +276,30 @@ function guessRoomType(name: string): RoomType | string {
   return 'Living room';
 }
 
+function normalizeRoomLabel(text: string): string {
+  return text.replace(/\s+/g, ' ').trim().slice(0, 40);
+}
+
+function labelsInsideRoom(
+  labels: RoomLabel[],
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+): RoomLabel[] {
+  const hit: RoomLabel[] = [];
+  const seen = new Set<string>();
+  for (const l of labels) {
+    if (!looksLikeRoomName(l.text)) continue;
+    if (l.x < x - 0.5 || l.x > x + w + 0.5 || l.y < y - 0.5 || l.y > y + h + 0.5) continue;
+    const key = normalizeRoomLabel(l.text).toUpperCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    hit.push({ ...l, text: normalizeRoomLabel(l.text) });
+  }
+  return hit;
+}
+
 function labelForRoom(
   labels: RoomLabel[],
   x: number,
@@ -288,22 +310,93 @@ function labelForRoom(
 ): string {
   const cx = x + w / 2;
   const cy = y + h / 2;
-  let best: RoomLabel | null = null;
+  const inside = labelsInsideRoom(labels, x, y, w, h);
+  if (!inside.length) return fallback;
+  let best = inside[0]!;
   let bestD = Infinity;
-  for (const l of labels) {
-    if (!looksLikeRoomName(l.text)) continue;
-    if (l.x < x - 0.5 || l.x > x + w + 0.5 || l.y < y - 0.5 || l.y > y + h + 0.5) continue;
+  for (const l of inside) {
     const d = (l.x - cx) ** 2 + (l.y - cy) ** 2;
     if (d < bestD) {
       bestD = d;
       best = l;
     }
   }
-  if (!best) return fallback;
-  return best.text.replace(/\s+/g, ' ').trim().slice(0, 40) || fallback;
+  return best.text || fallback;
 }
 
-/** Raster flood-fill room extraction. */
+/**
+ * Split an open-plan flood region that contains multiple room labels into
+ * non-overlapping axis-aligned rectangles via recursive kd-style cuts.
+ */
+function roomsFromLabelSlices(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  labels: RoomLabel[],
+  startN: number,
+): PlanRoomRect[] {
+  if (labels.length < 2) return [];
+
+  const splitGroup = (rx: number, ry: number, rw: number, rh: number, group: RoomLabel[]): PlanRoomRect[] => {
+    if (!group.length) return [];
+    if (group.length === 1 || rw < MIN_ROOM_FT * 1.5 || rh < MIN_ROOM_FT * 1.5) {
+      const label = group[0]!;
+      if (rw < MIN_ROOM_FT || rh < MIN_ROOM_FT || rw * rh < MIN_ROOM_AREA) return [];
+      return [room(label.text, guessRoomType(label.text), rx, ry, rw, rh, 9)];
+    }
+    const xs = group.map((l) => l.x);
+    const ys = group.map((l) => l.y);
+    const mean = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
+    const variance = (arr: number[]) => {
+      const m = mean(arr);
+      return arr.reduce((s, v) => s + (v - m) ** 2, 0) / arr.length;
+    };
+    const splitVertical = variance(xs) >= variance(ys);
+    const sorted = [...group].sort((a, b) => (splitVertical ? a.x - b.x : a.y - b.y));
+    const mid = Math.floor(sorted.length / 2);
+    // Keep at least one label on each side.
+    const cutIdx = Math.min(Math.max(mid, 1), sorted.length - 1);
+    const a = sorted[cutIdx - 1]!;
+    const b = sorted[cutIdx]!;
+    const cut = splitVertical ? (a.x + b.x) / 2 : (a.y + b.y) / 2;
+    const left: RoomLabel[] = [];
+    const right: RoomLabel[] = [];
+    for (const l of group) {
+      const v = splitVertical ? l.x : l.y;
+      (v < cut ? left : right).push(l);
+    }
+    if (!left.length || !right.length) {
+      // Degenerate — fall back to equal strip split.
+      const half = Math.ceil(sorted.length / 2);
+      left.length = 0;
+      right.length = 0;
+      left.push(...sorted.slice(0, half));
+      right.push(...sorted.slice(half));
+    }
+    if (!left.length || !right.length) {
+      const label = group[0]!;
+      return [room(label.text, guessRoomType(label.text), rx, ry, rw, rh, 9)];
+    }
+    if (splitVertical) {
+      const rwL = Math.max(MIN_ROOM_FT, cut - rx);
+      const rwR = Math.max(MIN_ROOM_FT, rx + rw - cut);
+      return [...splitGroup(rx, ry, rwL, rh, left), ...splitGroup(cut, ry, rwR, rh, right)];
+    }
+    const rhB = Math.max(MIN_ROOM_FT, cut - ry);
+    const rhT = Math.max(MIN_ROOM_FT, ry + rh - cut);
+    return [...splitGroup(rx, ry, rw, rhB, left), ...splitGroup(rx, cut, rw, rhT, right)];
+  };
+
+  const out = splitGroup(x, y, w, h, labels);
+  // Re-number is unnecessary; callers only need count. Ensure ≥2 kept.
+  if (out.length < 2) return [];
+  // Stomp sequential fallback ids if any slipped through — names come from labels.
+  void startN;
+  return out;
+}
+
+/** Raster flood-fill room extraction with adaptive envelope sealing. */
 export function roomsFromFloodFill(
   segments: Seg[],
   labels: RoomLabel[] = [],
@@ -321,75 +414,161 @@ export function roomsFromFloodFill(
     maxX = Math.max(maxX, s.x1, s.x2);
     maxY = Math.max(maxY, s.y1, s.y2);
   }
-  const pad = 2;
+  const pad = 4;
   minX -= pad;
   minY -= pad;
   maxX += pad;
   maxY += pad;
+  const bboxArea = Math.max(1, (maxX - minX) * (maxY - minY));
 
-  const res = RASTER_RES;
-  const cols = Math.min(900, Math.max(8, Math.ceil((maxX - minX) / res) + 1));
-  const rows = Math.min(900, Math.max(8, Math.ceil((maxY - minY) / res) + 1));
+  // Finer grid for better envelope fidelity (~3").
+  const res = 0.25;
+  const cols = Math.min(1400, Math.max(8, Math.ceil((maxX - minX) / res) + 1));
+  const rows = Math.min(1400, Math.max(8, Math.ceil((maxY - minY) / res) + 1));
+  if (cols * rows > 1_600_000) {
+    warnings.push('Plan raster clamped for memory — very large drawings may lose detail.');
+  }
 
-  const wall = new Uint8Array(cols * rows);
   const idx = (c: number, r: number) => r * cols + c;
   const toC = (x: number) => Math.max(0, Math.min(cols - 1, Math.round((x - minX) / res)));
   const toR = (y: number) => Math.max(0, Math.min(rows - 1, Math.round((y - minY) / res)));
 
-  const paint = (c0: number, r0: number, c1: number, r1: number) => {
-    const dc = Math.abs(c1 - c0);
-    const dr = Math.abs(r1 - r0);
-    const steps = Math.max(dc, dr, 1);
-    for (let i = 0; i <= steps; i++) {
-      const c = Math.round(c0 + ((c1 - c0) * i) / steps);
-      const r = Math.round(r0 + ((r1 - r0) * i) / steps);
-      wall[idx(c, r)] = 1;
-      // Thicken so double-line gaps and raster aliasing don't leak exterior flood.
-      for (const [dc, dr] of [
-        [1, 0],
-        [-1, 0],
-        [0, 1],
-        [0, -1],
-        [1, 1],
-        [-1, 1],
-      ] as const) {
-        const nc = c + dc;
-        const nr = r + dr;
-        if (nc >= 0 && nr >= 0 && nc < cols && nr < rows) wall[idx(nc, nr)] = 1;
+  const paintSegs = (target: Uint8Array, thick: number) => {
+    const paint = (c0: number, r0: number, c1: number, r1: number) => {
+      const dc = Math.abs(c1 - c0);
+      const dr = Math.abs(r1 - r0);
+      const steps = Math.max(dc, dr, 1);
+      for (let i = 0; i <= steps; i++) {
+        const c = Math.round(c0 + ((c1 - c0) * i) / steps);
+        const r = Math.round(r0 + ((r1 - r0) * i) / steps);
+        for (let dy = -thick; dy <= thick; dy++) {
+          for (let dx = -thick; dx <= thick; dx++) {
+            const nc = c + dx;
+            const nr = r + dy;
+            if (nc >= 0 && nr >= 0 && nc < cols && nr < rows) target[idx(nc, nr)] = 1;
+          }
+        }
       }
+    };
+    for (const s of segments) {
+      paint(toC(s.x1), toR(s.y1), toC(s.x2), toR(s.y2));
     }
   };
 
-  for (const s of segments) {
-    paint(toC(s.x1), toR(s.y1), toC(s.x2), toR(s.y2));
+  /** Binary dilate (square kernel). */
+  const dilate = (input: Uint8Array, radius: number): Uint8Array => {
+    if (radius <= 0) return input;
+    const out = new Uint8Array(input.length);
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        if (!input[idx(c, r)]) continue;
+        for (let dy = -radius; dy <= radius; dy++) {
+          for (let dx = -radius; dx <= radius; dx++) {
+            const nc = c + dx;
+            const nr = r + dy;
+            if (nc >= 0 && nr >= 0 && nc < cols && nr < rows) out[idx(nc, nr)] = 1;
+          }
+        }
+      }
+    }
+    return out;
+  };
+
+  /** Binary erode (square kernel). */
+  const erode = (input: Uint8Array, radius: number): Uint8Array => {
+    if (radius <= 0) return input;
+    const out = new Uint8Array(input.length);
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        let ok = true;
+        for (let dy = -radius; dy <= radius && ok; dy++) {
+          for (let dx = -radius; dx <= radius; dx++) {
+            const nc = c + dx;
+            const nr = r + dy;
+            if (nc < 0 || nr < 0 || nc >= cols || nr >= rows || !input[idx(nc, nr)]) {
+              ok = false;
+              break;
+            }
+          }
+        }
+        if (ok) out[idx(c, r)] = 1;
+      }
+    }
+    return out;
+  };
+
+  const morphClose = (src: Uint8Array, radius: number): Uint8Array => erode(dilate(src, radius), radius);
+
+  const floodOutside = (blocked: Uint8Array): Uint8Array => {
+    const outside = new Uint8Array(cols * rows);
+    const stack: number[] = [];
+    const push = (c: number, r: number) => {
+      if (c < 0 || r < 0 || c >= cols || r >= rows) return;
+      const i = idx(c, r);
+      if (blocked[i] || outside[i]) return;
+      outside[i] = 1;
+      stack.push(i);
+    };
+    for (let c = 0; c < cols; c++) {
+      push(c, 0);
+      push(c, rows - 1);
+    }
+    for (let r = 0; r < rows; r++) {
+      push(0, r);
+      push(cols - 1, r);
+    }
+    while (stack.length) {
+      const i = stack.pop()!;
+      const c = i % cols;
+      const rr = (i / cols) | 0;
+      push(c + 1, rr);
+      push(c - 1, rr);
+      push(c, rr + 1);
+      push(c, rr - 1);
+    }
+    return outside;
+  };
+
+  // Base wall paint (slightly thick so double-line faces connect).
+  const baseWalls = new Uint8Array(cols * rows);
+  paintSegs(baseWalls, 1);
+
+  // Adaptive envelope: increase morphological close until exterior flood stops
+  // leaking into the house (garage doors ~16 ft need ~8 ft radius).
+  const sealCandidatesFt = [2.5, 3.5, 5, 6.5, 8, 10];
+  let outside = floodOutside(baseWalls);
+  let sealUsedFt = 0;
+  let bestInterior = 0;
+  for (const sealFt of sealCandidatesFt) {
+    const sealed = morphClose(baseWalls, Math.max(1, Math.round(sealFt / res)));
+    const candOutside = floodOutside(sealed);
+    let interior = 0;
+    for (let i = 0; i < candOutside.length; i++) {
+      if (!candOutside[i] && !sealed[i]) interior++;
+    }
+    const interiorArea = interior * res * res;
+    const ratio = interiorArea / bboxArea;
+    // Prefer a solid building plate: enough interior, not the entire bbox.
+    if (interiorArea > bestInterior && ratio >= 0.18 && ratio <= 0.92) {
+      bestInterior = interiorArea;
+      outside = candOutside;
+      sealUsedFt = sealFt;
+    }
+    // Strong footprint — stop searching larger seals (they can erase hallways).
+    if (ratio >= 0.4 && ratio <= 0.85 && interiorArea >= 1800) {
+      outside = candOutside;
+      sealUsedFt = sealFt;
+      break;
+    }
+  }
+  if (sealUsedFt > 0) {
+    warnings.push(`Envelope sealed with ${sealUsedFt.toFixed(1)} ft morphological close.`);
+  } else {
+    warnings.push('Envelope seal weak — exterior may leak through large openings.');
   }
 
-  const outside = new Uint8Array(cols * rows);
-  const stack: number[] = [];
-  const push = (c: number, r: number) => {
-    if (c < 0 || r < 0 || c >= cols || r >= rows) return;
-    const i = idx(c, r);
-    if (wall[i] || outside[i]) return;
-    outside[i] = 1;
-    stack.push(i);
-  };
-  for (let c = 0; c < cols; c++) {
-    push(c, 0);
-    push(c, rows - 1);
-  }
-  for (let r = 0; r < rows; r++) {
-    push(0, r);
-    push(cols - 1, r);
-  }
-  while (stack.length) {
-    const i = stack.pop()!;
-    const c = i % cols;
-    const rr = (i / cols) | 0;
-    push(c + 1, rr);
-    push(c - 1, rr);
-    push(c, rr + 1);
-    push(c, rr - 1);
-  }
+  // Partition walls: seal typical interior door gaps (~3 ft) so rooms stay separate.
+  const partitionSealed = morphClose(baseWalls, Math.max(1, Math.round(2 / res)));
 
   const seen = new Uint8Array(cols * rows);
   const rooms: PlanRoomRect[] = [];
@@ -398,7 +577,8 @@ export function roomsFromFloodFill(
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       const i = idx(c, r);
-      if (wall[i] || outside[i] || seen[i]) continue;
+      // Interior empty: not outside, not a partition wall.
+      if (outside[i] || partitionSealed[i] || seen[i]) continue;
       let minC = c;
       let maxC = c;
       let minR = r;
@@ -423,7 +603,7 @@ export function roomsFromFloodFill(
         ] as const) {
           if (nc < 0 || nr < 0 || nc >= cols || nr >= rows) continue;
           const ni = idx(nc, nr);
-          if (wall[ni] || outside[ni] || seen[ni]) continue;
+          if (outside[ni] || partitionSealed[ni] || seen[ni]) continue;
           seen[ni] = 1;
           q.push(ni);
         }
@@ -434,10 +614,25 @@ export function roomsFromFloodFill(
       const areaFt = area * res * res;
       if (wFt < MIN_ROOM_FT || hFt < MIN_ROOM_FT || areaFt < MIN_ROOM_AREA) continue;
       const fillRatio = areaFt / (wFt * hFt);
-      if (fillRatio < 0.35 && areaFt > 800) continue;
+      // Reject wall-cavity slivers and spaghetti corridors.
+      if (fillRatio < 0.4 && areaFt < 180) continue;
+      if (fillRatio < 0.28) continue;
 
       const x = minX + minC * res;
       const y = minY + minR * res;
+
+      // Open-plan spaces often lack full walls between Kitchen / Great Room / Nook.
+      // When several room labels sit in one flood region, slice into non-overlapping strips.
+      const insideLabels = labelsInsideRoom(labels, x, y, wFt, hFt);
+      if (insideLabels.length >= 2 && areaFt >= 280) {
+        const split = roomsFromLabelSlices(x, y, wFt, hFt, insideLabels, n);
+        if (split.length >= 2) {
+          rooms.push(...split);
+          n += split.length;
+          continue;
+        }
+      }
+
       const fallback = `Room ${n}`;
       const name = labelForRoom(labels, x, y, wFt, hFt, fallback);
       rooms.push(room(name, guessRoomType(name), x, y, wFt, hFt, 9));
@@ -459,19 +654,52 @@ export function roomsFromFloodFill(
       ),
     );
   } else {
-    const strongName = /GARAGE|KITCHEN|BED|BATH|SUITE|GREAT|LIVING|DINING|FOYER|PANTRY|LAUNDRY|OFFICE|FAMILY|OWNER|MUD|CLOSET|HALL|ENTRY|NOOK|BONUS|FLEX/i;
+    const strongName =
+      /GARAGE|KITCHEN|BED|BATH|SUITE|GREAT|LIVING|DINING|FOYER|PANTRY|LAUNDRY|OFFICE|STUDY|FAMILY|OWNER|MUD|CLOSET|HALL|ENTRY|NOOK|BONUS|FLEX|MASTER|POWDER|LANAI|W\.?I\.?C/i;
     const filtered = rooms.filter((r) => {
       const area = r.w * r.h;
       if (area < MIN_ROOM_AREA) return false;
-      // Huge unlabeled / weakly labeled blobs are usually porch/patio/yard.
-      if (area > 1400 && !strongName.test(r.name)) return false;
+      // Drop huge unlabeled exterior leftovers (yard / lanai bleed).
+      if (area > 2800 && !strongName.test(r.name)) return false;
+      // Drop tiny unlabeled crumbs (wall pockets / fixture niches).
+      if (area < 70 && /^Room\s+\d+/i.test(r.name)) return false;
       return true;
     });
     if (filtered.length) {
       rooms.length = 0;
       rooms.push(...filtered);
     }
-    warnings.push(`Detected ${rooms.length} enclosed room(s) via wall flood-fill.`);
+
+    // Drop duplicate labels that appear both as a sealed room and inside an open-plan split.
+    const deduped: PlanRoomRect[] = [];
+    const byArea = [...rooms].sort((a, b) => b.w * b.h - a.w * a.h);
+    for (const r of byArea) {
+      const key = r.name.replace(/\s+/g, ' ').trim().toUpperCase();
+      const cx = r.x + r.w / 2;
+      const cy = r.y + r.h / 2;
+      const clash = deduped.some((o) => {
+        const ok = o.name.replace(/\s+/g, ' ').trim().toUpperCase();
+        if (ok !== key) return false;
+        const ox = o.x + o.w / 2;
+        const oy = o.y + o.h / 2;
+        return Math.hypot(cx - ox, cy - oy) < 10;
+      });
+      if (!clash) deduped.push(r);
+    }
+    if (deduped.length) {
+      rooms.length = 0;
+      rooms.push(...deduped);
+    }
+
+    // Coverage of wall bbox — connected plans should claim a large share.
+    const roomArea = rooms.reduce((s, r) => s + r.w * r.h, 0);
+    const wallSpanX = maxX - minX - 2 * pad;
+    const wallSpanY = maxY - minY - 2 * pad;
+    const wallBBox = Math.max(1, wallSpanX * wallSpanY);
+    const coverage = roomArea / wallBBox;
+    warnings.push(
+      `Detected ${rooms.length} enclosed room(s) via sealed-envelope flood-fill (${Math.round(coverage * 100)}% wall-bbox coverage).`,
+    );
   }
   return { rooms, warnings };
 }
@@ -603,7 +831,11 @@ export function segmentsToOrthogonalRoomsLegacy(segments: Seg[]): {
   return { rooms, warnings };
 }
 
-/** Ortho snap → cluster → double-wall centerlines → flood-fill rooms. */
+/**
+ * Ortho snap → cluster → keep dense double-line walls (plus gap close) → flood-fill.
+ * Centerlines are still computed for diagnostics, but flood-fill uses the denser
+ * wall paint so the building envelope does not fall apart at openings.
+ */
 export function segmentsToRoomsAccurate(
   rawSegments: Seg[],
   opts?: { labels?: RoomLabel[]; insUnits?: number },
@@ -625,28 +857,14 @@ export function segmentsToRoomsAccurate(
   const xMap = clusterValues(xs);
   const yMap = clusterValues(ys);
   const snapped = ortho.map((s) => snapSeg(s, xMap, yMap));
-  let centers = closeSmallGaps(centerlinesFromDoubleWalls(snapped), 4);
-  // Seal the outer footprint so exterior flood cannot leak through porch/garage openings.
-  if (centers.length) {
-    let minX = Infinity;
-    let minY = Infinity;
-    let maxX = -Infinity;
-    let maxY = -Infinity;
-    for (const s of centers) {
-      minX = Math.min(minX, s.x1, s.x2);
-      minY = Math.min(minY, s.y1, s.y2);
-      maxX = Math.max(maxX, s.x1, s.x2);
-      maxY = Math.max(maxY, s.y1, s.y2);
-    }
-    centers = mergeColinear([
-      ...centers,
-      { x1: minX, y1: minY, x2: maxX, y2: minY },
-      { x1: maxX, y1: minY, x2: maxX, y2: maxY },
-      { x1: maxX, y1: maxY, x2: minX, y2: maxY },
-      { x1: minX, y1: maxY, x2: minX, y2: minY },
-    ]);
-  }
-  warnings.push(`Wall centerlines: ${centers.length} (from ${ortho.length} ortho segments).`);
+
+  // Dense walls: merge colinear faces, bridge door-sized gaps. Morphological
+  // close in flood-fill handles larger garage / patio openings.
+  const denseWalls = closeSmallGaps(mergeColinear(snapped), 3.5);
+  const centers = centerlinesFromDoubleWalls(snapped);
+  warnings.push(
+    `Wall segments for fill: ${denseWalls.length} dense / ${centers.length} centerlines (from ${ortho.length} ortho).`,
+  );
 
   const scaledLabels = (opts?.labels ?? []).map((l) => ({
     x: l.x * scale,
@@ -654,7 +872,7 @@ export function segmentsToRoomsAccurate(
     text: l.text,
   }));
 
-  const { rooms, warnings: w2 } = roomsFromFloodFill(centers, scaledLabels);
+  const { rooms, warnings: w2 } = roomsFromFloodFill(denseWalls, scaledLabels);
   warnings.push(...w2);
-  return { rooms, warnings, scaledSegments: centers };
+  return { rooms, warnings, scaledSegments: denseWalls };
 }
