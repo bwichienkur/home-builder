@@ -23,6 +23,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
     "@react-three/drei": "latest",
     "@react-three/fiber": "latest",
     "cors": "latest",
@@ -34,6 +35,7 @@
     "react-dom": "latest",
     "react-router-dom": "^7.18.2",
     "three": "latest",
+    "ws": "^8.21.3",
     "xlsx": "^0.18.5",
     "zod": "latest",
     "zustand": "latest"

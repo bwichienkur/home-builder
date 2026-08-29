@@ -1,47 +1,63 @@
+'use strict';
+
 /**
- * Shared Neon / Postgres pool for ops-style snapshot routes.
+ * Shared Postgres pool for Express and Vercel.
+ * On Vercel, classic `pg` TCP often fails in serverless isolates — use
+ * @neondatabase/serverless (WebSocket) instead.
  */
-import pg from 'pg';
 
 let pool = null;
 
-export function databaseUrl() {
-  return (
-    process.env.DATABASE_URL ||
-    process.env.POSTGRES_URL ||
-    process.env.DATABASE_URL_UNPOOLED ||
-    process.env.POSTGRES_URL_NON_POOLING ||
-    ''
-  ).trim();
+function isVercelRuntime() {
+  return Boolean(process.env.VERCEL || process.env.VERCEL_ENV);
 }
 
-function poolSsl(url) {
-  // Neon and most hosted Postgres require TLS. Avoid crashing on cert chain mismatches in serverless.
-  if (/neon\.tech|sslmode=require|sslmode=verify/i.test(url) || url.includes('ssl=true')) {
-    return { rejectUnauthorized: false };
+function createPool() {
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) return null;
+
+  if (isVercelRuntime()) {
+    // eslint-disable-next-line global-require
+    const { Pool, neonConfig } = require('@neondatabase/serverless');
+    // eslint-disable-next-line global-require
+    const ws = require('ws');
+    neonConfig.webSocketConstructor = ws;
+    const p = new Pool({ connectionString });
+    p.on('error', (err) => {
+      console.error('[dbPool] idle client error', err?.message || err);
+    });
+    return p;
   }
-  return undefined;
+
+  // eslint-disable-next-line global-require
+  const { Pool } = require('pg');
+  const needsSsl =
+    process.env.PGSSLMODE === 'require' ||
+    /neon\.tech|sslmode=require/i.test(connectionString);
+  const p = new Pool({
+    connectionString,
+    ssl: needsSsl ? { rejectUnauthorized: false } : undefined,
+    max: Number(process.env.PG_POOL_MAX || 5),
+    idleTimeoutMillis: 10_000,
+    connectionTimeoutMillis: 8_000,
+  });
+  p.on('error', (err) => {
+    console.error('[dbPool] idle client error', err?.message || err);
+  });
+  return p;
 }
 
-export function getPool() {
-  const url = databaseUrl();
-  if (!url) return null;
+function getPool() {
+  if (!process.env.DATABASE_URL) return null;
   if (!pool) {
-    pool = new pg.Pool({
-      connectionString: url,
-      ssl: poolSsl(url),
-      max: 2,
-      idleTimeoutMillis: 10_000,
-      connectionTimeoutMillis: 8_000,
-    });
-    // Unhandled pool 'error' crashes the Vercel isolate → FUNCTION_INVOCATION_FAILED.
-    pool.on('error', (err) => {
-      console.error('pg pool error', err?.message || err);
-    });
+    try {
+      pool = createPool();
+    } catch (err) {
+      console.error('[dbPool] failed to create pool', err?.message || err);
+      pool = null;
+    }
   }
   return pool;
 }
 
-export function hasDatabase() {
-  return Boolean(databaseUrl());
-}
+module.exports = { getPool };

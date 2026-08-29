@@ -9,6 +9,8 @@ import type {
 } from './authProvider';
 import { normalizeRole, type UserRole } from './roles';
 
+const AUTH_FETCH_MS = 8_000;
+
 function asUser(raw: Partial<AuthUser> & { id: string; email: string; name: string }): AuthUser {
   return {
     id: raw.id,
@@ -16,6 +18,10 @@ function asUser(raw: Partial<AuthUser> & { id: string; email: string; name: stri
     name: raw.name,
     role: normalizeRole(raw.role),
   };
+}
+
+function authSignal(ms = AUTH_FETCH_MS): AbortSignal {
+  return AbortSignal.timeout(ms);
 }
 
 /**
@@ -35,6 +41,7 @@ export class RemoteAuthProvider implements AuthProvider {
         method: 'POST',
         headers: apiHeaders(),
         body: JSON.stringify({ email, password }),
+        signal: authSignal(),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) return { ok: false, error: body.error || 'Sign-in failed.' };
@@ -54,6 +61,7 @@ export class RemoteAuthProvider implements AuthProvider {
         method: 'POST',
         headers: apiHeaders(),
         body: JSON.stringify({ email, password, name }),
+        signal: authSignal(),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) return { ok: false, error: body.error || 'Registration failed.' };
@@ -75,6 +83,7 @@ export class RemoteAuthProvider implements AuthProvider {
       await fetch(`${this.base()}/api/auth/logout`, {
         method: 'POST',
         headers: apiHeaders(),
+        signal: authSignal(4_000),
       });
     } catch {
       /* ignore */
@@ -85,7 +94,10 @@ export class RemoteAuthProvider implements AuthProvider {
     const token = localStorage.getItem('mahnikka-auth-token');
     if (!token) return null;
     try {
-      const res = await fetch(`${this.base()}/api/auth/me`, { headers: apiHeaders() });
+      const res = await fetch(`${this.base()}/api/auth/me`, {
+        headers: apiHeaders(),
+        signal: authSignal(5_000),
+      });
       if (!res.ok) return null;
       const body = await res.json();
       return body.user ? asUser(body.user) : null;
