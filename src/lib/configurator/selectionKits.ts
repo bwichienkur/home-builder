@@ -3,9 +3,11 @@ import type { CatalogItem } from '../../components/catalog/catalogData';
 export type SelectionKitPart = {
   skuPattern?: RegExp;
   namePattern?: RegExp;
+  fallbackSku?: string;
   sourceTab?: string;
   label: string;
   required?: boolean;
+  hidden?: boolean;
 };
 
 export type SelectionKit = {
@@ -17,7 +19,7 @@ export type SelectionKit = {
   hiddenParts: SelectionKitPart[];
 };
 
-/** Multi-part plumbing/shower packages — visible picks auto-include behind-wall parts. */
+/** Multi-part plumbing packages — visible picks auto-include behind-wall parts. */
 export const SELECTION_KITS: SelectionKit[] = [
   {
     id: 'shower-trim-package',
@@ -25,14 +27,38 @@ export const SELECTION_KITS: SelectionKit[] = [
     category: 'Plumbing',
     roomTypes: ['Bathroom'],
     visibleParts: [
-      { label: 'Shower handle', namePattern: /handle|trim/i, sourceTab: 'Plumbing' },
-      { label: 'Shower head', namePattern: /shower head|rain/i, sourceTab: 'Plumbing' },
-      { label: 'Hand wand', namePattern: /wand|hand shower/i, sourceTab: 'Plumbing' },
+      { label: 'Shower handle', skuPattern: /^KIT-SHOWER-HANDLE$/i, namePattern: /shower handle|trim kit/i, sourceTab: 'Plumbing' },
+      { label: 'Shower head', skuPattern: /^KIT-SHOWER-HEAD$/i, namePattern: /shower head/i, sourceTab: 'Plumbing' },
+      { label: 'Hand wand', skuPattern: /^KIT-HAND-WAND$/i, namePattern: /hand shower|wand/i, sourceTab: 'Plumbing' },
     ],
     hiddenParts: [
-      { label: 'Shower valve', namePattern: /valve/i, sourceTab: 'Plumbing', required: true },
-      { label: 'Diverter valve', namePattern: /diverter/i, sourceTab: 'Plumbing', required: true },
-      { label: 'Shower hose', namePattern: /hose/i, sourceTab: 'Plumbing', required: true },
+      {
+        label: 'Shower valve',
+        skuPattern: /^KIT-SHOWER-VALVE$/i,
+        namePattern: /shower rough-in valve|shower valve/i,
+        fallbackSku: 'KIT-SHOWER-VALVE',
+        sourceTab: 'Plumbing',
+        required: true,
+        hidden: true,
+      },
+      {
+        label: 'Diverter valve',
+        skuPattern: /^KIT-DIVERTER$/i,
+        namePattern: /diverter valve/i,
+        fallbackSku: 'KIT-DIVERTER',
+        sourceTab: 'Plumbing',
+        required: true,
+        hidden: true,
+      },
+      {
+        label: 'Shower hose',
+        skuPattern: /^KIT-SHOWER-HOSE$/i,
+        namePattern: /shower hose|hand shower hose/i,
+        fallbackSku: 'KIT-SHOWER-HOSE',
+        sourceTab: 'Plumbing',
+        required: true,
+        hidden: true,
+      },
     ],
   },
   {
@@ -40,9 +66,19 @@ export const SELECTION_KITS: SelectionKit[] = [
     name: 'Tub filler package',
     category: 'Plumbing',
     roomTypes: ['Bathroom'],
-    visibleParts: [{ label: 'Tub filler', namePattern: /tub filler|roman tub/i, sourceTab: 'Plumbing' }],
+    visibleParts: [
+      { label: 'Tub filler', skuPattern: /^KIT-TUB-FILLER$/i, namePattern: /tub filler|roman tub/i, sourceTab: 'Plumbing' },
+    ],
     hiddenParts: [
-      { label: 'Tub valve', namePattern: /tub valve|valve/i, sourceTab: 'Plumbing', required: true },
+      {
+        label: 'Tub valve',
+        skuPattern: /^KIT-TUB-VALVE$/i,
+        namePattern: /tub rough-in valve|tub valve/i,
+        fallbackSku: 'KIT-TUB-VALVE',
+        sourceTab: 'Plumbing',
+        required: true,
+        hidden: true,
+      },
     ],
   },
   {
@@ -50,9 +86,19 @@ export const SELECTION_KITS: SelectionKit[] = [
     name: 'Vanity faucet package',
     category: 'Plumbing',
     roomTypes: ['Bathroom', 'Kitchen'],
-    visibleParts: [{ label: 'Faucet', namePattern: /faucet|lav/i, sourceTab: 'Plumbing' }],
+    visibleParts: [
+      { label: 'Faucet', skuPattern: /^KIT-LAV-FAUCET$/i, namePattern: /lavatory faucet|^faucet$/i, sourceTab: 'Plumbing' },
+    ],
     hiddenParts: [
-      { label: 'Supply lines', namePattern: /supply|stop/i, sourceTab: 'Plumbing', required: true },
+      {
+        label: 'Supply stops',
+        skuPattern: /^KIT-SUPPLY-STOP$/i,
+        namePattern: /supply stop|angle stop/i,
+        fallbackSku: 'KIT-SUPPLY-STOP',
+        sourceTab: 'Plumbing',
+        required: true,
+        hidden: true,
+      },
     ],
   },
 ];
@@ -60,6 +106,7 @@ export const SELECTION_KITS: SelectionKit[] = [
 function matchesPart(item: CatalogItem, part: SelectionKitPart): boolean {
   if (part.sourceTab && item.sourceTab !== part.sourceTab) return false;
   if (part.skuPattern && item.sku && part.skuPattern.test(item.sku)) return true;
+  if (part.fallbackSku && item.sku === part.fallbackSku) return true;
   if (part.namePattern && part.namePattern.test(item.name)) return true;
   return false;
 }
@@ -69,14 +116,10 @@ export function resolveKitParts(kit: SelectionKit, catalog: CatalogItem[], picke
   const allParts = [...kit.visibleParts, ...kit.hiddenParts];
   for (const part of allParts) {
     if (matchesPart(picked, part)) continue;
-    const match = catalog.find((item) => matchesPart(item, part));
+    const match =
+      catalog.find((item) => part.fallbackSku && item.sku === part.fallbackSku) ??
+      catalog.find((item) => matchesPart(item, part));
     if (match && !out.some((o) => o.id === match.id)) out.push(match);
-  }
-  for (const part of kit.hiddenParts.filter((p) => p.required !== false)) {
-    if (!out.some((item) => matchesPart(item, part))) {
-      const fallback = catalog.find((item) => matchesPart(item, part));
-      if (fallback) out.push(fallback);
-    }
   }
   return out;
 }

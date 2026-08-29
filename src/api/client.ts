@@ -124,3 +124,35 @@ export async function updateSelectionProject(
   if (!response.ok) throw new Error('Selection project could not be saved');
   return response.json();
 }
+
+export async function inviteSelectionProjectClient(
+  id: string,
+  body?: { clientEmail?: string; expiresInDays?: number },
+): Promise<{ shareToken: string; shareUrl: string; shareExpiresAt?: string; clientEmail?: string; note?: string }> {
+  const response = await fetch(`${API_URL}/api/selection-projects/${id}/invite`, {
+    method: 'POST',
+    headers: headers(),
+    body: JSON.stringify(body ?? {}),
+  });
+  if (!response.ok) throw new Error('Client invite could not be created');
+  return response.json();
+}
+
+export async function getSharedSelectionProject(token: string): Promise<ApiSelectionProject & { shareToken?: string }> {
+  const response = await fetch(`${API_URL}/api/selection-projects/shared/${encodeURIComponent(token)}`);
+  if (!response.ok) throw new Error('Shared selection project not found or expired');
+  return response.json();
+}
+
+export async function updateSharedSelectionProject(
+  token: string,
+  extended: Record<string, unknown>,
+): Promise<ApiSelectionProject> {
+  const response = await fetch(`${API_URL}/api/selection-projects/shared/${encodeURIComponent(token)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ extended }),
+  });
+  if (!response.ok) throw new Error('Shared selection project could not be saved');
+  return response.json();
+}

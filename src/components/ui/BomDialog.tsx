@@ -890,7 +890,7 @@ export function BomDialog({
             <button
               type="button"
               onClick={() =>
-                downloadCofExcel(
+                void downloadCofExcel(
                   {
                     project: cofProject,
                     contract: cofContract,
@@ -899,6 +899,7 @@ export function BomDialog({
                     planRooms,
                     takeoff: cofProject.takeoff,
                     levelOverrides: cofProject.levelOverrides,
+                    allowances: cofProject.allowances,
                   },
                   `${cofProject.name.replace(/[^\w.-]+/g, '-').slice(0, 40)}-cof.xlsx`,
                 )

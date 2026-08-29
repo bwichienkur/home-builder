@@ -1,6 +1,7 @@
 import type { CatalogItem, CatalogPlacementMode, PriceUnit } from '../../components/catalog/catalogData';
 import { enrichOlsenCatalog } from './olsenHeroModels';
 import olsenSeed from './olsenCatalogSeed.json';
+import plumbingKitStubs from './plumbingKitStubs.json';
 
 export type ApiCatalogProduct = {
   id: string;
@@ -99,9 +100,11 @@ export function mapApiProductToCatalogItem(row: ApiCatalogProduct): CatalogItem 
   };
 }
 
-/** Baked Olsen selections from Cost Library (offline / no DATABASE_URL). */
+/** Baked Olsen selections from Cost Library + plumbing kit stubs. */
 export function getOlsenCatalogSeed(): CatalogItem[] {
-  return enrichOlsenCatalog(olsenSeed as CatalogItem[]);
+  const stubs = plumbingKitStubs as CatalogItem[];
+  const merged = mergeCatalogItems(olsenSeed as CatalogItem[], stubs);
+  return enrichOlsenCatalog(merged);
 }
 
 export function mergeCatalogItems(base: CatalogItem[], overlay: CatalogItem[]): CatalogItem[] {

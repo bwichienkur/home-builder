@@ -15,6 +15,7 @@ export function SignOffPanel() {
   const project = useConfiguratorStore((s) => s.project);
   const role = useConfiguratorStore((s) => s.role);
   const setSignOff = useConfiguratorStore((s) => s.setSignOff);
+  const completeCloseout = useConfiguratorStore((s) => s.completeCloseout);
   const markClientFinished = useConfiguratorStore((s) => s.markClientFinished);
   const furniture = usePlannerStore((s) => s.furniture);
   const planRooms = usePlannerStore((s) => s.planRooms);
@@ -25,6 +26,7 @@ export function SignOffPanel() {
 
   const btRows = buildBtSelectionRows({ project, catalog, furniture, planRooms });
   const trades = tradeGroupedSummary(btRows);
+  const bothSigned = project.signOff.cof === 'approved' && project.signOff.buildertrend === 'approved';
 
   return (
     <section className="configurator-panel signoff-panel" aria-label="Sign-off and export">
@@ -32,6 +34,7 @@ export function SignOffPanel() {
         <div>
           <p className="configurator-eyebrow">Close-out</p>
           <strong>Sign-off &amp; export</strong>
+          <p className="muted">One action exports COF + BT CSV and marks both signed (no BT API write-back).</p>
         </div>
       </header>
 
@@ -41,9 +44,9 @@ export function SignOffPanel() {
           <span className={`configurator-status-chip ${signClass(project.signOff.cof)}`}>{project.signOff.cof}</span>
         </div>
         <div className="configurator-sign-card">
-          <span className="configurator-eyebrow">Buildertrend</span>
+          <span className="configurator-eyebrow">Buildertrend CSV</span>
           <span className={`configurator-status-chip ${signClass(project.signOff.buildertrend)}`}>
-            {project.signOff.buildertrend}
+            {project.signOff.buildertrend === 'approved' ? 'csv ready' : project.signOff.buildertrend}
           </span>
         </div>
       </div>
@@ -58,9 +61,17 @@ export function SignOffPanel() {
         <div className="configurator-panel-actions">
           <button
             type="button"
-            className="configurator-btn primary"
+            className="configurator-btn primary full"
+            disabled={bothSigned}
+            onClick={() => void completeCloseout()}
+          >
+            {bothSigned ? 'Signed & exported' : 'Sign & export COF + BT CSV'}
+          </button>
+          <button
+            type="button"
+            className="configurator-btn"
             onClick={() =>
-              downloadCofExcel({
+              void downloadCofExcel({
                 project,
                 contract: project.contract,
                 catalog,
@@ -68,19 +79,20 @@ export function SignOffPanel() {
                 planRooms,
                 takeoff: project.takeoff,
                 levelOverrides: project.levelOverrides,
+                allowances: project.allowances,
               })
             }
           >
-            Export COF Excel
+            Export COF only
           </button>
           <button type="button" className="configurator-btn" onClick={() => downloadBtSelectionsCsv(btRows)}>
-            Export BT selections CSV
+            Export BT CSV only
           </button>
           <button type="button" className="configurator-btn" onClick={() => setSignOff('cof', 'approved')}>
             Mark COF signed
           </button>
           <button type="button" className="configurator-btn" onClick={() => setSignOff('buildertrend', 'approved')}>
-            Mark BT approved
+            Mark BT CSV submitted
           </button>
         </div>
       )}

@@ -124,6 +124,20 @@ for (const raw of rows) {
 
 items.sort((a, b) => a.name.localeCompare(b.name));
 
+// Preserve plumbing kit stubs across Cost Library rebuilds.
+const stubsPath = join(root, 'src/lib/catalog/plumbingKitStubs.json');
+if (existsSync(stubsPath)) {
+  try {
+    const stubs = JSON.parse(readFileSync(stubsPath, 'utf8'));
+    const bySku = new Set(items.map((i) => i.sku));
+    for (const stub of stubs) {
+      if (stub?.sku && !bySku.has(stub.sku)) items.push(stub);
+    }
+  } catch {
+    console.warn('Could not merge plumbing kit stubs');
+  }
+}
+
 const meta = {
   generatedAt: new Date().toISOString(),
   sourceFile: 'Olsen_Cost_Library_All_Tabs_Reformatted_2026.xlsx',
@@ -131,6 +145,7 @@ const meta = {
   tabs: [...new Set(items.map((i) => i.sourceTab))].sort(),
   lookbookThumbs: Object.keys(lookbookThumbs).length,
   withPhotoThumb: items.filter((i) => i.thumbnailUrl?.includes('/lookbook/')).length,
+  kitStubs: existsSync(stubsPath),
 };
 
 writeFileSync(outPath, `${JSON.stringify(items, null, 2)}\n`);
