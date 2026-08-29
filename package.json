@@ -9,6 +9,7 @@
     "buildertrend:pull": "node -e \"import('./server/buildertrend/pull.js').then((m) => m.pullBuildertrend().then((p) => { console.log(JSON.stringify({ ok: true, authMethod: p.authMethod, pulledAt: p.pulledAt, statuses: p.statuses }, null, 2)); }).catch((e) => { console.error(e.message); process.exit(1); }))\"",
     "buildertrend:update-snapshot": "vitest run scripts/update-live-snapshot.spec.ts",
     "catalog:build-olsen": "node scripts/build-olsen-catalog.mjs",
+    "catalog:seed-db": "node scripts/seed-olsen-catalog-db.mjs",
     "catalog:extract-lookbook": "python3 scripts/extract-lookbook-thumbs.py && node scripts/build-olsen-catalog.mjs",
     "catalog:weekly-refresh": "node scripts/catalog-weekly-refresh.mjs",
     "plan:import-stillwater": "node scripts/import-stillwater-dwg.mjs",

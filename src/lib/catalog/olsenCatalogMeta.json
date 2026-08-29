@@ -1,10 +1,23 @@
 {
-  "generatedAt": "2026-08-28T19:54:43.622Z",
-  "sourceFile": "Olsen_Cost_Library_All_Tabs_Reformatted_2026.xlsx",
-  "rowCount": 722,
+  "generatedAt": "2026-08-29T12:33:17.924Z",
+  "sourcePackage": "Olsen_Inventory_Images_and_Master_Catalog",
+  "masterCatalogFile": "Olsen_3D_Full_Master_Catalog_Updated.xlsx",
+  "costLibraryFile": "Olsen_Cost_Library_All_Tabs_Reformatted_2026.xlsx",
+  "rowCount": 1154,
+  "counts": {
+    "moenVariants": 116,
+    "eagleRoofing": 40,
+    "tremronPavers": 5,
+    "sinks": 22,
+    "trim": 7,
+    "lookbookImageCandidates": 271,
+    "costLibrarySelectionTabs": 693,
+    "withInventoryPhoto": 461
+  },
   "tabs": [
     "Countertops",
     "Ext. Door Install",
+    "Interior Doors",
     "PGT Windows",
     "Pavers",
     "Plumbing",
@@ -19,8 +32,21 @@
     "Tile - Listel 4\"",
     "Tile - Pan",
     "Tile-Floor",
-    "Tile-Wall"
+    "Tile-Wall",
+    "Trim Material"
   ],
-  "lookbookThumbs": 467,
-  "withPhotoThumb": 467
+  "categories": [
+    "Appliances",
+    "Cabinetry",
+    "Decor",
+    "Doors",
+    "Exterior",
+    "Paneling",
+    "Plumbing",
+    "Specialties",
+    "Surfaces",
+    "Tile",
+    "Trim",
+    "Windows"
+  ]
 }

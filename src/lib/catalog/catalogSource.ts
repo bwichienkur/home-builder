@@ -100,7 +100,7 @@ export function mapApiProductToCatalogItem(row: ApiCatalogProduct): CatalogItem 
   };
 }
 
-/** Baked Olsen selections from Cost Library + plumbing kit stubs. */
+/** Baked Olsen selections from Master Catalog inventory + Cost Library COF tabs + plumbing kit stubs. */
 export function getOlsenCatalogSeed(): CatalogItem[] {
   const stubs = plumbingKitStubs as CatalogItem[];
   const merged = mergeCatalogItems(olsenSeed as CatalogItem[], stubs);
