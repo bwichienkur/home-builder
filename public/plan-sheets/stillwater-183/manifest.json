@@ -1,0 +1,77 @@
+{
+  "planId": "stillwater-183",
+  "sheets": [
+    {
+      "order": 0,
+      "name": "COVER",
+      "file": "00-cover.svg",
+      "bytes": 171026,
+      "segCount": 1189,
+      "labelCount": 78
+    },
+    {
+      "order": 1,
+      "name": "SHT. 1 FLOOR",
+      "file": "01-floor.svg",
+      "bytes": 212127,
+      "segCount": 1399,
+      "labelCount": 167
+    },
+    {
+      "order": 2,
+      "name": "SHT. 2 FRONT ELEVATION",
+      "file": "02-front-elevation.svg",
+      "bytes": 24004,
+      "segCount": 171,
+      "labelCount": 6
+    },
+    {
+      "order": 3,
+      "name": "SHT. 3 SIDE ELEVATIONS",
+      "file": "03-side-elevations.svg",
+      "bytes": 21902,
+      "segCount": 160,
+      "labelCount": 4
+    },
+    {
+      "order": 4,
+      "name": "SHT. 4 FOUNDATION",
+      "file": "04-foundation.svg",
+      "bytes": 76332,
+      "segCount": 498,
+      "labelCount": 76
+    },
+    {
+      "order": 5,
+      "name": "SHT. 5 ELECTRICAL",
+      "file": "05-electrical.svg",
+      "bytes": 109415,
+      "segCount": 765,
+      "labelCount": 32
+    },
+    {
+      "order": 6,
+      "name": "SHT. 6 DETAILS",
+      "file": "06-details.svg",
+      "bytes": 122982,
+      "segCount": 806,
+      "labelCount": 97
+    },
+    {
+      "order": 7,
+      "name": "SHT. 7 NOTES",
+      "file": "07-notes.svg",
+      "bytes": 28059,
+      "segCount": 115,
+      "labelCount": 97
+    },
+    {
+      "order": 8,
+      "name": "SHT. 8 TRUSS CONNECTOR",
+      "file": "08-truss.svg",
+      "bytes": 522052,
+      "segCount": 3929,
+      "labelCount": 22
+    }
+  ]
+}

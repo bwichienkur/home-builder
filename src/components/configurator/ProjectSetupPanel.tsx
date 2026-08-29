@@ -1,9 +1,18 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useConfiguratorStore, createBlankSelectionProject } from '../../store/configuratorStore';
 import { WORKFLOW_LABEL } from '../../store/configuratorStore';
 import type { ProjectWorkflowStatus, TeamMember, TeamRole } from '../../lib/configurator/projectTypes';
+import type { DrawingImportProgress } from '../../lib/housePlans/importDrawingFile';
 
 const TEAM_ROLES: TeamRole[] = ['estimator', 'designer', 'project_manager', 'client'];
+
+function progressLabel(p: DrawingImportProgress | null): string {
+  if (!p) return '';
+  if (p.stage === 'reading') return `Reading ${p.detail ?? 'file'}…`;
+  if (p.stage === 'converting') return 'Converting DWG → DXF…';
+  if (p.stage === 'parsing') return 'Building rooms + sheet previews…';
+  return 'Done';
+}
 
 export function ProjectSetupPanel() {
   const project = useConfiguratorStore((s) => s.project);
@@ -12,6 +21,7 @@ export function ProjectSetupPanel() {
   const setTeam = useConfiguratorStore((s) => s.setTeam);
   const setWorkflowStatus = useConfiguratorStore((s) => s.setWorkflowStatus);
   const importContractPricingFile = useConfiguratorStore((s) => s.importContractPricingFile);
+  const importProjectDrawing = useConfiguratorStore((s) => s.importProjectDrawing);
   const createClientInvite = useConfiguratorStore((s) => s.createClientInvite);
   const lastInviteUrl = useConfiguratorStore((s) => s.lastInviteUrl);
 
@@ -21,6 +31,13 @@ export function ProjectSetupPanel() {
   const [memberRole, setMemberRole] = useState<TeamRole>('designer');
   const [clientEmail, setClientEmail] = useState('');
   const [inviteBusy, setInviteBusy] = useState(false);
+  const [drawingFile, setDrawingFile] = useState<File | null>(null);
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [importBusy, setImportBusy] = useState(false);
+  const [importProgress, setImportProgress] = useState<DrawingImportProgress | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState(false);
+  const drawingInputRef = useRef<HTMLInputElement>(null);
 
   if (role !== 'admin') return null;
 
@@ -33,6 +50,39 @@ export function ProjectSetupPanel() {
     setTeam(next);
     setMemberName('');
     setMemberEmail('');
+  };
+
+  const assignDrawingFiles = (list: FileList | File[]) => {
+    const files = [...list];
+    const drawing = files.find((f) => /\.(dwg|dxf)$/i.test(f.name)) ?? null;
+    const pdf = files.find((f) => /\.pdf$/i.test(f.name)) ?? null;
+    if (drawing) setDrawingFile(drawing);
+    if (pdf) setPdfFile(pdf);
+  };
+
+  const runImport = async (createIfEmpty: boolean) => {
+    if (!drawingFile) {
+      setImportError('Choose a .dwg or .dxf file first.');
+      return;
+    }
+    setImportError(null);
+    setImportBusy(true);
+    setImportProgress({ stage: 'reading' });
+    try {
+      await importProjectDrawing(
+        { drawing: drawingFile, pdf: pdfFile },
+        {
+          planName: projectName.trim() || undefined,
+          createIfEmpty,
+          onProgress: setImportProgress,
+        },
+      );
+      setProjectName('');
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : 'Drawing import failed');
+    } finally {
+      setImportBusy(false);
+    }
   };
 
   return (
@@ -66,6 +116,78 @@ export function ProjectSetupPanel() {
             </button>
           </div>
         </label>
+
+        <div className="configurator-field drawing-drop-field">
+          <span>CAD drawing (DWG / DXF)</span>
+          <div
+            className={`drawing-dropzone ${dragOver ? 'is-dragover' : ''}`}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragOver(true);
+            }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragOver(false);
+              if (e.dataTransfer.files?.length) assignDrawingFiles(e.dataTransfer.files);
+            }}
+            onClick={() => drawingInputRef.current?.click()}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') drawingInputRef.current?.click();
+            }}
+          >
+            <strong>{drawingFile ? drawingFile.name : 'Drop MODEL.dwg here'}</strong>
+            <span className="muted">
+              Builds a configurable room model and sheet previews (floor, elevations, foundation, …).
+              Optional PDF plan set improves readability.
+            </span>
+            <input
+              ref={drawingInputRef}
+              type="file"
+              accept=".dwg,.dxf,application/acad,image/vnd.dwg"
+              hidden
+              onChange={(e) => {
+                if (e.target.files?.length) assignDrawingFiles(e.target.files);
+                e.target.value = '';
+              }}
+            />
+          </div>
+          <div className="configurator-inline-row drawing-drop-actions">
+            <label className="configurator-btn">
+              PDF plan set
+              <input
+                type="file"
+                accept=".pdf,application/pdf"
+                hidden
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) setPdfFile(file);
+                  e.target.value = '';
+                }}
+              />
+            </label>
+            {pdfFile && <span className="muted">{pdfFile.name}</span>}
+            <button
+              type="button"
+              className="configurator-btn primary"
+              disabled={!drawingFile || importBusy}
+              onClick={() => void runImport(!project)}
+            >
+              {importBusy ? progressLabel(importProgress) || 'Importing…' : project ? 'Import into project' : 'Create from drawing'}
+            </button>
+          </div>
+          {importError && <p className="configurator-status-chip is-warn">{importError}</p>}
+          {project?.drawingPackage && (
+            <p className="muted">
+              Drawing pack · {project.drawingPackage.sheets.length} sheets
+              {project.importedHousePlan
+                ? ` · ${project.importedHousePlan.floors[0]?.rooms.length ?? 0} rooms detected`
+                : ''}
+            </p>
+          )}
+        </div>
 
         <label className="configurator-field">
           <span>Workflow stage</span>
