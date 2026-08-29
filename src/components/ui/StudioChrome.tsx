@@ -37,6 +37,7 @@ import {
 } from 'lucide-react';
 import { roomCategories } from '../catalog/CatalogPanel';
 import { usePlannerStore } from '../../store/plannerStore';
+import { useConfiguratorStore } from '../../store/configuratorStore';
 import type { RoomType } from '../../types';
 import { WORLD_ORIGIN } from '../../lib/geometry/placement';
 import { PIXELS_PER_METER } from '../../lib/geometry/snapping';
@@ -263,7 +264,10 @@ export function StudioChrome({
   const atPlanLevel = !atStart && !inRoom;
   /** Floor tabs stay available in-room so multi-story GCs can jump floors without hunting the exit. */
   const showFloorChrome = (atPlanLevel || inRoom) && !pending;
-  const showFloorManage = atPlanLevel;
+  const configuratorRole = useConfiguratorStore((s) => s.role);
+  const shareToken = useConfiguratorStore((s) => s.shareToken);
+  const clientStructuralLock = configuratorRole === 'client' || !!shareToken;
+  const showFloorManage = atPlanLevel && !clientStructuralLock;
   const pendingRoomShape = usePlannerStore((s) => s.pendingRoomShape);
   const setPendingRoomShape = usePlannerStore((s) => s.setPendingRoomShape);
   const pendingAttachMode = usePlannerStore((s) => s.pendingAttachMode);
@@ -272,13 +276,17 @@ export function StudioChrome({
   const deletePlanRoom = usePlannerStore((s) => s.deletePlanRoom);
   const enterRoom = usePlannerStore((s) => s.enterRoom);
   const selectRoom = usePlannerStore((s) => s.selectRoom);
-  const showPlanRoomActions = atPlanLevel && !pending && !!selectedRoom;
+  const showPlanRoomActions = atPlanLevel && !pending && !!selectedRoom && !clientStructuralLock;
   /** Black rail only after a room is selected — never empty tool chrome on plan load. */
   const showPlanRail = showPlanRoomActions;
 
   useEffect(() => {
     if (inRoom) setStudioMode('furnish');
   }, [inRoom, setStudioMode]);
+
+  useEffect(() => {
+    if (clientStructuralLock) setStudioMode('furnish');
+  }, [clientStructuralLock, setStudioMode]);
 
   useEffect(() => {
     if (inRoom && tool === 'room') setTool('select');

@@ -1,3 +1,4 @@
+import { getSurveyConfig, surveyAnswersToLegacyFields } from '../../lib/configurator/surveyConfig';
 import { useConfiguratorStore } from '../../store/configuratorStore';
 import { curateFromSurvey, lookbookDefaults } from '../../lib/configurator/surveyCurations';
 import { useBuildCatalog } from '../../store/catalogStore';
@@ -15,6 +16,7 @@ export function ClientSurveyPanel({ forceShow = false }: Props) {
   const catalog = useBuildCatalog(inventory);
   const planRooms = usePlannerStore((s) => s.planRooms);
   const updatePlanRoom = usePlannerStore((s) => s.updatePlanRoom);
+  const config = getSurveyConfig();
 
   if (!project) return null;
   if (role !== 'client' && !forceShow) return null;
@@ -27,21 +29,40 @@ export function ClientSurveyPanel({ forceShow = false }: Props) {
     return null;
   }
 
+  const defaultFor = (id: string, mapsTo?: string) => {
+    const fromAnswers = project.survey?.answers?.[id];
+    if (typeof fromAnswers === 'string') return fromAnswers;
+    if (Array.isArray(fromAnswers)) return fromAnswers[0] ?? '';
+    if (mapsTo === 'exteriorStyle') return project.survey?.exteriorStyle ?? '';
+    if (mapsTo === 'interiorStyle') return project.survey?.interiorStyle ?? '';
+    if (mapsTo === 'palette') return project.survey?.palette ?? '';
+    if (mapsTo === 'notes') return project.survey?.notes ?? '';
+    return '';
+  };
+
   const submit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
+    const answers: Record<string, string | string[]> = {};
+    for (const q of config.questions) {
+      if (q.type === 'multi') {
+        answers[q.id] = fd.getAll(q.id).map(String);
+      } else {
+        answers[q.id] = String(fd.get(q.id) ?? '');
+      }
+    }
+    const legacy = surveyAnswersToLegacyFields(answers, config);
     const survey = {
       completedAt: new Date().toISOString(),
-      exteriorStyle: String(fd.get('exterior') ?? ''),
-      interiorStyle: String(fd.get('interior') ?? ''),
-      palette: String(fd.get('palette') ?? ''),
-      notes: String(fd.get('notes') ?? ''),
+      ...legacy,
+      answers,
+      surveyConfigId: config.id,
+      surveyConfigVersion: config.version,
     };
     setSurvey(survey);
     const curated = [...lookbookDefaults(catalog), ...curateFromSurvey(catalog, survey)];
     setCuratedOptions(curated);
 
-    // Preload Look Book / survey floor picks onto living rooms when empty.
     const floorPick = curated.find((c) => {
       const item = catalog.find((p) => p.id === c.catalogId);
       return item?.placementMode === 'floor-fill' || item?.sourceTab === 'Tile-Floor';
@@ -65,8 +86,8 @@ export function ClientSurveyPanel({ forceShow = false }: Props) {
       <header className="configurator-panel-header">
         <div>
           <p className="configurator-eyebrow">Client</p>
-          <strong>Design discovery</strong>
-          <p className="muted">Tell us your style — we&apos;ll preload Platinum options in every room.</p>
+          <strong>{config.title}</strong>
+          <p className="muted">{config.description}</p>
         </div>
         {project.survey?.completedAt && (
           <span className="configurator-status-chip is-success">
@@ -76,34 +97,35 @@ export function ClientSurveyPanel({ forceShow = false }: Props) {
       </header>
 
       <form className="configurator-survey-form" onSubmit={submit}>
-        <label className="configurator-field">
-          <span>Exterior style</span>
-          <select name="exterior" defaultValue={project.survey?.exteriorStyle ?? 'coastal'}>
-            <option value="coastal">Coastal</option>
-            <option value="modern">Modern</option>
-            <option value="traditional">Traditional</option>
-          </select>
-        </label>
-        <label className="configurator-field">
-          <span>Interior style</span>
-          <select name="interior" defaultValue={project.survey?.interiorStyle ?? 'warm'}>
-            <option value="warm">Warm transitional</option>
-            <option value="modern">Modern</option>
-            <option value="traditional">Traditional</option>
-          </select>
-        </label>
-        <label className="configurator-field">
-          <span>Color palette</span>
-          <select name="palette" defaultValue={project.survey?.palette ?? 'neutrals'}>
-            <option value="neutrals">Neutrals</option>
-            <option value="contrast">High contrast</option>
-            <option value="earth">Earth tones</option>
-          </select>
-        </label>
-        <label className="configurator-field full">
-          <span>Notes</span>
-          <textarea name="notes" rows={3} placeholder="Anything else we should know?" defaultValue={project.survey?.notes ?? ''} />
-        </label>
+        {config.questions.map((q) => {
+          if (q.type === 'text') {
+            return (
+              <label key={q.id} className="configurator-field full">
+                <span>{q.label}</span>
+                <textarea
+                  name={q.id}
+                  rows={q.rows ?? 3}
+                  placeholder={q.placeholder}
+                  defaultValue={defaultFor(q.id, q.mapsTo)}
+                  required={q.required}
+                />
+              </label>
+            );
+          }
+          return (
+            <label key={q.id} className="configurator-field">
+              <span>{q.label}</span>
+              <select name={q.id} defaultValue={defaultFor(q.id, q.mapsTo) || q.options?.[0]?.value} required={q.required}>
+                {q.options?.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+              {q.help ? <small className="muted">{q.help}</small> : null}
+            </label>
+          );
+        })}
         <button type="submit" className="configurator-btn primary full">
           Save survey &amp; preload Platinum options
         </button>

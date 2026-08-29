@@ -65,6 +65,10 @@ export function ProjectSetupPanel() {
       setImportError('Choose a .dwg or .dxf file first.');
       return;
     }
+    if (!pdfFile) {
+      setImportError('Plan-set PDF is required for readable sheet reference.');
+      return;
+    }
     setImportError(null);
     setImportBusy(true);
     setImportProgress({ stage: 'reading' });
@@ -140,8 +144,8 @@ export function ProjectSetupPanel() {
           >
             <strong>{drawingFile ? drawingFile.name : 'Drop MODEL.dwg here'}</strong>
             <span className="muted">
-              Builds a configurable room model and sheet previews (floor, elevations, foundation, …).
-              Optional PDF plan set improves readability.
+              Builds a configurable room model. Attach the plan-set PDF for readable sheets (required for client
+              reference).
             </span>
             <input
               ref={drawingInputRef}
@@ -172,7 +176,7 @@ export function ProjectSetupPanel() {
             <button
               type="button"
               className="configurator-btn primary"
-              disabled={!drawingFile || importBusy}
+              disabled={!drawingFile || !pdfFile || importBusy}
               onClick={() => void runImport(!project)}
             >
               {importBusy ? progressLabel(importProgress) || 'Importing…' : project ? 'Import into project' : 'Create from drawing'}

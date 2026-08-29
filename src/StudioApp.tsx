@@ -21,7 +21,7 @@ import { BomDialog } from './components/ui/BomDialog';
 import { SelectionInspector } from './components/ui/SelectionInspector';
 import { ElevationPreview } from './components/ui/ElevationPreview';
 import { StudioChrome } from './components/ui/StudioChrome';
-import { DesignStart } from './components/ui/DesignStart';
+import { BuildHub } from './features/build/BuildHub';
 import { useInventoryStore } from './store/inventoryStore';
 import { usePlannerStore } from './store/plannerStore';
 import { roomArea, validatePlan } from './lib/geometry/rooms';
@@ -541,11 +541,11 @@ export default function StudioApp() {
     if (snapshot && (!saved || snapshot.savedAt > (JSON.parse(saved).savedAt ?? ''))) {
       setRecovery(snapshot);
     } else if (saved) {
+      // Load scene into memory but stay on Build hub so the user can Continue or create new.
       store.load();
-      if (usePlannerStore.getState().walls.length) {
-        enterHouse();
-        window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 0);
-      }
+      store.showStart();
+    } else {
+      store.showStart();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -626,7 +626,7 @@ export default function StudioApp() {
       </section>
 
       {workflowStage === 'start' && (
-        <DesignStart
+        <BuildHub
           onBegan={() => {
             closeProjectMenu();
             setCatalogOpen(false);

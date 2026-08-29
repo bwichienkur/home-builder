@@ -97,8 +97,7 @@ export function PlanVerificationPanel() {
             onChange={(e) => setHousePlanId(e.target.value)}
             aria-label="House plan template"
           >
-            <option value="stillwater-183">183 Stillwater (from MODEL.dwg)</option>
-            <option value="granada">Granada (flyer proxy)</option>
+            <option value="stillwater-183">183 Stillwater</option>
             <option value="custom">Custom / imported DWG</option>
           </select>
         </label>

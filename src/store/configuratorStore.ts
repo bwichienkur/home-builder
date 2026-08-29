@@ -95,9 +95,16 @@ function isStillwaterProject(project: ExtendedSelectionProject | null | undefine
 }
 
 function withStillwaterSheets(project: ExtendedSelectionProject): ExtendedSelectionProject {
-  if (project.drawingPackage?.sheets?.length) return project;
   if (!isStillwaterProject(project)) return project;
   const drawings = stillwaterDrawingPackage();
+  // Upgrade older SVG-only packs (or packs that lost pdfUrl on persist) to the readable PDF set.
+  if (project.drawingPackage?.pdfUrl && project.drawingPackage.sheetSource === 'pdf') {
+    return {
+      ...project,
+      housePlanId: project.housePlanId ?? 'stillwater-183',
+      drawingPackageId: project.drawingPackageId ?? drawings.id,
+    };
+  }
   return {
     ...project,
     housePlanId: project.housePlanId ?? 'stillwater-183',
@@ -110,7 +117,8 @@ function slimDrawingPackageForPersist(pkg: DrawingPackage | undefined): DrawingP
   if (!pkg) return undefined;
   return {
     ...pkg,
-    pdfUrl: pkg.pdfFileName ? undefined : pkg.pdfUrl?.startsWith('blob:') ? undefined : pkg.pdfUrl,
+    // Keep hosted/public PDF paths; drop ephemeral blob: URLs (rehydrate from IDB).
+    pdfUrl: pkg.pdfUrl?.startsWith('blob:') ? undefined : pkg.pdfUrl,
     sheets: pkg.sheets.map(({ svg: _svg, ...rest }) => rest),
   };
 }
@@ -487,15 +495,23 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
   hydrateDrawingPackage: async () => {
     const project = get().project;
     if (!project?.drawingPackageId) return;
+    // Keep the hosted Stillwater / PDF plan-set package — do not replace with legacy SVG IDB packs.
+    if (project.drawingPackage?.sheetSource === 'pdf' && project.drawingPackage.pdfUrl) return;
     if (project.drawingPackage?.sheetSource === 'static' && project.drawingPackage.sheets.some((s) => s.imageUrl)) {
       return;
     }
     try {
       const stored = await loadDrawingPackage(project.drawingPackageId);
       if (!stored) return;
+      // Prefer PDF already on the project over older IDB SVG packages.
+      if (project.drawingPackage?.pdfUrl && !stored.package.pdfUrl) return;
       const next = {
         ...project,
-        drawingPackage: stored.package,
+        drawingPackage: stored.package.pdfUrl
+          ? stored.package
+          : project.drawingPackage?.pdfUrl
+            ? project.drawingPackage
+            : stored.package,
         importedHousePlan: stored.plan ?? project.importedHousePlan,
       };
       set({ project: next });
@@ -650,12 +666,17 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
   },
 }));
 
-export function createBlankSelectionProject(name: string, planRef?: string): ExtendedSelectionProject {
+export function createBlankSelectionProject(
+  name: string,
+  planRef?: string,
+  lotRef?: string,
+): ExtendedSelectionProject {
   return createEmptyExtendedProject({
     id: `project-${Date.now()}`,
     name,
     planRef: planRef ?? name,
-    contract: createPlatinumContract(name, planRef),
+    lotRef,
+    contract: createPlatinumContract(name, planRef, lotRef),
     createdAt: new Date().toISOString(),
   });
 }

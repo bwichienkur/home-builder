@@ -8,11 +8,11 @@ export type DrawingSheet = {
   /** 0 = cover / model extras; 1..n follow sheet order when known */
   order: number;
   kind: 'cover' | 'floor' | 'elevation' | 'foundation' | 'electrical' | 'details' | 'notes' | 'truss' | 'other';
-  /** Public URL or blob URL for a pre-rendered SVG/PNG */
+  /** Public URL or blob URL for a pre-rendered SVG/PNG (fallback only) */
   imageUrl?: string;
   /** Inline SVG markup when generated at import time (prefer IDB for large sets) */
   svg?: string;
-  /** PDF page index when a plan-set PDF was attached (0-based) */
+  /** PDF page index when a plan-set PDF was attached (0-based, for pdf.js / hash nav) */
   pdfPageIndex?: number;
 };
 
@@ -51,33 +51,51 @@ export function sheetKindFromName(name: string): DrawingSheet['kind'] {
   return 'other';
 }
 
-/** Stillwater 183 sheet labels aligned with Olsen MODEL.dwg paper tabs. */
-export const STILLWATER_SHEET_LABELS: { order: number; name: string; kind: DrawingSheet['kind']; file: string }[] = [
-  { order: 0, name: 'COVER', kind: 'cover', file: '00-cover.svg' },
-  { order: 1, name: 'SHT. 1 FLOOR', kind: 'floor', file: '01-floor.svg' },
-  { order: 2, name: 'SHT. 2 FRONT ELEVATION', kind: 'elevation', file: '02-front-elevation.svg' },
-  { order: 3, name: 'SHT. 3 SIDE ELEVATIONS', kind: 'elevation', file: '03-side-elevations.svg' },
-  { order: 4, name: 'SHT. 4 FOUNDATION', kind: 'foundation', file: '04-foundation.svg' },
-  { order: 5, name: 'SHT. 5 ELECTRICAL', kind: 'electrical', file: '05-electrical.svg' },
-  { order: 6, name: 'SHT. 6 DETAILS', kind: 'details', file: '06-details.svg' },
-  { order: 7, name: 'SHT. 7 NOTES', kind: 'notes', file: '07-notes.svg' },
-  { order: 8, name: 'SHT. 8 TRUSS CONNECTOR', kind: 'truss', file: '08-truss.svg' },
+/**
+ * Stillwater 183 sheet labels aligned with Olsen MODEL.dwg / plan-set PDF.
+ * Prefer the PDF (`plan-set.pdf`) — DXF viewport SVGs are lossy and jumble text.
+ */
+export const STILLWATER_SHEET_LABELS: {
+  order: number;
+  name: string;
+  kind: DrawingSheet['kind'];
+  pdfPageIndex: number;
+  file?: string;
+}[] = [
+  { order: 0, name: 'COVER', kind: 'cover', pdfPageIndex: 0 },
+  { order: 1, name: 'SHT. 1 FLOOR', kind: 'floor', pdfPageIndex: 1 },
+  { order: 2, name: 'SHT. 2 FRONT ELEVATION', kind: 'elevation', pdfPageIndex: 2 },
+  { order: 3, name: 'SHT. 3 SIDE ELEVATIONS', kind: 'elevation', pdfPageIndex: 3 },
+  { order: 4, name: 'SHT. 4 FOUNDATION', kind: 'foundation', pdfPageIndex: 4 },
+  { order: 5, name: 'SHT. 5 ELECTRICAL', kind: 'electrical', pdfPageIndex: 5 },
+  { order: 6, name: 'SHT. 6 DETAILS', kind: 'details', pdfPageIndex: 6 },
+  { order: 7, name: 'SHT. 7 NOTES', kind: 'notes', pdfPageIndex: 7 },
+  { order: 8, name: 'SHT. 8 TRUSS CONNECTOR', kind: 'truss', pdfPageIndex: 8 },
 ];
 
 export function stillwaterDrawingPackage(): DrawingPackage {
   const base = '/plan-sheets/stillwater-183';
   return {
     id: 'stillwater-183-drawings',
-    sourceFileName: 'MODEL.dwg',
+    sourceFileName: '183 STILLWATER plan set.pdf',
     importedAt: new Date().toISOString(),
     warnings: [],
-    sheetSource: 'static',
+    sheetSource: 'pdf',
+    pdfFileName: '183 STILLWATER_dj112425.pdf',
+    pdfUrl: `${base}/plan-set.pdf`,
     sheets: STILLWATER_SHEET_LABELS.map((s) => ({
       id: `stillwater-sheet-${s.order}`,
       name: s.name,
       order: s.order,
       kind: s.kind,
-      imageUrl: `${base}/${s.file}`,
+      pdfPageIndex: s.pdfPageIndex,
     })),
   };
+}
+
+/** Browser PDF viewer URL for a specific 1-based page (native viewer hash). */
+export function pdfViewerSrc(pdfUrl: string, pageIndex0: number): string {
+  const page = Math.max(1, pageIndex0 + 1);
+  const base = pdfUrl.split('#')[0]!;
+  return `${base}#page=${page}`;
 }

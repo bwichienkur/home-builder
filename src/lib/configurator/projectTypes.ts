@@ -88,6 +88,10 @@ export type SurveyResponse = {
   interiorStyle?: string;
   palette?: string;
   notes?: string;
+  /** Full answers keyed by survey question id (configurable questionnaire). */
+  answers?: Record<string, string | string[]>;
+  surveyConfigId?: string;
+  surveyConfigVersion?: number;
 };
 
 export type CuratedSelectionOption = {
