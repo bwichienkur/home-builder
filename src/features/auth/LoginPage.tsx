@@ -120,8 +120,8 @@ export function LoginPage() {
           <span className="muted"> (@mahnikka.local)</span>
         </p>
         <p className="muted">
-          Browser accounts by default. Set <code>VITE_AUTH_PROVIDER=remote</code> to use Neon{' '}
-          <code>/api/auth</code>.
+          Production signs in via Neon <code>/api/auth</code>. Local Vite uses browser accounts unless{' '}
+          <code>VITE_AUTH_PROVIDER=remote</code>.
         </p>
       </div>
     </div>

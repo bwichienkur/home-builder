@@ -1,10 +1,11 @@
-'use strict';
-
 /**
  * Shared Postgres pool for Express and Vercel.
  * On Vercel, classic `pg` TCP often fails in serverless isolates — use
  * @neondatabase/serverless (WebSocket) instead.
  */
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
 
 let pool = null;
 
@@ -12,14 +13,22 @@ function isVercelRuntime() {
   return Boolean(process.env.VERCEL || process.env.VERCEL_ENV);
 }
 
+function resolveConnectionString() {
+  return (
+    process.env.DATABASE_URL ||
+    process.env.POSTGRES_URL ||
+    process.env.DATABASE_URL_UNPOOLED ||
+    process.env.POSTGRES_URL_NON_POOLING ||
+    ''
+  );
+}
+
 function createPool() {
-  const connectionString = process.env.DATABASE_URL;
+  const connectionString = resolveConnectionString();
   if (!connectionString) return null;
 
   if (isVercelRuntime()) {
-    // eslint-disable-next-line global-require
     const { Pool, neonConfig } = require('@neondatabase/serverless');
-    // eslint-disable-next-line global-require
     const ws = require('ws');
     neonConfig.webSocketConstructor = ws;
     const p = new Pool({ connectionString });
@@ -29,7 +38,6 @@ function createPool() {
     return p;
   }
 
-  // eslint-disable-next-line global-require
   const { Pool } = require('pg');
   const needsSsl =
     process.env.PGSSLMODE === 'require' ||
@@ -47,8 +55,8 @@ function createPool() {
   return p;
 }
 
-function getPool() {
-  if (!process.env.DATABASE_URL) return null;
+export function getPool() {
+  if (!resolveConnectionString()) return null;
   if (!pool) {
     try {
       pool = createPool();
@@ -59,5 +67,3 @@ function getPool() {
   }
   return pool;
 }
-
-module.exports = { getPool };
