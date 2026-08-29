@@ -6,8 +6,23 @@ import {
   type DrawingPackage,
   type DrawingSheet,
 } from './drawingPackage';
+import { looksLikeRoomName } from './dxfParse';
 
-/** Layers kept for room footprint detection. */
+/** Layers preferred for room footprint (walls only — doors create openings/noise). */
+export const ROOM_WALL_LAYER_HINTS = [
+  'WALLS INT',
+  'WALLS EXT',
+  'WALL EXT',
+  'WALL INT',
+  'wall-external',
+  'wall-internal',
+  '1st_Floor_Objects_Walls',
+  'A-WALL',
+  'A-WALLS',
+  'WALL',
+];
+
+/** Layers kept for room footprint detection (exact historic set + fuzzy match). */
 export const WALL_LAYERS = new Set([
   'WALLS INT',
   'WALLS EXT',
@@ -18,6 +33,22 @@ export const WALL_LAYERS = new Set([
   '1st_Floor_Objects_Walls',
 ]);
 
+export function isRoomWallLayer(layer: string): boolean {
+  const u = layer.trim().toUpperCase();
+  if (!u) return false;
+  if (/DOOR|WINDOW|GLAZ|OPENING|SWING/.test(u)) return false;
+  if (WALL_LAYERS.has(layer) && !/DOOR/i.test(layer)) return true;
+  return (
+    /\bWALLS?\b/.test(u) ||
+    u.includes('WALL-') ||
+    u.startsWith('A-WALL') ||
+    ROOM_WALL_LAYER_HINTS.some((h) => u === h.toUpperCase())
+  );
+}
+
+export function isSheetWallLayer(layer: string): boolean {
+  return WALL_LAYERS.has(layer) || isRoomWallLayer(layer) || /DOOR|WINDOW/i.test(layer);
+}
 /** Layers drawn into sheet reference SVGs. */
 export const SHEET_LAYERS = new Set([
   ...WALL_LAYERS,
@@ -67,10 +98,13 @@ type Label = { x: number; y: number; text: string; layer: string };
 function decodeMtext(raw: string): string {
   return raw
     .replace(/\\P/gi, ' ')
+    .replace(/\\p[^\s\\;]*/gi, ' ')
     .replace(/\{\\[^;]*;/g, '')
     .replace(/\}/g, '')
     .replace(/\\[A-Za-z][^;\\]*;?/g, '')
     .replace(/%%[Uu]/g, '')
+    .replace(/^t[\d.,]+;/i, '')
+    .replace(/\s+/g, ' ')
     .trim();
 }
 
@@ -86,7 +120,11 @@ function iterPairs(dxfText: string): Generator<{ code: number; value: string }> 
 }
 
 /** Filter DXF ENTITIES to LINE/LWPOLYLINE on allow-listed layers (string rebuild). */
-export function filterDxfToLayers(dxfText: string, allow: Set<string>): string {
+export function filterDxfToLayers(
+  dxfText: string,
+  allow: Set<string>,
+  opts?: { fuzzyRoomWalls?: boolean },
+): string {
   const lines = dxfText.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
   const entities: string[] = [];
   for (let i = 0; i < lines.length; i++) {
@@ -102,7 +140,8 @@ export function filterDxfToLayers(dxfText: string, allow: Set<string>): string {
       i += 2;
     }
     i -= 2;
-    if (allow.has(layer)) entities.push(...entity);
+    const ok = allow.has(layer) || (opts?.fuzzyRoomWalls && isRoomWallLayer(layer));
+    if (ok) entities.push(...entity);
   }
   return [
     '  0',
@@ -266,8 +305,33 @@ function inView(x: number, y: number, vp: Viewport, pad = 0.02): boolean {
   return x >= vp.modelCx - hx && x <= vp.modelCx + hx && y >= vp.modelCy - hy && y <= vp.modelCy + hy;
 }
 
-function segHitsView(s: Seg, vp: Viewport): boolean {
-  return inView(s.x1, s.y1, vp) || inView(s.x2, s.y2, vp) || inView((s.x1 + s.x2) / 2, (s.y1 + s.y2) / 2, vp);
+export function pickFloorViewport(dxfText: string): Viewport | null {
+  const papers = parsePaperBlocks(dxfText);
+  const ranked: { meta: PaperMeta; vp: Viewport; title: string }[] = [];
+  papers.forEach((meta, index) => {
+    const vp = pickPrimaryViewport(meta.viewports);
+    if (!vp || vp.modelW * vp.modelH < 200) return;
+    const title = titleForPaper(meta, index);
+    ranked.push({ meta, vp, title });
+  });
+  const floor = ranked.find((r) => /FLOOR|PLAN/i.test(r.title) && !/FOUNDATION|ROOF|ELEV/i.test(r.title));
+  if (floor) return floor.vp;
+  // Largest viewport as fallback (usually the floor plan)
+  ranked.sort((a, b) => b.vp.modelW * b.vp.modelH - a.vp.modelW * a.vp.modelH);
+  return ranked[0]?.vp ?? null;
+}
+
+/** Keep segments that intersect a model-space viewport (floor plan crop). */
+export function cropSegmentsToViewport<T extends { x1: number; y1: number; x2: number; y2: number }>(
+  segs: T[],
+  vp: Viewport,
+  pad = 0.05,
+): T[] {
+  return segs.filter((s) => segHitsView(s as Seg, vp, pad));
+}
+
+function segHitsView(s: Seg, vp: Viewport, pad = 0.02): boolean {
+  return inView(s.x1, s.y1, vp, pad) || inView(s.x2, s.y2, vp, pad) || inView((s.x1 + s.x2) / 2, (s.y1 + s.y2) / 2, vp, pad);
 }
 
 /** Collect model-space geometry for sheet crops + wall filter in one pass. */
@@ -326,11 +390,11 @@ export function extractDxfModelGeometry(dxfText: string): {
     if (fields['67'] === '1') continue; // paper space entity in ENTITIES
     const layer = fields['8'] ?? '0';
 
-    if ((type === 'LINE' || type === 'LWPOLYLINE' || type === 'POLYLINE') && WALL_LAYERS.has(layer)) {
+    if ((type === 'LINE' || type === 'LWPOLYLINE' || type === 'POLYLINE') && isRoomWallLayer(layer)) {
       wallEntities.push(...raw);
     }
 
-    if (!SHEET_LAYERS.has(layer)) continue;
+    if (!SHEET_LAYERS.has(layer) && !isSheetWallLayer(layer)) continue;
 
     if (type === 'LINE') {
       const x1 = Number(fields['10']);
@@ -513,13 +577,50 @@ export function importDxfDrawingPackage(
   planName?: string,
 ): DrawingImportResult {
   const { segs, labels, wallDxf } = extractDxfModelGeometry(dxfText);
-  const roomSource = wallDxf.includes('LINE') || wallDxf.includes('LWPOLYLINE') ? wallDxf : filterDxfToLayers(dxfText, WALL_LAYERS);
-  const imported = importDxfHousePlan(roomSource, planName ?? sourceFileName.replace(/\.(dwg|dxf)$/i, ''));
+  const floorVp = pickFloorViewport(dxfText);
+
+  // Prefer wall segments cropped to the floor-plan viewport (avoids elevations / details in model space).
+  let roomSegs = segs.filter((s) => isRoomWallLayer(s.layer));
+  let roomLabels = labels.map((l) => ({ x: l.x, y: l.y, text: l.text, layer: l.layer }));
+  const cropWarnings: string[] = [];
+  if (floorVp) {
+    const cropped = cropSegmentsToViewport(roomSegs, floorVp, 0.08);
+    if (cropped.length >= 20) {
+      roomSegs = cropped;
+      roomLabels = cropSegmentsToViewport(
+        roomLabels.map((l) => ({ ...l, x1: l.x, y1: l.y, x2: l.x, y2: l.y })),
+        floorVp,
+        0.08,
+      )
+        .filter((l) => looksLikeRoomName(l.text) || /ROOM/i.test(String(l.layer ?? '')))
+        .map(({ x1, y1, text, layer }) => ({ x: x1, y: y1, text, layer }));
+      cropWarnings.push(
+        `Cropped walls to floor viewport (${floorVp.modelW.toFixed(0)}×${floorVp.modelH.toFixed(0)} model units).`,
+      );
+    } else {
+      cropWarnings.push('Floor viewport crop too sparse — using all model-space wall layers.');
+    }
+  }
+
+  const imported =
+    roomSegs.length >= 8
+      ? importDxfHousePlan(dxfText, planName ?? sourceFileName.replace(/\.(dwg|dxf)$/i, ''), {
+          segments: roomSegs,
+          labels: roomLabels,
+        })
+      : importDxfHousePlan(
+          wallDxf.includes('LINE') || wallDxf.includes('LWPOLYLINE')
+            ? wallDxf
+            : filterDxfToLayers(dxfText, WALL_LAYERS, { fuzzyRoomWalls: true }),
+          planName ?? sourceFileName.replace(/\.(dwg|dxf)$/i, ''),
+          { labels: roomLabels },
+        );
+
   const { sheets, warnings: sheetWarnings } = buildSheetsFromDxf(dxfText, segs, labels);
 
   const plan: HousePlan = {
     ...imported.plan,
-    note: 'Imported from DWG/DXF. Review rooms in Plan verification; use Drawing sheets for elevations and details.',
+    note: 'Imported from DWG/DXF (floor viewport crop + wall centerlines + flood-fill). Review rooms in Plan verification.',
     sourceUrl: sourceFileName,
   };
 
@@ -527,7 +628,7 @@ export function importDxfDrawingPackage(
     id: `drawings-${plan.id}`,
     sourceFileName,
     importedAt: new Date().toISOString(),
-    warnings: [...imported.warnings, ...sheetWarnings],
+    warnings: [...cropWarnings, ...imported.warnings, ...sheetWarnings],
     sheets,
     sheetSource: sheets.length ? 'dxf_viewport' : 'static',
   };
