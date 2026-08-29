@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useConfiguratorStore } from '../../store/configuratorStore';
-import type { DrawingSheet } from '../../lib/housePlans/drawingPackage';
+import { stillwaterDrawingPackage, type DrawingSheet } from '../../lib/housePlans/drawingPackage';
 
 function sheetSrc(sheet: DrawingSheet): string | null {
   if (sheet.imageUrl) return sheet.imageUrl;
@@ -10,9 +10,16 @@ function sheetSrc(sheet: DrawingSheet): string | null {
   return null;
 }
 
+function resolvePackage(project: NonNullable<ReturnType<typeof useConfiguratorStore.getState>['project']>) {
+  if (project.drawingPackage?.sheets?.length) return project.drawingPackage;
+  const hay = `${project.id} ${project.planRef ?? ''} ${project.name ?? ''} ${project.housePlanId ?? ''}`;
+  if (/stillwater/i.test(hay)) return stillwaterDrawingPackage();
+  return project.drawingPackage ?? null;
+}
+
 export function DrawingSheetsPanel() {
   const project = useConfiguratorStore((s) => s.project);
-  const pkg = project?.drawingPackage;
+  const pkg = project ? resolvePackage(project) : null;
   const sheets = useMemo(
     () => [...(pkg?.sheets ?? [])].sort((a, b) => a.order - b.order),
     [pkg?.sheets],

@@ -1512,7 +1512,7 @@
 
 .drawing-sheets-panel {
   position: fixed;
-  z-index: 36;
+  z-index: 85;
   right: 16px;
   bottom: calc(88px + env(safe-area-inset-bottom));
   display: flex;
