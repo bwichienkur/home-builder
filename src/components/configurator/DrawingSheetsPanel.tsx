@@ -7,11 +7,13 @@ import {
 } from '../../lib/housePlans/drawingPackage';
 
 function resolvePackage(project: NonNullable<ReturnType<typeof useConfiguratorStore.getState>['project']>) {
-  if (project.drawingPackage?.pdfUrl || project.drawingPackage?.sheets?.length) {
-    return project.drawingPackage;
-  }
+  // Prefer an attached PDF plan set — DXF viewport SVGs jumble text.
+  if (project.drawingPackage?.pdfUrl) return project.drawingPackage;
   const hay = `${project.id} ${project.planRef ?? ''} ${project.name ?? ''} ${project.housePlanId ?? ''}`;
-  if (/stillwater/i.test(hay)) return stillwaterDrawingPackage();
+  if (/stillwater/i.test(hay) || project.housePlanId === 'stillwater-183') {
+    return stillwaterDrawingPackage();
+  }
+  if (project.drawingPackage?.sheets?.length) return project.drawingPackage;
   return project.drawingPackage ?? null;
 }
 
