@@ -16,6 +16,7 @@ function postLoginPath(state: unknown): string {
 export function LoginPage() {
   const user = useAuthStore((s) => s.user);
   const sessionReady = useAuthStore((s) => s.sessionReady);
+  const markSessionReady = useAuthStore((s) => s.markSessionReady);
   const login = useAuthStore((s) => s.login);
   const register = useAuthStore((s) => s.register);
   const navigate = useNavigate();
@@ -26,6 +27,14 @@ export function LoginPage() {
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (sessionReady) return;
+    const t = window.setTimeout(() => {
+      if (!useAuthStore.getState().sessionReady) markSessionReady();
+    }, 2500);
+    return () => window.clearTimeout(t);
+  }, [sessionReady, markSessionReady]);
 
   if (!sessionReady) {
     return <div className="loading-3d">Loading…</div>;
@@ -111,8 +120,8 @@ export function LoginPage() {
           <span className="muted"> (@mahnikka.local)</span>
         </p>
         <p className="muted">
-          Production uses Neon-backed auth (`/api/auth`). Local Vite uses browser accounts unless{' '}
-          <code>VITE_AUTH_PROVIDER=remote</code>.
+          Browser accounts by default. Set <code>VITE_AUTH_PROVIDER=remote</code> to use Neon{' '}
+          <code>/api/auth</code>.
         </p>
       </div>
     </div>

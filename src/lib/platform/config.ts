@@ -18,20 +18,23 @@ function env(name: string, fallback = '') {
   return (value ?? fallback).trim();
 }
 
-/** Production (Vercel) defaults to shared HTTP APIs — pairs with Neon DATABASE_URL. */
+/**
+ * Default to browser/local so a broken Neon/API path cannot freeze the UI.
+ * Opt into shared Neon APIs with VITE_*_PROVIDER=http (or remote for auth).
+ */
 function resolveHttpDefault(explicitEnv: string): 'local' | 'http' {
   const explicit = env(explicitEnv, '');
   if (explicit === 'http' || explicit === 'remote') return 'http';
   if (explicit === 'local') return 'local';
-  return import.meta.env.PROD ? 'http' : 'local';
+  return 'local';
 }
 
 function resolveAuthProvider(): AuthProviderId {
   const explicit = env('VITE_AUTH_PROVIDER', '');
   if (explicit === 'remote') return 'remote';
   if (explicit === 'local') return 'local';
-  // Production uses Neon-backed /api/auth; local Vite stays browser-only.
-  return import.meta.env.PROD ? 'remote' : 'local';
+  // Local by default — remote auth waits on /api/auth and hung the whole app when Neon crashed.
+  return 'local';
 }
 
 function resolveCrmProvider(): CrmProviderId {
