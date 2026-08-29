@@ -145,27 +145,47 @@ function publicUser(email, row) {
   return { id: row.id, email, name: row.name, role: row.role };
 }
 
-function bearerEmail(req, store) {
-  const header = String(req.header('authorization') ?? '');
+function readHeader(headers, name) {
+  if (!headers) return '';
+  const key = String(name).toLowerCase();
+  const raw = headers[key] ?? headers[name];
+  return Array.isArray(raw) ? String(raw[0] ?? '') : String(raw ?? '');
+}
+
+function bearerEmailFromAuth(authorization, store) {
+  const header = String(authorization ?? '');
   const token = header.startsWith('Bearer ') ? header.slice(7) : '';
   const email = store.tokens[token];
   if (!email || !store.users[email]) return null;
   return email;
 }
 
-async function requireSystemAdmin(req, res) {
+function bearerEmail(req, store) {
+  const header =
+    typeof req.header === 'function' ? req.header('authorization') : readHeader(req.headers, 'authorization');
+  return bearerEmailFromAuth(header, store);
+}
+
+async function requireSystemAdminCtx(authorization) {
   const store = await loadAuthStore();
-  const email = bearerEmail(req, store);
-  if (!email) {
-    res.status(401).json({ error: 'Not signed in' });
-    return null;
-  }
+  const email = bearerEmailFromAuth(authorization, store);
+  if (!email) return { error: { status: 401, body: { error: 'Not signed in' } } };
   const row = store.users[email];
   if (row.role !== 'system_admin') {
-    res.status(403).json({ error: 'System admin role required.' });
-    return null;
+    return { error: { status: 403, body: { error: 'System admin role required.' } } };
   }
   return { store, email, user: row };
+}
+
+async function requireSystemAdmin(req, res) {
+  const authorization =
+    typeof req.header === 'function' ? req.header('authorization') : readHeader(req.headers, 'authorization');
+  const ctx = await requireSystemAdminCtx(authorization);
+  if (ctx.error) {
+    res.status(ctx.error.status).json(ctx.error.body);
+    return null;
+  }
+  return ctx;
 }
 
 function findUserById(store, userId) {
@@ -187,9 +207,12 @@ function apiKeyMeta(row) {
 
 export async function resolveApiKeyUser(req) {
   const store = await loadAuthStore();
-  const header = String(req.header('authorization') ?? '');
-  const bearer = header.startsWith('Bearer ') ? header.slice(7).trim() : '';
-  const raw = String(req.header('x-api-key') ?? bearer ?? '').trim();
+  const authorization =
+    typeof req.header === 'function' ? req.header('authorization') : readHeader(req.headers, 'authorization');
+  const apiKeyHeader =
+    typeof req.header === 'function' ? req.header('x-api-key') : readHeader(req.headers, 'x-api-key');
+  const bearer = authorization.startsWith('Bearer ') ? authorization.slice(7).trim() : '';
+  const raw = String(apiKeyHeader || bearer || '').trim();
   if (!raw.startsWith('mnk_')) return null;
   const keyHash = hash(raw);
   for (const [email, user] of Object.entries(store.users)) {
@@ -199,164 +222,132 @@ export async function resolveApiKeyUser(req) {
   return null;
 }
 
-export function mountAuthRoutes(app) {
-  app.post('/api/auth/register', async (req, res) => {
-    try {
-      const email = String(req.body?.email ?? '')
-        .trim()
-        .toLowerCase();
-      const password = String(req.body?.password ?? '');
-      const name = String(req.body?.name ?? '').trim() || email;
-      if (!email || password.length < 6) {
-        return res.status(400).json({ error: 'Valid email and password (6+ chars) required.' });
-      }
+/**
+ * Framework-agnostic auth/admin dispatcher for Express + Vercel.
+ * @returns {{ status: number, body: object }}
+ */
+export async function handleAuthRequest({ method, path, query = {}, body = {}, headers = {} }) {
+  const m = String(method || 'GET').toUpperCase();
+  const p = String(path || '').split('?')[0];
+  const authorization = readHeader(headers, 'authorization');
+
+  if (m === 'POST' && p === '/api/auth/register') {
+    const email = String(body?.email ?? '')
+      .trim()
+      .toLowerCase();
+    const password = String(body?.password ?? '');
+    const name = String(body?.name ?? '').trim() || email;
+    if (!email || password.length < 6) {
+      return { status: 400, body: { error: 'Valid email and password (6+ chars) required.' } };
+    }
+    const store = await loadAuthStore();
+    if (store.users[email]) return { status: 409, body: { error: 'That email is already registered.' } };
+    const id = crypto.randomUUID();
+    store.users[email] = {
+      id,
+      name,
+      passwordHash: hash(password),
+      role: 'user',
+      createdAt: new Date().toISOString(),
+      apiKeys: [],
+    };
+    const token = crypto.randomUUID();
+    store.tokens[token] = email;
+    await persistAuthStore(store);
+    return { status: 201, body: { user: publicUser(email, store.users[email]), token } };
+  }
+
+  if (m === 'POST' && p === '/api/auth/login') {
+    const email = String(body?.email ?? '')
+      .trim()
+      .toLowerCase();
+    const password = String(body?.password ?? '');
+    const store = await loadAuthStore();
+    const row = store.users[email];
+    if (!row || row.passwordHash !== hash(password)) {
+      return { status: 401, body: { error: 'Incorrect email or password.' } };
+    }
+    const token = crypto.randomUUID();
+    store.tokens[token] = email;
+    await persistAuthStore(store);
+    return { status: 200, body: { user: publicUser(email, row), token } };
+  }
+
+  if (m === 'POST' && p === '/api/auth/logout') {
+    const token = authorization.startsWith('Bearer ') ? authorization.slice(7) : '';
+    if (token) {
       const store = await loadAuthStore();
-      if (store.users[email]) return res.status(409).json({ error: 'That email is already registered.' });
-      const id = crypto.randomUUID();
-      store.users[email] = {
-        id,
-        name,
-        passwordHash: hash(password),
-        role: 'user',
-        createdAt: new Date().toISOString(),
-        apiKeys: [],
-      };
-      const token = crypto.randomUUID();
-      store.tokens[token] = email;
+      delete store.tokens[token];
       await persistAuthStore(store);
-      res.status(201).json({ user: publicUser(email, store.users[email]), token });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: 'Registration failed' });
     }
-  });
+    return { status: 200, body: { ok: true } };
+  }
 
-  app.post('/api/auth/login', async (req, res) => {
-    try {
-      const email = String(req.body?.email ?? '')
-        .trim()
-        .toLowerCase();
-      const password = String(req.body?.password ?? '');
-      const store = await loadAuthStore();
-      const row = store.users[email];
-      if (!row || row.passwordHash !== hash(password)) {
-        return res.status(401).json({ error: 'Incorrect email or password.' });
-      }
-      const token = crypto.randomUUID();
-      store.tokens[token] = email;
-      await persistAuthStore(store);
-      res.json({ user: publicUser(email, row), token });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: 'Login failed' });
+  if (m === 'GET' && p === '/api/auth/me') {
+    const store = await loadAuthStore();
+    const email = bearerEmailFromAuth(authorization, store);
+    if (!email) return { status: 401, body: { error: 'Not signed in' } };
+    return { status: 200, body: { user: publicUser(email, store.users[email]) } };
+  }
+
+  if (m === 'GET' && p === '/api/admin/users') {
+    const ctx = await requireSystemAdminCtx(authorization);
+    if (ctx.error) return ctx.error;
+    const q = String(query.q ?? '')
+      .trim()
+      .toLowerCase();
+    const items = Object.entries(ctx.store.users)
+      .map(([email, row]) => ({
+        id: row.id,
+        email,
+        name: row.name,
+        role: row.role,
+        createdAt: row.createdAt,
+        apiKeyCount: (row.apiKeys ?? []).filter((k) => !k.revokedAt).length,
+      }))
+      .filter((row) => {
+        if (!q) return true;
+        return (
+          row.email.includes(q) ||
+          row.name.toLowerCase().includes(q) ||
+          row.role.includes(q) ||
+          row.id.toLowerCase().includes(q)
+        );
+      })
+      .sort((a, b) => a.email.localeCompare(b.email));
+    return { status: 200, body: { items } };
+  }
+
+  const roleMatch = p.match(/^\/api\/admin\/users\/([^/]+)\/role$/);
+  if (m === 'PATCH' && roleMatch) {
+    const ctx = await requireSystemAdminCtx(authorization);
+    if (ctx.error) return ctx.error;
+    const role = String(body?.role ?? '');
+    if (!ROLES.has(role)) return { status: 400, body: { error: 'Invalid role.' } };
+    const found = findUserById(ctx.store, decodeURIComponent(roleMatch[1]));
+    if (!found) return { status: 404, body: { error: 'User not found.' } };
+    if (found.email === DEMO_EMAIL && role !== 'system_admin') {
+      return { status: 400, body: { error: 'The demo system admin role cannot be downgraded.' } };
     }
-  });
+    ctx.store.users[found.email] = { ...found.row, role };
+    await persistAuthStore(ctx.store);
+    return { status: 200, body: { ok: true, user: publicUser(found.email, ctx.store.users[found.email]) } };
+  }
 
-  app.post('/api/auth/logout', async (req, res) => {
-    try {
-      const header = String(req.header('authorization') ?? '');
-      const token = header.startsWith('Bearer ') ? header.slice(7) : '';
-      if (token) {
-        const store = await loadAuthStore();
-        delete store.tokens[token];
-        await persistAuthStore(store);
-      }
-      res.json({ ok: true });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: 'Logout failed' });
-    }
-  });
-
-  app.get('/api/auth/me', async (req, res) => {
-    try {
-      const store = await loadAuthStore();
-      const email = bearerEmail(req, store);
-      if (!email) return res.status(401).json({ error: 'Not signed in' });
-      res.json({ user: publicUser(email, store.users[email]) });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: 'Auth check failed' });
-    }
-  });
-
-  app.get('/api/admin/users', async (req, res) => {
-    try {
-      const ctx = await requireSystemAdmin(req, res);
-      if (!ctx) return;
-      const q = String(req.query.q ?? '')
-        .trim()
-        .toLowerCase();
-      const items = Object.entries(ctx.store.users)
-        .map(([email, row]) => ({
-          id: row.id,
-          email,
-          name: row.name,
-          role: row.role,
-          createdAt: row.createdAt,
-          apiKeyCount: (row.apiKeys ?? []).filter((k) => !k.revokedAt).length,
-        }))
-        .filter((row) => {
-          if (!q) return true;
-          return (
-            row.email.includes(q) ||
-            row.name.toLowerCase().includes(q) ||
-            row.role.includes(q) ||
-            row.id.toLowerCase().includes(q)
-          );
-        })
-        .sort((a, b) => a.email.localeCompare(b.email));
-      res.json({ items });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: 'Failed to list users' });
-    }
-  });
-
-  app.patch('/api/admin/users/:userId/role', async (req, res) => {
-    try {
-      const ctx = await requireSystemAdmin(req, res);
-      if (!ctx) return;
-      const role = String(req.body?.role ?? '');
-      if (!ROLES.has(role)) return res.status(400).json({ error: 'Invalid role.' });
-      const found = findUserById(ctx.store, req.params.userId);
-      if (!found) return res.status(404).json({ error: 'User not found.' });
-      if (found.email === DEMO_EMAIL && role !== 'system_admin') {
-        return res.status(400).json({ error: 'The demo system admin role cannot be downgraded.' });
-      }
-      ctx.store.users[found.email] = { ...found.row, role };
-      await persistAuthStore(ctx.store);
-      res.json({ ok: true, user: publicUser(found.email, ctx.store.users[found.email]) });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: 'Failed to update role' });
-    }
-  });
-
-  app.get('/api/admin/users/:userId/api-keys', async (req, res) => {
-    try {
-      const ctx = await requireSystemAdmin(req, res);
-      if (!ctx) return;
-      const found = findUserById(ctx.store, req.params.userId);
-      if (!found) return res.status(404).json({ error: 'User not found.' });
-      res.json({ items: (found.row.apiKeys ?? []).map(apiKeyMeta) });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: 'Failed to list API keys' });
-    }
-  });
-
-  app.post('/api/admin/users/:userId/api-keys', async (req, res) => {
-    try {
-      const ctx = await requireSystemAdmin(req, res);
-      if (!ctx) return;
-      const found = findUserById(ctx.store, req.params.userId);
-      if (!found) return res.status(404).json({ error: 'User not found.' });
+  const keysMatch = p.match(/^\/api\/admin\/users\/([^/]+)\/api-keys$/);
+  if (keysMatch) {
+    const userId = decodeURIComponent(keysMatch[1]);
+    const ctx = await requireSystemAdminCtx(authorization);
+    if (ctx.error) return ctx.error;
+    const found = findUserById(ctx.store, userId);
+    if (!found) return { status: 404, body: { error: 'User not found.' } };
+    if (m === 'GET') return { status: 200, body: { items: (found.row.apiKeys ?? []).map(apiKeyMeta) } };
+    if (m === 'POST') {
       const material = crypto.randomBytes(24).toString('hex');
       const key = `mnk_${material}`;
       const meta = {
         id: crypto.randomUUID(),
-        label: String(req.body?.label ?? '').trim() || 'Integration key',
+        label: String(body?.label ?? '').trim() || 'Integration key',
         prefix: `${key.slice(0, 12)}…`,
         hash: hash(key),
         createdAt: new Date().toISOString(),
@@ -365,31 +356,47 @@ export function mountAuthRoutes(app) {
       const apiKeys = [...(found.row.apiKeys ?? []), meta];
       ctx.store.users[found.email] = { ...found.row, apiKeys };
       await persistAuthStore(ctx.store);
-      res.status(201).json({ key, meta: apiKeyMeta(meta) });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: 'Failed to create API key' });
+      return { status: 201, body: { key, meta: apiKeyMeta(meta) } };
     }
-  });
+  }
 
-  app.delete('/api/admin/users/:userId/api-keys/:keyId', async (req, res) => {
+  const revokeMatch = p.match(/^\/api\/admin\/users\/([^/]+)\/api-keys\/([^/]+)$/);
+  if (m === 'DELETE' && revokeMatch) {
+    const ctx = await requireSystemAdminCtx(authorization);
+    if (ctx.error) return ctx.error;
+    const found = findUserById(ctx.store, decodeURIComponent(revokeMatch[1]));
+    if (!found) return { status: 404, body: { error: 'User not found.' } };
+    const keyId = decodeURIComponent(revokeMatch[2]);
+    const apiKeys = (found.row.apiKeys ?? []).map((k) =>
+      k.id === keyId ? { ...k, revokedAt: k.revokedAt ?? new Date().toISOString() } : k,
+    );
+    if (!apiKeys.some((k) => k.id === keyId)) {
+      return { status: 404, body: { error: 'API key not found.' } };
+    }
+    ctx.store.users[found.email] = { ...found.row, apiKeys };
+    await persistAuthStore(ctx.store);
+    return { status: 200, body: { ok: true } };
+  }
+
+  return { status: 404, body: { error: 'Not found', path: p } };
+}
+
+export function mountAuthRoutes(app) {
+  app.use(async (req, res, next) => {
+    const path = String(req.path || '').split('?')[0];
+    if (!path.startsWith('/api/auth') && !path.startsWith('/api/admin')) return next();
     try {
-      const ctx = await requireSystemAdmin(req, res);
-      if (!ctx) return;
-      const found = findUserById(ctx.store, req.params.userId);
-      if (!found) return res.status(404).json({ error: 'User not found.' });
-      const apiKeys = (found.row.apiKeys ?? []).map((k) =>
-        k.id === req.params.keyId ? { ...k, revokedAt: k.revokedAt ?? new Date().toISOString() } : k,
-      );
-      if (!apiKeys.some((k) => k.id === req.params.keyId)) {
-        return res.status(404).json({ error: 'API key not found.' });
-      }
-      ctx.store.users[found.email] = { ...found.row, apiKeys };
-      await persistAuthStore(ctx.store);
-      res.json({ ok: true });
+      const result = await handleAuthRequest({
+        method: req.method,
+        path,
+        query: req.query || {},
+        body: req.body,
+        headers: req.headers || {},
+      });
+      res.status(result.status).json(result.body);
     } catch (err) {
       console.error(err);
-      res.status(500).json({ error: 'Failed to revoke API key' });
+      res.status(500).json({ error: 'Auth request failed' });
     }
   });
 }
