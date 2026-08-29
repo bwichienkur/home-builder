@@ -732,6 +732,53 @@
   box-shadow: var(--shadow);
   border: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
 }
+.configurator-bar-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: auto;
+  flex: 1 1 auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  color: inherit;
+  cursor: default;
+  min-width: 0;
+}
+.configurator-bar-summary:disabled {
+  cursor: default;
+}
+.configurator-bar-summary-text {
+  min-width: 0;
+  flex: 1;
+}
+.configurator-bar-summary-text strong {
+  display: block;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.configurator-bar-toggle-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--accent-ink);
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+}
+.configurator-bar-details {
+  display: contents;
+}
 .configurator-bar-main {
   display: flex;
   flex-direction: column;
@@ -1179,17 +1226,30 @@
     left: 8px;
     right: 8px;
     top: calc(52px + env(safe-area-inset-top));
-    padding: 10px 12px;
-    gap: 8px 12px;
+    padding: 8px 10px;
+    gap: 8px;
+  }
+  .configurator-bar.is-collapsed {
+    padding: 6px 8px 6px 12px;
+  }
+  .configurator-bar-summary {
+    width: 100%;
+    cursor: pointer;
+    min-height: 44px;
+  }
+  .configurator-bar-summary-text strong {
+    font-size: 14px;
+    line-height: 1.25;
+    white-space: nowrap;
+  }
+  .configurator-bar.is-expanded .configurator-bar-details {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
   }
   .configurator-bar-main {
     width: 100%;
-  }
-  .configurator-bar-main strong {
-    font-size: 14px;
-    line-height: 1.25;
-    max-width: 100%;
-    white-space: normal;
   }
   .configurator-bar-controls {
     width: 100%;
@@ -1250,7 +1310,7 @@
     width: auto;
     /* Sit clearly above the multi-row studio dock */
     bottom: calc(88px + env(safe-area-inset-bottom));
-    max-height: min(52vh, 440px);
+    max-height: min(48vh, 400px);
     z-index: 72;
   }
   .configurator-dock.is-collapsed {
@@ -1259,10 +1319,22 @@
     width: auto;
     max-width: calc(100vw - 16px);
     bottom: calc(88px + env(safe-area-inset-bottom));
+    border-radius: 999px;
+    background: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 8px 24px rgba(0, 88, 163, 0.28);
+  }
+  .configurator-dock.is-collapsed .configurator-dock-chrome {
+    background: transparent;
   }
   .configurator-dock-toggle {
     min-height: 44px;
     padding: 12px 14px;
+  }
+  .configurator-dock.is-collapsed .configurator-dock-toggle {
+    color: #fff;
+    font-size: 13px;
+    padding: 12px 18px;
   }
   .configurator-dock-tabs {
     padding: 0 6px 8px;
