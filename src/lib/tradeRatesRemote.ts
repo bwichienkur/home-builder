@@ -1,5 +1,5 @@
-import { apiBaseUrl, apiHeaders, isCloudPersistHttp } from '../platform/config';
-import type { TradeRates } from '../../store/tradeRatesStore';
+import { apiBaseUrl, apiHeaders, isCloudPersistHttp } from './platform/config';
+import type { TradeRates } from '../store/tradeRatesStore';
 
 export function isTradeRatesHttp(): boolean {
   return isCloudPersistHttp();
