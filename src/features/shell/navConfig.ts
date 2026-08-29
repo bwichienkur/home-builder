@@ -39,7 +39,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: 'Studio',
     items: [
       { to: '/', label: 'Home', icon: House, end: true },
-      { to: '/build', label: 'Build', icon: Box },
+      { to: '/build', label: 'Project', icon: Box },
       { to: '/plans', label: 'Plans', icon: LayoutTemplate },
     ],
   },
@@ -80,7 +80,7 @@ export const NAV_GROUPS: NavGroup[] = [
 
 export const PAGE_TITLES: { path: string; end?: boolean; title: string }[] = [
   { path: '/', end: true, title: 'Overview' },
-  { path: '/build', title: 'Build' },
+  { path: '/build', title: 'Project' },
   { path: '/clients', title: 'Clients' },
   { path: '/vendors', title: 'Vendors' },
   { path: '/inventory', title: 'Materials' },

@@ -1,12 +1,15 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { listFloorplanTemplates } from '../../lib/housePlans/planRegistry';
 import type { DrawingImportProgress } from '../../lib/housePlans/importDrawingFile';
 import type { TeamMember } from '../../lib/configurator/projectTypes';
 import { WORKFLOW_LABEL } from '../../lib/configurator/projectTypes';
+import { listUsersForRole } from '../../lib/platform/listUsersForRole';
+import type { AdminUserRow } from '../../lib/platform/authProvider';
 import {
   createBlankSelectionProject,
   useConfiguratorStore,
 } from '../../store/configuratorStore';
+import { useCrmStore } from '../../store/crmStore';
 import { usePlannerStore } from '../../store/plannerStore';
 import { ContractConfigPanel } from '../../components/configurator/ContractConfigPanel';
 
@@ -54,28 +57,72 @@ export function ProjectWizard({ onComplete, onCancel }: Props) {
   const [step, setStep] = useState<StepId>('details');
   const [name, setName] = useState('');
   const [location, setLocation] = useState('');
-  const [estimator, setEstimator] = useState('');
-  const [designer, setDesigner] = useState('');
-  const [pm, setPm] = useState('');
+  const [estimatorId, setEstimatorId] = useState('');
+  const [designerId, setDesignerId] = useState('');
+  const [pmId, setPmId] = useState('');
+  const [clientId, setClientId] = useState('');
+  const [estimators, setEstimators] = useState<AdminUserRow[]>([]);
+  const [designers, setDesigners] = useState<AdminUserRow[]>([]);
+  const [pms, setPms] = useState<AdminUserRow[]>([]);
+  const [directoryError, setDirectoryError] = useState<string | null>(null);
   const [drawingFile, setDrawingFile] = useState<File | null>(null);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [importBusy, setImportBusy] = useState(false);
   const [importProgress, setImportProgress] = useState<DrawingImportProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [clientEmail, setClientEmail] = useState('');
   const [inviteBusy, setInviteBusy] = useState(false);
   const [allowancesConfirmed, setAllowancesConfirmed] = useState(false);
   const drawingRef = useRef<HTMLInputElement>(null);
   const pdfRef = useRef<HTMLInputElement>(null);
   const templates = useMemo(() => listFloorplanTemplates(), []);
+  const clients = useCrmStore((s) => (s.clients ?? []).filter((c) => !c.archived));
+  const hydrateCrm = useCrmStore((s) => s.hydrate);
+  const setPlannerClientId = usePlannerStore((s) => s.setClientId);
+
+  useEffect(() => {
+    void hydrateCrm();
+    let cancelled = false;
+    void Promise.all([
+      listUsersForRole('estimator'),
+      listUsersForRole('designer'),
+      listUsersForRole('pm'),
+    ])
+      .then(([est, des, pmRows]) => {
+        if (cancelled) return;
+        setEstimators(est);
+        setDesigners(des);
+        setPms(pmRows);
+        setDirectoryError(null);
+      })
+      .catch((err) => {
+        if (!cancelled) setDirectoryError(err instanceof Error ? err.message : 'Could not load users');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [hydrateCrm]);
 
   const stepIndex = STEPS.findIndex((s) => s.id === step);
 
+  const pickUser = (rows: AdminUserRow[], id: string) => rows.find((u) => u.id === id) ?? null;
+
   const buildTeam = (): TeamMember[] => {
     const team: TeamMember[] = [];
-    if (estimator.trim()) team.push({ role: 'estimator', name: estimator.trim() });
-    if (designer.trim()) team.push({ role: 'designer', name: designer.trim() });
-    if (pm.trim()) team.push({ role: 'project_manager', name: pm.trim() });
+    const est = pickUser(estimators, estimatorId);
+    const des = pickUser(designers, designerId);
+    const pm = pickUser(pms, pmId);
+    const client = clients.find((c) => c.id === clientId);
+    if (est) team.push({ role: 'estimator', name: est.name, email: est.email, userId: est.id });
+    if (des) team.push({ role: 'designer', name: des.name, email: des.email, userId: des.id });
+    if (pm) team.push({ role: 'project_manager', name: pm.name, email: pm.email, userId: pm.id });
+    if (client) {
+      team.push({
+        role: 'client',
+        name: client.name,
+        email: client.email || undefined,
+        clientId: client.id,
+      });
+    }
     return team;
   };
 
@@ -85,8 +132,12 @@ export function ProjectWizard({ onComplete, onCancel }: Props) {
       setError('Project name is required.');
       return;
     }
-    if (!estimator.trim() || !designer.trim() || !pm.trim()) {
+    if (!estimatorId || !designerId || !pmId) {
       setError('Assign an estimator, designer, and project manager.');
+      return;
+    }
+    if (!clientId) {
+      setError('Select a client.');
       return;
     }
     const blank = createBlankSelectionProject(name.trim(), name.trim(), location.trim() || undefined);
@@ -96,6 +147,7 @@ export function ProjectWizard({ onComplete, onCancel }: Props) {
       team: buildTeam(),
       workflowStatus: 'draft',
     });
+    setPlannerClientId(clientId);
     setStep('files');
   };
 
@@ -160,7 +212,8 @@ export function ProjectWizard({ onComplete, onCancel }: Props) {
     setInviteBusy(true);
     setError(null);
     try {
-      await createClientInvite(clientEmail.trim() || undefined);
+      const client = clients.find((c) => c.id === clientId);
+      await createClientInvite(client?.email?.trim() || undefined);
       setStep('ready');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Invite failed');
@@ -224,16 +277,60 @@ export function ProjectWizard({ onComplete, onCancel }: Props) {
             </label>
             <label className="configurator-field">
               <span>Estimator</span>
-              <input value={estimator} onChange={(e) => setEstimator(e.target.value)} placeholder="Name" />
+              <select value={estimatorId} onChange={(e) => setEstimatorId(e.target.value)} required>
+                <option value="">Select estimator…</option>
+                {estimators.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name} ({u.email})
+                  </option>
+                ))}
+              </select>
             </label>
             <label className="configurator-field">
               <span>Designer</span>
-              <input value={designer} onChange={(e) => setDesigner(e.target.value)} placeholder="Name" />
+              <select value={designerId} onChange={(e) => setDesignerId(e.target.value)} required>
+                <option value="">Select designer…</option>
+                {designers.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name} ({u.email})
+                  </option>
+                ))}
+              </select>
             </label>
             <label className="configurator-field">
               <span>Project manager</span>
-              <input value={pm} onChange={(e) => setPm(e.target.value)} placeholder="Name" />
+              <select value={pmId} onChange={(e) => setPmId(e.target.value)} required>
+                <option value="">Select project manager…</option>
+                {pms.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name} ({u.email})
+                  </option>
+                ))}
+              </select>
             </label>
+            <label className="configurator-field">
+              <span>Client</span>
+              <select value={clientId} onChange={(e) => setClientId(e.target.value)} required>
+                <option value="">Select client…</option>
+                {clients.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                    {c.email ? ` (${c.email})` : ''}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {directoryError && (
+              <p className="muted full">User directory: {directoryError}. Sign in, or add users under Account → Users.</p>
+            )}
+            {!directoryError && estimators.length === 0 && (
+              <p className="muted full">No estimators yet — seed accounts appear after first sign-in, or create users under Account → Users.</p>
+            )}
+            {clients.length === 0 && (
+              <p className="muted full">
+                No CRM clients yet. Add one under <a href="/clients">Clients</a> first.
+              </p>
+            )}
           </div>
         )}
 
@@ -362,12 +459,16 @@ export function ProjectWizard({ onComplete, onCancel }: Props) {
               </div>
             </div>
             <label className="configurator-field full">
-              <span>Client email (optional)</span>
-              <input
-                value={clientEmail}
-                onChange={(e) => setClientEmail(e.target.value)}
-                placeholder="client@example.com"
-              />
+              <span>Client</span>
+              <select value={clientId} onChange={(e) => setClientId(e.target.value)}>
+                <option value="">Select client…</option>
+                {clients.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                    {c.email ? ` (${c.email})` : ''}
+                  </option>
+                ))}
+              </select>
             </label>
             {lastInviteUrl && (
               <p className="configurator-invite-link full">

@@ -12,6 +12,15 @@ const STORAGE = 'mahnikka-local-accounts-v1';
 const DEMO_EMAIL = 'admin@mahnikka.local';
 const DEMO_PASS = 'admin123';
 
+const SEED_ACCOUNTS: { email: string; id: string; name: string; password: string; role: UserRole }[] = [
+  { email: DEMO_EMAIL, id: '00000000-0000-4000-8000-000000000001', name: 'Studio Admin', password: DEMO_PASS, role: 'system_admin' },
+  { email: 'designer@mahnikka.local', id: '00000000-0000-4000-8000-000000000002', name: 'Alex Designer', password: 'designer123', role: 'designer' },
+  { email: 'estimator@mahnikka.local', id: '00000000-0000-4000-8000-000000000003', name: 'Sam Estimator', password: 'estimator123', role: 'estimator' },
+  { email: 'client@mahnikka.local', id: '00000000-0000-4000-8000-000000000004', name: 'Casey Client', password: 'client123', role: 'client_viewer' },
+  { email: 'pm@mahnikka.local', id: '00000000-0000-4000-8000-000000000005', name: 'Pat Manager', password: 'pm123', role: 'pm' },
+];
+
+
 type ApiKeyRow = {
   id: string;
   label: string;
@@ -64,17 +73,19 @@ async function ensureDemo(accounts: Record<string, AccountRow>): Promise<Record<
   for (const [email, row] of Object.entries(accounts)) {
     next[email] = migrateAccount(email, row);
   }
-  if (!next[DEMO_EMAIL]) {
-    next[DEMO_EMAIL] = {
-      id: 'user-demo',
-      name: 'Studio Admin',
-      passwordHash: await sha256(DEMO_PASS),
-      role: 'system_admin',
-      createdAt: new Date().toISOString(),
-      apiKeys: [],
-    };
-  } else {
-    next[DEMO_EMAIL] = { ...next[DEMO_EMAIL], role: 'system_admin' };
+  for (const seed of SEED_ACCOUNTS) {
+    if (!next[seed.email]) {
+      next[seed.email] = {
+        id: seed.id,
+        name: seed.name,
+        passwordHash: await sha256(seed.password),
+        role: seed.role,
+        createdAt: new Date().toISOString(),
+        apiKeys: [],
+      };
+    } else if (seed.email === DEMO_EMAIL) {
+      next[seed.email] = { ...next[seed.email], role: 'system_admin' };
+    }
   }
   writeAccounts(next);
   return next;
@@ -239,5 +250,13 @@ export class LocalAuthProvider implements AuthProvider {
 }
 
 export const DEMO_LOGIN = { email: DEMO_EMAIL, password: DEMO_PASS };
+
+export const DEMO_ROLE_LOGINS = SEED_ACCOUNTS.map((s) => ({
+  email: s.email,
+  password: s.password,
+  role: s.role,
+  name: s.name,
+}));
+
 
 export { canManageUsers };

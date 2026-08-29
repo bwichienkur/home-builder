@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Cloud, FolderOpen, Plus } from 'lucide-react';
+import { Cloud, FolderOpen } from 'lucide-react';
 import { fetchCloudProjects } from '../../lib/cloudProjects';
 import { hydrateDesignsFromRemote, listSharedDesigns } from '../../lib/designShare';
 import { platformConfig } from '../../lib/platform/config';
@@ -67,25 +67,25 @@ export function HomePage() {
     <div className="data-page home-page">
       <OwnerDashboard />
 
-      <section className="home-build-files" aria-label="Build files">
+      <section className="home-build-files" aria-label="Projects">
         <header className="data-page-header">
           <div>
             <p className="eyebrow">Studio</p>
-            <h2>Build files</h2>
-            <p className="muted">Open a 3D plan on this device or in the cloud.</p>
+            <h2>Recent projects</h2>
+            <p className="muted">Open a plan on this device or in the cloud. Create new jobs from Project.</p>
           </div>
           <div className="data-page-actions">
-            <Link className="home-new-project" to="/build?new=1">
-              <Plus size={16} strokeWidth={2.2} />
-              New project
+            <Link className="home-new-project" to="/build">
+              <FolderOpen size={16} strokeWidth={2.2} />
+              Open Project
             </Link>
           </div>
         </header>
 
         {projects.length === 0 && !cloudLoading ? (
           <div className="home-empty">
-            <p>No Build files yet.</p>
-            <Link to="/build?new=1">Start a new project</Link>
+            <p>No projects yet.</p>
+            <Link to="/build">Go to Project to create one</Link>
           </div>
         ) : (
           <ul className="home-project-list">

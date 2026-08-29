@@ -31,7 +31,13 @@ export function BuildHub({ onBegan }: Props) {
   const setStudioMode = usePlannerStore((s) => s.setStudioMode);
   const setUnit = usePlannerStore((s) => s.setUnitSystem);
 
-  const [wizardOpen, setWizardOpen] = useState(false);
+  const [wizardOpen, setWizardOpen] = useState(() => {
+    try {
+      return new URLSearchParams(window.location.search).get('new') === '1';
+    } catch {
+      return false;
+    }
+  });
   const [localDesigns, setLocalDesigns] = useState(() => listSharedDesigns());
   const [cloudProjects, setCloudProjects] = useState<Awaited<ReturnType<typeof fetchCloudProjects>>>([]);
   const [selectionProjects, setSelectionProjects] = useState<ApiSelectionProject[]>([]);
@@ -150,9 +156,9 @@ export function BuildHub({ onBegan }: Props) {
   }
 
   return (
-    <section className="design-start build-hub" aria-label="Build projects">
+    <section className="design-start build-hub" aria-label="Projects">
       <div className="design-start-panel build-hub-panel is-wide">
-        <p className="design-start-eyebrow">Olsen Custom Homes · Build</p>
+        <p className="design-start-eyebrow">Olsen Custom Homes · Project</p>
         <h1>Projects</h1>
         <p className="design-start-lede">
           Open an existing job or start a guided project — drawings, estimator sign-off, designer invite, client
