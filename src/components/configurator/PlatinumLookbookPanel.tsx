@@ -31,7 +31,7 @@ export function PlatinumLookbookPanel() {
           <strong>Platinum included tiers</strong>
         </div>
         <ul className="configurator-trade-summary">
-          {levels.slice(0, 10).map((row) => (
+          {levels.map((row) => (
             <li key={row.pricingCategory}>
               <strong>{row.label}</strong>
               <span>{row.includedLevel}</span>

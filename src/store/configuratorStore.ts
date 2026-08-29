@@ -73,6 +73,8 @@ type ConfiguratorState = {
   removeAllowance: (index: number) => void;
   setLevelOverrides: (overrides: ContractLevelOverride[]) => void;
   setIncludedLevel: (row: ContractIncludedLevel) => void;
+  addIncludedLevel: (row?: Partial<ContractIncludedLevel>) => void;
+  removeIncludedLevel: (pricingCategory: string) => void;
   resetIncludedLevelsToPlatinum: () => void;
   clearProject: () => void;
   persistProject: () => Promise<void>;
@@ -440,13 +442,57 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
       levelOverrides,
     });
   },
-  resetIncludedLevelsToPlatinum: () => {
+  addIncludedLevel: (partial) => {
+    const project = get().project;
+    if (!project?.contract) return;
+    const label = partial?.label?.trim() || 'New trade';
+    const pricingCategory =
+      partial?.pricingCategory?.trim() ||
+      label
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '') ||
+      `tier-${Date.now()}`;
+    if (project.contract.includedLevels.some((r) => r.pricingCategory === pricingCategory)) return;
+    const row: ContractIncludedLevel = {
+      pricingCategory,
+      sourceTab: partial?.sourceTab ?? '',
+      includedLevel: partial?.includedLevel ?? 'Level 3',
+      label,
+      priceUnit: partial?.priceUnit ?? 'each',
+    };
+    get().setIncludedLevel(row);
+  },
+  removeIncludedLevel: (pricingCategory) => {
     const project = get().project;
     if (!project?.contract) return;
     patchProject(get, set, {
       contract: {
         ...project.contract,
-        includedLevels: PLATINUM_INCLUDED_LEVELS.map((r) => ({ ...r })),
+        includedLevels: project.contract.includedLevels.filter((r) => r.pricingCategory !== pricingCategory),
+        verifiedAt: new Date().toISOString().slice(0, 10),
+      },
+      levelOverrides: project.levelOverrides.filter((o) => o.pricingCategory !== pricingCategory),
+      allowances: project.allowances.filter((a) => a.pricingCategory !== pricingCategory),
+    });
+  },
+  resetIncludedLevelsToPlatinum: () => {
+    const project = get().project;
+    if (!project?.contract) return;
+    let tiers = PLATINUM_INCLUDED_LEVELS.map((r) => ({ ...r }));
+    try {
+      const raw = localStorage.getItem('olsen-org-config-v1');
+      if (raw) {
+        const parsed = JSON.parse(raw) as { platinumTiers?: ContractIncludedLevel[] };
+        if (parsed.platinumTiers?.length) tiers = parsed.platinumTiers.map((r) => ({ ...r }));
+      }
+    } catch {
+      /* defaults */
+    }
+    patchProject(get, set, {
+      contract: {
+        ...project.contract,
+        includedLevels: tiers,
         baseline: 'platinum',
         verifiedAt: new Date().toISOString().slice(0, 10),
         notes: 'Platinum Features baseline — delta pricing shows upgrade above included tier.',

@@ -19,6 +19,7 @@ describe('app nav', () => {
       '/ops/deals',
       '/ops/people',
       '/ops/reports',
+      '/config',
       '/settings',
       '/users',
       '/docs/api',
@@ -28,6 +29,7 @@ describe('app nav', () => {
   it('titles the current page for the shared top bar', () => {
     expect(pageTitleForPath('/')).toBe('Overview');
     expect(pageTitleForPath('/build')).toBe('Build');
+    expect(pageTitleForPath('/config')).toBe('Config');
     expect(pageTitleForPath('/inventory')).toBe('Materials');
     expect(pageTitleForPath('/ops')).toBe('Operations');
     expect(pageTitleForPath('/ops/jobs')).toBe('Jobs');

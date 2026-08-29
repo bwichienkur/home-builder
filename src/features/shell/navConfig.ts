@@ -13,6 +13,7 @@ import {
   ListChecks,
   Settings,
   Shield,
+  SlidersHorizontal,
   Store,
   Users,
   Wrench,
@@ -69,6 +70,7 @@ export const NAV_GROUPS: NavGroup[] = [
     id: 'account',
     label: 'Account',
     items: [
+      { to: '/config', label: 'Config', icon: SlidersHorizontal },
       { to: '/settings', label: 'Settings', icon: Settings },
       { to: '/users', label: 'Users', icon: Shield, adminOnly: true },
       { to: '/docs/api', label: 'API docs', icon: BookOpen },
@@ -91,6 +93,7 @@ export const PAGE_TITLES: { path: string; end?: boolean; title: string }[] = [
   { path: '/ops/reports', title: 'Reports' },
   { path: '/ops', title: 'Operations' },
   { path: '/plans', title: 'Plans' },
+  { path: '/config', title: 'Config' },
   { path: '/settings', title: 'Settings' },
   { path: '/users', title: 'Users' },
 ];

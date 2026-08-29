@@ -3,22 +3,7 @@ import type { PriceUnit } from '../../components/catalog/catalogTypes';
 
 export type ConfiguratorRole = 'client' | 'designer' | 'admin';
 
-export type PricingCategory =
-  | 'countertops-kitchen'
-  | 'countertops-bath'
-  | 'floor-tile'
-  | 'wall-tile-shower'
-  | 'backsplash'
-  | 'shower-pan'
-  | 'interior-doors'
-  | 'cabinetry'
-  | 'plumbing-fixtures'
-  | 'stone-veneer'
-  | 'trim'
-  | 'pavers'
-  | 'windows'
-  | 'outdoor-kitchen';
-
+export type PricingCategory = string;
 export type ContractIncludedLevel = {
   pricingCategory: PricingCategory;
   sourceTab?: string;
@@ -78,13 +63,26 @@ export function platinumSourceTabForCategory(category: PricingCategory): string 
   return PLATINUM_INCLUDED_LEVELS.find((r) => r.pricingCategory === category)?.sourceTab;
 }
 export function createPlatinumContract(name: string, planRef?: string, lotRef?: string): ContractSnapshot {
+  let includedLevels = PLATINUM_INCLUDED_LEVELS.map((row) => ({ ...row }));
+  try {
+    // Prefer org Config studio Platinum template when available (browser only).
+    const raw = typeof window !== 'undefined' ? localStorage.getItem('olsen-org-config-v1') : null;
+    if (raw) {
+      const parsed = JSON.parse(raw) as { platinumTiers?: ContractIncludedLevel[] };
+      if (parsed.platinumTiers?.length) {
+        includedLevels = parsed.platinumTiers.map((row) => ({ ...row }));
+      }
+    }
+  } catch {
+    /* keep code defaults */
+  }
   return {
     id: `contract-${slug(name)}`,
     name,
     planRef,
     lotRef,
     baseline: 'platinum',
-    includedLevels: PLATINUM_INCLUDED_LEVELS.map((row) => ({ ...row })),
+    includedLevels,
     verifiedAt: new Date().toISOString().slice(0, 10),
     notes: 'Platinum Features baseline — delta pricing shows upgrade above included tier.',
   };

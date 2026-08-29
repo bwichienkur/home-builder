@@ -85,6 +85,26 @@ export const CatalogPanel = memo(function CatalogPanel({
     () => {
       const curatedIds = new Set(project?.curatedOptions?.map((c) => c.catalogId) ?? []);
       const clientPlatinumOnly = role === 'client';
+      let curatedOnlyWhenAvailable = true;
+      let levelPattern = /level\s*[1-5]/i;
+      try {
+        const raw = localStorage.getItem('olsen-org-config-v1');
+        if (raw) {
+          const parsed = JSON.parse(raw) as {
+            clientRules?: { curatedOnlyWhenAvailable?: boolean; maxLevelPattern?: string };
+          };
+          if (parsed.clientRules?.curatedOnlyWhenAvailable === false) curatedOnlyWhenAvailable = false;
+          if (parsed.clientRules?.maxLevelPattern) {
+            try {
+              levelPattern = new RegExp(parsed.clientRules.maxLevelPattern, 'i');
+            } catch {
+              /* keep default */
+            }
+          }
+        }
+      } catch {
+        /* defaults */
+      }
       return all
         .filter((i) => {
           const haystack = `${i.brand ?? ''} ${i.model ?? ''} ${i.sku ?? ''} ${i.name} ${i.category} ${i.tags?.join(' ') ?? ''}`.toLowerCase();
@@ -93,9 +113,13 @@ export const CatalogPanel = memo(function CatalogPanel({
             !activeRoomFilter ||
             i.roomTypes?.some((rt) => activeRoomFilter.toLowerCase().includes(rt.toLowerCase())) ||
             i.name.toLowerCase().includes(activeRoomFilter.toLowerCase());
-          const curatedMatch = !clientPlatinumOnly || curatedIds.size === 0 || curatedIds.has(i.id);
+          const curatedMatch =
+            !clientPlatinumOnly ||
+            !curatedOnlyWhenAvailable ||
+            curatedIds.size === 0 ||
+            curatedIds.has(i.id);
           const platinumMatch =
-            !clientPlatinumOnly || !i.level || /level\s*[1-5]/i.test(i.level) || curatedIds.has(i.id);
+            !clientPlatinumOnly || !i.level || levelPattern.test(i.level) || curatedIds.has(i.id);
           return (
             (!recommended || roomMatch) &&
             roomFilterMatch &&
