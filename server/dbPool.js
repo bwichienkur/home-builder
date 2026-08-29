@@ -15,13 +15,28 @@ export function databaseUrl() {
   ).trim();
 }
 
+function poolSsl(url) {
+  // Neon and most hosted Postgres require TLS. Avoid crashing on cert chain mismatches in serverless.
+  if (/neon\.tech|sslmode=require|sslmode=verify/i.test(url) || url.includes('ssl=true')) {
+    return { rejectUnauthorized: false };
+  }
+  return undefined;
+}
+
 export function getPool() {
   const url = databaseUrl();
   if (!url) return null;
   if (!pool) {
     pool = new pg.Pool({
       connectionString: url,
-      ssl: url.includes('neon') ? { rejectUnauthorized: false } : undefined,
+      ssl: poolSsl(url),
+      max: 2,
+      idleTimeoutMillis: 10_000,
+      connectionTimeoutMillis: 8_000,
+    });
+    // Unhandled pool 'error' crashes the Vercel isolate → FUNCTION_INVOCATION_FAILED.
+    pool.on('error', (err) => {
+      console.error('pg pool error', err?.message || err);
     });
   }
   return pool;

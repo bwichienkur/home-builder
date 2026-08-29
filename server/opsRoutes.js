@@ -5,7 +5,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import pg from 'pg';
+import { getPool } from './dbPool.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA = path.join(__dirname, '../data/ops-store.json');
@@ -25,26 +25,6 @@ const EMPTY = {
   deals: [],
   people: [],
 };
-
-let pool = null;
-
-/** Neon Vercel integration sets DATABASE_URL (pooled); also accept common aliases. */
-function databaseUrl() {
-  return (
-    process.env.DATABASE_URL ||
-    process.env.POSTGRES_URL ||
-    process.env.DATABASE_URL_UNPOOLED ||
-    process.env.POSTGRES_URL_NON_POOLING ||
-    ''
-  ).trim();
-}
-
-function getPool() {
-  const url = databaseUrl();
-  if (!url) return null;
-  if (!pool) pool = new pg.Pool({ connectionString: url });
-  return pool;
-}
 
 async function ensureTable(db) {
   await db.query(`

@@ -113,11 +113,15 @@ async function loadAuthStore() {
   if (memoryStore) return memoryStore;
   const db = getPool();
   if (db) {
-    await ensureSnapshotTable(db, 'auth_snapshots');
-    const { payload } = await loadSnapshot('auth_snapshots');
-    if (payload?.users) {
-      memoryStore = normalizeStore(payload);
-      return memoryStore;
+    try {
+      await ensureSnapshotTable(db, 'auth_snapshots');
+      const { payload } = await loadSnapshot('auth_snapshots');
+      if (payload?.users) {
+        memoryStore = normalizeStore(payload);
+        return memoryStore;
+      }
+    } catch (err) {
+      console.warn('auth neon load failed; using local store', err?.message || err);
     }
   }
   memoryStore = normalizeStore(readFileAuth());
@@ -128,17 +132,26 @@ async function persistAuthStore(store) {
   memoryStore = store;
   const db = getPool();
   if (db) {
-    await saveSnapshot('auth_snapshots', store);
-    for (const [email, row] of Object.entries(store.users)) {
-      try {
-        await upsertUserRow(db, email, row);
-      } catch (err) {
-        console.warn('users upsert skipped', email, err.message);
+    try {
+      await saveSnapshot('auth_snapshots', store);
+      for (const [email, row] of Object.entries(store.users)) {
+        try {
+          await upsertUserRow(db, email, row);
+        } catch (err) {
+          console.warn('users upsert skipped', email, err.message);
+        }
       }
+      return;
+    } catch (err) {
+      console.warn('auth neon save failed; using file store', err?.message || err);
     }
-    return;
   }
-  writeFileAuth(store);
+  try {
+    writeFileAuth(store);
+  } catch (err) {
+    // Vercel serverless FS is read-only except /tmp — memoryStore still holds the session.
+    console.warn('auth file save skipped', err?.message || err);
+  }
 }
 
 function publicUser(email, row) {

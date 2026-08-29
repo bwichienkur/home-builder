@@ -108,7 +108,8 @@ export function LoginPage() {
           Demo: {DEMO_LOGIN.email} / {DEMO_LOGIN.password}
         </p>
         <p className="muted">
-          $0 local auth by default. Swap to hosted IdP later — see docs/ZERO_COST_TO_PAID.md.
+          Accounts stay in this browser by default. Set <code>VITE_AUTH_PROVIDER=remote</code> to use the API/Neon auth
+          store.
         </p>
       </div>
     </div>
