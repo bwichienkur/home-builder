@@ -193,10 +193,13 @@ export default async function authHandler(req, res) {
       return res.status(200).json({ user: publicUser(email, store.users[email]) });
     }
 
-    if (method === 'GET' && path === '/api/users') {
+    if (method === 'GET' && (path === '/api/users' || path === '/api/admin/users')) {
       const store = await loadStore();
       const email = store.tokens[readAuth(req.headers)];
-      if (!email) return res.status(401).json({ error: 'Not signed in' });
+      if (!email || !store.users[email]) return res.status(401).json({ error: 'Not signed in' });
+      if (path === '/api/admin/users' && store.users[email].role !== 'system_admin') {
+        return res.status(403).json({ error: 'System admin role required.' });
+      }
       const role = String(req.query?.role || '').trim();
       const q = String(req.query?.q || '')
         .trim()

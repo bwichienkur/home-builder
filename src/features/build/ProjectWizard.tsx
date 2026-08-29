@@ -75,7 +75,10 @@ export function ProjectWizard({ onComplete, onCancel }: Props) {
   const drawingRef = useRef<HTMLInputElement>(null);
   const pdfRef = useRef<HTMLInputElement>(null);
   const templates = useMemo(() => listFloorplanTemplates(), []);
-  const clients = useCrmStore((s) => (s.clients ?? []).filter((c) => !c.archived));
+  // Select stable refs only — filtering in the selector creates a new array every
+  // snapshot and trips React "Maximum update depth exceeded" (error #185).
+  const allClients = useCrmStore((s) => s.clients);
+  const clients = useMemo(() => (allClients ?? []).filter((c) => !c.archived), [allClients]);
   const hydrateCrm = useCrmStore((s) => s.hydrate);
   const setPlannerClientId = usePlannerStore((s) => s.setClientId);
 
