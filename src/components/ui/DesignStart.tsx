@@ -47,13 +47,6 @@ export function DesignStart({ onBegan }: { onBegan?: () => void }) {
 
   const startStillwater183 = () => {
     loadStillwater183();
-    if (!applyHousePlan('stillwater-183')) {
-      if (!applyHousePlan('granada')) {
-        applyRoomTemplate('rectangle');
-        enterHouse();
-      }
-    }
-    useConfiguratorStore.getState().setHousePlanId('stillwater-183');
     setStudioMode('furnish');
     setUnit('imperial');
     finish();

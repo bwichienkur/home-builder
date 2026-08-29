@@ -60,12 +60,12 @@ export function PlanVerificationPanel() {
         </span>
       </header>
 
-      {rollup && (
+      {(rollup || project.takeoff || planRooms.length > 0) && (
         <div className="configurator-kpi-row">
           <div className="configurator-kpi">
             <span className="configurator-eyebrow">Live job delta</span>
-            <strong className={rollup.jobDelta > 0 ? 'is-upgrade' : rollup.jobDelta < 0 ? 'is-credit' : ''}>
-              {rollup.jobDelta >= 0 ? '+' : ''}${rollup.jobDelta.toLocaleString()}
+            <strong className={rollup && rollup.jobDelta > 0 ? 'is-upgrade' : rollup && rollup.jobDelta < 0 ? 'is-credit' : ''}>
+              {rollup ? `${rollup.jobDelta >= 0 ? '+' : ''}$${rollup.jobDelta.toLocaleString()}` : '—'}
             </strong>
           </div>
           <div className="configurator-kpi">
@@ -75,6 +75,16 @@ export function PlanVerificationPanel() {
           <div className="configurator-kpi">
             <span className="configurator-eyebrow">Takeoff lines</span>
             <strong>{project.takeoff?.lines.length ?? 0}</strong>
+          </div>
+          <div className="configurator-kpi">
+            <span className="configurator-eyebrow">Qty source</span>
+            <strong>
+              {project.planVerification === 'approved_for_selections' && project.takeoff?.lines.length
+                ? 'Takeoff'
+                : project.takeoff?.qtySource === 'takeoff'
+                  ? 'Takeoff'
+                  : 'Geometry'}
+            </strong>
           </div>
         </div>
       )}

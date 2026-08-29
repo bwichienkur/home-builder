@@ -8,6 +8,10 @@ services:
     volumes:
       - roomcraft_db:/var/lib/postgresql/data
       - ./server/db/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
+      - ./server/db/002_vendor_inventory.sql:/docker-entrypoint-initdb.d/002-vendor-inventory.sql:ro
+      - ./server/db/003_ops_snapshot.sql:/docker-entrypoint-initdb.d/003-ops-snapshot.sql:ro
+      - ./server/db/004_catalog_selection_fields.sql:/docker-entrypoint-initdb.d/004-catalog-selection-fields.sql:ro
+      - ./server/db/005_selection_project_extended.sql:/docker-entrypoint-initdb.d/005-selection-project-extended.sql:ro
     ports: ["5432:5432"]
   api:
     image: node:22-alpine

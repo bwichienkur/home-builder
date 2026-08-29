@@ -41,6 +41,8 @@ export type ContractLevelOverride = {
   source?: 'contract_pricing_page' | 'manual';
 };
 
+export type QtySource = 'takeoff' | 'geometry' | 'auto';
+
 export type TakeoffLine = {
   id: string;
   sheet: string;
@@ -56,6 +58,8 @@ export type TakeoffLine = {
 export type TakeoffSnapshot = {
   importedAt: string;
   sourceFile?: string;
+  /** After approval, `takeoff` is the source of truth when lines exist. */
+  qtySource?: QtySource;
   lines: TakeoffLine[];
 };
 
@@ -84,6 +88,13 @@ export type SurveyResponse = {
   notes?: string;
 };
 
+export type CuratedSelectionOption = {
+  catalogId: string;
+  label: string;
+  roomType: string;
+  tier: 'lookbook' | 'survey' | 'designer';
+};
+
 export type ExtendedSelectionProject = SelectionProject & {
   workflowStatus: ProjectWorkflowStatus;
   planVerification: PlanVerificationStatus;
@@ -94,6 +105,7 @@ export type ExtendedSelectionProject = SelectionProject & {
   takeoff?: TakeoffSnapshot;
   selections?: SelectionSnapshot;
   survey?: SurveyResponse;
+  curatedOptions?: CuratedSelectionOption[];
   signOff: {
     cof: SignOffStatus;
     buildertrend: SignOffStatus;

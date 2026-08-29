@@ -4,7 +4,7 @@ import { roomArea } from '../geometry/rooms';
 import type { ContractSnapshot, PricingCategory } from './contractTypes';
 import { baseItemName, formatCatalogPrice, pricingCategoryForItem } from './deltaPricing';
 import type { AllowanceBudget, ContractLevelOverride, TakeoffSnapshot } from './projectTypes';
-import { takeoffQtyForCategory } from './importTakeoff';
+import { takeoffQtyForCategory, effectiveQty } from './importTakeoff';
 
 const M2_TO_SQFT = (1 / 0.3048) ** 2;
 
@@ -48,6 +48,7 @@ export function computeProjectRollup(input: {
   allowances?: AllowanceBudget[];
   levelOverrides?: ContractLevelOverride[];
   role?: 'designer' | 'client' | 'admin';
+  planVerification?: string;
 }): ProjectRollup {
   const roomLines: RoomRollupLine[] = [];
   const roomNameById = new Map(input.planRooms.map((r) => [r.id, r.name || r.roomType || 'Room']));
@@ -77,8 +78,15 @@ export function computeProjectRollup(input: {
     if (!room.floorCatalogId) continue;
     const product = input.catalog.find((p) => p.id === room.floorCatalogId);
     if (!product) continue;
-    const importedQty = takeoffQtyForCategory(input.takeoff, pricingCategoryForItem(product) ?? 'floor-tile', room.name);
-    const qty = importedQty > 0 ? importedQty : roomArea(room.points) * M2_TO_SQFT;
+    const importedQty = effectiveQty({
+      planVerification: input.planVerification ?? 'approved_for_selections',
+      takeoff: input.takeoff,
+      category: pricingCategoryForItem(product) ?? 'floor-tile',
+      room: room.name,
+      geometryQty: roomArea(room.points) * M2_TO_SQFT,
+      preferred: input.takeoff?.qtySource,
+    });
+    const qty = importedQty;
     const priceView = formatCatalogPrice(product, input.catalog, input.contract, input.role ?? 'designer', input.levelOverrides);
     const unitDelta = priceView.delta ?? (priceView.included ? 0 : product.price ?? product.cost ?? 0);
     roomLines.push({

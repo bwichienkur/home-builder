@@ -1,7 +1,8 @@
 import { useConfiguratorStore } from '../../store/configuratorStore';
-import { curateFromSurvey } from '../../lib/configurator/surveyCurations';
+import { curateFromSurvey, lookbookDefaults } from '../../lib/configurator/surveyCurations';
 import { useBuildCatalog } from '../../store/catalogStore';
 import { useInventoryStore } from '../../store/inventoryStore';
+import { usePlannerStore } from '../../store/plannerStore';
 
 type Props = { forceShow?: boolean };
 
@@ -9,8 +10,11 @@ export function ClientSurveyPanel({ forceShow = false }: Props) {
   const project = useConfiguratorStore((s) => s.project);
   const role = useConfiguratorStore((s) => s.role);
   const setSurvey = useConfiguratorStore((s) => s.setSurvey);
+  const setCuratedOptions = useConfiguratorStore((s) => s.setCuratedOptions);
   const inventory = useInventoryStore((s) => s.items);
   const catalog = useBuildCatalog(inventory);
+  const planRooms = usePlannerStore((s) => s.planRooms);
+  const updatePlanRoom = usePlannerStore((s) => s.updatePlanRoom);
 
   if (!project) return null;
   if (role !== 'client' && !forceShow) return null;
@@ -34,8 +38,26 @@ export function ClientSurveyPanel({ forceShow = false }: Props) {
       notes: String(fd.get('notes') ?? ''),
     };
     setSurvey(survey);
-    const curated = curateFromSurvey(catalog, survey);
-    console.info('Survey curated options', curated.length);
+    const curated = [...lookbookDefaults(catalog), ...curateFromSurvey(catalog, survey)];
+    setCuratedOptions(curated);
+
+    // Preload Look Book / survey floor picks onto living rooms when empty.
+    const floorPick = curated.find((c) => {
+      const item = catalog.find((p) => p.id === c.catalogId);
+      return item?.placementMode === 'floor-fill' || item?.sourceTab === 'Tile-Floor';
+    });
+    if (floorPick) {
+      const product = catalog.find((p) => p.id === floorPick.catalogId);
+      for (const room of planRooms) {
+        if (room.floorCatalogId) continue;
+        if (room.roomType === 'Outdoor' || room.roomType === 'Storage / wardrobe') continue;
+        updatePlanRoom(room.id, {
+          floorCatalogId: floorPick.catalogId,
+          floorName: product?.name,
+          floorColor: product?.color,
+        });
+      }
+    }
   };
 
   return (
@@ -46,7 +68,11 @@ export function ClientSurveyPanel({ forceShow = false }: Props) {
           <strong>Design discovery</strong>
           <p className="muted">Tell us your style — we&apos;ll preload Platinum options in every room.</p>
         </div>
-        {project.survey?.completedAt && <span className="configurator-status-chip is-success">Saved</span>}
+        {project.survey?.completedAt && (
+          <span className="configurator-status-chip is-success">
+            {project.curatedOptions?.length ?? 0} curated
+          </span>
+        )}
       </header>
 
       <form className="configurator-survey-form" onSubmit={submit}>
@@ -79,9 +105,20 @@ export function ClientSurveyPanel({ forceShow = false }: Props) {
           <textarea name="notes" rows={3} placeholder="Anything else we should know?" defaultValue={project.survey?.notes ?? ''} />
         </label>
         <button type="submit" className="configurator-btn primary full">
-          Save survey &amp; open configurator
+          Save survey &amp; preload Platinum options
         </button>
       </form>
+
+      {project.curatedOptions && project.curatedOptions.length > 0 && (
+        <ul className="configurator-trade-summary">
+          {project.curatedOptions.slice(0, 8).map((opt) => (
+            <li key={`${opt.roomType}-${opt.catalogId}`}>
+              <strong>{opt.roomType}</strong>
+              <span>{opt.label}</span>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }

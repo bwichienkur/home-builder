@@ -1,0 +1,374 @@
+{
+  "importedAt": "2026-08-28T23:53:39.274Z",
+  "sourceFile": "ST Veranda Model 183 Stillwater - COF #1 07.27.26 (002).xlsx",
+  "qtySource": "takeoff",
+  "lines": [
+    {
+      "id": "cof-tile-23-walls-to-8-",
+      "sheet": "Tile",
+      "room": "Owner's Bath",
+      "category": "wall-tile-shower",
+      "description": "Walls to 8'",
+      "qty": 244,
+      "unit": "sq ft",
+      "source": "cof_xlsx"
+    },
+    {
+      "id": "cof-tile-24-8-to-10-",
+      "sheet": "Tile",
+      "room": "Owner's Bath",
+      "category": "wall-tile-shower",
+      "description": "8' to 10'",
+      "qty": 62,
+      "unit": "sq ft",
+      "source": "cof_xlsx"
+    },
+    {
+      "id": "cof-tile-25-shower-bench",
+      "sheet": "Tile",
+      "room": "Owner's Bath",
+      "category": "wall-tile-shower",
+      "description": "Shower Bench",
+      "qty": 1,
+      "unit": "each",
+      "source": "cof_xlsx"
+    },
+    {
+      "id": "cof-tile-26-niche",
+      "sheet": "Tile",
+      "room": "Owner's Bath",
+      "category": "wall-tile-shower",
+      "description": "Niche",
+      "qty": 1,
+      "unit": "each",
+      "source": "cof_xlsx"
+    },
+    {
+      "id": "cof-tile-29-shower-floor",
+      "sheet": "Tile",
+      "room": "Owner's Bath",
+      "category": "shower-pan",
+      "description": "Shower Floor",
+      "qty": 55,
+      "unit": "sq ft",
+      "source": "cof_xlsx"
+    },
+    {
+      "id": "cof-tile-33-walls-to-8-",
+      "sheet": "Tile",
+      "room": "Bath 2",
+      "category": "wall-tile-shower",
+      "description": "Walls to 8'",
+      "qty": 104,
+      "unit": "sq ft",
+      "source": "cof_xlsx"
+    },
+    {
+      "id": "cof-tile-34-8-to-10-",
+      "sheet": "Tile",
+      "room": "Bath 2",
+      "category": "wall-tile-shower",
+      "description": "8' to 10'",
+      "qty": 26,
+      "unit": "sq ft",
+      "source": "cof_xlsx"
+    },
+    {
+      "id": "cof-tile-35-niche",
+      "sheet": "Tile",
+      "room": "Bath 2",
+      "category": "wall-tile-shower",
+      "description": "Niche",
+      "qty": 1,
+      "unit": "each",
+      "source": "cof_xlsx"
+    },
+    {
+      "id": "cof-tile-37-shower-floor",
+      "sheet": "Tile",
+      "room": "Bath 2",
+      "category": "shower-pan",
+      "description": "Shower Floor",
+      "qty": 18,
+      "unit": "sq ft",
+      "source": "cof_xlsx"
+    },
+    {
+      "id": "cof-tile-41-walls-to-8-",
+      "sheet": "Tile",
+      "room": "Bath 3",
+      "category": "wall-tile-shower",
+      "description": "Walls to 8'",
+      "qty": 112,
+      "unit": "sq ft",
+      "source": "cof_xlsx"
+    },
+    {
+      "id": "cof-tile-42-8-to-10-",
+      "sheet": "Tile",
+      "room": "Bath 3",
+      "category": "wall-tile-shower",
+      "description": "8' to 10'",
+      "qty": 24,
+      "unit": "sq ft",
+      "source": "cof_xlsx"
+    },
+    {
+      "id": "cof-tile-43-niche",
+      "sheet": "Tile",
+      "room": "Bath 3",
+      "category": "wall-tile-shower",
+      "description": "Niche",
+      "qty": 1,
+      "unit": "each",
+      "source": "cof_xlsx"
+    },
+    {
+      "id": "cof-tile-45-shower-floor-zero-entry",
+      "sheet": "Tile",
+      "room": "Bath 3",
+      "category": "shower-pan",
+      "description": "Shower Floor - Zero Entry",
+      "qty": 15,
+      "unit": "sq ft",
+      "source": "cof_xlsx"
+    },
+    {
+      "id": "cof-tile-48-cottage-fassa-9x40",
+      "sheet": "Tile",
+      "category": "floor-tile",
+      "description": "COTTAGE FASSA 9X40",
+      "qty": 2700,
+      "unit": "sq ft",
+      "source": "cof_xlsx"
+    },
+    {
+      "id": "cof-tile-68-vetri-bianco-4x12",
+      "sheet": "Tile",
+      "room": "Kitchen",
+      "category": "backsplash",
+      "description": "VETRI BIANCO 4x12",
+      "qty": 30,
+      "unit": "sq ft",
+      "source": "cof_xlsx"
+    },
+    {
+      "id": "cof-granite-22-carmen-2-cm-quartz-137-2-sf-total-7",
+      "sheet": "Granite",
+      "room": "Kitchen",
+      "category": "countertops-kitchen",
+      "description": "Carmen 2 CM Quartz - 137.2 SF Total @ $70.40 SF",
+      "qty": 137.2,
+      "unit": "sq ft",
+      "source": "cof_xlsx"
+    },
+    {
+      "id": "cof-granite-23-kitchen-perimeter-28-sf-",
+      "sheet": "Granite",
+      "room": "Kitchen",
+      "category": "countertops-kitchen",
+      "description": "Kitchen Perimeter - 28 SF",
+      "qty": 28,
+      "unit": "sq ft",
+      "source": "cof_xlsx"
+    },
+    {
+      "id": "cof-granite-24-kitchen-hood-wrap-48-sf-",
+      "sheet": "Granite",
+      "room": "Kitchen",
+      "category": "countertops-kitchen",
+      "description": "Kitchen Hood Wrap - 48 SF",
+      "qty": 48,
+      "unit": "sq ft",
+      "source": "cof_xlsx"
+    },
+    {
+      "id": "cof-granite-28-kitchen-stove-area-full-height-backsplas",
+      "sheet": "Granite",
+      "room": "Kitchen",
+      "category": "countertops-kitchen",
+      "description": "Kitchen stove Area Full Height Backsplash - 26.5 SF",
+      "qty": 26.5,
+      "unit": "sq ft",
+      "source": "cof_xlsx"
+    },
+    {
+      "id": "cof-granite-30-wet-bar-no-backsplash-27-2-sf-",
+      "sheet": "Granite",
+      "room": "Wet Bar",
+      "category": "countertops-kitchen",
+      "description": "Wet Bar No Backsplash - 27.2 SF",
+      "qty": 27.2,
+      "unit": "sq ft",
+      "source": "cof_xlsx"
+    },
+    {
+      "id": "cof-granite-32-entertainment-7-5-sf-",
+      "sheet": "Granite",
+      "room": "Great Room",
+      "category": "countertops-kitchen",
+      "description": "Entertainment - 7.5 SF",
+      "qty": 7.5,
+      "unit": "sq ft",
+      "source": "cof_xlsx"
+    },
+    {
+      "id": "cof-granite-33-super-white-quartz-146-3-sf-55-sf",
+      "sheet": "Granite",
+      "room": "Kitchen",
+      "category": "countertops-kitchen",
+      "description": "Super White Quartz 146.3 SF @ $55 SF",
+      "qty": 146.3,
+      "unit": "sq ft",
+      "source": "cof_xlsx"
+    },
+    {
+      "id": "cof-granite-34-kitchen-island-123-x-63-53-81-sf-",
+      "sheet": "Granite",
+      "room": "Kitchen",
+      "category": "countertops-kitchen",
+      "description": "Kitchen Island 123\" x 63\" - 53.81 SF",
+      "qty": 53.81,
+      "unit": "sq ft",
+      "source": "cof_xlsx"
+    },
+    {
+      "id": "cof-granite-35-2-kitchen-island-waterfalls-31-5-sf-",
+      "sheet": "Granite",
+      "room": "Kitchen",
+      "category": "countertops-kitchen",
+      "description": "2 Kitchen Island Waterfalls - 31.5 SF",
+      "qty": 31.5,
+      "unit": "sq ft",
+      "source": "cof_xlsx"
+    },
+    {
+      "id": "cof-granite-38-granite-master-w-4-bs-49-sf-",
+      "sheet": "Granite",
+      "room": "Owner's Bath",
+      "category": "countertops-bath",
+      "description": "Granite Master w. 4\" BS - 49 SF",
+      "qty": 49,
+      "unit": "sq ft",
+      "source": "cof_xlsx"
+    },
+    {
+      "id": "cof-granite-39-granite-bath-2-with-4-bs-14-7-sf",
+      "sheet": "Granite",
+      "room": "Bath 2",
+      "category": "countertops-bath",
+      "description": "Granite bath 2 with 4\" BS - 14.7 SF",
+      "qty": 14.7,
+      "unit": "sq ft",
+      "source": "cof_xlsx"
+    },
+    {
+      "id": "cof-granite-40-granite-bath-3-with-4-bs-11-09-sf-",
+      "sheet": "Granite",
+      "room": "Bath 3",
+      "category": "countertops-bath",
+      "description": "Granite bath 3 with 4\" BS - 11.09 SF",
+      "qty": 11.09,
+      "unit": "sq ft",
+      "source": "cof_xlsx"
+    },
+    {
+      "id": "cof-granite-44-white-fantasy-marble-69-8-sf-62-70-",
+      "sheet": "Granite",
+      "room": "Kitchen",
+      "category": "countertops-kitchen",
+      "description": "White Fantasy Marble - 69.8 SF @ $62.70 SF",
+      "qty": 69.8,
+      "unit": "sq ft",
+      "source": "cof_xlsx"
+    },
+    {
+      "id": "cof-granite-45-laundry-sink-cab-w-4-bs-15-86-sf-",
+      "sheet": "Granite",
+      "room": "Laundry",
+      "category": "countertops-bath",
+      "description": "Laundry Sink Cab w. 4\" BS - 15.86 SF",
+      "qty": 15.86,
+      "unit": "sq ft",
+      "source": "cof_xlsx"
+    },
+    {
+      "id": "cof-granite-46-laundry-dog-crate-w-4-bs-6-waterfa",
+      "sheet": "Granite",
+      "room": "Laundry",
+      "category": "countertops-bath",
+      "description": "Laundry Dog Crate w. 4\" BS &  6\" waterfall 25.78 SF",
+      "qty": 25.78,
+      "unit": "sq ft",
+      "source": "cof_xlsx"
+    },
+    {
+      "id": "cof-granite-49-stop-drop-16-sf-w-4-bs-",
+      "sheet": "Granite",
+      "room": "Stop & Drop",
+      "category": "countertops-kitchen",
+      "description": "Stop-drop - 16 SF w. 4\" BS",
+      "qty": 16,
+      "unit": "sq ft",
+      "source": "cof_xlsx"
+    },
+    {
+      "id": "cof-granite-50-pantry-w-4-bs-12-18-sf",
+      "sheet": "Granite",
+      "room": "Pantry",
+      "category": "countertops-kitchen",
+      "description": "Pantry w. 4\" BS - 12.18 SF",
+      "qty": 12.18,
+      "unit": "sq ft",
+      "source": "cof_xlsx"
+    },
+    {
+      "id": "cof-granite-52-fantasy-brown-3-cm-with-24-backsplash-",
+      "sheet": "Granite",
+      "room": "Kitchen",
+      "category": "countertops-kitchen",
+      "description": "Fantasy Brown 3 CM with 24\" Backsplash - 72.6 SF @ $46.20 SF",
+      "qty": 72.6,
+      "unit": "sq ft",
+      "source": "cof_xlsx"
+    },
+    {
+      "id": "cof-granite-53-summer-kitchen-46-sf",
+      "sheet": "Granite",
+      "room": "Lanai",
+      "category": "outdoor-kitchen",
+      "description": "Summer Kitchen - 46 SF",
+      "qty": 46,
+      "unit": "sq ft",
+      "source": "cof_xlsx"
+    },
+    {
+      "id": "cof-granite-54-24-backsplash-26-6-sf",
+      "sheet": "Granite",
+      "room": "Kitchen",
+      "category": "countertops-kitchen",
+      "description": "24\" Backsplash - 26.6 SF",
+      "qty": 26.6,
+      "unit": "sq ft",
+      "source": "cof_xlsx"
+    },
+    {
+      "id": "cof-trim-5",
+      "sheet": "Trim",
+      "category": "trim",
+      "description": "Standard 5 1/4\" Crown 680 LF",
+      "qty": 680,
+      "unit": "linear ft",
+      "source": "cof_xlsx"
+    },
+    {
+      "id": "cof-trim-7",
+      "sheet": "Trim",
+      "category": "trim",
+      "description": "Cove 5 1/4\" Crown 680 LF",
+      "qty": 680,
+      "unit": "linear ft",
+      "source": "cof_xlsx"
+    }
+  ]
+}

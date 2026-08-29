@@ -2,27 +2,35 @@
   "id": "stillwater-183",
   "name": "183 Stillwater · Veranda Model 183",
   "stories": 1,
-  "beds": 0,
-  "baths": 0,
+  "beds": 3,
+  "baths": 3,
   "livingSqFt": 2720,
-  "totalUnderRoofSqFt": 295,
-  "sourceUrl": "",
-  "note": "Imported from DXF (LINE/LWPOLYLINE). Orthogonal cell detection; review walls in Build.",
+  "totalUnderRoofSqFt": 3680,
+  "sourceUrl": "plans/source/183-stillwater/MODEL.dwg",
+  "note": "Named rooms for Stillwater COF pilot. Schematic footprints aligned to COF room labels.",
   "floors": [
     {
-      "id": "dxf-floor-1",
+      "id": "stillwater-183-1",
       "name": "First story",
       "rooms": [
-        {
-          "id": "imported-space--831--134",
-          "name": "Imported space",
-          "roomType": "Living room",
-          "x": -83.066,
-          "y": -13.43,
-          "w": 108.374,
-          "h": 25.101,
-          "ceilingFt": 9
-        }
+        { "id": "garage-0-0", "name": "Garage", "roomType": "Storage / wardrobe", "x": 0, "y": 0, "w": 22, "h": 24, "ceilingFt": 10 },
+        { "id": "laundry-220-0", "name": "Laundry", "roomType": "Laundry", "x": 22, "y": 0, "w": 10, "h": 10, "ceilingFt": 10 },
+        { "id": "stop-drop-320-0", "name": "Stop & Drop", "roomType": "Hallway", "x": 32, "y": 0, "w": 8, "h": 10, "ceilingFt": 10 },
+        { "id": "foyer-400-0", "name": "Foyer", "roomType": "Hallway", "x": 40, "y": 0, "w": 8, "h": 12, "ceilingFt": 12 },
+        { "id": "entry-400--60", "name": "Entry", "roomType": "Outdoor", "x": 40, "y": -6, "w": 8, "h": 6, "ceilingFt": 10 },
+        { "id": "pantry-220-100", "name": "Pantry", "roomType": "Storage / wardrobe", "x": 22, "y": 10, "w": 8, "h": 8, "ceilingFt": 10 },
+        { "id": "kitchen-300-100", "name": "Kitchen", "roomType": "Kitchen", "x": 30, "y": 10, "w": 14, "h": 14, "ceilingFt": 12 },
+        { "id": "great-room-440-100", "name": "Great Room", "roomType": "Living room", "x": 44, "y": 10, "w": 24, "h": 20, "ceilingFt": 12 },
+        { "id": "wet-bar-440-300", "name": "Wet Bar", "roomType": "Dining room", "x": 44, "y": 30, "w": 10, "h": 8, "ceilingFt": 10 },
+        { "id": "owners-suite-0-240", "name": "Owner's Suite", "roomType": "Bedroom", "x": 0, "y": 24, "w": 16, "h": 16, "ceilingFt": 10 },
+        { "id": "owners-bath-160-240", "name": "Owner's Bath", "roomType": "Bathroom", "x": 16, "y": 24, "w": 12, "h": 14, "ceilingFt": 10 },
+        { "id": "master-wic-280-240", "name": "Master WIC", "roomType": "Storage / wardrobe", "x": 28, "y": 24, "w": 8, "h": 10, "ceilingFt": 10 },
+        { "id": "master-hall-160-380", "name": "Master Hall", "roomType": "Hallway", "x": 16, "y": 38, "w": 8, "h": 6, "ceilingFt": 10 },
+        { "id": "bedroom-2-0-400", "name": "Bedroom 2", "roomType": "Bedroom", "x": 0, "y": 40, "w": 12, "h": 12, "ceilingFt": 10 },
+        { "id": "bath-2-120-400", "name": "Bath 2", "roomType": "Bathroom", "x": 12, "y": 40, "w": 8, "h": 12, "ceilingFt": 10 },
+        { "id": "bedroom-3-200-400", "name": "Bedroom 3", "roomType": "Bedroom", "x": 20, "y": 40, "w": 12, "h": 12, "ceilingFt": 10 },
+        { "id": "bath-3-320-400", "name": "Bath 3", "roomType": "Bathroom", "x": 32, "y": 40, "w": 8, "h": 12, "ceilingFt": 10 },
+        { "id": "lanai-400-380", "name": "Lanai", "roomType": "Outdoor", "x": 40, "y": 38, "w": 28, "h": 14, "ceilingFt": 12 }
       ]
     }
   ]
