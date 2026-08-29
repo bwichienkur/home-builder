@@ -209,7 +209,7 @@ export function ProjectSetupPanel() {
         </label>
 
         <label className="configurator-field">
-          <span>Contract pricing page</span>
+          <span>Contract pricing page (bulk import)</span>
           <input
             type="file"
             accept=".xlsx,.xls"
@@ -220,6 +220,7 @@ export function ProjectSetupPanel() {
               e.target.value = '';
             }}
           />
+          <small className="muted">Or edit tiers and allowances on the COF tab.</small>
         </label>
       </div>
 
@@ -271,28 +272,6 @@ export function ProjectSetupPanel() {
               Add teammate
             </button>
           </div>
-
-          {(project.levelOverrides.length > 0 || project.allowances.length > 0) && (
-            <div className="configurator-section">
-              <div className="configurator-section-title">
-                <strong>Contract pricing</strong>
-              </div>
-              <ul className="configurator-trade-summary">
-                {project.levelOverrides.map((o) => (
-                  <li key={`${o.pricingCategory}-${o.includedLevel}`}>
-                    <strong>{o.pricingCategory}</strong>
-                    <span>Included {o.includedLevel}</span>
-                  </li>
-                ))}
-                {project.allowances.map((a) => (
-                  <li key={`${a.pricingCategory}-${a.label}`}>
-                    <strong>{a.label || a.pricingCategory}</strong>
-                    <span>${a.budgetAmount.toLocaleString()} allowance</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
 
           <div className="configurator-section">
             <div className="configurator-section-title">
