@@ -4,9 +4,10 @@ import { ProjectSetupPanel } from './ProjectSetupPanel';
 import { PlanVerificationPanel } from './PlanVerificationPanel';
 import { ClientSurveyPanel } from './ClientSurveyPanel';
 import { SignOffPanel } from './SignOffPanel';
+import { PlatinumLookbookPanel } from './PlatinumLookbookPanel';
 import { RoomSelectionNav } from './RoomSelectionNav';
 
-type DockTab = 'setup' | 'verify' | 'survey' | 'signoff';
+type DockTab = 'setup' | 'verify' | 'survey' | 'lookbook' | 'signoff';
 
 function useIsNarrow(maxWidth = 900) {
   const [narrow, setNarrow] = useState(() =>
@@ -43,10 +44,15 @@ export function ConfiguratorDock() {
       { id: 'setup', label: 'Admin', show: role === 'admin' && !shareToken },
       { id: 'verify', label: 'Plan', show: (role === 'designer' || role === 'admin') && !shareToken },
       { id: 'survey', label: 'Survey', show: clientLocked || !!project?.survey },
+      {
+        id: 'lookbook',
+        label: 'Platinum',
+        show: clientLocked || !!project?.survey || !!project?.curatedOptions?.length,
+      },
       { id: 'signoff', label: 'Sign-off', show: true },
     ];
     return list.filter((t) => t.show);
-  }, [role, project?.survey, shareToken]);
+  }, [role, project?.survey, project?.curatedOptions?.length, shareToken]);
 
   if (!project) return null;
 
@@ -90,6 +96,7 @@ export function ConfiguratorDock() {
               {active === 'setup' && <ProjectSetupPanel />}
               {active === 'verify' && <PlanVerificationPanel />}
               {active === 'survey' && <ClientSurveyPanel forceShow />}
+              {active === 'lookbook' && <PlatinumLookbookPanel />}
               {active === 'signoff' && <SignOffPanel />}
             </div>
           </>

@@ -135,7 +135,8 @@ export function PlansPage() {
           <p className="eyebrow">House plans</p>
           <h1>Plan library</h1>
           <p className="muted">
-            Olsen Custom Homes flyer layouts plus measured samples. Import DXF/JSON for additional plates.
+            Floorplan templates for Build. Flyer proxies were removed — upload DXF/JSON or use the project wizard with
+            MODEL.dwg + plan-set PDF.
           </p>
         </div>
         <div className="data-page-actions">

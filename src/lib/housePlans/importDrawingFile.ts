@@ -55,24 +55,35 @@ export async function importDrawingFiles(
   if (files.pdf) {
     pdfBlob = files.pdf;
     const pdfUrl = URL.createObjectURL(files.pdf);
+    // Prefer PDF for sheet viewing — DXF viewport SVGs jumble text and crop elevations.
+    const sheets =
+      result.package.sheets.length > 0
+        ? result.package.sheets.map((s, i) => ({
+            ...s,
+            pdfPageIndex: s.pdfPageIndex ?? s.order ?? i,
+            svg: undefined,
+            imageUrl: undefined,
+          }))
+        : [
+            {
+              id: 'pdf-plan-set',
+              name: 'Plan set (PDF)',
+              order: 0,
+              kind: 'other' as const,
+              pdfPageIndex: 0,
+            },
+          ];
     const withPdf: DrawingPackage = {
       ...result.package,
       pdfFileName: files.pdf.name,
       pdfUrl,
-      sheetSource: result.package.sheets.length ? 'mixed' : 'pdf',
+      sheetSource: 'pdf',
+      sheets,
+      warnings: [
+        ...result.package.warnings,
+        'Sheet reference uses the uploaded plan-set PDF (readable text and full elevations).',
+      ],
     };
-    // If we have no DXF sheets, synthesize one entry pointing at the PDF.
-    if (!withPdf.sheets.length) {
-      withPdf.sheets = [
-        {
-          id: 'pdf-plan-set',
-          name: 'Plan set (PDF)',
-          order: 1,
-          kind: 'other',
-          pdfPageIndex: 0,
-        },
-      ];
-    }
     onProgress?.({ stage: 'done' });
     return { ...result, package: withPdf, pdfBlob };
   }

@@ -21,7 +21,7 @@ import { BomDialog } from './components/ui/BomDialog';
 import { SelectionInspector } from './components/ui/SelectionInspector';
 import { ElevationPreview } from './components/ui/ElevationPreview';
 import { StudioChrome } from './components/ui/StudioChrome';
-import { DesignStart } from './components/ui/DesignStart';
+import { BuildHub } from './features/build/BuildHub';
 import { useInventoryStore } from './store/inventoryStore';
 import { usePlannerStore } from './store/plannerStore';
 import { roomArea, validatePlan } from './lib/geometry/rooms';
@@ -626,7 +626,7 @@ export default function StudioApp() {
       </section>
 
       {workflowStage === 'start' && (
-        <DesignStart
+        <BuildHub
           onBegan={() => {
             closeProjectMenu();
             setCatalogOpen(false);

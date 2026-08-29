@@ -1,12 +1,19 @@
 import type { HousePlan } from './buildPlan';
-import { olsenHousePlans } from './olsenPlans';
-import { sampleHousePlans } from './samplePlans';
 import { stillwater183Plan } from './stillwater183Plan';
 import { useCrmStore } from '../../store/crmStore';
 
-/** Olsen flyer layouts plus measured open samples. */
+/**
+ * Floorplan templates available in Build / estimator verification.
+ * Flyer proxies and sample teaching plans were removed — they did not match real CAD plans.
+ * Additional templates will be uploaded to the app later; Stillwater is the seed template.
+ */
+export function listFloorplanTemplates(): HousePlan[] {
+  return [stillwater183Plan];
+}
+
+/** Built-in plans shown in Build / Plans — templates only (no inaccurate flyer proxies). */
 export function listBuiltinHousePlans(): HousePlan[] {
-  return [...olsenHousePlans, stillwater183Plan, ...sampleHousePlans];
+  return listFloorplanTemplates();
 }
 
 export function getBuiltinHousePlan(id: string) {

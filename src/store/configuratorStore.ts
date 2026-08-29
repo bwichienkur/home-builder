@@ -650,12 +650,17 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
   },
 }));
 
-export function createBlankSelectionProject(name: string, planRef?: string): ExtendedSelectionProject {
+export function createBlankSelectionProject(
+  name: string,
+  planRef?: string,
+  lotRef?: string,
+): ExtendedSelectionProject {
   return createEmptyExtendedProject({
     id: `project-${Date.now()}`,
     name,
     planRef: planRef ?? name,
-    contract: createPlatinumContract(name, planRef),
+    lotRef,
+    contract: createPlatinumContract(name, planRef, lotRef),
     createdAt: new Date().toISOString(),
   });
 }
