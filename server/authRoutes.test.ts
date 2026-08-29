@@ -16,6 +16,40 @@ describe('handleAuthRequest', () => {
     expect(result.body.token).toBeTruthy();
   });
 
+  it('logs in seeded estimator and designer', async () => {
+    const est = await handleAuthRequest({
+      method: 'POST',
+      path: '/api/auth/login',
+      body: { email: 'estimator@mahnikka.local', password: 'estimator123' },
+    });
+    expect(est.status).toBe(200);
+    expect(est.body.user.role).toBe('estimator');
+
+    const des = await handleAuthRequest({
+      method: 'POST',
+      path: '/api/auth/login',
+      body: { email: 'designer@mahnikka.local', password: 'designer123' },
+    });
+    expect(des.status).toBe(200);
+    expect(des.body.user.role).toBe('designer');
+  });
+
+  it('lists users by role for signed-in staff', async () => {
+    const login = await handleAuthRequest({
+      method: 'POST',
+      path: '/api/auth/login',
+      body: { email: 'admin@mahnikka.local', password: 'admin123' },
+    });
+    const listed = await handleAuthRequest({
+      method: 'GET',
+      path: '/api/users',
+      query: { role: 'estimator' },
+      headers: { authorization: `Bearer ${login.body.token}` },
+    });
+    expect(listed.status).toBe(200);
+    expect(listed.body.items.some((u: { role: string }) => u.role === 'estimator')).toBe(true);
+  });
+
   it('rejects bad passwords', async () => {
     const result = await handleAuthRequest({
       method: 'POST',
@@ -25,15 +59,5 @@ describe('handleAuthRequest', () => {
       query: {},
     });
     expect(result.status).toBe(401);
-  });
-
-  it('resolves rewrite-style login path via explicit path', async () => {
-    // Vercel rewrite restores __path=login → /api/auth/login before dispatch
-    const result = await handleAuthRequest({
-      method: 'POST',
-      path: '/api/auth/login',
-      body: { email: 'admin@mahnikka.local', password: 'admin123' },
-    });
-    expect(result.status).toBe(200);
   });
 });

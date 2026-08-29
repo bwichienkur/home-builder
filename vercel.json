@@ -22,6 +22,9 @@
     "api/crm.js": {
       "maxDuration": 30
     },
+    "api/auth.js": {
+      "maxDuration": 30
+    },
     "api/designs.js": {
       "maxDuration": 30
     },
@@ -30,6 +33,9 @@
     }
   },
   "rewrites": [
+    { "source": "/api/auth/:path*", "destination": "/api/auth?__path=:path*" },
+    { "source": "/api/admin/:path*", "destination": "/api/auth?__admin=1&__path=:path*" },
+    { "source": "/api/users", "destination": "/api/auth?__users=1&__path=users" },
     { "source": "/api/crm/:collection", "destination": "/api/crm?collection=:collection" },
     { "source": "/api/designs/:code", "destination": "/api/designs?__code=:code" },
     { "source": "/api/drawing-packages/:id", "destination": "/api/drawing-packages?__id=:id" },

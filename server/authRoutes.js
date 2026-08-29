@@ -12,7 +12,55 @@ import { ensureSnapshotTable, loadSnapshot, saveSnapshot } from './snapshotStore
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const AUTH_FILE = path.join(__dirname, '../data/auth-store.json');
 const DEMO_EMAIL = 'admin@mahnikka.local';
-const ROLES = new Set(['user', 'admin', 'system_admin']);
+
+/** Align with src/lib/platform/roles.ts (+ legacy `user`). */
+const ROLES = new Set([
+  'user',
+  'designer',
+  'estimator',
+  'pm',
+  'client_viewer',
+  'admin',
+  'system_admin',
+]);
+
+const SEED_USERS = [
+  {
+    email: DEMO_EMAIL,
+    id: '00000000-0000-4000-8000-000000000001',
+    name: 'Studio Admin',
+    password: 'admin123',
+    role: 'system_admin',
+  },
+  {
+    email: 'designer@mahnikka.local',
+    id: '00000000-0000-4000-8000-000000000002',
+    name: 'Alex Designer',
+    password: 'designer123',
+    role: 'designer',
+  },
+  {
+    email: 'estimator@mahnikka.local',
+    id: '00000000-0000-4000-8000-000000000003',
+    name: 'Sam Estimator',
+    password: 'estimator123',
+    role: 'estimator',
+  },
+  {
+    email: 'client@mahnikka.local',
+    id: '00000000-0000-4000-8000-000000000004',
+    name: 'Casey Client',
+    password: 'client123',
+    role: 'client_viewer',
+  },
+  {
+    email: 'pm@mahnikka.local',
+    id: '00000000-0000-4000-8000-000000000005',
+    name: 'Pat Manager',
+    password: 'pm123',
+    role: 'pm',
+  },
+];
 
 let memoryStore = null;
 
@@ -21,15 +69,17 @@ function hash(value) {
 }
 
 function normalizeRole(value) {
-  return ROLES.has(value) ? value : 'user';
+  if (value === 'user') return 'designer';
+  return ROLES.has(value) ? value : 'designer';
 }
 
 function migrateUser(email, row) {
+  const seed = SEED_USERS.find((s) => s.email === email);
   return {
     id: row.id,
     name: row.name,
     passwordHash: row.passwordHash,
-    role: email === DEMO_EMAIL ? 'system_admin' : normalizeRole(row.role),
+    role: email === DEMO_EMAIL ? 'system_admin' : normalizeRole(row.role ?? seed?.role),
     createdAt: row.createdAt ?? new Date().toISOString(),
     apiKeys: Array.isArray(row.apiKeys) ? row.apiKeys : [],
   };
@@ -48,23 +98,26 @@ function writeFileAuth(data) {
   fs.writeFileSync(AUTH_FILE, JSON.stringify(data, null, 2));
 }
 
-/** Stable UUID so demo admin can FK into projects when synced to users. */
-const DEMO_USER_ID = '00000000-0000-4000-8000-000000000001';
-
 function seedDemo(users) {
-  if (!users[DEMO_EMAIL]) {
-    users[DEMO_EMAIL] = {
-      id: DEMO_USER_ID,
-      name: 'Studio Admin',
-      passwordHash: hash('admin123'),
-      role: 'system_admin',
-      createdAt: new Date().toISOString(),
-      apiKeys: [],
-    };
-  } else {
-    const row = users[DEMO_EMAIL];
-    const id = /^[0-9a-f-]{36}$/i.test(String(row.id)) ? row.id : DEMO_USER_ID;
-    users[DEMO_EMAIL] = { ...row, id, role: 'system_admin' };
+  for (const seed of SEED_USERS) {
+    if (!users[seed.email]) {
+      users[seed.email] = {
+        id: seed.id,
+        name: seed.name,
+        passwordHash: hash(seed.password),
+        role: seed.role,
+        createdAt: new Date().toISOString(),
+        apiKeys: [],
+      };
+    } else {
+      const row = users[seed.email];
+      const id = /^[0-9a-f-]{36}$/i.test(String(row.id)) ? row.id : seed.id;
+      users[seed.email] = {
+        ...row,
+        id,
+        role: seed.email === DEMO_EMAIL ? 'system_admin' : normalizeRole(row.role || seed.role),
+      };
+    }
   }
   return users;
 }
@@ -86,7 +139,6 @@ async function ensureUsersColumns(db) {
 }
 
 async function upsertUserRow(db, email, row) {
-  // Only sync when id is a uuid so we don't break the users PK.
   if (!/^[0-9a-f-]{36}$/i.test(String(row.id))) return;
   await ensureUsersColumns(db);
   await db.query(
@@ -103,7 +155,7 @@ async function upsertUserRow(db, email, row) {
       row.createdAt ?? null,
       row.name ?? email,
       row.passwordHash ?? null,
-      row.role ?? 'user',
+      row.role ?? 'designer',
       JSON.stringify(row.apiKeys ?? []),
     ],
   );
@@ -118,6 +170,11 @@ async function loadAuthStore() {
       const { payload } = await loadSnapshot('auth_snapshots');
       if (payload?.users) {
         memoryStore = normalizeStore(payload);
+        const before = Object.keys(payload.users).length;
+        seedDemo(memoryStore.users);
+        if (Object.keys(memoryStore.users).length > before) {
+          void persistAuthStore(memoryStore).catch(() => {});
+        }
         return memoryStore;
       }
     } catch (err) {
@@ -149,7 +206,6 @@ async function persistAuthStore(store) {
   try {
     writeFileAuth(store);
   } catch (err) {
-    // Vercel serverless FS is read-only except /tmp — memoryStore still holds the session.
     console.warn('auth file save skipped', err?.message || err);
   }
 }
@@ -190,15 +246,11 @@ async function requireSystemAdminCtx(authorization) {
   return { store, email, user: row };
 }
 
-async function requireSystemAdmin(req, res) {
-  const authorization =
-    typeof req.header === 'function' ? req.header('authorization') : readHeader(req.headers, 'authorization');
-  const ctx = await requireSystemAdminCtx(authorization);
-  if (ctx.error) {
-    res.status(ctx.error.status).json(ctx.error.body);
-    return null;
-  }
-  return ctx;
+async function requireSignedInCtx(authorization) {
+  const store = await loadAuthStore();
+  const email = bearerEmailFromAuth(authorization, store);
+  if (!email) return { error: { status: 401, body: { error: 'Not signed in' } } };
+  return { store, email, user: store.users[email] };
 }
 
 function findUserById(store, userId) {
@@ -216,6 +268,31 @@ function apiKeyMeta(row) {
     createdAt: row.createdAt,
     revokedAt: row.revokedAt ?? null,
   };
+}
+
+function listUserItems(store, { q = '', role = '' } = {}) {
+  const query = String(q).trim().toLowerCase();
+  const roleFilter = String(role).trim().toLowerCase();
+  return Object.entries(store.users)
+    .map(([email, row]) => ({
+      id: row.id,
+      email,
+      name: row.name,
+      role: row.role,
+      createdAt: row.createdAt,
+      apiKeyCount: (row.apiKeys ?? []).filter((k) => !k.revokedAt).length,
+    }))
+    .filter((row) => {
+      if (roleFilter && row.role !== roleFilter) return false;
+      if (!query) return true;
+      return (
+        row.email.includes(query) ||
+        row.name.toLowerCase().includes(query) ||
+        row.role.includes(query) ||
+        row.id.toLowerCase().includes(query)
+      );
+    })
+    .sort((a, b) => a.email.localeCompare(b.email));
 }
 
 export async function resolveApiKeyUser(req) {
@@ -260,7 +337,7 @@ export async function handleAuthRequest({ method, path, query = {}, body = {}, h
       id,
       name,
       passwordHash: hash(password),
-      role: 'user',
+      role: 'designer',
       createdAt: new Date().toISOString(),
       apiKeys: [],
     };
@@ -303,32 +380,23 @@ export async function handleAuthRequest({ method, path, query = {}, body = {}, h
     return { status: 200, body: { user: publicUser(email, store.users[email]) } };
   }
 
+  /** Staff directory for team assignment — any signed-in user. */
+  if (m === 'GET' && p === '/api/users') {
+    const ctx = await requireSignedInCtx(authorization);
+    if (ctx.error) return ctx.error;
+    return {
+      status: 200,
+      body: { items: listUserItems(ctx.store, { q: query.q, role: query.role }) },
+    };
+  }
+
   if (m === 'GET' && p === '/api/admin/users') {
     const ctx = await requireSystemAdminCtx(authorization);
     if (ctx.error) return ctx.error;
-    const q = String(query.q ?? '')
-      .trim()
-      .toLowerCase();
-    const items = Object.entries(ctx.store.users)
-      .map(([email, row]) => ({
-        id: row.id,
-        email,
-        name: row.name,
-        role: row.role,
-        createdAt: row.createdAt,
-        apiKeyCount: (row.apiKeys ?? []).filter((k) => !k.revokedAt).length,
-      }))
-      .filter((row) => {
-        if (!q) return true;
-        return (
-          row.email.includes(q) ||
-          row.name.toLowerCase().includes(q) ||
-          row.role.includes(q) ||
-          row.id.toLowerCase().includes(q)
-        );
-      })
-      .sort((a, b) => a.email.localeCompare(b.email));
-    return { status: 200, body: { items } };
+    return {
+      status: 200,
+      body: { items: listUserItems(ctx.store, { q: query.q, role: query.role }) },
+    };
   }
 
   const roleMatch = p.match(/^\/api\/admin\/users\/([^/]+)\/role$/);
@@ -336,13 +404,13 @@ export async function handleAuthRequest({ method, path, query = {}, body = {}, h
     const ctx = await requireSystemAdminCtx(authorization);
     if (ctx.error) return ctx.error;
     const role = String(body?.role ?? '');
-    if (!ROLES.has(role)) return { status: 400, body: { error: 'Invalid role.' } };
+    if (!ROLES.has(role) || role === 'user') return { status: 400, body: { error: 'Invalid role.' } };
     const found = findUserById(ctx.store, decodeURIComponent(roleMatch[1]));
     if (!found) return { status: 404, body: { error: 'User not found.' } };
     if (found.email === DEMO_EMAIL && role !== 'system_admin') {
       return { status: 400, body: { error: 'The demo system admin role cannot be downgraded.' } };
     }
-    ctx.store.users[found.email] = { ...found.row, role };
+    ctx.store.users[found.email] = { ...found.row, role: normalizeRole(role) };
     await persistAuthStore(ctx.store);
     return { status: 200, body: { ok: true, user: publicUser(found.email, ctx.store.users[found.email]) } };
   }
@@ -396,12 +464,18 @@ export async function handleAuthRequest({ method, path, query = {}, body = {}, h
 
 export function mountAuthRoutes(app) {
   app.use(async (req, res, next) => {
-    const path = String(req.path || '').split('?')[0];
-    if (!path.startsWith('/api/auth') && !path.startsWith('/api/admin')) return next();
+    const pathName = String(req.path || '').split('?')[0];
+    if (
+      !pathName.startsWith('/api/auth') &&
+      !pathName.startsWith('/api/admin') &&
+      pathName !== '/api/users'
+    ) {
+      return next();
+    }
     try {
       const result = await handleAuthRequest({
         method: req.method,
-        path,
+        path: pathName,
         query: req.query || {},
         body: req.body,
         headers: req.headers || {},
@@ -413,3 +487,5 @@ export function mountAuthRoutes(app) {
     }
   });
 }
+
+export { SEED_USERS, DEMO_EMAIL };

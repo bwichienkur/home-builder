@@ -17,17 +17,42 @@ export class LocalCrmProvider implements CrmProvider {
   async load(): Promise<CrmSnapshot> {
     try {
       const raw = localStorage.getItem(KEY);
-      if (!raw) return empty();
-      const parsed = JSON.parse(raw) as Partial<CrmSnapshot> & { state?: CrmSnapshot };
-      // Zustand persist shape { state, version } or raw snapshot.
-      const state = parsed.state ?? parsed;
-      return {
-        clients: state.clients ?? [],
-        vendors: state.vendors ?? [],
-        inventory: state.inventory ?? [],
-        customFields: state.customFields ?? [],
-        housePlans: state.housePlans ?? [],
-      };
+      let snapshot = empty();
+      if (raw) {
+        const parsed = JSON.parse(raw) as Partial<CrmSnapshot> & { state?: CrmSnapshot };
+        const state = parsed.state ?? parsed;
+        snapshot = {
+          clients: state.clients ?? [],
+          vendors: state.vendors ?? [],
+          inventory: state.inventory ?? [],
+          customFields: state.customFields ?? [],
+          housePlans: state.housePlans ?? [],
+        };
+      }
+      if (!snapshot.clients.some((c) => !c.archived)) {
+        const now = new Date().toISOString();
+        snapshot = {
+          ...snapshot,
+          clients: [
+            {
+              id: 'client-demo-casey',
+              name: 'Casey Client',
+              email: 'client@mahnikka.local',
+              phone: '',
+              company: '',
+              address: '',
+              notes: 'Demo CRM client',
+              customFields: {},
+              createdAt: now,
+              updatedAt: now,
+              archived: false,
+            },
+            ...snapshot.clients,
+          ],
+        };
+        await this.save(snapshot);
+      }
+      return snapshot;
     } catch {
       return empty();
     }

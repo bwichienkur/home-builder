@@ -105,11 +105,14 @@ export function LoginPage() {
           )}
         </p>
         <p className="auth-demo muted">
-          Demo: {DEMO_LOGIN.email} / {DEMO_LOGIN.password}
+          Demo admin: {DEMO_LOGIN.email} / {DEMO_LOGIN.password}
+          <br />
+          Also: designer@ / designer123 · estimator@ / estimator123 · client@ / client123 · pm@ / pm123
+          <span className="muted"> (@mahnikka.local)</span>
         </p>
         <p className="muted">
-          Accounts stay in this browser by default. Set <code>VITE_AUTH_PROVIDER=remote</code> to use the API/Neon auth
-          store.
+          Production uses Neon-backed auth (`/api/auth`). Local Vite uses browser accounts unless{' '}
+          <code>VITE_AUTH_PROVIDER=remote</code>.
         </p>
       </div>
     </div>

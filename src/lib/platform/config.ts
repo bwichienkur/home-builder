@@ -30,8 +30,8 @@ function resolveAuthProvider(): AuthProviderId {
   const explicit = env('VITE_AUTH_PROVIDER', '');
   if (explicit === 'remote') return 'remote';
   if (explicit === 'local') return 'local';
-  // Default local — browser accounts work without API health. Opt into Neon/API with VITE_AUTH_PROVIDER=remote.
-  return 'local';
+  // Production uses Neon-backed /api/auth; local Vite stays browser-only.
+  return import.meta.env.PROD ? 'remote' : 'local';
 }
 
 function resolveCrmProvider(): CrmProviderId {

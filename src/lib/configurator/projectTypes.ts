@@ -27,6 +27,10 @@ export type TeamMember = {
   role: TeamRole;
   name: string;
   email?: string;
+  /** Auth user id when assigned from the directory. */
+  userId?: string;
+  /** CRM client id when role is client. */
+  clientId?: string;
 };
 
 export type AllowanceBudget = {
