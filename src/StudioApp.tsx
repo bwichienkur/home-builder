@@ -69,6 +69,7 @@ export default function StudioApp() {
   const hydrateConfigurator = useConfiguratorStore((s) => s.hydrate);
   const syncConfigurator = useConfiguratorStore((s) => s.syncFromApi);
   const saveConfiguratorSelections = useConfiguratorStore((s) => s.saveSelections);
+  const hydrateFromShareToken = useConfiguratorStore((s) => s.hydrateFromShareToken);
   const configuratorProject = useConfiguratorStore((s) => s.project);
   const allCatalog = useBuildCatalog(customCatalog);
 
@@ -77,6 +78,21 @@ export default function StudioApp() {
     hydrateConfigurator();
     void syncConfigurator();
   }, [hydrateCatalog, hydrateConfigurator, syncConfigurator]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const share = params.get('share');
+    if (!share) return;
+    void hydrateFromShareToken(share).then((ok) => {
+      if (!ok) return;
+      usePlannerStore.getState().setStudioMode('furnish');
+      usePlannerStore.getState().setUnitSystem('imperial');
+      window.setTimeout(() => {
+        window.dispatchEvent(new Event('roomcraft-fit-plan'));
+        window.dispatchEvent(new Event('roomcraft-refocus'));
+      }, 120);
+    });
+  }, [hydrateFromShareToken]);
 
   const {
     walls,

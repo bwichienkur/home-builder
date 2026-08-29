@@ -86,12 +86,15 @@ describe('room rollups', () => {
 });
 
 describe('selection kits', () => {
-  it('expands shower picks to include valve parts when catalog matches exist', () => {
-    const plumbing = catalog.filter((i) => i.sourceTab === 'Plumbing');
-    const handle = plumbing.find((i) => /handle|trim/i.test(i.name));
-    if (!handle) return;
-    const expanded = expandCatalogSelection(handle, plumbing);
-    expect(expanded.items.length).toBeGreaterThanOrEqual(1);
+  it('expands shower handle stub into valve/diverter/hose kit parts', () => {
+    const handle = catalog.find((i) => i.sku === 'KIT-SHOWER-HANDLE');
+    expect(handle).toBeTruthy();
+    const expanded = expandCatalogSelection(handle!, catalog);
+    expect(expanded.kitId).toBe('shower-trim-package');
+    expect(expanded.items.length).toBeGreaterThanOrEqual(4);
+    expect(expanded.items.some((i) => i.sku === 'KIT-SHOWER-VALVE')).toBe(true);
+    expect(expanded.items.some((i) => i.sku === 'KIT-DIVERTER')).toBe(true);
+    expect(expanded.items.some((i) => i.sku === 'KIT-SHOWER-HOSE')).toBe(true);
   });
 });
 

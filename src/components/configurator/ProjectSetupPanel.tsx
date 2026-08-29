@@ -12,11 +12,15 @@ export function ProjectSetupPanel() {
   const setTeam = useConfiguratorStore((s) => s.setTeam);
   const setWorkflowStatus = useConfiguratorStore((s) => s.setWorkflowStatus);
   const importContractPricingFile = useConfiguratorStore((s) => s.importContractPricingFile);
+  const createClientInvite = useConfiguratorStore((s) => s.createClientInvite);
+  const lastInviteUrl = useConfiguratorStore((s) => s.lastInviteUrl);
 
   const [projectName, setProjectName] = useState('');
   const [memberName, setMemberName] = useState('');
   const [memberEmail, setMemberEmail] = useState('');
   const [memberRole, setMemberRole] = useState<TeamRole>('designer');
+  const [clientEmail, setClientEmail] = useState('');
+  const [inviteBusy, setInviteBusy] = useState(false);
 
   if (role !== 'admin') return null;
 
@@ -140,6 +144,62 @@ export function ProjectSetupPanel() {
             <button type="button" className="configurator-btn" onClick={addTeamMember} disabled={!memberName.trim()}>
               Add teammate
             </button>
+          </div>
+
+          {(project.levelOverrides.length > 0 || project.allowances.length > 0) && (
+            <div className="configurator-section">
+              <div className="configurator-section-title">
+                <strong>Contract pricing</strong>
+              </div>
+              <ul className="configurator-trade-summary">
+                {project.levelOverrides.map((o) => (
+                  <li key={`${o.pricingCategory}-${o.includedLevel}`}>
+                    <strong>{o.pricingCategory}</strong>
+                    <span>Included {o.includedLevel}</span>
+                  </li>
+                ))}
+                {project.allowances.map((a) => (
+                  <li key={`${a.pricingCategory}-${a.label}`}>
+                    <strong>{a.label || a.pricingCategory}</strong>
+                    <span>${a.budgetAmount.toLocaleString()} allowance</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div className="configurator-section">
+            <div className="configurator-section-title">
+              <strong>Client invite</strong>
+            </div>
+            <p className="muted">Creates a share link for the client portal (survey + Platinum selections). Copy into email — SMTP is not configured.</p>
+            <div className="configurator-inline-row">
+              <input
+                value={clientEmail}
+                onChange={(e) => setClientEmail(e.target.value)}
+                placeholder="client@email.com (optional)"
+              />
+              <button
+                type="button"
+                className="configurator-btn primary"
+                disabled={inviteBusy}
+                onClick={() => {
+                  setInviteBusy(true);
+                  void createClientInvite(clientEmail.trim() || undefined)
+                    .then((url) => {
+                      void navigator.clipboard?.writeText(url);
+                    })
+                    .finally(() => setInviteBusy(false));
+                }}
+              >
+                {inviteBusy ? 'Creating…' : 'Create invite link'}
+              </button>
+            </div>
+            {lastInviteUrl && (
+              <p className="muted">
+                Link copied · <a href={lastInviteUrl}>{lastInviteUrl}</a>
+              </p>
+            )}
           </div>
         </div>
       )}

@@ -11,18 +11,20 @@ type DockTab = 'setup' | 'verify' | 'survey' | 'signoff';
 export function ConfiguratorDock() {
   const role = useConfiguratorStore((s) => s.role);
   const project = useConfiguratorStore((s) => s.project);
+  const shareToken = useConfiguratorStore((s) => s.shareToken);
   const [open, setOpen] = useState(true);
   const [tab, setTab] = useState<DockTab>(role === 'client' ? 'survey' : role === 'admin' ? 'setup' : 'verify');
 
   const tabs = useMemo(() => {
+    const clientLocked = role === 'client' || !!shareToken;
     const list: { id: DockTab; label: string; show: boolean }[] = [
-      { id: 'setup', label: 'Admin', show: role === 'admin' },
-      { id: 'verify', label: 'Plan', show: role === 'designer' || role === 'admin' },
-      { id: 'survey', label: 'Survey', show: role === 'client' || !!project?.survey },
+      { id: 'setup', label: 'Admin', show: role === 'admin' && !shareToken },
+      { id: 'verify', label: 'Plan', show: (role === 'designer' || role === 'admin') && !shareToken },
+      { id: 'survey', label: 'Survey', show: clientLocked || !!project?.survey },
       { id: 'signoff', label: 'Sign-off', show: true },
     ];
     return list.filter((t) => t.show);
-  }, [role, project?.survey]);
+  }, [role, project?.survey, shareToken]);
 
   if (!project) return null;
 

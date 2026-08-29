@@ -10,6 +10,8 @@ import {
   createSelectionProject,
   listSelectionProjects,
   updateSelectionProject,
+  inviteSelectionProjectClient,
+  getSharedSelectionProject,
 } from '../api/client';
 import type {
   ExtendedSelectionProject,
@@ -20,6 +22,7 @@ import type {
   SurveyResponse,
   TakeoffSnapshot,
   TeamMember,
+  CuratedSelectionOption,
 } from '../lib/configurator/projectTypes';
 import {
   createEmptyExtendedProject,
@@ -30,21 +33,28 @@ import { loadTakeoffFromFile } from '../lib/configurator/importTakeoff';
 import { loadContractPricingFromFile } from '../lib/configurator/importContractPricing';
 import type { FurnitureItem, PlanRoomLabel } from '../types';
 import stillwaterTakeoffSeed from '../lib/configurator/stillwater183Takeoff.json';
-import type { CuratedSelectionOption } from '../lib/configurator/projectTypes';
 import { usePlannerStore } from './plannerStore';
 import { getHousePlan } from '../lib/housePlans/planRegistry';
+import { downloadCofExcel } from '../lib/configurator/exportCof';
+import { buildBtSelectionRows, downloadBtSelectionsCsv } from '../lib/configurator/exportBtSelections';
+import { getOlsenCatalogSeed } from '../lib/catalog/catalogSource';
+import { expandCatalogSelection } from '../lib/configurator/selectionKits';
 
 const STORAGE = 'roomcraft-configurator-v2';
+const LOCAL_SHARES = 'roomcraft-client-shares';
 
 type ConfiguratorState = {
   role: ConfiguratorRole;
   project: ExtendedSelectionProject | null;
   contract: ContractSnapshot | null;
   remoteId: string | null;
+  shareToken: string | null;
+  lastInviteUrl: string | null;
   syncing: boolean;
   syncError: string | null;
   activeRoomFilter: string | null;
   hydrate: () => void;
+  hydrateFromShareToken: (token: string) => Promise<boolean>;
   syncFromApi: () => Promise<void>;
   setRole: (role: ConfiguratorRole) => void;
   loadProject: (project: ExtendedSelectionProject, remoteId?: string | null) => void;
@@ -63,6 +73,8 @@ type ConfiguratorState = {
   setCuratedOptions: (options: CuratedSelectionOption[]) => void;
   markClientFinished: () => void;
   setSignOff: (target: 'cof' | 'buildertrend', status: SignOffStatus) => void;
+  completeCloseout: () => Promise<void>;
+  createClientInvite: (clientEmail?: string) => Promise<string>;
   setActiveRoomFilter: (room: string | null) => void;
 };
 
@@ -71,9 +83,20 @@ function toExtended(project: SelectionProject | ExtendedSelectionProject): Exten
   return createEmptyExtendedProject(project);
 }
 
-function readState(): Pick<ConfiguratorState, 'role' | 'project' | 'contract' | 'remoteId' | 'activeRoomFilter'> {
+function readState(): Pick<
+  ConfiguratorState,
+  'role' | 'project' | 'contract' | 'remoteId' | 'activeRoomFilter' | 'shareToken' | 'lastInviteUrl'
+> {
   if (typeof window === 'undefined') {
-    return { role: 'designer', project: null, contract: null, remoteId: null, activeRoomFilter: null };
+    return {
+      role: 'designer',
+      project: null,
+      contract: null,
+      remoteId: null,
+      activeRoomFilter: null,
+      shareToken: null,
+      lastInviteUrl: null,
+    };
   }
   try {
     const raw = JSON.parse(localStorage.getItem(STORAGE) ?? localStorage.getItem('roomcraft-configurator-v1') ?? '{}') as Partial<
@@ -86,13 +109,28 @@ function readState(): Pick<ConfiguratorState, 'role' | 'project' | 'contract' | 
       contract: raw.contract ?? project?.contract ?? null,
       remoteId: raw.remoteId ?? null,
       activeRoomFilter: raw.activeRoomFilter ?? null,
+      shareToken: raw.shareToken ?? null,
+      lastInviteUrl: raw.lastInviteUrl ?? null,
     };
   } catch {
-    return { role: 'designer', project: null, contract: null, remoteId: null, activeRoomFilter: null };
+    return {
+      role: 'designer',
+      project: null,
+      contract: null,
+      remoteId: null,
+      activeRoomFilter: null,
+      shareToken: null,
+      lastInviteUrl: null,
+    };
   }
 }
 
-function persist(state: Pick<ConfiguratorState, 'role' | 'project' | 'contract' | 'remoteId' | 'activeRoomFilter'>) {
+function persist(
+  state: Pick<
+    ConfiguratorState,
+    'role' | 'project' | 'contract' | 'remoteId' | 'activeRoomFilter' | 'shareToken' | 'lastInviteUrl'
+  >,
+) {
   if (typeof window === 'undefined') return;
   localStorage.setItem(STORAGE, JSON.stringify(state));
 }
@@ -111,16 +149,92 @@ function patchProject(
   const project = get().project;
   if (!project) return;
   const next = { ...project, ...patch };
-  persist({ role: get().role, project: next, contract: next.contract, remoteId: get().remoteId, activeRoomFilter: get().activeRoomFilter });
+  persist({
+    role: get().role,
+    project: next,
+    contract: next.contract,
+    remoteId: get().remoteId,
+    activeRoomFilter: get().activeRoomFilter,
+    shareToken: get().shareToken,
+    lastInviteUrl: get().lastInviteUrl,
+  });
   set({ project: next, contract: next.contract });
   void get().persistProject();
 }
 
 export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
   ...initial,
+  shareToken: initial.shareToken ?? null,
+  lastInviteUrl: initial.lastInviteUrl ?? null,
   syncing: false,
   syncError: null,
   hydrate: () => set(readState()),
+  hydrateFromShareToken: async (token) => {
+    try {
+      const shared = await getSharedSelectionProject(token);
+      const extended = (shared.extended ?? {}) as Partial<ExtendedSelectionProject>;
+      const project = toExtended({
+        id: shared.id,
+        name: shared.name,
+        planRef: shared.planRef,
+        lotRef: shared.lotRef,
+        contract: shared.contract,
+        createdAt: shared.createdAt,
+        ...extended,
+      } as ExtendedSelectionProject);
+      persist({
+        role: 'client',
+        project,
+        contract: project.contract,
+        remoteId: shared.id,
+        activeRoomFilter: null,
+        shareToken: token,
+        lastInviteUrl: null,
+      });
+      set({
+        role: 'client',
+        project,
+        contract: project.contract,
+        remoteId: shared.id,
+        shareToken: token,
+        activeRoomFilter: null,
+      });
+      if (project.housePlanId) {
+        const plan = getHousePlan(project.housePlanId);
+        if (plan) usePlannerStore.getState().applyHousePlanObject(plan);
+      }
+      return true;
+    } catch {
+      // Local fallback shares (same browser / demo)
+      try {
+        const map = JSON.parse(localStorage.getItem(LOCAL_SHARES) ?? '{}') as Record<
+          string,
+          { project: ExtendedSelectionProject; expiresAt?: string }
+        >;
+        const entry = map[token];
+        if (!entry?.project) return false;
+        if (entry.expiresAt && new Date(entry.expiresAt).getTime() < Date.now()) return false;
+        const project = toExtended(entry.project);
+        persist({
+          role: 'client',
+          project,
+          contract: project.contract,
+          remoteId: null,
+          activeRoomFilter: null,
+          shareToken: token,
+          lastInviteUrl: null,
+        });
+        set({ role: 'client', project, contract: project.contract, shareToken: token, remoteId: null });
+        if (project.housePlanId) {
+          const plan = getHousePlan(project.housePlanId);
+          if (plan) usePlannerStore.getState().applyHousePlanObject(plan);
+        }
+        return true;
+      } catch {
+        return false;
+      }
+    }
+  },
   syncFromApi: async () => {
     set({ syncing: true, syncError: null });
     try {
@@ -151,7 +265,15 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
           signOff: extended.signOff,
           sceneProjectId: match.sceneProjectId,
         } as ExtendedSelectionProject);
-        persist({ role: get().role, project, contract: match.contract, remoteId: match.id, activeRoomFilter: get().activeRoomFilter });
+        persist({
+          role: get().role,
+          project,
+          contract: match.contract,
+          remoteId: match.id,
+          activeRoomFilter: get().activeRoomFilter,
+          shareToken: get().shareToken,
+          lastInviteUrl: get().lastInviteUrl,
+        });
         set({ project, contract: match.contract, remoteId: match.id, syncing: false });
       } else {
         set({ syncing: false });
@@ -166,7 +288,7 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
   },
   loadProject: (project, remoteId = null) => {
     const nextProject = toExtended(project);
-    const next = { role: get().role, project: nextProject, contract: nextProject.contract, remoteId, activeRoomFilter: get().activeRoomFilter };
+    const next = { role: get().role, project: nextProject, contract: nextProject.contract, remoteId, activeRoomFilter: get().activeRoomFilter, shareToken: get().shareToken, lastInviteUrl: get().lastInviteUrl };
     persist(next);
     set(next);
     void get().persistProject();
@@ -190,8 +312,16 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
     patchProject(get, set, { contract });
   },
   clearProject: () => {
-    persist({ role: get().role, project: null, contract: null, remoteId: null, activeRoomFilter: null });
-    set({ project: null, contract: null, remoteId: null, activeRoomFilter: null });
+    persist({
+      role: get().role,
+      project: null,
+      contract: null,
+      remoteId: null,
+      activeRoomFilter: null,
+      shareToken: null,
+      lastInviteUrl: null,
+    });
+    set({ project: null, contract: null, remoteId: null, activeRoomFilter: null, shareToken: null, lastInviteUrl: null });
   },
   persistProject: async () => {
     const { project, remoteId } = get();
@@ -285,15 +415,22 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
     });
   },
   saveSelections: (furniture, planRooms) => {
+    const catalog = getOlsenCatalogSeed();
     const snapshot: SelectionSnapshot = {
       savedAt: new Date().toISOString(),
       items: furniture
         .filter((f) => f.placementKind !== 'stair')
-        .map((f) => ({
-          catalogId: f.catalogId,
-          qty: 1,
-          signOff: 'pending' as SignOffStatus,
-        })),
+        .map((f) => {
+          const product = catalog.find((p) => p.id === f.catalogId);
+          const kitId = product ? expandCatalogSelection(product, catalog).kitId : undefined;
+          return {
+            catalogId: f.catalogId,
+            sku: product?.sku,
+            qty: 1,
+            signOff: 'pending' as SignOffStatus,
+            kitId,
+          };
+        }),
       floorFinishes: planRooms
         .filter((r) => r.floorCatalogId)
         .map((r) => ({ roomId: r.id, catalogId: r.floorCatalogId!, roomName: r.name || r.roomType })),
@@ -316,6 +453,63 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
           ? 'approved'
           : project.workflowStatus;
     patchProject(get, set, { signOff, workflowStatus });
+  },
+  completeCloseout: async () => {
+    const project = get().project;
+    if (!project) return;
+    const catalog = getOlsenCatalogSeed();
+    const furniture = usePlannerStore.getState().furniture;
+    const planRooms = usePlannerStore.getState().planRooms;
+    await downloadCofExcel({
+      project,
+      contract: project.contract,
+      catalog,
+      furniture,
+      planRooms,
+      takeoff: project.takeoff,
+      levelOverrides: project.levelOverrides,
+      allowances: project.allowances,
+    });
+    const btRows = buildBtSelectionRows({ project, catalog, furniture, planRooms });
+    downloadBtSelectionsCsv(btRows);
+    const now = new Date().toISOString();
+    patchProject(get, set, {
+      signOff: {
+        cof: 'approved',
+        buildertrend: 'approved',
+        cofSignedAt: now,
+        btSubmittedAt: now,
+      },
+      workflowStatus: 'approved',
+    });
+  },
+  createClientInvite: async (clientEmail) => {
+    const project = get().project;
+    if (!project) throw new Error('No project');
+    const remoteId = get().remoteId;
+    if (remoteId && isUuid(remoteId)) {
+      try {
+        const invited = await inviteSelectionProjectClient(remoteId, { clientEmail });
+        persist({
+          ...get(),
+          lastInviteUrl: invited.shareUrl,
+          shareToken: invited.shareToken,
+        });
+        set({ lastInviteUrl: invited.shareUrl, shareToken: invited.shareToken });
+        return invited.shareUrl;
+      } catch {
+        /* fall through to local share */
+      }
+    }
+    const token = crypto.randomUUID().replace(/-/g, '').slice(0, 24);
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    const map = JSON.parse(localStorage.getItem(LOCAL_SHARES) ?? '{}') as Record<string, unknown>;
+    map[token] = { project, expiresAt, clientEmail };
+    localStorage.setItem(LOCAL_SHARES, JSON.stringify(map));
+    const shareUrl = `${window.location.origin}/build?share=${token}`;
+    persist({ ...get(), lastInviteUrl: shareUrl, shareToken: token });
+    set({ lastInviteUrl: shareUrl, shareToken: token });
+    return shareUrl;
   },
   setActiveRoomFilter: (activeRoomFilter) => {
     persist({ ...get(), activeRoomFilter });
