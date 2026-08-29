@@ -29,8 +29,9 @@ import {
   clearRecoverySnapshot,
   deleteSharedDesign,
   designShareUrl,
+  hydrateDesignsFromRemote,
   listSharedDesigns,
-  loadSharedDesign,
+  loadSharedDesignAsync,
   readActiveDesignCode,
   readDesignCodeFromLocation,
   readRecoverySnapshot,
@@ -478,9 +479,11 @@ export default function StudioApp() {
 
   useEffect(() => {
     if (!menuOpen) return;
-    setDesigns(listSharedDesigns());
-    setCloudRef(readCloudProjectRef());
     let cancelled = false;
+    void hydrateDesignsFromRemote().then((items) => {
+      if (!cancelled) setDesigns(items);
+    });
+    setCloudRef(readCloudProjectRef());
     setCloudLoading(true);
     void fetchCloudProjects().then((items) => {
       if (!cancelled) {
@@ -526,15 +529,27 @@ export default function StudioApp() {
     }
     const code = readDesignCodeFromLocation();
     if (code) {
-      const shared = loadSharedDesign(code);
-      if (shared && store.importProject(shared.payload)) {
-        setProjectName(shared.name);
-        rememberDesign(shared.code);
-        enterHouse();
-        notify(`Opened design ${code}`);
-        window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 0);
-        return;
-      }
+      void loadSharedDesignAsync(code).then((shared) => {
+        if (shared && store.importProject(shared.payload)) {
+          setProjectName(shared.name);
+          rememberDesign(shared.code);
+          enterHouse();
+          notify(`Opened design ${code}`);
+          window.setTimeout(() => window.dispatchEvent(new Event('roomcraft-refocus')), 0);
+          return;
+        }
+        const snapshot = readRecoverySnapshot();
+        const saved = localStorage.getItem('roomcraft-project');
+        if (snapshot && (!saved || snapshot.savedAt > (JSON.parse(saved).savedAt ?? ''))) {
+          setRecovery(snapshot);
+        } else if (saved) {
+          store.load();
+          store.showStart();
+        } else {
+          store.showStart();
+        }
+      });
+      return;
     }
     const snapshot = readRecoverySnapshot();
     const saved = localStorage.getItem('roomcraft-project');

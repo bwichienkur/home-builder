@@ -1,7 +1,7 @@
 /**
  * Org-wide Build / COF configuration — Platinum tiers, survey, mappings,
  * Look Book seeds, client catalog rules, and invite copy.
- * Persisted in localStorage until a settings API exists.
+ * Cached in localStorage; production syncs via /api/org-config → Neon.
  */
 import type { PriceUnit } from '../../components/catalog/catalogTypes';
 import {

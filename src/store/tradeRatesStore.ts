@@ -1,5 +1,10 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import {
+  isTradeRatesHttp,
+  pullTradeRatesFromServer,
+  pushTradeRatesToServer,
+} from '../lib/tradeRatesRemote';
 
 /** Trade rate book ($ / unit) + job markups for GC / bid estimates. */
 export type TradeRates = {
@@ -81,6 +86,7 @@ type TradeRatesState = TradeRates & {
   setRate: <K extends keyof TradeRates>(key: K, value: number) => void;
   setRates: (next: Partial<TradeRates>) => void;
   resetRates: () => void;
+  hydrateRemote: () => Promise<void>;
 };
 
 function clampRate(value: number, min = 0, max = 1_000_000) {
@@ -98,15 +104,28 @@ const PCT_KEYS: (keyof TradeRates)[] = [
   'bondPct',
 ];
 
+let pushTimer: ReturnType<typeof setTimeout> | null = null;
+
+function schedulePush() {
+  if (!isTradeRatesHttp()) return;
+  if (pushTimer) clearTimeout(pushTimer);
+  pushTimer = setTimeout(() => {
+    const rates = pickTradeRates(useTradeRatesStore.getState());
+    void pushTradeRatesToServer(rates).catch((err) => console.warn('Trade rates remote save failed', err));
+  }, 600);
+}
+
 export const useTradeRatesStore = create<TradeRatesState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       ...DEFAULT_TRADE_RATES,
-      setRate: (key, value) =>
+      setRate: (key, value) => {
         set({
           [key]: PCT_KEYS.includes(key) ? clampRate(value, 0, 5) : clampRate(value),
-        } as Partial<TradeRatesState>),
-      setRates: (next) =>
+        } as Partial<TradeRatesState>);
+        schedulePush();
+      },
+      setRates: (next) => {
         set((s) => {
           const out: Partial<TradeRates> = {};
           for (const key of Object.keys(DEFAULT_TRADE_RATES) as (keyof TradeRates)[]) {
@@ -115,10 +134,35 @@ export const useTradeRatesStore = create<TradeRatesState>()(
             out[key] = PCT_KEYS.includes(key) ? clampRate(v, 0, 5) : clampRate(v);
           }
           return { ...s, ...out };
-        }),
-      resetRates: () => set({ ...DEFAULT_TRADE_RATES }),
+        });
+        schedulePush();
+      },
+      resetRates: () => {
+        set({ ...DEFAULT_TRADE_RATES });
+        schedulePush();
+      },
+      hydrateRemote: async () => {
+        if (!isTradeRatesHttp()) return;
+        try {
+          const remote = await pullTradeRatesFromServer();
+          if (remote?.rates && !remote.empty) {
+            set({ ...pickTradeRates(remote.rates) });
+            return;
+          }
+          await pushTradeRatesToServer(pickTradeRates(get()));
+        } catch (err) {
+          console.warn('Trade rates remote hydrate failed', err);
+        }
+      },
     }),
-    { name: 'mahnikka-trade-rates-v3' },
+    {
+      name: 'mahnikka-trade-rates-v3',
+      onRehydrateStorage: () => () => {
+        if (typeof window !== 'undefined' && isTradeRatesHttp()) {
+          void useTradeRatesStore.getState().hydrateRemote();
+        }
+      },
+    },
   ),
 );
 
@@ -129,4 +173,8 @@ export function pickTradeRates(state: TradeRates): TradeRates {
     if (typeof v === 'number' && Number.isFinite(v)) out[key] = v;
   }
   return out;
+}
+
+if (typeof window !== 'undefined' && isTradeRatesHttp()) {
+  void useTradeRatesStore.getState().hydrateRemote();
 }

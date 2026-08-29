@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Cloud, FolderOpen, Plus, ClipboardList } from 'lucide-react';
 import { listSelectionProjects, type ApiSelectionProject } from '../../api/client';
 import { fetchCloudProjects } from '../../lib/cloudProjects';
-import { listSharedDesigns } from '../../lib/designShare';
+import { hydrateDesignsFromRemote, listSharedDesigns } from '../../lib/designShare';
 import { platformConfig } from '../../lib/platform/config';
 import { WORKFLOW_LABEL } from '../../lib/configurator/projectTypes';
 import { listHomeProjects, type HomeProject } from '../home/homeProjects';
@@ -39,8 +39,11 @@ export function BuildHub({ onBegan }: Props) {
 
   useEffect(() => {
     let cancelled = false;
-    setLocalDesigns(listSharedDesigns());
-    const tasks: Promise<void>[] = [];
+    const tasks: Promise<void>[] = [
+      hydrateDesignsFromRemote().then((items) => {
+        if (!cancelled) setLocalDesigns(items);
+      }),
+    ];
     if (platformConfig.cloudConfigured()) {
       tasks.push(
         fetchCloudProjects().then((items) => {

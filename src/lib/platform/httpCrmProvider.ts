@@ -1,20 +1,17 @@
-import { apiHeaders, platformConfig } from './config';
+import { apiBaseUrl, apiHeaders } from './config';
 import type { CrmProvider, CrmSnapshot } from './crmProvider';
 
 const COLLECTIONS = ['clients', 'vendors', 'inventory', 'customFields', 'housePlans'] as const;
 
 /**
- * HTTP CRM adapter — uses /api/crm/* (file store $0 today, Postgres later).
- * When you add DATABASE_URL-backed tables, keep these routes and the UI stays put.
+ * HTTP CRM adapter — uses /api/crm/* (Neon crm_snapshots when DATABASE_URL is set).
+ * Empty VITE_API_URL → same-origin (Vercel or Vite proxy).
  */
 export class HttpCrmProvider implements CrmProvider {
   readonly id = 'http' as const;
 
   private base() {
-    if (!platformConfig.apiUrl) {
-      throw new Error('VITE_API_URL is required when VITE_CRM_PROVIDER=http');
-    }
-    return platformConfig.apiUrl;
+    return apiBaseUrl();
   }
 
   async load(): Promise<CrmSnapshot> {

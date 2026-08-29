@@ -32,9 +32,10 @@ describe('platform providers ($0 defaults)', () => {
     localStorage.clear();
   });
 
-  it('defaults to local auth and local CRM', () => {
+  it('defaults to local auth and local CRM in development', () => {
     expect(platformConfig.authProvider).toBe('local');
     expect(platformConfig.crmProvider).toBe('local');
+    expect(platformConfig.cloudPersist).toBe('local');
     expect(getAuthProvider()).toBeInstanceOf(LocalAuthProvider);
     expect(getCrmProvider()).toBeInstanceOf(LocalCrmProvider);
   });

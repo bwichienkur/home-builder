@@ -1,4 +1,4 @@
-import { apiHeaders, platformConfig } from './config';
+import { apiBaseUrl, apiHeaders } from './config';
 import type {
   AdminUserRow,
   ApiKeyMeta,
@@ -19,18 +19,14 @@ function asUser(raw: Partial<AuthUser> & { id: string; email: string; name: stri
 }
 
 /**
- * Remote auth adapter — talks to YOUR API today ($0 file-backed /api/auth).
- * Later: point the same routes at Auth0/Clerk/Cognito token exchange, or
- * replace this class with an SDK wrapper. UI stays unchanged.
+ * Remote auth adapter — talks to /api/auth (Neon auth_snapshots + users table).
+ * Empty VITE_API_URL → same-origin (Vercel serverless or Vite proxy to Express).
  */
 export class RemoteAuthProvider implements AuthProvider {
   readonly id = 'remote' as const;
 
   private base() {
-    if (!platformConfig.apiUrl) {
-      throw new Error('VITE_API_URL is required when VITE_AUTH_PROVIDER=remote');
-    }
-    return platformConfig.apiUrl;
+    return apiBaseUrl();
   }
 
   async login(email: string, password: string): Promise<AuthResult> {
@@ -74,9 +70,9 @@ export class RemoteAuthProvider implements AuthProvider {
   async logout() {
     const token = localStorage.getItem('mahnikka-auth-token');
     localStorage.removeItem('mahnikka-auth-token');
-    if (!platformConfig.apiUrl || !token) return;
+    if (!token) return;
     try {
-      await fetch(`${platformConfig.apiUrl}/api/auth/logout`, {
+      await fetch(`${this.base()}/api/auth/logout`, {
         method: 'POST',
         headers: apiHeaders(),
       });
@@ -87,9 +83,9 @@ export class RemoteAuthProvider implements AuthProvider {
 
   async restoreSession(): Promise<AuthUser | null> {
     const token = localStorage.getItem('mahnikka-auth-token');
-    if (!token || !platformConfig.apiUrl) return null;
+    if (!token) return null;
     try {
-      const res = await fetch(`${platformConfig.apiUrl}/api/auth/me`, { headers: apiHeaders() });
+      const res = await fetch(`${this.base()}/api/auth/me`, { headers: apiHeaders() });
       if (!res.ok) return null;
       const body = await res.json();
       return body.user ? asUser(body.user) : null;
