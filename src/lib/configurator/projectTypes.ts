@@ -1,6 +1,8 @@
 /** Olsen configurator project workflow, takeoff, team, and sign-off types. */
 import type { PriceUnit } from '../../components/catalog/catalogTypes';
 import type { ContractSnapshot, PricingCategory, SelectionProject } from './contractTypes';
+import type { DrawingPackage } from '../housePlans/drawingPackage';
+import type { HousePlan } from '../housePlans/buildPlan';
 
 export type PlanVerificationStatus = 'unverified' | 'in_review' | 'approved_for_selections';
 
@@ -99,6 +101,11 @@ export type ExtendedSelectionProject = SelectionProject & {
   workflowStatus: ProjectWorkflowStatus;
   planVerification: PlanVerificationStatus;
   housePlanId?: string;
+  /** Full HousePlan when imported from DWG/DXF (housePlanId usually `custom`). */
+  importedHousePlan?: HousePlan;
+  /** Sheet reference pack (SVG/PDF). Large SVG bodies live in IndexedDB via drawingPackageId. */
+  drawingPackage?: DrawingPackage;
+  drawingPackageId?: string;
   team: TeamMember[];
   allowances: AllowanceBudget[];
   levelOverrides: ContractLevelOverride[];

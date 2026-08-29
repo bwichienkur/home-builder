@@ -14,6 +14,7 @@ import { useAppNav } from './features/shell/AppNavContext';
 import { CatalogPanel } from './components/catalog/CatalogPanel';
 import { ConfiguratorBar } from './components/configurator/ConfiguratorBar';
 import { ConfiguratorDock } from './components/configurator/ConfiguratorDock';
+import { DrawingSheetsPanel } from './components/configurator/DrawingSheetsPanel';
 import { useBuildCatalog, useCatalogStore } from './store/catalogStore';
 import { useConfiguratorStore } from './store/configuratorStore';
 import { BomDialog } from './components/ui/BomDialog';
@@ -670,6 +671,7 @@ export default function StudioApp() {
 
       {workflowStage !== 'start' && <ConfiguratorBar />}
       {workflowStage !== 'start' && <ConfiguratorDock />}
+      {workflowStage !== 'start' && <DrawingSheetsPanel />}
 
       <ElevationPreview open={elevationOpen} onClose={() => setElevationOpen(false)} />
 

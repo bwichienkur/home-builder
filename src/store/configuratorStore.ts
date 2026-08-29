@@ -35,6 +35,10 @@ import type { FurnitureItem, PlanRoomLabel } from '../types';
 import stillwaterTakeoffSeed from '../lib/configurator/stillwater183Takeoff.json';
 import { usePlannerStore } from './plannerStore';
 import { getHousePlan } from '../lib/housePlans/planRegistry';
+import { stillwaterDrawingPackage, type DrawingPackage } from '../lib/housePlans/drawingPackage';
+import type { HousePlan } from '../lib/housePlans/buildPlan';
+import { importDrawingFiles, type DrawingImportProgress } from '../lib/housePlans/importDrawingFile';
+import { loadDrawingPackage, saveDrawingPackage } from '../lib/housePlans/drawingPackageStorage';
 import { downloadCofExcel } from '../lib/configurator/exportCof';
 import { buildBtSelectionRows, downloadBtSelectionsCsv } from '../lib/configurator/exportBtSelections';
 import { getOlsenCatalogSeed } from '../lib/catalog/catalogSource';
@@ -68,6 +72,11 @@ type ConfiguratorState = {
   setTeam: (team: TeamMember[]) => void;
   importTakeoffFile: (file: File) => Promise<void>;
   importContractPricingFile: (file: File) => Promise<void>;
+  importProjectDrawing: (
+    files: { drawing?: File | null; pdf?: File | null },
+    opts?: { planName?: string; createIfEmpty?: boolean; onProgress?: (p: DrawingImportProgress) => void },
+  ) => Promise<void>;
+  hydrateDrawingPackage: () => Promise<void>;
   saveSelections: (furniture: FurnitureItem[], planRooms: PlanRoomLabel[]) => void;
   setSurvey: (survey: SurveyResponse) => void;
   setCuratedOptions: (options: CuratedSelectionOption[]) => void;
@@ -78,9 +87,37 @@ type ConfiguratorState = {
   setActiveRoomFilter: (room: string | null) => void;
 };
 
+function isStillwaterProject(project: ExtendedSelectionProject | null | undefined): boolean {
+  if (!project) return false;
+  if (project.housePlanId === 'stillwater-183') return true;
+  const hay = `${project.id} ${project.planRef ?? ''} ${project.name ?? ''}`;
+  return /stillwater/i.test(hay);
+}
+
+function withStillwaterSheets(project: ExtendedSelectionProject): ExtendedSelectionProject {
+  if (project.drawingPackage?.sheets?.length) return project;
+  if (!isStillwaterProject(project)) return project;
+  const drawings = stillwaterDrawingPackage();
+  return {
+    ...project,
+    housePlanId: project.housePlanId ?? 'stillwater-183',
+    drawingPackageId: drawings.id,
+    drawingPackage: drawings,
+  };
+}
+
+function slimDrawingPackageForPersist(pkg: DrawingPackage | undefined): DrawingPackage | undefined {
+  if (!pkg) return undefined;
+  return {
+    ...pkg,
+    pdfUrl: pkg.pdfFileName ? undefined : pkg.pdfUrl?.startsWith('blob:') ? undefined : pkg.pdfUrl,
+    sheets: pkg.sheets.map(({ svg: _svg, ...rest }) => rest),
+  };
+}
+
 function toExtended(project: SelectionProject | ExtendedSelectionProject): ExtendedSelectionProject {
-  if ('workflowStatus' in project) return project;
-  return createEmptyExtendedProject(project);
+  if ('workflowStatus' in project) return withStillwaterSheets(project);
+  return withStillwaterSheets(createEmptyExtendedProject(project));
 }
 
 function readState(): Pick<
@@ -132,7 +169,10 @@ function persist(
   >,
 ) {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(STORAGE, JSON.stringify(state));
+  const project = state.project
+    ? { ...state.project, drawingPackage: slimDrawingPackageForPersist(state.project.drawingPackage) }
+    : null;
+  localStorage.setItem(STORAGE, JSON.stringify({ ...state, project }));
 }
 
 const initial = readState();
@@ -168,7 +208,21 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
   lastInviteUrl: initial.lastInviteUrl ?? null,
   syncing: false,
   syncError: null,
-  hydrate: () => set(readState()),
+  hydrate: () => {
+    const state = readState();
+    const project = state.project ? withStillwaterSheets(toExtended(state.project)) : null;
+    set({ ...state, project });
+    if (project?.importedHousePlan) {
+      usePlannerStore.getState().applyHousePlanObject(project.importedHousePlan);
+    } else if (project?.housePlanId && project.housePlanId !== 'custom') {
+      const plan = getHousePlan(project.housePlanId);
+      if (plan) usePlannerStore.getState().applyHousePlanObject(plan);
+    }
+    if (project?.drawingPackage && state.project && !state.project.drawingPackage?.sheets?.length) {
+      persist({ ...state, project });
+    }
+    void get().hydrateDrawingPackage();
+  },
   hydrateFromShareToken: async (token) => {
     try {
       const shared = await getSharedSelectionProject(token);
@@ -256,6 +310,9 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
           workflowStatus: extended.workflowStatus,
           planVerification: extended.planVerification,
           housePlanId: extended.housePlanId,
+          importedHousePlan: extended.importedHousePlan,
+          drawingPackageId: extended.drawingPackageId,
+          drawingPackage: extended.drawingPackage,
           team: extended.team,
           allowances: extended.allowances,
           levelOverrides: extended.levelOverrides,
@@ -291,13 +348,23 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
     const next = { role: get().role, project: nextProject, contract: nextProject.contract, remoteId, activeRoomFilter: get().activeRoomFilter, shareToken: get().shareToken, lastInviteUrl: get().lastInviteUrl };
     persist(next);
     set(next);
+    if (nextProject.importedHousePlan) {
+      usePlannerStore.getState().applyHousePlanObject(nextProject.importedHousePlan);
+    } else if (nextProject.housePlanId && nextProject.housePlanId !== 'custom') {
+      const plan = getHousePlan(nextProject.housePlanId);
+      if (plan) usePlannerStore.getState().applyHousePlanObject(plan);
+    }
+    void get().hydrateDrawingPackage();
     void get().persistProject();
   },
   loadStillwater183: () => {
     const base = createEmptyExtendedProject(STILLWATER_183_PROJECT);
+    const drawings = stillwaterDrawingPackage();
     get().loadProject({
       ...base,
       housePlanId: 'stillwater-183',
+      drawingPackageId: drawings.id,
+      drawingPackage: drawings,
       workflowStatus: 'plan_verification',
       planVerification: 'in_review',
       takeoff: {
@@ -337,6 +404,9 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
           workflowStatus: project.workflowStatus,
           planVerification: project.planVerification,
           housePlanId: project.housePlanId,
+          importedHousePlan: project.importedHousePlan,
+          drawingPackageId: project.drawingPackageId,
+          drawingPackage: slimDrawingPackageForPersist(project.drawingPackage),
           team: project.team,
           allowances: project.allowances,
           levelOverrides: project.levelOverrides,
@@ -395,12 +465,75 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
     });
   },
   setHousePlanId: (housePlanId) => {
-    patchProject(get, set, { housePlanId });
-    if (housePlanId === 'custom') return;
+    if (housePlanId === 'stillwater-183') {
+      const drawings = stillwaterDrawingPackage();
+      patchProject(get, set, {
+        housePlanId,
+        drawingPackageId: drawings.id,
+        drawingPackage: drawings,
+      });
+    } else {
+      patchProject(get, set, { housePlanId });
+    }
+    if (housePlanId === 'custom') {
+      const imported = get().project?.importedHousePlan;
+      if (imported) usePlannerStore.getState().applyHousePlanObject(imported);
+      return;
+    }
     const plan = getHousePlan(housePlanId);
     if (plan) usePlannerStore.getState().applyHousePlanObject(plan);
   },
   setTeam: (team) => patchProject(get, set, { team }),
+  hydrateDrawingPackage: async () => {
+    const project = get().project;
+    if (!project?.drawingPackageId) return;
+    if (project.drawingPackage?.sheetSource === 'static' && project.drawingPackage.sheets.some((s) => s.imageUrl)) {
+      return;
+    }
+    try {
+      const stored = await loadDrawingPackage(project.drawingPackageId);
+      if (!stored) return;
+      const next = {
+        ...project,
+        drawingPackage: stored.package,
+        importedHousePlan: stored.plan ?? project.importedHousePlan,
+      };
+      set({ project: next });
+    } catch {
+      /* ignore IDB misses */
+    }
+  },
+  importProjectDrawing: async (files, opts) => {
+    let project = get().project;
+    if (!project && opts?.createIfEmpty) {
+      const name = opts.planName?.trim() || files.drawing?.name.replace(/\.(dwg|dxf)$/i, '') || 'New project';
+      get().loadProject(createBlankSelectionProject(name));
+      project = get().project;
+    }
+    if (!project) throw new Error('Create a project before importing a drawing.');
+
+    const result = await importDrawingFiles(files, {
+      planName: opts?.planName ?? project.name,
+      onProgress: opts?.onProgress,
+    });
+
+    const packageId = await saveDrawingPackage({
+      package: result.package,
+      plan: result.plan,
+      pdfBlob: result.pdfBlob,
+    });
+
+    patchProject(get, set, {
+      housePlanId: 'custom',
+      importedHousePlan: result.plan as HousePlan,
+      drawingPackageId: packageId,
+      drawingPackage: result.package,
+      workflowStatus: 'plan_verification',
+      planVerification: 'in_review',
+      planRef: result.plan.name,
+    });
+    usePlannerStore.getState().applyHousePlanObject(result.plan);
+  },
   importTakeoffFile: async (file) => {
     const takeoff = await loadTakeoffFromFile(file);
     patchProject(get, set, { takeoff, workflowStatus: 'plan_verification' });

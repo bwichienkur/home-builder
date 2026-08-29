@@ -99,10 +99,18 @@ export function PlanVerificationPanel() {
           >
             <option value="stillwater-183">183 Stillwater (from MODEL.dwg)</option>
             <option value="granada">Granada (flyer proxy)</option>
-            <option value="custom">Custom / imported</option>
+            <option value="custom">Custom / imported DWG</option>
           </select>
         </label>
       </div>
+
+      {project.drawingPackage && (
+        <p className="muted">
+          Drawing sheets ready · open the <strong>Sheets</strong> panel for floor, elevations, foundation, electrical,
+          details, notes, and truss.
+          {project.drawingPackage.warnings[0] ? ` · ${project.drawingPackage.warnings[0]}` : ''}
+        </p>
+      )}
 
       <div className="configurator-panel-actions">
         <input
