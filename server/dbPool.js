@@ -1,11 +1,10 @@
 /**
  * Shared Postgres pool for Express and Vercel.
- * On Vercel, classic `pg` TCP often fails in serverless isolates — use
- * @neondatabase/serverless (WebSocket) instead.
+ * On Vercel use Neon HTTP (`neon()`) — no TCP/WebSocket, works in serverless.
+ * Local Express keeps classic `pg` Pool.
  */
-import { createRequire } from 'module';
-
-const require = createRequire(import.meta.url);
+import pg from 'pg';
+import { neon } from '@neondatabase/serverless';
 
 let pool = null;
 
@@ -23,26 +22,44 @@ function resolveConnectionString() {
   );
 }
 
+/** pg-compatible wrapper around Neon HTTP so callers can use `{ rows } = await db.query(...)`. */
+function createNeonHttpClient(connectionString) {
+  const sql = neon(connectionString, { fullResults: true });
+  return {
+    async query(text, params = []) {
+      const result = await sql.query(text, params);
+      // fullResults → { rows, fields, ... }; without it neon returns row array.
+      if (Array.isArray(result)) {
+        return { rows: result, rowCount: result.length };
+      }
+      return {
+        rows: result.rows ?? [],
+        rowCount: result.rowCount ?? result.rows?.length ?? 0,
+        fields: result.fields,
+        command: result.command,
+      };
+    },
+    on() {
+      /* no-op — HTTP client has no idle socket events */
+    },
+    end() {
+      return Promise.resolve();
+    },
+  };
+}
+
 function createPool() {
   const connectionString = resolveConnectionString();
   if (!connectionString) return null;
 
   if (isVercelRuntime()) {
-    const { Pool, neonConfig } = require('@neondatabase/serverless');
-    const ws = require('ws');
-    neonConfig.webSocketConstructor = ws;
-    const p = new Pool({ connectionString });
-    p.on('error', (err) => {
-      console.error('[dbPool] idle client error', err?.message || err);
-    });
-    return p;
+    return createNeonHttpClient(connectionString);
   }
 
-  const { Pool } = require('pg');
   const needsSsl =
     process.env.PGSSLMODE === 'require' ||
     /neon\.tech|sslmode=require/i.test(connectionString);
-  const p = new Pool({
+  const p = new pg.Pool({
     connectionString,
     ssl: needsSsl ? { rejectUnauthorized: false } : undefined,
     max: Number(process.env.PG_POOL_MAX || 5),
