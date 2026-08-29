@@ -65,6 +65,24 @@ describe('dxf room accuracy helpers', () => {
     expect(names.some((n) => n.includes('KITCHEN'))).toBe(true);
   });
 
+  it('splits open-plan flood regions using multiple room labels', () => {
+    // Single open rectangle — no interior walls — with two labels.
+    const segs = [
+      { x1: 0, y1: 0, x2: 40, y2: 0 },
+      { x1: 40, y1: 0, x2: 40, y2: 24 },
+      { x1: 40, y1: 24, x2: 0, y2: 24 },
+      { x1: 0, y1: 24, x2: 0, y2: 0 },
+    ];
+    const { rooms } = roomsFromFloodFill(segs, [
+      { x: 10, y: 12, text: 'KITCHEN' },
+      { x: 30, y: 12, text: 'GREAT ROOM' },
+    ]);
+    expect(rooms.length).toBeGreaterThanOrEqual(2);
+    const names = rooms.map((r) => r.name.toUpperCase());
+    expect(names.some((n) => n.includes('KITCHEN'))).toBe(true);
+    expect(names.some((n) => n.includes('GREAT'))).toBe(true);
+  });
+
   it('imports a closed rectangle DXF into at least one room with sane size', () => {
     const dxf = `0
 SECTION
@@ -180,5 +198,35 @@ describe('room name heuristics', () => {
     expect(looksLikeRoomName('KITCHEN')).toBe(true);
     expect(looksLikeRoomName("10'-0\" CLG.")).toBe(false);
     expect(looksLikeRoomName('3-CAR GARAGE')).toBe(true);
+    expect(looksLikeRoomName('GREAT ROOM')).toBe(true);
+    expect(looksLikeRoomName('seat')).toBe(false);
+    expect(looksLikeRoomName('ACCESS')).toBe(false);
+    expect(looksLikeRoomName('TECH. CAB.')).toBe(false);
+  });
+
+  it('decodes underlined MTEXT room names', async () => {
+    const { parseDxfEntitiesToSegments } = await import('./dxfParse');
+    const dxf = `0
+SECTION
+2
+ENTITIES
+0
+MTEXT
+8
+TEXT ROOM
+10
+10
+20
+10
+1
+{\\fSansSerif|b0|i0|c2|p2;\\H1.333x;\\LKITCHEN}
+0
+ENDSEC
+0
+EOF
+`;
+    const { labels } = parseDxfEntitiesToSegments(dxf);
+    expect(labels.some((l) => /KITCHEN/i.test(l.text))).toBe(true);
+    expect(labels[0]!.text).toMatch(/^KITCHEN$/i);
   });
 });
