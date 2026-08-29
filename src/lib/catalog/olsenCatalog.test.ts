@@ -6,8 +6,12 @@ describe('Olsen catalog seed', () => {
   it('loads baked selections from Cost Library', () => {
     const seed = getOlsenCatalogSeed();
     expect(seed.length).toBeGreaterThan(500);
-    expect(seed.every((i) => i.id.startsWith('olsen-'))).toBe(true);
-    expect(seed.every((i) => i.sku?.startsWith('C'))).toBe(true);
+    const costLibrary = seed.filter((i) => i.id.startsWith('olsen-'));
+    const kitStubs = seed.filter((i) => i.id.startsWith('kit-'));
+    expect(costLibrary.length).toBeGreaterThan(500);
+    expect(kitStubs.length).toBeGreaterThan(0);
+    expect(costLibrary.every((i) => i.sku?.startsWith('C'))).toBe(true);
+    expect(kitStubs.every((i) => i.sku?.startsWith('KIT-'))).toBe(true);
   });
 
   it('includes tiered countertop and tile rows with placement metadata', () => {

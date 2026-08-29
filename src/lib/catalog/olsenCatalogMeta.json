@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-08-28T19:54:43.622Z",
+  "generatedAt": "2026-08-29T00:57:47.761Z",
   "sourceFile": "Olsen_Cost_Library_All_Tabs_Reformatted_2026.xlsx",
-  "rowCount": 722,
+  "rowCount": 732,
   "tabs": [
     "Countertops",
     "Ext. Door Install",
@@ -21,6 +21,7 @@
     "Tile-Floor",
     "Tile-Wall"
   ],
-  "lookbookThumbs": 467,
-  "withPhotoThumb": 467
+  "lookbookThumbs": 513,
+  "withPhotoThumb": 503,
+  "kitStubs": true
 }
