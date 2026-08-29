@@ -57,6 +57,17 @@ function tabToCofSheet(sourceTab?: string): string | null {
     'Stone-Eldorado': 'Stone',
     'Trim Material': 'Options',
   };
+  try {
+    const raw = typeof window !== 'undefined' ? localStorage.getItem('olsen-org-config-v1') : null;
+    if (raw) {
+      const parsed = JSON.parse(raw) as { tabMappings?: { sourceTab: string; cofSheet: string }[] };
+      if (parsed.tabMappings?.length) {
+        for (const m of parsed.tabMappings) map[m.sourceTab] = m.cofSheet;
+      }
+    }
+  } catch {
+    /* keep defaults */
+  }
   return sourceTab ? map[sourceTab] ?? 'Options' : null;
 }
 

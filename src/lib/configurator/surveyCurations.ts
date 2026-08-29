@@ -55,17 +55,40 @@ export function curateFromSurvey(catalog: CatalogItem[], survey: SurveyResponse)
   return out;
 }
 
-/** Look Book defaults — Level at or below Platinum included tier per tab. */
+/** Look Book defaults — driven by org Config studio seeds when present. */
 export function lookbookDefaults(catalog: CatalogItem[]): CuratedOption[] {
-  const tabs = ['Countertops', 'Tile-Floor', 'Tile-Wall', 'Tile - Backsplash', 'Plumbing'];
+  let seeds = [
+    { sourceTab: 'Countertops', minLevel: 'Level 3', roomType: 'Kitchen' },
+    { sourceTab: 'Tile-Floor', minLevel: 'Level 3', roomType: 'Living' },
+    { sourceTab: 'Tile-Wall', minLevel: 'Level 3', roomType: 'Master Bath' },
+    { sourceTab: 'Tile - Backsplash', minLevel: 'Level 3', roomType: 'Kitchen' },
+    { sourceTab: 'Plumbing', minLevel: 'Level 3', roomType: 'Whole home' },
+  ];
+  try {
+    const raw = typeof window !== 'undefined' ? localStorage.getItem('olsen-org-config-v1') : null;
+    if (raw) {
+      const parsed = JSON.parse(raw) as {
+        lookbookSeeds?: { sourceTab: string; minLevel: string; roomType: string }[];
+      };
+      if (parsed.lookbookSeeds?.length) seeds = parsed.lookbookSeeds;
+    }
+  } catch {
+    /* defaults */
+  }
   const out: CuratedOption[] = [];
-  for (const tab of tabs) {
-    const pick = catalog.find((i) => i.sourceTab === tab && i.thumbnailUrl?.includes('/lookbook/') && i.level?.match(/level\s*[3-5]/i));
+  for (const seed of seeds) {
+    const minNum = Number(seed.minLevel.match(/\d+/)?.[0] ?? 3);
+    const pick = catalog.find((i) => {
+      if (i.sourceTab !== seed.sourceTab) return false;
+      if (!i.thumbnailUrl?.includes('/lookbook/')) return false;
+      const n = Number(i.level?.match(/\d+/)?.[0] ?? 0);
+      return n >= minNum;
+    });
     if (pick) {
       out.push({
         catalogId: pick.id,
         label: pick.name,
-        roomType: pick.roomTypes?.[0] ?? 'Whole home',
+        roomType: seed.roomType || pick.roomTypes?.[0] || 'Whole home',
         tier: 'lookbook',
       });
     }

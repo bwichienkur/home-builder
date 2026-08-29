@@ -13,7 +13,7 @@ export function parseLevelNumber(level?: string | null): number | null {
 
 export function pricingCategoryForItem(item: Pick<CatalogItem, 'sourceTab' | 'category' | 'subcategory' | 'roomTypes'>): PricingCategory | null {
   const tab = item.sourceTab ?? '';
-  const map: Record<string, PricingCategory> = {
+  let map: Record<string, PricingCategory> = {
     Countertops: item.roomTypes?.includes('Kitchen') ? 'countertops-kitchen' : 'countertops-bath',
     'Tile-Floor': 'floor-tile',
     'Tile-Wall': 'wall-tile-shower',
@@ -31,6 +31,29 @@ export function pricingCategoryForItem(item: Pick<CatalogItem, 'sourceTab' | 'ca
     'Summer Kitchen': 'outdoor-kitchen',
     Pavers: 'pavers',
   };
+  try {
+    const raw = typeof window !== 'undefined' ? localStorage.getItem('olsen-org-config-v1') : null;
+    if (raw) {
+      const parsed = JSON.parse(raw) as {
+        tabMappings?: { sourceTab: string; pricingCategory: string; kitchenBathSplit?: boolean }[];
+      };
+      if (parsed.tabMappings?.length) {
+        const fromOrg: Record<string, PricingCategory> = {};
+        for (const m of parsed.tabMappings) {
+          if (m.kitchenBathSplit && m.sourceTab === 'Countertops') {
+            fromOrg.Countertops = item.roomTypes?.includes('Kitchen')
+              ? 'countertops-kitchen'
+              : 'countertops-bath';
+          } else {
+            fromOrg[m.sourceTab] = m.pricingCategory;
+          }
+        }
+        map = { ...map, ...fromOrg };
+      }
+    }
+  } catch {
+    /* keep defaults */
+  }
   if (map[tab]) return map[tab];
   if (item.category === 'Tile' && item.subcategory === 'Floor') return 'floor-tile';
   if (item.category === 'Surfaces' && item.subcategory === 'Countertop') return 'countertops-kitchen';
@@ -98,12 +121,24 @@ export function formatCatalogPrice(
   const unit = item.priceUnit ?? 'each';
   const price = item.price ?? item.cost;
   if (role === 'client') {
-    return {
-      showPrice: false,
-      label: item.level ? `${item.level} selection` : 'Included in survey',
-      included: true,
-      priceUnit: unit,
-    };
+    let hidePricing = true;
+    try {
+      const raw = localStorage.getItem('olsen-org-config-v1');
+      if (raw) {
+        const parsed = JSON.parse(raw) as { clientRules?: { hidePricing?: boolean } };
+        if (parsed.clientRules?.hidePricing === false) hidePricing = false;
+      }
+    } catch {
+      /* default hide */
+    }
+    if (hidePricing) {
+      return {
+        showPrice: false,
+        label: item.level ? `${item.level} selection` : 'Included in survey',
+        included: true,
+        priceUnit: unit,
+      };
+    }
   }
 
   if (price == null) {

@@ -9,6 +9,7 @@ import { VendorsPage } from './features/crm/VendorsPage';
 import { InventoryPage } from './features/crm/InventoryPage';
 import { PlansPage } from './features/plans/PlansPage';
 import { SettingsPage } from './features/settings/SettingsPage';
+import { ConfigPage } from './features/config/ConfigPage';
 import { UsersPage } from './features/admin/UsersPage';
 import { ApiDocsPage } from './features/docs/ApiDocsPage';
 
@@ -170,6 +171,7 @@ export function AppRouter() {
             }
           />
           <Route path="plans" element={<PlansPage />} />
+          <Route path="config" element={<ConfigPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="users" element={<UsersPage />} />
         </Route>

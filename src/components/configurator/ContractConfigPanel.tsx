@@ -2,7 +2,6 @@ import { useState } from 'react';
 import {
   INCLUDED_LEVEL_OPTIONS,
   PRICE_UNIT_OPTIONS,
-  PRICING_CATEGORIES,
   platinumLabelForCategory,
   type PricingCategory,
 } from '../../lib/configurator/contractTypes';
@@ -24,6 +23,8 @@ export function ContractConfigPanel({ embedded = false, readOnly = false }: Prop
   const project = useConfiguratorStore((s) => s.project);
   const role = useConfiguratorStore((s) => s.role);
   const setIncludedLevel = useConfiguratorStore((s) => s.setIncludedLevel);
+  const addIncludedLevel = useConfiguratorStore((s) => s.addIncludedLevel);
+  const removeIncludedLevel = useConfiguratorStore((s) => s.removeIncludedLevel);
   const resetIncludedLevelsToPlatinum = useConfiguratorStore((s) => s.resetIncludedLevelsToPlatinum);
   const upsertAllowance = useConfiguratorStore((s) => s.upsertAllowance);
   const removeAllowance = useConfiguratorStore((s) => s.removeAllowance);
@@ -33,6 +34,8 @@ export function ContractConfigPanel({ embedded = false, readOnly = false }: Prop
   const [newCategory, setNewCategory] = useState<PricingCategory>('outdoor-kitchen');
   const [newBudget, setNewBudget] = useState('');
   const [newUnit, setNewUnit] = useState<PriceUnit>('allowance');
+  const [newTierLabel, setNewTierLabel] = useState('');
+  const [newTierTab, setNewTierTab] = useState('');
 
   if (!project?.contract) return null;
   const canEdit = !readOnly && (role === 'admin' || role === 'designer' || embedded);
@@ -40,7 +43,7 @@ export function ContractConfigPanel({ embedded = false, readOnly = false }: Prop
   const levels = project.contract.includedLevels.length
     ? project.contract.includedLevels
     : [];
-
+  const categoryOptions = levels.map((l) => l.pricingCategory);
   const addAllowance = () => {
     const amount = Number(newBudget.replace(/[,$]/g, ''));
     if (!newLabel.trim() || !Number.isFinite(amount) || amount < 0) return;
@@ -74,8 +77,10 @@ export function ContractConfigPanel({ embedded = false, readOnly = false }: Prop
             <thead>
               <tr>
                 <th>Trade</th>
+                <th>Catalog tab</th>
                 <th>Included level</th>
                 <th>Label</th>
+                {canEdit ? <th /> : null}
               </tr>
             </thead>
             <tbody>
@@ -83,6 +88,18 @@ export function ContractConfigPanel({ embedded = false, readOnly = false }: Prop
                 <tr key={row.pricingCategory}>
                   <td>
                     <span className="contract-config-cat">{row.pricingCategory}</span>
+                  </td>
+                  <td>
+                    {canEdit ? (
+                      <input
+                        value={row.sourceTab ?? ''}
+                        aria-label={`Source tab for ${row.pricingCategory}`}
+                        placeholder="e.g. Plumbing"
+                        onChange={(e) => setIncludedLevel({ ...row, sourceTab: e.target.value })}
+                      />
+                    ) : (
+                      row.sourceTab || '—'
+                    )}
                   </td>
                   <td>
                     {canEdit ? (
@@ -125,13 +142,56 @@ export function ContractConfigPanel({ embedded = false, readOnly = false }: Prop
                       row.label
                     )}
                   </td>
+                  {canEdit ? (
+                    <td>
+                      <button
+                        type="button"
+                        className="configurator-btn"
+                        onClick={() => removeIncludedLevel(row.pricingCategory)}
+                        aria-label={`Remove ${row.label}`}
+                      >
+                        Remove
+                      </button>
+                    </td>
+                  ) : null}
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+        {canEdit && (
+          <div className="configurator-field-grid compact contract-config-add">
+            <label className="configurator-field">
+              <span>Add trade label</span>
+              <input
+                value={newTierLabel}
+                onChange={(e) => setNewTierLabel(e.target.value)}
+                placeholder="e.g. Fireplace package"
+              />
+            </label>
+            <label className="configurator-field">
+              <span>Catalog tab</span>
+              <input
+                value={newTierTab}
+                onChange={(e) => setNewTierTab(e.target.value)}
+                placeholder="Optional source tab"
+              />
+            </label>
+            <button
+              type="button"
+              className="configurator-btn primary"
+              disabled={!newTierLabel.trim()}
+              onClick={() => {
+                addIncludedLevel({ label: newTierLabel.trim(), sourceTab: newTierTab.trim() });
+                setNewTierLabel('');
+                setNewTierTab('');
+              }}
+            >
+              Add tier
+            </button>
+          </div>
+        )}
       </div>
-
       <div className="configurator-section">
         <div className="configurator-section-title">
           <strong>Allowances</strong>
@@ -183,17 +243,19 @@ export function ContractConfigPanel({ embedded = false, readOnly = false }: Prop
                             )
                           }
                         >
-                          {PRICING_CATEGORIES.map((c) => (
+                          {categoryOptions.map((c) => (
                             <option key={c} value={c}>
                               {c}
                             </option>
                           ))}
+                          {!categoryOptions.includes(a.pricingCategory) && (
+                            <option value={a.pricingCategory}>{a.pricingCategory}</option>
+                          )}
                         </select>
                       ) : (
                         a.pricingCategory
                       )}
-                    </td>
-                    <td>
+                    </td>                    <td>
                       {canEdit ? (
                         <input
                           type="number"
@@ -266,13 +328,12 @@ export function ContractConfigPanel({ embedded = false, readOnly = false }: Prop
             <label className="configurator-field">
               <span>Category</span>
               <select value={newCategory} onChange={(e) => setNewCategory(e.target.value as PricingCategory)}>
-                {PRICING_CATEGORIES.map((c) => (
+                {(categoryOptions.length ? categoryOptions : ['outdoor-kitchen']).map((c) => (
                   <option key={c} value={c}>
                     {c}
                   </option>
                 ))}
-              </select>
-            </label>
+              </select>            </label>
             <label className="configurator-field">
               <span>Budget ($)</span>
               <input value={newBudget} onChange={(e) => setNewBudget(e.target.value)} placeholder="2500" />

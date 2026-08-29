@@ -43,6 +43,20 @@ describe('contract COF / allowances editors', () => {
     expect(useConfiguratorStore.getState().project!.allowances).toHaveLength(0);
   });
 
+  it('adds and removes included tiers', () => {
+    const { addIncludedLevel, removeIncludedLevel } = useConfiguratorStore.getState();
+    const before = useConfiguratorStore.getState().project!.contract.includedLevels.length;
+    addIncludedLevel({ label: 'Fireplace package', sourceTab: 'Fireplace' });
+    const project = useConfiguratorStore.getState().project!;
+    expect(project.contract.includedLevels.length).toBe(before + 1);
+    expect(project.contract.includedLevels.some((r) => r.label === 'Fireplace package')).toBe(true);
+    const cat = project.contract.includedLevels.find((r) => r.label === 'Fireplace package')!.pricingCategory;
+    removeIncludedLevel(cat);
+    expect(useConfiguratorStore.getState().project!.contract.includedLevels.some((r) => r.pricingCategory === cat)).toBe(
+      false,
+    );
+  });
+
   it('resets included levels to Platinum defaults', () => {
     const { setIncludedLevel, resetIncludedLevelsToPlatinum } = useConfiguratorStore.getState();
     const floor = PLATINUM_INCLUDED_LEVELS.find((r) => r.pricingCategory === 'floor-tile')!;

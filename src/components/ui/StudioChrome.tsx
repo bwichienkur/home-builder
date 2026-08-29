@@ -266,7 +266,17 @@ export function StudioChrome({
   const showFloorChrome = (atPlanLevel || inRoom) && !pending;
   const configuratorRole = useConfiguratorStore((s) => s.role);
   const shareToken = useConfiguratorStore((s) => s.shareToken);
-  const clientStructuralLock = configuratorRole === 'client' || !!shareToken;
+  let lockStructural = true;
+  try {
+    const raw = localStorage.getItem('olsen-org-config-v1');
+    if (raw) {
+      const parsed = JSON.parse(raw) as { clientRules?: { lockStructuralEdits?: boolean } };
+      if (parsed.clientRules?.lockStructuralEdits === false) lockStructural = false;
+    }
+  } catch {
+    /* default lock */
+  }
+  const clientStructuralLock = lockStructural && (configuratorRole === 'client' || !!shareToken);
   const showFloorManage = atPlanLevel && !clientStructuralLock;
   const pendingRoomShape = usePlannerStore((s) => s.pendingRoomShape);
   const setPendingRoomShape = usePlannerStore((s) => s.setPendingRoomShape);

@@ -3,6 +3,7 @@ import { useConfiguratorStore, createBlankSelectionProject } from '../../store/c
 import { WORKFLOW_LABEL } from '../../store/configuratorStore';
 import type { ProjectWorkflowStatus, TeamMember, TeamRole } from '../../lib/configurator/projectTypes';
 import type { DrawingImportProgress } from '../../lib/housePlans/importDrawingFile';
+import { formatInviteEmail, loadOrgConfig } from '../../lib/configurator/orgConfig';
 
 const TEAM_ROLES: TeamRole[] = ['estimator', 'designer', 'project_manager', 'client'];
 
@@ -277,7 +278,10 @@ export function ProjectSetupPanel() {
             <div className="configurator-section-title">
               <strong>Client invite</strong>
             </div>
-            <p className="muted">Creates a share link for the client portal (survey + Platinum selections). Copy into email — SMTP is not configured.</p>
+            <p className="muted">
+              {loadOrgConfig().inviteCopy.portalBlurb} Copy the link into email — SMTP is not configured. Edit invite
+              wording under <strong>Config → Invite copy</strong>.
+            </p>
             <div className="configurator-inline-row">
               <input
                 value={clientEmail}
@@ -292,17 +296,22 @@ export function ProjectSetupPanel() {
                   setInviteBusy(true);
                   void createClientInvite(clientEmail.trim() || undefined)
                     .then((url) => {
-                      void navigator.clipboard?.writeText(url);
+                      const email = formatInviteEmail(loadOrgConfig().inviteCopy, {
+                        clientName: clientEmail.trim() || undefined,
+                        projectName: project.name,
+                        inviteUrl: url,
+                      });
+                      void navigator.clipboard?.writeText(email);
                     })
                     .finally(() => setInviteBusy(false));
                 }}
               >
-                {inviteBusy ? 'Creating…' : 'Create invite link'}
+                {inviteBusy ? 'Creating…' : 'Create invite + copy email'}
               </button>
             </div>
             {lastInviteUrl && (
               <p className="muted">
-                Link copied · <a className="configurator-invite-link" href={lastInviteUrl}>{lastInviteUrl}</a>
+                Link ready · <a className="configurator-invite-link" href={lastInviteUrl}>{lastInviteUrl}</a>
               </p>
             )}
           </div>
