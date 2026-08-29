@@ -197,7 +197,7 @@ export function ProjectSetupPanel() {
             </div>
             {lastInviteUrl && (
               <p className="muted">
-                Link copied · <a href={lastInviteUrl}>{lastInviteUrl}</a>
+                Link copied · <a className="configurator-invite-link" href={lastInviteUrl}>{lastInviteUrl}</a>
               </p>
             )}
           </div>

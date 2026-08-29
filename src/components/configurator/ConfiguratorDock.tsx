@@ -60,12 +60,17 @@ export function ConfiguratorDock() {
         </div>
 
         {open && (
-          <div className="configurator-dock-body" role="tabpanel">
-            {active === 'setup' && <ProjectSetupPanel />}
-            {active === 'verify' && <PlanVerificationPanel />}
-            {active === 'survey' && <ClientSurveyPanel forceShow />}
-            {active === 'signoff' && <SignOffPanel />}
-          </div>
+          <>
+            <div className="configurator-dock-rooms">
+              <RoomSelectionNav />
+            </div>
+            <div className="configurator-dock-body" role="tabpanel">
+              {active === 'setup' && <ProjectSetupPanel />}
+              {active === 'verify' && <PlanVerificationPanel />}
+              {active === 'survey' && <ClientSurveyPanel forceShow />}
+              {active === 'signoff' && <SignOffPanel />}
+            </div>
+          </>
         )}
       </aside>
     </>

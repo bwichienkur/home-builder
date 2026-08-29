@@ -742,6 +742,10 @@
   font-size: 16px;
   font-weight: 800;
   letter-spacing: -0.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: min(100%, 52vw);
 }
 .configurator-bar-meta {
   display: flex;
@@ -817,6 +821,9 @@
   gap: 0;
   border-bottom: 1px solid var(--line);
   background: linear-gradient(180deg, #f7f9fb 0%, var(--surface) 100%);
+}
+.configurator-dock-rooms {
+  display: none;
 }
 .configurator-dock.is-collapsed .configurator-dock-chrome {
   border-bottom: 0;
@@ -1161,19 +1168,241 @@
   gap: 10px;
 }
 
+.configurator-invite-link {
+  word-break: break-all;
+  overflow-wrap: anywhere;
+}
+
+/* —— Mobile / narrow: keep workflow usable above the studio dock —— */
 @media (max-width: 900px) {
-  .configurator-room-rail {
-    right: 12px;
+  .configurator-bar {
+    left: 8px;
+    right: 8px;
+    top: calc(52px + env(safe-area-inset-top));
+    padding: 10px 12px;
+    gap: 8px 12px;
   }
+  .configurator-bar-main {
+    width: 100%;
+  }
+  .configurator-bar-main strong {
+    font-size: 14px;
+    line-height: 1.25;
+    max-width: 100%;
+    white-space: normal;
+  }
+  .configurator-bar-controls {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .configurator-bar-meta {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    max-width: 100%;
+    padding-bottom: 2px;
+  }
+  .configurator-bar-meta::-webkit-scrollbar {
+    display: none;
+  }
+  .configurator-contract-chip {
+    max-width: 100%;
+    white-space: normal;
+    line-height: 1.3;
+    border-radius: 12px;
+  }
+  .configurator-field.inline {
+    flex-wrap: wrap;
+  }
+
+  /* Desktop float rail hides on mobile — rooms live inside the dock instead */
+  .configurator-room-rail {
+    display: none;
+  }
+  .configurator-dock-rooms {
+    display: block;
+    padding: 0 8px 8px;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface);
+  }
+  .configurator-dock-rooms .room-selection-nav {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 2px 0 4px;
+    mask-image: linear-gradient(90deg, #000 0%, #000 calc(100% - 16px), transparent);
+  }
+  .configurator-dock-rooms .room-selection-nav::-webkit-scrollbar {
+    display: none;
+  }
+  .configurator-dock-rooms .room-selection-nav button {
+    flex: 0 0 auto;
+    min-height: 40px;
+    box-shadow: none;
+  }
+
   .configurator-dock {
     top: auto;
-    bottom: calc(12px + env(safe-area-inset-bottom));
-    max-height: min(52vh, 420px);
+    left: 8px;
+    right: 8px;
+    width: auto;
+    /* Sit clearly above the multi-row studio dock */
+    bottom: calc(88px + env(safe-area-inset-bottom));
+    max-height: min(52vh, 440px);
+    z-index: 72;
   }
+  .configurator-dock.is-collapsed {
+    left: auto;
+    right: 8px;
+    width: auto;
+    max-width: calc(100vw - 16px);
+    bottom: calc(88px + env(safe-area-inset-bottom));
+  }
+  .configurator-dock-toggle {
+    min-height: 44px;
+    padding: 12px 14px;
+  }
+  .configurator-dock-tabs {
+    padding: 0 6px 8px;
+    gap: 4px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .configurator-dock-tabs button {
+    flex: 1 0 auto;
+    min-width: 64px;
+    min-height: 40px;
+    padding: 8px 10px;
+  }
+  .configurator-dock-body {
+    padding: 10px 12px 14px;
+  }
+
+  .configurator-panel-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .configurator-panel-header .muted {
+    margin: 4px 0 0;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  .configurator-panel-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .configurator-panel-actions .configurator-btn {
+    width: 100%;
+    min-height: 44px;
+  }
+
   .configurator-field-grid.compact,
-  .configurator-survey-form,
+  .configurator-survey-form {
+    grid-template-columns: 1fr;
+  }
+  /* Keep KPI / sign cards as a readable 2-up grid (not a tall single stack). */
   .configurator-kpi-row,
   .configurator-sign-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .configurator-inline-row {
+    flex-wrap: wrap;
+  }
+  .configurator-inline-row .configurator-btn {
+    width: 100%;
+    min-height: 44px;
+  }
+  .configurator-btn.full,
+  .configurator-btn.primary.full {
+    min-height: 44px;
+  }
+
+  .configurator-trade-summary li {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  .configurator-trade-summary span {
+    text-align: left;
+    word-break: break-word;
+  }
+  .configurator-team-list li {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .configurator-table-wrap {
+    -webkit-overflow-scrolling: touch;
+  }
+  .configurator-mini-table th,
+  .configurator-mini-table td {
+    padding: 8px;
+  }
+
+  .configurator-section a,
+  .configurator-invite-link {
+    word-break: break-all;
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 480px) {
+  .configurator-bar {
+    padding: 8px 10px;
+  }
+  .configurator-dock {
+    bottom: calc(80px + env(safe-area-inset-bottom));
+    max-height: min(54vh, 460px);
+  }
+  .configurator-dock.is-collapsed {
+    bottom: calc(80px + env(safe-area-inset-bottom));
+  }
+  .configurator-sign-row {
     grid-template-columns: 1fr;
+  }
+  .configurator-kpi {
+    padding: 8px;
+  }
+  .configurator-kpi strong {
+    font-size: 14px;
+  }
+  .configurator-status-chip {
+    font-size: 10px;
+    padding: 3px 8px;
+  }
+
+  .design-start {
+    place-items: start center;
+    padding: max(12px, env(safe-area-inset-top)) 14px max(20px, env(safe-area-inset-bottom));
+  }
+  .design-start-panel {
+    width: 100%;
+    gap: 12px;
+  }
+  .design-start h1 {
+    font-size: clamp(24px, 7vw, 32px);
+  }
+  .design-start-choice {
+    padding: 14px;
+    gap: 12px;
+    min-height: 68px;
+  }
+  .design-start-choice strong {
+    font-size: 15px;
+  }
+  .design-start-choice span {
+    font-size: 12px;
+  }
+  .design-start-gallery {
+    max-height: min(48vh, 420px);
+  }
+  .design-start-gallery .house-plan-card {
+    grid-template-columns: 76px minmax(0, 1fr);
+    padding: 8px;
+  }
+  .design-start-gallery .house-plan-thumb {
+    height: 68px;
   }
 }
