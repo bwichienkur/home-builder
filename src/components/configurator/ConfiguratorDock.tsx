@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useConfiguratorStore } from '../../store/configuratorStore';
 import { ProjectSetupPanel } from './ProjectSetupPanel';
 import { PlanVerificationPanel } from './PlanVerificationPanel';
@@ -8,12 +8,34 @@ import { RoomSelectionNav } from './RoomSelectionNav';
 
 type DockTab = 'setup' | 'verify' | 'survey' | 'signoff';
 
+function useIsNarrow(maxWidth = 900) {
+  const [narrow, setNarrow] = useState(() =>
+    typeof window !== 'undefined' ? window.matchMedia(`(max-width: ${maxWidth}px)`).matches : false,
+  );
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${maxWidth}px)`);
+    const onChange = () => setNarrow(mq.matches);
+    onChange();
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, [maxWidth]);
+  return narrow;
+}
+
 export function ConfiguratorDock() {
   const role = useConfiguratorStore((s) => s.role);
   const project = useConfiguratorStore((s) => s.project);
   const shareToken = useConfiguratorStore((s) => s.shareToken);
-  const [open, setOpen] = useState(true);
+  const isNarrow = useIsNarrow();
+  // Mobile starts collapsed so the plan/canvas stays visible.
+  const [open, setOpen] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth > 900 : true,
+  );
   const [tab, setTab] = useState<DockTab>(role === 'client' ? 'survey' : role === 'admin' ? 'setup' : 'verify');
+
+  useEffect(() => {
+    if (!isNarrow) setOpen(true);
+  }, [isNarrow]);
 
   const tabs = useMemo(() => {
     const clientLocked = role === 'client' || !!shareToken;
@@ -39,7 +61,7 @@ export function ConfiguratorDock() {
       <aside className={`configurator-dock ${open ? 'is-open' : 'is-collapsed'}`} aria-label="Configurator workflow">
         <div className="configurator-dock-chrome">
           <button type="button" className="configurator-dock-toggle" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
-            {open ? 'Hide workflow' : 'Show workflow'}
+            {open ? 'Hide workflow' : 'Workflow'}
           </button>
           {open && (
             <div className="configurator-dock-tabs" role="tablist" aria-label="Workflow sections">
