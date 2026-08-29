@@ -16,9 +16,12 @@ if (!url) {
   process.exit(1);
 }
 
-const files = readdirSync(dbDir)
-  .filter((f) => /^\d{3}_.+\.sql$/.test(f) && f !== '001_schema.sql')
-  .sort();
+const files = [
+  'schema.sql',
+  ...readdirSync(dbDir)
+    .filter((f) => /^\d{3}_.+\.sql$/.test(f) && f !== '001_schema.sql')
+    .sort(),
+];
 
 const client = new pg.Client({ connectionString: url, ssl: url.includes('neon') ? { rejectUnauthorized: false } : undefined });
 await client.connect();
@@ -30,18 +33,19 @@ try {
     );
   `);
   for (const file of files) {
-    const already = await client.query('SELECT 1 FROM schema_migrations WHERE id = $1', [file]);
+    const migrationId = file === 'schema.sql' ? '001_schema.sql' : file;
+    const already = await client.query('SELECT 1 FROM schema_migrations WHERE id = $1', [migrationId]);
     if (already.rowCount) {
-      console.log(JSON.stringify({ skip: file }));
+      console.log(JSON.stringify({ skip: migrationId }));
       continue;
     }
     const sql = readFileSync(join(dbDir, file), 'utf8');
     await client.query('BEGIN');
     try {
       await client.query(sql);
-      await client.query('INSERT INTO schema_migrations (id) VALUES ($1)', [file]);
+      await client.query('INSERT INTO schema_migrations (id) VALUES ($1)', [migrationId]);
       await client.query('COMMIT');
-      console.log(JSON.stringify({ applied: file }));
+      console.log(JSON.stringify({ applied: migrationId }));
     } catch (err) {
       await client.query('ROLLBACK');
       throw err;

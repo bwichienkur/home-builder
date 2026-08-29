@@ -98,7 +98,6 @@ const items = [...seed, ...stubs].map(mapSeedItem).filter(Boolean);
 const byKey = new Map();
 for (const item of items) byKey.set(`${item.vendorId}|${item.sku}`, item);
 const unique = [...byKey.values()];
-
 const vendorIds = [...new Set(unique.map((i) => i.vendorId))];
 
 const client = new pg.Client({
@@ -109,7 +108,6 @@ await client.connect();
 
 let created = 0;
 let updated = 0;
-const vendorIds = [...new Set(unique.map((i) => i.vendorId))];
 
 try {
   await client.query('BEGIN');
