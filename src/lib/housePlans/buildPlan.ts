@@ -1,6 +1,7 @@
 import type { Opening, Point, RoomType, SceneSnapshot, Wall } from '../../types';
 import { WORLD_ORIGIN } from '../geometry/placement';
 import { PIXELS_PER_METER } from '../geometry/snapping';
+import { buildFloorFromCadWalls } from './dxfCadBuild';
 
 export type PlanPointFt = { x: number; y: number };
 
@@ -49,6 +50,8 @@ export type HousePlanFloor = {
   id: string;
   name: string;
   rooms: PlanRoomRect[];
+  /** CAD wall centerlines (feet, local origin). When set, walls render from these — not room box edges. */
+  wallSegmentsFt?: { x1: number; y1: number; x2: number; y2: number; layer?: string; exterior?: boolean }[];
 };
 
 export type HousePlan = {
@@ -336,8 +339,12 @@ export function buildFloorFromRooms(floor: HousePlanFloor, opts?: BuildFloorOpti
 }
 
 export function buildHouse(plan: HousePlan): BuiltHouse {
-  const openings = plan.id.startsWith('dxf-') ? 'shared-only' : 'catalog';
-  const floors = plan.floors.map((f) => buildFloorFromRooms(f, { openings }));
+  const legacyOpenings = plan.id.startsWith('dxf-') ? 'shared-only' : 'catalog';
+  const floors = plan.floors.map((f) =>
+    f.wallSegmentsFt?.length
+      ? buildFloorFromCadWalls(f, { wallSegmentsFt: f.wallSegmentsFt })
+      : buildFloorFromRooms(f, { openings: legacyOpenings }),
+  );
   return {
     planId: plan.id,
     planName: plan.name,

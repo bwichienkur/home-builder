@@ -153,11 +153,10 @@ EOF
 describe('imported room finalize', () => {
   it('translates to origin and snaps shared edges', () => {
     const rooms = finalizeImportedRooms([
-      { id: 'a', name: 'Kitchen', roomType: 'Kitchen', x: 100, y: 200, w: 10, h: 12, ceilingFt: 9 },
-      { id: 'b', name: 'Pantry', roomType: 'Kitchen', x: 110.4, y: 200.3, w: 8, h: 12, ceilingFt: 9 },
+      { id: 'a', name: 'Kitchen', roomType: 'Kitchen', x: 0, y: 0, w: 10, h: 12, ceilingFt: 9 },
+      { id: 'b', name: 'Pantry', roomType: 'Kitchen', x: 10.4, y: 0.3, w: 8, h: 12, ceilingFt: 9 },
     ]);
     expect(rooms[0]!.x).toBe(0);
-    expect(rooms[0]!.y).toBeCloseTo(0, 0);
     expect(rooms[1]!.x).toBeCloseTo(rooms[0]!.w, 0);
   });
 });

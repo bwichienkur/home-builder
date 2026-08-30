@@ -8,7 +8,9 @@ import {
   readInsUnits,
   segmentsToRoomsAccurate,
   segmentsToOrthogonalRoomsLegacy,
+  wallCenterlinesFromSegments,
 } from './dxfRooms';
+import { translateRoomsAndWalls } from './dxfCadBuild';
 
 export type DxfImportResult = {
   plan: HousePlan;
@@ -98,29 +100,27 @@ function bridgeGarageToHouse(rooms: PlanRoomRect[]): PlanRoomRect[] {
   return rooms;
 }
 
-/** Translate to origin, snap shared edges, and grid-align imported room boxes. */
+/** Snap shared edges and grid-align imported room boxes (expects local origin). */
 export function finalizeImportedRooms(rooms: PlanRoomRect[]): PlanRoomRect[] {
   if (!rooms.length) return rooms;
-  const minX = Math.min(...rooms.map((r) => r.x));
-  const minY = Math.min(...rooms.map((r) => r.y));
-  let out = rooms.map((r) => ({
-    ...r,
-    x: r.x - minX,
-    y: r.y - minY,
-  }));
-  out = bridgeGarageToHouse(out);
+  let out = bridgeGarageToHouse([...rooms]);
   out = snapRoomEdges(out);
   out = out.map((r) => {
     const x = roundGrid(r.x);
     const y = roundGrid(r.y);
     const x2 = roundGrid(r.x + r.w);
     const y2 = roundGrid(r.y + r.h);
+    const pointsFt = r.pointsFt?.map((p) => ({
+      x: roundGrid(p.x),
+      y: roundGrid(p.y),
+    }));
     return {
       ...r,
       x,
       y,
       w: Math.max(MIN_ROOM_FT, x2 - x),
       h: Math.max(MIN_ROOM_FT, y2 - y),
+      pointsFt,
     };
   });
   return out;
@@ -159,11 +159,17 @@ export function importDxfHousePlan(
   const accurate = segmentsToRoomsAccurate(segments, { labels, insUnits });
   warnings.push(...accurate.warnings);
 
-  let rooms = finalizeImportedRooms(accurate.rooms);
+  const wallLines = wallCenterlinesFromSegments(accurate.scaledSegments);
+  const normalized = translateRoomsAndWalls(accurate.rooms, wallLines);
+  let rooms = finalizeImportedRooms(normalized.rooms);
+  let wallSegmentsFt = normalized.walls;
+
   if (rooms.length <= 1 && segments.length > 20) {
     const legacy = segmentsToOrthogonalRoomsLegacy(accurate.scaledSegments);
     if (legacy.rooms.length > rooms.length) {
-      rooms = finalizeImportedRooms(legacy.rooms);
+      const legacyNorm = translateRoomsAndWalls(legacy.rooms, wallLines);
+      rooms = finalizeImportedRooms(legacyNorm.rooms);
+      wallSegmentsFt = legacyNorm.walls;
       warnings.push('Used rectangular cell detection (more rooms than flood-fill).');
       warnings.push(...legacy.warnings);
     }
@@ -175,9 +181,10 @@ export function importDxfHousePlan(
   const minY = Math.min(...rooms.map((r) => r.y), 0);
   const living = rooms.reduce((s, r) => s + r.w * r.h, 0);
   const spanArea = Math.max(maxX - minX, 0) * Math.max(maxY - minY, 0);
-  // If rooms are scattered (viewport leftovers), prefer living area over absurd bbox.
   const underRoof = spanArea > living * 2.5 ? living * 1.12 : spanArea;
-  warnings.push('Normalized room coordinates to local origin and snapped shared edges.');
+  warnings.push(
+    `CAD build: ${wallSegmentsFt.length} wall centerline(s), ${rooms.filter((r) => r.pointsFt?.length).length} polygon room(s).`,
+  );
   const plan: HousePlan = {
     id: `dxf-${crypto.randomUUID().slice(0, 8)}`,
     name,
@@ -187,8 +194,15 @@ export function importDxfHousePlan(
     livingSqFt: Math.round(living),
     totalUnderRoofSqFt: Math.round(underRoof),
     sourceUrl: '',
-    note: 'Imported from DXF. Sealed-envelope rooms — review names/sizes in Plan verification.',
-    floors: [{ id: `dxf-floor-1`, name: 'First story', rooms }],
+    note: 'Imported from DXF (CAD walls + labeled floor regions). Review in Plan verification.',
+    floors: [
+      {
+        id: `dxf-floor-1`,
+        name: 'First story',
+        rooms,
+        wallSegmentsFt,
+      },
+    ],
   };
   return { plan, warnings, lineCount: segments.length };
 }
