@@ -4,6 +4,7 @@ import {
   clusterValues,
   isNearOrtho,
   roomsFromFloodFill,
+  roomsFromOutdoorLabels,
   scaleSegmentsToFeet,
   segmentsToRoomsAccurate,
 } from './dxfRooms';
@@ -87,20 +88,49 @@ describe('dxf room accuracy helpers', () => {
     expect((kitchen?.w ?? 0) * (kitchen?.h ?? 0)).toBeGreaterThan(150);
   });
 
-  it('uses soft/dashed partitions to separate open-plan rooms', () => {
+  it('uses soft/dashed wall partitions to separate open-plan rooms', () => {
     const walls = [
       { x1: 0, y1: 0, x2: 40, y2: 0 },
       { x1: 40, y1: 0, x2: 40, y2: 24 },
       { x1: 40, y1: 24, x2: 0, y2: 24 },
       { x1: 0, y1: 24, x2: 0, y2: 0 },
     ];
-    const soft = [{ x1: 20, y1: 1, x2: 20, y2: 23, linetype: 'DASHED', layer: 'CEILING' }];
-    const { rooms, warnings } = roomsFromFloodFill(walls, [
-      { x: 10, y: 12, text: 'KITCHEN' },
-      { x: 30, y: 12, text: 'GREAT ROOM' },
-    ], { softPartitions: soft });
+    const soft = [{ x1: 20, y1: 1, x2: 20, y2: 23, linetype: 'DASHED', layer: 'WALLS INT' }];
+    const { rooms, warnings } = roomsFromFloodFill(
+      walls,
+      [
+        { x: 10, y: 12, text: 'KITCHEN' },
+        { x: 30, y: 12, text: 'GREAT ROOM' },
+      ],
+      { softPartitions: soft },
+    );
     expect(warnings.some((w) => /soft space-boundary/i.test(w))).toBe(true);
     expect(rooms.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('fills residual interior so open plates are not left blank', () => {
+    const segs = [
+      { x1: 0, y1: 0, x2: 40, y2: 0 },
+      { x1: 40, y1: 0, x2: 40, y2: 24 },
+      { x1: 40, y1: 24, x2: 0, y2: 24 },
+      { x1: 0, y1: 24, x2: 0, y2: 0 },
+    ];
+    // Only label one side — residual fill should claim the rest.
+    const { rooms } = roomsFromFloodFill(segs, [{ x: 10, y: 12, text: 'KITCHEN' }]);
+    const covered = rooms.reduce((s, r) => s + r.w * r.h, 0);
+    // ~960 sq ft plate — expect most of it filled after residual pass.
+    expect(covered).toBeGreaterThan(500);
+  });
+
+  it('creates outdoor lanai from labels outside the sealed envelope', () => {
+    const outdoor = roomsFromOutdoorLabels(
+      [{ x: 50, y: -5, text: 'LANAI' }],
+      [],
+      { minX: 0, minY: -10, maxX: 80, maxY: 40 },
+    );
+    expect(outdoor.length).toBe(1);
+    expect(outdoor[0]!.roomType).toBe('Outdoor');
+    expect(/LANAI/i.test(outdoor[0]!.name)).toBe(true);
   });
 
   it('imports a closed rectangle DXF into at least one room with sane size', () => {

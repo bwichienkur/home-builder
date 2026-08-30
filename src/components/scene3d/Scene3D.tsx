@@ -29,6 +29,7 @@ import { FurnitureVisual } from './CatalogModel';
 import { FloorFillPieces } from './FloorFillPieces';
 import { PlanEditLayer } from './PlanEditLayer';
 import { CadPlanOverlay } from './CadPlanOverlay';
+import { PlanRoomDashedOutlines } from './PlanRoomDashedOutlines';
 import type { ReactElement } from 'react';
 import type { PlanRoomLabel, Wall } from '../../types';
 
@@ -2336,6 +2337,7 @@ function Room() {
   return (
     <Bvh enabled={cameraMode !== 'top'}>
       <CadPlanOverlay />
+      <PlanRoomDashedOutlines />
       {roomEntries.length ? (
         roomEntries.map(({ points, label }, i) => {
           const selected = !!label && label.id === selectedRoomId;

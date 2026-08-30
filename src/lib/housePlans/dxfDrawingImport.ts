@@ -71,11 +71,12 @@ export function isPlanOverlayLayer(layer: string): boolean {
   return isRoomWallLayer(layer) || isOpeningLayer(layer) || isSheetWallLayer(layer);
 }
 
-export function planVectorRole(layer: string): 'wall' | 'opening' | 'fixture' | 'other' {
+export function planVectorRole(layer: string): 'wall' | 'opening' | 'fixture' | 'soft' | 'other' {
   if (isOpeningLayer(layer)) return 'opening';
   if (isRoomWallLayer(layer)) return 'wall';
   const u = layer.trim().toUpperCase();
   if (/FIXTURE|COUNTER|CABINET|APPLIANCE|SINK|TOILET|RANGE|STOVE|OVEN/.test(u)) return 'fixture';
+  if (/CEILING|VOLUME|SPACE.?BOUND|ROOM.?BOUND|OPEN.?PLAN/.test(u)) return 'soft';
   return 'other';
 }
 
@@ -631,11 +632,22 @@ export function importDxfDrawingPackage(
   let roomSegs = segs.filter((s) => isRoomWallLayer(s.layer));
   let openingSegs = segs.filter((s) => isOpeningLayer(s.layer));
   let overlaySegs = segs.filter((s) => isPlanOverlayLayer(s.layer));
-  let softSegs = segs.filter(
-    (s) =>
-      isSoftSpaceLayer(s.layer) ||
-      (/DASH|HIDDEN|PHANTOM|DOT/i.test(s.linetype ?? '') && (isRoomWallLayer(s.layer) || isSoftSpaceLayer(s.layer))),
-  );
+  let softSegs = segs.filter((s) => {
+    const lt = (s.linetype ?? '').toUpperCase();
+    const layer = s.layer.toUpperCase();
+    if (/SPACE.?BOUND|ROOM.?BOUND|OPEN.?PLAN|VOLUME.?LINE/.test(layer)) return true;
+    if (/DASH|HIDDEN|PHANTOM|DOT/.test(lt) && /\bWALL/.test(layer)) return true;
+    return false;
+  });
+  // Broader soft linework for dotted overlay (ceiling breaks, etc.) — not used for flood paint.
+  let softOverlaySegs = segs.filter((s) => {
+    const lt = (s.linetype ?? '').toUpperCase();
+    const layer = s.layer.toUpperCase();
+    if (softSegs.includes(s)) return true;
+    if (/DASH|HIDDEN|PHANTOM|DOT|CENTER/.test(lt)) return true;
+    if (/CEILING|VOLUME/.test(layer)) return true;
+    return false;
+  });
   let roomLabels = labels.map((l) => ({ x: l.x, y: l.y, text: l.text, layer: l.layer }));
   const cropWarnings: string[] = [];
   if (floorVp) {
@@ -645,6 +657,7 @@ export function importDxfDrawingPackage(
       openingSegs = cropSegmentsToViewport(openingSegs, floorVp, 0.12);
       overlaySegs = cropSegmentsToViewport(overlaySegs, floorVp, 0.12);
       softSegs = cropSegmentsToViewport(softSegs, floorVp, 0.12);
+      softOverlaySegs = cropSegmentsToViewport(softOverlaySegs, floorVp, 0.12);
       roomLabels = cropSegmentsToViewport(
         roomLabels.map((l) => ({ ...l, x1: l.x, y1: l.y, x2: l.x, y2: l.y })),
         floorVp,
@@ -666,7 +679,7 @@ export function importDxfDrawingPackage(
           segments: roomSegs,
           labels: roomLabels,
           openingSegments: openingSegs,
-          planVectors: overlaySegs,
+          planVectors: [...overlaySegs, ...softOverlaySegs],
           softPartitions: softSegs,
         })
       : importDxfHousePlan(
@@ -674,7 +687,12 @@ export function importDxfDrawingPackage(
             ? wallDxf
             : filterDxfToLayers(dxfText, WALL_LAYERS, { fuzzyRoomWalls: true }),
           planName ?? sourceFileName.replace(/\.(dwg|dxf)$/i, ''),
-          { labels: roomLabels, openingSegments: openingSegs, planVectors: overlaySegs, softPartitions: softSegs },
+          {
+            labels: roomLabels,
+            openingSegments: openingSegs,
+            planVectors: [...overlaySegs, ...softOverlaySegs],
+            softPartitions: softSegs,
+          },
         );
 
   const { sheets, warnings: sheetWarnings } = buildSheetsFromDxf(dxfText, segs, labels);

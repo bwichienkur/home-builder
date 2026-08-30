@@ -4,19 +4,19 @@ import { usePlannerStore } from '../../store/plannerStore';
 
 const FT_TO_M = 0.3048;
 
-type Role = 'wall' | 'opening' | 'fixture' | 'other';
+type Role = 'wall' | 'opening' | 'fixture' | 'soft' | 'other';
 
-const ROLE_STYLE: Record<Role, { color: string; opacity: number }> = {
+const ROLE_STYLE: Record<Role, { color: string; opacity: number; dashed?: boolean }> = {
   wall: { color: '#1e293b', opacity: 0.55 },
   opening: { color: '#b45309', opacity: 0.72 },
   fixture: { color: '#0f766e', opacity: 0.8 },
+  soft: { color: '#334155', opacity: 0.65, dashed: true },
   other: { color: '#64748b', opacity: 0.28 },
 };
 
 /**
  * Plan-first CAD underlay: exact DXF linework in top/plan view, registered to the
- * same plate center as CAD walls. Non-interactive — rooms/walls remain editable above.
- * 3D continues to extrude from the plan wall/room model.
+ * same plate center as CAD walls. Soft/dashed edges render dotted like the DWG.
  */
 export function CadPlanOverlay() {
   const cameraMode = usePlannerStore((s) => s.cameraMode);
@@ -30,17 +30,20 @@ export function CadPlanOverlay() {
 
   const geometries = useMemo(() => {
     if (!vectors?.length || !center) return null;
-    const buckets: Record<Role, number[]> = { wall: [], opening: [], fixture: [], other: [] };
+    const buckets: Record<Role, number[]> = {
+      wall: [],
+      opening: [],
+      fixture: [],
+      soft: [],
+      other: [],
+    };
     for (const s of vectors) {
       const role: Role = s.role ?? 'other';
-      // Same transform as buildFloorFromCadWalls → Scene3D world():
-      // plan px = WORLD_ORIGIN + (ft - center) * FT_TO_M * PPM
-      // world m = (plan px - WORLD_ORIGIN) / PPM = (ft - center) * FT_TO_M
       const x1 = (s.x1 - center.cx) * FT_TO_M;
       const z1 = (s.y1 - center.cy) * FT_TO_M;
       const x2 = (s.x2 - center.cx) * FT_TO_M;
       const z2 = (s.y2 - center.cy) * FT_TO_M;
-      const y = -0.048; // below floor plate
+      const y = -0.048;
       buckets[role].push(x1, y, z1, x2, y, z2);
     }
     const out: Partial<Record<Role, THREE.BufferGeometry>> = {};
@@ -70,13 +73,31 @@ export function CadPlanOverlay() {
         if (!geo) return null;
         const style = ROLE_STYLE[role];
         return (
-          <lineSegments key={role} geometry={geo} raycast={() => null}>
-            <lineBasicMaterial
-              color={style.color}
-              transparent
-              opacity={style.opacity}
-              depthWrite={false}
-            />
+          <lineSegments
+            key={role}
+            geometry={geo}
+            raycast={() => null}
+            onUpdate={(self) => {
+              if (style.dashed) self.computeLineDistances();
+            }}
+          >
+            {style.dashed ? (
+              <lineDashedMaterial
+                color={style.color}
+                transparent
+                opacity={style.opacity}
+                depthWrite={false}
+                dashSize={0.12}
+                gapSize={0.1}
+              />
+            ) : (
+              <lineBasicMaterial
+                color={style.color}
+                transparent
+                opacity={style.opacity}
+                depthWrite={false}
+              />
+            )}
           </lineSegments>
         );
       })}

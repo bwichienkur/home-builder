@@ -21,11 +21,12 @@ function openingKindFromLayer(layer: string): 'door' | 'window' {
   return 'door';
 }
 
-function planVectorRole(layer: string): 'wall' | 'opening' | 'fixture' | 'other' {
+function planVectorRole(layer: string): 'wall' | 'opening' | 'fixture' | 'soft' | 'other' {
   const u = layer.trim().toUpperCase();
   if (/DOOR|WINDOW|GLAZ|OPENING|A-GLAZ|A-DOOR|A-WIND/.test(u)) return 'opening';
   if (/\bWALLS?\b|A-WALL|WALL-/.test(u)) return 'wall';
   if (/FIXTURE|COUNTER|CABINET|APPLIANCE|SINK|TOILET|RANGE|STOVE|OVEN/.test(u)) return 'fixture';
+  if (/CEILING|VOLUME|SPACE.?BOUND|ROOM.?BOUND|OPEN.?PLAN/.test(u)) return 'soft';
   return 'other';
 }
 
@@ -241,17 +242,30 @@ export function importDxfHousePlan(
   const planScaled = rawPlanVectors.length
     ? scaleSegmentsToFeet(rawPlanVectors, insUnits).segments
     : [];
+  const classifyPlanVector = (s: (typeof planScaled)[number], ox: number, oy: number) => {
+    const base = planVectorRole(s.layer ?? '');
+    const lt = (s.linetype ?? '').toUpperCase();
+    // Dashed/hidden space boundaries stay dotted even on wall layers (DWG room ticks).
+    const role: 'wall' | 'opening' | 'fixture' | 'soft' | 'other' =
+      base === 'opening' || base === 'fixture'
+        ? base
+        : base === 'soft' || /DASH|HIDDEN|PHANTOM|DOT|CENTER/.test(lt)
+          ? 'soft'
+          : base;
+    return {
+      x1: s.x1 - ox,
+      y1: s.y1 - oy,
+      x2: s.x2 - ox,
+      y2: s.y2 - oy,
+      layer: s.layer,
+      role,
+    };
+  };
+
   let cadPlanVectorsFt = planScaled
     .filter((s) => Math.hypot(s.x2 - s.x1, s.y2 - s.y1) > 0.05)
     .slice(0, MAX_CAD_PLAN_VECTORS)
-    .map((s) => ({
-      x1: s.x1 - origin.x,
-      y1: s.y1 - origin.y,
-      x2: s.x2 - origin.x,
-      y2: s.y2 - origin.y,
-      layer: s.layer,
-      role: planVectorRole(s.layer ?? ''),
-    }));
+    .map((s) => classifyPlanVector(s, origin.x, origin.y));
 
   if (rooms.length <= 1 && segments.length > 20) {
     const legacy = segmentsToOrthogonalRoomsLegacy(accurate.scaledSegments);
@@ -263,14 +277,7 @@ export function importDxfHousePlan(
       cadPlanVectorsFt = planScaled
         .filter((s) => Math.hypot(s.x2 - s.x1, s.y2 - s.y1) > 0.05)
         .slice(0, MAX_CAD_PLAN_VECTORS)
-        .map((s) => ({
-          x1: s.x1 - legacyNorm.origin.x,
-          y1: s.y1 - legacyNorm.origin.y,
-          x2: s.x2 - legacyNorm.origin.x,
-          y2: s.y2 - legacyNorm.origin.y,
-          layer: s.layer,
-          role: planVectorRole(s.layer ?? ''),
-        }));
+        .map((s) => classifyPlanVector(s, legacyNorm.origin.x, legacyNorm.origin.y));
       warnings.push('Used rectangular cell detection (more rooms than flood-fill).');
       warnings.push(...legacy.warnings);
     }
