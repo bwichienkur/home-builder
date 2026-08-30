@@ -324,76 +324,36 @@ function labelForRoom(
   return best.text || fallback;
 }
 
-/**
- * Split an open-plan flood region that contains multiple room labels into
- * non-overlapping axis-aligned rectangles via recursive kd-style cuts.
- */
-function roomsFromLabelSlices(
+/** Axis-aligned Voronoi boxes for open-plan regions with multiple room labels. */
+function roomsFromLabelVoronoi(
   x: number,
   y: number,
   w: number,
   h: number,
   labels: RoomLabel[],
-  startN: number,
 ): PlanRoomRect[] {
   if (labels.length < 2) return [];
-
-  const splitGroup = (rx: number, ry: number, rw: number, rh: number, group: RoomLabel[]): PlanRoomRect[] => {
-    if (!group.length) return [];
-    if (group.length === 1 || rw < MIN_ROOM_FT * 1.5 || rh < MIN_ROOM_FT * 1.5) {
-      const label = group[0]!;
-      if (rw < MIN_ROOM_FT || rh < MIN_ROOM_FT || rw * rh < MIN_ROOM_AREA) return [];
-      return [room(label.text, guessRoomType(label.text), rx, ry, rw, rh, 9)];
+  const out: PlanRoomRect[] = [];
+  for (const label of labels) {
+    let x0 = x;
+    let y0 = y;
+    let x1 = x + w;
+    let y1 = y + h;
+    for (const other of labels) {
+      if (other === label) continue;
+      const mx = (label.x + other.x) / 2;
+      const my = (label.y + other.y) / 2;
+      if (other.x < label.x) x0 = Math.max(x0, mx);
+      else if (other.x > label.x) x1 = Math.min(x1, mx);
+      if (other.y < label.y) y0 = Math.max(y0, my);
+      else if (other.y > label.y) y1 = Math.min(y1, my);
     }
-    const xs = group.map((l) => l.x);
-    const ys = group.map((l) => l.y);
-    const mean = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
-    const variance = (arr: number[]) => {
-      const m = mean(arr);
-      return arr.reduce((s, v) => s + (v - m) ** 2, 0) / arr.length;
-    };
-    const splitVertical = variance(xs) >= variance(ys);
-    const sorted = [...group].sort((a, b) => (splitVertical ? a.x - b.x : a.y - b.y));
-    const mid = Math.floor(sorted.length / 2);
-    // Keep at least one label on each side.
-    const cutIdx = Math.min(Math.max(mid, 1), sorted.length - 1);
-    const a = sorted[cutIdx - 1]!;
-    const b = sorted[cutIdx]!;
-    const cut = splitVertical ? (a.x + b.x) / 2 : (a.y + b.y) / 2;
-    const left: RoomLabel[] = [];
-    const right: RoomLabel[] = [];
-    for (const l of group) {
-      const v = splitVertical ? l.x : l.y;
-      (v < cut ? left : right).push(l);
-    }
-    if (!left.length || !right.length) {
-      // Degenerate — fall back to equal strip split.
-      const half = Math.ceil(sorted.length / 2);
-      left.length = 0;
-      right.length = 0;
-      left.push(...sorted.slice(0, half));
-      right.push(...sorted.slice(half));
-    }
-    if (!left.length || !right.length) {
-      const label = group[0]!;
-      return [room(label.text, guessRoomType(label.text), rx, ry, rw, rh, 9)];
-    }
-    if (splitVertical) {
-      const rwL = Math.max(MIN_ROOM_FT, cut - rx);
-      const rwR = Math.max(MIN_ROOM_FT, rx + rw - cut);
-      return [...splitGroup(rx, ry, rwL, rh, left), ...splitGroup(cut, ry, rwR, rh, right)];
-    }
-    const rhB = Math.max(MIN_ROOM_FT, cut - ry);
-    const rhT = Math.max(MIN_ROOM_FT, ry + rh - cut);
-    return [...splitGroup(rx, ry, rw, rhB, left), ...splitGroup(rx, cut, rw, rhT, right)];
-  };
-
-  const out = splitGroup(x, y, w, h, labels);
-  // Re-number is unnecessary; callers only need count. Ensure ≥2 kept.
-  if (out.length < 2) return [];
-  // Stomp sequential fallback ids if any slipped through — names come from labels.
-  void startN;
-  return out;
+    const rw = x1 - x0;
+    const rh = y1 - y0;
+    if (rw < MIN_ROOM_FT || rh < MIN_ROOM_FT || rw * rh < MIN_ROOM_AREA) continue;
+    out.push(room(label.text, guessRoomType(label.text), x0, y0, rw, rh, 9));
+  }
+  return out.length >= 2 ? out : [];
 }
 
 /** Raster flood-fill room extraction with adaptive envelope sealing. */
@@ -567,7 +527,7 @@ export function roomsFromFloodFill(
     warnings.push('Envelope seal weak — exterior may leak through large openings.');
   }
 
-  // Partition walls: seal typical interior door gaps (~3 ft) so rooms stay separate.
+  // Partition walls: seal typical interior door gaps (~2 ft) so rooms stay separate.
   const partitionSealed = morphClose(baseWalls, Math.max(1, Math.round(2 / res)));
 
   const seen = new Uint8Array(cols * rows);
@@ -621,11 +581,9 @@ export function roomsFromFloodFill(
       const x = minX + minC * res;
       const y = minY + minR * res;
 
-      // Open-plan spaces often lack full walls between Kitchen / Great Room / Nook.
-      // When several room labels sit in one flood region, slice into non-overlapping strips.
       const insideLabels = labelsInsideRoom(labels, x, y, wFt, hFt);
       if (insideLabels.length >= 2 && areaFt >= 280) {
-        const split = roomsFromLabelSlices(x, y, wFt, hFt, insideLabels, n);
+        const split = roomsFromLabelVoronoi(x, y, wFt, hFt, insideLabels);
         if (split.length >= 2) {
           rooms.push(...split);
           n += split.length;

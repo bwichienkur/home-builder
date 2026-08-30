@@ -336,7 +336,8 @@ export function buildFloorFromRooms(floor: HousePlanFloor, opts?: BuildFloorOpti
 }
 
 export function buildHouse(plan: HousePlan): BuiltHouse {
-  const floors = plan.floors.map((f) => buildFloorFromRooms(f));
+  const openings = plan.id.startsWith('dxf-') ? 'shared-only' : 'catalog';
+  const floors = plan.floors.map((f) => buildFloorFromRooms(f, { openings }));
   return {
     planId: plan.id,
     planName: plan.name,

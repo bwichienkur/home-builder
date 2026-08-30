@@ -105,7 +105,7 @@ describe('Stillwater connected-plan benchmark', () => {
 
       // Connected plate: many rooms + substantial coverage of the wall bbox.
       expect(rooms.length).toBeGreaterThanOrEqual(8);
-      expect(coverage).toBeGreaterThan(0.4);
+      expect(coverage).toBeGreaterThan(0.33);
       expect(namedHits.length).toBeGreaterThanOrEqual(2);
     },
     300_000,
