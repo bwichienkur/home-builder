@@ -109,9 +109,10 @@ export type ExtendedSelectionProject = SelectionProject & {
   workflowStatus: ProjectWorkflowStatus;
   planVerification: PlanVerificationStatus;
   housePlanId?: string;
-  /** Full HousePlan when imported from DWG/DXF (housePlanId usually `custom`). */
+  /** Full HousePlan when imported from DWG/DXF (housePlanId usually `custom`).
+   * Not written to localStorage — rehydrated from IndexedDB via drawingPackageId. */
   importedHousePlan?: HousePlan;
-  /** Sheet reference pack (SVG/PDF). Large SVG bodies live in IndexedDB via drawingPackageId. */
+  /** Sheet reference pack (SVG/PDF). Large SVG/PDF bodies live in IndexedDB via drawingPackageId. */
   drawingPackage?: DrawingPackage;
   drawingPackageId?: string;
   team: TeamMember[];

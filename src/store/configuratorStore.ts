@@ -135,6 +135,81 @@ function slimDrawingPackageForPersist(pkg: DrawingPackage | undefined): DrawingP
   };
 }
 
+/**
+ * localStorage has a ~5 MB origin quota. Full DXF imports embed wallSegmentsFt +
+ * polygon rooms that blow past it. Large plan/PDF/SVG bodies already live in
+ * IndexedDB via drawingPackageId — omit them from the sync key.
+ */
+export function slimProjectForLocalPersist(project: ExtendedSelectionProject): ExtendedSelectionProject {
+  const { importedHousePlan: _plan, ...rest } = project;
+  return {
+    ...rest,
+    drawingPackage: slimDrawingPackageForPersist(project.drawingPackage),
+  };
+}
+
+function isQuotaExceededError(err: unknown): boolean {
+  if (!err || typeof err !== 'object') return false;
+  const e = err as DOMException;
+  return e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014;
+}
+
+function writeLocalStorageJson(key: string, value: unknown) {
+  localStorage.setItem(key, JSON.stringify(value));
+}
+
+/** Persist configurator shell state without large CAD payloads. */
+export function persistConfiguratorLocal(
+  state: Pick<
+    ConfiguratorState,
+    'role' | 'project' | 'contract' | 'remoteId' | 'activeRoomFilter' | 'shareToken' | 'lastInviteUrl'
+  >,
+) {
+  if (typeof localStorage === 'undefined') return;
+  const project = state.project ? slimProjectForLocalPersist(state.project) : null;
+  const payload = { ...state, project };
+  try {
+    writeLocalStorageJson(STORAGE, payload);
+  } catch (err) {
+    if (!isQuotaExceededError(err)) throw err;
+    // Last resort: drop drawingPackage meta + takeoff lines; keep ids for IDB rehydrate.
+    const emergency = project
+      ? {
+          ...payload,
+          project: {
+            ...project,
+            drawingPackage: project.drawingPackage
+              ? {
+                  id: project.drawingPackage.id,
+                  sourceFileName: project.drawingPackage.sourceFileName,
+                  importedAt: project.drawingPackage.importedAt,
+                  warnings: [],
+                  sheets: [],
+                  pdfFileName: project.drawingPackage.pdfFileName,
+                  pdfUrl: project.drawingPackage.pdfUrl?.startsWith('blob:')
+                    ? undefined
+                    : project.drawingPackage.pdfUrl,
+                  sheetSource: project.drawingPackage.sheetSource,
+                }
+              : undefined,
+            takeoff: project.takeoff
+              ? { ...project.takeoff, lines: [] as typeof project.takeoff.lines }
+              : undefined,
+          },
+        }
+      : payload;
+    try {
+      writeLocalStorageJson(STORAGE, emergency);
+    } catch (err2) {
+      if (!isQuotaExceededError(err2)) throw err2;
+      console.warn(
+        'Configurator localStorage quota exceeded — project kept in memory/IndexedDB only.',
+        err2,
+      );
+    }
+  }
+}
+
 function toExtended(project: SelectionProject | ExtendedSelectionProject): ExtendedSelectionProject {
   if ('workflowStatus' in project) return withStillwaterSheets(project);
   return withStillwaterSheets(createEmptyExtendedProject(project));
@@ -188,11 +263,7 @@ function persist(
     'role' | 'project' | 'contract' | 'remoteId' | 'activeRoomFilter' | 'shareToken' | 'lastInviteUrl'
   >,
 ) {
-  if (typeof window === 'undefined') return;
-  const project = state.project
-    ? { ...state.project, drawingPackage: slimDrawingPackageForPersist(state.project.drawingPackage) }
-    : null;
-  localStorage.setItem(STORAGE, JSON.stringify({ ...state, project }));
+  persistConfiguratorLocal(state);
 }
 
 const initial = readState();
@@ -277,6 +348,7 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
         const plan = getHousePlan(project.housePlanId);
         if (plan) usePlannerStore.getState().applyHousePlanObject(plan);
       }
+      await get().hydrateDrawingPackage();
       return true;
     } catch {
       // Local fallback shares (same browser / demo)
@@ -303,6 +375,7 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
           const plan = getHousePlan(project.housePlanId);
           if (plan) usePlannerStore.getState().applyHousePlanObject(plan);
         }
+        await get().hydrateDrawingPackage();
         return true;
       } catch {
         return false;
@@ -609,26 +682,39 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
   hydrateDrawingPackage: async () => {
     const project = get().project;
     if (!project?.drawingPackageId) return;
+    const needsPlanFromIdb =
+      !project.importedHousePlan && (project.housePlanId === 'custom' || !project.housePlanId);
     // Keep the hosted Stillwater / PDF plan-set package — do not replace with legacy SVG IDB packs.
-    if (project.drawingPackage?.sheetSource === 'pdf' && project.drawingPackage.pdfUrl) return;
-    if (project.drawingPackage?.sheetSource === 'static' && project.drawingPackage.sheets.some((s) => s.imageUrl)) {
+    if (project.drawingPackage?.sheetSource === 'pdf' && project.drawingPackage.pdfUrl && !needsPlanFromIdb) {
+      return;
+    }
+    if (
+      project.drawingPackage?.sheetSource === 'static' &&
+      project.drawingPackage.sheets.some((s) => s.imageUrl) &&
+      !needsPlanFromIdb
+    ) {
       return;
     }
     try {
       const stored = await loadDrawingPackage(project.drawingPackageId);
       if (!stored) return;
       // Prefer PDF already on the project over older IDB SVG packages.
-      if (project.drawingPackage?.pdfUrl && !stored.package.pdfUrl) return;
+      if (project.drawingPackage?.pdfUrl && !stored.package.pdfUrl && !needsPlanFromIdb) return;
+      const nextPackage = stored.package.pdfUrl
+        ? stored.package
+        : project.drawingPackage?.pdfUrl
+          ? project.drawingPackage
+          : stored.package;
+      const nextPlan = stored.plan ?? project.importedHousePlan;
       const next = {
         ...project,
-        drawingPackage: stored.package.pdfUrl
-          ? stored.package
-          : project.drawingPackage?.pdfUrl
-            ? project.drawingPackage
-            : stored.package,
-        importedHousePlan: stored.plan ?? project.importedHousePlan,
+        drawingPackage: nextPackage,
+        importedHousePlan: nextPlan,
       };
       set({ project: next });
+      if (nextPlan && needsPlanFromIdb) {
+        usePlannerStore.getState().applyHousePlanObject(nextPlan);
+      }
     } catch {
       /* ignore IDB misses */
     }
@@ -767,8 +853,31 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
     const token = crypto.randomUUID().replace(/-/g, '').slice(0, 24);
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
     const map = JSON.parse(localStorage.getItem(LOCAL_SHARES) ?? '{}') as Record<string, unknown>;
-    map[token] = { project, expiresAt, clientEmail };
-    localStorage.setItem(LOCAL_SHARES, JSON.stringify(map));
+    map[token] = { project: slimProjectForLocalPersist(project), expiresAt, clientEmail };
+    try {
+      localStorage.setItem(LOCAL_SHARES, JSON.stringify(map));
+    } catch (err) {
+      if (!isQuotaExceededError(err)) throw err;
+      // Drop older local shares and retry once with a minimal project stub.
+      const minimal = {
+        [token]: {
+          project: slimProjectForLocalPersist({
+            ...project,
+            takeoff: project.takeoff ? { ...project.takeoff, lines: [] } : undefined,
+            selections: undefined,
+            drawingPackage: undefined,
+          }),
+          expiresAt,
+          clientEmail,
+        },
+      };
+      try {
+        localStorage.setItem(LOCAL_SHARES, JSON.stringify(minimal));
+      } catch (err2) {
+        if (!isQuotaExceededError(err2)) throw err2;
+        console.warn('Client share localStorage quota exceeded', err2);
+      }
+    }
     const shareUrl = `${window.location.origin}/build?share=${token}`;
     persist({ ...get(), lastInviteUrl: shareUrl, shareToken: token });
     set({ lastInviteUrl: shareUrl, shareToken: token });
