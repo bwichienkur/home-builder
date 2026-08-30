@@ -52,6 +52,8 @@ export type HousePlanFloor = {
   rooms: PlanRoomRect[];
   /** CAD wall centerlines (feet, local origin). When set, walls render from these — not room box edges. */
   wallSegmentsFt?: { x1: number; y1: number; x2: number; y2: number; layer?: string; exterior?: boolean }[];
+  /** Door/window hints from DXF layers (feet, same local origin as wallSegmentsFt). */
+  openingHintsFt?: { x1: number; y1: number; x2: number; y2: number; kind: 'door' | 'window'; layer?: string }[];
 };
 
 export type HousePlan = {
@@ -342,7 +344,10 @@ export function buildHouse(plan: HousePlan): BuiltHouse {
   const legacyOpenings = plan.id.startsWith('dxf-') ? 'shared-only' : 'catalog';
   const floors = plan.floors.map((f) =>
     f.wallSegmentsFt?.length
-      ? buildFloorFromCadWalls(f, { wallSegmentsFt: f.wallSegmentsFt })
+      ? buildFloorFromCadWalls(f, {
+          wallSegmentsFt: f.wallSegmentsFt,
+          openingHintsFt: f.openingHintsFt,
+        })
       : buildFloorFromRooms(f, { openings: legacyOpenings }),
   );
   return {
@@ -666,36 +671,73 @@ export function splitPlanRoomPoints(points: Point[], axis?: 'x' | 'y'): [Point[]
 /**
  * Rebuild walls/openings from edited plan-room labels (pixel polygons).
  * Preserves per-room floor colors when ids match.
- * Interactive edits use shared-only openings (no starter windows/doors).
+ * Interactive edits use shared-only openings (no starter windows/doors),
+ * unless CAD wallSegmentsFt are provided — then walls stay CAD-faithful.
  */
 export function rebuildFromPlanRooms(
   labels: { id: string; name: string; roomType: RoomType; points: Point[]; floorColor?: string }[],
   floorId = 'edited',
   ceilingHeightM = 2.74,
-  opts?: { centerFt?: { cx: number; cy: number } },
+  opts?: {
+    centerFt?: { cx: number; cy: number };
+    wallSegmentsFt?: HousePlanFloor['wallSegmentsFt'];
+    openingHintsFt?: HousePlanFloor['openingHintsFt'];
+    cadBuildCenterFt?: { cx: number; cy: number };
+  },
 ) {
+  const cadCenter = opts?.cadBuildCenterFt ?? opts?.centerFt;
   const rooms: PlanRoomRect[] = labels.map((label) => {
-    const pointsFt = label.points.map((p) => ({
-      x: (p.x - WORLD_ORIGIN.x) / PIXELS_PER_METER / FT_TO_M,
-      y: (p.y - WORLD_ORIGIN.y) / PIXELS_PER_METER / FT_TO_M,
-    }));
+    const pointsFt = label.points.map((p) => {
+      const x = (p.x - WORLD_ORIGIN.x) / PIXELS_PER_METER / FT_TO_M;
+      const y = (p.y - WORLD_ORIGIN.y) / PIXELS_PER_METER / FT_TO_M;
+      // Pixel labels were built as (localFt - cadCenter); restore local feet for CAD walls.
+      return cadCenter && opts?.wallSegmentsFt?.length
+        ? { x: x + cadCenter.cx, y: y + cadCenter.cy }
+        : { x, y };
+    });
     const size = planRoomSizeFeet(label.points);
+    const localSize =
+      cadCenter && opts?.wallSegmentsFt?.length
+        ? {
+            minX: size.minX + cadCenter.cx,
+            minY: size.minY + cadCenter.cy,
+            widthFt: size.widthFt,
+            depthFt: size.depthFt,
+          }
+        : size;
     return {
       id: label.id,
       name: label.name,
       roomType: label.roomType,
-      x: size.minX,
-      y: size.minY,
-      w: size.widthFt,
-      h: size.depthFt,
+      x: localSize.minX,
+      y: localSize.minY,
+      w: localSize.widthFt,
+      h: localSize.depthFt,
       pointsFt,
       ceilingFt: ceilingHeightM / FT_TO_M,
     };
   });
-  const built = buildFloorFromRooms(
-    { id: floorId, name: 'Edited floor', rooms },
-    { openings: 'shared-only', centerFt: opts?.centerFt },
-  );
+
+  const built =
+    opts?.wallSegmentsFt?.length
+      ? buildFloorFromCadWalls(
+          {
+            id: floorId,
+            name: 'Edited floor',
+            rooms,
+            wallSegmentsFt: opts.wallSegmentsFt,
+            openingHintsFt: opts.openingHintsFt,
+          },
+          {
+            centerFt: cadCenter,
+            wallSegmentsFt: opts.wallSegmentsFt,
+            openingHintsFt: opts.openingHintsFt,
+          },
+        )
+      : buildFloorFromRooms(
+          { id: floorId, name: 'Edited floor', rooms },
+          { openings: 'shared-only', centerFt: opts?.centerFt },
+        );
   built.roomPolygons = built.roomPolygons.map((poly) => ({
     ...poly,
     floorColor: labels.find((l) => l.id === poly.id)?.floorColor,

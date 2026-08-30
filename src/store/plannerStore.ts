@@ -10,6 +10,7 @@ import { perimeterTrimSegments, type PerimeterTrimEdge } from '../lib/geometry/c
 import { writeRecoverySnapshot } from '../lib/designShare';
 import { buildHouse, rebuildFromPlanRooms, resizePlanRoomPoints, shapedRoomPoints, snapRoomCenterToNeighbors, splitPlanRoomPoints, proposedRoomOverlaps, planRoomLabelOverlaps, attachSquareRoomPoints, attachSideBlocked, nudgePlanRoomsByWall, planRoomsCenterFt, movePlanRoomVertexPoints, insertPlanRoomVertexPoints, removePlanRoomVertexPoints, type PlanRoomShape, type AttachSide } from '../lib/housePlans/buildPlan';
 import type { HousePlan } from '../lib/housePlans/buildPlan';
+import { cadBuildCenterFt } from '../lib/housePlans/dxfCadBuild';
 import { getHousePlan } from '../lib/housePlans/planRegistry';
 import { remapFurnitureAfterPlanRebuild } from '../lib/geometry/planFurnitureRemap';
 import { remapOpeningsAfterPlanRebuild } from '../lib/geometry/planOpeningRemap';
@@ -27,6 +28,12 @@ type FloorRecord = {
   planRooms?: PlanRoomLabel[];
   /** Floor-to-floor height used for stacking and IFC elevations (m). */
   storyHeightM?: number;
+  /** CAD wall centerlines (feet). When set, room edits keep CAD walls. */
+  wallSegmentsFt?: HousePlan['floors'][number]['wallSegmentsFt'];
+  /** Door/window hints from DXF (feet, same origin as wallSegmentsFt). */
+  openingHintsFt?: HousePlan['floors'][number]['openingHintsFt'];
+  /** Plate center used when CAD walls were first projected to pixels. */
+  cadBuildCenterFt?: { cx: number; cy: number };
 };
 export type { FloorRecord };
 export type FurnitureAddMeta = {
@@ -399,8 +406,12 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     const prevWalls = get().walls;
     const prevOpenings = get().openings;
     const height = get().walls[0]?.height ?? 2.74;
+    const activeFloor = get().floors.find((f) => f.id === get().activeFloorId);
     const rebuilt = rebuildFromPlanRooms(nextLabels, get().activeFloorId, height, {
       centerFt: opts?.centerFt,
+      wallSegmentsFt: activeFloor?.wallSegmentsFt,
+      openingHintsFt: activeFloor?.openingHintsFt,
+      cadBuildCenterFt: activeFloor?.cadBuildCenterFt,
     });
     const planRooms = rebuilt.roomPolygons.map((p) => ({
       ...p,
@@ -425,44 +436,34 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       furniture,
       planRooms,
     };
+    const floorPatch = (f: FloorRecord, activeId: string): FloorRecord =>
+      f.id === activeId
+        ? {
+            ...f,
+            scene: {
+              ...f.scene,
+              walls: rebuilt.scene.walls,
+              openings,
+              furniture,
+              planRooms,
+            },
+            planRooms,
+            // Preserve CAD metadata across edits.
+            wallSegmentsFt: f.wallSegmentsFt,
+            openingHintsFt: f.openingHintsFt,
+            cadBuildCenterFt: f.cadBuildCenterFt,
+          }
+        : f;
     if (opts?.live) {
       set((s) => ({
         ...patch,
-        floors: s.floors.map((f) =>
-          f.id === s.activeFloorId
-            ? {
-                ...f,
-                scene: {
-                  ...f.scene,
-                  walls: rebuilt.scene.walls,
-                  openings,
-                  furniture,
-                  planRooms,
-                },
-                planRooms,
-              }
-            : f,
-        ),
+        floors: s.floors.map((f) => floorPatch(f, s.activeFloorId)),
         ...(opts?.selectedRoomId !== undefined ? { selectedRoomId: opts.selectedRoomId } : {}),
       }));
     } else {
       mutate(patch);
       set((s) => ({
-        floors: s.floors.map((f) =>
-          f.id === s.activeFloorId
-            ? {
-                ...f,
-                scene: {
-                  ...f.scene,
-                  walls: rebuilt.scene.walls,
-                  openings,
-                  furniture,
-                  planRooms,
-                },
-                planRooms,
-              }
-            : f,
-        ),
+        floors: s.floors.map((f) => floorPatch(f, s.activeFloorId)),
         ...(opts?.selectedRoomId !== undefined ? { selectedRoomId: opts.selectedRoomId } : {}),
       }));
     }
@@ -818,12 +819,23 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     },
     applyHousePlanObject: (plan) => {
       const built = buildHouse(plan);
-      const floors: FloorRecord[] = built.floors.map((f) => ({
-        id: f.id,
-        name: f.name,
-        scene: f.scene,
-        planRooms: f.roomPolygons,
-      }));
+      const floors: FloorRecord[] = built.floors.map((f, i) => {
+        const source = plan.floors[i];
+        const wallSegmentsFt = source?.wallSegmentsFt;
+        const openingHintsFt = source?.openingHintsFt;
+        return {
+          id: f.id,
+          name: f.name,
+          scene: f.scene,
+          planRooms: f.roomPolygons,
+          wallSegmentsFt,
+          openingHintsFt,
+          cadBuildCenterFt:
+            wallSegmentsFt?.length && source
+              ? cadBuildCenterFt(source)
+              : undefined,
+        };
+      });
       const first = floors[0];
       if (!first) return false;
       set({

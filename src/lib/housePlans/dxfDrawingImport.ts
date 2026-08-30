@@ -49,6 +49,20 @@ export function isRoomWallLayer(layer: string): boolean {
 export function isSheetWallLayer(layer: string): boolean {
   return WALL_LAYERS.has(layer) || isRoomWallLayer(layer) || /DOOR|WINDOW/i.test(layer);
 }
+
+/** Door / window / glazing layers — used for Opening entities, not wall centerlines. */
+export function isOpeningLayer(layer: string): boolean {
+  const u = layer.trim().toUpperCase();
+  if (!u) return false;
+  if (/SWING|ARC|HINGE/.test(u) && !/DOOR|WINDOW|GLAZ|OPEN/.test(u)) return false;
+  return /DOOR|WINDOW|GLAZ|OPENING|A-GLAZ|A-DOOR|A-WIND/.test(u);
+}
+
+export function openingKindFromLayer(layer: string): 'door' | 'window' {
+  const u = layer.trim().toUpperCase();
+  if (/WINDOW|GLAZ|WIND/.test(u)) return 'window';
+  return 'door';
+}
 /** Layers drawn into sheet reference SVGs. */
 export const SHEET_LAYERS = new Set([
   ...WALL_LAYERS,
@@ -592,12 +606,14 @@ export function importDxfDrawingPackage(
 
   // Prefer wall segments cropped to the floor-plan viewport (avoids elevations / details in model space).
   let roomSegs = segs.filter((s) => isRoomWallLayer(s.layer));
+  let openingSegs = segs.filter((s) => isOpeningLayer(s.layer));
   let roomLabels = labels.map((l) => ({ x: l.x, y: l.y, text: l.text, layer: l.layer }));
   const cropWarnings: string[] = [];
   if (floorVp) {
     const cropped = cropSegmentsToViewport(roomSegs, floorVp, 0.08);
     if (cropped.length >= 20) {
       roomSegs = cropped;
+      openingSegs = cropSegmentsToViewport(openingSegs, floorVp, 0.12);
       roomLabels = cropSegmentsToViewport(
         roomLabels.map((l) => ({ ...l, x1: l.x, y1: l.y, x2: l.x, y2: l.y })),
         floorVp,
@@ -618,13 +634,14 @@ export function importDxfDrawingPackage(
       ? importDxfHousePlan(dxfText, planName ?? sourceFileName.replace(/\.(dwg|dxf)$/i, ''), {
           segments: roomSegs,
           labels: roomLabels,
+          openingSegments: openingSegs,
         })
       : importDxfHousePlan(
           wallDxf.includes('LINE') || wallDxf.includes('LWPOLYLINE')
             ? wallDxf
             : filterDxfToLayers(dxfText, WALL_LAYERS, { fuzzyRoomWalls: true }),
           planName ?? sourceFileName.replace(/\.(dwg|dxf)$/i, ''),
-          { labels: roomLabels },
+          { labels: roomLabels, openingSegments: openingSegs },
         );
 
   const { sheets, warnings: sheetWarnings } = buildSheetsFromDxf(dxfText, segs, labels);

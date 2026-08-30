@@ -6,11 +6,18 @@ import {
 } from './dxfParse';
 import {
   readInsUnits,
+  scaleSegmentsToFeet,
   segmentsToRoomsAccurate,
   segmentsToOrthogonalRoomsLegacy,
   wallCenterlinesFromSegments,
 } from './dxfRooms';
-import { translateRoomsAndWalls } from './dxfCadBuild';
+import { translateRoomsAndWalls, type PlanOpeningHintFt } from './dxfCadBuild';
+
+function openingKindFromLayer(layer: string): 'door' | 'window' {
+  const u = layer.trim().toUpperCase();
+  if (/WINDOW|GLAZ|WIND/.test(u)) return 'window';
+  return 'door';
+}
 
 export type DxfImportResult = {
   plan: HousePlan;
@@ -143,7 +150,7 @@ export function segmentsToOrthogonalRooms(segments: Seg[]): {
 export function importDxfHousePlan(
   dxfText: string,
   name = 'Imported DXF plan',
-  opts?: { labels?: DxfLabel[]; segments?: DxfSeg[] },
+  opts?: { labels?: DxfLabel[]; segments?: DxfSeg[]; openingSegments?: DxfSeg[] },
 ): DxfImportResult {
   const insUnits = readInsUnits(dxfText);
   const parsed = opts?.segments
@@ -160,16 +167,33 @@ export function importDxfHousePlan(
   warnings.push(...accurate.warnings);
 
   const wallLines = wallCenterlinesFromSegments(accurate.scaledSegments);
-  const normalized = translateRoomsAndWalls(accurate.rooms, wallLines);
+
+  // Scale + classify opening-layer segments with the same unit scale as walls.
+  const rawOpenings = opts?.openingSegments ?? [];
+  const openingScaled = rawOpenings.length
+    ? scaleSegmentsToFeet(rawOpenings, insUnits).segments
+    : [];
+  const openingHints: PlanOpeningHintFt[] = openingScaled.map((s) => ({
+    x1: s.x1,
+    y1: s.y1,
+    x2: s.x2,
+    y2: s.y2,
+    layer: s.layer,
+    kind: openingKindFromLayer(s.layer ?? ''),
+  }));
+
+  const normalized = translateRoomsAndWalls(accurate.rooms, wallLines, openingHints);
   let rooms = finalizeImportedRooms(normalized.rooms);
   let wallSegmentsFt = normalized.walls;
+  let openingHintsFt = normalized.openings;
 
   if (rooms.length <= 1 && segments.length > 20) {
     const legacy = segmentsToOrthogonalRoomsLegacy(accurate.scaledSegments);
     if (legacy.rooms.length > rooms.length) {
-      const legacyNorm = translateRoomsAndWalls(legacy.rooms, wallLines);
+      const legacyNorm = translateRoomsAndWalls(legacy.rooms, wallLines, openingHints);
       rooms = finalizeImportedRooms(legacyNorm.rooms);
       wallSegmentsFt = legacyNorm.walls;
+      openingHintsFt = legacyNorm.openings;
       warnings.push('Used rectangular cell detection (more rooms than flood-fill).');
       warnings.push(...legacy.warnings);
     }
@@ -183,7 +207,7 @@ export function importDxfHousePlan(
   const spanArea = Math.max(maxX - minX, 0) * Math.max(maxY - minY, 0);
   const underRoof = spanArea > living * 2.5 ? living * 1.12 : spanArea;
   warnings.push(
-    `CAD build: ${wallSegmentsFt.length} wall centerline(s), ${rooms.filter((r) => r.pointsFt?.length).length} polygon room(s).`,
+    `CAD build: ${wallSegmentsFt.length} wall centerline(s), ${openingHintsFt.length} opening hint(s), ${rooms.filter((r) => r.pointsFt?.length).length} polygon room(s).`,
   );
   const plan: HousePlan = {
     id: `dxf-${crypto.randomUUID().slice(0, 8)}`,
@@ -201,6 +225,7 @@ export function importDxfHousePlan(
         name: 'First story',
         rooms,
         wallSegmentsFt,
+        openingHintsFt: openingHintsFt.length ? openingHintsFt : undefined,
       },
     ],
   };
