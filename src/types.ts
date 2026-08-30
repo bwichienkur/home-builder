@@ -111,6 +111,8 @@ export type LayerVisibility = {
   roof: boolean;
   framing: boolean;
   setbacks: boolean;
+  /** Exact DXF linework under Plan view (CAD reference overlay). */
+  cadOverlay: boolean;
 };
 export const DEFAULT_LAYER_VISIBILITY: LayerVisibility = {
   furniture: true,
@@ -121,6 +123,7 @@ export const DEFAULT_LAYER_VISIBILITY: LayerVisibility = {
   roof: true,
   framing: false,
   setbacks: true,
+  cadOverlay: true,
 };
 export type PlanRoomLabel = {
   id: string;

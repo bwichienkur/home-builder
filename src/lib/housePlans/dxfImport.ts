@@ -13,10 +13,19 @@ import {
 } from './dxfRooms';
 import { translateRoomsAndWalls, type PlanOpeningHintFt } from './dxfCadBuild';
 
+const MAX_CAD_PLAN_VECTORS = 8000;
+
 function openingKindFromLayer(layer: string): 'door' | 'window' {
   const u = layer.trim().toUpperCase();
   if (/WINDOW|GLAZ|WIND/.test(u)) return 'window';
   return 'door';
+}
+
+function planVectorRole(layer: string): 'wall' | 'opening' | 'other' {
+  const u = layer.trim().toUpperCase();
+  if (/DOOR|WINDOW|GLAZ|OPENING|A-GLAZ|A-DOOR|A-WIND/.test(u)) return 'opening';
+  if (/\bWALLS?\b|A-WALL|WALL-/.test(u)) return 'wall';
+  return 'other';
 }
 
 export type DxfImportResult = {
@@ -150,7 +159,13 @@ export function segmentsToOrthogonalRooms(segments: Seg[]): {
 export function importDxfHousePlan(
   dxfText: string,
   name = 'Imported DXF plan',
-  opts?: { labels?: DxfLabel[]; segments?: DxfSeg[]; openingSegments?: DxfSeg[] },
+  opts?: {
+    labels?: DxfLabel[];
+    segments?: DxfSeg[];
+    openingSegments?: DxfSeg[];
+    /** Raw model-space linework for Plan CAD overlay (same units as segments). */
+    planVectors?: DxfSeg[];
+  },
 ): DxfImportResult {
   const insUnits = readInsUnits(dxfText);
   const parsed = opts?.segments
@@ -186,6 +201,26 @@ export function importDxfHousePlan(
   let rooms = finalizeImportedRooms(normalized.rooms);
   let wallSegmentsFt = normalized.walls;
   let openingHintsFt = normalized.openings;
+  const origin = normalized.origin;
+
+  // Plan CAD overlay vectors — exact DXF linework in the same local-feet frame.
+  const rawPlanVectors = opts?.planVectors?.length
+    ? opts.planVectors
+    : [...segments, ...rawOpenings];
+  const planScaled = rawPlanVectors.length
+    ? scaleSegmentsToFeet(rawPlanVectors, insUnits).segments
+    : [];
+  let cadPlanVectorsFt = planScaled
+    .filter((s) => Math.hypot(s.x2 - s.x1, s.y2 - s.y1) > 0.05)
+    .slice(0, MAX_CAD_PLAN_VECTORS)
+    .map((s) => ({
+      x1: s.x1 - origin.x,
+      y1: s.y1 - origin.y,
+      x2: s.x2 - origin.x,
+      y2: s.y2 - origin.y,
+      layer: s.layer,
+      role: planVectorRole(s.layer ?? ''),
+    }));
 
   if (rooms.length <= 1 && segments.length > 20) {
     const legacy = segmentsToOrthogonalRoomsLegacy(accurate.scaledSegments);
@@ -194,6 +229,17 @@ export function importDxfHousePlan(
       rooms = finalizeImportedRooms(legacyNorm.rooms);
       wallSegmentsFt = legacyNorm.walls;
       openingHintsFt = legacyNorm.openings;
+      cadPlanVectorsFt = planScaled
+        .filter((s) => Math.hypot(s.x2 - s.x1, s.y2 - s.y1) > 0.05)
+        .slice(0, MAX_CAD_PLAN_VECTORS)
+        .map((s) => ({
+          x1: s.x1 - legacyNorm.origin.x,
+          y1: s.y1 - legacyNorm.origin.y,
+          x2: s.x2 - legacyNorm.origin.x,
+          y2: s.y2 - legacyNorm.origin.y,
+          layer: s.layer,
+          role: planVectorRole(s.layer ?? ''),
+        }));
       warnings.push('Used rectangular cell detection (more rooms than flood-fill).');
       warnings.push(...legacy.warnings);
     }
@@ -207,7 +253,7 @@ export function importDxfHousePlan(
   const spanArea = Math.max(maxX - minX, 0) * Math.max(maxY - minY, 0);
   const underRoof = spanArea > living * 2.5 ? living * 1.12 : spanArea;
   warnings.push(
-    `CAD build: ${wallSegmentsFt.length} wall centerline(s), ${openingHintsFt.length} opening hint(s), ${rooms.filter((r) => r.pointsFt?.length).length} polygon room(s).`,
+    `CAD build: ${wallSegmentsFt.length} wall centerline(s), ${openingHintsFt.length} opening hint(s), ${cadPlanVectorsFt.length} plan vector(s), ${rooms.filter((r) => r.pointsFt?.length).length} polygon room(s).`,
   );
   const plan: HousePlan = {
     id: `dxf-${crypto.randomUUID().slice(0, 8)}`,
@@ -218,7 +264,7 @@ export function importDxfHousePlan(
     livingSqFt: Math.round(living),
     totalUnderRoofSqFt: Math.round(underRoof),
     sourceUrl: '',
-    note: 'Imported from DXF (CAD walls + labeled floor regions). Review in Plan verification.',
+    note: 'Imported from DXF (plan-first CAD overlay + walls + labeled rooms). Review in Plan verification.',
     floors: [
       {
         id: `dxf-floor-1`,
@@ -226,6 +272,7 @@ export function importDxfHousePlan(
         rooms,
         wallSegmentsFt,
         openingHintsFt: openingHintsFt.length ? openingHintsFt : undefined,
+        cadPlanVectorsFt: cadPlanVectorsFt.length ? cadPlanVectorsFt : undefined,
       },
     ],
   };

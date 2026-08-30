@@ -63,6 +63,17 @@ export function openingKindFromLayer(layer: string): 'door' | 'window' {
   if (/WINDOW|GLAZ|WIND/.test(u)) return 'window';
   return 'door';
 }
+
+/** Model-space linework kept for the Plan CAD overlay (walls, openings, sheet geometry). */
+export function isPlanOverlayLayer(layer: string): boolean {
+  return isRoomWallLayer(layer) || isOpeningLayer(layer) || isSheetWallLayer(layer);
+}
+
+export function planVectorRole(layer: string): 'wall' | 'opening' | 'other' {
+  if (isOpeningLayer(layer)) return 'opening';
+  if (isRoomWallLayer(layer)) return 'wall';
+  return 'other';
+}
 /** Layers drawn into sheet reference SVGs. */
 export const SHEET_LAYERS = new Set([
   ...WALL_LAYERS,
@@ -607,6 +618,7 @@ export function importDxfDrawingPackage(
   // Prefer wall segments cropped to the floor-plan viewport (avoids elevations / details in model space).
   let roomSegs = segs.filter((s) => isRoomWallLayer(s.layer));
   let openingSegs = segs.filter((s) => isOpeningLayer(s.layer));
+  let overlaySegs = segs.filter((s) => isPlanOverlayLayer(s.layer));
   let roomLabels = labels.map((l) => ({ x: l.x, y: l.y, text: l.text, layer: l.layer }));
   const cropWarnings: string[] = [];
   if (floorVp) {
@@ -614,6 +626,7 @@ export function importDxfDrawingPackage(
     if (cropped.length >= 20) {
       roomSegs = cropped;
       openingSegs = cropSegmentsToViewport(openingSegs, floorVp, 0.12);
+      overlaySegs = cropSegmentsToViewport(overlaySegs, floorVp, 0.12);
       roomLabels = cropSegmentsToViewport(
         roomLabels.map((l) => ({ ...l, x1: l.x, y1: l.y, x2: l.x, y2: l.y })),
         floorVp,
@@ -635,13 +648,14 @@ export function importDxfDrawingPackage(
           segments: roomSegs,
           labels: roomLabels,
           openingSegments: openingSegs,
+          planVectors: overlaySegs,
         })
       : importDxfHousePlan(
           wallDxf.includes('LINE') || wallDxf.includes('LWPOLYLINE')
             ? wallDxf
             : filterDxfToLayers(dxfText, WALL_LAYERS, { fuzzyRoomWalls: true }),
           planName ?? sourceFileName.replace(/\.(dwg|dxf)$/i, ''),
-          { labels: roomLabels, openingSegments: openingSegs },
+          { labels: roomLabels, openingSegments: openingSegs, planVectors: overlaySegs },
         );
 
   const { sheets, warnings: sheetWarnings } = buildSheetsFromDxf(dxfText, segs, labels);
