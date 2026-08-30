@@ -3,7 +3,7 @@
  * Handles double-line walls, soft orthogonality, unit scaling, and flood-fill rooms.
  */
 import type { PlanRoomRect } from './buildPlan';
-import { room } from './planFactories';
+import { room, poly } from './planFactories';
 import type { RoomType } from '../../types';
 import { looksLikeRoomName } from './dxfParse';
 
@@ -15,6 +15,106 @@ const ORTHO_RATIO = 0.04; // |min(dx,dy)|/|max| below this ⇒ treat as ortho
 const MIN_ROOM_FT = 3;
 const MIN_ROOM_AREA = 20; // sq ft
 const WALL_THICK_MIN = 0.2; // ft (~2.5")
+
+function isExteriorLayer(layer?: string): boolean {
+  const u = (layer ?? '').toUpperCase();
+  if (!u) return false;
+  if (/INT|INTERIOR/.test(u) && !/EXT/.test(u)) return false;
+  return /EXT|EXTERIOR|OUT/i.test(u) || /\bWALLS EXT\b/.test(u);
+}
+
+function segLength(s: Seg): number {
+  return Math.hypot(s.x2 - s.x1, s.y2 - s.y1);
+}
+
+/** Collapse double-line walls to centerlines for scene rendering. */
+export function wallCenterlinesFromSegments(segments: Seg[]): (Seg & { exterior?: boolean })[] {
+  const centers = centerlinesFromDoubleWalls(segments);
+  const source = centers.length >= Math.max(8, segments.length * 0.25) ? centers : segments;
+  return source
+    .filter((s) => segLength(s) >= 1.5)
+    .map((s) => ({
+      ...s,
+      exterior: isExteriorLayer(s.layer),
+    }));
+}
+
+function polygonAreaFtLocal(points: { x: number; y: number }[]) {
+  if (points.length < 3) return 0;
+  let sum = 0;
+  for (let i = 0; i < points.length; i++) {
+    const a = points[i]!;
+    const b = points[(i + 1) % points.length]!;
+    sum += a.x * b.y - b.x * a.y;
+  }
+  return Math.abs(sum) / 2;
+}
+
+function simplifyOrthogonalPolygon(points: { x: number; y: number }[]) {
+  if (points.length < 4) return points;
+  const out: { x: number; y: number }[] = [];
+  const n = points.length;
+  for (let i = 0; i < n; i++) {
+    const prev = points[(i - 1 + n) % n]!;
+    const cur = points[i]!;
+    const next = points[(i + 1) % n]!;
+    const colinearH = Math.abs(prev.y - cur.y) < 1e-6 && Math.abs(cur.y - next.y) < 1e-6;
+    const colinearV = Math.abs(prev.x - cur.x) < 1e-6 && Math.abs(cur.x - next.x) < 1e-6;
+    if (!colinearH && !colinearV) out.push(cur);
+  }
+  return out.length >= 3 ? out : points;
+}
+
+/** Trace an orthogonal polygon from flood-fill grid cells. */
+export function traceRegionPolygon(
+  cellIndices: number[],
+  cols: number,
+  res: number,
+  originX: number,
+  originY: number,
+): { x: number; y: number }[] {
+  const cells = new Set(cellIndices);
+  const has = (c: number, r: number) => cells.has(r * cols + c);
+  type GEdge = { x1: number; y1: number; x2: number; y2: number };
+  const edges: GEdge[] = [];
+  for (const idx of cells) {
+    const c = idx % cols;
+    const r = (idx / cols) | 0;
+    if (!has(c, r - 1)) edges.push({ x1: c, y1: r, x2: c + 1, y2: r });
+    if (!has(c + 1, r)) edges.push({ x1: c + 1, y1: r, x2: c + 1, y2: r + 1 });
+    if (!has(c, r + 1)) edges.push({ x1: c + 1, y1: r + 1, x2: c, y2: r + 1 });
+    if (!has(c - 1, r)) edges.push({ x1: c, y1: r + 1, x2: c, y2: r });
+  }
+  if (!edges.length) return [];
+  const key = (x: number, y: number) => `${x},${y}`;
+  const byStart = new Map<string, GEdge[]>();
+  for (const e of edges) {
+    const k = key(e.x1, e.y1);
+    const list = byStart.get(k) ?? [];
+    list.push(e);
+    byStart.set(k, list);
+  }
+  const used = new Set<GEdge>();
+  const loops: { x: number; y: number }[][] = [];
+  for (const start of edges) {
+    if (used.has(start)) continue;
+    const loop: { x: number; y: number }[] = [];
+    let cur: GEdge | null = start;
+    let guard = 0;
+    while (cur && guard++ < edges.length + 4) {
+      used.add(cur);
+      loop.push({ x: originX + cur.x1 * res, y: originY + cur.y1 * res });
+      const candidates: GEdge[] = (byStart.get(key(cur.x2, cur.y2)) ?? []).filter((e) => !used.has(e));
+      cur = candidates[0] ?? null;
+      if (cur === start) break;
+    }
+    if (loop.length >= 3) loops.push(loop);
+  }
+  if (!loops.length) return [];
+  loops.sort((a, b) => polygonAreaFtLocal(b) - polygonAreaFtLocal(a));
+  return simplifyOrthogonalPolygon(loops[0]!);
+}
+
 const WALL_THICK_MAX = 1.2; // ft (~14")
 export function isNearOrtho(s: Seg): boolean {
   const dx = Math.abs(s.x1 - s.x2);
@@ -351,7 +451,19 @@ function roomsFromLabelVoronoi(
     const rw = x1 - x0;
     const rh = y1 - y0;
     if (rw < MIN_ROOM_FT || rh < MIN_ROOM_FT || rw * rh < MIN_ROOM_AREA) continue;
-    out.push(room(label.text, guessRoomType(label.text), x0, y0, rw, rh, 9));
+    out.push(
+      poly(
+        label.text,
+        guessRoomType(label.text),
+        [
+          { x: x0, y: y0 },
+          { x: x1, y: y0 },
+          { x: x1, y: y1 },
+          { x: x0, y: y1 },
+        ],
+        9,
+      ),
+    );
   }
   return out.length >= 2 ? out : [];
 }
@@ -544,6 +656,7 @@ export function roomsFromFloodFill(
       let minR = r;
       let maxR = r;
       let area = 0;
+      const cells: number[] = [];
       const q = [i];
       seen[i] = 1;
       for (let qi = 0; qi < q.length; qi++) {
@@ -551,6 +664,7 @@ export function roomsFromFloodFill(
         const cc = cur % cols;
         const rr = (cur / cols) | 0;
         area++;
+        cells.push(cur);
         minC = Math.min(minC, cc);
         maxC = Math.max(maxC, cc);
         minR = Math.min(minR, rr);
@@ -593,7 +707,12 @@ export function roomsFromFloodFill(
 
       const fallback = `Room ${n}`;
       const name = labelForRoom(labels, x, y, wFt, hFt, fallback);
-      rooms.push(room(name, guessRoomType(name), x, y, wFt, hFt, 9));
+      const footprint = traceRegionPolygon(cells, cols, res, minX, minY);
+      if (footprint.length >= 3 && fillRatio >= 0.55) {
+        rooms.push(poly(name, guessRoomType(name), footprint, 9));
+      } else {
+        rooms.push(room(name, guessRoomType(name), x, y, wFt, hFt, 9));
+      }
       n++;
     }
   }
@@ -797,7 +916,12 @@ export function segmentsToOrthogonalRoomsLegacy(segments: Seg[]): {
 export function segmentsToRoomsAccurate(
   rawSegments: Seg[],
   opts?: { labels?: RoomLabel[]; insUnits?: number },
-): { rooms: PlanRoomRect[]; warnings: string[]; scaledSegments: Seg[] } {
+): {
+  rooms: PlanRoomRect[];
+  warnings: string[];
+  scaledSegments: Seg[];
+  wallCenterlines: Seg[];
+} {
   const warnings: string[] = [];
   const { segments: scaled, unitNote, scale } = scaleSegmentsToFeet(rawSegments, opts?.insUnits);
   warnings.push(unitNote);
@@ -807,7 +931,12 @@ export function segmentsToRoomsAccurate(
     warnings.push(`${scaled.length - ortho.length} non-orthogonal segment(s) ignored.`);
   }
   if (!ortho.length) {
-    return { rooms: [], warnings: [...warnings, 'No orthogonal wall segments.'], scaledSegments: scaled };
+    return {
+      rooms: [],
+      warnings: [...warnings, 'No orthogonal wall segments.'],
+      scaledSegments: scaled,
+      wallCenterlines: [],
+    };
   }
 
   const xs = ortho.flatMap((s) => [s.x1, s.x2]);
@@ -832,5 +961,7 @@ export function segmentsToRoomsAccurate(
 
   const { rooms, warnings: w2 } = roomsFromFloodFill(denseWalls, scaledLabels);
   warnings.push(...w2);
-  return { rooms, warnings, scaledSegments: denseWalls };
+  const wallCenterlines = wallCenterlinesFromSegments(denseWalls);
+  warnings.push(`CAD wall centerlines for scene: ${wallCenterlines.length}.`);
+  return { rooms, warnings, scaledSegments: denseWalls, wallCenterlines };
 }
