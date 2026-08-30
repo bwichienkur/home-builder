@@ -1,99 +1,30 @@
 import { describe, expect, it } from 'vitest';
-import { importDxfHousePlan } from './dxfImport';
+import { flipPlanY, flipPlanLabels, importDxfHousePlan } from './dxfImport';
 import { isPlanOverlayLayer, planVectorRole } from './dxfDrawingImport';
 
 describe('plan-first CAD overlay import', () => {
-  it('classifies overlay layers', () => {
+  it('classifies overlay layers including fixtures', () => {
     expect(isPlanOverlayLayer('WALLS INT')).toBe(true);
     expect(isPlanOverlayLayer('DOORS')).toBe(true);
     expect(isPlanOverlayLayer('WINDOWS')).toBe(true);
+    expect(isPlanOverlayLayer('FIXTURES')).toBe(true);
+    expect(isPlanOverlayLayer('COUNTER')).toBe(true);
     expect(planVectorRole('WALLS EXT')).toBe('wall');
     expect(planVectorRole('DOORS')).toBe('opening');
+    expect(planVectorRole('FIXTURES')).toBe('fixture');
     expect(planVectorRole('DIMS')).toBe('other');
   });
 
-  it('stores cadPlanVectorsFt alongside wallSegmentsFt', () => {
-    // Simple inch-based rectangle with a door tick on DOORS layer.
-    const dxf = `0
-SECTION
-2
-HEADER
-9
-$INSUNITS
-70
-1
-0
-ENDSEC
-0
-SECTION
-2
-ENTITIES
-0
-LINE
-8
-WALLS INT
-10
-0
-20
-0
-11
-240
-21
-0
-0
-LINE
-8
-WALLS INT
-10
-240
-20
-0
-11
-240
-21
-180
-0
-LINE
-8
-WALLS INT
-10
-240
-20
-180
-11
-0
-21
-180
-0
-LINE
-8
-WALLS INT
-10
-0
-20
-180
-11
-0
-21
-0
-0
-LINE
-8
-DOORS
-10
-100
-20
-0
-11
-136
-21
-0
-0
-ENDSEC
-0
-EOF
-`;
-    const { plan, warnings } = importDxfHousePlan(dxf, 'Overlay test', {
+  it('flipPlanY mirrors sheet orientation', () => {
+    const flipped = flipPlanY([{ x1: 0, y1: 10, x2: 5, y2: 20, layer: 'WALLS INT' }]);
+    expect(flipped[0]!.y1).toBe(-10);
+    expect(flipped[0]!.y2).toBe(-20);
+    expect(flipPlanLabels([{ x: 1, y: 8, text: 'KITCHEN' }])[0]!.y).toBe(-8);
+  });
+
+  it('stores cadPlanVectorsFt alongside wallSegmentsFt including fixtures', () => {
+    const { plan, warnings } = importDxfHousePlan('unused', 'Overlay test', {
+      skipYFlip: true,
       segments: [
         { x1: 0, y1: 0, x2: 240, y2: 0, layer: 'WALLS INT' },
         { x1: 240, y1: 0, x2: 240, y2: 180, layer: 'WALLS INT' },
@@ -107,6 +38,8 @@ EOF
         { x1: 240, y1: 180, x2: 0, y2: 180, layer: 'WALLS INT' },
         { x1: 0, y1: 180, x2: 0, y2: 0, layer: 'WALLS INT' },
         { x1: 100, y1: 0, x2: 136, y2: 0, layer: 'DOORS' },
+        { x1: 40, y1: 40, x2: 55, y2: 40, layer: 'FIXTURES' },
+        { x1: 60, y1: 50, x2: 90, y2: 50, layer: 'COUNTER' },
       ],
     });
     const floor = plan.floors[0]!;
@@ -114,6 +47,7 @@ EOF
     expect(floor.cadPlanVectorsFt?.length).toBeGreaterThanOrEqual(4);
     expect(floor.cadPlanVectorsFt?.some((v) => v.role === 'opening')).toBe(true);
     expect(floor.cadPlanVectorsFt?.some((v) => v.role === 'wall')).toBe(true);
+    expect(floor.cadPlanVectorsFt?.some((v) => v.role === 'fixture')).toBe(true);
     expect(warnings.some((w) => /plan vector/i.test(w))).toBe(true);
   });
 });

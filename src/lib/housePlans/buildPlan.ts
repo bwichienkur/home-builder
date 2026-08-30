@@ -64,7 +64,7 @@ export type HousePlanFloor = {
     x2: number;
     y2: number;
     layer?: string;
-    role?: 'wall' | 'opening' | 'other';
+    role?: 'wall' | 'opening' | 'fixture' | 'other';
   }[];
 };
 

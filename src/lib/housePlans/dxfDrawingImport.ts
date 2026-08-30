@@ -64,15 +64,25 @@ export function openingKindFromLayer(layer: string): 'door' | 'window' {
   return 'door';
 }
 
-/** Model-space linework kept for the Plan CAD overlay (walls, openings, sheet geometry). */
+/** Model-space linework kept for the Plan CAD overlay (walls, openings, fixtures, sheet geometry). */
 export function isPlanOverlayLayer(layer: string): boolean {
+  const u = layer.trim().toUpperCase();
+  if (/FIXTURE|COUNTER|CABINET|APPLIANCE/.test(u)) return true;
   return isRoomWallLayer(layer) || isOpeningLayer(layer) || isSheetWallLayer(layer);
 }
 
-export function planVectorRole(layer: string): 'wall' | 'opening' | 'other' {
+export function planVectorRole(layer: string): 'wall' | 'opening' | 'fixture' | 'other' {
   if (isOpeningLayer(layer)) return 'opening';
   if (isRoomWallLayer(layer)) return 'wall';
+  const u = layer.trim().toUpperCase();
+  if (/FIXTURE|COUNTER|CABINET|APPLIANCE|SINK|TOILET|RANGE|STOVE|OVEN/.test(u)) return 'fixture';
   return 'other';
+}
+
+/** Soft partition / space-boundary layers for open-plan room splits. */
+export function isSoftSpaceLayer(layer: string): boolean {
+  const u = layer.trim().toUpperCase();
+  return /CEILING|VOLUME|SPACE.?BOUND|ROOM.?BOUND|OPEN.?PLAN/.test(u);
 }
 /** Layers drawn into sheet reference SVGs. */
 export const SHEET_LAYERS = new Set([
@@ -117,7 +127,7 @@ type PaperMeta = {
   viewports: Viewport[];
 };
 
-type Seg = { x1: number; y1: number; x2: number; y2: number; layer: string };
+type Seg = { x1: number; y1: number; x2: number; y2: number; layer: string; linetype?: string };
 type Label = { x: number; y: number; text: string; layer: string };
 
 function decodeMtext(raw: string): string {
@@ -437,12 +447,14 @@ export function extractDxfModelGeometry(dxfText: string): {
       const y1 = Number(fields['20']);
       const x2 = Number(fields['11']);
       const y2 = Number(fields['21']);
-      if ([x1, y1, x2, y2].every(Number.isFinite)) segs.push({ x1, y1, x2, y2, layer });
+      const linetype = fields['6'];
+      if ([x1, y1, x2, y2].every(Number.isFinite)) segs.push({ x1, y1, x2, y2, layer, linetype });
     } else if (type === 'LWPOLYLINE') {
       // re-parse verts from raw pairs
       const verts: { x: number; y: number }[] = [];
       let pendingX: number | null = null;
       let closed = false;
+      const linetype = fields['6'];
       for (let r = 0; r + 1 < raw.length; r += 2) {
         const c = raw[r]!.trim();
         const v = raw[r + 1]!.trim();
@@ -456,12 +468,12 @@ export function extractDxfModelGeometry(dxfText: string): {
       for (let v = 0; v < verts.length - 1; v++) {
         const a = verts[v]!;
         const b = verts[v + 1]!;
-        segs.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y, layer });
+        segs.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y, layer, linetype });
       }
       if (closed && verts.length > 2) {
         const a = verts[verts.length - 1]!;
         const b = verts[0]!;
-        segs.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y, layer });
+        segs.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y, layer, linetype });
       }
     } else if (type === 'TEXT' || type === 'MTEXT') {
       const text = decodeMtext(fields['1'] ?? '');
@@ -619,6 +631,11 @@ export function importDxfDrawingPackage(
   let roomSegs = segs.filter((s) => isRoomWallLayer(s.layer));
   let openingSegs = segs.filter((s) => isOpeningLayer(s.layer));
   let overlaySegs = segs.filter((s) => isPlanOverlayLayer(s.layer));
+  let softSegs = segs.filter(
+    (s) =>
+      isSoftSpaceLayer(s.layer) ||
+      (/DASH|HIDDEN|PHANTOM|DOT/i.test(s.linetype ?? '') && (isRoomWallLayer(s.layer) || isSoftSpaceLayer(s.layer))),
+  );
   let roomLabels = labels.map((l) => ({ x: l.x, y: l.y, text: l.text, layer: l.layer }));
   const cropWarnings: string[] = [];
   if (floorVp) {
@@ -627,6 +644,7 @@ export function importDxfDrawingPackage(
       roomSegs = cropped;
       openingSegs = cropSegmentsToViewport(openingSegs, floorVp, 0.12);
       overlaySegs = cropSegmentsToViewport(overlaySegs, floorVp, 0.12);
+      softSegs = cropSegmentsToViewport(softSegs, floorVp, 0.12);
       roomLabels = cropSegmentsToViewport(
         roomLabels.map((l) => ({ ...l, x1: l.x, y1: l.y, x2: l.x, y2: l.y })),
         floorVp,
@@ -649,13 +667,14 @@ export function importDxfDrawingPackage(
           labels: roomLabels,
           openingSegments: openingSegs,
           planVectors: overlaySegs,
+          softPartitions: softSegs,
         })
       : importDxfHousePlan(
           wallDxf.includes('LINE') || wallDxf.includes('LWPOLYLINE')
             ? wallDxf
             : filterDxfToLayers(dxfText, WALL_LAYERS, { fuzzyRoomWalls: true }),
           planName ?? sourceFileName.replace(/\.(dwg|dxf)$/i, ''),
-          { labels: roomLabels, openingSegments: openingSegs, planVectors: overlaySegs },
+          { labels: roomLabels, openingSegments: openingSegs, planVectors: overlaySegs, softPartitions: softSegs },
         );
 
   const { sheets, warnings: sheetWarnings } = buildSheetsFromDxf(dxfText, segs, labels);

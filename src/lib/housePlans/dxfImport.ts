@@ -21,11 +21,24 @@ function openingKindFromLayer(layer: string): 'door' | 'window' {
   return 'door';
 }
 
-function planVectorRole(layer: string): 'wall' | 'opening' | 'other' {
+function planVectorRole(layer: string): 'wall' | 'opening' | 'fixture' | 'other' {
   const u = layer.trim().toUpperCase();
   if (/DOOR|WINDOW|GLAZ|OPENING|A-GLAZ|A-DOOR|A-WIND/.test(u)) return 'opening';
   if (/\bWALLS?\b|A-WALL|WALL-/.test(u)) return 'wall';
+  if (/FIXTURE|COUNTER|CABINET|APPLIANCE|SINK|TOILET|RANGE|STOVE|OVEN/.test(u)) return 'fixture';
   return 'other';
+}
+
+/**
+ * Flip CAD Y so plan orientation matches floor sheets / PDF (SVG already uses scale(1,-1)).
+ * Apply once to all channels before room detection.
+ */
+export function flipPlanY<T extends { y1: number; y2: number }>(segs: T[]): T[] {
+  return segs.map((s) => ({ ...s, y1: -s.y1, y2: -s.y2 }));
+}
+
+export function flipPlanLabels<T extends { y: number }>(labels: T[]): T[] {
+  return labels.map((l) => ({ ...l, y: -l.y }));
 }
 
 export type DxfImportResult = {
@@ -165,26 +178,47 @@ export function importDxfHousePlan(
     openingSegments?: DxfSeg[];
     /** Raw model-space linework for Plan CAD overlay (same units as segments). */
     planVectors?: DxfSeg[];
+    /** Soft/dashed space boundaries for open-plan room partitions. */
+    softPartitions?: DxfSeg[];
+    /** Skip sheet-matching Y flip (tests / already-flipped geometry). */
+    skipYFlip?: boolean;
   },
 ): DxfImportResult {
   const insUnits = readInsUnits(dxfText);
   const parsed = opts?.segments
     ? { segments: opts.segments, labels: opts.labels ?? [], warnings: [] as string[] }
     : parseDxfEntitiesToSegments(dxfText);
-  const segments = parsed.segments;
+  let segments = parsed.segments;
+  let labels = opts?.labels?.length ? opts.labels : parsed.labels;
+  let rawOpenings = opts?.openingSegments ?? [];
+  let rawPlanVectors = opts?.planVectors?.length ? opts.planVectors : [...segments, ...rawOpenings];
+  let rawSoft = opts?.softPartitions ?? [];
   const warnings = [...parsed.warnings];
+
+  // Match floor-sheet / PDF orientation (garage bottom-right on Stillwater, etc.).
+  if (!opts?.skipYFlip) {
+    segments = flipPlanY(segments);
+    labels = flipPlanLabels(labels);
+    rawOpenings = flipPlanY(rawOpenings);
+    rawPlanVectors = flipPlanY(rawPlanVectors);
+    rawSoft = flipPlanY(rawSoft);
+    warnings.push('Flipped plan Y to match floor-sheet orientation.');
+  }
+
   if (!segments.length) {
     warnings.push('No LINE/LWPOLYLINE geometry found.');
   }
 
-  const labels = opts?.labels?.length ? opts.labels : parsed.labels;
-  const accurate = segmentsToRoomsAccurate(segments, { labels, insUnits });
+  const accurate = segmentsToRoomsAccurate(segments, {
+    labels,
+    insUnits,
+    softPartitions: rawSoft,
+  });
   warnings.push(...accurate.warnings);
 
   const wallLines = wallCenterlinesFromSegments(accurate.scaledSegments);
 
   // Scale + classify opening-layer segments with the same unit scale as walls.
-  const rawOpenings = opts?.openingSegments ?? [];
   const openingScaled = rawOpenings.length
     ? scaleSegmentsToFeet(rawOpenings, insUnits).segments
     : [];
@@ -204,9 +238,6 @@ export function importDxfHousePlan(
   const origin = normalized.origin;
 
   // Plan CAD overlay vectors — exact DXF linework in the same local-feet frame.
-  const rawPlanVectors = opts?.planVectors?.length
-    ? opts.planVectors
-    : [...segments, ...rawOpenings];
   const planScaled = rawPlanVectors.length
     ? scaleSegmentsToFeet(rawPlanVectors, insUnits).segments
     : [];
@@ -252,8 +283,9 @@ export function importDxfHousePlan(
   const living = rooms.reduce((s, r) => s + r.w * r.h, 0);
   const spanArea = Math.max(maxX - minX, 0) * Math.max(maxY - minY, 0);
   const underRoof = spanArea > living * 2.5 ? living * 1.12 : spanArea;
+  const fixtureCount = cadPlanVectorsFt.filter((v) => v.role === 'fixture').length;
   warnings.push(
-    `CAD build: ${wallSegmentsFt.length} wall centerline(s), ${openingHintsFt.length} opening hint(s), ${cadPlanVectorsFt.length} plan vector(s), ${rooms.filter((r) => r.pointsFt?.length).length} polygon room(s).`,
+    `CAD build: ${wallSegmentsFt.length} wall centerline(s), ${openingHintsFt.length} opening hint(s), ${cadPlanVectorsFt.length} plan vector(s) (${fixtureCount} fixture), ${rooms.filter((r) => r.pointsFt?.length).length} polygon room(s).`,
   );
   const plan: HousePlan = {
     id: `dxf-${crypto.randomUUID().slice(0, 8)}`,
@@ -264,7 +296,7 @@ export function importDxfHousePlan(
     livingSqFt: Math.round(living),
     totalUnderRoofSqFt: Math.round(underRoof),
     sourceUrl: '',
-    note: 'Imported from DXF (plan-first CAD overlay + walls + labeled rooms). Review in Plan verification.',
+    note: 'Imported from DXF (plan-first: Y-matched sheet, CAD overlay, open-plan fills). Review in Plan verification.',
     floors: [
       {
         id: `dxf-floor-1`,
