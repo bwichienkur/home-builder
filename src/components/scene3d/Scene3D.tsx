@@ -1429,8 +1429,8 @@ function WallMeshes() {
               key={w.id + 'b' + i}
               position={[x, y, z]}
               rotation={[0, angle, 0]}
-              castShadow={!fading}
-              receiveShadow={!fading}
+              castShadow={!fading && cameraMode !== 'top'}
+              receiveShadow={!fading && cameraMode !== 'top'}
               raycast={skipRay}
               userData={fading ? { wallCutawayPick: true } : undefined}
               onClick={(e) => {
@@ -1708,8 +1708,8 @@ function WallMeshes() {
               <mesh
                 key={`corner-${key}`}
                 position={[x, h / 2, z]}
-                castShadow={!fading}
-                receiveShadow={!fading}
+                castShadow={!fading && cameraMode !== 'top'}
+                receiveShadow={!fading && cameraMode !== 'top'}
                 renderOrder={selectedTouch ? 2 : 0}
                 raycast={fading ? () => {} : undefined}
                 userData={fading ? { wallCutawayPick: true } : undefined}
@@ -2361,7 +2361,7 @@ function Room() {
               ) : (
               <mesh
                 rotation={[Math.PI / 2, 0, 0]}
-                receiveShadow
+                receiveShadow={cameraMode !== 'top'}
                 position={[0, -0.035, 0]}
                 userData={{ roomPick: true }}
                 onClick={(e) => chooseFloor(e, label?.id)}
@@ -2807,6 +2807,7 @@ export function Scene3D() {
   const begin = usePlannerStore((s) => s.beginPlacement);
   const pending = usePlannerStore((s) => s.pendingPlacement);
   const pendingCorner = usePlannerStore((s) => s.pendingCorner);
+  const cameraMode = usePlannerStore((s) => s.cameraMode);
   const select = usePlannerStore((s) => s.selectFurniture);
   const selectWall = usePlannerStore((s) => s.selectWall);
   const selectSurface = usePlannerStore((s) => s.selectSurface);
@@ -2885,7 +2886,7 @@ export function Scene3D() {
         <SceneAtmosphere />
         <ambientLight intensity={coarse ? 0.9 : 0.78} />
         <directionalLight
-          castShadow={!coarse}
+          castShadow={!coarse && cameraMode !== 'top'}
           intensity={coarse ? 1.1 : 1.35}
           position={[5, 8, 4]}
           shadow-mapSize={coarse ? [256, 256] : [512, 512]}

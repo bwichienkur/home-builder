@@ -7,7 +7,7 @@ import {
   scaleSegmentsToFeet,
   segmentsToRoomsAccurate,
 } from './dxfRooms';
-import { importDxfHousePlan } from './dxfImport';
+import { importDxfHousePlan, finalizeImportedRooms } from './dxfImport';
 import { isRoomWallLayer } from './dxfDrawingImport';
 
 describe('dxf room accuracy helpers', () => {
@@ -65,8 +65,7 @@ describe('dxf room accuracy helpers', () => {
     expect(names.some((n) => n.includes('KITCHEN'))).toBe(true);
   });
 
-  it('splits open-plan flood regions using multiple room labels', () => {
-    // Single open rectangle — no interior walls — with two labels.
+  it('splits open-plan regions into Voronoi boxes per label', () => {
     const segs = [
       { x1: 0, y1: 0, x2: 40, y2: 0 },
       { x1: 40, y1: 0, x2: 40, y2: 24 },
@@ -148,6 +147,18 @@ EOF
     expect(result.plan.floors[0]!.rooms.length).toBeGreaterThanOrEqual(2);
     expect(result.plan.livingSqFt).toBeGreaterThan(100);
     expect(result.plan.livingSqFt).toBeLessThan(600);
+  });
+});
+
+describe('imported room finalize', () => {
+  it('translates to origin and snaps shared edges', () => {
+    const rooms = finalizeImportedRooms([
+      { id: 'a', name: 'Kitchen', roomType: 'Kitchen', x: 100, y: 200, w: 10, h: 12, ceilingFt: 9 },
+      { id: 'b', name: 'Pantry', roomType: 'Kitchen', x: 110.4, y: 200.3, w: 8, h: 12, ceilingFt: 9 },
+    ]);
+    expect(rooms[0]!.x).toBe(0);
+    expect(rooms[0]!.y).toBeCloseTo(0, 0);
+    expect(rooms[1]!.x).toBeCloseTo(rooms[0]!.w, 0);
   });
 });
 

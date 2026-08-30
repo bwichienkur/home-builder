@@ -2,6 +2,7 @@ import { useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import type { Point } from '../../types';
 import { useCatalogById } from '../../store/catalogStore';
+import { usePlannerStore } from '../../store/plannerStore';
 import { roomPolygonWorld, roomShapeWithHoles } from '../../lib/geometry/rooms';
 import {
   FLOOR_FILL_TOP_Y,
@@ -98,6 +99,7 @@ export function FloorFillPieces({
   onClick?: (e: any) => void;
 }) {
   const catalogById = useCatalogById();
+  const planView = usePlannerStore((s) => s.cameraMode === 'top');
   const product = useMemo(
     () => catalogById.get(catalogId),
     [catalogId, catalogById],
@@ -140,7 +142,7 @@ export function FloorFillPieces({
     <mesh
       rotation={[Math.PI / 2, 0, 0]}
       position={[0, groutY, 0]}
-      receiveShadow
+      receiveShadow={!planView}
       userData={userData}
       onClick={onClick}
     >
@@ -183,7 +185,7 @@ export function FloorFillPieces({
         key={`${catalogId}-${spec.kind}-${count}`}
         ref={mesh}
         args={[undefined, undefined, count]}
-        receiveShadow
+        receiveShadow={!planView}
         frustumCulled={false}
         userData={userData}
         onClick={onClick}
