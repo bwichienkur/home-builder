@@ -54,6 +54,18 @@ export type HousePlanFloor = {
   wallSegmentsFt?: { x1: number; y1: number; x2: number; y2: number; layer?: string; exterior?: boolean }[];
   /** Door/window hints from DXF layers (feet, same local origin as wallSegmentsFt). */
   openingHintsFt?: { x1: number; y1: number; x2: number; y2: number; kind: 'door' | 'window'; layer?: string }[];
+  /**
+   * Exact DXF linework for Plan-view CAD overlay (feet, same local origin).
+   * Plan is the source of truth for layout; 3D extrudes walls/rooms derived from the plan model.
+   */
+  cadPlanVectorsFt?: {
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+    layer?: string;
+    role?: 'wall' | 'opening' | 'other';
+  }[];
 };
 
 export type HousePlan = {

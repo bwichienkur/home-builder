@@ -32,6 +32,8 @@ type FloorRecord = {
   wallSegmentsFt?: HousePlan['floors'][number]['wallSegmentsFt'];
   /** Door/window hints from DXF (feet, same origin as wallSegmentsFt). */
   openingHintsFt?: HousePlan['floors'][number]['openingHintsFt'];
+  /** Exact DXF linework for Plan CAD overlay (feet). */
+  cadPlanVectorsFt?: HousePlan['floors'][number]['cadPlanVectorsFt'];
   /** Plate center used when CAD walls were first projected to pixels. */
   cadBuildCenterFt?: { cx: number; cy: number };
 };
@@ -451,6 +453,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
             // Preserve CAD metadata across edits.
             wallSegmentsFt: f.wallSegmentsFt,
             openingHintsFt: f.openingHintsFt,
+            cadPlanVectorsFt: f.cadPlanVectorsFt,
             cadBuildCenterFt: f.cadBuildCenterFt,
           }
         : f;
@@ -823,6 +826,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         const source = plan.floors[i];
         const wallSegmentsFt = source?.wallSegmentsFt;
         const openingHintsFt = source?.openingHintsFt;
+        const cadPlanVectorsFt = source?.cadPlanVectorsFt;
         return {
           id: f.id,
           name: f.name,
@@ -830,9 +834,13 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
           planRooms: f.roomPolygons,
           wallSegmentsFt,
           openingHintsFt,
+          cadPlanVectorsFt,
           cadBuildCenterFt:
-            wallSegmentsFt?.length && source
-              ? cadBuildCenterFt(source)
+            source && (wallSegmentsFt?.length || cadPlanVectorsFt?.length)
+              ? cadBuildCenterFt({
+                  rooms: source.rooms,
+                  wallSegmentsFt: wallSegmentsFt?.length ? wallSegmentsFt : cadPlanVectorsFt,
+                })
               : undefined,
         };
       });

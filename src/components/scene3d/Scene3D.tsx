@@ -28,6 +28,7 @@ import { useInventoryStore } from '../../store/inventoryStore';
 import { FurnitureVisual } from './CatalogModel';
 import { FloorFillPieces } from './FloorFillPieces';
 import { PlanEditLayer } from './PlanEditLayer';
+import { CadPlanOverlay } from './CadPlanOverlay';
 import type { ReactElement } from 'react';
 import type { PlanRoomLabel, Wall } from '../../types';
 
@@ -2334,6 +2335,7 @@ function Room() {
   }, [planRooms, rooms, isolating, selectedRoomId]);
   return (
     <Bvh enabled={cameraMode !== 'top'}>
+      <CadPlanOverlay />
       {roomEntries.length ? (
         roomEntries.map(({ points, label }, i) => {
           const selected = !!label && label.id === selectedRoomId;

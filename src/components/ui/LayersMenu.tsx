@@ -4,6 +4,7 @@ import { usePlannerStore } from '../../store/plannerStore';
 import type { LayerVisibility } from '../../types';
 
 const LAYER_LABELS: { key: keyof LayerVisibility; label: string }[] = [
+  { key: 'cadOverlay', label: 'CAD overlay' },
   { key: 'labels', label: 'Room labels' },
   { key: 'dims', label: 'Wall dims' },
   { key: 'openings', label: 'Doors / windows' },
