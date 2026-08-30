@@ -1,6 +1,6 @@
 /** Low-level DXF entity parsing for wall segments + room labels. */
 
-export type DxfSeg = { x1: number; y1: number; x2: number; y2: number; layer?: string };
+export type DxfSeg = { x1: number; y1: number; x2: number; y2: number; layer?: string; linetype?: string };
 export type DxfLabel = { x: number; y: number; text: string; layer?: string };
 
 function decodeMtext(raw: string): string {
@@ -80,6 +80,7 @@ export function parseDxfEntitiesToSegments(dxfText: string): {
       let x2 = 0;
       let y2 = 0;
       let layer = '0';
+      let linetype: string | undefined;
       while (i < lines.length) {
         const p = readPair();
         if (!p) break;
@@ -88,19 +89,21 @@ export function parseDxfEntitiesToSegments(dxfText: string): {
           break;
         }
         if (p.code === 8) layer = p.value;
+        if (p.code === 6) linetype = p.value;
         if (p.code === 10) x1 = Number(p.value);
         if (p.code === 20) y1 = Number(p.value);
         if (p.code === 11) x2 = Number(p.value);
         if (p.code === 21) y2 = Number(p.value);
       }
       if ([x1, y1, x2, y2].every((n) => Number.isFinite(n))) {
-        segments.push({ x1, y1, x2, y2, layer });
+        segments.push({ x1, y1, x2, y2, layer, linetype });
       }
     } else if (type === 'LWPOLYLINE') {
       const verts: { x: number; y: number }[] = [];
       let closed = false;
       let pendingX: number | null = null;
       let layer = '0';
+      let linetype: string | undefined;
       while (i < lines.length) {
         const p = readPair();
         if (!p) break;
@@ -109,6 +112,7 @@ export function parseDxfEntitiesToSegments(dxfText: string): {
           break;
         }
         if (p.code === 8) layer = p.value;
+        if (p.code === 6) linetype = p.value;
         if (p.code === 70) closed = (Number(p.value) & 1) === 1;
         if (p.code === 10) pendingX = Number(p.value);
         if (p.code === 20 && pendingX != null) {
@@ -119,12 +123,12 @@ export function parseDxfEntitiesToSegments(dxfText: string): {
       for (let v = 0; v < verts.length - 1; v++) {
         const a = verts[v]!;
         const b = verts[v + 1]!;
-        segments.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y, layer });
+        segments.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y, layer, linetype });
       }
       if (closed && verts.length > 2) {
         const a = verts[verts.length - 1]!;
         const b = verts[0]!;
-        segments.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y, layer });
+        segments.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y, layer, linetype });
       }
     } else if (type === 'TEXT' || type === 'MTEXT') {
       let text = '';

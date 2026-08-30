@@ -7,7 +7,7 @@ import { room, poly } from './planFactories';
 import type { RoomType } from '../../types';
 import { looksLikeRoomName } from './dxfParse';
 
-export type Seg = { x1: number; y1: number; x2: number; y2: number; layer?: string };
+export type Seg = { x1: number; y1: number; x2: number; y2: number; layer?: string; linetype?: string };
 export type RoomLabel = { x: number; y: number; text: string };
 
 const FT_EPS = 0.08; // ~1" snap cluster
@@ -468,19 +468,117 @@ function roomsFromLabelVoronoi(
   return out.length >= 2 ? out : [];
 }
 
+/**
+ * Partition a flood-fill region by nearest room label (raster Voronoi).
+ * Each label gets the cells closest to it — fills grow to the wall envelope
+ * instead of shrinking to midplane AABBs.
+ */
+export function roomsFromLabelCells(
+  cellIndices: number[],
+  cols: number,
+  res: number,
+  originX: number,
+  originY: number,
+  labels: RoomLabel[],
+): PlanRoomRect[] {
+  if (labels.length < 2 || cellIndices.length < 8) return [];
+  const buckets: number[][] = labels.map(() => []);
+  for (const idx of cellIndices) {
+    const c = idx % cols;
+    const r = (idx / cols) | 0;
+    const cx = originX + (c + 0.5) * res;
+    const cy = originY + (r + 0.5) * res;
+    let best = 0;
+    let bestD = Infinity;
+    for (let i = 0; i < labels.length; i++) {
+      const l = labels[i]!;
+      const d = (l.x - cx) ** 2 + (l.y - cy) ** 2;
+      if (d < bestD) {
+        bestD = d;
+        best = i;
+      }
+    }
+    buckets[best]!.push(idx);
+  }
+  const out: PlanRoomRect[] = [];
+  for (let i = 0; i < labels.length; i++) {
+    const cells = buckets[i]!;
+    if (cells.length < 4) continue;
+    const label = labels[i]!;
+    const footprint = traceRegionPolygon(cells, cols, res, originX, originY);
+    if (footprint.length >= 3) {
+      const xs = footprint.map((p) => p.x);
+      const ys = footprint.map((p) => p.y);
+      const rw = Math.max(...xs) - Math.min(...xs);
+      const rh = Math.max(...ys) - Math.min(...ys);
+      const area = polygonAreaFtLocal(footprint);
+      if (rw < MIN_ROOM_FT || rh < MIN_ROOM_FT || area < MIN_ROOM_AREA) continue;
+      out.push(poly(label.text, guessRoomType(label.text), footprint, 9));
+    } else {
+      // Fallback AABB of assigned cells
+      let minC = Infinity;
+      let maxC = -Infinity;
+      let minR = Infinity;
+      let maxR = -Infinity;
+      for (const idx of cells) {
+        const c = idx % cols;
+        const r = (idx / cols) | 0;
+        minC = Math.min(minC, c);
+        maxC = Math.max(maxC, c);
+        minR = Math.min(minR, r);
+        maxR = Math.max(maxR, r);
+      }
+      const x0 = originX + minC * res;
+      const y0 = originY + minR * res;
+      const rw = (maxC - minC + 1) * res;
+      const rh = (maxR - minR + 1) * res;
+      if (rw < MIN_ROOM_FT || rh < MIN_ROOM_FT || rw * rh < MIN_ROOM_AREA) continue;
+      out.push(
+        poly(
+          label.text,
+          guessRoomType(label.text),
+          [
+            { x: x0, y: y0 },
+            { x: x0 + rw, y: y0 },
+            { x: x0 + rw, y: y0 + rh },
+            { x: x0, y: y0 + rh },
+          ],
+          9,
+        ),
+      );
+    }
+  }
+  return out.length >= 2 ? out : [];
+}
+
+/** Soft / dashed space-boundary segments — partition rooms, not solid walls. */
+export function isSoftPartitionSeg(s: Seg): boolean {
+  const lt = (s.linetype ?? '').toUpperCase();
+  if (/DASH|HIDDEN|PHANTOM|DOT|CENTER/.test(lt)) return true;
+  const layer = (s.layer ?? '').toUpperCase();
+  // Volume / ceiling break layers often mark open-plan room edges.
+  if (/CEILING|VOLUME|SPACE.?BOUND|ROOM.?BOUND|OPEN.?PLAN/.test(layer)) return true;
+  return false;
+}
+
 /** Raster flood-fill room extraction with adaptive envelope sealing. */
 export function roomsFromFloodFill(
   segments: Seg[],
   labels: RoomLabel[] = [],
+  opts?: { softPartitions?: Seg[] },
 ): { rooms: PlanRoomRect[]; warnings: string[] } {
   const warnings: string[] = [];
-  if (!segments.length) return { rooms: [], warnings: ['No wall segments for room fill.'] };
+  const softFromWalls = segments.filter(isSoftPartitionSeg);
+  const solidSegments = segments.filter((s) => !isSoftPartitionSeg(s));
+  const softPartitions = [...softFromWalls, ...(opts?.softPartitions ?? [])];
+  if (!solidSegments.length && !segments.length) return { rooms: [], warnings: ['No wall segments for room fill.'] };
+  const wallSegs = solidSegments.length ? solidSegments : segments;
 
   let minX = Infinity;
   let minY = Infinity;
   let maxX = -Infinity;
   let maxY = -Infinity;
-  for (const s of segments) {
+  for (const s of [...wallSegs, ...softPartitions]) {
     minX = Math.min(minX, s.x1, s.x2);
     minY = Math.min(minY, s.y1, s.y2);
     maxX = Math.max(maxX, s.x1, s.x2);
@@ -505,7 +603,7 @@ export function roomsFromFloodFill(
   const toC = (x: number) => Math.max(0, Math.min(cols - 1, Math.round((x - minX) / res)));
   const toR = (y: number) => Math.max(0, Math.min(rows - 1, Math.round((y - minY) / res)));
 
-  const paintSegs = (target: Uint8Array, thick: number) => {
+  const paintSegs = (target: Uint8Array, thick: number, segs: Seg[] = wallSegs) => {
     const paint = (c0: number, r0: number, c1: number, r1: number) => {
       const dc = Math.abs(c1 - c0);
       const dr = Math.abs(r1 - r0);
@@ -522,7 +620,7 @@ export function roomsFromFloodFill(
         }
       }
     };
-    for (const s of segments) {
+    for (const s of segs) {
       paint(toC(s.x1), toR(s.y1), toC(s.x2), toR(s.y2));
     }
   };
@@ -641,6 +739,11 @@ export function roomsFromFloodFill(
 
   // Partition walls: seal typical interior door gaps (~2 ft) so rooms stay separate.
   const partitionSealed = morphClose(baseWalls, Math.max(1, Math.round(2 / res)));
+  // Soft/dashed space boundaries (ceiling breaks, open-plan edges) — partition only.
+  if (softPartitions.length) {
+    paintSegs(partitionSealed, 0, softPartitions);
+    warnings.push(`Applied ${softPartitions.length} soft space-boundary segment(s).`);
+  }
 
   const seen = new Uint8Array(cols * rows);
   const rooms: PlanRoomRect[] = [];
@@ -697,7 +800,11 @@ export function roomsFromFloodFill(
 
       const insideLabels = labelsInsideRoom(labels, x, y, wFt, hFt);
       if (insideLabels.length >= 2 && areaFt >= 280) {
-        const split = roomsFromLabelVoronoi(x, y, wFt, hFt, insideLabels);
+        // Prefer cell-nearest partition so fills grow to the wall envelope.
+        let split = roomsFromLabelCells(cells, cols, res, minX, minY, insideLabels);
+        if (split.length < 2) {
+          split = roomsFromLabelVoronoi(x, y, wFt, hFt, insideLabels);
+        }
         if (split.length >= 2) {
           rooms.push(...split);
           n += split.length;
@@ -915,7 +1022,7 @@ export function segmentsToOrthogonalRoomsLegacy(segments: Seg[]): {
  */
 export function segmentsToRoomsAccurate(
   rawSegments: Seg[],
-  opts?: { labels?: RoomLabel[]; insUnits?: number },
+  opts?: { labels?: RoomLabel[]; insUnits?: number; softPartitions?: Seg[] },
 ): {
   rooms: PlanRoomRect[];
   warnings: string[];
@@ -959,7 +1066,13 @@ export function segmentsToRoomsAccurate(
     text: l.text,
   }));
 
-  const { rooms, warnings: w2 } = roomsFromFloodFill(denseWalls, scaledLabels);
+  const softScaled = (opts?.softPartitions ?? []).length
+    ? scaleSegmentsToFeet(opts!.softPartitions!, opts?.insUnits).segments
+    : [];
+
+  const { rooms, warnings: w2 } = roomsFromFloodFill(denseWalls, scaledLabels, {
+    softPartitions: softScaled,
+  });
   warnings.push(...w2);
   const wallCenterlines = wallCenterlinesFromSegments(denseWalls);
   warnings.push(`CAD wall centerlines for scene: ${wallCenterlines.length}.`);

@@ -4,11 +4,12 @@ import { usePlannerStore } from '../../store/plannerStore';
 
 const FT_TO_M = 0.3048;
 
-type Role = 'wall' | 'opening' | 'other';
+type Role = 'wall' | 'opening' | 'fixture' | 'other';
 
 const ROLE_STYLE: Record<Role, { color: string; opacity: number }> = {
   wall: { color: '#1e293b', opacity: 0.55 },
   opening: { color: '#b45309', opacity: 0.72 },
+  fixture: { color: '#0f766e', opacity: 0.8 },
   other: { color: '#64748b', opacity: 0.28 },
 };
 
@@ -29,7 +30,7 @@ export function CadPlanOverlay() {
 
   const geometries = useMemo(() => {
     if (!vectors?.length || !center) return null;
-    const buckets: Record<Role, number[]> = { wall: [], opening: [], other: [] };
+    const buckets: Record<Role, number[]> = { wall: [], opening: [], fixture: [], other: [] };
     for (const s of vectors) {
       const role: Role = s.role ?? 'other';
       // Same transform as buildFloorFromCadWalls → Scene3D world():

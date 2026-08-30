@@ -65,7 +65,7 @@ describe('dxf room accuracy helpers', () => {
     expect(names.some((n) => n.includes('KITCHEN'))).toBe(true);
   });
 
-  it('splits open-plan regions into Voronoi boxes per label', () => {
+  it('splits open-plan regions into labeled fills that cover the envelope', () => {
     const segs = [
       { x1: 0, y1: 0, x2: 40, y2: 0 },
       { x1: 40, y1: 0, x2: 40, y2: 24 },
@@ -80,6 +80,27 @@ describe('dxf room accuracy helpers', () => {
     const names = rooms.map((r) => r.name.toUpperCase());
     expect(names.some((n) => n.includes('KITCHEN'))).toBe(true);
     expect(names.some((n) => n.includes('GREAT'))).toBe(true);
+    const great = rooms.find((r) => /GREAT/i.test(r.name));
+    const kitchen = rooms.find((r) => /KITCHEN/i.test(r.name));
+    // Cell-nearest fills should claim a real share of the ~960 sq ft plate — not tiny label boxes.
+    expect((great?.w ?? 0) * (great?.h ?? 0)).toBeGreaterThan(150);
+    expect((kitchen?.w ?? 0) * (kitchen?.h ?? 0)).toBeGreaterThan(150);
+  });
+
+  it('uses soft/dashed partitions to separate open-plan rooms', () => {
+    const walls = [
+      { x1: 0, y1: 0, x2: 40, y2: 0 },
+      { x1: 40, y1: 0, x2: 40, y2: 24 },
+      { x1: 40, y1: 24, x2: 0, y2: 24 },
+      { x1: 0, y1: 24, x2: 0, y2: 0 },
+    ];
+    const soft = [{ x1: 20, y1: 1, x2: 20, y2: 23, linetype: 'DASHED', layer: 'CEILING' }];
+    const { rooms, warnings } = roomsFromFloodFill(walls, [
+      { x: 10, y: 12, text: 'KITCHEN' },
+      { x: 30, y: 12, text: 'GREAT ROOM' },
+    ], { softPartitions: soft });
+    expect(warnings.some((w) => /soft space-boundary/i.test(w))).toBe(true);
+    expect(rooms.length).toBeGreaterThanOrEqual(2);
   });
 
   it('imports a closed rectangle DXF into at least one room with sane size', () => {
