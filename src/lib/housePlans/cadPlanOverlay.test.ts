@@ -40,6 +40,8 @@ describe('plan-first CAD overlay import', () => {
         { x1: 100, y1: 0, x2: 136, y2: 0, layer: 'DOORS' },
         { x1: 40, y1: 40, x2: 55, y2: 40, layer: 'FIXTURES' },
         { x1: 60, y1: 50, x2: 90, y2: 50, layer: 'COUNTER' },
+        { x1: 120, y1: 20, x2: 120, y2: 160, layer: 'WALLS INT', linetype: 'DASHED' },
+        { x1: 10, y1: 90, x2: 100, y2: 90, layer: 'CEILING' },
       ],
     });
     const floor = plan.floors[0]!;
@@ -48,6 +50,7 @@ describe('plan-first CAD overlay import', () => {
     expect(floor.cadPlanVectorsFt?.some((v) => v.role === 'opening')).toBe(true);
     expect(floor.cadPlanVectorsFt?.some((v) => v.role === 'wall')).toBe(true);
     expect(floor.cadPlanVectorsFt?.some((v) => v.role === 'fixture')).toBe(true);
+    expect(floor.cadPlanVectorsFt?.some((v) => v.role === 'soft')).toBe(true);
     expect(warnings.some((w) => /plan vector/i.test(w))).toBe(true);
   });
 });

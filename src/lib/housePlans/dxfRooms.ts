@@ -364,13 +364,14 @@ export function closeSmallGaps(segments: Seg[], maxGap = 3.5): Seg[] {
 function guessRoomType(name: string): RoomType | string {
   const n = name.toLowerCase();
   if (/garage|carport/.test(n)) return 'Garage';
+  if (/lanai|porch|patio|balcony|courtyard|pool/.test(n)) return 'Outdoor';
   if (/kitchen|pantry/.test(n)) return 'Kitchen';
   if (/bath|powder|toilet|w\.?\s*c/.test(n)) return 'Bathroom';
   if (/bed|suite|owner|master|guest/.test(n)) return 'Bedroom';
   if (/laundry|mud|utility|mech/.test(n)) return 'Utility';
-  if (/dining/.test(n)) return 'Dining room';
+  if (/dining|nook/.test(n)) return 'Dining room';
   if (/office|study|flex/.test(n)) return 'Office';
-  if (/closet|wardrobe/.test(n)) return 'Closet';
+  if (/closet|wardrobe|w\.?\s*i\.?\s*c/.test(n)) return 'Closet';
   if (/foyer|entry|hall|corridor/.test(n)) return 'Hallway';
   if (/great|living|family|lounge|den/.test(n)) return 'Living room';
   return 'Living room';
@@ -551,14 +552,227 @@ export function roomsFromLabelCells(
   return out.length >= 2 ? out : [];
 }
 
-/** Soft / dashed space-boundary segments — partition rooms, not solid walls. */
+/** Soft / dashed space-boundary segments — partition rooms, not solid walls.
+ * Avoid painting all CEILING geometry (too noisy — shreds open plan into strips).
+ */
 export function isSoftPartitionSeg(s: Seg): boolean {
   const lt = (s.linetype ?? '').toUpperCase();
-  if (/DASH|HIDDEN|PHANTOM|DOT|CENTER/.test(lt)) return true;
   const layer = (s.layer ?? '').toUpperCase();
-  // Volume / ceiling break layers often mark open-plan room edges.
-  if (/CEILING|VOLUME|SPACE.?BOUND|ROOM.?BOUND|OPEN.?PLAN/.test(layer)) return true;
+  // Explicit space / room boundary layers.
+  if (/SPACE.?BOUND|ROOM.?BOUND|OPEN.?PLAN|VOLUME.?LINE/.test(layer)) return true;
+  // Dashed/hidden on wall layers only (volume ticks on walls, not full ceiling grids).
+  if (/DASH|HIDDEN|PHANTOM|DOT/.test(lt) && /\bWALL/.test(layer)) return true;
   return false;
+}
+
+/** Soft edges kept for Plan overlay (dotted room outlines) — broader than partition paint. */
+export function isSoftOverlaySeg(s: Seg): boolean {
+  if (isSoftPartitionSeg(s)) return true;
+  const lt = (s.linetype ?? '').toUpperCase();
+  const layer = (s.layer ?? '').toUpperCase();
+  if (/DASH|HIDDEN|PHANTOM|DOT|CENTER/.test(lt)) return true;
+  if (/CEILING|VOLUME/.test(layer) && segLength(s) >= 3) return true;
+  return false;
+}
+
+function pointInPoly(px: number, py: number, pts: { x: number; y: number }[]): boolean {
+  if (pts.length < 3) return false;
+  let inside = false;
+  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+    const xi = pts[i]!.x;
+    const yi = pts[i]!.y;
+    const xj = pts[j]!.x;
+    const yj = pts[j]!.y;
+    if (yi > py !== yj > py && px < ((xj - xi) * (py - yi)) / (yj - yi + 1e-12) + xi) inside = !inside;
+  }
+  return inside;
+}
+
+function roomFootprint(r: PlanRoomRect): { x: number; y: number }[] {
+  if (r.pointsFt && r.pointsFt.length >= 3) return r.pointsFt;
+  return [
+    { x: r.x, y: r.y },
+    { x: r.x + r.w, y: r.y },
+    { x: r.x + r.w, y: r.y + r.h },
+    { x: r.x, y: r.y + r.h },
+  ];
+}
+
+/**
+ * Claim leftover interior cells so the floor plate has no blank holes.
+ * Large leftover blobs become Hall/Living (or take a nearby unused label);
+ * small leftovers merge into the nearest existing room polygon.
+ */
+export function fillResidualInterior(
+  rooms: PlanRoomRect[],
+  interiorCells: number[],
+  cols: number,
+  res: number,
+  originX: number,
+  originY: number,
+  labels: RoomLabel[] = [],
+): PlanRoomRect[] {
+  // Always return a new array — callers may clear `rooms` after assign.
+  if (!interiorCells.length || !rooms.length) return rooms.slice();
+  const footprints = rooms.map(roomFootprint);
+  const uncovered: number[] = [];
+  for (const idx of interiorCells) {
+    const c = idx % cols;
+    const r = (idx / cols) | 0;
+    const cx = originX + (c + 0.5) * res;
+    const cy = originY + (r + 0.5) * res;
+    const covered = footprints.some((fp) => pointInPoly(cx, cy, fp));
+    if (!covered) uncovered.push(idx);
+  }
+  if (!uncovered.length) return rooms.map((r) => ({ ...r, pointsFt: r.pointsFt ? [...r.pointsFt] : undefined }));
+
+  // Connected components of uncovered interior.
+  const uncoveredSet = new Set(uncovered);
+  const seen = new Set<number>();
+  const components: number[][] = [];
+  for (const start of uncovered) {
+    if (seen.has(start)) continue;
+    const q = [start];
+    seen.add(start);
+    const comp: number[] = [];
+    for (let qi = 0; qi < q.length; qi++) {
+      const cur = q[qi]!;
+      comp.push(cur);
+      const cc = cur % cols;
+      const rr = (cur / cols) | 0;
+      for (const [nc, nr] of [
+        [cc + 1, rr],
+        [cc - 1, rr],
+        [cc, rr + 1],
+        [cc, rr - 1],
+      ] as const) {
+        const ni = nr * cols + nc;
+        if (!uncoveredSet.has(ni) || seen.has(ni)) continue;
+        seen.add(ni);
+        q.push(ni);
+      }
+    }
+    components.push(comp);
+  }
+
+  const usedLabels = new Set(rooms.map((r) => r.name.replace(/\s+/g, ' ').trim().toUpperCase()));
+  const next: PlanRoomRect[] = rooms.map((r) => ({
+    ...r,
+    pointsFt: r.pointsFt ? [...r.pointsFt] : undefined,
+  }));
+  const extras: PlanRoomRect[] = [];
+
+  for (const comp of components) {
+    const areaFt = comp.length * res * res;
+    if (areaFt < 25) continue;
+    const footprint = traceRegionPolygon(comp, cols, res, originX, originY);
+    if (footprint.length < 3) continue;
+    const xs = footprint.map((p) => p.x);
+    const ys = footprint.map((p) => p.y);
+    const x0 = Math.min(...xs);
+    const y0 = Math.min(...ys);
+    const w = Math.max(...xs) - x0;
+    const h = Math.max(...ys) - y0;
+    const cx = x0 + w / 2;
+    const cy = y0 + h / 2;
+
+    // Prefer an unused label that sits in/near this blob (lanai, hall, nook, …).
+    let labelHit: RoomLabel | undefined;
+    let bestLabelD = Infinity;
+    for (const l of labels) {
+      if (!looksLikeRoomName(l.text)) continue;
+      const key = normalizeRoomLabel(l.text).toUpperCase();
+      if (usedLabels.has(key)) continue;
+      if (l.x < x0 - 4 || l.x > x0 + w + 4 || l.y < y0 - 4 || l.y > y0 + h + 4) continue;
+      const d = (l.x - cx) ** 2 + (l.y - cy) ** 2;
+      if (d < bestLabelD) {
+        bestLabelD = d;
+        labelHit = l;
+      }
+    }
+
+    if (labelHit || areaFt >= 80) {
+      const name = labelHit ? normalizeRoomLabel(labelHit.text) : areaFt >= 200 ? 'Living' : 'Hall';
+      usedLabels.add(name.toUpperCase());
+      extras.push(poly(name, guessRoomType(name), footprint, 9));
+      continue;
+    }
+
+    // Small leftover — merge into nearest room by expanding its AABB/polygon union roughly.
+    let bestIdx = 0;
+    let bestD = Infinity;
+    for (let i = 0; i < next.length; i++) {
+      const r = next[i]!;
+      const rcx = r.x + r.w / 2;
+      const rcy = r.y + r.h / 2;
+      const d = (rcx - cx) ** 2 + (rcy - cy) ** 2;
+      if (d < bestD) {
+        bestD = d;
+        bestIdx = i;
+      }
+    }
+    const host = next[bestIdx]!;
+    const hostFp = roomFootprint(host);
+    const merged = [...hostFp, ...footprint];
+    const mxs = merged.map((p) => p.x);
+    const mys = merged.map((p) => p.y);
+    const mx0 = Math.min(...mxs);
+    const my0 = Math.min(...mys);
+    const mw = Math.max(...mxs) - mx0;
+    const mh = Math.max(...mys) - my0;
+    // Prefer traced union when host already has a polygon — use AABB of both as a solid fill.
+    next[bestIdx] = poly(host.name, host.roomType, [
+      { x: mx0, y: my0 },
+      { x: mx0 + mw, y: my0 },
+      { x: mx0 + mw, y: my0 + mh },
+      { x: mx0, y: my0 + mh },
+    ], host.ceilingFt ?? 9);
+  }
+
+  return [...next, ...extras];
+}
+
+/**
+ * Create Outdoor rooms for LANAI/PORCH/PATIO/ENTRY labels that flood-fill missed
+ * (often outside the sealed wall envelope).
+ */
+export function roomsFromOutdoorLabels(
+  labels: RoomLabel[],
+  existing: PlanRoomRect[],
+  bounds: { minX: number; minY: number; maxX: number; maxY: number },
+): PlanRoomRect[] {
+  const out: PlanRoomRect[] = [];
+  const used = new Set(existing.map((r) => r.name.replace(/\s+/g, ' ').trim().toUpperCase()));
+  for (const l of labels) {
+    if (!looksLikeRoomName(l.text)) continue;
+    if (!/LANAI|PORCH|PATIO|BALCONY|ENTRY|COURTYARD/i.test(l.text)) continue;
+    const key = normalizeRoomLabel(l.text).toUpperCase();
+    if (used.has(key)) continue;
+    // Skip if label already sits inside an existing room.
+    if (existing.some((r) => pointInPoly(l.x, l.y, roomFootprint(r)))) continue;
+    used.add(key);
+    // Default outdoor pad around the label, clamped to drawing bounds.
+    const w = /ENTRY/i.test(l.text) ? 10 : 18;
+    const h = /ENTRY/i.test(l.text) ? 8 : 12;
+    let x0 = l.x - w / 2;
+    let y0 = l.y - h / 2;
+    x0 = Math.max(bounds.minX, Math.min(bounds.maxX - w, x0));
+    y0 = Math.max(bounds.minY, Math.min(bounds.maxY - h, y0));
+    out.push(
+      poly(
+        normalizeRoomLabel(l.text),
+        'Outdoor',
+        [
+          { x: x0, y: y0 },
+          { x: x0 + w, y: y0 },
+          { x: x0 + w, y: y0 + h },
+          { x: x0, y: y0 + h },
+        ],
+        10,
+      ),
+    );
+  }
+  return out;
 }
 
 /** Raster flood-fill room extraction with adaptive envelope sealing. */
@@ -873,6 +1087,28 @@ export function roomsFromFloodFill(
     if (deduped.length) {
       rooms.length = 0;
       rooms.push(...deduped);
+    }
+
+    // Collect full interior plate (inside envelope, not solid walls) and fill blanks.
+    const interiorCells: number[] = [];
+    for (let i = 0; i < outside.length; i++) {
+      if (!outside[i] && !baseWalls[i]) interiorCells.push(i);
+    }
+    const filled = fillResidualInterior(rooms, interiorCells, cols, res, minX, minY, labels);
+    const filledCopy = filled === rooms ? rooms.slice() : filled;
+    rooms.length = 0;
+    rooms.push(...filledCopy);
+
+    // Outdoor labels (lanai / porch / entry) often sit outside the sealed envelope.
+    const outdoor = roomsFromOutdoorLabels(labels, rooms, {
+      minX: minX + pad,
+      minY: minY + pad,
+      maxX: maxX - pad,
+      maxY: maxY - pad,
+    });
+    if (outdoor.length) {
+      rooms.push(...outdoor);
+      warnings.push(`Added ${outdoor.length} outdoor space(s) from labels (lanai/porch/entry).`);
     }
 
     // Coverage of wall bbox — connected plans should claim a large share.
