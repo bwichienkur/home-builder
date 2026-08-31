@@ -823,6 +823,40 @@ function Furniture() {
   );
 }
 
+
+/** Opaque floor strips under every wall — seals Walk junctions even when room polygons are complex. */
+function WallFloorSeals({ color }: { color: string }) {
+  const walls = usePlannerStore((s) => s.walls);
+  const cameraMode = usePlannerStore((s) => s.cameraMode);
+  if (cameraMode === 'top' || cameraMode === 'elevation' || !walls.length) return null;
+  return (
+    <group userData={{ wallFloorSeals: true }}>
+      {walls.map((w) => {
+        const ax = (w.start.x - WORLD_ORIGIN.x) / PIXELS_PER_METER;
+        const az = (w.start.y - WORLD_ORIGIN.y) / PIXELS_PER_METER;
+        const bx = (w.end.x - WORLD_ORIGIN.x) / PIXELS_PER_METER;
+        const bz = (w.end.y - WORLD_ORIGIN.y) / PIXELS_PER_METER;
+        const len = Math.hypot(bx - ax, bz - az) || 0.01;
+        const midX = (ax + bx) / 2;
+        const midZ = (az + bz) / 2;
+        const angle = -Math.atan2(bz - az, bx - ax);
+        const depth = Math.max(w.thickness, 0.12) + 0.55;
+        return (
+          <mesh
+            key={`wfs-${w.id}`}
+            position={[midX, -0.01, midZ]}
+            rotation={[0, angle, 0]}
+            raycast={() => {}}
+          >
+            <boxGeometry args={[len + 0.08, 0.06, depth]} />
+            <meshBasicMaterial color={color} toneMapped={false} depthWrite />
+          </mesh>
+        );
+      })}
+    </group>
+  );
+}
+
 function Room() {
   const floor = usePlannerStore((s) => s.floorColor);
   const ceiling = usePlannerStore((s) => s.ceilingColor);
@@ -957,6 +991,7 @@ function Room() {
     <Bvh enabled={cameraMode !== 'top'}>
       <CadPlanOverlay />
       <PlanRoomDashedOutlines />
+      <WallFloorSeals color={floor} />
       {houseSealPoints && (
         <mesh
           rotation={[Math.PI / 2, 0, 0]}
