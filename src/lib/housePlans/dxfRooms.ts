@@ -664,7 +664,7 @@ export function fillResidualInterior(
 
   for (const comp of components) {
     const areaFt = comp.length * res * res;
-    if (areaFt < 25) continue;
+    if (areaFt < 18) continue;
     const footprint = traceRegionPolygon(comp, cols, res, originX, originY);
     if (footprint.length < 3) continue;
     const xs = footprint.map((p) => p.x);
@@ -691,7 +691,7 @@ export function fillResidualInterior(
       }
     }
 
-    if (labelHit || areaFt >= 80) {
+    if (labelHit || areaFt >= 60) {
       const name = labelHit ? normalizeRoomLabel(labelHit.text) : areaFt >= 200 ? 'Living' : 'Hall';
       usedLabels.add(name.toUpperCase());
       extras.push(poly(name, guessRoomType(name), footprint, 9));
@@ -752,8 +752,8 @@ export function roomsFromOutdoorLabels(
     if (existing.some((r) => pointInPoly(l.x, l.y, roomFootprint(r)))) continue;
     used.add(key);
     // Default outdoor pad around the label, clamped to drawing bounds.
-    const w = /ENTRY/i.test(l.text) ? 10 : 18;
-    const h = /ENTRY/i.test(l.text) ? 8 : 12;
+    const w = /ENTRY/i.test(l.text) ? 12 : /LANAI|PORCH/i.test(l.text) ? 22 : 16;
+    const h = /ENTRY/i.test(l.text) ? 10 : /LANAI|PORCH/i.test(l.text) ? 14 : 12;
     let x0 = l.x - w / 2;
     let y0 = l.y - h / 2;
     x0 = Math.max(bounds.minX, Math.min(bounds.maxX - w, x0));
@@ -1111,7 +1111,7 @@ export function roomsFromFloodFill(
       warnings.push(`Added ${outdoor.length} outdoor space(s) from labels (lanai/porch/entry).`);
     }
 
-    // Coverage of wall bbox — connected plans should claim a large share.
+    // Coverage of wall bbox — AABB sum (gate-compatible) + union raster (honest plate fill).
     const roomArea = rooms.reduce((s, r) => s + r.w * r.h, 0);
     const wallSpanX = maxX - minX - 2 * pad;
     const wallSpanY = maxY - minY - 2 * pad;
@@ -1120,6 +1120,38 @@ export function roomsFromFloodFill(
     warnings.push(
       `Detected ${rooms.length} enclosed room(s) via sealed-envelope flood-fill (${Math.round(coverage * 100)}% wall-bbox coverage).`,
     );
+    {
+      const coverRes = Math.max(res, 0.5);
+      const conditioned = rooms.filter((r) => r.roomType !== 'Outdoor');
+      const spanRooms = conditioned.length ? conditioned : rooms;
+      const painted = new Set<number>();
+      const cCols = Math.max(1, Math.ceil(wallSpanX / coverRes));
+      const cRows = Math.max(1, Math.ceil(wallSpanY / coverRes));
+      for (const room of spanRooms) {
+        const pts =
+          room.pointsFt && room.pointsFt.length >= 3
+            ? room.pointsFt
+            : [
+                { x: room.x, y: room.y },
+                { x: room.x + room.w, y: room.y },
+                { x: room.x + room.w, y: room.y + room.h },
+                { x: room.x, y: room.y + room.h },
+              ];
+        const c0 = Math.max(0, Math.floor((room.x - (minX + pad)) / coverRes));
+        const c1 = Math.min(cCols, Math.ceil((room.x + room.w - (minX + pad)) / coverRes));
+        const r0 = Math.max(0, Math.floor((room.y - (minY + pad)) / coverRes));
+        const r1 = Math.min(cRows, Math.ceil((room.y + room.h - (minY + pad)) / coverRes));
+        for (let rr = r0; rr < r1; rr++) {
+          for (let cc = c0; cc < c1; cc++) {
+            const cx = minX + pad + (cc + 0.5) * coverRes;
+            const cy = minY + pad + (rr + 0.5) * coverRes;
+            if (pointInPoly(cx, cy, pts)) painted.add(rr * cCols + cc);
+          }
+        }
+      }
+      const unionPct = (painted.size * coverRes * coverRes) / wallBBox;
+      warnings.push(`Union floor coverage ${Math.round(unionPct * 100)}% of wall bbox.`);
+    }
   }
   return { rooms, warnings };
 }

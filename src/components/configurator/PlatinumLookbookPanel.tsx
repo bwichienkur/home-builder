@@ -1,10 +1,19 @@
 import { useConfiguratorStore } from '../../store/configuratorStore';
+import { usePlannerStore } from '../../store/plannerStore';
+import { useBuildCatalog } from '../../store/catalogStore';
+import { useInventoryStore } from '../../store/inventoryStore';
 import { PLATINUM_INCLUDED_LEVELS } from '../../lib/configurator/contractTypes';
 
 /** Client-facing Platinum Features + Look Book summary inside the configurator dock. */
 export function PlatinumLookbookPanel() {
   const project = useConfiguratorStore((s) => s.project);
   const role = useConfiguratorStore((s) => s.role);
+  const selectedRoomId = usePlannerStore((s) => s.selectedRoomId);
+  const planRooms = usePlannerStore((s) => s.planRooms);
+  const applyLookbookToRoom = usePlannerStore((s) => s.applyLookbookToRoom);
+  const inventory = useInventoryStore((s) => s.items);
+  const catalog = useBuildCatalog(inventory);
+
   if (!project) return null;
   if (role !== 'client' && !project.survey) return null;
 
@@ -13,6 +22,21 @@ export function PlatinumLookbookPanel() {
     : PLATINUM_INCLUDED_LEVELS;
   const lookbook = (project.curatedOptions ?? []).filter((o) => o.tier === 'lookbook');
   const curated = (project.curatedOptions ?? []).filter((o) => o.tier === 'survey');
+  const focusRoom = planRooms.find((r) => r.id === selectedRoomId);
+
+  const applyPick = (catalogId: string, label: string) => {
+    const item = catalog.find((c) => c.id === catalogId);
+    const color = item?.color ?? '#c9b18f';
+    const isFloor = !item || /floor|tile|plank|surface/i.test(`${item.category} ${item.name} ${label}`);
+    applyLookbookToRoom({
+      roomId: selectedRoomId,
+      floorColor: isFloor ? color : undefined,
+      floorCatalogId: isFloor ? catalogId : undefined,
+      floorName: isFloor ? label : undefined,
+      wallColor: !isFloor && /wall|paint/i.test(`${item?.category} ${label}`) ? color : undefined,
+      ceilingColor: !isFloor && /ceiling/i.test(`${item?.category} ${label}`) ? color : undefined,
+    });
+  };
 
   return (
     <section className="configurator-panel platinum-lookbook-panel" aria-label="Platinum features and Look Book">
@@ -22,6 +46,7 @@ export function PlatinumLookbookPanel() {
           <strong>Platinum Features &amp; Look Book</strong>
           <p className="muted">
             Selections stay within Platinum — no pricing shown. Structural changes (walls, doors, windows) are locked.
+            {focusRoom ? ` Applying to ${focusRoom.name}.` : ' Select a room to apply finishes.'}
           </p>
         </div>
       </header>
@@ -50,6 +75,14 @@ export function PlatinumLookbookPanel() {
               <li key={`lb-${opt.catalogId}`}>
                 <strong>{opt.roomType}</strong>
                 <span>{opt.label}</span>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  disabled={!selectedRoomId}
+                  onClick={() => applyPick(opt.catalogId, opt.label)}
+                >
+                  Apply to room
+                </button>
               </li>
             ))}
           </ul>
@@ -66,6 +99,14 @@ export function PlatinumLookbookPanel() {
               <li key={`sv-${opt.roomType}-${opt.catalogId}`}>
                 <strong>{opt.roomType}</strong>
                 <span>{opt.label}</span>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  disabled={!selectedRoomId}
+                  onClick={() => applyPick(opt.catalogId, opt.label)}
+                >
+                  Apply to room
+                </button>
               </li>
             ))}
           </ul>

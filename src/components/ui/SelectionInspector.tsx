@@ -449,13 +449,15 @@ function PlanRoomProperties({ room, onClose }: { room: PlanRoomLabel; onClose: (
   );
 }
 
-function FinishSwatches({ highlight = null }: { highlight?: 'floor' | 'ceiling' | null }) {
+function FinishSwatches({ highlight = null }: { highlight?: 'floor' | 'ceiling' | 'wall' | null }) {
   const set = usePlannerStore((s) => s.setFinish);
+  const selectedRoomId = usePlannerStore((s) => s.selectedRoomId);
+  const scope = selectedRoomId ? 'this room' : 'whole house';
   return (
     <>
       {(highlight === null || highlight === 'floor') && (
         <label className={highlight === 'floor' ? 'finish-highlight' : ''}>
-          Floor material
+          Floor material ({scope})
           <div className="swatches">
             {finishes.slice(0, 6).map(([n, c]) => (
               <button title={n} key={c} style={{ background: c }} onClick={() => set('floor', c)} />
@@ -463,9 +465,19 @@ function FinishSwatches({ highlight = null }: { highlight?: 'floor' | 'ceiling' 
           </div>
         </label>
       )}
+      {(highlight === null || highlight === 'wall') && (
+        <label className={highlight === 'wall' ? 'finish-highlight' : ''}>
+          Wall color ({scope})
+          <div className="swatches">
+            {finishes.slice(2, 8).map(([n, c]) => (
+              <button title={n} key={`wall-${c}`} style={{ background: c }} onClick={() => set('wall', c)} />
+            ))}
+          </div>
+        </label>
+      )}
       {(highlight === null || highlight === 'ceiling') && (
         <label className={highlight === 'ceiling' ? 'finish-highlight' : ''}>
-          Ceiling color
+          Ceiling color ({scope})
           <div className="swatches">
             {finishes.slice(5).map(([n, c]) => (
               <button title={n} key={`ceil-${c}`} style={{ background: c }} onClick={() => set('ceiling', c)} />

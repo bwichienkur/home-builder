@@ -30,6 +30,13 @@ import { FloorFillPieces } from './FloorFillPieces';
 import { PlanEditLayer } from './PlanEditLayer';
 import { CadPlanOverlay } from './CadPlanOverlay';
 import { PlanRoomDashedOutlines } from './PlanRoomDashedOutlines';
+import { FirstPersonControls } from './FirstPersonControls';
+import type { CameraMode } from '../../types';
+
+/** Eye-height orbit (legacy `walk` + renamed `eyeOrbit`). */
+function isEyeOrbit(mode: CameraMode) {
+  return mode === 'walk' || mode === 'eyeOrbit';
+}
 import type { ReactElement } from 'react';
 import type { PlanRoomLabel, Wall } from '../../types';
 
@@ -206,7 +213,7 @@ function CameraRig() {
     x * yawCos - z * yawSin,
     x * yawSin + z * yawCos,
   ];
-  const fovDeg = mode === 'walk' ? 58 : mode === 'top' || mode === 'elevation' ? 42 : 48;
+  const fovDeg = isEyeOrbit(mode) ? 58 : mode === 'top' || mode === 'elevation' ? 42 : 48;
   const aspect = Math.max(0.35, canvasW / Math.max(1, canvasH));
 
   // Page center by default; shift into the free band left of a wide inspector only.
@@ -216,7 +223,7 @@ function CameraRig() {
     const dist =
       mode === 'top'
         ? viewFraming.topHeight
-        : mode === 'walk'
+        : isEyeOrbit(mode)
           ? Math.max(4.2, viewFraming.span * 0.55)
           : Math.hypot(viewFraming.orbitPose[0] - center[0], viewFraming.orbitPose[1], viewFraming.orbitPose[2] - center[2]) ||
             viewFraming.topHeight;
@@ -272,7 +279,7 @@ function CameraRig() {
       const [ox, oz] = yawOffset(0, zBias);
       return [center[0] + shiftWorldX + ox, viewFraming.topPose[1], center[2] + shiftWorldZ + oz];
     }
-    if (mode === 'walk') {
+    if (isEyeOrbit(mode)) {
       const back = Math.max(4.2, viewFraming.span * 0.55);
       const [ox, oz] = yawOffset(0, back);
       return [center[0] + shiftWorldX + ox, 1.55, center[2] + shiftWorldZ + oz];
@@ -296,10 +303,10 @@ function CameraRig() {
   const maxDistance =
     mode === 'top'
       ? Math.max(viewFraming.topHeight * 2.4, viewFraming.span * 7, 100)
-      : mode === 'walk'
+      : isEyeOrbit(mode)
         ? Math.max(14, viewFraming.span * 1.4)
         : Math.max(viewFraming.orbitPose[1] * 2.6, viewFraming.span * 5.5, 52);
-  const minDistance = mode === 'walk' ? 1.2 : mode === 'top' ? Math.max(3, viewFraming.span * 0.08) : Math.max(2.5, viewFraming.span * 0.12);
+  const minDistance = isEyeOrbit(mode) ? 1.2 : mode === 'top' ? Math.max(3, viewFraming.span * 0.08) : Math.max(2.5, viewFraming.span * 0.12);
 
   // Orthographic plan zoom — true top-down (no perspective tilt).
   const orthoZoom = useMemo(() => {
@@ -529,36 +536,40 @@ function CameraRig() {
         />
       ) : (
         <PerspectiveCamera
-          key="persp"
+          key={mode === 'firstPerson' ? 'fp-persp' : 'persp'}
           makeDefault
           position={poseTuple}
-          fov={mode === 'walk' ? 58 : 48}
+          fov={isEyeOrbit(mode) || mode === 'firstPerson' ? 58 : 48}
         />
       )}
-      <OrbitControls
-        ref={controls}
-        enabled={!moving && !placing}
-        target={[targetTuple[0], mode === 'walk' ? 1.1 : targetTuple[1], targetTuple[2]]}
-        minPolarAngle={mode === 'top' ? 1e-4 : mode === 'elevation' ? Math.PI / 2 - 1e-4 : mode === 'walk' ? 0.7 : 0}
-        maxPolarAngle={mode === 'top' ? 1e-3 : mode === 'elevation' ? Math.PI / 2 + 1e-4 : mode === 'walk' ? Math.PI / 2.05 : Math.PI - 0.06}
-        minAzimuthAngle={mode === 'top' ? viewYawRad : mode === 'elevation' ? elevationAzimuth : -Infinity}
-        maxAzimuthAngle={mode === 'top' ? viewYawRad : mode === 'elevation' ? elevationAzimuth : Infinity}
-        minDistance={minDistance}
-        maxDistance={maxDistance}
-        enableZoom
-        enablePan={!moving}
-        enableRotate={mode !== 'top' && mode !== 'elevation' && !moving}
-        mouseButtons={{
-          LEFT: mode === 'top' || mode === 'elevation' ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE,
-          MIDDLE: THREE.MOUSE.DOLLY,
-          RIGHT: THREE.MOUSE.PAN,
-        }}
-        touches={{
-          ONE: mode === 'top' || mode === 'elevation' ? THREE.TOUCH.PAN : THREE.TOUCH.ROTATE,
-          TWO: THREE.TOUCH.DOLLY_PAN,
-        }}
-        onChange={() => invalidate()}
-      />
+      {mode === 'firstPerson' ? (
+        <FirstPersonControls />
+      ) : (
+        <OrbitControls
+          ref={controls}
+          enabled={!moving && !placing}
+          target={[targetTuple[0], isEyeOrbit(mode) ? 1.1 : targetTuple[1], targetTuple[2]]}
+          minPolarAngle={mode === 'top' ? 1e-4 : mode === 'elevation' ? Math.PI / 2 - 1e-4 : isEyeOrbit(mode) ? 0.7 : 0}
+          maxPolarAngle={mode === 'top' ? 1e-3 : mode === 'elevation' ? Math.PI / 2 + 1e-4 : isEyeOrbit(mode) ? Math.PI / 2.05 : Math.PI - 0.06}
+          minAzimuthAngle={mode === 'top' ? viewYawRad : mode === 'elevation' ? elevationAzimuth : -Infinity}
+          maxAzimuthAngle={mode === 'top' ? viewYawRad : mode === 'elevation' ? elevationAzimuth : Infinity}
+          minDistance={minDistance}
+          maxDistance={maxDistance}
+          enableZoom
+          enablePan={!moving}
+          enableRotate={mode !== 'top' && mode !== 'elevation' && !moving}
+          mouseButtons={{
+            LEFT: mode === 'top' || mode === 'elevation' ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE,
+            MIDDLE: THREE.MOUSE.DOLLY,
+            RIGHT: THREE.MOUSE.PAN,
+          }}
+          touches={{
+            ONE: mode === 'top' || mode === 'elevation' ? THREE.TOUCH.PAN : THREE.TOUCH.ROTATE,
+            TWO: THREE.TOUCH.DOLLY_PAN,
+          }}
+          onChange={() => invalidate()}
+        />
+      )}
     </>
   );
 }
@@ -1257,11 +1268,12 @@ function ElevationWallDims({
 function WallMeshes() {
   const walls = useVisibleWalls();
   const openings = usePlannerStore((s) => s.openings);
-  const color = usePlannerStore((s) => s.wallColor);
+  const sceneWallColor = usePlannerStore((s) => s.wallColor);
   const selectedId = usePlannerStore((s) => s.selectedWallId);
   const selectedOpeningId = usePlannerStore((s) => s.selectedOpeningId);
   const selectedRoomId = usePlannerStore((s) => s.selectedRoomId);
   const planRooms = usePlannerStore((s) => s.planRooms);
+  const workflowStage = usePlannerStore((s) => s.workflowStage);
   const unitSystem = usePlannerStore((s) => s.unitSystem);
   const select = usePlannerStore((s) => s.selectWall);
   const placeOpeningAtWorld = usePlannerStore((s) => s.placeOpeningAtWorld);
@@ -1270,6 +1282,8 @@ function WallMeshes() {
   const elevationFace = usePlannerStore((s) => s.elevationFace);
   const tool = usePlannerStore((s) => s.tool);
   const opacityByWall = useDollhouseCutaway(walls);
+  const focusRoom = workflowStage === 'room' ? planRooms.find((r) => r.id === selectedRoomId) : null;
+  const color = focusRoom?.wallColor || sceneWallColor;
   const wallIds = useMemo(() => new Set(walls.map((w) => w.id)), [walls]);
   const visibleOpenings = useMemo(
     () => (layers.openings ? openings.filter((o) => wallIds.has(o.wallId)) : []),
@@ -2342,6 +2356,7 @@ function Room() {
         roomEntries.map(({ points, label }, i) => {
           const selected = !!label && label.id === selectedRoomId;
           const floorColor = label?.floorColor || floor;
+          const ceilingColor = label?.ceilingColor || ceiling;
           const span = (() => {
             const xs = points.map((p) => (p.x - WORLD_ORIGIN.x) / PIXELS_PER_METER);
             const zs = points.map((p) => (p.y - WORLD_ORIGIN.y) / PIXELS_PER_METER);
@@ -2431,12 +2446,12 @@ function Room() {
                 >
                   <shapeGeometry args={[roomShapeWithHoles(points, stairs)]} />
                   <meshStandardMaterial
-                    color={selectedSurface === 'ceiling' ? '#0058a3' : ceiling}
+                    color={selectedSurface === 'ceiling' ? '#0058a3' : ceilingColor}
                     roughness={0.92}
                     side={THREE.DoubleSide}
                     transparent
                     opacity={ceilingOpacity}
-                    depthWrite={ceilingOpacity > 0.75 || cameraMode === 'walk'}
+                    depthWrite={ceilingOpacity > 0.75 || isEyeOrbit(cameraMode) || cameraMode === 'firstPerson'}
                     emissive={selectedSurface === 'ceiling' ? '#003d70' : '#000000'}
                     emissiveIntensity={selectedSurface === 'ceiling' ? 0.1 : 0}
                   />
@@ -2479,7 +2494,7 @@ function Room() {
                 roughness={0.92}
                 transparent
                 opacity={ceilingOpacity}
-                depthWrite={ceilingOpacity > 0.75 || cameraMode === 'walk'}
+                depthWrite={ceilingOpacity > 0.75 || isEyeOrbit(cameraMode) || cameraMode === 'firstPerson'}
                 side={THREE.DoubleSide}
               />
             </mesh>
@@ -2907,6 +2922,8 @@ export function Scene3D() {
       </Canvas>
       {pending ? (
         <div className="scene-help">Move to place · Tap floor or Confirm to drop · Cancel to abort</div>
+      ) : cameraMode === 'firstPerson' ? (
+        <div className="scene-help">Click to look · WASD to walk · Esc releases pointer</div>
       ) : (
         <div className="scene-help">Drag furniture to move · Tap through open walls · Empty space pans/orbits</div>
       )}

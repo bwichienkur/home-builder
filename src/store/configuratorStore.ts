@@ -742,7 +742,7 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
 
     patchProject(get, set, {
       housePlanId: 'custom',
-      importedHousePlan: asPlanDocument(result.plan),
+      importedHousePlan: asPlanDocument(result.plan, { sourceFile: files.drawing?.name }),
       drawingPackageId: packageId,
       drawingPackage: result.package,
       workflowStatus: 'plan_verification',
