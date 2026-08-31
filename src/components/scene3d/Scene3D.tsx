@@ -1567,8 +1567,14 @@ export function Scene3D() {
   const walking = walkPerfActive(cameraMode);
   if (!supported) return <SceneFallback />;
   return (
-    <div className="scene-host" onDragOver={(e) => e.preventDefault()} onDrop={drop}>
+    <div
+      className="scene-host"
+      style={{ background: cameraMode === 'top' || cameraMode === 'elevation' ? '#e8eaed' : '#c9b18f' }}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={drop}
+    >
       <Canvas
+        style={{ background: cameraMode === 'top' || cameraMode === 'elevation' ? '#e8eaed' : '#c9b18f' }}
         fallback={<SceneFallback />}
         shadows={!coarse && !walking}
         // Walk: cap DPR for fps. Edit modes keep sharper edges.
@@ -1584,6 +1590,11 @@ export function Scene3D() {
         }}
         onCreated={(state) => {
           state.events.filter = preferInteriorPicks;
+          const mode = usePlannerStore.getState().cameraMode;
+          const hex = mode === 'top' || mode === 'elevation' ? '#e8eaed' : '#c9b18f';
+          const c = new THREE.Color(hex);
+          state.scene.background = c;
+          state.gl.setClearColor(c, 1);
         }}
         onPointerMissed={() => {
           if (pending || pendingCorner) return;
