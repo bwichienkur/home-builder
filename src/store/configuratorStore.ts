@@ -762,6 +762,16 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
     // Apply the stamped document so stable room IDs match stored plan.
     planner.applyHousePlanObject(doc);
 
+    // Show CAD linework under rooms for DWG parity; fit the plate.
+    usePlannerStore.getState().setLayerVisibility({ cadOverlay: true });
+    usePlannerStore.getState().setCameraMode('top');
+    if (typeof window !== 'undefined') {
+      window.setTimeout(() => {
+        window.dispatchEvent(new Event('roomcraft-fit-plan'));
+        window.dispatchEvent(new Event('roomcraft-refocus'));
+      }, 80);
+    }
+
     // Re-apply finishes that survive re-import via name+centroid match.
     const nextRooms = doc.floors[0]?.rooms ?? [];
     const merged = mergeRoomConfigurations(prevRooms, nextRooms, prevConfigs);
