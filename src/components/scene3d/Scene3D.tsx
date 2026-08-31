@@ -31,12 +31,7 @@ import { PlanEditLayer } from './PlanEditLayer';
 import { CadPlanOverlay } from './CadPlanOverlay';
 import { PlanRoomDashedOutlines } from './PlanRoomDashedOutlines';
 import { FirstPersonControls } from './FirstPersonControls';
-import type { CameraMode } from '../../types';
-
-/** Eye-height orbit (legacy `walk` + renamed `eyeOrbit`). */
-function isEyeOrbit(mode: CameraMode) {
-  return mode === 'walk' || mode === 'eyeOrbit';
-}
+import { isEyeOrbit } from './cameraModes';
 import type { ReactElement } from 'react';
 import type { PlanRoomLabel, Wall } from '../../types';
 

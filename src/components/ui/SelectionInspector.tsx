@@ -380,6 +380,29 @@ function PlanRoomProperties({ room, onClose }: { room: PlanRoomLabel; onClose: (
           Furnish room
         </button>
       </div>
+      <FinishSwatches />
+      <p className="muted room-size-line">
+        {[
+          room.floorCatalogId && `Floor: ${room.floorName ?? room.floorCatalogId}`,
+          room.wallCatalogId && `Wall: ${room.wallCatalogId}`,
+          room.ceilingCatalogId && `Ceiling: ${room.ceilingCatalogId}`,
+        ]
+          .filter(Boolean)
+          .join(' · ') || 'No catalog finishes yet — use swatches or Look Book Apply to room.'}
+      </p>
+      <div className="wall-actions">
+        <button
+          type="button"
+          className="btn-secondary"
+          onClick={() => {
+            onClose();
+            enterRoom(room.id);
+            window.dispatchEvent(new CustomEvent('roomcraft-open-catalog', { detail: { filter: 'Surfaces' } }));
+          }}
+        >
+          Open catalog for finishes
+        </button>
+      </div>
       <label>
         Room name
         <input className="property-input" value={room.name} onChange={(e) => update(room.id, { name: e.target.value })} />

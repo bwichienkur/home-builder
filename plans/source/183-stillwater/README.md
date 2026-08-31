@@ -16,6 +16,22 @@ npm run plan:fidelity
 
 Generates `MODEL.dxf` from `MODEL.dwg` when missing. Writes `artifacts/plan-fidelity/stillwater-report.json` and `stillwater-rooms.svg` on each run.
 
+Synthetic open-plan / ranch fixtures also run under `src/lib/housePlans/syntheticFidelity.test.ts` (no second real CAD package in-repo yet).
+
+## Server DWG → JSON spike (deferred)
+
+Native DWG fidelity beyond `dwgdxf` WASM is the next accuracy lever when Stillwater envelope/raster plateaus:
+
+| Option | Notes |
+|--------|-------|
+| Keep `dwgdxf` WASM | Current path; good enough for iterative flood-fill work |
+| LibreDWG / ODA server | Resolve BLOCKs/INSERTs/ARCs; needs a small Node or container service |
+| Teigha / commercial | Highest fidelity; licensing |
+
+**Spike exit criteria:** convert Stillwater `MODEL.dwg` server-side to normalized walls+labels JSON that improves fidelity gate envelope coverage by ≥10 pts vs WASM DXF. Only then wire a Vercel/serverless or sidecar converter.
+
+Until then: prefer DXF layer hygiene in AutoCAD (floor viewport, wall/door layers, soft space boundaries) over a new service.
+
 
 ```bash
 npm run plan:import-stillwater
