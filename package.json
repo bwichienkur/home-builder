@@ -15,6 +15,7 @@
     "plan:import-stillwater": "node scripts/import-stillwater-dwg.mjs",
     "plan:export-stillwater-sheets": "node scripts/export-stillwater-sheets.mjs",
     "plan:fidelity": "vitest run src/lib/housePlans/planFidelity.test.ts src/lib/housePlans/stillwaterFidelity.test.ts",
+    "plan:compare-stillwater": "vitest run src/lib/housePlans/stillwaterCompare.test.ts",
     "db:migrate": "node scripts/migrate-db.mjs",
     "catalog:export-vendor-import": "node scripts/export-olsen-vendor-import.mjs",
     "pipedrive:pull": "node -e \"import('./server/pipedrive/pull.js').then((m) => m.pullPipedrive().then((p) => { console.log(JSON.stringify({ ok: true, pulledAt: p.pulledAt, company: p.reports.company, openDeals: p.reports.openDeals.length, wonDeals: p.reports.wonDeals.length }, null, 2)); }).catch((e) => { console.error(e.message); process.exit(1); }))\"",

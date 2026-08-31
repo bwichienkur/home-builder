@@ -3,7 +3,7 @@ import type { PlanFidelityThresholds } from './planFidelity';
 /**
  * Regression thresholds for Stillwater MODEL.dxf full-package import.
  * Raised Aug 2026 toward CAD-faithfulness after plan-engine-continue.
- * Baseline: 21 rooms, 11/11 named hits, ~63% envelope, ~51% raster, ~4180 living, ~3400+ gross.
+ * Baseline: ~22 rooms, 11/11 named hits, ~63% envelope, ~51% raster, ~4186 living, ~3400+ gross.
  * Aspirational long-term target remains ~95% envelope / raster coverage (needs richer CAD geometry).
  */
 export const STILLWATER_EXPECTED_NAME_PATTERNS = [

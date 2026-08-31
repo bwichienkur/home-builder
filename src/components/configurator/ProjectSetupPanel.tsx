@@ -188,10 +188,26 @@ export function ProjectSetupPanel() {
             <p className="muted">
               Drawing pack · {project.drawingPackage.sheets.length} sheets
               {project.importedHousePlan
-                ? ` · ${project.importedHousePlan.floors[0]?.rooms.length ?? 0} rooms detected`
+                ? ` · ${project.importedHousePlan.floors[0]?.rooms.length ?? 0} rooms · ${project.importedHousePlan.livingSqFt ?? '—'} sf living`
                 : ''}
             </p>
           )}
+          {project?.drawingPackage?.warnings?.length ? (
+            <details className="drawing-import-warnings">
+              <summary className="muted">Import notes ({project.drawingPackage.warnings.length})</summary>
+              <ul>
+                {project.drawingPackage.warnings.slice(0, 8).map((w) => (
+                  <li key={w}>{w}</li>
+                ))}
+              </ul>
+            </details>
+          ) : null}
+          <p className="muted" style={{ fontSize: '0.85rem', lineHeight: 1.35 }}>
+            Stillwater QA: drop <code>plans/source/183-stillwater/MODEL.dwg</code> +{' '}
+            <code>public/plan-sheets/stillwater-183/plan-set.pdf</code>. After import, keep{' '}
+            <strong>Layers → CAD overlay</strong> on and open <strong>Plan sheets</strong> for the PDF floor.
+            CLI: <code>npm run plan:compare-stillwater</code>.
+          </p>
         </div>
 
         <label className="configurator-field">

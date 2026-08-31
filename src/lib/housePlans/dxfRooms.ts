@@ -693,8 +693,8 @@ export function fillResidualInterior(
       }
     }
 
-    if (labelHit || areaFt >= 60) {
-      const name = labelHit ? normalizeRoomLabel(labelHit.text) : areaFt >= 200 ? 'Living' : 'Hall';
+    if (labelHit || areaFt >= 40) {
+      const name = labelHit ? normalizeRoomLabel(labelHit.text) : areaFt >= 160 ? 'Living' : 'Hall';
       usedLabels.add(name.toUpperCase());
       extras.push(poly(name, guessRoomType(name), footprint, 9));
       continue;
