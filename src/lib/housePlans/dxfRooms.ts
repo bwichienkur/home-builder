@@ -714,6 +714,10 @@ export function fillResidualInterior(
       }
     }
     const host = next[bestIdx]!;
+    // Do not replace a traced wall-hugging polygon with an AABB — that drifts fills off CAD.
+    if (host.pointsFt && host.pointsFt.length >= 3 && areaFt < 90) {
+      continue;
+    }
     const hostFp = roomFootprint(host);
     const merged = [...hostFp, ...footprint];
     const mxs = merged.map((p) => p.x);
