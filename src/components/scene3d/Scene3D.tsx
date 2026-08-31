@@ -75,8 +75,8 @@ function SceneAtmosphere() {
   const framing = useMemo(() => framingFromWalls(walls), [walls]);
   const { gl, scene } = useThree();
   // Walk / eye-orbit: floor-matched clear color so any residual seam never reads as white void.
-  const walkLike = mode === 'firstPerson' || mode === 'walk' || mode === 'eyeOrbit';
-  const bg = mode === 'top' || mode === 'elevation' ? '#e8eaed' : walkLike ? '#c9b18f' : '#e8eaed';
+  // Any non-plan 3D view: floor-matched clear color so wall–floor micro-gaps never flash studio gray.
+  const bg = mode === 'top' || mode === 'elevation' ? '#e8eaed' : '#c9b18f';
   useLayoutEffect(() => {
     const c = new THREE.Color(bg);
     scene.background = c;
@@ -928,23 +928,27 @@ function Room() {
     }
     selectSurface('floor');
   };
-  const isolating = workflowStage === 'room' && !!selectedRoomId;
+    const isolating = workflowStage === 'room' && !!selectedRoomId;
   // Plan stays exact for CAD registration; Walk/3D floors expand under walls so seams never show white.
   const sealFloors = cameraMode !== 'top' && cameraMode !== 'elevation';
+  // In Walk/3D never drop neighboring room floors — isolating to one room left white voids at shared walls.
   const roomEntries = useMemo(() => {
     if (planRooms.length) {
-      const labels = isolating ? planRooms.filter((r) => r.id === selectedRoomId) : planRooms;
+      const labels =
+        isolating && !sealFloors ? planRooms.filter((r) => r.id === selectedRoomId) : planRooms;
       return labels.map((label) => ({ points: label.points, label }));
     }
     return rooms.map((points, i) => ({ points, label: undefined as PlanRoomLabel | undefined, i }));
-  }, [planRooms, rooms, isolating, selectedRoomId]);
+  }, [planRooms, rooms, isolating, selectedRoomId, sealFloors]);
   const houseSealPoints = useMemo(() => {
-    if (!sealFloors || !roomEntries.length) return null;
-    return roomBoundsPolygon(
-      roomEntries.map((e) => e.points),
-      FLOOR_SEAL_EXPAND_M + 0.15,
-    );
-  }, [sealFloors, roomEntries]);
+    if (!sealFloors) return null;
+    const polys = planRooms.length
+      ? planRooms.map((r) => r.points)
+      : rooms;
+    if (!polys.length) return null;
+    return roomBoundsPolygon(polys, FLOOR_SEAL_EXPAND_M + 0.15);
+  }, [sealFloors, planRooms, rooms]);
+
   return (
     <Bvh enabled={cameraMode !== 'top'}>
       <CadPlanOverlay />
