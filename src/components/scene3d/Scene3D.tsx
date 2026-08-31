@@ -143,9 +143,6 @@ function FloorMaterial({
           transparent={transparent}
           opacity={opacity}
           depthWrite={depthWrite}
-          polygonOffset
-          polygonOffsetFactor={1}
-          polygonOffsetUnits={1}
         />
       }
     >
@@ -269,9 +266,6 @@ function TexturedFloorMaterialColorOnly({
       transparent={transparent}
       opacity={opacity}
       depthWrite={depthWrite}
-      polygonOffset
-      polygonOffsetFactor={1}
-      polygonOffsetUnits={1}
     />
   );
 }
@@ -312,9 +306,6 @@ function TexturedFloorMaterialColorRough({
       transparent={transparent}
       opacity={opacity}
       depthWrite={depthWrite}
-      polygonOffset
-      polygonOffsetFactor={1}
-      polygonOffsetUnits={1}
     />
   );
 }
@@ -360,9 +351,6 @@ function TexturedFloorMaterialPBR({
       transparent={transparent}
       opacity={opacity}
       depthWrite={depthWrite}
-      polygonOffset
-      polygonOffsetFactor={1}
-      polygonOffsetUnits={1}
     />
   );
 }
@@ -851,11 +839,11 @@ function WallFloorSeals({ color }: { color: string }) {
         return (
           <mesh
             key={`wfs-${w.id}`}
-            position={[midX, -0.01, midZ]}
+            position={[midX, 0.02, midZ]}
             rotation={[0, angle, 0]}
             raycast={() => {}}
           >
-            <boxGeometry args={[len + 0.08, 0.06, depth]} />
+            <boxGeometry args={[len + 0.12, 0.12, depth]} />
             <meshBasicMaterial color={color} toneMapped={false} depthWrite />
           </mesh>
         );
