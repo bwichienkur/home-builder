@@ -583,6 +583,8 @@ export function WallMeshes() {
         const role = w.assembly ?? 'interior';
         if (role === 'exterior') tinted.lerp(new THREE.Color('#7a746c'), 0.16);
         else if (role === 'party') tinted.lerp(new THREE.Color('#5c5348'), 0.12);
+        // Walk: no polygonOffset — offset opens light leaks at wall–floor grazing angles.
+        const walkMode = cameraMode === 'firstPerson' || cameraMode === 'walk';
         const wallMat = {
           color: `#${tinted.getHexString()}`,
           roughness: 0.86,
@@ -590,9 +592,9 @@ export function WallMeshes() {
           opacity: drawOpacity,
           // Stable depth policy while soft — flipping depthWrite mid-fade caused dissolve pops.
           depthWrite: orbiting ? drawOpacity > 0.96 : !soft || drawOpacity > 0.9,
-          polygonOffset: true,
-          polygonOffsetFactor: 1,
-          polygonOffsetUnits: 1,
+          polygonOffset: !walkMode,
+          polygonOffsetFactor: walkMode ? 0 : 1,
+          polygonOffsetUnits: walkMode ? 0 : 1,
         } as const;
         const base = solids.map((box, i) => {
           const c = (box.along0 + box.along1) / 2;
@@ -753,6 +755,22 @@ export function WallMeshes() {
             );
           return parts;
         });
+        // Opaque baseboard seals residual wall–floor micro-gaps in Walk/3D.
+        const baseboard =
+          cameraMode !== 'top' && cameraMode !== 'elevation'
+            ? [
+                <mesh
+                  key={w.id + 'baseboard'}
+                  position={[midX, 0.04, midZ]}
+                  rotation={[0, angle, 0]}
+                  raycast={() => {}}
+                  renderOrder={1}
+                >
+                  <boxGeometry args={[origLen + 0.06, 0.1, Math.max(w.thickness, 0.12) + 0.06]} />
+                  <meshBasicMaterial color={`#${tinted.getHexString()}`} toneMapped={false} depthWrite />
+                </mesh>,
+              ]
+            : [];
         // 3D pick proxy while fading so cut-away walls remain selectable.
         return [
           ...(topPick ? [topPick] : []),
@@ -775,6 +793,7 @@ export function WallMeshes() {
               ]
             : []),
           ...base,
+          ...baseboard,
           ...selectionHalo,
           ...fixtures,
           ...(cameraMode === 'top' &&
@@ -882,17 +901,20 @@ export function WallMeshes() {
             const drawOpacity = opacity;
             const fading = drawOpacity < 0.97;
             const soft = orbiting || drawOpacity < 0.999;
+            // Dig corner posts slightly below the floor so bases never flash background.
+            const postBite = 0.05;
+            const postH = h + postBite;
             posts.push(
               <mesh
                 key={`corner-${key}`}
-                position={[x, h / 2, z]}
+                position={[x, postH / 2 - postBite, z]}
                 castShadow={!fading && cameraMode !== 'top'}
                 receiveShadow={!fading && cameraMode !== 'top'}
                 renderOrder={selectedTouch ? 2 : 0}
                 raycast={fading ? () => {} : undefined}
                 userData={fading ? { wallCutawayPick: true } : undefined}
               >
-                <boxGeometry args={[t * 0.98, h, t * 0.98]} />
+                <boxGeometry args={[t * 0.98, postH, t * 0.98]} />
                 <meshStandardMaterial
                   color={color}
                   roughness={0.86}

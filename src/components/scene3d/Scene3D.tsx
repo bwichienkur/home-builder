@@ -5,7 +5,15 @@ import * as THREE from 'three';
 import { usePlannerStore } from '../../store/plannerStore';
 import { useCatalogById } from '../../store/catalogStore';
 import type { FurnitureItem, PlanRoomLabel, Wall } from '../../types';
-import { detectRoomPolygons, roomShape, roomShapeWithHoles } from '../../lib/geometry/rooms';
+import {
+  detectRoomPolygons,
+  expandRoomPolygon,
+  FLOOR_SEAL_EXPAND_M,
+  FLOOR_UNDER_WALL_M,
+  roomBoundsPolygon,
+  roomShape,
+  roomShapeWithHoles,
+} from '../../lib/geometry/rooms';
 import { alignmentGuides, clampWallMountY, constrainPlacement, pointOnWall, roomFloorCenter, wallFrame, WORLD_ORIGIN } from '../../lib/geometry/placement';
 import { doorSwingZones, furnitureHitsDoorSwing } from '../../lib/geometry/doorClearance';
 import { wouldOverlapFurniture } from '../../lib/collisions';
@@ -65,18 +73,30 @@ function SceneAtmosphere() {
   const mode = usePlannerStore((s) => s.cameraMode);
   const walls = usePlannerStore((s) => s.walls);
   const framing = useMemo(() => framingFromWalls(walls), [walls]);
-  // Top: no fog (overhead plates sat past the old far plane).
-  if (mode === 'top' || mode === 'elevation') return <color attach="background" args={['#e8eaed']} />;
-  // Orbit/walk: keep a soft depth cue, but start fog well beyond normal dollhouse distances
-  // so zooming out never dissolves the room (old near ≈ 18m blanked the plate).
+  const { gl, scene } = useThree();
+  // Non-plan 3D: floor-tone clear color. Environment unmount can null scene.background —
+  // force Color + clearColor every frame so wall–floor gaps never flash studio gray (#e8eaed).
+  const bg = mode === 'top' || mode === 'elevation' ? '#e8eaed' : '#c9b18f';
+  const bgRef = useRef(bg);
+  bgRef.current = bg;
+  useLayoutEffect(() => {
+    const c = new THREE.Color(bg);
+    scene.background = c;
+    gl.setClearColor(c, 1);
+  }, [bg, gl, scene]);
+  useFrame(() => {
+    const hex = bgRef.current;
+    let c = scene.background;
+    if (!(c instanceof THREE.Color) || c.getHexString() !== hex.slice(1)) {
+      c = new THREE.Color(hex);
+      scene.background = c;
+    }
+    gl.setClearColor(c as THREE.Color, 1);
+  });
+  if (mode === 'top' || mode === 'elevation') return null;
   const near = Math.max(85, framing.span * 6.5);
   const far = Math.max(near + 100, framing.span * 16);
-  return (
-    <>
-      <color attach="background" args={['#e8eaed']} />
-      <fog attach="fog" args={['#e8eaed', near, far]} />
-    </>
-  );
+  return <fog attach="fog" args={[bg, near, far]} />;
 }
 
 function FloorMaterial({
@@ -110,10 +130,7 @@ function FloorMaterial({
         transparent={transparent}
         opacity={opacity}
         depthWrite={depthWrite}
-        polygonOffset
-        polygonOffsetFactor={4}
-        polygonOffsetUnits={4}
-      />
+              />
     );
   }
   return (
@@ -126,9 +143,6 @@ function FloorMaterial({
           transparent={transparent}
           opacity={opacity}
           depthWrite={depthWrite}
-          polygonOffset
-          polygonOffsetFactor={4}
-          polygonOffsetUnits={4}
         />
       }
     >
@@ -252,9 +266,6 @@ function TexturedFloorMaterialColorOnly({
       transparent={transparent}
       opacity={opacity}
       depthWrite={depthWrite}
-      polygonOffset
-      polygonOffsetFactor={4}
-      polygonOffsetUnits={4}
     />
   );
 }
@@ -295,9 +306,6 @@ function TexturedFloorMaterialColorRough({
       transparent={transparent}
       opacity={opacity}
       depthWrite={depthWrite}
-      polygonOffset
-      polygonOffsetFactor={4}
-      polygonOffsetUnits={4}
     />
   );
 }
@@ -343,9 +351,6 @@ function TexturedFloorMaterialPBR({
       transparent={transparent}
       opacity={opacity}
       depthWrite={depthWrite}
-      polygonOffset
-      polygonOffsetFactor={4}
-      polygonOffsetUnits={4}
     />
   );
 }
@@ -813,6 +818,47 @@ function Furniture() {
   );
 }
 
+
+/** Opaque floor strips under every wall — seals Walk junctions even when room polygons are complex. */
+function WallFloorSeals({ color }: { color: string }) {
+  const walls = usePlannerStore((s) => s.walls);
+  const cameraMode = usePlannerStore((s) => s.cameraMode);
+  if (cameraMode === 'top' || cameraMode === 'elevation' || !walls.length) return null;
+  return (
+    <group userData={{ wallFloorSeals: true }}>
+      {walls.map((w) => {
+        const ax = (w.start.x - WORLD_ORIGIN.x) / PIXELS_PER_METER;
+        const az = (w.start.y - WORLD_ORIGIN.y) / PIXELS_PER_METER;
+        const bx = (w.end.x - WORLD_ORIGIN.x) / PIXELS_PER_METER;
+        const bz = (w.end.y - WORLD_ORIGIN.y) / PIXELS_PER_METER;
+        const len = Math.hypot(bx - ax, bz - az) || 0.01;
+        const midX = (ax + bx) / 2;
+        const midZ = (az + bz) / 2;
+        const angle = -Math.atan2(bz - az, bx - ax);
+        // Wide strip centered on the wall so both interior faces are covered.
+        const depth = Math.max(w.thickness, 0.12) + 1.2;
+        return (
+          <mesh
+            key={`wfs-${w.id}`}
+            position={[midX, 0.03, midZ]}
+            rotation={[0, angle, 0]}
+            raycast={() => {}}
+            renderOrder={2}
+          >
+            <boxGeometry args={[len + 0.2, 0.16, depth]} />
+            <meshBasicMaterial
+              color={color}
+              toneMapped={false}
+              depthTest={false}
+              depthWrite={false}
+            />
+          </mesh>
+        );
+      })}
+    </group>
+  );
+}
+
 function Room() {
   const floor = usePlannerStore((s) => s.floorColor);
   const ceiling = usePlannerStore((s) => s.ceilingColor);
@@ -922,23 +968,50 @@ function Room() {
     }
     selectSurface('floor');
   };
-  const isolating = workflowStage === 'room' && !!selectedRoomId;
+    const isolating = workflowStage === 'room' && !!selectedRoomId;
+  // Plan stays exact for CAD registration; Walk/3D floors expand under walls so seams never show white.
+  const sealFloors = cameraMode !== 'top' && cameraMode !== 'elevation';
+  // In Walk/3D never drop neighboring room floors — isolating to one room left white voids at shared walls.
   const roomEntries = useMemo(() => {
     if (planRooms.length) {
-      const labels = isolating ? planRooms.filter((r) => r.id === selectedRoomId) : planRooms;
+      const labels =
+        isolating && !sealFloors ? planRooms.filter((r) => r.id === selectedRoomId) : planRooms;
       return labels.map((label) => ({ points: label.points, label }));
     }
     return rooms.map((points, i) => ({ points, label: undefined as PlanRoomLabel | undefined, i }));
-  }, [planRooms, rooms, isolating, selectedRoomId]);
+  }, [planRooms, rooms, isolating, selectedRoomId, sealFloors]);
+  const houseSealPoints = useMemo(() => {
+    if (!sealFloors) return null;
+    const polys = planRooms.length
+      ? planRooms.map((r) => r.points)
+      : rooms;
+    if (!polys.length) return null;
+    return roomBoundsPolygon(polys, FLOOR_SEAL_EXPAND_M + 0.15);
+  }, [sealFloors, planRooms, rooms]);
+
   return (
     <Bvh enabled={cameraMode !== 'top'}>
       <CadPlanOverlay />
       <PlanRoomDashedOutlines />
+      <WallFloorSeals color={floor} />
+      {houseSealPoints && (
+        <mesh
+          rotation={[Math.PI / 2, 0, 0]}
+          position={[0, -0.002, 0]}
+          raycast={() => {}}
+          userData={{ houseFloorSeal: true }}
+        >
+          <extrudeGeometry args={[roomShape(houseSealPoints), { depth: 0.14, bevelEnabled: false, steps: 1 }]} />
+          <meshBasicMaterial color={floor} toneMapped={false} depthWrite />
+        </mesh>
+      )}
       {roomEntries.length ? (
         roomEntries.map(({ points, label }, i) => {
           const selected = !!label && label.id === selectedRoomId;
           const floorColor = label?.floorColor || floor;
           const ceilingColor = label?.ceilingColor || ceiling;
+          const floorPoints = sealFloors ? expandRoomPolygon(points, FLOOR_UNDER_WALL_M) : points;
+          const sealPoints = sealFloors ? expandRoomPolygon(points, FLOOR_SEAL_EXPAND_M) : null;
           const span = (() => {
             const xs = points.map((p) => (p.x - WORLD_ORIGIN.x) / PIXELS_PER_METER);
             const zs = points.map((p) => (p.y - WORLD_ORIGIN.y) / PIXELS_PER_METER);
@@ -947,9 +1020,20 @@ function Room() {
           const labelSize = Math.min(0.55, Math.max(0.22, span * 0.08));
           return (
             <group key={label?.id ?? i}>
+              {sealPoints && (
+                <mesh
+                  rotation={[Math.PI / 2, 0, 0]}
+                  position={[0, -0.002, 0]}
+                  raycast={() => {}}
+                  userData={{ floorSeal: true }}
+                >
+                  <extrudeGeometry args={[roomShape(sealPoints), { depth: 0.12, bevelEnabled: false, steps: 1 }]} />
+                  <meshBasicMaterial color={floorColor} toneMapped={false} depthWrite />
+                </mesh>
+              )}
               {label?.floorCatalogId ? (
                 <FloorFillPieces
-                  points={points}
+                  points={floorPoints}
                   holes={stairs}
                   catalogId={label.floorCatalogId}
                   color={floorColor}
@@ -959,20 +1043,40 @@ function Room() {
                   userData={{ roomPick: true }}
                   onClick={(e) => chooseFloor(e, label?.id)}
                 />
-              ) : (
+              ) : sealFloors ? (
               <mesh
                 rotation={[Math.PI / 2, 0, 0]}
-                receiveShadow={cameraMode !== 'top'}
-                position={[0, -0.035, 0]}
+                receiveShadow
+                position={[0, -0.002, 0]}
                 userData={{ roomPick: true }}
                 onClick={(e) => chooseFloor(e, label?.id)}
               >
-                <shapeGeometry args={[roomShapeWithHoles(points, stairs)]} />
+                <extrudeGeometry
+                  args={[roomShapeWithHoles(floorPoints, stairs), { depth: 0.1, bevelEnabled: false, steps: 1 }]}
+                />
                 <FloorMaterial
                   color={floorColor}
                   catalogId={label?.floorCatalogId}
                   opacity={floorOpacity}
                   transparent={cameraMode === 'orbit' || floorOpacity < 0.999}
+                  depthWrite={floorOpacity > 0.85}
+                  worldSpan={span}
+                />
+              </mesh>
+              ) : (
+              <mesh
+                rotation={[Math.PI / 2, 0, 0]}
+                receiveShadow={false}
+                position={[0, -0.035, 0]}
+                userData={{ roomPick: true }}
+                onClick={(e) => chooseFloor(e, label?.id)}
+              >
+                <shapeGeometry args={[roomShapeWithHoles(floorPoints, stairs)]} />
+                <FloorMaterial
+                  color={floorColor}
+                  catalogId={label?.floorCatalogId}
+                  opacity={floorOpacity}
+                  transparent={floorOpacity < 0.999}
                   depthWrite={floorOpacity > 0.85}
                   worldSpan={span}
                 />
@@ -1458,8 +1562,14 @@ export function Scene3D() {
   const walking = walkPerfActive(cameraMode);
   if (!supported) return <SceneFallback />;
   return (
-    <div className="scene-host" onDragOver={(e) => e.preventDefault()} onDrop={drop}>
+    <div
+      className="scene-host"
+      style={{ background: cameraMode === 'top' || cameraMode === 'elevation' ? '#e8eaed' : '#c9b18f' }}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={drop}
+    >
       <Canvas
+        style={{ background: cameraMode === 'top' || cameraMode === 'elevation' ? '#e8eaed' : '#c9b18f' }}
         fallback={<SceneFallback />}
         shadows={!coarse && !walking}
         // Walk: cap DPR for fps. Edit modes keep sharper edges.
@@ -1475,6 +1585,11 @@ export function Scene3D() {
         }}
         onCreated={(state) => {
           state.events.filter = preferInteriorPicks;
+          const mode = usePlannerStore.getState().cameraMode;
+          const hex = mode === 'top' || mode === 'elevation' ? '#e8eaed' : '#c9b18f';
+          const c = new THREE.Color(hex);
+          state.scene.background = c;
+          state.gl.setClearColor(c, 1);
         }}
         onPointerMissed={() => {
           if (pending || pendingCorner) return;
