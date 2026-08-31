@@ -6,6 +6,7 @@ import {
   detectRoomPolygons,
   expandRoomPolygon,
   FLOOR_UNDER_WALL_M,
+  roomBoundsPolygon,
   roomArea,
   roomPolygonWorld,
   roomShape,
@@ -85,5 +86,47 @@ describe('room geometry', () => {
     const same = expandRoomPolygon(poly, 0);
     expect(same).toEqual(poly);
     expect(same).not.toBe(poly);
+  });
+
+  it('expands concave L-shapes without insetting the re-entrant corner', () => {
+    // L: outer 200×200 with a 100×100 bite from the top-right.
+    const poly = [
+      { x: 0, y: 0 },
+      { x: 200, y: 0 },
+      { x: 200, y: 100 },
+      { x: 100, y: 100 },
+      { x: 100, y: 200 },
+      { x: 0, y: 200 },
+    ];
+    const grown = expandRoomPolygon(poly, 0.1);
+    expect(roomArea(grown)).toBeGreaterThan(roomArea(poly));
+    // Re-entrant vertex (100,100) must move toward the exterior of the L (down-right),
+    // not into the solid (up-left). Outward for that corner is +x / +y in plan.
+    const re = grown[3]!;
+    expect(re.x).toBeGreaterThan(100);
+    expect(re.y).toBeGreaterThan(100);
+  });
+
+  it('builds an expanded AABB underlay covering all rooms', () => {
+    const a = [
+      { x: 0, y: 0 },
+      { x: 100, y: 0 },
+      { x: 100, y: 80 },
+      { x: 0, y: 80 },
+    ];
+    const b = [
+      { x: 100, y: 0 },
+      { x: 220, y: 0 },
+      { x: 220, y: 120 },
+      { x: 100, y: 120 },
+    ];
+    const plate = roomBoundsPolygon([a, b], 0.1);
+    expect(plate).toHaveLength(4);
+    const xs = plate!.map((p) => p.x);
+    const ys = plate!.map((p) => p.y);
+    expect(Math.min(...xs)).toBeLessThan(0);
+    expect(Math.max(...xs)).toBeGreaterThan(220);
+    expect(Math.min(...ys)).toBeLessThan(0);
+    expect(Math.max(...ys)).toBeGreaterThan(120);
   });
 });

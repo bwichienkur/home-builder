@@ -11,25 +11,53 @@ const key = (p: Point) => `${Math.round(p.x)},${Math.round(p.y)}`;
  * slightly inside the inner face — expand so floors tuck under walls and no
  * background shows at the wall–floor junction.
  */
-export const FLOOR_UNDER_WALL_M = 0.2;
+export const FLOOR_UNDER_WALL_M = 0.25;
 
 /** Extra underlay expand (meters) used only for the Walk/3D floor seal plate. */
-export const FLOOR_SEAL_EXPAND_M = 0.4;
+export const FLOOR_SEAL_EXPAND_M = 0.55;
 
-function polygonCentroid(points: Point[]): Point {
-  let x = 0;
-  let y = 0;
-  for (const p of points) {
-    x += p.x;
-    y += p.y;
+/** Ray-cast point-in-polygon (plan pixels). Inclusive on edges. */
+function pointInPolygon(x: number, y: number, points: Point[]): boolean {
+  let inside = false;
+  for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+    const pi = points[i]!;
+    const pj = points[j]!;
+    const denom = pj.y - pi.y || 1e-12;
+    const intersect =
+      pi.y > y !== pj.y > y && x < ((pj.x - pi.x) * (y - pi.y)) / denom + pi.x;
+    if (intersect) inside = !inside;
   }
-  const n = Math.max(points.length, 1);
-  return { x: x / n, y: y / n };
+  return inside;
+}
+
+function outwardNormal(
+  ax: number,
+  ay: number,
+  bx: number,
+  by: number,
+  points: Point[],
+): { x: number; y: number } {
+  const ex = bx - ax;
+  const ey = by - ay;
+  const len = Math.hypot(ex, ey) || 1;
+  // Candidate perpendicular; flip if a probe along it lands inside the polygon.
+  let nx = -ey / len;
+  let ny = ex / len;
+  const mx = (ax + bx) * 0.5;
+  const my = (ay + by) * 0.5;
+  const probe = 0.35; // ~plan px — enough to leave the edge without jumping rooms
+  if (pointInPolygon(mx + nx * probe, my + ny * probe, points)) {
+    nx = -nx;
+    ny = -ny;
+  }
+  return { x: nx, y: ny };
 }
 
 /**
  * Expand (or shrink) a plan-pixel polygon along outward edge normals.
  * Positive `meters` grows the fill so 3D floors seal under wall thickness.
+ * Uses point-in-polygon probes so concave / L-shaped rooms expand correctly
+ * (centroid-based outward tests can inset on re-entrant edges).
  */
 export function expandRoomPolygon(
   points: Point[],
@@ -40,55 +68,57 @@ export function expandRoomPolygon(
     return points.map((p) => ({ x: p.x, y: p.y }));
   }
   const d = meters * scale;
-  const c = polygonCentroid(points);
   const n = points.length;
   const out: Point[] = [];
   for (let i = 0; i < n; i++) {
     const prev = points[(i - 1 + n) % n]!;
     const curr = points[i]!;
     const next = points[(i + 1) % n]!;
-    const e1x = curr.x - prev.x;
-    const e1y = curr.y - prev.y;
-    const e2x = next.x - curr.x;
-    const e2y = next.y - curr.y;
-    const len1 = Math.hypot(e1x, e1y) || 1;
-    const len2 = Math.hypot(e2x, e2y) || 1;
+    const n1 = outwardNormal(prev.x, prev.y, curr.x, curr.y, points);
+    const n2 = outwardNormal(curr.x, curr.y, next.x, next.y, points);
 
-    // Perp candidates; pick the one pointing away from the centroid (outward).
-    let n1x = -e1y / len1;
-    let n1y = e1x / len1;
-    const m1x = (prev.x + curr.x) * 0.5;
-    const m1y = (prev.y + curr.y) * 0.5;
-    if (
-      (m1x + n1x - c.x) ** 2 + (m1y + n1y - c.y) ** 2 <
-      (m1x - n1x - c.x) ** 2 + (m1y - n1y - c.y) ** 2
-    ) {
-      n1x = -n1x;
-      n1y = -n1y;
-    }
-    let n2x = -e2y / len2;
-    let n2y = e2x / len2;
-    const m2x = (curr.x + next.x) * 0.5;
-    const m2y = (curr.y + next.y) * 0.5;
-    if (
-      (m2x + n2x - c.x) ** 2 + (m2y + n2y - c.y) ** 2 <
-      (m2x - n2x - c.x) ** 2 + (m2y - n2y - c.y) ** 2
-    ) {
-      n2x = -n2x;
-      n2y = -n2y;
-    }
-
-    let mx = n1x + n2x;
-    let my = n1y + n2y;
+    let mx = n1.x + n2.x;
+    let my = n1.y + n2.y;
     const ml = Math.hypot(mx, my) || 1;
     mx /= ml;
     my /= ml;
     // Miter length so offset edges stay parallel to originals.
-    const cosHalf = Math.max(0.25, n1x * mx + n1y * my);
+    const cosHalf = Math.max(0.25, n1.x * mx + n1.y * my);
     const miter = d / cosHalf;
     out.push({ x: curr.x + mx * miter, y: curr.y + my * miter });
   }
   return out;
+}
+
+/**
+ * Axis-aligned plan-pixel bounds of many room polygons, expanded by `meters`.
+ * Used as a continuous under-house floor plate so soft gaps between rooms stay filled.
+ */
+export function roomBoundsPolygon(
+  rooms: Point[][],
+  expandM = FLOOR_SEAL_EXPAND_M,
+  scale = PIXELS_PER_METER,
+): Point[] | null {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const pts of rooms) {
+    for (const p of pts) {
+      if (p.x < minX) minX = p.x;
+      if (p.y < minY) minY = p.y;
+      if (p.x > maxX) maxX = p.x;
+      if (p.y > maxY) maxY = p.y;
+    }
+  }
+  if (!Number.isFinite(minX) || maxX - minX < 1 || maxY - minY < 1) return null;
+  const pad = expandM * scale;
+  return [
+    { x: minX - pad, y: minY - pad },
+    { x: maxX + pad, y: minY - pad },
+    { x: maxX + pad, y: maxY + pad },
+    { x: minX - pad, y: maxY + pad },
+  ];
 }
 
 export function detectRoomPolygons(walls: Wall[]): Point[][] {

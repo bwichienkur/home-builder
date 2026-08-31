@@ -10,6 +10,7 @@ import {
   expandRoomPolygon,
   FLOOR_SEAL_EXPAND_M,
   FLOOR_UNDER_WALL_M,
+  roomBoundsPolygon,
   roomShape,
   roomShapeWithHoles,
 } from '../../lib/geometry/rooms';
@@ -76,7 +77,7 @@ function SceneAtmosphere() {
   if (mode === 'top' || mode === 'elevation') return <color attach="background" args={['#e8eaed']} />;
   // Walk: match default floor tone so any microscopic wall–floor seam never reads as white void.
   // Orbit keeps the soft studio gray.
-  const bg = mode === 'firstPerson' ? '#c9b18f' : '#e8eaed';
+  const bg = mode === 'firstPerson' || mode === 'walk' ? '#c9b18f' : '#e8eaed';
   // Orbit/walk: keep a soft depth cue, but start fog well beyond normal dollhouse distances
   // so zooming out never dissolves the room (old near ≈ 18m blanked the plate).
   const near = Math.max(85, framing.span * 6.5);
@@ -121,8 +122,8 @@ function FloorMaterial({
         opacity={opacity}
         depthWrite={depthWrite}
         polygonOffset
-        polygonOffsetFactor={4}
-        polygonOffsetUnits={4}
+        polygonOffsetFactor={1}
+        polygonOffsetUnits={1}
       />
     );
   }
@@ -137,8 +138,8 @@ function FloorMaterial({
           opacity={opacity}
           depthWrite={depthWrite}
           polygonOffset
-          polygonOffsetFactor={4}
-          polygonOffsetUnits={4}
+          polygonOffsetFactor={1}
+          polygonOffsetUnits={1}
         />
       }
     >
@@ -263,8 +264,8 @@ function TexturedFloorMaterialColorOnly({
       opacity={opacity}
       depthWrite={depthWrite}
       polygonOffset
-      polygonOffsetFactor={4}
-      polygonOffsetUnits={4}
+      polygonOffsetFactor={1}
+      polygonOffsetUnits={1}
     />
   );
 }
@@ -306,8 +307,8 @@ function TexturedFloorMaterialColorRough({
       opacity={opacity}
       depthWrite={depthWrite}
       polygonOffset
-      polygonOffsetFactor={4}
-      polygonOffsetUnits={4}
+      polygonOffsetFactor={1}
+      polygonOffsetUnits={1}
     />
   );
 }
@@ -354,8 +355,8 @@ function TexturedFloorMaterialPBR({
       opacity={opacity}
       depthWrite={depthWrite}
       polygonOffset
-      polygonOffsetFactor={4}
-      polygonOffsetUnits={4}
+      polygonOffsetFactor={1}
+      polygonOffsetUnits={1}
     />
   );
 }
@@ -942,10 +943,28 @@ function Room() {
     }
     return rooms.map((points, i) => ({ points, label: undefined as PlanRoomLabel | undefined, i }));
   }, [planRooms, rooms, isolating, selectedRoomId]);
+  const houseSealPoints = useMemo(() => {
+    if (!sealFloors || !roomEntries.length) return null;
+    return roomBoundsPolygon(
+      roomEntries.map((e) => e.points),
+      FLOOR_SEAL_EXPAND_M + 0.15,
+    );
+  }, [sealFloors, roomEntries]);
   return (
     <Bvh enabled={cameraMode !== 'top'}>
       <CadPlanOverlay />
       <PlanRoomDashedOutlines />
+      {houseSealPoints && (
+        <mesh
+          rotation={[Math.PI / 2, 0, 0]}
+          position={[0, -0.07, 0]}
+          raycast={() => {}}
+          userData={{ houseFloorSeal: true }}
+        >
+          <shapeGeometry args={[roomShape(houseSealPoints)]} />
+          <meshBasicMaterial color={floor} toneMapped={false} depthWrite />
+        </mesh>
+      )}
       {roomEntries.length ? (
         roomEntries.map(({ points, label }, i) => {
           const selected = !!label && label.id === selectedRoomId;

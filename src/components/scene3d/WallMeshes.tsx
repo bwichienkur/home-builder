@@ -583,6 +583,8 @@ export function WallMeshes() {
         const role = w.assembly ?? 'interior';
         if (role === 'exterior') tinted.lerp(new THREE.Color('#7a746c'), 0.16);
         else if (role === 'party') tinted.lerp(new THREE.Color('#5c5348'), 0.12);
+        // Walk: no polygonOffset — offset opens light leaks at wall–floor grazing angles.
+        const walkMode = cameraMode === 'firstPerson' || cameraMode === 'walk';
         const wallMat = {
           color: `#${tinted.getHexString()}`,
           roughness: 0.86,
@@ -590,9 +592,9 @@ export function WallMeshes() {
           opacity: drawOpacity,
           // Stable depth policy while soft — flipping depthWrite mid-fade caused dissolve pops.
           depthWrite: orbiting ? drawOpacity > 0.96 : !soft || drawOpacity > 0.9,
-          polygonOffset: true,
-          polygonOffsetFactor: 1,
-          polygonOffsetUnits: 1,
+          polygonOffset: !walkMode,
+          polygonOffsetFactor: walkMode ? 0 : 1,
+          polygonOffsetUnits: walkMode ? 0 : 1,
         } as const;
         const base = solids.map((box, i) => {
           const c = (box.along0 + box.along1) / 2;
