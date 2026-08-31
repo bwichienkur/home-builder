@@ -408,6 +408,9 @@ export default function StudioApp() {
       } else if (e.key === 'Delete' || e.key === 'Backspace') {
         if (!store.pendingPlacement) store.deleteSelected();
       } else if (e.key === 'Escape') {
+        if (store.cameraMode === 'firstPerson') {
+          store.setCameraMode('orbit');
+        }
         if (store.pendingPlacement) store.cancelPendingPlacement();
         if (store.pendingCorner) store.cancelPendingCorner();
         store.setDraftStart(null);

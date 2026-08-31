@@ -41,7 +41,11 @@ import { usePlannerStore } from './plannerStore';
 import { getHousePlan } from '../lib/housePlans/planRegistry';
 import { stillwaterDrawingPackage, type DrawingPackage } from '../lib/housePlans/drawingPackage';
 import type { HousePlan } from '../lib/housePlans/buildPlan';
-import { asPlanDocument } from '../lib/housePlans/planDocument';
+import {
+  asPlanDocument,
+  mergeRoomConfigurations,
+  roomConfigurationsFromLabels,
+} from '../lib/housePlans/planDocument';
 import { importDrawingFiles, type DrawingImportProgress } from '../lib/housePlans/importDrawingFile';
 import { loadDrawingPackage, saveDrawingPackage } from '../lib/housePlans/drawingPackageStorage';
 import { downloadCofExcel } from '../lib/configurator/exportCof';
@@ -729,27 +733,49 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
     }
     if (!project) throw new Error('Create a project before importing a drawing.');
 
+    const planner = usePlannerStore.getState();
+    const prevRooms = project.importedHousePlan?.floors?.[0]?.rooms ?? [];
+    const prevConfigs = roomConfigurationsFromLabels(planner.planRooms);
+
     const result = await importDrawingFiles(files, {
       planName: opts?.planName ?? project.name,
       onProgress: opts?.onProgress,
     });
 
+    const doc = asPlanDocument(result.plan, { sourceFile: files.drawing?.name });
     const packageId = await saveDrawingPackage({
       package: result.package,
-      plan: result.plan,
+      plan: doc,
       pdfBlob: result.pdfBlob,
     });
 
     patchProject(get, set, {
       housePlanId: 'custom',
-      importedHousePlan: asPlanDocument(result.plan, { sourceFile: files.drawing?.name }),
+      importedHousePlan: doc,
       drawingPackageId: packageId,
       drawingPackage: result.package,
       workflowStatus: 'plan_verification',
       planVerification: 'in_review',
       planRef: result.plan.name,
     });
-    usePlannerStore.getState().applyHousePlanObject(result.plan);
+
+    // Apply the stamped document so stable room IDs match stored plan.
+    planner.applyHousePlanObject(doc);
+
+    // Re-apply finishes that survive re-import via name+centroid match.
+    const nextRooms = doc.floors[0]?.rooms ?? [];
+    const merged = mergeRoomConfigurations(prevRooms, nextRooms, prevConfigs);
+    for (const cfg of merged) {
+      usePlannerStore.getState().updatePlanRoom(cfg.roomId, {
+        floorColor: cfg.floorColor,
+        floorCatalogId: cfg.floorCatalogId,
+        floorName: cfg.floorName,
+        wallColor: cfg.wallColor,
+        ceilingColor: cfg.ceilingColor,
+        wallCatalogId: cfg.wallCatalogId,
+        ceilingCatalogId: cfg.ceilingCatalogId,
+      });
+    }
   },
   importTakeoffFile: async (file) => {
     const takeoff = await loadTakeoffFromFile(file);
@@ -784,6 +810,12 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
       floorFinishes: planRooms
         .filter((r) => r.floorCatalogId)
         .map((r) => ({ roomId: r.id, catalogId: r.floorCatalogId!, roomName: r.name || r.roomType })),
+      wallFinishes: planRooms
+        .filter((r) => r.wallCatalogId)
+        .map((r) => ({ roomId: r.id, catalogId: r.wallCatalogId!, roomName: r.name || r.roomType })),
+      ceilingFinishes: planRooms
+        .filter((r) => r.ceilingCatalogId)
+        .map((r) => ({ roomId: r.id, catalogId: r.ceilingCatalogId!, roomName: r.name || r.roomType })),
     };
     patchProject(get, set, { selections: snapshot });
   },

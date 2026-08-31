@@ -1,6 +1,7 @@
 import type { CatalogItem } from '../../components/catalog/catalogData';
 import type { FurnitureItem, PlanRoomLabel } from '../../types';
 import { roomArea } from '../geometry/rooms';
+import { PIXELS_PER_METER } from '../geometry/snapping';
 import type { ContractSnapshot, PricingCategory } from './contractTypes';
 import { baseItemName, formatCatalogPrice, pricingCategoryForItem } from './deltaPricing';
 import type { AllowanceBudget, ContractLevelOverride, TakeoffSnapshot } from './projectTypes';
@@ -100,6 +101,50 @@ export function computeProjectRollup(input: {
       lineDelta: priceView.included ? 0 : Math.round((unitDelta ?? 0) * qty * 100) / 100,
       included: priceView.included,
     });
+  }
+
+  // Per-room wall / ceiling catalog finishes.
+  for (const room of input.planRooms) {
+    for (const [catalogId, surface] of [
+      [room.wallCatalogId, 'wall'] as const,
+      [room.ceilingCatalogId, 'ceiling'] as const,
+    ]) {
+      if (!catalogId) continue;
+      const product = input.catalog.find((p) => p.id === catalogId);
+      if (!product) continue;
+      const areaSqFt = roomArea(room.points) * M2_TO_SQFT;
+      const perimeterM =
+        room.points.length >= 2
+          ? room.points.reduce((sum, p, i) => {
+              const q = room.points[(i + 1) % room.points.length]!;
+              return sum + Math.hypot(q.x - p.x, q.y - p.y) / PIXELS_PER_METER;
+            }, 0)
+          : 0;
+      const wallAreaSqFt = perimeterM * 2.74 * M2_TO_SQFT;
+      const geometryQty = surface === 'ceiling' ? areaSqFt : Math.max(wallAreaSqFt, areaSqFt * 0.5);
+      const categoryFallback = surface === 'ceiling' ? 'ceiling' : 'paint';
+      const importedQty = effectiveQty({
+        planVerification: input.planVerification ?? 'approved_for_selections',
+        takeoff: input.takeoff,
+        category: pricingCategoryForItem(product) ?? categoryFallback,
+        room: room.name,
+        geometryQty,
+        preferred: input.takeoff?.qtySource,
+      });
+      const priceView = formatCatalogPrice(product, input.catalog, input.contract, input.role ?? 'designer', input.levelOverrides);
+      const unitDelta = priceView.delta ?? (priceView.included ? 0 : product.price ?? product.cost ?? 0);
+      roomLines.push({
+        roomId: room.id,
+        roomName: room.name || room.roomType || 'Room',
+        category: pricingCategoryForItem(product) ?? categoryFallback,
+        description: baseItemName(product.name),
+        qty: Math.round(importedQty * 10) / 10,
+        unit: product.priceUnit ?? 'sq ft',
+        unitDelta: priceView.included ? 0 : unitDelta,
+        lineDelta: priceView.included ? 0 : Math.round((unitDelta ?? 0) * importedQty * 100) / 100,
+        included: priceView.included,
+      });
+    }
   }
 
   const roomTotalsMap = new Map<string, { roomId: string; roomName: string; delta: number }>();

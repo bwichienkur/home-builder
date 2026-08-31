@@ -425,10 +425,19 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       openingHintsFt: activeFloor?.openingHintsFt,
       cadBuildCenterFt: activeFloor?.cadBuildCenterFt,
     });
-    const planRooms = rebuilt.roomPolygons.map((p) => ({
-      ...p,
-      floorColor: nextLabels.find((l) => l.id === p.id)?.floorColor,
-    }));
+    const planRooms = rebuilt.roomPolygons.map((p) => {
+      const src = nextLabels.find((l) => l.id === p.id);
+      return {
+        ...p,
+        floorColor: src?.floorColor,
+        floorCatalogId: src?.floorCatalogId,
+        floorName: src?.floorName,
+        wallColor: src?.wallColor,
+        ceilingColor: src?.ceilingColor,
+        wallCatalogId: src?.wallCatalogId,
+        ceilingCatalogId: src?.ceilingCatalogId,
+      };
+    });
     const openings = remapOpeningsAfterPlanRebuild(
       prevWalls,
       rebuilt.scene.walls,

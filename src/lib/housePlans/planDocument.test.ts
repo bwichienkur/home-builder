@@ -8,6 +8,7 @@ import {
   planDocumentFloors,
   planDocumentRooms,
   roomCentroidFt,
+  roomConfigurationsFromLabels,
   stableRoomId,
 } from './planDocument';
 
@@ -38,6 +39,17 @@ describe('planDocument v1', () => {
     expect(merged.length).toBe(1);
     expect(merged[0]!.floorColor).toBe('#abc123');
     expect(merged[0]!.roomId).toBe(next[0]!.id);
+  });
+
+  it('snapshots finish configs from plan labels', () => {
+    const configs = roomConfigurationsFromLabels([
+      { id: 'a', floorColor: '#fff', floorCatalogId: 'f1' },
+      { id: 'b', wallCatalogId: 'w1', ceilingColor: '#eee' },
+      { id: 'c' },
+    ]);
+    expect(configs).toHaveLength(2);
+    expect(configs[0]!.floorCatalogId).toBe('f1');
+    expect(configs[1]!.wallCatalogId).toBe('w1');
   });
 
   it('builds a house scene from the plan document', () => {

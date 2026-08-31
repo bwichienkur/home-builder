@@ -562,6 +562,8 @@ export function isSoftPartitionSeg(s: Seg): boolean {
   if (/SPACE.?BOUND|ROOM.?BOUND|OPEN.?PLAN|VOLUME.?LINE/.test(layer)) return true;
   // Dashed/hidden on wall layers only (volume ticks on walls, not full ceiling grids).
   if (/DASH|HIDDEN|PHANTOM|DOT/.test(lt) && /\bWALL/.test(layer)) return true;
+  // Long centerline-style ticks on INT layers often mark open-plan edges (Stillwater great room).
+  if (/CENTER|CENTERLINE/.test(lt) && /\bWALL/.test(layer) && segLength(s) >= 4) return true;
   return false;
 }
 
@@ -752,10 +754,51 @@ export function roomsFromOutdoorLabels(
     if (existing.some((r) => pointInPoly(l.x, l.y, roomFootprint(r)))) continue;
     used.add(key);
     // Default outdoor pad around the label, clamped to drawing bounds.
-    const w = /ENTRY/i.test(l.text) ? 12 : /LANAI|PORCH/i.test(l.text) ? 22 : 16;
-    const h = /ENTRY/i.test(l.text) ? 10 : /LANAI|PORCH/i.test(l.text) ? 14 : 12;
+    // Prefer growing toward nearest existing room edge (lanai usually abuts great room).
+    let w = /ENTRY/i.test(l.text) ? 12 : /LANAI|PORCH/i.test(l.text) ? 28 : 16;
+    let h = /ENTRY/i.test(l.text) ? 10 : /LANAI|PORCH/i.test(l.text) ? 16 : 12;
     let x0 = l.x - w / 2;
     let y0 = l.y - h / 2;
+    // Snap pad toward nearest non-outdoor room so outdoor space sits against the plate.
+    let nearest: { x: number; y: number; w: number; h: number } | undefined;
+    let bestD = Infinity;
+    for (const r of existing) {
+      if (r.roomType === 'Outdoor') continue;
+      const rcx = r.x + r.w / 2;
+      const rcy = r.y + r.h / 2;
+      const d = (rcx - l.x) ** 2 + (rcy - l.y) ** 2;
+      if (d < bestD) {
+        bestD = d;
+        nearest = r;
+      }
+    }
+    if (nearest && /LANAI|PORCH|PATIO/i.test(l.text)) {
+      // Place pad centered on label but abut the nearest room AABB on the closest side.
+      const cx = l.x;
+      const cy = l.y;
+      const nx0 = nearest.x;
+      const ny0 = nearest.y;
+      const nx1 = nearest.x + nearest.w;
+      const ny1 = nearest.y + nearest.h;
+      const distLeft = Math.abs(cx - nx0);
+      const distRight = Math.abs(cx - nx1);
+      const distTop = Math.abs(cy - ny0);
+      const distBottom = Math.abs(cy - ny1);
+      const minSide = Math.min(distLeft, distRight, distTop, distBottom);
+      if (minSide === distBottom) {
+        y0 = ny1;
+        x0 = Math.min(Math.max(cx - w / 2, nx0 - 2), nx1 + 2 - w);
+      } else if (minSide === distTop) {
+        y0 = ny0 - h;
+        x0 = Math.min(Math.max(cx - w / 2, nx0 - 2), nx1 + 2 - w);
+      } else if (minSide === distRight) {
+        x0 = nx1;
+        y0 = Math.min(Math.max(cy - h / 2, ny0 - 2), ny1 + 2 - h);
+      } else {
+        x0 = nx0 - w;
+        y0 = Math.min(Math.max(cy - h / 2, ny0 - 2), ny1 + 2 - h);
+      }
+    }
     x0 = Math.max(bounds.minX, Math.min(bounds.maxX - w, x0));
     y0 = Math.max(bounds.minY, Math.min(bounds.maxY - h, y0));
     out.push(

@@ -1,6 +1,7 @@
 /**
  * First-person walkthrough controls for Plan-derived 3D scenes.
  * WASD + pointer-lock look; simple wall collision from wall segments.
+ * Esc exits walk mode (and pointer lock).
  */
 import { useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
@@ -8,6 +9,7 @@ import * as THREE from 'three';
 import { usePlannerStore } from '../../store/plannerStore';
 import { WORLD_ORIGIN } from '../../lib/geometry/placement';
 import { PIXELS_PER_METER } from '../../lib/geometry/snapping';
+import type { PlanRoomLabel } from '../../types';
 
 const EYE_H = 1.55;
 const SPEED = 3.2;
@@ -35,8 +37,23 @@ function collides(x: number, z: number, segs: Seg[]): boolean {
   return false;
 }
 
+function pickSpawnRoom(planRooms: PlanRoomLabel[], selectedRoomId: string | null): PlanRoomLabel | undefined {
+  if (selectedRoomId) {
+    const focused = planRooms.find((r) => r.id === selectedRoomId);
+    if (focused) return focused;
+  }
+  // Prefer foyer / entry for walkthrough start, then great room / living, else first room.
+  const prefer = [/FOYER|ENTRY|VESTIBULE/i, /GREAT|LIVING|FAMILY/i];
+  for (const re of prefer) {
+    const hit = planRooms.find((r) => re.test(r.name));
+    if (hit) return hit;
+  }
+  return planRooms[0];
+}
+
 export function FirstPersonControls() {
   const mode = usePlannerStore((s) => s.cameraMode);
+  const setCameraMode = usePlannerStore((s) => s.setCameraMode);
   const walls = usePlannerStore((s) => s.walls);
   const planRooms = usePlannerStore((s) => s.planRooms);
   const selectedRoomId = usePlannerStore((s) => s.selectedRoomId);
@@ -57,13 +74,13 @@ export function FirstPersonControls() {
     });
   }, [walls]);
 
-  // Seed camera inside focused room (or plate center).
+  // Seed camera inside foyer/entry (or focused room).
   useEffect(() => {
     if (mode !== 'firstPerson') {
       primed.current = false;
       return;
     }
-    const room = planRooms.find((r) => r.id === selectedRoomId) ?? planRooms[0];
+    const room = pickSpawnRoom(planRooms, selectedRoomId);
     if (room && room.points.length >= 3) {
       const xs = room.points.map((p) => (p.x - WORLD_ORIGIN.x) / PIXELS_PER_METER);
       const zs = room.points.map((p) => (p.y - WORLD_ORIGIN.y) / PIXELS_PER_METER);
@@ -90,6 +107,12 @@ export function FirstPersonControls() {
     if (mode !== 'firstPerson') return;
     const el = gl.domElement;
     const onKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'Escape') {
+        if (document.pointerLockElement === el) document.exitPointerLock();
+        setCameraMode('orbit');
+        e.preventDefault();
+        return;
+      }
       keys.current.add(e.code);
       if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
         e.preventDefault();
@@ -122,7 +145,7 @@ export function FirstPersonControls() {
       if (document.pointerLockElement === el) document.exitPointerLock();
       locked.current = false;
     };
-  }, [mode, gl]);
+  }, [mode, gl, setCameraMode]);
 
   useFrame((_, dt) => {
     if (mode !== 'firstPerson' || !primed.current) return;
