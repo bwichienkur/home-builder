@@ -18,6 +18,10 @@ Generates `MODEL.dxf` from `MODEL.dwg` when missing. Writes `artifacts/plan-fide
 
 Synthetic open-plan / ranch fixtures also run under `src/lib/housePlans/syntheticFidelity.test.ts` (no second real CAD package in-repo yet).
 
+## Scene modules
+
+Configurator scene is split for maintainability: `CameraRig.tsx`, `WallMeshes.tsx`, `FirstPersonControls.tsx`, `cameraModes.ts`, `sceneWorld.ts` under `src/components/scene3d/` (Plan = source of truth; 3D extrudes from plan).
+
 ## Server DWG → JSON spike (deferred)
 
 Native DWG fidelity beyond `dwgdxf` WASM is the next accuracy lever when Stillwater envelope/raster plateaus:
