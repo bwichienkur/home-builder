@@ -882,17 +882,20 @@ export function WallMeshes() {
             const drawOpacity = opacity;
             const fading = drawOpacity < 0.97;
             const soft = orbiting || drawOpacity < 0.999;
+            // Dig corner posts slightly below the floor so bases never flash background.
+            const postBite = 0.05;
+            const postH = h + postBite;
             posts.push(
               <mesh
                 key={`corner-${key}`}
-                position={[x, h / 2, z]}
+                position={[x, postH / 2 - postBite, z]}
                 castShadow={!fading && cameraMode !== 'top'}
                 receiveShadow={!fading && cameraMode !== 'top'}
                 renderOrder={selectedTouch ? 2 : 0}
                 raycast={fading ? () => {} : undefined}
                 userData={fading ? { wallCutawayPick: true } : undefined}
               >
-                <boxGeometry args={[t * 0.98, h, t * 0.98]} />
+                <boxGeometry args={[t * 0.98, postH, t * 0.98]} />
                 <meshStandardMaterial
                   color={color}
                   roughness={0.86}

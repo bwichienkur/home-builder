@@ -19,7 +19,9 @@ export function wallSolidBoxes(
   extend: number,
   openings: Opening[],
 ): WallSolidBox[] {
-  const ys = new Set<number>([0, Math.max(wallHeight, 0.1)]);
+  // Dig slightly below the floor plate so wall bases never leave a background seam.
+  const floorBite = 0.05;
+  const ys = new Set<number>([-floorBite, Math.max(wallHeight, 0.1)]);
   for (const o of openings) {
     ys.add(clamp(o.sill, 0, wallHeight));
     ys.add(clamp(o.sill + o.height, 0, wallHeight));

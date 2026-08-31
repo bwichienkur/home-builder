@@ -48,6 +48,11 @@ describe('wallSolidBoxes', () => {
     expect(sills.some((b) => b.along0 <= 0.01 && b.along1 >= 4.99)).toBe(true);
   });
 
+  it('digs wall solids slightly below the floor plate', () => {
+    const boxes = wallSolidBoxes(2.7, 5, 5, 0, []);
+    expect(Math.min(...boxes.map((b) => b.y0))).toBeLessThan(-0.04);
+  });
+
   it('leaves a hole only in the opening’s height band', () => {
     const boxes = wallSolidBoxes(2.7, 5, 5, 0, [door]);
     const mid = boxes.filter((b) => b.y0 < 1 && b.y1 > 1);

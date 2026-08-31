@@ -11,10 +11,10 @@ const key = (p: Point) => `${Math.round(p.x)},${Math.round(p.y)}`;
  * slightly inside the inner face — expand so floors tuck under walls and no
  * background shows at the wall–floor junction.
  */
-export const FLOOR_UNDER_WALL_M = 0.12;
+export const FLOOR_UNDER_WALL_M = 0.2;
 
 /** Extra underlay expand (meters) used only for the Walk/3D floor seal plate. */
-export const FLOOR_SEAL_EXPAND_M = 0.22;
+export const FLOOR_SEAL_EXPAND_M = 0.4;
 
 function polygonCentroid(points: Point[]): Point {
   let x = 0;
