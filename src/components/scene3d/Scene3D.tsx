@@ -835,16 +835,23 @@ function WallFloorSeals({ color }: { color: string }) {
         const midX = (ax + bx) / 2;
         const midZ = (az + bz) / 2;
         const angle = -Math.atan2(bz - az, bx - ax);
-        const depth = Math.max(w.thickness, 0.12) + 0.55;
+        // Wide strip centered on the wall so both interior faces are covered.
+        const depth = Math.max(w.thickness, 0.12) + 1.2;
         return (
           <mesh
             key={`wfs-${w.id}`}
-            position={[midX, 0.02, midZ]}
+            position={[midX, 0.03, midZ]}
             rotation={[0, angle, 0]}
             raycast={() => {}}
+            renderOrder={2}
           >
-            <boxGeometry args={[len + 0.12, 0.12, depth]} />
-            <meshBasicMaterial color={color} toneMapped={false} depthWrite />
+            <boxGeometry args={[len + 0.2, 0.16, depth]} />
+            <meshBasicMaterial
+              color={color}
+              toneMapped={false}
+              depthTest={false}
+              depthWrite={false}
+            />
           </mesh>
         );
       })}
