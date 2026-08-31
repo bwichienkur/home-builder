@@ -755,6 +755,22 @@ export function WallMeshes() {
             );
           return parts;
         });
+        // Opaque baseboard seals residual wall–floor micro-gaps in Walk/3D.
+        const baseboard =
+          cameraMode !== 'top' && cameraMode !== 'elevation'
+            ? [
+                <mesh
+                  key={w.id + 'baseboard'}
+                  position={[midX, 0.04, midZ]}
+                  rotation={[0, angle, 0]}
+                  raycast={() => {}}
+                  renderOrder={1}
+                >
+                  <boxGeometry args={[origLen + 0.06, 0.1, Math.max(w.thickness, 0.12) + 0.06]} />
+                  <meshBasicMaterial color={`#${tinted.getHexString()}`} toneMapped={false} depthWrite />
+                </mesh>,
+              ]
+            : [];
         // 3D pick proxy while fading so cut-away walls remain selectable.
         return [
           ...(topPick ? [topPick] : []),
@@ -777,6 +793,7 @@ export function WallMeshes() {
               ]
             : []),
           ...base,
+          ...baseboard,
           ...selectionHalo,
           ...fixtures,
           ...(cameraMode === 'top' &&

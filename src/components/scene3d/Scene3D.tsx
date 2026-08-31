@@ -74,7 +74,6 @@ function SceneAtmosphere() {
   const walls = usePlannerStore((s) => s.walls);
   const framing = useMemo(() => framingFromWalls(walls), [walls]);
   const { gl, scene } = useThree();
-  // Walk / eye-orbit: floor-matched clear color so any residual seam never reads as white void.
   // Any non-plan 3D view: floor-matched clear color so wall–floor micro-gaps never flash studio gray.
   const bg = mode === 'top' || mode === 'elevation' ? '#e8eaed' : '#c9b18f';
   useLayoutEffect(() => {
@@ -82,6 +81,11 @@ function SceneAtmosphere() {
     scene.background = c;
     gl.setClearColor(c, 1);
   }, [bg, gl, scene]);
+  // Re-assert every frame — some R3F/drei paths reset clear color on resize/HMR.
+  useFrame(() => {
+    const c = scene.background;
+    if (c instanceof THREE.Color) gl.setClearColor(c, 1);
+  });
   if (mode === 'top' || mode === 'elevation') return null;
   const near = Math.max(85, framing.span * 6.5);
   const far = Math.max(near + 100, framing.span * 16);
