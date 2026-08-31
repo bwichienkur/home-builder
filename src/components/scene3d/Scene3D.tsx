@@ -26,7 +26,7 @@ import { CadPlanOverlay } from './CadPlanOverlay';
 import { PlanRoomDashedOutlines } from './PlanRoomDashedOutlines';
 import { CameraRig } from './CameraRig';
 import { WallMeshes } from './WallMeshes';
-import { isEyeOrbit } from './cameraModes';
+import { isEyeOrbit, walkPerfActive } from './cameraModes';
 import { isCoarsePointer, world } from './sceneWorld';
 
 
@@ -1455,18 +1455,19 @@ export function Scene3D() {
     }
   }, []);
   const coarse = useMemo(() => isCoarsePointer(), []);
+  const walking = walkPerfActive(cameraMode);
   if (!supported) return <SceneFallback />;
   return (
     <div className="scene-host" onDragOver={(e) => e.preventDefault()} onDrop={drop}>
       <Canvas
         fallback={<SceneFallback />}
-        shadows={!coarse}
-        // Higher DPR + MSAA on phones — low caps were causing jagged wall/floor edges.
-        dpr={coarse ? [1, 1.75] : [1, 2]}
-        frameloop="demand"
-        performance={{ min: coarse ? 0.55 : 0.65, debounce: 200 }}
+        shadows={!coarse && !walking}
+        // Walk: cap DPR for fps. Edit modes keep sharper edges.
+        dpr={walking ? [1, 1.25] : coarse ? [1, 1.75] : [1, 2]}
+        frameloop={walking ? 'always' : 'demand'}
+        performance={{ min: walking ? 0.4 : coarse ? 0.55 : 0.65, debounce: walking ? 0 : 200 }}
         gl={{
-          antialias: true,
+          antialias: !walking,
           powerPreference: 'high-performance',
           alpha: false,
           stencil: false,
@@ -1485,17 +1486,17 @@ export function Scene3D() {
         }}
       >
         <SceneAtmosphere />
-        <ambientLight intensity={coarse ? 0.9 : 0.78} />
+        <ambientLight intensity={walking ? 1.05 : coarse ? 0.9 : 0.78} />
         <directionalLight
-          castShadow={!coarse && cameraMode !== 'top'}
-          intensity={coarse ? 1.1 : 1.35}
+          castShadow={!coarse && !walking && cameraMode !== 'top'}
+          intensity={walking ? 0.95 : coarse ? 1.1 : 1.35}
           position={[5, 8, 4]}
           shadow-mapSize={coarse ? [256, 256] : [512, 512]}
         />
         <Suspense fallback={null}>
           <Room />
         </Suspense>
-        {!coarse && (
+        {!coarse && !walking && (
           <Suspense fallback={null}>
             <Environment preset="apartment" environmentIntensity={0.35} />
           </Suspense>

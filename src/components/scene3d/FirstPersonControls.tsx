@@ -177,7 +177,7 @@ export function FirstPersonControls() {
   const openings = usePlannerStore((s) => s.openings);
   const planRooms = usePlannerStore((s) => s.planRooms);
   const selectedRoomId = usePlannerStore((s) => s.selectedRoomId);
-  const { camera, gl } = useThree();
+  const { camera, gl, invalidate } = useThree();
   const keys = useRef(new Set<string>());
   const stick = useRef({ x: 0, y: 0 });
   const yaw = useRef(0);
@@ -190,6 +190,9 @@ export function FirstPersonControls() {
   );
 
   const segs = useRef<Seg[]>([]);
+  const forward = useRef(new THREE.Vector3());
+  const right = useRef(new THREE.Vector3());
+  const wish = useRef(new THREE.Vector3());
   useEffect(() => {
     segs.current = wallCollisionSegs(walls, openings);
   }, [walls, openings]);
@@ -274,21 +277,21 @@ export function FirstPersonControls() {
   useFrame((_, dt) => {
     if (mode !== 'firstPerson' || !primed.current) return;
     const k = keys.current;
-    const forward = new THREE.Vector3(-Math.sin(yaw.current), 0, -Math.cos(yaw.current));
-    const right = new THREE.Vector3(Math.cos(yaw.current), 0, -Math.sin(yaw.current));
-    const wish = new THREE.Vector3();
-    if (k.has('KeyW') || k.has('ArrowUp')) wish.add(forward);
-    if (k.has('KeyS') || k.has('ArrowDown')) wish.sub(forward);
-    if (k.has('KeyD') || k.has('ArrowRight')) wish.add(right);
-    if (k.has('KeyA') || k.has('ArrowLeft')) wish.sub(right);
+    forward.current.set(-Math.sin(yaw.current), 0, -Math.cos(yaw.current));
+    right.current.set(Math.cos(yaw.current), 0, -Math.sin(yaw.current));
+    wish.current.set(0, 0, 0);
+    if (k.has('KeyW') || k.has('ArrowUp')) wish.current.add(forward.current);
+    if (k.has('KeyS') || k.has('ArrowDown')) wish.current.sub(forward.current);
+    if (k.has('KeyD') || k.has('ArrowRight')) wish.current.add(right.current);
+    if (k.has('KeyA') || k.has('ArrowLeft')) wish.current.sub(right.current);
     if (stick.current.x || stick.current.y) {
-      wish.addScaledVector(forward, stick.current.y);
-      wish.addScaledVector(right, stick.current.x);
+      wish.current.addScaledVector(forward.current, stick.current.y);
+      wish.current.addScaledVector(right.current, stick.current.x);
     }
-    if (wish.lengthSq() > 0) {
-      wish.normalize().multiplyScalar(SPEED * Math.min(dt, 0.05));
-      const nx = pos.current.x + wish.x;
-      const nz = pos.current.z + wish.z;
+    if (wish.current.lengthSq() > 0) {
+      wish.current.normalize().multiplyScalar(SPEED * Math.min(dt, 0.05));
+      const nx = pos.current.x + wish.current.x;
+      const nz = pos.current.z + wish.current.z;
       if (!collides(nx, pos.current.z, segs.current)) pos.current.x = nx;
       if (!collides(pos.current.x, nz, segs.current)) pos.current.z = nz;
     }
@@ -297,6 +300,8 @@ export function FirstPersonControls() {
     camera.rotation.order = 'YXZ';
     camera.rotation.y = yaw.current;
     camera.rotation.x = pitch.current;
+    // Demand frameloop elsewhere — keep Walk redrawing every frame.
+    invalidate();
   });
 
   if (mode !== 'firstPerson' || !coarse || typeof document === 'undefined') return null;

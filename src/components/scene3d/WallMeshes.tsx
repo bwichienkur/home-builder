@@ -229,6 +229,16 @@ function useDollhouseCutaway(walls: ReturnType<typeof usePlannerStore.getState>[
   }, [walls, enabled, center, invalidate]);
 
   useFrame((_, delta) => {
+    // Walk/plan/elevation: skip per-wall cutaway work (keeps Walk fps smooth).
+    if (cameraMode === 'firstPerson' || cameraMode === 'top' || cameraMode === 'elevation') {
+      wasEnabled.current = false;
+      if (lastKey.current !== 'walk-opaque') {
+        lastKey.current = 'walk-opaque';
+        smoothed.current = {};
+        setOpacityByWall({});
+      }
+      return;
+    }
     const next: Record<string, number> = {};
     const justEnabled = enabled && !wasEnabled.current;
     const justDisabled = !enabled && wasEnabled.current;
