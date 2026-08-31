@@ -19,6 +19,7 @@ import {
   Lamp,
   PanelTop,
   Pentagon,
+  PersonStanding,
   Plus,
   Redo2,
   RotateCw,
@@ -216,9 +217,9 @@ export function StudioChrome({
     }, 0);
   };
 
-  const choose3d = (mode: 'orbit' | 'walk' = 'orbit') => {
+  const choose3d = (mode: 'orbit' | 'walk' | 'eyeOrbit' | 'firstPerson' = 'orbit') => {
     setView('3d');
-    setCamera(mode);
+    setCamera(mode === 'walk' ? 'eyeOrbit' : mode);
     window.setTimeout(() => {
       window.dispatchEvent(new Event('roomcraft-fit-plan'));
       window.dispatchEvent(new Event('roomcraft-refocus'));
@@ -816,6 +817,15 @@ export function StudioChrome({
               <button type="button" className={!isTop && !isElevation && camera === 'orbit' ? 'is-active' : ''} onClick={() => choose3d('orbit')} title="3D view">
                 <Box size={16} />
                 <span>3D</span>
+              </button>
+              <button
+                type="button"
+                className={camera === 'firstPerson' ? 'is-active' : ''}
+                onClick={() => choose3d('firstPerson')}
+                title="Walk through — WASD + click to look"
+              >
+                <PersonStanding size={16} />
+                <span>Walk</span>
               </button>
             </div>
             <span className="studio-dock-rule" aria-hidden="true" />

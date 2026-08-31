@@ -69,7 +69,7 @@ export type FurnitureItem = {
   /** Stair connects two floor ids when placementKind is stair. */
   stair?: StairSpec;
 };
-export type CameraMode = 'top' | 'orbit' | 'walk' | 'elevation';
+export type CameraMode = 'top' | 'orbit' | 'walk' | 'eyeOrbit' | 'firstPerson' | 'elevation';
 export type ElevationFace = 'front' | 'back' | 'left' | 'right';
 export type UnitSystem = 'metric' | 'imperial';
 export type Tool = 'select' | 'wall' | 'door' | 'window' | 'passage' | 'room' | 'corner';
@@ -134,6 +134,12 @@ export type PlanRoomLabel = {
   /** Catalog SKU applied as a floor fill (tile / surface) for shopping-list qty. */
   floorCatalogId?: string;
   floorName?: string;
+  /** Per-room wall finish (falls back to scene wallColor). */
+  wallColor?: string;
+  /** Per-room ceiling finish (falls back to scene ceilingColor). */
+  ceilingColor?: string;
+  wallCatalogId?: string;
+  ceilingCatalogId?: string;
 };
 export type SceneSnapshot = {
   walls: Wall[];

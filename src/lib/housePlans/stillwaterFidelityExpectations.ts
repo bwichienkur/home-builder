@@ -2,9 +2,9 @@ import type { PlanFidelityThresholds } from './planFidelity';
 
 /**
  * Regression thresholds for Stillwater MODEL.dxf full-package import.
- * Baseline captured Aug 2026 after plan-fill-gaps (#261): 21 rooms, ~51% raster coverage,
- * 4133 living sq ft. Thresholds sit slightly below baseline to catch regressions, not
- * aspirational CAD fidelity (target 95% is a future Phase 1 goal).
+ * Raised Aug 2026 toward CAD-faithfulness after plan-engine-continue.
+ * Baseline: 21 rooms, 11/11 named hits, ~62% envelope, 4133 living, ~3366 gross.
+ * Aspirational long-term target remains ~95% envelope / raster coverage.
  */
 export const STILLWATER_EXPECTED_NAME_PATTERNS = [
   'GARAGE',
@@ -21,11 +21,11 @@ export const STILLWATER_EXPECTED_NAME_PATTERNS = [
 ] as const;
 
 export const STILLWATER_FIDELITY_THRESHOLDS: PlanFidelityThresholds = {
-  minRoomCount: 18,
-  minNamedHits: 10,
-  minEnvelopeCoveragePct: 0.55,
-  minLivingSqFt: 3800,
-  minGrossRoomAreaSqFt: 3000,
+  minRoomCount: 20,
+  minNamedHits: 11,
+  minEnvelopeCoveragePct: 0.58,
+  minLivingSqFt: 4000,
+  minGrossRoomAreaSqFt: 3200,
   requiredNamePatterns: [
     'GARAGE',
     'KITCHEN',
@@ -33,6 +33,8 @@ export const STILLWATER_FIDELITY_THRESHOLDS: PlanFidelityThresholds = {
     'MASTER',
     'FOYER',
     'LANAI',
+    'NOOK',
+    'LAUNDRY',
   ],
 };
 

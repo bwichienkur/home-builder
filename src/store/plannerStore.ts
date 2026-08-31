@@ -186,7 +186,7 @@ type PlannerState = SceneSnapshot & {
   housePlanName: string | null;
   planRooms: PlanRoomLabel[];
   selectRoom: (id: string | null) => void;
-  updatePlanRoom: (id: string, patch: Partial<Pick<PlanRoomLabel, 'name' | 'roomType' | 'floorColor' | 'floorCatalogId' | 'floorName'>>) => void;
+  updatePlanRoom: (id: string, patch: Partial<Pick<PlanRoomLabel, 'name' | 'roomType' | 'floorColor' | 'floorCatalogId' | 'floorName' | 'wallColor' | 'ceilingColor' | 'wallCatalogId' | 'ceilingCatalogId'>>) => void;
   resizePlanRoom: (id: string, widthFt: number, depthFt: number) => void;
   deletePlanRoom: (id: string) => void;
   addSquareRoom: (center: Point, widthFt?: number, depthFt?: number, name?: string) => string | null;
@@ -268,6 +268,16 @@ type PlannerState = SceneSnapshot & {
   /** Clear per-room (or global) floor finish color. */
   clearFloorFinish: () => void;
   setFinish: (target: SurfaceTarget, color: string) => void;
+  applyLookbookToRoom: (opts: {
+    roomId?: string | null;
+    floorColor?: string;
+    floorCatalogId?: string;
+    floorName?: string;
+    wallColor?: string;
+    ceilingColor?: string;
+    wallCatalogId?: string;
+    ceilingCatalogId?: string;
+  }) => boolean;
   addFloor: (opts?: { copyActive?: boolean }) => void;
   switchFloor: (id: string) => void;
   renameFloor: (id: string, name: string) => void;
@@ -965,6 +975,12 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         pendingCorner: null,
         selectedVertexIndex: null,
       });
+      if (typeof window !== 'undefined') {
+        window.setTimeout(() => {
+          window.dispatchEvent(new Event('roomcraft-fit-plan'));
+          window.dispatchEvent(new Event('roomcraft-refocus'));
+        }, 0);
+      }
     },
     exitRoom: () =>
       set({
@@ -1912,8 +1928,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       set({ openingNotice: 'Floor finish reset.' });
     },
     setFinish: (target, color) => {
+      const roomId = get().selectedRoomId;
       if (target === 'floor') {
-        const roomId = get().selectedRoomId;
         if (roomId) {
           get().updatePlanRoom(roomId, { floorColor: color });
           return;
@@ -1921,7 +1937,40 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         mutate({ floorColor: color });
         return;
       }
-      mutate(target === 'wall' ? { wallColor: color } : { ceilingColor: color });
+      if (target === 'wall') {
+        if (roomId) {
+          get().updatePlanRoom(roomId, { wallColor: color });
+          return;
+        }
+        mutate({ wallColor: color });
+        return;
+      }
+      if (roomId) {
+        get().updatePlanRoom(roomId, { ceilingColor: color });
+        return;
+      }
+      mutate({ ceilingColor: color });
+    },
+    /** Apply a lookbook/catalog finish to the focused room (or global if none). */
+    applyLookbookToRoom: (opts) => {
+      const roomId = opts.roomId ?? get().selectedRoomId;
+      if (!roomId) {
+        if (opts.floorColor) mutate({ floorColor: opts.floorColor });
+        if (opts.wallColor) mutate({ wallColor: opts.wallColor });
+        if (opts.ceilingColor) mutate({ ceilingColor: opts.ceilingColor });
+        return false;
+      }
+      get().updatePlanRoom(roomId, {
+        floorColor: opts.floorColor,
+        floorCatalogId: opts.floorCatalogId,
+        floorName: opts.floorName,
+        wallColor: opts.wallColor,
+        ceilingColor: opts.ceilingColor,
+        wallCatalogId: opts.wallCatalogId,
+        ceilingCatalogId: opts.ceilingCatalogId,
+      });
+      set({ openingNotice: 'Look Book finish applied to this room.' });
+      return true;
     },
     addFloor: (opts) => {
       const id = crypto.randomUUID();

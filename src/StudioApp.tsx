@@ -150,9 +150,15 @@ export default function StudioApp() {
   const startGhostPlacement = useCallback(() => {
     store.setView('3d');
     const coarse = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
-    // Keep Plan (top) when placing; only leave walk → orbit. Never yank Plan into orbit.
+    // Keep Plan (top) when placing; only leave walk/FP → orbit. Never yank Plan into orbit.
     if (coarse || store.cameraMode === 'top' || store.cameraMode === 'elevation') store.setCameraMode('top');
-    else if (store.cameraMode === 'walk') store.setCameraMode('orbit');
+    else if (
+      store.cameraMode === 'walk' ||
+      store.cameraMode === 'eyeOrbit' ||
+      store.cameraMode === 'firstPerson'
+    ) {
+      store.setCameraMode('orbit');
+    }
     setCatalogOpen(false);
     closeProjectMenu();
     setInspectorOpen(false);
@@ -608,7 +614,7 @@ export default function StudioApp() {
     'view-3d',
     isTop ? 'camera-top' : '',
     isElevation ? 'camera-elevation' : '',
-    cameraMode === 'walk' ? 'camera-walk' : '',
+    cameraMode === 'walk' || cameraMode === 'eyeOrbit' || cameraMode === 'firstPerson' ? 'camera-walk' : '',
     pendingPlacement ? 'is-placing' : '',
     workflowStage === 'start' ? 'is-start' : '',
     workflowStage === 'room' ? 'is-room-focus' : '',
