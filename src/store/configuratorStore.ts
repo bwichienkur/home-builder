@@ -41,6 +41,7 @@ import { usePlannerStore } from './plannerStore';
 import { getHousePlan } from '../lib/housePlans/planRegistry';
 import { stillwaterDrawingPackage, type DrawingPackage } from '../lib/housePlans/drawingPackage';
 import type { HousePlan } from '../lib/housePlans/buildPlan';
+import { asPlanDocument } from '../lib/housePlans/planDocument';
 import { importDrawingFiles, type DrawingImportProgress } from '../lib/housePlans/importDrawingFile';
 import { loadDrawingPackage, saveDrawingPackage } from '../lib/housePlans/drawingPackageStorage';
 import { downloadCofExcel } from '../lib/configurator/exportCof';
@@ -741,7 +742,7 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
 
     patchProject(get, set, {
       housePlanId: 'custom',
-      importedHousePlan: result.plan as HousePlan,
+      importedHousePlan: asPlanDocument(result.plan),
       drawingPackageId: packageId,
       drawingPackage: result.package,
       workflowStatus: 'plan_verification',

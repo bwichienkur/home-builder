@@ -11,6 +11,8 @@ export function RoomSelectionNav() {
   const activeRoomFilter = useConfiguratorStore((s) => s.activeRoomFilter);
   const setActiveRoomFilter = useConfiguratorStore((s) => s.setActiveRoomFilter);
   const planRooms = usePlannerStore((s) => s.planRooms);
+  const enterRoom = usePlannerStore((s) => s.enterRoom);
+  const exitRoom = usePlannerStore((s) => s.exitRoom);
   const furniture = usePlannerStore((s) => s.furniture);
   const inventory = useInventoryStore((s) => s.items);
   const catalog = useBuildCatalog(inventory);
@@ -37,18 +39,29 @@ export function RoomSelectionNav() {
 
   return (
     <nav className="room-selection-nav" aria-label="Room selections">
-      <button type="button" className={!activeRoomFilter ? 'active' : ''} onClick={() => setActiveRoomFilter(null)}>
+      <button
+        type="button"
+        className={!activeRoomFilter ? 'active' : ''}
+        onClick={() => {
+          setActiveRoomFilter(null);
+          exitRoom();
+        }}
+      >
         <span>All rooms</span>
         {rollup && <small>${rollup.jobDelta.toLocaleString()}</small>}
       </button>
       {rooms.map((room) => {
         const total = rollup?.roomTotals.find((r) => r.roomName === room)?.delta ?? 0;
+        const planRoom = planRooms.find((r) => r.name === room);
         return (
           <button
             key={room}
             type="button"
             className={activeRoomFilter === room ? 'active' : ''}
-            onClick={() => setActiveRoomFilter(room)}
+            onClick={() => {
+              setActiveRoomFilter(room);
+              if (planRoom) enterRoom(planRoom.id);
+            }}
           >
             <span>{room}</span>
             {role !== 'client' && (

@@ -141,6 +141,8 @@ describe('perimeter trim',()=>{
   const id=usePlannerStore.getState().placePlanRoom({x:400,y:300},'rectangle','Trim Room');
   expect(id).toBeTruthy();
   usePlannerStore.getState().enterRoom(id!);
+  expect(usePlannerStore.getState().cameraMode).toBe('orbit');
+  expect(usePlannerStore.getState().studioMode).toBe('furnish');
   usePlannerStore.getState().applyPerimeterTrim('baseboard','Baseboard','Trim',[1,.015,.09],'#fff','floor');
   const before=usePlannerStore.getState().furniture.filter(f=>f.placementKind==='perimeter-trim');
   expect(before.length).toBeGreaterThanOrEqual(4);
