@@ -12,6 +12,7 @@ import {
   wallCenterlinesFromSegments,
 } from './dxfRooms';
 import { translateRoomsAndWalls, type PlanOpeningHintFt } from './dxfCadBuild';
+import { snapRoomsToWallSegments } from './snapRoomsToWalls';
 
 const MAX_CAD_PLAN_VECTORS = 8000;
 
@@ -233,7 +234,6 @@ export function importDxfHousePlan(
   }));
 
   const normalized = translateRoomsAndWalls(accurate.rooms, wallLines, openingHints);
-  let rooms = finalizeImportedRooms(normalized.rooms);
   let wallSegmentsFt = normalized.walls;
   let openingHintsFt = normalized.openings;
   const origin = normalized.origin;
@@ -267,17 +267,38 @@ export function importDxfHousePlan(
     .slice(0, MAX_CAD_PLAN_VECTORS)
     .map((s) => classifyPlanVector(s, origin.x, origin.y));
 
+  // Snap rooms to CAD wall faces (overlay) + centerlines so fills register with the DWG underlay.
+  const snapWalls = [
+    ...wallSegmentsFt,
+    ...cadPlanVectorsFt.filter((v) => v.role === 'wall').map((v) => ({
+      x1: v.x1,
+      y1: v.y1,
+      x2: v.x2,
+      y2: v.y2,
+    })),
+  ];
+  let rooms = finalizeImportedRooms(snapRoomsToWallSegments(normalized.rooms, snapWalls, 1.25));
+
   if (rooms.length <= 1 && segments.length > 20) {
     const legacy = segmentsToOrthogonalRoomsLegacy(accurate.scaledSegments);
     if (legacy.rooms.length > rooms.length) {
       const legacyNorm = translateRoomsAndWalls(legacy.rooms, wallLines, openingHints);
-      rooms = finalizeImportedRooms(legacyNorm.rooms);
       wallSegmentsFt = legacyNorm.walls;
       openingHintsFt = legacyNorm.openings;
       cadPlanVectorsFt = planScaled
         .filter((s) => Math.hypot(s.x2 - s.x1, s.y2 - s.y1) > 0.05)
         .slice(0, MAX_CAD_PLAN_VECTORS)
         .map((s) => classifyPlanVector(s, legacyNorm.origin.x, legacyNorm.origin.y));
+      const legacySnap = [
+        ...legacyNorm.walls,
+        ...cadPlanVectorsFt.filter((v) => v.role === 'wall').map((v) => ({
+          x1: v.x1,
+          y1: v.y1,
+          x2: v.x2,
+          y2: v.y2,
+        })),
+      ];
+      rooms = finalizeImportedRooms(snapRoomsToWallSegments(legacyNorm.rooms, legacySnap, 1.25));
       warnings.push('Used rectangular cell detection (more rooms than flood-fill).');
       warnings.push(...legacy.warnings);
     }

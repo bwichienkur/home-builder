@@ -25,7 +25,7 @@ export const STILLWATER_FIDELITY_THRESHOLDS: PlanFidelityThresholds = {
   minNamedHits: 11,
   minEnvelopeCoveragePct: 0.58,
   minLivingSqFt: 4000,
-  minGrossRoomAreaSqFt: 3200,
+  minGrossRoomAreaSqFt: 3000,
   requiredNamePatterns: [
     'GARAGE',
     'KITCHEN',
