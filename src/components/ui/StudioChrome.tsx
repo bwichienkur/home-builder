@@ -821,8 +821,8 @@ export function StudioChrome({
               <button
                 type="button"
                 className={camera === 'firstPerson' ? 'is-active' : ''}
-                onClick={() => choose3d('firstPerson')}
-                title="Walk through — WASD + click to look"
+                onClick={() => choose3d(camera === 'firstPerson' ? 'orbit' : 'firstPerson')}
+                title={camera === 'firstPerson' ? 'Exit walk (Esc)' : 'Walk through — WASD + click to look · Esc exits'}
               >
                 <PersonStanding size={16} />
                 <span>Walk</span>

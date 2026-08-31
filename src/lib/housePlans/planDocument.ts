@@ -34,6 +34,42 @@ export type RoomConfiguration = {
   ceilingCatalogId?: string;
 };
 
+/** Snapshot finish fields from live plan room labels. */
+export function roomConfigurationsFromLabels(
+  labels: {
+    id: string;
+    floorColor?: string;
+    floorCatalogId?: string;
+    floorName?: string;
+    wallColor?: string;
+    ceilingColor?: string;
+    wallCatalogId?: string;
+    ceilingCatalogId?: string;
+  }[],
+): RoomConfiguration[] {
+  return labels
+    .filter(
+      (r) =>
+        r.floorColor ||
+        r.floorCatalogId ||
+        r.floorName ||
+        r.wallColor ||
+        r.ceilingColor ||
+        r.wallCatalogId ||
+        r.ceilingCatalogId,
+    )
+    .map((r) => ({
+      roomId: r.id,
+      floorColor: r.floorColor,
+      floorCatalogId: r.floorCatalogId,
+      floorName: r.floorName,
+      wallColor: r.wallColor,
+      ceilingColor: r.ceilingColor,
+      wallCatalogId: r.wallCatalogId,
+      ceilingCatalogId: r.ceilingCatalogId,
+    }));
+}
+
 /** Stable id from room name + centroid (feet). */
 export function stableRoomId(name: string, cx: number, cy: number): string {
   const slug = name.toLowerCase().replace(/\W+/g, '-').replace(/^-|-$/g, '') || 'room';

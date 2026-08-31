@@ -84,6 +84,8 @@ export type SelectionSnapshot = {
   savedAt: string;
   items: PersistedSelection[];
   floorFinishes: { roomId: string; catalogId: string; roomName?: string }[];
+  wallFinishes?: { roomId: string; catalogId: string; roomName?: string }[];
+  ceilingFinishes?: { roomId: string; catalogId: string; roomName?: string }[];
 };
 
 export type SurveyResponse = {

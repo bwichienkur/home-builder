@@ -27,14 +27,19 @@ export function PlatinumLookbookPanel() {
   const applyPick = (catalogId: string, label: string) => {
     const item = catalog.find((c) => c.id === catalogId);
     const color = item?.color ?? '#c9b18f';
-    const isFloor = !item || /floor|tile|plank|surface/i.test(`${item.category} ${item.name} ${label}`);
+    const hay = `${item?.category ?? ''} ${item?.name ?? ''} ${label}`;
+    const isFloor = !item || /floor|tile|plank|surface/i.test(hay);
+    const isWall = /wall|paint|panel/i.test(hay);
+    const isCeiling = /ceiling/i.test(hay);
     applyLookbookToRoom({
       roomId: selectedRoomId,
       floorColor: isFloor ? color : undefined,
       floorCatalogId: isFloor ? catalogId : undefined,
       floorName: isFloor ? label : undefined,
-      wallColor: !isFloor && /wall|paint/i.test(`${item?.category} ${label}`) ? color : undefined,
-      ceilingColor: !isFloor && /ceiling/i.test(`${item?.category} ${label}`) ? color : undefined,
+      wallColor: isWall ? color : undefined,
+      wallCatalogId: isWall ? catalogId : undefined,
+      ceilingColor: isCeiling ? color : undefined,
+      ceilingCatalogId: isCeiling ? catalogId : undefined,
     });
   };
 

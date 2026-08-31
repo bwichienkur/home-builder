@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import type { CatalogItem } from '../catalog/catalogData';
 import type { FurnitureItem, Opening, PlanRoomLabel, UnitSystem, Wall } from '../../types';
 import { roomArea } from '../../lib/geometry/rooms';
+import { PIXELS_PER_METER } from '../../lib/geometry/snapping';
 import { usePlannerStore } from '../../store/plannerStore';
 import { pickTradeRates, useTradeRatesStore } from '../../store/tradeRatesStore';
 import { computeHouseTakeoff } from '../../lib/houseEstimate';
@@ -147,6 +148,45 @@ export function BomDialog({
       removable: true,
       kind: 'floor',
     });
+  }
+
+  const surfaceFinishRooms = selectedRoomId
+    ? planRooms.filter((r) => r.id === selectedRoomId)
+    : planRooms;
+  for (const room of surfaceFinishRooms) {
+    for (const [catalogId, kind, label] of [
+      [room.wallCatalogId, 'wall', 'Wall finish'] as const,
+      [room.ceilingCatalogId, 'ceiling', 'Ceiling finish'] as const,
+    ]) {
+      if (!catalogId) continue;
+      const product = catalog.find((p) => p.id === catalogId);
+      if (!product) continue;
+      const areaM2 = roomArea(room.points);
+      const qty =
+        kind === 'ceiling'
+          ? areaM2 * M2_TO_SQFT
+          : (() => {
+              const perimeterM = room.points.reduce((sum, p, i) => {
+                const q = room.points[(i + 1) % room.points.length]!;
+                return sum + Math.hypot(q.x - p.x, q.y - p.y) / PIXELS_PER_METER;
+              }, 0);
+              return perimeterM * 2.74 * M2_TO_SQFT;
+            })();
+      floorRows.push({
+        key: `${kind}-${room.id}-${catalogId}`,
+        name: product.name || label,
+        brand: product.brand,
+        sku: product.sku ?? catalogId,
+        category: product.category ?? (kind === 'ceiling' ? 'Ceiling' : 'Paint'),
+        qty,
+        unit: product.priceUnit ?? 'sq ft',
+        price: product.price,
+        cost: product.cost,
+        laborCost: product.laborCost != null ? product.laborCost * qty : undefined,
+        removable: true,
+        kind: 'floor',
+      });
+    }
   }
 
   const manualRows: BomRow[] = manualBomLines.map((line) => ({
