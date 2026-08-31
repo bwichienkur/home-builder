@@ -12,3 +12,8 @@ export function isFirstPerson(mode: CameraMode) {
 export function isWalkLike(mode: CameraMode) {
   return isEyeOrbit(mode) || isFirstPerson(mode);
 }
+
+/** Lightweight render profile for first-person walk (smooth fps over fidelity). */
+export function walkPerfActive(mode: CameraMode) {
+  return mode === 'firstPerson';
+}
