@@ -10,6 +10,7 @@ import {
   Handshake,
   House,
   LayoutTemplate,
+  PenTool,
   ListChecks,
   Settings,
   Shield,
@@ -41,6 +42,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { to: '/', label: 'Home', icon: House, end: true },
       { to: '/build', label: 'Project', icon: Box },
       { to: '/plans', label: 'Plans', icon: LayoutTemplate },
+      { to: '/cad', label: 'CAD Studio', icon: PenTool },
     ],
   },
   {
@@ -93,6 +95,7 @@ export const PAGE_TITLES: { path: string; end?: boolean; title: string }[] = [
   { path: '/ops/reports', title: 'Reports' },
   { path: '/ops', title: 'Operations' },
   { path: '/plans', title: 'Plans' },
+  { path: '/cad', title: 'CAD Studio' },
   { path: '/config', title: 'Config' },
   { path: '/settings', title: 'Settings' },
   { path: '/users', title: 'Users' },
