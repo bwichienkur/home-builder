@@ -74,17 +74,24 @@ function SceneAtmosphere() {
   const walls = usePlannerStore((s) => s.walls);
   const framing = useMemo(() => framingFromWalls(walls), [walls]);
   const { gl, scene } = useThree();
-  // Any non-plan 3D view: floor-matched clear color so wall–floor micro-gaps never flash studio gray.
+  // Non-plan 3D: floor-tone clear color. Environment unmount can null scene.background —
+  // force Color + clearColor every frame so wall–floor gaps never flash studio gray (#e8eaed).
   const bg = mode === 'top' || mode === 'elevation' ? '#e8eaed' : '#c9b18f';
+  const bgRef = useRef(bg);
+  bgRef.current = bg;
   useLayoutEffect(() => {
     const c = new THREE.Color(bg);
     scene.background = c;
     gl.setClearColor(c, 1);
   }, [bg, gl, scene]);
-  // Re-assert every frame — some R3F/drei paths reset clear color on resize/HMR.
   useFrame(() => {
-    const c = scene.background;
-    if (c instanceof THREE.Color) gl.setClearColor(c, 1);
+    const hex = bgRef.current;
+    let c = scene.background;
+    if (!(c instanceof THREE.Color) || c.getHexString() !== hex.slice(1)) {
+      c = new THREE.Color(hex);
+      scene.background = c;
+    }
+    gl.setClearColor(c as THREE.Color, 1);
   });
   if (mode === 'top' || mode === 'elevation') return null;
   const near = Math.max(85, framing.span * 6.5);
