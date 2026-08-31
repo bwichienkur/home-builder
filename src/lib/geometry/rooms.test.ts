@@ -2,7 +2,15 @@ import { describe, expect, it } from 'vitest';
 import type { Wall } from '../../types';
 import { planToWorld, WORLD_ORIGIN } from './placement';
 import { PIXELS_PER_METER } from './snapping';
-import { detectRoomPolygons, roomArea, roomPolygonWorld, roomShape, validatePlan } from './rooms';
+import {
+  detectRoomPolygons,
+  expandRoomPolygon,
+  FLOOR_UNDER_WALL_M,
+  roomArea,
+  roomPolygonWorld,
+  roomShape,
+  validatePlan,
+} from './rooms';
 
 const walls: Wall[] = [
   ['a', 0, 0, 400, 0],
@@ -56,5 +64,26 @@ describe('room geometry', () => {
   it('uses the shared world origin and pixels-per-meter constants', () => {
     expect(WORLD_ORIGIN.x).toBe(420);
     expect(PIXELS_PER_METER).toBe(80);
+  });
+
+  it('expands a rectangle outward so 3D floors tuck under walls', () => {
+    const poly = [
+      { x: 100, y: 100 },
+      { x: 300, y: 100 },
+      { x: 300, y: 260 },
+      { x: 100, y: 260 },
+    ];
+    const grown = expandRoomPolygon(poly, FLOOR_UNDER_WALL_M);
+    expect(grown).toHaveLength(4);
+    // Area must increase.
+    expect(roomArea(grown)).toBeGreaterThan(roomArea(poly));
+    // Each edge moves outward by ~FLOOR_UNDER_WALL_M (in meters).
+    const insetM = (300 - 100) / PIXELS_PER_METER;
+    const grownW = (Math.max(...grown.map((p) => p.x)) - Math.min(...grown.map((p) => p.x))) / PIXELS_PER_METER;
+    expect(grownW).toBeCloseTo(insetM + 2 * FLOOR_UNDER_WALL_M, 2);
+    // Zero expand is a copy.
+    const same = expandRoomPolygon(poly, 0);
+    expect(same).toEqual(poly);
+    expect(same).not.toBe(poly);
   });
 });

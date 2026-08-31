@@ -5,6 +5,92 @@ import { PIXELS_PER_METER } from './snapping';
 
 const key = (p: Point) => `${Math.round(p.x)},${Math.round(p.y)}`;
 
+/**
+ * How far 3D/Walk floor meshes extend past the plan room polygon (meters).
+ * Walls are centered on their plan line (~0.15 m thick); flood-fill rooms can sit
+ * slightly inside the inner face — expand so floors tuck under walls and no
+ * background shows at the wall–floor junction.
+ */
+export const FLOOR_UNDER_WALL_M = 0.12;
+
+/** Extra underlay expand (meters) used only for the Walk/3D floor seal plate. */
+export const FLOOR_SEAL_EXPAND_M = 0.22;
+
+function polygonCentroid(points: Point[]): Point {
+  let x = 0;
+  let y = 0;
+  for (const p of points) {
+    x += p.x;
+    y += p.y;
+  }
+  const n = Math.max(points.length, 1);
+  return { x: x / n, y: y / n };
+}
+
+/**
+ * Expand (or shrink) a plan-pixel polygon along outward edge normals.
+ * Positive `meters` grows the fill so 3D floors seal under wall thickness.
+ */
+export function expandRoomPolygon(
+  points: Point[],
+  meters: number,
+  scale = PIXELS_PER_METER,
+): Point[] {
+  if (points.length < 3 || !Number.isFinite(meters) || Math.abs(meters) < 1e-9) {
+    return points.map((p) => ({ x: p.x, y: p.y }));
+  }
+  const d = meters * scale;
+  const c = polygonCentroid(points);
+  const n = points.length;
+  const out: Point[] = [];
+  for (let i = 0; i < n; i++) {
+    const prev = points[(i - 1 + n) % n]!;
+    const curr = points[i]!;
+    const next = points[(i + 1) % n]!;
+    const e1x = curr.x - prev.x;
+    const e1y = curr.y - prev.y;
+    const e2x = next.x - curr.x;
+    const e2y = next.y - curr.y;
+    const len1 = Math.hypot(e1x, e1y) || 1;
+    const len2 = Math.hypot(e2x, e2y) || 1;
+
+    // Perp candidates; pick the one pointing away from the centroid (outward).
+    let n1x = -e1y / len1;
+    let n1y = e1x / len1;
+    const m1x = (prev.x + curr.x) * 0.5;
+    const m1y = (prev.y + curr.y) * 0.5;
+    if (
+      (m1x + n1x - c.x) ** 2 + (m1y + n1y - c.y) ** 2 <
+      (m1x - n1x - c.x) ** 2 + (m1y - n1y - c.y) ** 2
+    ) {
+      n1x = -n1x;
+      n1y = -n1y;
+    }
+    let n2x = -e2y / len2;
+    let n2y = e2x / len2;
+    const m2x = (curr.x + next.x) * 0.5;
+    const m2y = (curr.y + next.y) * 0.5;
+    if (
+      (m2x + n2x - c.x) ** 2 + (m2y + n2y - c.y) ** 2 <
+      (m2x - n2x - c.x) ** 2 + (m2y - n2y - c.y) ** 2
+    ) {
+      n2x = -n2x;
+      n2y = -n2y;
+    }
+
+    let mx = n1x + n2x;
+    let my = n1y + n2y;
+    const ml = Math.hypot(mx, my) || 1;
+    mx /= ml;
+    my /= ml;
+    // Miter length so offset edges stay parallel to originals.
+    const cosHalf = Math.max(0.25, n1x * mx + n1y * my);
+    const miter = d / cosHalf;
+    out.push({ x: curr.x + mx * miter, y: curr.y + my * miter });
+  }
+  return out;
+}
+
 export function detectRoomPolygons(walls: Wall[]): Point[][] {
   const unused = new Set(walls.map((w) => w.id));
   const rooms: Point[][] = [];

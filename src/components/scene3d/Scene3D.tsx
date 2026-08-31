@@ -5,7 +5,14 @@ import * as THREE from 'three';
 import { usePlannerStore } from '../../store/plannerStore';
 import { useCatalogById } from '../../store/catalogStore';
 import type { FurnitureItem, PlanRoomLabel, Wall } from '../../types';
-import { detectRoomPolygons, roomShape, roomShapeWithHoles } from '../../lib/geometry/rooms';
+import {
+  detectRoomPolygons,
+  expandRoomPolygon,
+  FLOOR_SEAL_EXPAND_M,
+  FLOOR_UNDER_WALL_M,
+  roomShape,
+  roomShapeWithHoles,
+} from '../../lib/geometry/rooms';
 import { alignmentGuides, clampWallMountY, constrainPlacement, pointOnWall, roomFloorCenter, wallFrame, WORLD_ORIGIN } from '../../lib/geometry/placement';
 import { doorSwingZones, furnitureHitsDoorSwing } from '../../lib/geometry/doorClearance';
 import { wouldOverlapFurniture } from '../../lib/collisions';
@@ -67,14 +74,17 @@ function SceneAtmosphere() {
   const framing = useMemo(() => framingFromWalls(walls), [walls]);
   // Top: no fog (overhead plates sat past the old far plane).
   if (mode === 'top' || mode === 'elevation') return <color attach="background" args={['#e8eaed']} />;
+  // Walk: match default floor tone so any microscopic wall–floor seam never reads as white void.
+  // Orbit keeps the soft studio gray.
+  const bg = mode === 'firstPerson' ? '#c9b18f' : '#e8eaed';
   // Orbit/walk: keep a soft depth cue, but start fog well beyond normal dollhouse distances
   // so zooming out never dissolves the room (old near ≈ 18m blanked the plate).
   const near = Math.max(85, framing.span * 6.5);
   const far = Math.max(near + 100, framing.span * 16);
   return (
     <>
-      <color attach="background" args={['#e8eaed']} />
-      <fog attach="fog" args={['#e8eaed', near, far]} />
+      <color attach="background" args={[bg]} />
+      <fog attach="fog" args={[bg, near, far]} />
     </>
   );
 }
@@ -923,6 +933,8 @@ function Room() {
     selectSurface('floor');
   };
   const isolating = workflowStage === 'room' && !!selectedRoomId;
+  // Plan stays exact for CAD registration; Walk/3D floors expand under walls so seams never show white.
+  const sealFloors = cameraMode !== 'top' && cameraMode !== 'elevation';
   const roomEntries = useMemo(() => {
     if (planRooms.length) {
       const labels = isolating ? planRooms.filter((r) => r.id === selectedRoomId) : planRooms;
@@ -939,6 +951,8 @@ function Room() {
           const selected = !!label && label.id === selectedRoomId;
           const floorColor = label?.floorColor || floor;
           const ceilingColor = label?.ceilingColor || ceiling;
+          const floorPoints = sealFloors ? expandRoomPolygon(points, FLOOR_UNDER_WALL_M) : points;
+          const sealPoints = sealFloors ? expandRoomPolygon(points, FLOOR_SEAL_EXPAND_M) : null;
           const span = (() => {
             const xs = points.map((p) => (p.x - WORLD_ORIGIN.x) / PIXELS_PER_METER);
             const zs = points.map((p) => (p.y - WORLD_ORIGIN.y) / PIXELS_PER_METER);
@@ -947,9 +961,20 @@ function Room() {
           const labelSize = Math.min(0.55, Math.max(0.22, span * 0.08));
           return (
             <group key={label?.id ?? i}>
+              {sealPoints && (
+                <mesh
+                  rotation={[Math.PI / 2, 0, 0]}
+                  position={[0, -0.055, 0]}
+                  raycast={() => {}}
+                  userData={{ floorSeal: true }}
+                >
+                  <shapeGeometry args={[roomShape(sealPoints)]} />
+                  <meshBasicMaterial color={floorColor} toneMapped={false} depthWrite />
+                </mesh>
+              )}
               {label?.floorCatalogId ? (
                 <FloorFillPieces
-                  points={points}
+                  points={floorPoints}
                   holes={stairs}
                   catalogId={label.floorCatalogId}
                   color={floorColor}
@@ -967,7 +992,7 @@ function Room() {
                 userData={{ roomPick: true }}
                 onClick={(e) => chooseFloor(e, label?.id)}
               >
-                <shapeGeometry args={[roomShapeWithHoles(points, stairs)]} />
+                <shapeGeometry args={[roomShapeWithHoles(floorPoints, stairs)]} />
                 <FloorMaterial
                   color={floorColor}
                   catalogId={label?.floorCatalogId}
