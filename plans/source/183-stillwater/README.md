@@ -6,7 +6,16 @@
 | `MODEL.dxf` | Generated — full conversion (~130 MB, gitignored) |
 | `MODEL.walls.dxf` | Generated — wall/door layers only (~2.4 MB, gitignored) |
 
-## Regenerate plan seed
+## Plan fidelity gate
+
+Regression test for import quality (room count, named rooms, floor coverage):
+
+```bash
+npm run plan:fidelity
+```
+
+Generates `MODEL.dxf` from `MODEL.dwg` when missing. Writes `artifacts/plan-fidelity/stillwater-report.json` and `stillwater-rooms.svg` on each run.
+
 
 ```bash
 npm run plan:import-stillwater
