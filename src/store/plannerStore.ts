@@ -949,13 +949,14 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
       if (!room) return;
       set({
         workflowStage: 'room',
+        studioMode: 'furnish',
         selectedRoomId: id,
         selectedWallId: null,
         selectedOpeningId: null,
         selectedFurnitureId: null,
         selectedSurface: null,
         roomType: room.roomType,
-        cameraMode: 'top',
+        cameraMode: 'orbit',
         view: '3d',
         tool: 'select',
         draftStart: null,
