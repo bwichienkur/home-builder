@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { HousePlan } from '../../lib/housePlans/buildPlan';
 import { importDxfHousePlan, inspectIfc } from '../../lib/housePlans/dxfImport';
+import { asPlanDocument } from '../../lib/housePlans/planDocument';
 import { listBuiltinHousePlans } from '../../lib/housePlans/planRegistry';
 import { useCrmStore } from '../../store/crmStore';
 import { usePlannerStore } from '../../store/plannerStore';
@@ -21,7 +22,8 @@ export function PlansPage() {
   const [manualD, setManualD] = useState(16);
 
   const openInBuild = (plan: HousePlan) => {
-    if (!applyPlanObject(plan)) {
+    const doc = asPlanDocument(plan, { sourceFile: plan.sourceUrl || plan.id });
+    if (!applyPlanObject(doc)) {
       setNotice('Could not open that plan in Build.');
       return;
     }
@@ -57,11 +59,12 @@ export function PlansPage() {
     const lower = file.name.toLowerCase();
     if (lower.endsWith('.dxf')) {
       const result = importDxfHousePlan(text, file.name.replace(/\.dxf$/i, ''));
+      const doc = asPlanDocument(result.plan, { sourceFile: file.name });
       setNotice(
-        `DXF import: ${result.lineCount} segments, ${result.plan.floors[0]?.rooms.length ?? 0} rooms.` +
+        `DXF import: ${result.lineCount} segments, ${doc.floors[0]?.rooms.length ?? 0} rooms.` +
           (result.warnings.length ? ` Warnings: ${result.warnings.join(' ')}` : ''),
       );
-      persistAndOpen(result.plan, {
+      persistAndOpen(doc, {
         source: file.name,
         license: 'User-imported DXF',
         format: 'dxf',

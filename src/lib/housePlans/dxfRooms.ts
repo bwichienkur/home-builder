@@ -666,7 +666,7 @@ export function fillResidualInterior(
 
   for (const comp of components) {
     const areaFt = comp.length * res * res;
-    if (areaFt < 18) continue;
+    if (areaFt < 12) continue;
     const footprint = traceRegionPolygon(comp, cols, res, originX, originY);
     if (footprint.length < 3) continue;
     const xs = footprint.map((p) => p.x);
@@ -962,10 +962,13 @@ export function roomsFromFloodFill(
 
   // Adaptive envelope: increase morphological close until exterior flood stops
   // leaking into the house (garage doors ~16 ft need ~8 ft radius).
+  // Keep searching past the first "good enough" seal — Stillwater often needs
+  // 3.5–5 ft to close porch/garage openings without swallowing the yard.
   const sealCandidatesFt = [2.5, 3.5, 5, 6.5, 8, 10];
   let outside = floodOutside(baseWalls);
   let sealUsedFt = 0;
   let bestInterior = 0;
+  let bestScore = -Infinity;
   for (const sealFt of sealCandidatesFt) {
     const sealed = morphClose(baseWalls, Math.max(1, Math.round(sealFt / res)));
     const candOutside = floodOutside(sealed);
@@ -975,16 +978,17 @@ export function roomsFromFloodFill(
     }
     const interiorArea = interior * res * res;
     const ratio = interiorArea / bboxArea;
-    // Prefer a solid building plate: enough interior, not the entire bbox.
-    if (interiorArea > bestInterior && ratio >= 0.18 && ratio <= 0.92) {
+    if (ratio < 0.18 || ratio > 0.92) continue;
+    // Score: maximize enclosed interior, lightly prefer mid-band coverage, penalize oversized seals.
+    const score = interiorArea - Math.abs(ratio - 0.72) * bboxArea * 0.15 - sealFt * 8;
+    if (score > bestScore || (score === bestScore && interiorArea > bestInterior)) {
+      bestScore = score;
       bestInterior = interiorArea;
       outside = candOutside;
       sealUsedFt = sealFt;
     }
-    // Strong footprint — stop searching larger seals (they can erase hallways).
-    if (ratio >= 0.4 && ratio <= 0.85 && interiorArea >= 1800) {
-      outside = candOutside;
-      sealUsedFt = sealFt;
+    // Diminishing returns — larger seals rarely add plate once we are mid-band.
+    if (ratio >= 0.55 && ratio <= 0.85 && interiorArea >= 2200 && sealFt >= 5) {
       break;
     }
   }
