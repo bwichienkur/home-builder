@@ -11,10 +11,10 @@ const key = (p: Point) => `${Math.round(p.x)},${Math.round(p.y)}`;
  * slightly inside the inner face — expand so floors tuck under walls and no
  * background shows at the wall–floor junction.
  */
-export const FLOOR_UNDER_WALL_M = 0.25;
+export const FLOOR_UNDER_WALL_M = 0.35;
 
 /** Extra underlay expand (meters) used only for the Walk/3D floor seal plate. */
-export const FLOOR_SEAL_EXPAND_M = 0.55;
+export const FLOOR_SEAL_EXPAND_M = 0.7;
 
 /** Ray-cast point-in-polygon (plan pixels). Inclusive on edges. */
 function pointInPolygon(x: number, y: number, points: Point[]): boolean {

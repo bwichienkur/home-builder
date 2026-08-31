@@ -73,21 +73,19 @@ function SceneAtmosphere() {
   const mode = usePlannerStore((s) => s.cameraMode);
   const walls = usePlannerStore((s) => s.walls);
   const framing = useMemo(() => framingFromWalls(walls), [walls]);
-  // Top: no fog (overhead plates sat past the old far plane).
-  if (mode === 'top' || mode === 'elevation') return <color attach="background" args={['#e8eaed']} />;
-  // Walk: match default floor tone so any microscopic wall–floor seam never reads as white void.
-  // Orbit keeps the soft studio gray.
-  const bg = mode === 'firstPerson' || mode === 'walk' ? '#c9b18f' : '#e8eaed';
-  // Orbit/walk: keep a soft depth cue, but start fog well beyond normal dollhouse distances
-  // so zooming out never dissolves the room (old near ≈ 18m blanked the plate).
+  const { gl, scene } = useThree();
+  // Walk / eye-orbit: floor-matched clear color so any residual seam never reads as white void.
+  const walkLike = mode === 'firstPerson' || mode === 'walk' || mode === 'eyeOrbit';
+  const bg = mode === 'top' || mode === 'elevation' ? '#e8eaed' : walkLike ? '#c9b18f' : '#e8eaed';
+  useLayoutEffect(() => {
+    const c = new THREE.Color(bg);
+    scene.background = c;
+    gl.setClearColor(c, 1);
+  }, [bg, gl, scene]);
+  if (mode === 'top' || mode === 'elevation') return null;
   const near = Math.max(85, framing.span * 6.5);
   const far = Math.max(near + 100, framing.span * 16);
-  return (
-    <>
-      <color attach="background" args={[bg]} />
-      <fog attach="fog" args={[bg, near, far]} />
-    </>
-  );
+  return <fog attach="fog" args={[bg, near, far]} />;
 }
 
 function FloorMaterial({
@@ -121,10 +119,7 @@ function FloorMaterial({
         transparent={transparent}
         opacity={opacity}
         depthWrite={depthWrite}
-        polygonOffset
-        polygonOffsetFactor={1}
-        polygonOffsetUnits={1}
-      />
+              />
     );
   }
   return (
@@ -957,11 +952,11 @@ function Room() {
       {houseSealPoints && (
         <mesh
           rotation={[Math.PI / 2, 0, 0]}
-          position={[0, -0.07, 0]}
+          position={[0, -0.002, 0]}
           raycast={() => {}}
           userData={{ houseFloorSeal: true }}
         >
-          <shapeGeometry args={[roomShape(houseSealPoints)]} />
+          <extrudeGeometry args={[roomShape(houseSealPoints), { depth: 0.14, bevelEnabled: false, steps: 1 }]} />
           <meshBasicMaterial color={floor} toneMapped={false} depthWrite />
         </mesh>
       )}
@@ -983,11 +978,11 @@ function Room() {
               {sealPoints && (
                 <mesh
                   rotation={[Math.PI / 2, 0, 0]}
-                  position={[0, -0.055, 0]}
+                  position={[0, -0.002, 0]}
                   raycast={() => {}}
                   userData={{ floorSeal: true }}
                 >
-                  <shapeGeometry args={[roomShape(sealPoints)]} />
+                  <extrudeGeometry args={[roomShape(sealPoints), { depth: 0.12, bevelEnabled: false, steps: 1 }]} />
                   <meshBasicMaterial color={floorColor} toneMapped={false} depthWrite />
                 </mesh>
               )}
@@ -1003,10 +998,30 @@ function Room() {
                   userData={{ roomPick: true }}
                   onClick={(e) => chooseFloor(e, label?.id)}
                 />
+              ) : sealFloors ? (
+              <mesh
+                rotation={[Math.PI / 2, 0, 0]}
+                receiveShadow
+                position={[0, -0.002, 0]}
+                userData={{ roomPick: true }}
+                onClick={(e) => chooseFloor(e, label?.id)}
+              >
+                <extrudeGeometry
+                  args={[roomShapeWithHoles(floorPoints, stairs), { depth: 0.1, bevelEnabled: false, steps: 1 }]}
+                />
+                <FloorMaterial
+                  color={floorColor}
+                  catalogId={label?.floorCatalogId}
+                  opacity={floorOpacity}
+                  transparent={cameraMode === 'orbit' || floorOpacity < 0.999}
+                  depthWrite={floorOpacity > 0.85}
+                  worldSpan={span}
+                />
+              </mesh>
               ) : (
               <mesh
                 rotation={[Math.PI / 2, 0, 0]}
-                receiveShadow={cameraMode !== 'top'}
+                receiveShadow={false}
                 position={[0, -0.035, 0]}
                 userData={{ roomPick: true }}
                 onClick={(e) => chooseFloor(e, label?.id)}
@@ -1016,7 +1031,7 @@ function Room() {
                   color={floorColor}
                   catalogId={label?.floorCatalogId}
                   opacity={floorOpacity}
-                  transparent={cameraMode === 'orbit' || floorOpacity < 0.999}
+                  transparent={floorOpacity < 0.999}
                   depthWrite={floorOpacity > 0.85}
                   worldSpan={span}
                 />
