@@ -1,20 +1,19 @@
-import { useThree } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { RoundedBox, Text } from '@react-three/drei';
-import { useMemo, useRef, useState, useEffect } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import * as THREE from 'three';
 import { usePlannerStore } from '../../store/plannerStore';
-import type { Opening } from '../../types';
-import { wallFrame } from '../../lib/geometry/placement';
+import type { Opening, Wall } from '../../types';
+import { roomFloorCenter, wallFrame, WORLD_ORIGIN } from '../../lib/geometry/placement';
 import { enclosureWallsForRoom, planRoomEdgeIndexForWall } from '../../lib/geometry/roomWalls';
 import { pickFacingWall, elevationFaceBasis, wallWorldFrame } from '../../lib/geometry/elevationFace';
 import { planWallDimAnchor, elevationDimPillAnchors, DIM_FONT_M } from '../../lib/geometry/wallDimPills';
 import { splitEdgeEndpoints } from '../../lib/geometry/planCornerGhost';
 import { clampOpeningOffset, openingCenterOnWall, wallOffsetFromWorldPoint, wallSolidBoxes } from '../../lib/geometry/wallOpenings';
 import { wallCutawayOpacity } from '../../lib/geometry/wallCutaway';
+import { PIXELS_PER_METER } from '../../lib/geometry/snapping';
 import { formatLength } from '../../lib/measurements';
 import { world } from './sceneWorld';
-import type { Wall } from '../../types';
-import type { ReactElement } from 'react';
 
 function DoorLeaf({
   x,
