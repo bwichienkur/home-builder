@@ -1,4 +1,8 @@
-server
+# Keep server/ — api/* imports shared pull/http handlers from here.
+# Exclude local-only Express entry and tests from the deployment bundle.
+server/index.js
+server/**/*.test.js
+server/**/*.test.ts
 data
 coverage
 *.tsbuildinfo

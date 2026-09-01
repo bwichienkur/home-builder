@@ -396,6 +396,27 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
     }
   };
 
+  const onRefreshAll = async () => {
+    if (native) {
+      await onRefresh();
+      return;
+    }
+    setError('');
+    setPipedriveError('');
+    setRefreshing(true);
+    setRefreshingPipedrive(true);
+    try {
+      await onRefresh();
+    } finally {
+      setRefreshing(false);
+    }
+    try {
+      await onRefreshPipedrive();
+    } finally {
+      setRefreshingPipedrive(false);
+    }
+  };
+
   const detail = liveDetail ?? LIVE_DRILLDOWN;
   const pipedriveRefreshedAt = livePdPull?.pulledAt || LIVE_PIPEDRIVE_AT || LIVE_SNAPSHOT_AT;
 
@@ -415,5 +436,6 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
     cancelCookiePrompt,
     onRefresh,
     onRefreshPipedrive,
+    onRefreshAll,
   };
 }
