@@ -99,13 +99,14 @@ function facadeFacePlanCoords(
   const cy = (bounds.minY + bounds.maxY) / 2;
   switch (frontFace) {
     case 'north':
-      return { xFt: cx, yFt: bounds.maxY, yaw: Math.PI, outward: [0, 1] };
+      return { xFt: cx, yFt: bounds.maxY, yaw: 0, outward: [0, 1] };
     case 'east':
       return { xFt: bounds.maxX, yFt: cy, yaw: -Math.PI / 2, outward: [1, 0] };
     case 'west':
       return { xFt: bounds.minX, yFt: cy, yaw: Math.PI / 2, outward: [-1, 0] };
     default:
-      return { xFt: cx, yFt: bounds.minY, yaw: 0, outward: [0, -1] };
+      // South gable — plane normal must face outward (−Z in world).
+      return { xFt: cx, yFt: bounds.minY, yaw: Math.PI, outward: [0, -1] };
   }
 }
 
