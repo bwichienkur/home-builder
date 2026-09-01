@@ -21,3 +21,19 @@ export { renderCadElevationSvg, elevationSvgDataUrl } from './renderCadElevation
 export { extrudeCadPlate } from './extrudeCadPlate';
 export { detectCadFixtures } from './detectCadFixtures';
 export { demoCadPlate } from './demoCadPlate';
+export {
+  addFixtureHint,
+  addOpeningHint,
+  addWallCenterline,
+  deleteSelection,
+  formatWallLengthFt,
+  moveFixtureHint,
+  moveLabel,
+  moveOpeningHint,
+  pickAtPoint,
+  segLengthFt,
+  selectionSummary,
+  syncWallSegments,
+  type CadEditTool,
+  type CadPlateSelection,
+} from './editCadPlate';

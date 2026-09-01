@@ -4,10 +4,14 @@ import {
   demoCadPlate,
   extrudeCadPlate,
   renderCadElevationSvg,
-  renderCadPlateSvg,
+  deleteSelection,
+  selectionSummary,
   withLayerVisibility,
-  type CadPlate,
+  type CadEditTool,
+  type CadPlateSelection,
 } from '../../lib/cadStudio';
+import type { CadFixtureKind, CadPlate } from '../../lib/cadStudio/types';
+import { CadPlateEditor } from './CadPlateEditor';
 import { importDrawingFiles, type DrawingImportProgress } from '../../lib/housePlans/importDrawingFile';
 import { CadExtrudeView } from './CadExtrudeView';
 import { CadMassingView } from './CadMassingView';
@@ -33,6 +37,9 @@ export function CadStudioPage() {
   const [progress, setProgress] = useState<DrawingImportProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sheetId, setSheetId] = useState<string | null>(null);
+  const [editTool, setEditTool] = useState<CadEditTool>('select');
+  const [fixtureKind, setFixtureKind] = useState<CadFixtureKind>('sink');
+  const [selection, setSelection] = useState<CadPlateSelection | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const visibility = useMemo(() => {
@@ -60,8 +67,7 @@ export function CadStudioPage() {
         visibleLayers: visibleLayerSet,
       });
     }
-    if (!plate.segments.length) return null;
-    return renderCadPlateSvg(plate, { title: plate.sourceFileName });
+    return null;
   }, [plate, plateMode, visibleLayerSet]);
 
   const extrusion = useMemo(() => (plate ? extrudeCadPlate(plate) : null), [plate]);
@@ -218,6 +224,67 @@ export function CadStudioPage() {
             )}
           </section>
           <section>
+            <h2>Edit plan</h2>
+            <div className="cad-edit-tools">
+              {(
+                [
+                  ['select', 'Select / move'],
+                  ['wall', 'Add wall'],
+                  ['opening', 'Add door'],
+                  ['fixture', 'Add fixture'],
+                  ['delete', 'Delete'],
+                ] as const
+              ).map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  className={editTool === id ? 'is-active' : ''}
+                  onClick={() => {
+                    setEditTool(id);
+                    setSelection(null);
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {editTool === 'fixture' && (
+              <label className="cad-fixture-pick">
+                Fixture type
+                <select
+                  value={fixtureKind}
+                  onChange={(e) => setFixtureKind(e.target.value as CadFixtureKind)}
+                >
+                  <option value="sink">Sink</option>
+                  <option value="toilet">Toilet</option>
+                  <option value="tub">Tub</option>
+                  <option value="appliance">Stove / appliance</option>
+                  <option value="counter">Counter</option>
+                  <option value="island">Island</option>
+                </select>
+              </label>
+            )}
+            {selection && plate && (
+              <div className="cad-selection-inspector">
+                <div className="cad-selection-title">{selectionSummary(plate, selection)}</div>
+                <button
+                  type="button"
+                  className="cad-delete-btn"
+                  onClick={() => {
+                    setPlate(deleteSelection(plate, selection));
+                    setSelection(null);
+                  }}
+                >
+                  Delete selected
+                </button>
+              </div>
+            )}
+            <p className="cad-edit-hint">
+              Click a wall to see its length. Drag labels, fixtures, doors, and wall endpoints in Select mode.
+              Add-wall and Add-door: click start, then end. Edits update Extrude 3D live.
+            </p>
+          </section>
+          <section>
             <h2>Plate</h2>
             <div className="cad-stats">
               <div>File: {plate?.sourceFileName ?? '—'}</div>
@@ -272,7 +339,16 @@ export function CadStudioPage() {
                   Side elevation
                 </button>
               </div>
-              {plateSvg ? (
+              {plateMode === 'floor' && plate?.segments.length ? (
+                <CadPlateEditor
+                  plate={plate}
+                  tool={editTool}
+                  fixtureKind={fixtureKind}
+                  selection={selection}
+                  onSelectionChange={setSelection}
+                  onPlateChange={setPlate}
+                />
+              ) : plateSvg ? (
                 <div className="cad-plate-svg" dangerouslySetInnerHTML={{ __html: plateSvg }} />
               ) : (
                 <div className="cad-empty">
