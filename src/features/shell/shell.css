@@ -111,7 +111,8 @@
 .app-shell.is-nav-docked .app-shell-main {
   grid-column: 2;
 }
-.app-shell-main:has(.studio-root) {
+.app-shell-main:has(.studio-root),
+.app-shell-main:has(.cad-studio) {
   overflow: hidden;
 }
 .app-shell:has(.studio-root) .app-shell-top {
