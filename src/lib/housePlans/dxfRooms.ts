@@ -27,16 +27,73 @@ function segLength(s: Seg): number {
   return Math.hypot(s.x2 - s.x1, s.y2 - s.y1);
 }
 
-/** Collapse double-line walls to centerlines for scene rendering. */
+function pointNearSegment(
+  px: number,
+  py: number,
+  s: Seg,
+  eps: number,
+): boolean {
+  const dx = s.x2 - s.x1;
+  const dy = s.y2 - s.y1;
+  const len2 = dx * dx + dy * dy;
+  if (len2 < 1e-12) return Math.hypot(px - s.x1, py - s.y1) <= eps;
+  let t = ((px - s.x1) * dx + (py - s.y1) * dy) / len2;
+  t = Math.max(0, Math.min(1, t));
+  return Math.hypot(px - (s.x1 + t * dx), py - (s.y1 + t * dy)) <= eps;
+}
+
+/** True when two wall centerlines share a corner or form a T-junction. */
+function wallsJoin(a: Seg, b: Seg, eps = 0.35): boolean {
+  const aEnds = [
+    { x: a.x1, y: a.y1 },
+    { x: a.x2, y: a.y2 },
+  ];
+  const bEnds = [
+    { x: b.x1, y: b.y1 },
+    { x: b.x2, y: b.y2 },
+  ];
+  for (const p of aEnds) {
+    for (const q of bEnds) {
+      if (Math.hypot(p.x - q.x, p.y - q.y) <= eps) return true;
+    }
+    if (pointNearSegment(p.x, p.y, b, eps)) return true;
+  }
+  for (const p of bEnds) {
+    if (pointNearSegment(p.x, p.y, a, eps)) return true;
+  }
+  return false;
+}
+
+/**
+ * Drop floating centerlines that do not join the wall graph.
+ * Paired hatch / column / dimension fragments often survive double-line collapse
+ * as short isolated runs that are not real partitions.
+ */
+export function dropIsolatedWallCenterlines(segments: Seg[], joinEps = 0.35): Seg[] {
+  if (segments.length < 2) return segments;
+  return segments.filter((s, i) =>
+    segments.some((o, j) => i !== j && wallsJoin(s, o, joinEps)),
+  );
+}
+
+/**
+ * Collapse double-line walls to centerlines for scene rendering.
+ * Prefers paired face→centerline results so lone dimension / witness / tick
+ * lines on wall layers are not extruded as walls. Falls back to raw segments
+ * only when pairing finds nothing (true single-line drawings).
+ */
 export function wallCenterlinesFromSegments(segments: Seg[]): (Seg & { exterior?: boolean })[] {
   const centers = centerlinesFromDoubleWalls(segments);
-  const source = centers.length >= Math.max(8, segments.length * 0.25) ? centers : segments;
-  return source
-    .filter((s) => segLength(s) >= 1.5)
-    .map((s) => ({
-      ...s,
-      exterior: isExteriorLayer(s.layer),
-    }));
+  // Any successful pairs win — unpaired annotation faces on wall layers must not
+  // re-enter via a "% of raw faces" fallback. Single-line plans yield zero pairs.
+  const source = centers.length > 0 ? centers : segments;
+  const connected = dropIsolatedWallCenterlines(
+    source.filter((s) => segLength(s) >= 1.5),
+  );
+  return connected.map((s) => ({
+    ...s,
+    exterior: isExteriorLayer(s.layer),
+  }));
 }
 
 function polygonAreaFtLocal(points: { x: number; y: number }[]) {
@@ -236,7 +293,12 @@ export function mergeColinear(segments: Seg[]): Seg[] {
   return [...mergeGroup(horiz, 'h'), ...mergeGroup(vert, 'v')];
 }
 
-/** Collapse parallel double-line walls to centerlines. */
+/**
+ * Collapse parallel double-line walls to centerlines.
+ * Unpaired faces are omitted — lone measurement, witness, and tick lines on wall
+ * layers must not become wall centerlines. Single-line drawings are handled by
+ * {@link wallCenterlinesFromSegments} falling back to raw segments.
+ */
 export function centerlinesFromDoubleWalls(segments: Seg[]): Seg[] {
   const horiz = segments.filter((s) => Math.abs(s.y1 - s.y2) <= FT_EPS);
   const vert = segments.filter((s) => Math.abs(s.x1 - s.x2) <= FT_EPS);
@@ -278,7 +340,6 @@ export function centerlinesFromDoubleWalls(segments: Seg[]): Seg[] {
       usedH.add(pair);
     }
   }
-  for (let i = 0; i < horiz.length; i++) if (!usedH.has(i)) out.push(horiz[i]!);
 
   for (let i = 0; i < vert.length; i++) {
     if (usedV.has(i)) continue;
@@ -314,7 +375,6 @@ export function centerlinesFromDoubleWalls(segments: Seg[]): Seg[] {
       usedV.add(pair);
     }
   }
-  for (let i = 0; i < vert.length; i++) if (!usedV.has(i)) out.push(vert[i]!);
 
   return mergeColinear(out);
 }

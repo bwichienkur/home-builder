@@ -107,16 +107,6 @@ export function buildCadPlateFromDxf(
   const scaled = scaleSegmentsToFeet(pool.slice(0, MAX_SEGMENTS), insUnits).segments;
   const flipped = flipPlanY(scaled);
 
-  const segments: CadSegmentFt[] = flipped.map((s) => ({
-    x1: s.x1,
-    y1: s.y1,
-    x2: s.x2,
-    y2: s.y2,
-    layer: s.layer ?? '0',
-    role: classifySegmentRole(s.layer ?? '0'),
-    linetype: s.linetype,
-  }));
-
   const wallRaw = flipped.filter((s) => isRoomWallLayer(s.layer ?? ''));
   const centers = wallCenterlinesFromSegments(wallRaw);
   const wallCenterlines: CadWallCenterlineFt[] = centers.map((s) => ({
@@ -127,6 +117,29 @@ export function buildCadPlateFromDxf(
     layer: s.layer,
     exterior: s.exterior ?? exteriorFromLayer(s.layer),
   }));
+
+  // Plate walls = paired centerlines only. Raw wall-layer faces often include
+  // unpaired measurement / witness / tick lines that must not draw as walls.
+  const nonWall = flipped.filter((s) => !isRoomWallLayer(s.layer ?? ''));
+  const segments: CadSegmentFt[] = [
+    ...wallCenterlines.map((s) => ({
+      x1: s.x1,
+      y1: s.y1,
+      x2: s.x2,
+      y2: s.y2,
+      layer: s.layer ?? 'WALLS',
+      role: 'wall' as const,
+    })),
+    ...nonWall.map((s) => ({
+      x1: s.x1,
+      y1: s.y1,
+      x2: s.x2,
+      y2: s.y2,
+      layer: s.layer ?? '0',
+      role: classifySegmentRole(s.layer ?? '0'),
+      linetype: s.linetype,
+    })),
+  ];
 
   const openingHints: CadOpeningHintFt[] = flipped
     .filter((s) => isOpeningLayer(s.layer ?? ''))

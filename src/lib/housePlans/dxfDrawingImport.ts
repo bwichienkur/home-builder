@@ -36,7 +36,16 @@ export const WALL_LAYERS = new Set([
 export function isRoomWallLayer(layer: string): boolean {
   const u = layer.trim().toUpperCase();
   if (!u) return false;
+  // Openings, dimensions, notes, hatch, and finish-only "DRY WALL" are not structural walls.
+  // Measurement / extension lines often share wall-ish names or sit beside wall layers.
   if (/DOOR|WINDOW|GLAZ|OPENING|SWING/.test(u)) return false;
+  if (
+    /DIM|DIMENSION|ANNO|NOTE|TEXT|TITLE|BORDER|HATCH|REVCLOUD|MEASURE|TICK|GRID|REF|DRY\s*WALL/.test(
+      u,
+    )
+  ) {
+    return false;
+  }
   if (WALL_LAYERS.has(layer) && !/DOOR/i.test(layer)) return true;
   return (
     /\bWALLS?\b/.test(u) ||

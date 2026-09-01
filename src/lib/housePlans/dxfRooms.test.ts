@@ -7,6 +7,7 @@ import {
   roomsFromOutdoorLabels,
   scaleSegmentsToFeet,
   segmentsToRoomsAccurate,
+  wallCenterlinesFromSegments,
 } from './dxfRooms';
 import { importDxfHousePlan, finalizeImportedRooms } from './dxfImport';
 import { isRoomWallLayer } from './dxfDrawingImport';
@@ -218,6 +219,62 @@ describe('room wall layer matching', () => {
     expect(isRoomWallLayer('A-WALL')).toBe(true);
     expect(isRoomWallLayer('DOORS')).toBe(false);
     expect(isRoomWallLayer('doors-window')).toBe(false);
+  });
+
+  it('rejects dimension, note, hatch, and drywall finish layers', () => {
+    expect(isRoomWallLayer('DIMS')).toBe(false);
+    expect(isRoomWallLayer('DIM')).toBe(false);
+    expect(isRoomWallLayer('A-ANNO-DIMS')).toBe(false);
+    expect(isRoomWallLayer('DRY WALL')).toBe(false);
+    expect(isRoomWallLayer('HATCH')).toBe(false);
+    expect(isRoomWallLayer('NOTE')).toBe(false);
+  });
+});
+
+describe('wall centerlines vs measurement lines', () => {
+  it('does not keep unpaired witness lines as wall centerlines', () => {
+    // Double-line wall at y=0/0.5 plus a lone "dimension" line at y=3
+    const segs = [
+      { x1: 0, y1: 0, x2: 20, y2: 0, layer: 'WALLS INT' },
+      { x1: 0, y1: 0.5, x2: 20, y2: 0.5, layer: 'WALLS INT' },
+      { x1: 0, y1: 3, x2: 20, y2: 3, layer: 'WALLS INT' }, // unpaired measurement-like
+      { x1: 0, y1: 0, x2: 0, y2: 10, layer: 'WALLS EXT' },
+      { x1: 0.5, y1: 0, x2: 0.5, y2: 10, layer: 'WALLS EXT' },
+    ];
+    const centers = wallCenterlinesFromSegments(segs);
+    expect(centers.some((s) => Math.abs((s.y1 + s.y2) / 2 - 3) < 0.2)).toBe(false);
+    expect(centers.some((s) => Math.abs((s.y1 + s.y2) / 2 - 0.25) < 0.1)).toBe(true);
+  });
+
+  it('falls back to raw segments for true single-line drawings', () => {
+    const segs = [
+      { x1: 0, y1: 0, x2: 20, y2: 0, layer: 'WALLS INT' },
+      { x1: 20, y1: 0, x2: 20, y2: 12, layer: 'WALLS INT' },
+      { x1: 20, y1: 12, x2: 0, y2: 12, layer: 'WALLS INT' },
+      { x1: 0, y1: 12, x2: 0, y2: 0, layer: 'WALLS INT' },
+    ];
+    const centers = wallCenterlinesFromSegments(segs);
+    expect(centers.length).toBe(4);
+  });
+
+  it('drops floating paired stubs that do not join the wall graph', () => {
+    const segs = [
+      // Real double-line room
+      { x1: 0, y1: 0, x2: 20, y2: 0 },
+      { x1: 0, y1: 0.5, x2: 20, y2: 0.5 },
+      { x1: 0, y1: 10, x2: 20, y2: 10 },
+      { x1: 0, y1: 10.5, x2: 20, y2: 10.5 },
+      { x1: 0, y1: 0, x2: 0, y2: 10.5 },
+      { x1: 0.5, y1: 0, x2: 0.5, y2: 10.5 },
+      { x1: 20, y1: 0, x2: 20, y2: 10.5 },
+      { x1: 19.5, y1: 0, x2: 19.5, y2: 10.5 },
+      // Floating double-line stub (column/dim fragment), not connected
+      { x1: 6, y1: 30, x2: 8, y2: 30 },
+      { x1: 6, y1: 30.5, x2: 8, y2: 30.5 },
+    ];
+    const centers = wallCenterlinesFromSegments(segs);
+    expect(centers.some((s) => (s.y1 + s.y2) / 2 > 25)).toBe(false);
+    expect(centers.length).toBeGreaterThanOrEqual(4);
   });
 });
 

@@ -25,7 +25,9 @@ export function isFoundationLayer(layer: string): boolean {
 
 export function isAnnotationLayer(layer: string): boolean {
   const u = layer.trim().toUpperCase();
-  return /TEXT|DIM|NOTE|TITLE|BORDER|VIEWPORT|REVCLOUD|HATCH|GRID|REF/.test(u);
+  return /TEXT|DIM|NOTE|TITLE|BORDER|VIEWPORT|REVCLOUD|HATCH|GRID|REF|DRY\s*WALL|MEASURE|TICK/.test(
+    u,
+  );
 }
 
 export function classifyLayerKind(layer: string): CadLayerKind {
