@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Canvas, useLoader } from '@react-three/fiber';
+import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import type { CadExtrusion, CadMassing, CadPlanFace, CadRoofMassing } from '../../lib/cadStudio';
@@ -120,24 +120,50 @@ function ElevationFacadePlane({
   massing: CadMassing;
   centerFt: { cx: number; cy: number };
 }) {
-  const dataUrl = useMemo(() => elevationSvgDataUrl(sheet, { padFt: 0.25 }), [sheet]);
-  const texture = useLoader(THREE.TextureLoader, dataUrl);
-  texture.colorSpace = THREE.SRGBColorSpace;
+  const [texture, setTexture] = useState<THREE.Texture | null>(null);
+  const sheetKey = `${sheet.name}-${sheet.segments.length}-${massing.facadeWidthFt}`;
+
+  useEffect(() => {
+    let cancelled = false;
+    let tex: THREE.Texture | null = null;
+    const url = elevationSvgDataUrl(sheet, { padFt: 0.25 });
+    const img = new Image();
+    img.onload = () => {
+      if (cancelled) return;
+      tex = new THREE.Texture(img);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.needsUpdate = true;
+      setTexture(tex);
+    };
+    img.src = url;
+    return () => {
+      cancelled = true;
+      tex?.dispose();
+    };
+  }, [sheetKey, sheet]);
 
   const wM = massing.facadeWidthFt * FT_TO_M;
   const hM = massing.facadeHeightFt * FT_TO_M;
   const face = facadeFacePlanCoords(massing.frontFace, massing.planBounds);
   const [wx, wz] = planFtToWorld(face.xFt, face.yFt, centerFt);
-  const offset = 0.18;
+  const offset = 0.35;
+
+  if (!texture) return null;
 
   return (
     <mesh
       position={[wx + face.outward[0]! * offset, hM / 2, wz + face.outward[1]! * offset]}
       rotation={[0, face.yaw, 0]}
-      renderOrder={2}
+      renderOrder={10}
     >
       <planeGeometry args={[wM, hM]} />
-      <meshBasicMaterial map={texture} toneMapped={false} side={THREE.FrontSide} />
+      <meshBasicMaterial
+        map={texture}
+        toneMapped={false}
+        side={THREE.FrontSide}
+        depthTest={false}
+        depthWrite={false}
+      />
     </mesh>
   );
 }
@@ -170,7 +196,9 @@ function MassingScene({ extrusion }: { extrusion: CadExtrusion }) {
       <CadExtrudeSceneParts walls={walls} openings={openings} fixtures={fixtures} centerFt={centerFt} />
       <RoofMesh roof={massing.roof} storyHeightM={storyHeightM} envelope={envelope} />
       {massing.frontElevation && (
-        <ElevationFacadePlane sheet={massing.frontElevation} massing={massing} centerFt={centerFt} />
+        <Suspense fallback={null}>
+          <ElevationFacadePlane sheet={massing.frontElevation} massing={massing} centerFt={centerFt} />
+        </Suspense>
       )}
       <OrbitControls makeDefault target={[0, storyHeightM * 0.55, 0]} />
     </>
