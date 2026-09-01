@@ -45,7 +45,7 @@ export function AppShell() {
   const navigate = useNavigate();
   const location = useLocation();
   const showUsers = canManageUsers(user?.role);
-  const isBuild = location.pathname.startsWith('/build');
+  const isBuild = location.pathname.startsWith('/build') || location.pathname.startsWith('/cad');
   const pageTitle = pageTitleForPath(location.pathname);
   const wide = useWideLayout();
   const canDock = wide && !isBuild;

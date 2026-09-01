@@ -14,6 +14,9 @@ import { UsersPage } from './features/admin/UsersPage';
 import { ApiDocsPage } from './features/docs/ApiDocsPage';
 
 const StudioApp = lazy(() => import('./StudioApp'));
+const CadStudioPage = lazy(() =>
+  import('./features/cad/CadStudioPage').then((m) => ({ default: m.CadStudioPage })),
+);
 const AdminPage = lazy(() =>
   import('./components/admin/AdminPage').then((m) => ({ default: m.AdminPage })),
 );
@@ -84,6 +87,14 @@ export function AppRouter() {
             element={
               <Lazy>
                 <StudioApp />
+              </Lazy>
+            }
+          />
+          <Route
+            path="cad"
+            element={
+              <Lazy>
+                <CadStudioPage />
               </Lazy>
             }
           />
