@@ -1,5 +1,6 @@
 import { pullPipedrive, readCache } from './pull.js';
 import { readJsonBody } from '../buildertrend/http.js';
+import { loadDashboardLivePull, saveDashboardLivePull, DASHBOARD_PULL_IDS } from '../dashboardLivePullStore.js';
 
 function sendError(res, err) {
   const status = Number(err?.status) || 500;
@@ -19,6 +20,7 @@ export async function handleRefresh(req, res) {
     const body = await readJsonBody(req);
     const token = typeof body?.token === 'string' ? body.token : undefined;
     const payload = await pullPipedrive({ token });
+    await saveDashboardLivePull(DASHBOARD_PULL_IDS.pipedrive, payload);
     res.json({ ok: true, ...payload });
   } catch (err) {
     sendError(res, err);
@@ -30,7 +32,8 @@ export async function handleDashboard(req, res) {
     res.setHeader('Allow', 'GET');
     return res.status(405).json({ ok: false, error: 'Use GET.' });
   }
-  const cache = readCache();
+  const fromDb = await loadDashboardLivePull(DASHBOARD_PULL_IDS.pipedrive);
+  const cache = fromDb.payload ?? readCache();
   if (!cache) return res.status(404).json({ ok: false, error: 'No live Pipedrive pull yet.' });
   res.json({ ok: true, ...cache });
 }

@@ -28,15 +28,16 @@ describe('slimPullForStorage', () => {
 });
 
 describe('storeLivePull', () => {
-  it('does not throw when localStorage quota is exceeded', () => {
+  it('clears legacy localStorage instead of persisting large pulls', () => {
     const storage = new Map<string, string>();
+    storage.set('mahnikka-bt-live-pull', '{"huge":true}');
     const original = globalThis.localStorage;
     Object.defineProperty(globalThis, 'localStorage', {
       configurable: true,
       value: {
         getItem: (key: string) => storage.get(key) ?? null,
-        setItem: () => {
-          throw new DOMException('quota', 'QuotaExceededError');
+        setItem: (key: string, value: string) => {
+          storage.set(key, value);
         },
         removeItem: (key: string) => {
           storage.delete(key);
@@ -49,7 +50,8 @@ describe('storeLivePull', () => {
         authMethod: 'cookie',
         reports: { wip: [{ jobID: 1 }] },
       });
-      expect(ok).toBe(false);
+      expect(ok).toBe(true);
+      expect(storage.has('mahnikka-bt-live-pull')).toBe(false);
     } finally {
       Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: original });
     }

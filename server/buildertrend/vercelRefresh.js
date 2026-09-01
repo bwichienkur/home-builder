@@ -7,6 +7,8 @@
  * so every network/parse step uses a hard Promise.race timeout and a size cap.
  */
 
+import { saveDashboardLivePull, DASHBOARD_PULL_IDS } from '../dashboardLivePullStore.js';
+
 const ORIGIN = 'https://buildertrend.net';
 const FETCH_MS = 12_000;
 const MAX_BT_BODY_CHARS = 1_500_000;
@@ -362,7 +364,7 @@ export async function handleVercelRefresh(req, res) {
       dailyLogs,
     };
 
-    return res.status(200).json({
+    const payload = {
       ok: true,
       pulledAt: new Date().toISOString(),
       authMethod: cookieSource === 'env' ? 'cookie-env' : 'cookie',
@@ -378,7 +380,9 @@ export async function handleVercelRefresh(req, res) {
         cookieSource,
       },
       reports,
-    });
+    };
+    await saveDashboardLivePull(DASHBOARD_PULL_IDS.buildertrend, payload);
+    return res.status(200).json(payload);
   } catch (err) {
     const status = Number(err?.status) || 500;
     const message =
