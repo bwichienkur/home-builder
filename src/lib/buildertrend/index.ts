@@ -70,5 +70,5 @@ export type { RequiredBtCookieName } from './cookieSession';
 export { formatCompactUsd, formatUsd, formatPct, formatDelta, formatRefreshedAt, formatRefreshAgo, formatCloseDate, formatDays, formatMonthsDays, splitMonthsDays, totalSlipDays, phaseLabel } from './format';
 export { PM_REVENUE_LAST_30D_GOAL } from './types';
 export type * from './types';
-export type { BuildertrendLivePull } from './refreshClient';
+export type { BuildertrendLivePull, BuildertrendRefreshProgress } from './refreshClient';
 export type { BuildertrendReports, MappedBuildertrendPull } from './mapReports';

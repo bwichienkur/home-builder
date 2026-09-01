@@ -1,6 +1,6 @@
-import { handleVercelRefresh } from '../../server/buildertrend/vercelRefresh.js';
+import { handleVercelFullRefresh } from '../../server/buildertrend/vercelFullRefresh.js';
 
-export const config = { maxDuration: 60 };
+export const config = { maxDuration: 300 };
 
 /**
  * Vercel Node body: often a Buffer or already-parsed object. Normalize before handler.
@@ -30,7 +30,7 @@ export default async function handler(req, res) {
         code: 'bad_body',
       });
     }
-    await handleVercelRefresh(req, res);
+    await handleVercelFullRefresh(req, res);
   } catch (err) {
     console.error('buildertrend refresh fatal', err);
     if (!res.headersSent) {

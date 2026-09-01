@@ -14,14 +14,17 @@ export const DASHBOARD_PULL_IDS = {
 
 function slimBuildertrendPull(pull) {
   if (!pull?.reports) return pull;
-  return {
+  const slimmed = {
     pulledAt: pull.pulledAt,
     authMethod: pull.authMethod,
     enrichment: pull.enrichment,
     readonly: pull.readonly,
     serverless: pull.serverless,
+    statuses: pull.statuses,
     reports: slimReportsForClient(pull.reports, { now: new Date(pull.pulledAt || Date.now()) }),
   };
+  if (pull._pullState) slimmed._pullState = pull._pullState;
+  return slimmed;
 }
 
 function slimPipedrivePull(pull) {

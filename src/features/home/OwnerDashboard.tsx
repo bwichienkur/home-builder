@@ -149,6 +149,14 @@ function deltaClass(delta: number, invert = false) {
   return good ? 'is-up' : 'is-down';
 }
 
+function btRefreshLabel(refreshing: boolean, progress: { done: number; total: number } | null) {
+  if (!refreshing) return 'Refresh from Buildertrend';
+  if (progress && progress.total > 0) {
+    return `Pulling jobs ${progress.done}/${progress.total}…`;
+  }
+  return 'Pulling…';
+}
+
 export function OwnerDashboard() {
   const [status, setStatus] = useState<JobStatus>('open');
   const [dateRange, setDateRange] = useState<DateRangeId>('all');
@@ -159,6 +167,7 @@ export function OwnerDashboard() {
     error,
     pipedriveError,
     refreshing,
+    refreshProgress,
     refreshingPipedrive,
     livePull,
     livePdPull,
@@ -239,7 +248,11 @@ export function OwnerDashboard() {
               disabled={refreshing || refreshingPipedrive || Boolean(cookiePrompt) || cookieBusy}
               aria-busy={refreshing || refreshingPipedrive}
             >
-              {refreshing || refreshingPipedrive ? 'Pulling…' : 'Refresh all'}
+              {refreshing || refreshingPipedrive
+                ? refreshProgress && refreshProgress.total > 0
+                  ? `Pulling jobs ${refreshProgress.done}/${refreshProgress.total}…`
+                  : 'Pulling…'
+                : 'Refresh all'}
             </button>
           </div>
           <div className="dash-refresh-group">
@@ -254,7 +267,7 @@ export function OwnerDashboard() {
               disabled={refreshing || Boolean(cookiePrompt) || cookieBusy}
               aria-busy={refreshing}
             >
-              {refreshing ? 'Pulling…' : 'Refresh from Buildertrend'}
+              {btRefreshLabel(refreshing, refreshProgress)}
             </button>
           </div>
           <div className="dash-refresh-group">
