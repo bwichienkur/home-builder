@@ -36,7 +36,7 @@ export function classifyLayerKind(layer: string): CadLayerKind {
   if (isAnnotationLayer(layer)) return 'annotation';
   if (isRoomWallLayer(layer) || isOpeningLayer(layer) || isSoftSpaceLayer(layer)) return 'floor';
   const u = layer.trim().toUpperCase();
-  if (/FIXTURE|COUNTER|CABINET|APPLIANCE|WALL|DOOR|WINDOW|FLOOR|ROOM/.test(u)) return 'floor';
+  if (/FIXTURE|COUNTER|CABINET|APPLIANCE|PLUMB|SHELF|WALL|DOOR|WINDOW|FLOOR|ROOM/.test(u)) return 'floor';
   return 'other';
 }
 

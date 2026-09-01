@@ -109,6 +109,66 @@ A-ELEV-FRONT
  21
 100
   0
+LINE
+  8
+COUNTER
+ 10
+5
+ 20
+5
+ 11
+12
+ 21
+5
+  0
+LINE
+  8
+COUNTER
+ 10
+12
+ 20
+5
+ 11
+12
+ 21
+9
+  0
+LINE
+  8
+CEILING
+  6
+HIDDEN
+ 10
+2
+ 20
+2
+ 11
+14
+ 21
+2
+  0
+CIRCLE
+  8
+FIXTURES
+ 10
+8
+ 20
+7
+ 40
+0.5
+  0
+TEXT
+  8
+TEXT ROOM
+ 10
+8
+ 20
+12
+ 40
+1
+  1
+KITCHEN
+  0
 ENDSEC
   0
 EOF
@@ -122,6 +182,8 @@ describe('cadStudio', () => {
     expect(classifyLayerKind('A-ELEV-FRONT')).toBe('elevation');
     expect(classifySegmentRole('DOORS')).toBe('opening');
     expect(classifySegmentRole('WALLS INT')).toBe('wall');
+    expect(classifySegmentRole('COUNTER')).toBe('fixture');
+    expect(classifySegmentRole('CEILING')).toBe('soft');
   });
 
   it('builds a plate from DXF with wall centerlines and openings', () => {
@@ -132,11 +194,23 @@ describe('cadStudio', () => {
     expect(plate.segments.length).toBeGreaterThan(0);
   });
 
+  it('imports fixtures, soft room borders, and room labels onto the plate', () => {
+    const plate = buildCadPlateFromDxf(tinyDxf, 'tiny.dxf');
+    expect(plate.segments.some((s) => s.role === 'fixture')).toBe(true);
+    expect(plate.segments.some((s) => s.role === 'soft')).toBe(true);
+    expect(plate.labels.some((l) => /KITCHEN/i.test(l.text))).toBe(true);
+    const svg = renderCadPlateSvg(plate);
+    expect(svg).toContain('#0f766e');
+    expect(svg).toContain('stroke-dasharray');
+    expect(svg).toContain('KITCHEN');
+  });
+
   it('renders SVG plate and extrudes walls from centerlines', () => {
     const plate = demoCadPlate();
     const svg = renderCadPlateSvg(plate, { title: 'Demo' });
     expect(svg).toContain('<svg');
     expect(svg).toContain('#1e293b');
+    expect(svg).toContain('KITCHEN');
     const extrusion = extrudeCadPlate(plate);
     expect(extrusion.walls.length).toBeGreaterThanOrEqual(8);
     expect(extrusion.openings.length).toBeGreaterThanOrEqual(1);

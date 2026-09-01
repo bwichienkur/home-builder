@@ -26,7 +26,7 @@ export async function importDrawingFiles(
     planName?: string;
     onProgress?: (p: DrawingImportProgress) => void;
   },
-): Promise<DrawingImportResult & { pdfBlob?: Blob }> {
+): Promise<DrawingImportResult & { pdfBlob?: Blob; dxfText: string }> {
   const drawing = files.drawing;
   if (!drawing) throw new Error('Choose a .dwg or .dxf file.');
 
@@ -85,9 +85,9 @@ export async function importDrawingFiles(
       ],
     };
     onProgress?.({ stage: 'done' });
-    return { ...result, package: withPdf, pdfBlob };
+    return { ...result, package: withPdf, pdfBlob, dxfText };
   }
 
   onProgress?.({ stage: 'done' });
-  return result;
+  return { ...result, dxfText };
 }
