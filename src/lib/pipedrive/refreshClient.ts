@@ -42,21 +42,12 @@ async function parseError(response: Response) {
 }
 
 export function loadStoredPipedrivePull(): PipedriveLivePull | null {
-  if (typeof localStorage === 'undefined') return null;
-  try {
-    const raw = localStorage.getItem(LIVE_PD_PULL_STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as PipedriveLivePull;
-    if (!parsed?.pulledAt || !parsed.reports) return null;
-    return parsed;
-  } catch {
-    return null;
-  }
+  clearStoredPipedrivePull();
+  return null;
 }
 
-export function storePipedrivePull(pull: PipedriveLivePull) {
-  if (typeof localStorage === 'undefined') return;
-  localStorage.setItem(LIVE_PD_PULL_STORAGE_KEY, JSON.stringify(pull));
+export function storePipedrivePull(_pull: PipedriveLivePull) {
+  clearStoredPipedrivePull();
 }
 
 export function clearStoredPipedrivePull() {

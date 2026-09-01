@@ -6,6 +6,7 @@ import 'dotenv/config';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { saveDashboardLivePull, DASHBOARD_PULL_IDS } from '../dashboardLivePullStore.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const API_ORIGIN = 'https://api.pipedrive.com';
@@ -133,5 +134,6 @@ export async function pullPipedrive({ token } = {}) {
     reports,
   };
   writeCache(payload);
+  await saveDashboardLivePull(DASHBOARD_PULL_IDS.pipedrive, payload);
   return payload;
 }

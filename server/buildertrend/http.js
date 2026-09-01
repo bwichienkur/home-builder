@@ -1,5 +1,6 @@
 import { pullBuildertrend, readCache } from './pull.js';
 import { estimateJsonBytes, MAX_CLIENT_PAYLOAD_BYTES, slimReportsForClient } from './slim.js';
+import { loadDashboardLivePull, saveDashboardLivePull, DASHBOARD_PULL_IDS } from '../dashboardLivePullStore.js';
 
 function sendError(res, err) {
   const status = Number(err?.status) || 500;
@@ -91,6 +92,7 @@ export async function handleRefresh(req, res, options = {}) {
       cookie,
       serverless: options.serverless === true || Boolean(process.env.VERCEL),
     });
+    await saveDashboardLivePull(DASHBOARD_PULL_IDS.buildertrend, payload);
     res.json({ ok: true, ...clientPayload(payload) });
   } catch (err) {
     sendError(res, err);
@@ -102,7 +104,8 @@ export async function handleDashboard(req, res) {
     res.setHeader('Allow', 'GET');
     return res.status(405).json({ ok: false, error: 'Use GET.' });
   }
-  const cache = readCache();
+  const fromDb = await loadDashboardLivePull(DASHBOARD_PULL_IDS.buildertrend);
+  const cache = fromDb.payload ?? readCache();
   if (!cache) return res.status(404).json({ ok: false, error: 'No live Buildertrend pull yet.' });
   try {
     res.json({ ok: true, ...clientPayload(cache) });

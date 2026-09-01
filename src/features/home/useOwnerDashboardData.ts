@@ -5,7 +5,6 @@ import {
   fetchCachedBuildertrendPull,
   getOwnerDashboardProvider,
   isNativeOwnerDashboard,
-  loadStoredLivePull,
   mapBuildertrendReports,
   mockOwnerDashboardProvider,
   refreshBuildertrendPull,
@@ -38,7 +37,6 @@ import type { LiveDrilldown } from '../../lib/dashboard/drilldownTypes';
 import { mapPipedriveDeals, mergeSalesFromPipedrive } from '../../lib/pipedrive/mapDeals';
 import {
   fetchCachedPipedrivePull,
-  loadStoredPipedrivePull,
   refreshPipedrivePull,
   storePipedrivePull,
   type PipedriveLivePull,
@@ -125,12 +123,8 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
   const [pipedriveError, setPipedriveError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [refreshingPipedrive, setRefreshingPipedrive] = useState(false);
-  const [livePull, setLivePull] = useState<BuildertrendLivePull | null>(() =>
-    isNativeOwnerDashboard() ? null : loadStoredLivePull(),
-  );
-  const [livePdPull, setLivePdPull] = useState<PipedriveLivePull | null>(() =>
-    isNativeOwnerDashboard() ? null : loadStoredPipedrivePull(),
-  );
+  const [livePull, setLivePull] = useState<BuildertrendLivePull | null>(null);
+  const [livePdPull, setLivePdPull] = useState<PipedriveLivePull | null>(null);
   const [liveDetail, setLiveDetail] = useState<LiveDrilldown | null>(null);
   const [cookiePrompt, setCookiePrompt] = useState<BtCookiePromptState | null>(null);
   const [cookieBusy, setCookieBusy] = useState(false);

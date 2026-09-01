@@ -7,6 +7,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { slimCoreReportRows } from './slim.js';
+import { saveDashboardLivePull, DASHBOARD_PULL_IDS } from '../dashboardLivePullStore.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ORIGIN = 'https://buildertrend.net';
@@ -1213,9 +1214,10 @@ export async function pullBuildertrend({ cookie, serverless: serverlessOpt } = {
     reports,
   };
   if (serverless) {
-    // Browser stores the pull in localStorage; skip /tmp write to save memory/time.
+    await saveDashboardLivePull(DASHBOARD_PULL_IDS.buildertrend, payload);
     return payload;
   }
   writeCache(payload);
+  await saveDashboardLivePull(DASHBOARD_PULL_IDS.buildertrend, payload);
   return payload;
 }
