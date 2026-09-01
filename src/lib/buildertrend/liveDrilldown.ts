@@ -8,8 +8,462 @@ import type { LiveDrilldown } from '../dashboard/drilldownTypes';
  * Daily logs = user×job rows from the rolling 4-week window.
  */
 export const LIVE_DRILLDOWN: LiveDrilldown = {
-  "generatedAt": "2026-09-01T19:59:55.306Z",
-  "dealsByStage": {},
+  "generatedAt": "2026-09-01T20:19:53.727Z",
+  "dealsByStage": {
+    "pd-1": [
+      {
+        "id": 12,
+        "title": "Michael and Gabrielle Sergent | 5806 Spruce Creek Road",
+        "value": 750000,
+        "stageName": "First Contact",
+        "probabilityPct": 10,
+        "weightedValue": 75000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 13,
+        "title": "Trivett Sam",
+        "value": 500000,
+        "stageName": "First Contact",
+        "probabilityPct": 10,
+        "weightedValue": 50000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 19,
+        "title": "Yanet Garay | 1707 Destino Court",
+        "value": 1000000,
+        "stageName": "First Contact",
+        "probabilityPct": 10,
+        "weightedValue": 100000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 56,
+        "title": "Mark Rosado | 20 Longview Parkway",
+        "value": 1350000,
+        "stageName": "First Contact",
+        "probabilityPct": 10,
+        "weightedValue": 135000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 57,
+        "title": "Durwood Goings | 390 Windsor Court",
+        "value": 1000000,
+        "stageName": "First Contact",
+        "probabilityPct": 10,
+        "weightedValue": 100000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 58,
+        "title": "Ed & Daisy Soto | 95 Coronado Road",
+        "value": 900000,
+        "stageName": "First Contact",
+        "probabilityPct": 10,
+        "weightedValue": 90000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 59,
+        "title": "Tom Kohberger | 559 Beach Bum Boulevard",
+        "value": 1600000,
+        "stageName": "First Contact",
+        "probabilityPct": 10,
+        "weightedValue": 160000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 63,
+        "title": "R. Kim & Michele Etherdige |  Lot 10 VB",
+        "value": 1100000,
+        "stageName": "First Contact",
+        "probabilityPct": 10,
+        "weightedValue": 110000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 77,
+        "title": "Mike and Cassie Dorceus | 549 Antila Way",
+        "value": 1500000,
+        "stageName": "First Contact",
+        "probabilityPct": 10,
+        "weightedValue": 150000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 81,
+        "title": "Klioze Jackie",
+        "value": 950000,
+        "stageName": "First Contact",
+        "probabilityPct": 10,
+        "weightedValue": 95000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 82,
+        "title": "Doug Densmore |  Ponce Terrace Circle",
+        "value": 1000000,
+        "stageName": "First Contact",
+        "probabilityPct": 10,
+        "weightedValue": 100000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 83,
+        "title": "Allen Kim and Mike LISA GARDENER CUSTOMER",
+        "value": 1800000,
+        "stageName": "First Contact",
+        "probabilityPct": 10,
+        "weightedValue": 180000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 87,
+        "title": "Allen & Susan Tutt | 148 Inlet Drive",
+        "value": 1300000,
+        "stageName": "First Contact",
+        "probabilityPct": 10,
+        "weightedValue": 130000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 98,
+        "title": "Vinnie Antignano | 29 Island Estates Parkway",
+        "value": 1379628,
+        "stageName": "First Contact",
+        "probabilityPct": 10,
+        "weightedValue": 137962.80000000002,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 105,
+        "title": "Larry Meador | 233 Quay Assisi Court",
+        "value": 1900000,
+        "stageName": "First Contact",
+        "probabilityPct": 10,
+        "weightedValue": 190000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 118,
+        "title": "Hank Foley | 2724 South Peninsula Drive",
+        "value": 2100000,
+        "stageName": "First Contact",
+        "probabilityPct": 10,
+        "weightedValue": 210000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 758,
+        "title": "David Torres | (305)308-5475",
+        "value": 0,
+        "stageName": "First Contact",
+        "probabilityPct": 10,
+        "weightedValue": 0,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 865,
+        "title": "Rachel Akins | 4719 Riverglen Boulevard",
+        "value": 1000000,
+        "stageName": "First Contact",
+        "probabilityPct": 10,
+        "weightedValue": 100000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 904,
+        "title": "Ian & Leah Robinson",
+        "value": 1000000,
+        "stageName": "First Contact",
+        "probabilityPct": 10,
+        "weightedValue": 100000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 905,
+        "title": "Tasha Sallowen REALTOR",
+        "value": 800000,
+        "stageName": "First Contact",
+        "probabilityPct": 10,
+        "weightedValue": 80000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 910,
+        "title": "Lee and Carrie Cherian",
+        "value": 1596263,
+        "stageName": "First Contact",
+        "probabilityPct": 10,
+        "weightedValue": 159626.30000000002,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 912,
+        "title": "Chris Lovett",
+        "value": 1200000,
+        "stageName": "First Contact",
+        "probabilityPct": 10,
+        "weightedValue": 120000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 932,
+        "title": "Nicole Nagrani | 2420 Dodge Drive",
+        "value": 1000000,
+        "stageName": "First Contact",
+        "probabilityPct": 10,
+        "weightedValue": 100000,
+        "expectedCloseDate": "",
+        "status": "open"
+      }
+    ],
+    "pd-2": [
+      {
+        "id": 9,
+        "title": "Tim and Lori Antolovic | 288 Yacht Harbor Drive",
+        "value": 1000000,
+        "stageName": "Qualified",
+        "probabilityPct": 25,
+        "weightedValue": 250000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 10,
+        "title": "Todd Blanks | 275 South Riverwalk Drive",
+        "value": 842000,
+        "stageName": "Qualified",
+        "probabilityPct": 25,
+        "weightedValue": 210500,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 11,
+        "title": "Indrani Manbahal | 729 Strihal Loop",
+        "value": 1200000,
+        "stageName": "Qualified",
+        "probabilityPct": 25,
+        "weightedValue": 300000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 15,
+        "title": "Kovacs Mark",
+        "value": 0,
+        "stageName": "Qualified",
+        "probabilityPct": 25,
+        "weightedValue": 0,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 20,
+        "title": "Scott Cate | 15 Ice House Road",
+        "value": 3000000,
+        "stageName": "Qualified",
+        "probabilityPct": 10,
+        "weightedValue": 300000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 23,
+        "title": "Robert and Jenny Burton | 2 Camino Del Mar",
+        "value": 1200000,
+        "stageName": "Qualified",
+        "probabilityPct": 10,
+        "weightedValue": 120000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 34,
+        "title": "Mark & Carol Reeve | 607 Goodwin Avenue",
+        "value": 950000,
+        "stageName": "Qualified",
+        "probabilityPct": 10,
+        "weightedValue": 95000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 54,
+        "title": "John and Tina Gray | 5350 Southwest 26th Court",
+        "value": 1100000,
+        "stageName": "Qualified",
+        "probabilityPct": 25,
+        "weightedValue": 275000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 62,
+        "title": "Jane & Tim Veschio | 4 Turkey Oak Lane",
+        "value": 1300000,
+        "stageName": "Qualified",
+        "probabilityPct": 25,
+        "weightedValue": 325000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 71,
+        "title": "Shackelford Mike (Has Realtor)",
+        "value": 2000000,
+        "stageName": "Qualified",
+        "probabilityPct": 25,
+        "weightedValue": 500000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 839,
+        "title": "Joe Cossetti | 4392 North Oceanshore Boulevard",
+        "value": 2500000,
+        "stageName": "Qualified",
+        "probabilityPct": 2,
+        "weightedValue": 50000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 911,
+        "title": "Carmen & Robert Gonzalez | 114 Hernandez Avenue",
+        "value": 1139018,
+        "stageName": "Qualified",
+        "probabilityPct": 25,
+        "weightedValue": 284754.5,
+        "expectedCloseDate": "",
+        "status": "open"
+      }
+    ],
+    "pd-3": [
+      {
+        "id": 53,
+        "title": "Nix Gene LISA GARDNER CLIENT",
+        "value": 2200000,
+        "stageName": "Meet with Eric",
+        "probabilityPct": 55,
+        "weightedValue": 1210000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 78,
+        "title": "Denise Kuendig | 229 Vista Della Toscana",
+        "value": 1300000,
+        "stageName": "Meet with Eric",
+        "probabilityPct": 55,
+        "weightedValue": 715000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 86,
+        "title": "Peek David",
+        "value": 776730,
+        "stageName": "Meet with Eric",
+        "probabilityPct": 55,
+        "weightedValue": 427201.50000000006,
+        "expectedCloseDate": "",
+        "status": "open"
+      }
+    ],
+    "pd-4": [
+      {
+        "id": 37,
+        "title": "Jim Orr | 1926 Lake Disston Drive",
+        "value": 1055300,
+        "stageName": "Homesite Secured",
+        "probabilityPct": 10,
+        "weightedValue": 105530,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 67,
+        "title": "Kimberly and Michael Inglis | 50 Cool Water Court",
+        "value": 1000000,
+        "stageName": "Homesite Secured",
+        "probabilityPct": 40,
+        "weightedValue": 400000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 714,
+        "title": "Cafasso Joe & Shelly Lot 186 VB",
+        "value": 1200000,
+        "stageName": "Homesite Secured",
+        "probabilityPct": 40,
+        "weightedValue": 480000,
+        "expectedCloseDate": "",
+        "status": "open"
+      }
+    ],
+    "pd-5": [
+      {
+        "id": 654,
+        "title": "Bussa Bill (Has Realtor)",
+        "value": 1100000,
+        "stageName": "Pricing Proposal",
+        "probabilityPct": 70,
+        "weightedValue": 770000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 864,
+        "title": "Sharley & Hank Gilbert |  Stillwater Drive Lot 140",
+        "value": 1228721,
+        "stageName": "Pricing Proposal",
+        "probabilityPct": 70,
+        "weightedValue": 860104.7,
+        "expectedCloseDate": "",
+        "status": "open"
+      }
+    ],
+    "pd-6": [],
+    "pd-17": [
+      {
+        "id": 106,
+        "title": "Anne & Brent Lister | 122 Coronado Road",
+        "value": 965037,
+        "stageName": "Under Negotiation",
+        "probabilityPct": 85,
+        "weightedValue": 820281.45,
+        "expectedCloseDate": "",
+        "status": "open"
+      }
+    ]
+  },
   "selectionsByJobId": {
     "35764730": [
       {
