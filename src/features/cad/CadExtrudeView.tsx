@@ -18,15 +18,15 @@ function fixtureColor(kind: CadFixtureKind): string {
   switch (kind) {
     case 'counter':
     case 'island':
-      return '#a8a29e'; // stone / countertop
+      return '#b8956c'; // warm cabinet / countertop
     case 'sink':
-      return '#94a3b8';
+      return '#7dd3fc';
     case 'toilet':
-      return '#e2e8f0';
+      return '#f8fafc';
     case 'tub':
-      return '#cbd5e1';
+      return '#e2e8f0';
     case 'appliance':
-      return '#64748b';
+      return '#475569';
     default:
       return '#78716c';
   }
