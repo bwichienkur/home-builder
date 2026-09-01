@@ -17,7 +17,7 @@ export { buildCadElevationSheets, extractRoofProfileFromElevation } from './buil
 export { buildCadMassing, detectFrontFace } from './buildCadMassing';
 export { classifyLayerKind, classifySegmentRole, isElevationLayer } from './classifyLayers';
 export { renderCadPlateSvg } from './renderCadPlateSvg';
-export { renderCadElevationSvg } from './renderCadElevationSvg';
+export { renderCadElevationSvg, elevationSvgDataUrl } from './renderCadElevationSvg';
 export { extrudeCadPlate } from './extrudeCadPlate';
 export { detectCadFixtures } from './detectCadFixtures';
 export { demoCadPlate } from './demoCadPlate';

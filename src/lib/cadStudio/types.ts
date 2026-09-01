@@ -115,7 +115,7 @@ export type CadRoofProfilePoint = { xFt: number; yFt: number };
 export type CadRoofMassing = {
   style: 'procedural' | 'dxf';
   ridgeHeightM: number;
-  /** True when the ridge runs parallel to plan X (front/back gable). */
+  /** True when the ridge runs parallel to plan X (side-elevation / eave faces front). */
   ridgeAlongX: boolean;
   /** Ridge envelope from ROOF linework on the front elevation (DXF mode). */
   profile?: CadRoofProfilePoint[];
@@ -132,6 +132,10 @@ export type CadMassing = {
   sideElevation?: CadElevationSheet;
   facadeWidthFt: number;
   facadeDepthFt: number;
+  /** Elevation sheet height (grade to ridge) in feet. */
+  facadeHeightFt: number;
+  /** Plan bounds (feet) for aligning facade plane to walls. */
+  planBounds: CadBoundsFt;
 };
 
 /**
