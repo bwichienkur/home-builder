@@ -7,7 +7,8 @@ import {
   openingKindFromLayer,
   pickFloorViewport,
 } from '../housePlans/dxfDrawingImport';
-import { flipPlanY } from '../housePlans/dxfImport';
+import { flipPlanLabels, flipPlanY } from '../housePlans/dxfImport';
+import { looksLikeRoomName } from '../housePlans/dxfParse';
 import {
   readInsUnits,
   scaleSegmentsToFeet,
@@ -17,6 +18,7 @@ import type { DrawingSheet } from '../housePlans/drawingPackage';
 import { classifyLayerKind, classifySegmentRole } from './classifyLayers';
 import type {
   CadBoundsFt,
+  CadLabelFt,
   CadLayerInfo,
   CadOpeningHintFt,
   CadPlate,
@@ -25,6 +27,7 @@ import type {
 } from './types';
 
 const MAX_SEGMENTS = 12_000;
+const MAX_LABELS = 200;
 
 function boundsOf(segs: { x1: number; y1: number; x2: number; y2: number }[]): CadBoundsFt {
   if (!segs.length) return { minX: 0, minY: 0, maxX: 1, maxY: 1 };
@@ -42,7 +45,7 @@ function boundsOf(segs: { x1: number; y1: number; x2: number; y2: number }[]): C
   return { minX, minY, maxX, maxY };
 }
 
-function buildLayerIndex(segments: CadSegmentFt[]): CadLayerInfo[] {
+function buildLayerIndex(segments: CadSegmentFt[], labels: CadLabelFt[] = []): CadLayerInfo[] {
   const map = new Map<string, CadLayerInfo>();
   for (const s of segments) {
     const existing = map.get(s.layer);
@@ -56,9 +59,28 @@ function buildLayerIndex(segments: CadSegmentFt[]): CadLayerInfo[] {
       name: s.layer,
       kind,
       role,
-      visible: kind === 'floor' && (role === 'wall' || role === 'opening' || role === 'fixture' || role === 'soft'),
+      visible:
+        kind === 'floor' &&
+        (role === 'wall' || role === 'opening' || role === 'fixture' || role === 'soft'),
       segmentCount: 1,
     });
+  }
+  for (const label of labels) {
+    const name = label.layer || 'TEXT ROOM';
+    if (map.has(name)) continue;
+    map.set(name, {
+      name,
+      kind: 'annotation',
+      role: 'other',
+      visible: true,
+      segmentCount: 0,
+    });
+  }
+  // Annotation linework (generic TEXT notes) stays off by default; room-name layer stays on.
+  for (const layer of map.values()) {
+    if (layer.kind === 'annotation' && layer.role === 'other' && !/ROOM/i.test(layer.name)) {
+      layer.visible = false;
+    }
   }
   return [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
@@ -67,6 +89,17 @@ function exteriorFromLayer(layer?: string): boolean {
   const u = (layer ?? '').toUpperCase();
   if (/INT|INTERIOR/.test(u) && !/EXT/.test(u)) return false;
   return /EXT|EXTERIOR|OUT/.test(u);
+}
+
+function segmentRole(layer: string, linetype?: string): CadSegmentFt['role'] {
+  const lt = (linetype ?? '').toUpperCase();
+  if (
+    /DASH|HIDDEN|PHANTOM|DOT/.test(lt) &&
+    /CEILING|VOLUME|SPACE.?BOUND|ROOM.?BOUND/.test(layer.toUpperCase())
+  ) {
+    return 'soft';
+  }
+  return classifySegmentRole(layer);
 }
 
 /**
@@ -84,10 +117,16 @@ export function buildCadPlateFromDxf(
   const insUnits = readInsUnits(dxfText);
 
   let working = segs;
+  let workingLabels = labels;
   if (floorVp) {
     const cropped = cropSegmentsToViewport(working, floorVp, 0.1);
     if (cropped.length >= 20) {
       working = cropped;
+      workingLabels = cropSegmentsToViewport(
+        workingLabels.map((l) => ({ ...l, x1: l.x, y1: l.y, x2: l.x, y2: l.y })),
+        floorVp,
+        0.08,
+      ).map(({ x1, y1, text, layer }) => ({ x: x1, y: y1, text, layer }));
       warnings.push(
         `Cropped model space to floor viewport (${floorVp.modelW.toFixed(0)}×${floorVp.modelH.toFixed(0)}).`,
       );
@@ -99,12 +138,12 @@ export function buildCadPlateFromDxf(
   }
 
   const preferred = working.filter((s) => {
-    const role = classifySegmentRole(s.layer);
+    const role = segmentRole(s.layer, s.linetype);
     const kind = classifyLayerKind(s.layer);
     return kind === 'floor' || role !== 'other';
   });
   const pool = preferred.length >= 8 ? preferred : working;
-  const scaled = scaleSegmentsToFeet(pool.slice(0, MAX_SEGMENTS), insUnits).segments;
+  const { scale, segments: scaled } = scaleSegmentsToFeet(pool.slice(0, MAX_SEGMENTS), insUnits);
   const flipped = flipPlanY(scaled);
 
   const wallRaw = flipped.filter((s) => isRoomWallLayer(s.layer ?? ''));
@@ -136,7 +175,7 @@ export function buildCadPlateFromDxf(
       x2: s.x2,
       y2: s.y2,
       layer: s.layer ?? '0',
-      role: classifySegmentRole(s.layer ?? '0'),
+      role: segmentRole(s.layer ?? '0', s.linetype),
       linetype: s.linetype,
     })),
   ];
@@ -152,6 +191,19 @@ export function buildCadPlateFromDxf(
       layer: s.layer,
     }));
 
+  const plateLabels: CadLabelFt[] = flipPlanLabels(
+    workingLabels
+      .filter((l) => looksLikeRoomName(l.text) || /ROOM/i.test(String(l.layer ?? '')))
+      .map((l) => ({
+        x: l.x * scale,
+        y: l.y * scale,
+        text: l.text,
+        layer: l.layer,
+      }))
+      .filter((l) => looksLikeRoomName(l.text))
+      .slice(0, MAX_LABELS),
+  );
+
   let sheets = opts?.sheets ?? [];
   let sheetSource: CadPlate['sheetSource'] = opts?.sheetSource ?? 'static';
   if (!sheets.length) {
@@ -164,16 +216,26 @@ export function buildCadPlateFromDxf(
   if (wallCenterlines.length < 4) {
     warnings.push('Few wall centerlines detected — check wall layer names in the DXF.');
   }
+  const fixtureCount = segments.filter((s) => s.role === 'fixture').length;
+  const softCount = segments.filter((s) => s.role === 'soft').length;
+  if (fixtureCount) {
+    warnings.push(`Fixture linework: ${fixtureCount} segment(s) (counters, sinks, appliances).`);
+  }
+  if (softCount) {
+    warnings.push(`Soft room borders: ${softCount} segment(s) (ceiling / space boundaries).`);
+  }
+  if (plateLabels.length) warnings.push(`Room labels: ${plateLabels.length}.`);
 
   return {
     id: `cad-plate-${Date.now().toString(36)}`,
     sourceFileName,
     importedAt: new Date().toISOString(),
     warnings,
-    layers: buildLayerIndex(segments),
+    layers: buildLayerIndex(segments, plateLabels),
     segments,
     wallCenterlines,
     openingHints,
+    labels: plateLabels,
     sheets,
     bounds: boundsOf(segments.length ? segments : wallCenterlines),
     sheetSource,
@@ -195,4 +257,11 @@ export function withLayerVisibility(plate: CadPlate, visibility: Record<string, 
 export function visibleSegments(plate: CadPlate): CadSegmentFt[] {
   const on = new Set(plate.layers.filter((l) => l.visible).map((l) => l.name));
   return plate.segments.filter((s) => on.has(s.layer));
+}
+
+export function visibleLabels(plate: CadPlate): CadLabelFt[] {
+  const on = new Set(plate.layers.filter((l) => l.visible).map((l) => l.name));
+  return (plate.labels ?? []).filter(
+    (l) => !l.layer || on.has(l.layer) || !plate.layers.some((x) => x.name === l.layer),
+  );
 }

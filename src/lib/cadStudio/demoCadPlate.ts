@@ -40,6 +40,27 @@ export function demoCadPlate(): CadPlate {
       layer: s.layer,
       role: 'opening' as const,
     })),
+    // Kitchen island / counter outline
+    { x1: 14, y1: 18, x2: 22, y2: 18, layer: 'COUNTER', role: 'fixture' as const },
+    { x1: 22, y1: 18, x2: 22, y2: 22, layer: 'COUNTER', role: 'fixture' as const },
+    { x1: 22, y1: 22, x2: 14, y2: 22, layer: 'COUNTER', role: 'fixture' as const },
+    { x1: 14, y1: 22, x2: 14, y2: 18, layer: 'COUNTER', role: 'fixture' as const },
+    // Soft room border (dashed ceiling / space boundary)
+    {
+      x1: 1,
+      y1: 15,
+      x2: 11,
+      y2: 15,
+      layer: 'CEILING',
+      role: 'soft' as const,
+      linetype: 'HIDDEN',
+    },
+  ];
+
+  const labels = [
+    { x: 6, y: 21, text: 'KITCHEN', layer: 'TEXT ROOM' },
+    { x: 19, y: 7, text: 'BEDROOM', layer: 'TEXT ROOM' },
+    { x: 33, y: 21, text: 'GREAT ROOM', layer: 'TEXT ROOM' },
   ];
 
   const layerNames = [...new Set(segments.map((s) => s.layer))];
@@ -51,7 +72,13 @@ export function demoCadPlate(): CadPlate {
     layers: layerNames.map((name) => ({
       name,
       kind: 'floor' as const,
-      role: /DOOR|WINDOW/i.test(name) ? ('opening' as const) : ('wall' as const),
+      role: /DOOR|WINDOW/i.test(name)
+        ? ('opening' as const)
+        : /COUNTER|FIXTURE/i.test(name)
+          ? ('fixture' as const)
+          : /CEILING/i.test(name)
+            ? ('soft' as const)
+            : ('wall' as const),
       visible: true,
       segmentCount: segments.filter((s) => s.layer === name).length,
     })),
@@ -65,6 +92,7 @@ export function demoCadPlate(): CadPlate {
       exterior: s.exterior,
     })),
     openingHints: openings,
+    labels,
     sheets: [
       { id: 'demo-floor', name: 'SHT. 1 FLOOR', order: 1, kind: 'floor' },
       { id: 'demo-front', name: 'SHT. 2 FRONT ELEVATION', order: 2, kind: 'elevation' },

@@ -43,6 +43,13 @@ export type CadWallCenterlineFt = {
   exterior?: boolean;
 };
 
+export type CadLabelFt = {
+  x: number;
+  y: number;
+  text: string;
+  layer?: string;
+};
+
 export type CadBoundsFt = {
   minX: number;
   minY: number;
@@ -64,6 +71,8 @@ export type CadPlate = {
   segments: CadSegmentFt[];
   wallCenterlines: CadWallCenterlineFt[];
   openingHints: CadOpeningHintFt[];
+  /** Room names and similar plan labels (feet, same frame as segments). */
+  labels: CadLabelFt[];
   sheets: DrawingSheet[];
   bounds: CadBoundsFt;
   sheetSource: 'dxf_viewport' | 'pdf' | 'static' | 'mixed' | 'synthetic';

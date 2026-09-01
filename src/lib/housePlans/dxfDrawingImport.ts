@@ -7,6 +7,13 @@ import {
   type DrawingSheet,
 } from './drawingPackage';
 import { looksLikeRoomName } from './dxfParse';
+import {
+  arcToSegments,
+  circleToSegments,
+  explodeInsert,
+  isFixtureGeometryLayer,
+  loadBlockPrimitives,
+} from './dxfFixtureGeometry';
 
 /** Layers preferred for room footprint (walls only — doors create openings/noise). */
 export const ROOM_WALL_LAYER_HINTS = [
@@ -75,16 +82,15 @@ export function openingKindFromLayer(layer: string): 'door' | 'window' {
 
 /** Model-space linework kept for the Plan CAD overlay (walls, openings, fixtures, sheet geometry). */
 export function isPlanOverlayLayer(layer: string): boolean {
-  const u = layer.trim().toUpperCase();
-  if (/FIXTURE|COUNTER|CABINET|APPLIANCE/.test(u)) return true;
+  if (isFixtureGeometryLayer(layer)) return true;
   return isRoomWallLayer(layer) || isOpeningLayer(layer) || isSheetWallLayer(layer);
 }
 
 export function planVectorRole(layer: string): 'wall' | 'opening' | 'fixture' | 'soft' | 'other' {
   if (isOpeningLayer(layer)) return 'opening';
   if (isRoomWallLayer(layer)) return 'wall';
+  if (isFixtureGeometryLayer(layer)) return 'fixture';
   const u = layer.trim().toUpperCase();
-  if (/FIXTURE|COUNTER|CABINET|APPLIANCE|SINK|TOILET|RANGE|STOVE|OVEN/.test(u)) return 'fixture';
   if (/CEILING|VOLUME|SPACE.?BOUND|ROOM.?BOUND|OPEN.?PLAN/.test(u)) return 'soft';
   return 'other';
 }
@@ -104,6 +110,9 @@ export const SHEET_LAYERS = new Set([
   'DIM',
   'COUNTER',
   'FIXTURES',
+  'PLUMBING',
+  'SHELF',
+  'SHELVES',
   'CONC',
   'ELECTRIC',
   'ELECTRIC LINES',
@@ -400,14 +409,9 @@ export function extractDxfModelGeometry(dxfText: string): {
   const labels: Label[] = [];
   const wallEntities: string[] = [];
   const lines = dxfText.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+  const blocks = loadBlockPrimitives(dxfText);
 
   let i = 0;
-  const inEntities = (): boolean => {
-    // Find ENTITIES section start once via scan — handled in loop below
-    return true;
-  };
-  void inEntities;
-
   let section: string | null = null;
   while (i < lines.length) {
     if (lines[i]!.trim() === '0' && (lines[i + 1] ?? '').trim() === 'SECTION') {
@@ -450,7 +454,9 @@ export function extractDxfModelGeometry(dxfText: string): {
       wallEntities.push(...raw);
     }
 
-    if (!SHEET_LAYERS.has(layer) && !isSheetWallLayer(layer)) continue;
+    const keepLayer =
+      SHEET_LAYERS.has(layer) || isSheetWallLayer(layer) || isFixtureGeometryLayer(layer);
+    if (!keepLayer) continue;
 
     if (type === 'LINE') {
       const x1 = Number(fields['10']);
@@ -460,7 +466,6 @@ export function extractDxfModelGeometry(dxfText: string): {
       const linetype = fields['6'];
       if ([x1, y1, x2, y2].every(Number.isFinite)) segs.push({ x1, y1, x2, y2, layer, linetype });
     } else if (type === 'LWPOLYLINE') {
-      // re-parse verts from raw pairs
       const verts: { x: number; y: number }[] = [];
       let pendingX: number | null = null;
       let closed = false;
@@ -484,6 +489,44 @@ export function extractDxfModelGeometry(dxfText: string): {
         const a = verts[verts.length - 1]!;
         const b = verts[0]!;
         segs.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y, layer, linetype });
+      }
+    } else if (type === 'CIRCLE' && isFixtureGeometryLayer(layer)) {
+      segs.push(
+        ...circleToSegments(
+          Number(fields['10']),
+          Number(fields['20']),
+          Number(fields['40']),
+          layer,
+          fields['6'],
+        ),
+      );
+    } else if (type === 'ARC' && isFixtureGeometryLayer(layer)) {
+      segs.push(
+        ...arcToSegments(
+          Number(fields['10']),
+          Number(fields['20']),
+          Number(fields['40']),
+          Number(fields['50']),
+          Number(fields['51']),
+          layer,
+          fields['6'],
+        ),
+      );
+    } else if (type === 'INSERT' && isFixtureGeometryLayer(layer)) {
+      const name = fields['2'] ?? '';
+      const prims = blocks.get(name);
+      if (prims?.length) {
+        segs.push(
+          ...explodeInsert(
+            prims,
+            Number(fields['10'] ?? 0),
+            Number(fields['20'] ?? 0),
+            Number(fields['41'] ?? 1) || 1,
+            Number(fields['42'] ?? fields['41'] ?? 1) || 1,
+            Number(fields['50'] ?? 0) || 0,
+            layer,
+          ),
+        );
       }
     } else if (type === 'TEXT' || type === 'MTEXT') {
       const text = decodeMtext(fields['1'] ?? '');

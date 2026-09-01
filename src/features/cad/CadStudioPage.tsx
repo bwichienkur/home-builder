@@ -70,77 +70,15 @@ export function CadStudioPage() {
           { drawing: file },
           { planName: file.name.replace(/\.dwg$/i, ''), onProgress: setProgress },
         );
-        const floor = result.plan.floors[0];
-        const segs = floor?.wallSegmentsFt ?? [];
-        const hints = floor?.openingHintsFt ?? [];
-        const vectors = floor?.cadPlanVectorsFt ?? [];
-        if (!segs.length) {
-          throw new Error('DWG import produced no wall segments. Try exporting DXF from CAD.');
-        }
-        setPlate({
-          id: `cad-from-dwg-${result.plan.id}`,
-          sourceFileName: file.name,
-          importedAt: new Date().toISOString(),
-          warnings: [...result.package.warnings, 'Plate built from DWG→DXF import wall segments.'],
-          layers: [
-            {
-              name: 'WALLS',
-              kind: 'floor',
-              role: 'wall',
-              visible: true,
-              segmentCount: segs.length,
-            },
-          ],
-          segments: [
-            // Wall centerlines only — skip raw wall-role vectors (often unpaired
-            // measurement / witness lines left on wall layers after DWG→DXF).
-            ...segs.map((s) => ({
-              x1: s.x1,
-              y1: s.y1,
-              x2: s.x2,
-              y2: s.y2,
-              layer: s.layer ?? 'WALLS',
-              role: 'wall' as const,
-            })),
-            ...vectors
-              .filter((v) => v.role !== 'wall')
-              .map((v) => ({
-                x1: v.x1,
-                y1: v.y1,
-                x2: v.x2,
-                y2: v.y2,
-                layer: v.layer ?? 'CAD',
-                role:
-                  v.role === 'opening' || v.role === 'fixture' || v.role === 'soft'
-                    ? v.role
-                    : ('other' as const),
-              })),
-          ],
-          wallCenterlines: segs.map((s) => ({
-            x1: s.x1,
-            y1: s.y1,
-            x2: s.x2,
-            y2: s.y2,
-            layer: s.layer,
-            exterior: s.exterior,
-          })),
-          openingHints: hints.map((h) => ({
-            x1: h.x1,
-            y1: h.y1,
-            x2: h.x2,
-            y2: h.y2,
-            kind: h.kind,
-            layer: h.layer,
-          })),
+        // Same plate builder as DXF so fixtures, soft borders, and room labels appear.
+        const plate = buildCadPlateFromDxf(result.dxfText, file.name, {
           sheets: result.package.sheets,
-          bounds: {
-            minX: Math.min(...segs.flatMap((s) => [s.x1, s.x2])),
-            minY: Math.min(...segs.flatMap((s) => [s.y1, s.y2])),
-            maxX: Math.max(...segs.flatMap((s) => [s.x1, s.x2])),
-            maxY: Math.max(...segs.flatMap((s) => [s.y1, s.y2])),
-          },
-          sheetSource: result.package.sheetSource === 'pdf' ? 'pdf' : 'dxf_viewport',
           pdfUrl: result.package.pdfUrl,
+          sheetSource: result.package.sheetSource === 'pdf' ? 'pdf' : 'dxf_viewport',
+        });
+        setPlate({
+          ...plate,
+          warnings: [...result.package.warnings, ...plate.warnings],
         });
       } else {
         throw new Error('Use a .dxf or .dwg file.');
@@ -251,6 +189,9 @@ export function CadStudioPage() {
               <div>File: {plate?.sourceFileName ?? '—'}</div>
               <div>Walls: {plate?.wallCenterlines.length ?? 0}</div>
               <div>Openings: {plate?.openingHints.length ?? 0}</div>
+              <div>Fixtures: {plate?.segments.filter((s) => s.role === 'fixture').length ?? 0}</div>
+              <div>Soft borders: {plate?.segments.filter((s) => s.role === 'soft').length ?? 0}</div>
+              <div>Labels: {plate?.labels?.length ?? 0}</div>
               <div>Vectors: {plate?.segments.length ?? 0}</div>
               <div>Sheets: {plate?.sheets.length ?? 0}</div>
             </div>
