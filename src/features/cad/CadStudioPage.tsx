@@ -190,6 +190,7 @@ export function CadStudioPage() {
               <div>Walls: {plate?.wallCenterlines.length ?? 0}</div>
               <div>Openings: {plate?.openingHints.length ?? 0}</div>
               <div>Fixtures: {plate?.segments.filter((s) => s.role === 'fixture').length ?? 0}</div>
+              <div>3D fixtures: {extrusion?.fixtures.length ?? 0}</div>
               <div>Soft borders: {plate?.segments.filter((s) => s.role === 'soft').length ?? 0}</div>
               <div>Labels: {plate?.labels?.length ?? 0}</div>
               <div>Vectors: {plate?.segments.length ?? 0}</div>

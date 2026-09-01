@@ -17,7 +17,7 @@ HEADER
   9
 $INSUNITS
  70
-1
+2
   0
 ENDSEC
   0
@@ -135,6 +135,30 @@ COUNTER
   0
 LINE
   8
+COUNTER
+ 10
+12
+ 20
+9
+ 11
+5
+ 21
+9
+  0
+LINE
+  8
+COUNTER
+ 10
+5
+ 20
+9
+ 11
+5
+ 21
+5
+  0
+LINE
+  8
 CEILING
   6
 HIDDEN
@@ -155,7 +179,23 @@ FIXTURES
  20
 7
  40
-0.5
+4
+  0
+INSERT
+  8
+FIXTURES
+  2
+pv_toi_std
+ 10
+22
+ 20
+8
+ 41
+1
+ 42
+1
+ 50
+0
   0
 TEXT
   8
@@ -199,6 +239,7 @@ describe('cadStudio', () => {
     expect(plate.segments.some((s) => s.role === 'fixture')).toBe(true);
     expect(plate.segments.some((s) => s.role === 'soft')).toBe(true);
     expect(plate.labels.some((l) => /KITCHEN/i.test(l.text))).toBe(true);
+    expect(plate.fixtureHints.length).toBeGreaterThanOrEqual(1);
     const svg = renderCadPlateSvg(plate);
     expect(svg).toContain('#0f766e');
     expect(svg).toContain('stroke-dasharray');
@@ -214,6 +255,19 @@ describe('cadStudio', () => {
     const extrusion = extrudeCadPlate(plate);
     expect(extrusion.walls.length).toBeGreaterThanOrEqual(8);
     expect(extrusion.openings.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('detects procedural Extrude fixtures from counters and INSERT/CIRCLE hints', () => {
+    const plate = buildCadPlateFromDxf(tinyDxf, 'tiny.dxf');
+    const extrusion = extrudeCadPlate(plate);
+    expect(extrusion.fixtures.length).toBeGreaterThanOrEqual(2);
+    expect(extrusion.fixtures.some((f) => f.kind === 'island' || f.kind === 'counter')).toBe(true);
+    expect(extrusion.fixtures.some((f) => f.kind === 'sink')).toBe(true);
+    expect(extrusion.fixtures.some((f) => f.kind === 'toilet')).toBe(true);
+
+    const demo = extrudeCadPlate(demoCadPlate());
+    expect(demo.fixtures.some((f) => f.kind === 'island')).toBe(true);
+    expect(demo.fixtures.some((f) => f.kind === 'sink')).toBe(true);
   });
 
   it('honors layer visibility toggles in SVG', () => {

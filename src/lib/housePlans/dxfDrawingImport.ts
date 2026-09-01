@@ -11,8 +11,10 @@ import {
   arcToSegments,
   circleToSegments,
   explodeInsert,
+  fixtureKindFromBlockName,
   isFixtureGeometryLayer,
   loadBlockPrimitives,
+  type FixtureHint,
 } from './dxfFixtureGeometry';
 
 /** Layers preferred for room footprint (walls only — doors create openings/noise). */
@@ -403,10 +405,12 @@ function segHitsView(
 export function extractDxfModelGeometry(dxfText: string): {
   segs: Seg[];
   labels: Label[];
+  fixtureHints: FixtureHint[];
   wallDxf: string;
 } {
   const segs: Seg[] = [];
   const labels: Label[] = [];
+  const fixtureHints: FixtureHint[] = [];
   const wallEntities: string[] = [];
   const lines = dxfText.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
   const blocks = loadBlockPrimitives(dxfText);
@@ -491,15 +495,14 @@ export function extractDxfModelGeometry(dxfText: string): {
         segs.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y, layer, linetype });
       }
     } else if (type === 'CIRCLE' && isFixtureGeometryLayer(layer)) {
-      segs.push(
-        ...circleToSegments(
-          Number(fields['10']),
-          Number(fields['20']),
-          Number(fields['40']),
-          layer,
-          fields['6'],
-        ),
-      );
+      const cx = Number(fields['10']);
+      const cy = Number(fields['20']);
+      const r = Number(fields['40']);
+      segs.push(...circleToSegments(cx, cy, r, layer, fields['6']));
+      if (Number.isFinite(cx + cy + r) && r > 0) {
+        const kind = r >= 8 ? 'toilet' : r >= 3 ? 'sink' : 'other'; // inches when INSUNITS=1
+        fixtureHints.push({ x: cx, y: cy, radius: r, layer, kind });
+      }
     } else if (type === 'ARC' && isFixtureGeometryLayer(layer)) {
       segs.push(
         ...arcToSegments(
@@ -514,19 +517,45 @@ export function extractDxfModelGeometry(dxfText: string): {
       );
     } else if (type === 'INSERT' && isFixtureGeometryLayer(layer)) {
       const name = fields['2'] ?? '';
+      const ix = Number(fields['10'] ?? 0);
+      const iy = Number(fields['20'] ?? 0);
+      const sx = Number(fields['41'] ?? 1) || 1;
+      const sy = Number(fields['42'] ?? fields['41'] ?? 1) || 1;
+      const rot = Number(fields['50'] ?? 0) || 0;
       const prims = blocks.get(name);
       if (prims?.length) {
-        segs.push(
-          ...explodeInsert(
-            prims,
-            Number(fields['10'] ?? 0),
-            Number(fields['20'] ?? 0),
-            Number(fields['41'] ?? 1) || 1,
-            Number(fields['42'] ?? fields['41'] ?? 1) || 1,
-            Number(fields['50'] ?? 0) || 0,
-            layer,
-          ),
-        );
+        segs.push(...explodeInsert(prims, ix, iy, sx, sy, rot, layer));
+        let minX = Infinity;
+        let minY = Infinity;
+        let maxX = -Infinity;
+        let maxY = -Infinity;
+        for (const p of prims) {
+          minX = Math.min(minX, p.x1 * sx, p.x2 * sx);
+          minY = Math.min(minY, p.y1 * sy, p.y2 * sy);
+          maxX = Math.max(maxX, p.x1 * sx, p.x2 * sx);
+          maxY = Math.max(maxY, p.y1 * sy, p.y2 * sy);
+        }
+        fixtureHints.push({
+          x: ix,
+          y: iy,
+          width: Math.max(0.5, maxX - minX),
+          depth: Math.max(0.5, maxY - minY),
+          rotationDeg: rot,
+          layer,
+          blockName: name,
+          kind: fixtureKindFromBlockName(name),
+        });
+      } else {
+        fixtureHints.push({
+          x: ix,
+          y: iy,
+          width: 18 * Math.abs(sx),
+          depth: 18 * Math.abs(sy),
+          rotationDeg: rot,
+          layer,
+          blockName: name,
+          kind: fixtureKindFromBlockName(name),
+        });
       }
     } else if (type === 'TEXT' || type === 'MTEXT') {
       const text = decodeMtext(fields['1'] ?? '');
@@ -561,7 +590,7 @@ export function extractDxfModelGeometry(dxfText: string): {
     '',
   ].join('\n');
 
-  return { segs, labels, wallDxf };
+  return { segs, labels, fixtureHints, wallDxf };
 }
 
 function strokeForLayer(layer: string): string {

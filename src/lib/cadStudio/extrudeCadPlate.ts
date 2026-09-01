@@ -1,16 +1,21 @@
 import { buildFloorFromCadWalls } from '../housePlans/dxfCadBuild';
 import type { HousePlanFloor } from '../housePlans/buildPlan';
+import { detectCadFixtures } from './detectCadFixtures';
 import type { CadExtrusion, CadPlate } from './types';
 
 const DEFAULT_HEIGHT_M = 2.74;
 
 /**
- * Extrude 3D walls + openings from CAD plate wall centerlines.
- * Does not synthesize walls from room boxes — plate linework is the source of truth.
+ * Extrude 3D walls + openings + procedural fixtures from a CAD plate.
+ * Fixtures are never walls — counters/sinks/toilets are separate meshes.
  */
 export function extrudeCadPlate(plate: CadPlate, opts?: { heightM?: number }): CadExtrusion {
   const heightM = opts?.heightM ?? DEFAULT_HEIGHT_M;
   const ceilingFt = heightM / 0.3048;
+  const centerFt = {
+    cx: (plate.bounds.minX + plate.bounds.maxX) / 2,
+    cy: (plate.bounds.minY + plate.bounds.maxY) / 2,
+  };
 
   const floor: HousePlanFloor = {
     id: `${plate.id}-floor`,
@@ -47,14 +52,13 @@ export function extrudeCadPlate(plate: CadPlate, opts?: { heightM?: number }): C
     })),
   };
 
-  const built = buildFloorFromCadWalls(floor);
+  const built = buildFloorFromCadWalls(floor, { centerFt });
+  const fixtures = detectCadFixtures(plate);
   return {
     walls: built.scene.walls,
     openings: built.scene.openings,
-    centerFt: {
-      cx: (plate.bounds.minX + plate.bounds.maxX) / 2,
-      cy: (plate.bounds.minY + plate.bounds.maxY) / 2,
-    },
+    fixtures,
+    centerFt,
     heightM,
   };
 }
