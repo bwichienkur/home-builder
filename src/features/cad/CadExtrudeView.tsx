@@ -3,6 +3,8 @@ import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import type { CadExtrusion, CadFixtureInstance, CadFixtureKind } from '../../lib/cadStudio';
+import { CadGroundPlane, CadSceneEnvironment } from './CadSceneEnvironment';
+import { WallMesh } from './CadRealisticWalls';
 import { world } from '../../components/scene3d/sceneWorld';
 import { PIXELS_PER_METER } from '../../lib/geometry/snapping';
 import { WORLD_ORIGIN } from '../../lib/geometry/placement';
@@ -30,40 +32,6 @@ function fixtureColor(kind: CadFixtureKind): string {
     default:
       return '#78716c';
   }
-}
-
-function WallMesh({ wall, openings }: { wall: Wall; openings: Opening[] }) {
-  const [sx, sz] = world(wall.start.x, wall.start.y);
-  const [ex, ez] = world(wall.end.x, wall.end.y);
-  const dx = ex - sx;
-  const dz = ez - sz;
-  const len = Math.hypot(dx, dz) || 0.01;
-  const angle = Math.atan2(dz, dx);
-  const mid: [number, number, number] = [(sx + ex) / 2, wall.height / 2, (sz + ez) / 2];
-  const wallOpenings = openings.filter((o) => o.wallId === wall.id);
-
-  return (
-    <group position={mid} rotation={[0, -angle, 0]}>
-      <mesh castShadow receiveShadow>
-        <boxGeometry args={[len, wall.height, wall.thickness]} />
-        <meshStandardMaterial color={wall.assembly === 'exterior' ? '#e8e2d6' : '#f3f0e9'} />
-      </mesh>
-      {wallOpenings.map((o) => {
-        const localX = (o.offset - 0.5) * len;
-        const y = o.sill + o.height / 2;
-        return (
-          <mesh key={o.id} position={[localX, y - wall.height / 2, 0]}>
-            <boxGeometry args={[o.width, o.height, wall.thickness + 0.04]} />
-            <meshStandardMaterial
-              color={o.type === 'window' ? '#7dd3fc' : '#1e293b'}
-              transparent={o.type === 'window'}
-              opacity={o.type === 'window' ? 0.45 : 0.9}
-            />
-          </mesh>
-        );
-      })}
-    </group>
-  );
 }
 
 function FixtureMesh({
@@ -131,17 +99,19 @@ export function CadExtrudeSceneParts({
   openings,
   fixtures,
   centerFt,
+  mode = 'extrude',
 }: {
   walls: Wall[];
   openings: Opening[];
   fixtures: CadFixtureInstance[];
   centerFt: { cx: number; cy: number };
   wallSegmentsFt?: Array<{ x1: number; y1: number; x2: number; y2: number; exterior?: boolean }>;
+  mode?: 'extrude' | 'massing';
 }) {
   return (
     <>
       {walls.map((w) => (
-        <WallMesh key={w.id} wall={w} openings={openings} />
+        <WallMesh key={w.id} wall={w} openings={openings} mode={mode} />
       ))}
       {fixtures.map((f) => (
         <FixtureMesh key={f.id} fixture={f} centerFt={centerFt} />
@@ -165,25 +135,10 @@ function Scene({ extrusion }: { extrusion: CadExtrusion }) {
 
   return (
     <>
-      <color attach="background" args={['#dfe5ec']} />
-      <ambientLight intensity={0.55} />
-      <directionalLight position={[8, 14, 6]} intensity={1.1} castShadow />
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
-        <planeGeometry args={[floorSize, floorSize]} />
-        <meshStandardMaterial color="#c9b18f" />
-      </mesh>
-      <gridHelper
-        args={[floorSize, Math.max(10, Math.round(floorSize)), '#94a3b8', '#cbd5e1']}
-        position={[0, 0.001, 0]}
-      />
-      <CadExtrudeSceneParts
-        walls={walls}
-        openings={openings}
-        fixtures={fixtures}
-        centerFt={centerFt}
-        wallSegmentsFt={extrusion.wallSegmentsFt}
-      />
-      <OrbitControls makeDefault target={[0, 1.2, 0]} />
+      <CadSceneEnvironment targetY={1.2} />
+      <CadGroundPlane size={floorSize} />
+      <CadExtrudeSceneParts walls={walls} openings={openings} fixtures={fixtures} centerFt={centerFt} />
+      <OrbitControls makeDefault target={[0, 1.2, 0]} maxPolarAngle={Math.PI / 2.05} />
     </>
   );
 }
@@ -201,6 +156,7 @@ export function CadExtrudeView({ extrusion }: { extrusion: CadExtrusion }) {
         camera={{ position: [18, 14, 18], fov: 42, near: 0.1, far: 500 }}
         onCreated={({ gl }) => {
           gl.toneMapping = THREE.ACESFilmicToneMapping;
+          gl.toneMappingExposure = 1.05;
           gl.shadowMap.enabled = true;
         }}
       >
