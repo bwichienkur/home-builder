@@ -7,7 +7,7 @@ import type { OwnerJob, PipelineStage, SalesPerformanceBar, TimeMetric } from '.
  *   PIPEDRIVE_API_TOKEN=… npm run pipedrive:pull
  *   npm run buildertrend:update-snapshot
  * Jobs / WIP / logs / tasks / selections = Buildertrend.
- * Sales funnel still from BT Lead Opportunities when Pipedrive cache is absent.
+ * Sales funnel + weighted pipeline from Pipedrive Sales pipeline (pulled 2026-09-01T20:19:53.727Z).
  * Past due = Tasks Status includes Not completed + due date before today.
  * Pending selections = per job, exclude green Selected/Completed (status 2 and 3).
  * Test job "**** Tate TEST JOB" omitted.
@@ -619,29 +619,46 @@ export const LIVE_JOBS: OwnerJob[] = OPEN_JOBS;
 /** Sales funnel: Pipedrive Sales stages when PD cache present, else BT Lead Opportunities. */
 export const LIVE_PIPELINE: PipelineStage[] = [
   {
-    "id": "lead",
-    "label": "Lead",
-    "value": 44100000
+    "id": "pd-1",
+    "label": "First Contact",
+    "value": 2672589,
+    "dealCount": 23
   },
   {
-    "id": "proposal",
-    "label": "Proposal",
-    "value": 0
+    "id": "pd-2",
+    "label": "Qualified",
+    "value": 2710255,
+    "dealCount": 12
   },
   {
-    "id": "pre-contract",
-    "label": "Pre-Contract",
-    "value": 0
+    "id": "pd-4",
+    "label": "Homesite Secured",
+    "value": 985530,
+    "dealCount": 3
   },
   {
-    "id": "contract",
-    "label": "Contract",
-    "value": 0
+    "id": "pd-3",
+    "label": "Meet with Eric",
+    "value": 2352202,
+    "dealCount": 3
   },
   {
-    "id": "closed",
-    "label": "Closed / Won",
-    "value": 0
+    "id": "pd-5",
+    "label": "Pricing Proposal",
+    "value": 1630105,
+    "dealCount": 2
+  },
+  {
+    "id": "pd-17",
+    "label": "Under Negotiation",
+    "value": 820281,
+    "dealCount": 1
+  },
+  {
+    "id": "pd-6",
+    "label": "Contract Sent",
+    "value": 0,
+    "dealCount": 0
   }
 ];
 
@@ -659,7 +676,7 @@ export const LIVE_SALES_PERFORMANCE: SalesPerformanceBar[] = [
   {
     "id": "signing",
     "label": "Expected Signing Value",
-    "value": 44100000
+    "value": 0
   }
 ];
 
@@ -688,7 +705,7 @@ export const LIVE_TARGET_MARGIN_PCT = 15;
 export const LIVE_PROJECTED_MARGIN_PCT = 32.8;
 export const LIVE_ROLLING_REVENUE_12MO = 16583950.560000004;
 /** Weighted pipeline: Pipedrive value × stage probability when PD cache present. */
-export const LIVE_WEIGHTED_PIPELINE = 20928500;
+export const LIVE_WEIGHTED_PIPELINE = 11170961;
 export const LIVE_SNAPSHOT_AT = '2026-09-01T19:59:55.306Z';
 /** Pipedrive Sales pipeline pull timestamp baked into this snapshot (empty when PD cache absent). */
-export const LIVE_PIPEDRIVE_AT = '';
+export const LIVE_PIPEDRIVE_AT = '2026-09-01T20:19:53.727Z';
