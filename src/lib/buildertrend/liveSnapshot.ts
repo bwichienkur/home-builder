@@ -7,7 +7,7 @@ import type { OwnerJob, PipelineStage, SalesPerformanceBar, TimeMetric } from '.
  *   PIPEDRIVE_API_TOKEN=… npm run pipedrive:pull
  *   npm run buildertrend:update-snapshot
  * Jobs / WIP / logs / tasks / selections = Buildertrend.
- * Sales funnel + weighted pipeline from Pipedrive Sales pipeline (pulled 2026-08-27T12:31:41.055Z).
+ * Sales funnel still from BT Lead Opportunities when Pipedrive cache is absent.
  * Past due = Tasks Status includes Not completed + due date before today.
  * Pending selections = per job, exclude green Selected/Completed (status 2 and 3).
  * Test job "**** Tate TEST JOB" omitted.
@@ -23,7 +23,7 @@ const OPEN_JOBS: OwnerJob[] = [
     pastDueTasks: 15,
     dailyLogsRecentDone: 20,
     dailyLogsRecentPmDone: 12,
-    dailyLogsTotal: 173,
+    dailyLogsTotal: 176,
     foundationStarted: true,
     totalSlip: 157,
     revenueLast30d: 275680.64,
@@ -37,7 +37,7 @@ const OPEN_JOBS: OwnerJob[] = [
     estCloseDate: "2026-10-09",
     openedAt: "2025-06-05",
     slip: {"permit":28,"selections":131,"construction":129},
-    notes: "Install Tile",
+    notes: "Dig Pool",
   },
   {
     id: "bt-40351917",
@@ -46,10 +46,10 @@ const OPEN_JOBS: OwnerJob[] = [
     status: "open",
     phase: "construction",
     pendingSelections: 1,
-    pastDueTasks: 22,
-    dailyLogsRecentDone: 22,
+    pastDueTasks: 28,
+    dailyLogsRecentDone: 23,
     dailyLogsRecentPmDone: 16,
-    dailyLogsTotal: 161,
+    dailyLogsTotal: 169,
     foundationStarted: true,
     totalSlip: 63,
     changeOrderRevenue: -37213.63,
@@ -64,7 +64,7 @@ const OPEN_JOBS: OwnerJob[] = [
     estCloseDate: "2026-10-01",
     openedAt: "2025-05-27",
     slip: {"permit":0,"selections":0,"construction":63},
-    notes: "Landscaping",
+    notes: "Tub install",
   },
   {
     id: "bt-40228562",
@@ -72,11 +72,11 @@ const OPEN_JOBS: OwnerJob[] = [
     pm: "Paul Dimeglio",
     status: "open",
     phase: "construction",
-    pendingSelections: 0,
-    pastDueTasks: 19,
-    dailyLogsRecentDone: 17,
-    dailyLogsRecentPmDone: 15,
-    dailyLogsTotal: 235,
+    pendingSelections: 2,
+    pastDueTasks: 21,
+    dailyLogsRecentDone: 19,
+    dailyLogsRecentPmDone: 14,
+    dailyLogsTotal: 240,
     foundationStarted: true,
     totalSlip: 60,
     changeOrderRevenue: 88461.45,
@@ -86,13 +86,13 @@ const OPEN_JOBS: OwnerJob[] = [
     estPermittingEnd: "2025-08-25",
     estFoundationStart: "2025-09-02",
     estClosingEnd: "2026-09-29",
-    contractPrice: 1402571.9,
+    contractPrice: 1404288.32,
     revenueToDate: 1289596.45,
-    wip: 1402571.9,
+    wip: 1404288.32,
     estCloseDate: "2026-09-29",
     openedAt: "2025-05-14",
     slip: {"permit":0,"selections":0,"construction":60},
-    notes: "Measure +install glass on last bathroom",
+    notes: "Fix Steam Shower Tile and install",
   },
   {
     id: "bt-42790290",
@@ -100,7 +100,7 @@ const OPEN_JOBS: OwnerJob[] = [
     pm: "Unassigned",
     status: "open",
     phase: "design",
-    pendingSelections: 67,
+    pendingSelections: 65,
     pastDueTasks: 15,
     dailyLogsTotal: 3,
     foundationStarted: false,
@@ -114,7 +114,7 @@ const OPEN_JOBS: OwnerJob[] = [
     estCloseDate: "2027-03-22",
     openedAt: "2026-06-04",
     slip: {"permit":0,"selections":0,"construction":0},
-    notes: "Permitting",
+    notes: "Selection Phase 1 Due",
   },
   {
     id: "bt-42615310",
@@ -124,9 +124,9 @@ const OPEN_JOBS: OwnerJob[] = [
     phase: "design",
     pendingSelections: 17,
     pastDueTasks: 1,
-    dailyLogsRecentDone: 3,
+    dailyLogsRecentDone: 4,
     dailyLogsRecentPmDone: 0,
-    dailyLogsTotal: 7,
+    dailyLogsTotal: 10,
     foundationStarted: false,
     estFirstScheduleStart: "2026-03-25",
     estPermittingEnd: "2026-09-11",
@@ -147,10 +147,10 @@ const OPEN_JOBS: OwnerJob[] = [
     status: "open",
     phase: "construction",
     pendingSelections: 1,
-    pastDueTasks: 14,
-    dailyLogsRecentDone: 23,
+    pastDueTasks: 23,
+    dailyLogsRecentDone: 25,
     dailyLogsRecentPmDone: 15,
-    dailyLogsTotal: 116,
+    dailyLogsTotal: 119,
     foundationStarted: true,
     totalSlip: 66,
     revenueLast30d: 141823.79,
@@ -164,7 +164,7 @@ const OPEN_JOBS: OwnerJob[] = [
     estCloseDate: "2026-11-19",
     openedAt: "2025-05-09",
     slip: {"permit":0,"selections":0,"construction":66},
-    notes: "FMEP Inspection",
+    notes: "Exterior Paint",
   },
   {
     id: "bt-42969582",
@@ -172,11 +172,11 @@ const OPEN_JOBS: OwnerJob[] = [
     pm: "Adam Horseman",
     status: "open",
     phase: "construction",
-    pendingSelections: 3,
-    pastDueTasks: 26,
-    dailyLogsRecentDone: 20,
-    dailyLogsRecentPmDone: 14,
-    dailyLogsTotal: 68,
+    pendingSelections: 1,
+    pastDueTasks: 25,
+    dailyLogsRecentDone: 22,
+    dailyLogsRecentPmDone: 15,
+    dailyLogsTotal: 74,
     foundationStarted: true,
     totalSlip: 11,
     estFirstScheduleStart: "2026-03-12",
@@ -241,10 +241,10 @@ const OPEN_JOBS: OwnerJob[] = [
     status: "open",
     phase: "construction",
     pendingSelections: 0,
-    pastDueTasks: 7,
-    dailyLogsRecentDone: 17,
-    dailyLogsRecentPmDone: 13,
-    dailyLogsTotal: 176,
+    pastDueTasks: 5,
+    dailyLogsRecentDone: 19,
+    dailyLogsRecentPmDone: 14,
+    dailyLogsTotal: 182,
     foundationStarted: true,
     totalSlip: 67,
     changeOrderRevenue: 121419.71,
@@ -267,11 +267,11 @@ const OPEN_JOBS: OwnerJob[] = [
     pm: "James Manford",
     status: "open",
     phase: "construction",
-    pendingSelections: 0,
-    pastDueTasks: 39,
-    dailyLogsRecentDone: 23,
+    pendingSelections: 2,
+    pastDueTasks: 40,
+    dailyLogsRecentDone: 25,
     dailyLogsRecentPmDone: 16,
-    dailyLogsTotal: 260,
+    dailyLogsTotal: 266,
     foundationStarted: true,
     totalSlip: 64,
     changeOrderRevenue: 263907.46,
@@ -287,7 +287,7 @@ const OPEN_JOBS: OwnerJob[] = [
     estCloseDate: "2026-09-24",
     openedAt: "2025-02-17",
     slip: {"permit":0,"selections":0,"construction":60},
-    notes: "Cabinet Trim",
+    notes: "Corporate Walk",
   },
   {
     id: "bt-41118068",
@@ -298,13 +298,13 @@ const OPEN_JOBS: OwnerJob[] = [
     pendingSelections: 2,
     pastDueTasks: 9,
     dailyLogsRecentDone: 19,
-    dailyLogsRecentPmDone: 14,
-    dailyLogsTotal: 114,
+    dailyLogsRecentPmDone: 12,
+    dailyLogsTotal: 117,
     foundationStarted: true,
     totalSlip: 51,
     changeOrderRevenue: 103105.48,
     changeOrderProfit: 22142.4,
-    revenueLast30d: 101455.96,
+    revenueLast30d: 96250.96,
     estFirstScheduleStart: "2025-07-07",
     estPermittingEnd: "2026-01-29",
     estFoundationStart: "2026-02-16",
@@ -315,7 +315,7 @@ const OPEN_JOBS: OwnerJob[] = [
     estCloseDate: "2026-10-15",
     openedAt: "2025-07-07",
     slip: {"permit":0,"selections":0,"construction":51},
-    notes: "Tile & Flooring",
+    notes: "Cabinets & Countertops",
   },
   {
     id: "bt-45667667",
@@ -324,7 +324,7 @@ const OPEN_JOBS: OwnerJob[] = [
     status: "open",
     phase: "design",
     pendingSelections: 67,
-    pastDueTasks: 12,
+    pastDueTasks: 41,
     foundationStarted: false,
     estFirstScheduleStart: "2026-07-07",
     estPermittingEnd: "2026-09-23",
@@ -333,10 +333,10 @@ const OPEN_JOBS: OwnerJob[] = [
     contractPrice: 0,
     revenueToDate: 0,
     wip: 0,
-    estCloseDate: "2027-02-27",
-    openedAt: "2026-08-27",
+    estCloseDate: "2027-03-01",
+    openedAt: "2026-09-01",
     slip: {"permit":0,"selections":0,"construction":0},
-    notes: "Permitting",
+    notes: "Selection Phase 2 Due",
   },
   {
     id: "bt-38319441",
@@ -344,11 +344,11 @@ const OPEN_JOBS: OwnerJob[] = [
     pm: "Unassigned",
     status: "open",
     phase: "design",
-    pendingSelections: 19,
+    pendingSelections: 14,
     pastDueTasks: 42,
-    dailyLogsRecentDone: 6,
+    dailyLogsRecentDone: 8,
     dailyLogsRecentPmDone: 0,
-    dailyLogsTotal: 6,
+    dailyLogsTotal: 10,
     foundationStarted: false,
     totalSlip: 0,
     estFirstScheduleStart: "2025-09-18",
@@ -361,7 +361,28 @@ const OPEN_JOBS: OwnerJob[] = [
     estCloseDate: "2027-02-22",
     openedAt: "2025-09-18",
     slip: {"permit":159,"selections":201,"construction":3},
-    notes: "Load Fill Dirt/Build Pad",
+    notes: "Selection Phase 3 Due",
+  },
+  {
+    id: "bt-46189691",
+    name: "Muehlenbeck",
+    pm: "Unassigned",
+    status: "open",
+    phase: "design",
+    pendingSelections: 67,
+    pastDueTasks: 3,
+    foundationStarted: false,
+    estFirstScheduleStart: "2026-08-18",
+    estPermittingEnd: "2026-11-04",
+    estFoundationStart: "2026-11-23",
+    estClosingEnd: "2027-04-21",
+    contractPrice: 1791482,
+    revenueToDate: 0,
+    wip: 1791482,
+    estCloseDate: "2027-04-01",
+    openedAt: "2026-09-01",
+    slip: {"permit":0,"selections":0,"construction":0},
+    notes: "Bid Period",
   },
   {
     id: "bt-35918575",
@@ -369,16 +390,15 @@ const OPEN_JOBS: OwnerJob[] = [
     pm: "Adam Horseman",
     status: "open",
     phase: "construction",
-    pendingSelections: 0,
-    pastDueTasks: 12,
-    dailyLogsRecentDone: 20,
-    dailyLogsRecentPmDone: 12,
-    dailyLogsTotal: 252,
+    pendingSelections: 1,
+    pastDueTasks: 10,
+    dailyLogsRecentDone: 19,
+    dailyLogsRecentPmDone: 14,
+    dailyLogsTotal: 257,
     foundationStarted: true,
     totalSlip: 313,
     changeOrderRevenue: 214343.13,
     changeOrderProfit: 62545.73,
-    revenueLast30d: 7135.85,
     estFirstScheduleStart: "2025-04-09",
     estPermittingEnd: "2025-06-19",
     estFoundationStart: "2025-06-18",
@@ -389,7 +409,7 @@ const OPEN_JOBS: OwnerJob[] = [
     estCloseDate: "2026-09-10",
     openedAt: "2025-04-09",
     slip: {"permit":0,"selections":0,"construction":72},
-    notes: "Warranty period",
+    notes: "Final Building Inspection",
   },
   {
     id: "bt-42083349",
@@ -399,9 +419,9 @@ const OPEN_JOBS: OwnerJob[] = [
     phase: "construction",
     pendingSelections: 1,
     pastDueTasks: 3,
-    dailyLogsRecentDone: 17,
+    dailyLogsRecentDone: 16,
     dailyLogsRecentPmDone: 10,
-    dailyLogsTotal: 58,
+    dailyLogsTotal: 62,
     foundationStarted: true,
     totalSlip: 0,
     revenueLast30d: 127468.3,
@@ -425,9 +445,9 @@ const OPEN_JOBS: OwnerJob[] = [
     phase: "design",
     pendingSelections: 67,
     pastDueTasks: 12,
-    dailyLogsRecentDone: 1,
+    dailyLogsRecentDone: 2,
     dailyLogsRecentPmDone: 0,
-    dailyLogsTotal: 3,
+    dailyLogsTotal: 4,
     foundationStarted: false,
     revenueLast30d: 117133.3,
     estFirstScheduleStart: "2026-06-05",
@@ -440,7 +460,7 @@ const OPEN_JOBS: OwnerJob[] = [
     estCloseDate: "2027-03-19",
     openedAt: "2026-06-05",
     slip: {"permit":0,"selections":0,"construction":0},
-    notes: "Permitting",
+    notes: "Selection Phase 1 Due",
   },
   {
     id: "bt-45118977",
@@ -473,7 +493,7 @@ const OPEN_JOBS: OwnerJob[] = [
     pastDueTasks: 14,
     dailyLogsRecentDone: 19,
     dailyLogsRecentPmDone: 12,
-    dailyLogsTotal: 128,
+    dailyLogsTotal: 132,
     foundationStarted: true,
     totalSlip: 13,
     changeOrderRevenue: 10298.04,
@@ -488,7 +508,7 @@ const OPEN_JOBS: OwnerJob[] = [
     estCloseDate: "2026-09-10",
     openedAt: "2025-08-21",
     slip: {"permit":0,"selections":0,"construction":13},
-    notes: "Finish Pool",
+    notes: "Engineering Inspection",
   },
   {
     id: "bt-43331519",
@@ -510,7 +530,7 @@ const OPEN_JOBS: OwnerJob[] = [
     estCloseDate: "2027-03-22",
     openedAt: "2026-06-24",
     slip: {"permit":0,"selections":0,"construction":0},
-    notes: "Permitting",
+    notes: "Selection Phase 3 Due",
   },
   {
     id: "bt-42673665",
@@ -518,11 +538,11 @@ const OPEN_JOBS: OwnerJob[] = [
     pm: "James Manford",
     status: "open",
     phase: "construction",
-    pendingSelections: 0,
+    pendingSelections: 1,
     pastDueTasks: 29,
-    dailyLogsRecentDone: 23,
-    dailyLogsRecentPmDone: 16,
-    dailyLogsTotal: 139,
+    dailyLogsRecentDone: 25,
+    dailyLogsRecentPmDone: 17,
+    dailyLogsTotal: 145,
     foundationStarted: true,
     totalSlip: 18,
     estFirstScheduleStart: "2026-01-02",
@@ -535,7 +555,7 @@ const OPEN_JOBS: OwnerJob[] = [
     estCloseDate: "2026-09-17",
     openedAt: "2026-01-02",
     slip: {"permit":0,"selections":0,"construction":76},
-    notes: "Front door Inserts",
+    notes: "CDC Trim and wet bar",
   },
   {
     id: "bt-38397739",
@@ -545,9 +565,9 @@ const OPEN_JOBS: OwnerJob[] = [
     phase: "construction",
     pendingSelections: 0,
     pastDueTasks: 6,
-    dailyLogsRecentDone: 17,
-    dailyLogsRecentPmDone: 14,
-    dailyLogsTotal: 226,
+    dailyLogsRecentDone: 18,
+    dailyLogsRecentPmDone: 15,
+    dailyLogsTotal: 230,
     foundationStarted: true,
     totalSlip: 91,
     changeOrderRevenue: 193363.44,
@@ -590,7 +610,7 @@ const OPEN_JOBS: OwnerJob[] = [
     estCloseDate: "2026-09-03",
     openedAt: "2025-07-15",
     slip: {"permit":0,"selections":0,"construction":96},
-    notes: "Closing",
+    notes: "C/O",
   },
 ];
 
@@ -599,46 +619,29 @@ export const LIVE_JOBS: OwnerJob[] = OPEN_JOBS;
 /** Sales funnel: Pipedrive Sales stages when PD cache present, else BT Lead Opportunities. */
 export const LIVE_PIPELINE: PipelineStage[] = [
   {
-    "id": "pd-1",
-    "label": "First Contact",
-    "value": 2443063,
-    "dealCount": 24
+    "id": "lead",
+    "label": "Lead",
+    "value": 44100000
   },
   {
-    "id": "pd-2",
-    "label": "Qualified",
-    "value": 2215000,
-    "dealCount": 11
+    "id": "proposal",
+    "label": "Proposal",
+    "value": 0
   },
   {
-    "id": "pd-4",
-    "label": "Homesite Secured",
-    "value": 1000000,
-    "dealCount": 3
+    "id": "pre-contract",
+    "label": "Pre-Contract",
+    "value": 0
   },
   {
-    "id": "pd-3",
-    "label": "Meet with Eric",
-    "value": 2352202,
-    "dealCount": 3
+    "id": "contract",
+    "label": "Contract",
+    "value": 0
   },
   {
-    "id": "pd-5",
-    "label": "Pricing Proposal",
-    "value": 1630105,
-    "dealCount": 2
-  },
-  {
-    "id": "pd-17",
-    "label": "Under Negotiation",
-    "value": 820281,
-    "dealCount": 1
-  },
-  {
-    "id": "pd-6",
-    "label": "Contract Sent",
-    "value": 0,
-    "dealCount": 0
+    "id": "closed",
+    "label": "Closed / Won",
+    "value": 0
   }
 ];
 
@@ -646,17 +649,17 @@ export const LIVE_SALES_PERFORMANCE: SalesPerformanceBar[] = [
   {
     "id": "backlog",
     "label": "Signed Backlog",
-    "value": 30035251.06
+    "value": 31828449.48
   },
   {
     "id": "closings",
     "label": "Projected Closings",
-    "value": 18004662.780000005
+    "value": 18006379.2
   },
   {
     "id": "signing",
     "label": "Expected Signing Value",
-    "value": 0
+    "value": 44100000
   }
 ];
 
@@ -682,10 +685,10 @@ export const LIVE_TIME_METRICS: TimeMetric[] = [
 ];
 
 export const LIVE_TARGET_MARGIN_PCT = 15;
-export const LIVE_PROJECTED_MARGIN_PCT = 33.3;
-export const LIVE_ROLLING_REVENUE_12MO = 16404188.42;
+export const LIVE_PROJECTED_MARGIN_PCT = 32.8;
+export const LIVE_ROLLING_REVENUE_12MO = 16583950.560000004;
 /** Weighted pipeline: Pipedrive value × stage probability when PD cache present. */
-export const LIVE_WEIGHTED_PIPELINE = 10460650;
-export const LIVE_SNAPSHOT_AT = '2026-08-27T12:30:51.657Z';
+export const LIVE_WEIGHTED_PIPELINE = 20928500;
+export const LIVE_SNAPSHOT_AT = '2026-09-01T19:59:55.306Z';
 /** Pipedrive Sales pipeline pull timestamp baked into this snapshot (empty when PD cache absent). */
-export const LIVE_PIPEDRIVE_AT = '2026-08-27T12:31:41.055Z';
+export const LIVE_PIPEDRIVE_AT = '';

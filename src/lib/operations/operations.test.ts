@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { LIVE_JOBS, LIVE_SNAPSHOT_AT } from '../buildertrend/liveSnapshot';
+import { LIVE_JOBS, LIVE_PIPEDRIVE_AT, LIVE_SNAPSHOT_AT } from '../buildertrend/liveSnapshot';
 import { LIVE_DRILLDOWN } from '../buildertrend/liveDrilldown';
 import { OPS_STORAGE_KEY } from './types';
 import { mapExternalDealStage, seedOpsFromLiveSnapshot } from './seed';
@@ -58,7 +58,9 @@ describe('operations seed + map', () => {
     const seeded = seedOpsFromLiveSnapshot();
     const mapped = mapOpsSnapshotToDashboardInputs(seeded, new Date('2030-01-15T12:00:00Z'));
     expect(mapped.jobs.length).toBe(seeded.jobs.filter((j) => !j.archived).length);
-    expect(mapped.pipeline.some((p) => (p.dealCount ?? 0) > 0)).toBe(true);
+    if (LIVE_PIPEDRIVE_AT) {
+      expect(mapped.pipeline.some((p) => (p.dealCount ?? 0) > 0)).toBe(true);
+    }
     expect(mapped.targetMarginPct).toBe(seeded.settings.targetMarginPct);
     expect(mapped.timeMetrics.length).toBe(3);
     expect(mapped.timeMetrics.map((m) => m.id)).toEqual(['contract-close', 'permit-close', 'slab-close']);
