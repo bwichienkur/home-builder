@@ -6,6 +6,7 @@ import type { PlanRoomRect } from './buildPlan';
 import { room, poly } from './planFactories';
 import type { RoomType } from '../../types';
 import { looksLikeRoomName } from './dxfParse';
+import { resolveWallCorners } from './wallCorners';
 
 export type Seg = { x1: number; y1: number; x2: number; y2: number; layer?: string; linetype?: string };
 export type RoomLabel = { x: number; y: number; text: string };
@@ -489,8 +490,10 @@ export function prepareCadWallCenterlines(rawWallSegments: Seg[]): (Seg & { exte
   const paired = centerlinesFromDoubleWalls(snapped);
   const source = paired.length > 0 ? paired : bridged.filter((s) => segLength(s) >= 1.5);
   const joined = joinOrthogonalWallCenterlines(source, 1.75);
+  const cornered = resolveWallCorners(joined, 1.75);
+  const merged = mergeColinear(cornered);
   const connected = dropIsolatedWallCenterlines(
-    joinOrthogonalWallCenterlines(joined, 0.85).filter((s) => segLength(s) >= 1.0),
+    resolveWallCorners(merged, 0.85).filter((s) => segLength(s) >= 1.0),
     0.45,
   );
 

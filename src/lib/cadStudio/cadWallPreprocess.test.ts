@@ -4,6 +4,7 @@ import {
   prepareCadWallCenterlines,
   wallEndpointJoinStats,
 } from '../housePlans/dxfRooms';
+import { estimateWallCorners, resolveWallCorners } from '../housePlans/wallCorners';
 
 describe('prepareCadWallCenterlines', () => {
   it('joins corners on a double-line box without spillover endpoints', () => {
@@ -32,5 +33,19 @@ describe('prepareCadWallCenterlines', () => {
     const joined = joinOrthogonalWallCenterlines(segs, 1.0);
     const vert = joined.find((s) => Math.abs(s.x1 - s.x2) < 0.01)!;
     expect(vert.y2).toBeCloseTo(10, 0);
+  });
+
+  it('estimateWallCorners finds L corners on a box', () => {
+    const segs = [
+      { x1: 0, y1: 0, x2: 20, y2: 0 },
+      { x1: 20, y1: 0, x2: 20, y2: 12 },
+      { x1: 0, y1: 12, x2: 20, y2: 12 },
+      { x1: 0, y1: 0, x2: 0, y2: 12 },
+    ];
+    const corners = estimateWallCorners(segs);
+    expect(corners.length).toBeGreaterThanOrEqual(4);
+    const resolved = resolveWallCorners(segs);
+    const stats = wallEndpointJoinStats(resolved, 0.35);
+    expect(stats.joined / stats.total).toBeGreaterThan(0.85);
   });
 });

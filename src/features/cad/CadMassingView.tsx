@@ -2,12 +2,13 @@ import { useMemo } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
-import type { CadExtrusion, CadMassing, CadPlanFace, CadRoofMassing } from '../../lib/cadStudio';
+import type { CadExtrusion, CadRoofMassing } from '../../lib/cadStudio';
 import { WORLD_ORIGIN } from '../../lib/geometry/placement';
 import { PIXELS_PER_METER } from '../../lib/geometry/snapping';
 import { world } from '../../components/scene3d/sceneWorld';
 import type { Wall } from '../../types';
 import { CadExtrudeSceneParts } from './CadExtrudeView';
+import { CadElevationFacadeShell } from './CadElevationFacadeShell';
 
 const FT_TO_M = 0.3048;
 const ROOF_THICKNESS = 0.14;
@@ -112,64 +113,6 @@ function RoofMesh({
   );
 }
 
-/** Render ROOF-layer elevation linework as 3D segments on the front face (structural reference). */
-function ElevationRoofLinework({
-  massing,
-  centerFt,
-}: {
-  massing: CadMassing;
-  centerFt: { cx: number; cy: number };
-}) {
-  const sheet = massing.frontElevation;
-  const geom = useMemo(() => {
-    if (!sheet) return null;
-    const roofSegs = sheet.segments.filter((s) => /ROOF|TRUSS|RAFTER|GABLE|SOFFIT/i.test(s.layer));
-    if (!roofSegs.length) return null;
-
-    const b = massing.planBounds;
-    const widthFt = Math.max(1, sheet.bounds.maxX - sheet.bounds.minX);
-    const planWidthFt = Math.max(1, b.maxX - b.minX);
-    const xOffset = b.minX + (planWidthFt - widthFt) / 2;
-    const positions: number[] = [];
-
-    const mapPlan = (xFt: number, yFt: number): [number, number, number] => {
-      let px = xFt;
-      let py = b.minY;
-      switch (massing.frontFace as CadPlanFace) {
-        case 'north':
-          py = b.maxY;
-          px = xOffset + xFt;
-          break;
-        case 'east':
-          return [...planFtToWorld(b.maxX, b.minY + (xFt / widthFt) * (b.maxY - b.minY), centerFt), yFt * FT_TO_M];
-        case 'west':
-          return [...planFtToWorld(b.minX, b.minY + (xFt / widthFt) * (b.maxY - b.minY), centerFt), yFt * FT_TO_M];
-        default:
-          px = xOffset + xFt;
-          py = b.minY;
-      }
-      const [wx, wz] = planFtToWorld(px, py, centerFt);
-      return [wx, yFt * FT_TO_M, wz];
-    };
-
-    for (const s of roofSegs) {
-      const [x1, y1, z1] = mapPlan(s.x1Ft, s.y1Ft);
-      const [x2, y2, z2] = mapPlan(s.x2Ft, s.y2Ft);
-      positions.push(x1, y1, z1, x2, y2, z2);
-    }
-    const g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    return g;
-  }, [sheet, massing, centerFt]);
-
-  if (!geom) return null;
-  return (
-    <lineSegments geometry={geom} renderOrder={5}>
-      <lineBasicMaterial color="#374151" linewidth={1} />
-    </lineSegments>
-  );
-}
-
 function MassingScene({ extrusion }: { extrusion: CadExtrusion }) {
   const { walls, openings, fixtures, centerFt, massing, wallSegmentsFt } = extrusion;
   const storyHeightM = massing.storyHeightM;
@@ -207,8 +150,14 @@ function MassingScene({ extrusion }: { extrusion: CadExtrusion }) {
         centerFt={centerFt}
         wallSegmentsFt={wallSegmentsFt}
       />
+      {massing.frontElevation && (
+        <CadElevationFacadeShell
+          sheet={massing.frontElevation}
+          massing={massing}
+          centerFt={centerFt}
+        />
+      )}
       <RoofMesh roof={massing.roof} storyHeightM={storyHeightM} envelope={envelope} />
-      <ElevationRoofLinework massing={massing} centerFt={centerFt} />
       <OrbitControls makeDefault target={[0, storyHeightM * 0.55, 0]} />
     </>
   );
