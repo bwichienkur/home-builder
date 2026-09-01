@@ -215,7 +215,7 @@ export function openingsFromCadHints(
           gy = (e.ay + e.by) / 2;
         }
       }
-      if (gap < 1.8 || gap > 4.5) continue;
+      if (gap < 2.2 || gap > 4.5) continue;
 
       // Prefer the longer wall as host; place opening near the gap endpoint.
       const host = aLen >= bLen ? i : j;

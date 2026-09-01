@@ -2,6 +2,7 @@ import { buildFloorFromCadWalls } from '../housePlans/dxfCadBuild';
 import type { HousePlanFloor } from '../housePlans/buildPlan';
 import { buildCadMassing } from './buildCadMassing';
 import { detectCadFixtures } from './detectCadFixtures';
+import { elevationOpeningHintsFt } from './elevationOpenings';
 import type { CadExtrusion, CadPlate } from './types';
 
 const DEFAULT_HEIGHT_M = 2.74;
@@ -53,15 +54,39 @@ export function extrudeCadPlate(plate: CadPlate, opts?: { heightM?: number }): C
     })),
   };
 
-  const built = buildFloorFromCadWalls(floor, { centerFt });
-  const fixtures = detectCadFixtures(plate);
   const massing = buildCadMassing(plate, heightM);
+  const elevHints = elevationOpeningHintsFt(plate, massing);
+  const allHints = [...plate.openingHints, ...elevHints];
+
+  const floorWithHints: HousePlanFloor = {
+    ...floor,
+    openingHintsFt: allHints.map((h) => ({
+      x1: h.x1,
+      y1: h.y1,
+      x2: h.x2,
+      y2: h.y2,
+      kind: h.kind,
+      layer: h.layer,
+    })),
+  };
+
+  const builtWithOpenings = buildFloorFromCadWalls(floorWithHints, { centerFt });
+  const fixtures = detectCadFixtures(plate);
+  const wallSegmentsFt = plate.wallCenterlines.map((s) => ({
+    x1: s.x1,
+    y1: s.y1,
+    x2: s.x2,
+    y2: s.y2,
+    exterior: s.exterior,
+  }));
+
   return {
-    walls: built.scene.walls,
-    openings: built.scene.openings,
+    walls: builtWithOpenings.scene.walls,
+    openings: builtWithOpenings.scene.openings,
     fixtures,
     centerFt,
     heightM,
     massing,
+    wallSegmentsFt,
   };
 }
