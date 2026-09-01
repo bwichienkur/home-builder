@@ -16,7 +16,7 @@ function escapeXml(s: string): string {
 /** SVG for a front/side elevation sheet (Y up, grade at bottom). */
 export function renderCadElevationSvg(
   sheet: CadElevationSheet,
-  opts?: { padFt?: number; title?: string; visibleLayers?: Set<string> },
+  opts?: { padFt?: number; title?: string; visibleLayers?: Set<string>; richFills?: boolean },
 ): string {
   const pad = opts?.padFt ?? 2;
   const { minX, minY, maxX, maxY } = sheet.bounds;
@@ -33,10 +33,75 @@ export function renderCadElevationSvg(
 
   const parts: string[] = [
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w.toFixed(3)} ${h.toFixed(3)}" width="1200" height="${Math.round((1200 * h) / w)}" role="img" aria-label="${escapeXml(opts?.title ?? sheet.name)}">`,
-    `<rect width="100%" height="100%" fill="#eef2f6"/>`,
+    `<rect width="100%" height="100%" fill="#c8d4e0"/>`,
     `<line x1="${pad.toFixed(2)}" y1="${(h - pad).toFixed(2)}" x2="${(w - pad).toFixed(2)}" y2="${(h - pad).toFixed(2)}" stroke="#64748b" stroke-width="${(stroke * 1.2).toFixed(4)}" stroke-dasharray="0.5 0.4"/>`,
-    `<g>`,
   ];
+
+  if (opts?.richFills) {
+    const wallTop = Math.max(
+      ...segs.filter((s) => /WALL|EXT|BRG/i.test(s.layer)).flatMap((s) => [s.y1Ft, s.y2Ft]),
+      maxY - 1,
+    );
+    const wallLeft = minX - ox;
+    const wallRight = maxX - ox;
+    const gradeY = h - (minY - oy);
+    const topY = h - (Math.min(wallTop, maxY) - oy);
+    parts.push(
+      `<rect x="${wallLeft.toFixed(2)}" y="${topY.toFixed(2)}" width="${(wallRight - wallLeft).toFixed(2)}" height="${(gradeY - topY).toFixed(2)}" fill="#e8e2d6"/>`,
+    );
+
+    for (const s of segs) {
+      const u = s.layer.toUpperCase();
+      if (/STONE|BRG|COLUMN|PORCH/i.test(u)) {
+        const x1 = Math.min(s.x1Ft, s.x2Ft) - ox;
+        const x2 = Math.max(s.x1Ft, s.x2Ft) - ox;
+        const y1 = h - (Math.max(s.y1Ft, s.y2Ft) - oy);
+        const y2 = h - (Math.min(s.y1Ft, s.y2Ft) - oy);
+        if (x2 - x1 > 0.2 && y2 - y1 > 0.2) {
+          parts.push(
+            `<rect x="${x1.toFixed(2)}" y="${y1.toFixed(2)}" width="${(x2 - x1).toFixed(2)}" height="${(y2 - y1).toFixed(2)}" fill="#a8a29e" opacity="0.85"/>`,
+          );
+        }
+      }
+    }
+
+    for (const s of segs) {
+      if (s.role !== 'opening' && !/WINDOW|DOOR|GLAZ|GARAGE|OPEN/i.test(s.layer)) continue;
+      const x1 = Math.min(s.x1Ft, s.x2Ft) - ox;
+      const x2 = Math.max(s.x1Ft, s.x2Ft) - ox;
+      const y1 = h - (Math.max(s.y1Ft, s.y2Ft) - oy);
+      const y2 = h - (Math.min(s.y1Ft, s.y2Ft) - oy);
+      if (x2 - x1 < 0.3 || y2 - y1 < 0.3) continue;
+      const isWindow = /WINDOW|GLAZ/i.test(s.layer) || s.role === 'opening' && !/DOOR|GARAGE/i.test(s.layer);
+      const fill = isWindow ? '#7dd3fc' : '#334155';
+      const op = isWindow ? 0.65 : 0.9;
+      parts.push(
+        `<rect x="${x1.toFixed(2)}" y="${y1.toFixed(2)}" width="${(x2 - x1).toFixed(2)}" height="${(y2 - y1).toFixed(2)}" fill="${fill}" opacity="${op}" rx="0.08"/>`,
+      );
+    }
+
+    const roofPts = segs
+      .filter((s) => /ROOF|TRUSS|RAFTER|GABLE/i.test(s.layer))
+      .flatMap((s) => [
+        { x: s.x1Ft - ox, y: h - (s.y1Ft - oy) },
+        { x: s.x2Ft - ox, y: h - (s.y2Ft - oy) },
+      ]);
+    if (roofPts.length >= 4) {
+      const bins = new Map<number, number>();
+      for (const p of roofPts) {
+        const k = Math.round(p.x * 4);
+        bins.set(k, Math.max(bins.get(k) ?? 0, p.y));
+      }
+      const profile = [...bins.entries()].sort((a, b) => a[0] - b[0]).map(([k, y]) => ({ x: k / 4, y }));
+      if (profile.length >= 2) {
+        const poly = profile.map((p) => `${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' ');
+        const base = `${profile[0]!.x.toFixed(2)},${gradeY.toFixed(2)} ${profile[profile.length - 1]!.x.toFixed(2)},${gradeY.toFixed(2)}`;
+        parts.push(`<polygon points="${poly} ${base}" fill="#8b7355" opacity="0.88"/>`);
+      }
+    }
+  }
+
+  parts.push(`<g>`);
 
   for (const s of segs) {
     const x1 = s.x1Ft - ox;
@@ -75,8 +140,12 @@ export function renderCadElevationSvg(
 /** Data URL for the same SVG used on the Plate elevation tab (Massing facade texture). */
 export function elevationSvgDataUrl(
   sheet: CadElevationSheet,
-  opts?: { padFt?: number; visibleLayers?: Set<string> },
+  opts?: { padFt?: number; visibleLayers?: Set<string>; richFills?: boolean },
 ): string {
-  const svg = renderCadElevationSvg(sheet, { padFt: opts?.padFt ?? 0.25, visibleLayers: opts?.visibleLayers });
+  const svg = renderCadElevationSvg(sheet, {
+    padFt: opts?.padFt ?? 0.25,
+    visibleLayers: opts?.visibleLayers,
+    richFills: opts?.richFills ?? false,
+  });
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }

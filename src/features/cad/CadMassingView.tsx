@@ -2,16 +2,16 @@ import { useMemo } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
-import type { CadExtrusion, CadRoofMassing } from '../../lib/cadStudio';
+import type { CadExtrusion } from '../../lib/cadStudio';
 import { WORLD_ORIGIN } from '../../lib/geometry/placement';
 import { PIXELS_PER_METER } from '../../lib/geometry/snapping';
 import { world } from '../../components/scene3d/sceneWorld';
-import type { Wall } from '../../types';
 import { CadExtrudeSceneParts } from './CadExtrudeView';
 import { CadElevationFacadeShell } from './CadElevationFacadeShell';
+import { CadProfileRoofMesh } from './CadProfileRoofMesh';
+import { CadGroundPlane, CadSceneEnvironment } from './CadSceneEnvironment';
 
 const FT_TO_M = 0.3048;
-const ROOF_THICKNESS = 0.14;
 
 function ftToPx(ft: number) {
   return ft * FT_TO_M * PIXELS_PER_METER;
@@ -46,109 +46,28 @@ function planBoundsEnvelopeM(
   return { minX, maxX, minZ, maxZ };
 }
 
-function wallEnvelopeM(walls: Wall[]): { minX: number; maxX: number; minZ: number; maxZ: number } | null {
-  if (!walls.length) return null;
-  let minX = Infinity;
-  let maxX = -Infinity;
-  let minZ = Infinity;
-  let maxZ = -Infinity;
-  for (const w of walls) {
-    for (const p of [w.start, w.end]) {
-      const [x, z] = world(p.x, p.y);
-      minX = Math.min(minX, x);
-      maxX = Math.max(maxX, x);
-      minZ = Math.min(minZ, z);
-      maxZ = Math.max(maxZ, z);
-    }
-  }
-  return { minX, maxX, minZ, maxZ };
-}
-
-function RoofMesh({
-  roof,
-  storyHeightM,
-  envelope,
-}: {
-  roof: CadRoofMassing;
-  storyHeightM: number;
-  envelope: { minX: number; maxX: number; minZ: number; maxZ: number };
-}) {
-  const w = Math.max(0.5, envelope.maxX - envelope.minX);
-  const d = Math.max(0.5, envelope.maxZ - envelope.minZ);
-  const cx = (envelope.minX + envelope.maxX) / 2;
-  const cz = (envelope.minZ + envelope.maxZ) / 2;
-  const overhang = roof.overhangM;
-  const riseM = Math.max(0.35, roof.ridgeHeightM - storyHeightM);
-  const ridgeAlongX = roof.ridgeAlongX;
-  const halfSpan = (ridgeAlongX ? w : d) / 2;
-  const slopeLen = Math.hypot(halfSpan, riseM);
-  const pitch = Math.atan2(riseM, halfSpan);
-
-  return (
-    <group position={[cx, storyHeightM, cz]}>
-      {ridgeAlongX ? (
-        <>
-          <mesh position={[-halfSpan / 2, riseM / 2, 0]} rotation={[0, 0, pitch]} castShadow receiveShadow>
-            <boxGeometry args={[slopeLen, ROOF_THICKNESS, d + overhang * 2]} />
-            <meshStandardMaterial color="#6b7280" roughness={0.78} metalness={0.05} side={THREE.DoubleSide} />
-          </mesh>
-          <mesh position={[halfSpan / 2, riseM / 2, 0]} rotation={[0, 0, -pitch]} castShadow receiveShadow>
-            <boxGeometry args={[slopeLen, ROOF_THICKNESS, d + overhang * 2]} />
-            <meshStandardMaterial color="#6b7280" roughness={0.78} metalness={0.05} side={THREE.DoubleSide} />
-          </mesh>
-        </>
-      ) : (
-        <>
-          <mesh position={[0, riseM / 2, -halfSpan / 2]} rotation={[pitch, 0, 0]} castShadow receiveShadow>
-            <boxGeometry args={[w + overhang * 2, ROOF_THICKNESS, slopeLen]} />
-            <meshStandardMaterial color="#6b7280" roughness={0.78} metalness={0.05} side={THREE.DoubleSide} />
-          </mesh>
-          <mesh position={[0, riseM / 2, halfSpan / 2]} rotation={[-pitch, 0, 0]} castShadow receiveShadow>
-            <boxGeometry args={[w + overhang * 2, ROOF_THICKNESS, slopeLen]} />
-            <meshStandardMaterial color="#6b7280" roughness={0.78} metalness={0.05} side={THREE.DoubleSide} />
-          </mesh>
-        </>
-      )}
-    </group>
-  );
-}
-
 function MassingScene({ extrusion }: { extrusion: CadExtrusion }) {
-  const { walls, openings, fixtures, centerFt, massing, wallSegmentsFt } = extrusion;
+  const { walls, openings, fixtures, centerFt, massing } = extrusion;
   const storyHeightM = massing.storyHeightM;
-  const planEnvelope = useMemo(
+  const envelope = useMemo(
     () => planBoundsEnvelopeM(massing.planBounds, centerFt),
     [massing.planBounds, centerFt],
   );
-  const wallEnv = useMemo(() => wallEnvelopeM(walls), [walls]);
-  const envelope = planEnvelope ?? wallEnv;
   const floorSize = useMemo(() => {
-    if (!envelope) return 24;
     const span = Math.max(envelope.maxX - envelope.minX, envelope.maxZ - envelope.minZ);
-    return span * 2.6;
+    return span * 2.8;
   }, [envelope]);
-
-  if (!envelope) return null;
 
   return (
     <>
-      <color attach="background" args={['#dfe5ec']} />
-      <ambientLight intensity={0.55} />
-      <directionalLight position={[8, 16, 6]} intensity={1.15} castShadow />
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
-        <planeGeometry args={[floorSize, floorSize]} />
-        <meshStandardMaterial color="#c9b18f" />
-      </mesh>
-      <gridHelper
-        args={[floorSize, Math.max(10, Math.round(floorSize)), '#94a3b8', '#cbd5e1']}
-        position={[0, 0.001, 0]}
-      />
+      <CadSceneEnvironment targetY={storyHeightM * 0.55} sunPosition={[50, 32, 24]} />
+      <CadGroundPlane size={floorSize} />
       <CadExtrudeSceneParts
         walls={walls}
         openings={openings}
         fixtures={fixtures}
         centerFt={centerFt}
-        wallSegmentsFt={wallSegmentsFt}
+        mode="massing"
       />
       {massing.frontElevation && (
         <CadElevationFacadeShell
@@ -157,8 +76,8 @@ function MassingScene({ extrusion }: { extrusion: CadExtrusion }) {
           centerFt={centerFt}
         />
       )}
-      <RoofMesh roof={massing.roof} storyHeightM={storyHeightM} envelope={envelope} />
-      <OrbitControls makeDefault target={[0, storyHeightM * 0.55, 0]} />
+      <CadProfileRoofMesh roof={massing.roof} storyHeightM={storyHeightM} envelope={envelope} />
+      <OrbitControls makeDefault target={[0, storyHeightM * 0.5, 0]} maxPolarAngle={Math.PI / 2.08} />
     </>
   );
 }
@@ -171,9 +90,10 @@ export function CadMassingView({ extrusion }: { extrusion: CadExtrusion }) {
     <div className="cad-extrude-host">
       <Canvas
         shadows
-        camera={{ position: [22, 18, 22], fov: 42, near: 0.1, far: 500 }}
+        camera={{ position: [28, 20, 28], fov: 40, near: 0.1, far: 500 }}
         onCreated={({ gl }) => {
           gl.toneMapping = THREE.ACESFilmicToneMapping;
+          gl.toneMappingExposure = 1.08;
           gl.shadowMap.enabled = true;
         }}
       >
