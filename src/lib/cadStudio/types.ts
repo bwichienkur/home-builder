@@ -50,6 +50,35 @@ export type CadLabelFt = {
   layer?: string;
 };
 
+/** Raw fixture pose from DXF INSERT / CIRCLE (plan feet after plate build). */
+export type CadFixtureKind = 'counter' | 'island' | 'sink' | 'toilet' | 'tub' | 'appliance' | 'other';
+
+export type CadFixtureHintFt = {
+  xFt: number;
+  yFt: number;
+  widthFt?: number;
+  depthFt?: number;
+  radiusFt?: number;
+  rotationDeg?: number;
+  layer: string;
+  blockName?: string;
+  kind?: CadFixtureKind;
+};
+
+/** Procedural 3D fixture instance for Extrude view (plan feet). */
+export type CadFixtureInstance = {
+  id: string;
+  kind: CadFixtureKind;
+  xFt: number;
+  yFt: number;
+  widthFt: number;
+  depthFt: number;
+  heightM: number;
+  rotationRad: number;
+  layer?: string;
+  blockName?: string;
+};
+
 export type CadBoundsFt = {
   minX: number;
   minY: number;
@@ -73,6 +102,8 @@ export type CadPlate = {
   openingHints: CadOpeningHintFt[];
   /** Room names and similar plan labels (feet, same frame as segments). */
   labels: CadLabelFt[];
+  /** INSERT/CIRCLE poses for procedural Extrude meshes. */
+  fixtureHints: CadFixtureHintFt[];
   sheets: DrawingSheet[];
   bounds: CadBoundsFt;
   sheetSource: 'dxf_viewport' | 'pdf' | 'static' | 'mixed' | 'synthetic';
@@ -82,6 +113,7 @@ export type CadPlate = {
 export type CadExtrusion = {
   walls: Wall[];
   openings: Opening[];
+  fixtures: CadFixtureInstance[];
   centerFt: { cx: number; cy: number };
   heightM: number;
 };

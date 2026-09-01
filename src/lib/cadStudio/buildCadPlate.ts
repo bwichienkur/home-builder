@@ -18,6 +18,7 @@ import type { DrawingSheet } from '../housePlans/drawingPackage';
 import { classifyLayerKind, classifySegmentRole } from './classifyLayers';
 import type {
   CadBoundsFt,
+  CadFixtureHintFt,
   CadLabelFt,
   CadLayerInfo,
   CadOpeningHintFt,
@@ -112,12 +113,13 @@ export function buildCadPlateFromDxf(
   opts?: { sheets?: DrawingSheet[]; pdfUrl?: string; sheetSource?: CadPlate['sheetSource'] },
 ): CadPlate {
   const warnings: string[] = [];
-  const { segs, labels } = extractDxfModelGeometry(dxfText);
+  const { segs, labels, fixtureHints: rawHints } = extractDxfModelGeometry(dxfText);
   const floorVp = pickFloorViewport(dxfText);
   const insUnits = readInsUnits(dxfText);
 
   let working = segs;
   let workingLabels = labels;
+  let workingHints = rawHints;
   if (floorVp) {
     const cropped = cropSegmentsToViewport(working, floorVp, 0.1);
     if (cropped.length >= 20) {
@@ -127,6 +129,15 @@ export function buildCadPlateFromDxf(
         floorVp,
         0.08,
       ).map(({ x1, y1, text, layer }) => ({ x: x1, y: y1, text, layer }));
+      workingHints = cropSegmentsToViewport(
+        workingHints.map((h) => ({ ...h, x1: h.x, y1: h.y, x2: h.x, y2: h.y })),
+        floorVp,
+        0.12,
+      ).map(({ x1, y1, ...rest }) => ({
+        ...rest,
+        x: x1,
+        y: y1,
+      }));
       warnings.push(
         `Cropped model space to floor viewport (${floorVp.modelW.toFixed(0)}×${floorVp.modelH.toFixed(0)}).`,
       );
@@ -204,6 +215,30 @@ export function buildCadPlateFromDxf(
       .slice(0, MAX_LABELS),
   );
 
+  const plateFixtureHints: CadFixtureHintFt[] = flipPlanLabels(
+    workingHints.map((h) => ({
+      x: h.x * scale,
+      y: h.y * scale,
+      widthFt: h.width != null ? h.width * scale : undefined,
+      depthFt: h.depth != null ? h.depth * scale : undefined,
+      radiusFt: h.radius != null ? h.radius * scale : undefined,
+      rotationDeg: h.rotationDeg,
+      layer: h.layer,
+      blockName: h.blockName,
+      kind: h.kind,
+    })),
+  ).map(({ x, y, widthFt, depthFt, radiusFt, rotationDeg, layer, blockName, kind }) => ({
+    xFt: x,
+    yFt: y,
+    widthFt,
+    depthFt,
+    radiusFt,
+    rotationDeg,
+    layer,
+    blockName,
+    kind,
+  }));
+
   let sheets = opts?.sheets ?? [];
   let sheetSource: CadPlate['sheetSource'] = opts?.sheetSource ?? 'static';
   if (!sheets.length) {
@@ -225,6 +260,9 @@ export function buildCadPlateFromDxf(
     warnings.push(`Soft room borders: ${softCount} segment(s) (ceiling / space boundaries).`);
   }
   if (plateLabels.length) warnings.push(`Room labels: ${plateLabels.length}.`);
+  if (plateFixtureHints.length) {
+    warnings.push(`Fixture poses: ${plateFixtureHints.length} (INSERT/CIRCLE for Extrude).`);
+  }
 
   return {
     id: `cad-plate-${Date.now().toString(36)}`,
@@ -236,6 +274,7 @@ export function buildCadPlateFromDxf(
     wallCenterlines,
     openingHints,
     labels: plateLabels,
+    fixtureHints: plateFixtureHints,
     sheets,
     bounds: boundsOf(segments.length ? segments : wallCenterlines),
     sheetSource,

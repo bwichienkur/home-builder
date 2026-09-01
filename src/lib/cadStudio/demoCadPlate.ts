@@ -93,6 +93,9 @@ export function demoCadPlate(): CadPlate {
     })),
     openingHints: openings,
     labels,
+    fixtureHints: [
+      { xFt: 16, yFt: 20.5, widthFt: 1.5, depthFt: 1.2, layer: 'FIXTURES', kind: 'sink', blockName: 'pv_snk_double' },
+    ],
     sheets: [
       { id: 'demo-floor', name: 'SHT. 1 FLOOR', order: 1, kind: 'floor' },
       { id: 'demo-front', name: 'SHT. 2 FRONT ELEVATION', order: 2, kind: 'elevation' },

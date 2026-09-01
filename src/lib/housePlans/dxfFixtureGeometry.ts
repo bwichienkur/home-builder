@@ -16,6 +16,28 @@ export function isFixtureGeometryLayer(layer: string): boolean {
   );
 }
 
+export function fixtureKindFromBlockName(name: string): 'sink' | 'toilet' | 'tub' | 'appliance' | 'other' {
+  const u = name.toUpperCase();
+  if (/SNK|SINK/.test(u)) return 'sink';
+  if (/TOI|TOILET|PTOI|WC\b/.test(u)) return 'toilet';
+  if (/TUB|BATH|SHOWER/.test(u)) return 'tub';
+  if (/OVEN|RANGE|STOVE|FRIDGE|REF|MICRO|AP[_-]|DISHW|WASHER|DRYER/.test(u)) return 'appliance';
+  return 'other';
+}
+
+/** Model-space fixture pose from INSERT / CIRCLE (drawing units). */
+export type FixtureHint = {
+  x: number;
+  y: number;
+  width?: number;
+  depth?: number;
+  radius?: number;
+  rotationDeg?: number;
+  layer: string;
+  blockName?: string;
+  kind?: 'sink' | 'toilet' | 'tub' | 'appliance' | 'other';
+};
+
 /** Approximate a circle as closed polyline chords. */
 export function circleToSegments(
   cx: number,

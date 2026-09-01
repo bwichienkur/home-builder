@@ -2,9 +2,35 @@ import { useMemo } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
-import type { CadExtrusion } from '../../lib/cadStudio';
+import type { CadExtrusion, CadFixtureInstance, CadFixtureKind } from '../../lib/cadStudio';
 import { world } from '../../components/scene3d/sceneWorld';
+import { PIXELS_PER_METER } from '../../lib/geometry/snapping';
+import { WORLD_ORIGIN } from '../../lib/geometry/placement';
 import type { Opening, Wall } from '../../types';
+
+const FT_TO_M = 0.3048;
+
+function ftToPx(ft: number) {
+  return ft * FT_TO_M * PIXELS_PER_METER;
+}
+
+function fixtureColor(kind: CadFixtureKind): string {
+  switch (kind) {
+    case 'counter':
+    case 'island':
+      return '#b8956c'; // warm cabinet / countertop
+    case 'sink':
+      return '#7dd3fc';
+    case 'toilet':
+      return '#f8fafc';
+    case 'tub':
+      return '#e2e8f0';
+    case 'appliance':
+      return '#475569';
+    default:
+      return '#78716c';
+  }
+}
 
 function WallMesh({ wall, openings }: { wall: Wall; openings: Opening[] }) {
   const [sx, sz] = world(wall.start.x, wall.start.y);
@@ -40,8 +66,70 @@ function WallMesh({ wall, openings }: { wall: Wall; openings: Opening[] }) {
   );
 }
 
+/** Procedural fixture mesh — box for counters, rounded box for sinks/toilets. */
+function FixtureMesh({
+  fixture,
+  centerFt,
+}: {
+  fixture: CadFixtureInstance;
+  centerFt: { cx: number; cy: number };
+}) {
+  const planX = WORLD_ORIGIN.x + ftToPx(fixture.xFt - centerFt.cx);
+  const planY = WORLD_ORIGIN.y + ftToPx(fixture.yFt - centerFt.cy);
+  const [wx, wz] = world(planX, planY);
+  const wM = fixture.widthFt * FT_TO_M;
+  const dM = fixture.depthFt * FT_TO_M;
+  const hM = fixture.heightM;
+  const color = fixtureColor(fixture.kind);
+  // Plan rotation: CAD CCW from +X; Three.js yaw around Y with -angle like walls.
+  const yaw = -fixture.rotationRad;
+
+  if (fixture.kind === 'sink' || fixture.kind === 'toilet') {
+    const r = Math.max(wM, dM) / 2;
+    return (
+      <group position={[wx, 0, wz]} rotation={[0, yaw, 0]}>
+        <mesh castShadow receiveShadow position={[0, hM / 2, 0]}>
+          <cylinderGeometry args={[r * 0.85, r, hM, 16]} />
+          <meshStandardMaterial color={color} metalness={0.15} roughness={0.45} />
+        </mesh>
+      </group>
+    );
+  }
+
+  if (fixture.kind === 'tub') {
+    return (
+      <group position={[wx, 0, wz]} rotation={[0, yaw, 0]}>
+        <mesh castShadow receiveShadow position={[0, hM / 2, 0]}>
+          <boxGeometry args={[wM, hM, dM]} />
+          <meshStandardMaterial color={color} roughness={0.55} />
+        </mesh>
+      </group>
+    );
+  }
+
+  // Counter / island / appliance / other — box
+  return (
+    <group position={[wx, 0, wz]} rotation={[0, yaw, 0]}>
+      <mesh castShadow receiveShadow position={[0, hM / 2, 0]}>
+        <boxGeometry args={[wM, hM, dM]} />
+        <meshStandardMaterial
+          color={color}
+          roughness={fixture.kind === 'appliance' ? 0.35 : 0.6}
+          metalness={fixture.kind === 'appliance' ? 0.25 : 0.05}
+        />
+      </mesh>
+      {(fixture.kind === 'counter' || fixture.kind === 'island') && (
+        <mesh castShadow position={[0, hM + 0.015, 0]}>
+          <boxGeometry args={[wM + 0.02, 0.03, dM + 0.02]} />
+          <meshStandardMaterial color="#d6d3d1" roughness={0.4} />
+        </mesh>
+      )}
+    </group>
+  );
+}
+
 function Scene({ extrusion }: { extrusion: CadExtrusion }) {
-  const { walls, openings } = extrusion;
+  const { walls, openings, fixtures, centerFt } = extrusion;
   const floorSize = useMemo(() => {
     if (!walls.length) return 20;
     let max = 10;
@@ -68,6 +156,9 @@ function Scene({ extrusion }: { extrusion: CadExtrusion }) {
       />
       {walls.map((w) => (
         <WallMesh key={w.id} wall={w} openings={openings} />
+      ))}
+      {fixtures.map((f) => (
+        <FixtureMesh key={f.id} fixture={f} centerFt={centerFt} />
       ))}
       <OrbitControls makeDefault target={[0, 1.2, 0]} />
     </>
