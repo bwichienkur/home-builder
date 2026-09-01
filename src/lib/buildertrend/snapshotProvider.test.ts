@@ -29,9 +29,9 @@ describe('owner dashboard Buildertrend snapshot', () => {
     const phaseSum = dash.phases.reduce((sum, slice) => sum + slice.count, 0);
     const byPhase = Object.fromEntries(dash.phases.map((p) => [p.phase, p]));
 
-    expect(openJobs.length).toBe(23);
-    expect(phaseSum).toBe(23);
-    expect(byPhase.design?.count).toBe(9);
+    expect(openJobs.length).toBe(24);
+    expect(phaseSum).toBe(24);
+    expect(byPhase.design?.count).toBe(10);
     expect(byPhase.construction?.count).toBe(14);
     expect(dash.phases.map((p) => p.label)).toEqual(['Design / Permitting', 'Construction']);
     expect(dash.pmScorecard.length).toBeGreaterThan(0);
