@@ -92,6 +92,8 @@ export function CadStudioPage() {
             },
           ],
           segments: [
+            // Wall centerlines only — skip raw wall-role vectors (often unpaired
+            // measurement / witness lines left on wall layers after DWG→DXF).
             ...segs.map((s) => ({
               x1: s.x1,
               y1: s.y1,
@@ -100,17 +102,19 @@ export function CadStudioPage() {
               layer: s.layer ?? 'WALLS',
               role: 'wall' as const,
             })),
-            ...vectors.map((v) => ({
-              x1: v.x1,
-              y1: v.y1,
-              x2: v.x2,
-              y2: v.y2,
-              layer: v.layer ?? 'CAD',
-              role:
-                v.role === 'wall' || v.role === 'opening' || v.role === 'fixture' || v.role === 'soft'
-                  ? v.role
-                  : ('other' as const),
-            })),
+            ...vectors
+              .filter((v) => v.role !== 'wall')
+              .map((v) => ({
+                x1: v.x1,
+                y1: v.y1,
+                x2: v.x2,
+                y2: v.y2,
+                layer: v.layer ?? 'CAD',
+                role:
+                  v.role === 'opening' || v.role === 'fixture' || v.role === 'soft'
+                    ? v.role
+                    : ('other' as const),
+              })),
           ],
           wallCenterlines: segs.map((s) => ({
             x1: s.x1,
