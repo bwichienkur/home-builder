@@ -5,6 +5,12 @@
 import { errorCodeFromUnknown, formatUnknownError } from '../httpError';
 import { platformConfig } from '../platform/config';
 import type { BuildertrendReports } from './mapReports';
+import {
+  estimatePullBytes,
+  MAX_BROWSER_PULL_BYTES,
+  priorSmallEnoughToMerge,
+  slimPullForStorage,
+} from './slimLivePull';
 
 export const LIVE_PULL_STORAGE_KEY = 'mahnikka-bt-live-pull';
 
@@ -141,9 +147,22 @@ export function loadStoredLivePull(): BuildertrendLivePull | null {
   }
 }
 
-export function storeLivePull(pull: BuildertrendLivePull) {
-  if (typeof localStorage === 'undefined') return;
-  localStorage.setItem(LIVE_PULL_STORAGE_KEY, JSON.stringify(pull));
+export function storeLivePull(pull: BuildertrendLivePull): boolean {
+  if (typeof localStorage === 'undefined') return false;
+  const slimmed = slimPullForStorage(pull, { now: new Date(pull.pulledAt) });
+  const payload = JSON.stringify(slimmed);
+  try {
+    localStorage.setItem(LIVE_PULL_STORAGE_KEY, payload);
+    return true;
+  } catch {
+    try {
+      localStorage.removeItem(LIVE_PULL_STORAGE_KEY);
+      localStorage.setItem(LIVE_PULL_STORAGE_KEY, payload);
+      return true;
+    } catch {
+      return false;
+    }
+  }
 }
 
 export function clearStoredLivePull() {
@@ -204,15 +223,17 @@ export async function refreshBuildertrendPull(cookie?: string): Promise<Buildert
   }
   const prior = loadStoredLivePull();
   const enrichment = body.enrichment ?? (body.serverless ? 'core' : 'full');
-  const pull = mergeCorePullWithPrior(
-    {
-      pulledAt: body.pulledAt,
-      authMethod: body.authMethod,
-      reports: body.reports,
-      enrichment,
-    },
-    prior,
-  );
-  storeLivePull(pull);
+  const apiPull: BuildertrendLivePull = {
+    pulledAt: body.pulledAt,
+    authMethod: body.authMethod,
+    reports: body.reports,
+    enrichment,
+  };
+  const mergePrior = priorSmallEnoughToMerge(prior) ? prior : null;
+  const pull = mergeCorePullWithPrior(apiPull, mergePrior);
+  const stored = storeLivePull(apiPull);
+  if (!stored && estimatePullBytes(slimPullForStorage(apiPull)) > MAX_BROWSER_PULL_BYTES) {
+    console.warn('Buildertrend live pull was too large to save in this browser; using session-only data.');
+  }
   return pull;
 }
