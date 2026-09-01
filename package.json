@@ -20,6 +20,7 @@
     "catalog:export-vendor-import": "node scripts/export-olsen-vendor-import.mjs",
     "pipedrive:pull": "node -e \"import('./server/pipedrive/pull.js').then((m) => m.pullPipedrive().then((p) => { console.log(JSON.stringify({ ok: true, pulledAt: p.pulledAt, company: p.reports.company, openDeals: p.reports.openDeals.length, wonDeals: p.reports.wonDeals.length }, null, 2)); }).catch((e) => { console.error(e.message); process.exit(1); }))\"",
     "dashboard:update-snapshot": "vitest run scripts/update-live-snapshot.spec.ts",
+    "dashboard:pull": "npm run buildertrend:pull && npm run pipedrive:pull && npm run dashboard:update-snapshot",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest run"

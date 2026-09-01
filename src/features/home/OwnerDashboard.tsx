@@ -169,6 +169,7 @@ export function OwnerDashboard() {
     cancelCookiePrompt,
     onRefresh,
     onRefreshPipedrive,
+    onRefreshAll,
   } = useOwnerDashboardData(status, dateRange);
 
   const filters = useMemo(() => ({ status, dateRange }), [status, dateRange]);
@@ -230,6 +231,17 @@ export function OwnerDashboard() {
               ))}
             </select>
           </label>
+          <div className="dash-refresh-group">
+            <button
+              type="button"
+              className="dash-refresh dash-refresh-all"
+              onClick={() => void onRefreshAll()}
+              disabled={refreshing || refreshingPipedrive || Boolean(cookiePrompt) || cookieBusy}
+              aria-busy={refreshing || refreshingPipedrive}
+            >
+              {refreshing || refreshingPipedrive ? 'Pulling…' : 'Refresh all'}
+            </button>
+          </div>
           <div className="dash-refresh-group">
             <p className="dash-refreshed">
               <span className="dash-refresh-label">Buildertrend</span>

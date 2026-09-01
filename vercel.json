@@ -10,6 +10,15 @@
     "api/buildertrend/ping.js": {
       "maxDuration": 10
     },
+    "api/pipedrive/refresh.js": {
+      "maxDuration": 60
+    },
+    "api/pipedrive/dashboard.js": {
+      "maxDuration": 30
+    },
+    "api/buildertrend/dashboard.js": {
+      "maxDuration": 30
+    },
     "api/ops.js": {
       "maxDuration": 30
     },

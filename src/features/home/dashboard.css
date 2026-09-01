@@ -104,6 +104,17 @@
   color: var(--muted);
 }
 
+.dash-refresh-all {
+  font-weight: 750;
+  border-color: #18181b;
+  background: #18181b;
+  color: #fafafa;
+}
+
+.dash-refresh-all:hover:not(:disabled) {
+  background: #27272a;
+}
+
 .dash-refresh:hover:not(:disabled) {
   background: #f4f4f5;
 }
