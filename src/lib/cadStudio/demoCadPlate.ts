@@ -64,11 +64,48 @@ export function demoCadPlate(): CadPlate {
   ];
 
   const layerNames = [...new Set(segments.map((s) => s.layer))];
+
+  const elevationFront = {
+    face: 'front' as const,
+    name: 'SHT. 2 FRONT ELEVATION',
+    gradeFt: 0,
+    bounds: { minX: 0, minY: 0, maxX: 40, maxY: 18 },
+    labels: [{ x: 20, y: 16, text: 'FRONT ELEVATION', layer: 'A-ELEV-TEXT' }],
+    segments: [
+      { x1Ft: 0, y1Ft: 0, x2Ft: 40, y2Ft: 0, layer: 'WALLS EXT', role: 'wall' as const },
+      { x1Ft: 0, y1Ft: 0, x2Ft: 0, y2Ft: 9, layer: 'WALLS EXT', role: 'wall' as const },
+      { x1Ft: 40, y1Ft: 0, x2Ft: 40, y2Ft: 9, layer: 'WALLS EXT', role: 'wall' as const },
+      { x1Ft: 5, y1Ft: 0, x2Ft: 8, y2Ft: 7, layer: 'DOORS', role: 'opening' as const },
+      { x1Ft: 18, y1Ft: 0, x2Ft: 21, y2Ft: 7, layer: 'DOORS', role: 'opening' as const },
+      { x1Ft: 32, y1Ft: 3, x2Ft: 36, y2Ft: 7, layer: 'WINDOWS', role: 'opening' as const },
+      { x1Ft: 0, y1Ft: 9, x2Ft: 20, y2Ft: 18, layer: 'ROOF', role: 'elevation' as const },
+      { x1Ft: 20, y1Ft: 18, x2Ft: 40, y2Ft: 9, layer: 'ROOF', role: 'elevation' as const },
+    ],
+  };
+
+  const elevationSide = {
+    face: 'side' as const,
+    name: 'SHT. 3 SIDE ELEVATIONS',
+    gradeFt: 0,
+    bounds: { minX: 0, minY: 0, maxX: 28, maxY: 16 },
+    labels: [],
+    segments: [
+      { x1Ft: 0, y1Ft: 0, x2Ft: 28, y2Ft: 0, layer: 'WALLS EXT', role: 'wall' as const },
+      { x1Ft: 0, y1Ft: 0, x2Ft: 0, y2Ft: 9, layer: 'WALLS EXT', role: 'wall' as const },
+      { x1Ft: 28, y1Ft: 0, x2Ft: 28, y2Ft: 9, layer: 'WALLS EXT', role: 'wall' as const },
+      { x1Ft: 0, y1Ft: 9, x2Ft: 14, y2Ft: 16, layer: 'ROOF', role: 'elevation' as const },
+      { x1Ft: 14, y1Ft: 16, x2Ft: 28, y2Ft: 9, layer: 'ROOF', role: 'elevation' as const },
+    ],
+  };
+
   return {
     id: 'cad-demo-ranch',
     sourceFileName: 'demo-ranch.dxf',
     importedAt: new Date().toISOString(),
-    warnings: ['Synthetic demo plate — replace with a DXF/DWG import for production CAD.'],
+    warnings: [
+      'Synthetic demo plate — replace with a DXF/DWG import for production CAD.',
+      'Front elevation: 8 segment(s), 40.0×18.0 ft.',
+    ],
     layers: layerNames.map((name) => ({
       name,
       kind: 'floor' as const,
@@ -96,6 +133,8 @@ export function demoCadPlate(): CadPlate {
     fixtureHints: [
       { xFt: 16, yFt: 20.5, widthFt: 1.5, depthFt: 1.2, layer: 'FIXTURES', kind: 'sink', blockName: 'pv_snk_double' },
     ],
+    elevationFront,
+    elevationSide,
     sheets: [
       { id: 'demo-floor', name: 'SHT. 1 FLOOR', order: 1, kind: 'floor' },
       { id: 'demo-front', name: 'SHT. 2 FRONT ELEVATION', order: 2, kind: 'elevation' },

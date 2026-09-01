@@ -1,5 +1,6 @@
 import { buildFloorFromCadWalls } from '../housePlans/dxfCadBuild';
 import type { HousePlanFloor } from '../housePlans/buildPlan';
+import { buildCadMassing } from './buildCadMassing';
 import { detectCadFixtures } from './detectCadFixtures';
 import type { CadExtrusion, CadPlate } from './types';
 
@@ -54,11 +55,13 @@ export function extrudeCadPlate(plate: CadPlate, opts?: { heightM?: number }): C
 
   const built = buildFloorFromCadWalls(floor, { centerFt });
   const fixtures = detectCadFixtures(plate);
+  const massing = buildCadMassing(plate, heightM);
   return {
     walls: built.scene.walls,
     openings: built.scene.openings,
     fixtures,
     centerFt,
     heightM,
+    massing,
   };
 }

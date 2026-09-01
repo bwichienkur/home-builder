@@ -18,7 +18,7 @@ function fixtureColor(kind: CadFixtureKind): string {
   switch (kind) {
     case 'counter':
     case 'island':
-      return '#b8956c'; // warm cabinet / countertop
+      return '#b8956c';
     case 'sink':
       return '#7dd3fc';
     case 'toilet':
@@ -66,7 +66,6 @@ function WallMesh({ wall, openings }: { wall: Wall; openings: Opening[] }) {
   );
 }
 
-/** Procedural fixture mesh — box for counters, rounded box for sinks/toilets. */
 function FixtureMesh({
   fixture,
   centerFt,
@@ -81,7 +80,6 @@ function FixtureMesh({
   const dM = fixture.depthFt * FT_TO_M;
   const hM = fixture.heightM;
   const color = fixtureColor(fixture.kind);
-  // Plan rotation: CAD CCW from +X; Three.js yaw around Y with -angle like walls.
   const yaw = -fixture.rotationRad;
 
   if (fixture.kind === 'sink' || fixture.kind === 'toilet') {
@@ -107,7 +105,6 @@ function FixtureMesh({
     );
   }
 
-  // Counter / island / appliance / other — box
   return (
     <group position={[wx, 0, wz]} rotation={[0, yaw, 0]}>
       <mesh castShadow receiveShadow position={[0, hM / 2, 0]}>
@@ -125,6 +122,30 @@ function FixtureMesh({
         </mesh>
       )}
     </group>
+  );
+}
+
+/** Shared walls + fixtures for Extrude and Massing views. */
+export function CadExtrudeSceneParts({
+  walls,
+  openings,
+  fixtures,
+  centerFt,
+}: {
+  walls: Wall[];
+  openings: Opening[];
+  fixtures: CadFixtureInstance[];
+  centerFt: { cx: number; cy: number };
+}) {
+  return (
+    <>
+      {walls.map((w) => (
+        <WallMesh key={w.id} wall={w} openings={openings} />
+      ))}
+      {fixtures.map((f) => (
+        <FixtureMesh key={f.id} fixture={f} centerFt={centerFt} />
+      ))}
+    </>
   );
 }
 
@@ -154,12 +175,7 @@ function Scene({ extrusion }: { extrusion: CadExtrusion }) {
         args={[floorSize, Math.max(10, Math.round(floorSize)), '#94a3b8', '#cbd5e1']}
         position={[0, 0.001, 0]}
       />
-      {walls.map((w) => (
-        <WallMesh key={w.id} wall={w} openings={openings} />
-      ))}
-      {fixtures.map((f) => (
-        <FixtureMesh key={f.id} fixture={f} centerFt={centerFt} />
-      ))}
+      <CadExtrudeSceneParts walls={walls} openings={openings} fixtures={fixtures} centerFt={centerFt} />
       <OrbitControls makeDefault target={[0, 1.2, 0]} />
     </>
   );
