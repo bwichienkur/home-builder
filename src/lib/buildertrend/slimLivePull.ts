@@ -8,7 +8,7 @@ export type StorableLivePull = {
   pulledAt: string;
   authMethod: string;
   reports: BuildertrendReports;
-  enrichment?: 'core' | 'full';
+  enrichment?: 'core' | 'partial' | 'full';
 };
 
 function asRecord(value: unknown): Record<string, unknown> | null {

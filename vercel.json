@@ -5,7 +5,7 @@
   "outputDirectory": "dist",
   "functions": {
     "api/buildertrend/refresh.js": {
-      "maxDuration": 60
+      "maxDuration": 300
     },
     "api/buildertrend/ping.js": {
       "maxDuration": 10

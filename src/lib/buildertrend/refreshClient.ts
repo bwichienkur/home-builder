@@ -12,9 +12,11 @@ export type BuildertrendLivePull = {
   pulledAt: string;
   authMethod: string;
   reports: BuildertrendReports;
-  /** `core` = Vercel lite pull (no tasks/selections/baseline); `full` = complete. */
-  enrichment?: 'core' | 'full';
+  /** `core` = Vercel lite pull; `partial` = full pull in progress; `full` = complete. */
+  enrichment?: 'core' | 'partial' | 'full';
 };
+
+export type BuildertrendRefreshProgress = { done: number; total: number };
 
 function apiBase() {
   return platformConfig.apiUrl.replace(/\/$/, '');
@@ -164,45 +166,63 @@ export async function fetchCachedBuildertrendPull(): Promise<BuildertrendLivePul
   }
 }
 
-export async function refreshBuildertrendPull(cookie?: string): Promise<BuildertrendLivePull> {
-  let response: Response;
-  try {
-    const requestBody = cookie ? JSON.stringify({ cookie }) : undefined;
-    response = await fetch(`${apiBase()}/api/buildertrend/refresh`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { accept: 'application/json', ...(requestBody ? { 'content-type': 'application/json' } : {}) },
-      body: requestBody,
-    });
-  } catch {
-    throw new Error('Could not reach the refresh API. Start `npm run server` (it proxies /api) and try again.');
-  }
-  if (!response.ok) {
-    const info = await parseError(response);
-    const err = new Error(
-      response.status >= 500
-        ? `${info.message} (HTTP ${response.status})`
-        : info.message,
-    );
-    (err as { code?: string }).code = info.code;
-    throw err;
-  }
-  const body = (await response.json()) as BuildertrendLivePull & {
-    ok?: boolean;
-    error?: unknown;
-    enrichment?: 'core' | 'full';
-    serverless?: boolean;
-  };
-  if (!body?.reports) {
-    throw new Error(formatUnknownError(body.error, 'Buildertrend refresh returned no reports.'));
-  }
-  const enrichment = body.enrichment ?? (body.serverless ? 'core' : 'full');
-  const pull: BuildertrendLivePull = {
-    pulledAt: body.pulledAt,
-    authMethod: body.authMethod,
-    reports: body.reports,
-    enrichment,
-  };
+export async function refreshBuildertrendPull(
+  cookie?: string,
+  options?: { onProgress?: (progress: BuildertrendRefreshProgress) => void },
+): Promise<BuildertrendLivePull> {
+  let continuePull = false;
+  let pull: BuildertrendLivePull | null = null;
+
+  do {
+    let response: Response;
+    try {
+      const requestBody = JSON.stringify({
+        ...(cookie ? { cookie } : {}),
+        ...(continuePull ? { continue: true } : {}),
+      });
+      response = await fetch(`${apiBase()}/api/buildertrend/refresh`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { accept: 'application/json', ...(requestBody ? { 'content-type': 'application/json' } : {}) },
+        body: requestBody,
+      });
+    } catch {
+      throw new Error('Could not reach the refresh API. Start `npm run server` (it proxies /api) and try again.');
+    }
+    if (!response.ok) {
+      const info = await parseError(response);
+      const err = new Error(
+        response.status >= 500
+          ? `${info.message} (HTTP ${response.status})`
+          : info.message,
+      );
+      (err as { code?: string }).code = info.code;
+      throw err;
+    }
+    const body = (await response.json()) as BuildertrendLivePull & {
+      ok?: boolean;
+      error?: unknown;
+      enrichment?: 'core' | 'partial' | 'full';
+      serverless?: boolean;
+      continue?: boolean;
+      progress?: BuildertrendRefreshProgress;
+    };
+    if (!body?.reports) {
+      throw new Error(formatUnknownError(body.error, 'Buildertrend refresh returned no reports.'));
+    }
+    if (body.progress && options?.onProgress) {
+      options.onProgress(body.progress);
+    }
+    const enrichment = body.enrichment ?? (body.serverless ? 'core' : 'full');
+    pull = {
+      pulledAt: body.pulledAt,
+      authMethod: body.authMethod,
+      reports: body.reports,
+      enrichment,
+    };
+    continuePull = Boolean(body.continue);
+  } while (continuePull);
+
   storeLivePull(pull);
   return pull;
 }

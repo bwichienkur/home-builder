@@ -11,7 +11,7 @@ import {
   storeLivePull,
   summarizeOwnerDashboard,
 } from '../../lib/buildertrend';
-import type { BuildertrendLivePull } from '../../lib/buildertrend';
+import type { BuildertrendLivePull, BuildertrendRefreshProgress } from '../../lib/buildertrend';
 import {
   LIVE_JOBS,
   LIVE_PIPELINE,
@@ -122,6 +122,7 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
   const [error, setError] = useState('');
   const [pipedriveError, setPipedriveError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [refreshProgress, setRefreshProgress] = useState<BuildertrendRefreshProgress | null>(null);
   const [refreshingPipedrive, setRefreshingPipedrive] = useState(false);
   const [livePull, setLivePull] = useState<BuildertrendLivePull | null>(null);
   const [livePdPull, setLivePdPull] = useState<PipedriveLivePull | null>(null);
@@ -255,12 +256,16 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
     settle?.(false);
   }, [cookieBusy]);
 
+  const refreshOptions = {
+    onProgress: (progress: BuildertrendRefreshProgress) => setRefreshProgress(progress),
+  };
+
   const submitCookiePrompt = useCallback(async (cookie: string) => {
     setCookieBusy(true);
     setCookiePrompt((prev) => (prev ? { ...prev, error: undefined } : prev));
     setError('');
     try {
-      const pull = await refreshBuildertrendPull(cookie);
+      const pull = await refreshBuildertrendPull(cookie, refreshOptions);
       storeBtCookie(cookie);
       setLivePull(pull);
       setError('');
@@ -282,6 +287,7 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
 
   const onRefresh = async () => {
     setError('');
+    setRefreshProgress(null);
 
     if (native) {
       setRefreshing(true);
@@ -306,11 +312,12 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
     const pullWithCookie = async (cookie: string) => {
       setRefreshing(true);
       try {
-        const pull = await refreshBuildertrendPull(cookie);
+        const pull = await refreshBuildertrendPull(cookie, refreshOptions);
         storeBtCookie(cookie);
         applyPull(pull);
       } finally {
         setRefreshing(false);
+        setRefreshProgress(null);
       }
     };
 
@@ -350,7 +357,7 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
 
       setRefreshing(true);
       try {
-        const pull = await refreshBuildertrendPull();
+        const pull = await refreshBuildertrendPull(undefined, refreshOptions);
         applyPull(pull);
       } catch (reason: unknown) {
         const message = formatUnknownError(reason, 'Buildertrend refresh failed.');
@@ -365,10 +372,12 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
         setError(message);
       } finally {
         setRefreshing(false);
+        setRefreshProgress(null);
       }
     } catch (reason: unknown) {
       setError(formatUnknownError(reason, 'Buildertrend refresh failed.'));
       setRefreshing(false);
+      setRefreshProgress(null);
     }
   };
 
@@ -419,6 +428,7 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
     error,
     pipedriveError,
     refreshing,
+    refreshProgress,
     refreshingPipedrive,
     livePull,
     livePdPull,

@@ -55,17 +55,18 @@ export async function readJsonBody(req) {
 }
 
 function clientPayload(payload) {
+  const { _pullState, ...rest } = payload ?? {};
   // Core serverless pulls are already field-slimmed; avoid a second full JSON.stringify
   // size check that can OOM on the remaining report bags.
-  if (payload?.enrichment === 'core' || payload?.serverless) {
+  if (rest?.enrichment === 'core' || rest?.serverless) {
     return {
-      ...payload,
-      reports: payload.reports,
+      ...rest,
+      reports: rest.reports,
     };
   }
   const slimmed = {
-    ...payload,
-    reports: slimReportsForClient(payload.reports),
+    ...rest,
+    reports: slimReportsForClient(rest.reports),
   };
   const bytes = estimateJsonBytes({ ok: true, ...slimmed });
   if (bytes > MAX_CLIENT_PAYLOAD_BYTES) {

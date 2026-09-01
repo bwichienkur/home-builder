@@ -1050,11 +1050,41 @@ export async function fetchReportsServerless(session) {
   };
 }
 
-export async function fetchReports(session, options = {}) {
-  const serverless = Boolean(options.serverless ?? process.env.VERCEL);
-  if (serverless) return fetchReportsServerless(session);
+function siteWorkByJobFromSchedule(scheduleData) {
+  return Object.fromEntries(
+    Object.entries(scheduleData ?? {})
+      .filter(([, row]) => row?.siteWork)
+      .map(([jobId, row]) => [
+        jobId,
+        {
+          title: row.siteWork.title,
+          started: row.siteWork.started,
+          percentComplete: row.siteWork.percentComplete,
+          isComplete: row.siteWork.isComplete,
+          startDate: row.siteWork.startDate,
+        },
+      ]),
+  );
+}
 
-  const perJobConcurrency = 5;
+function emptyPerJobReports() {
+  return {
+    tasks: { tasks: [] },
+    actionItemsByJob: {},
+    selectionsByJob: {},
+    scheduleByJob: {},
+    siteWorkByJob: {},
+    baselineSlipByJob: {},
+    baselineItemsByJob: {},
+    jobInfoContractByJob: {},
+  };
+}
+
+/**
+ * Aggregate BT reports (waves 1+2) without per-job enrichment.
+ * Used by staged Vercel refresh and full local pulls.
+ */
+export async function fetchReportsCore(session) {
   const { start: logStart, end: logEnd } = rollingLogWindow();
 
   const wave1 = await Promise.all([
@@ -1093,61 +1123,14 @@ export async function fetchReports(session, options = {}) {
   const jobIds = openJobIdsFromPicker(jobs.data);
   const closedWarrantyIds = closedWarrantyJobIdsFromReports(schedulePercentComplete.data, dailyLogs.data);
   const scheduleJobIds = [...new Set([...jobIds, ...closedWarrantyIds])];
-
   const masterTemplate = await fetchOchMasterTemplateTitles(session);
-  const [tasks, actionItemsByJob, selectionsByJob, scheduleByJob, baselineSlipByJob, jobInfoContractByJob] =
-    await Promise.all([
-      fetchTasksForOpenJobs(session, jobIds, { concurrency: perJobConcurrency }),
-      jobIds.length ? fetchActionItemsByJob(session, jobIds) : Promise.resolve({}),
-      jobIds.length ? fetchSelectionsForOpenJobs(session, jobIds, { concurrency: perJobConcurrency }) : Promise.resolve({}),
-      scheduleJobIds.length
-        ? fetchScheduleMilestonesByJob(session, scheduleJobIds)
-        : Promise.resolve({ ok: true, status: 200, data: {} }),
-      jobIds.length
-        ? fetchBaselineSlipByJob(session, jobIds, { templateTitles: masterTemplate.titles })
-        : Promise.resolve({ ok: true, status: 200, data: {}, itemsByJob: {} }),
-      jobIds.length ? fetchJobInfoContractByJob(session, jobIds) : Promise.resolve({}),
-    ]);
 
-  const scheduleData = scheduleByJob.data ?? {};
-  const siteWorkByJob = Object.fromEntries(
-    Object.entries(scheduleData)
-      .filter(([, row]) => row?.siteWork)
-      .map(([jobId, row]) => [
-        jobId,
-        {
-          title: row.siteWork.title,
-          started: row.siteWork.started,
-          percentComplete: row.siteWork.percentComplete,
-          isComplete: row.siteWork.isComplete,
-          startDate: row.siteWork.startDate,
-        },
-      ]),
-  );
-
-  const reports = {
-    wip: wip.data,
-    profitability: profitability.data,
-    changeOrderProfit: changeOrderProfit.data,
-    cashflow: cashflow.data,
-    jobInfoContractByJob,
-    dailyLogs: dailyLogs.data,
-    userDailyLogsRecent: userDailyLogsRecent.data,
-    schedulePercentComplete: schedulePercentComplete.data,
-    baselineDuration: baselineDuration.data,
-    leadStatus: leadStatus.data,
-    jobs: jobs.data,
-    leads: leadsGrid.data,
-    jobsites: jobsites.data,
-    tasks: tasks.data,
-    actionItemsByJob,
-    selectionsByJob,
-    scheduleByJob: scheduleData,
-    siteWorkByJob,
-    baselineSlipByJob: baselineSlipByJob.data ?? {},
-    baselineItemsByJob: baselineSlipByJob.itemsByJob ?? {},
-    ochMasterTemplateId: masterTemplate.templateId,
-  };
+  const closedOnlyScheduleIds = closedWarrantyIds.filter((id) => !jobIds.includes(id));
+  let scheduleByJob = {};
+  if (closedOnlyScheduleIds.length) {
+    const closedSchedule = await fetchScheduleMilestonesByJob(session, closedOnlyScheduleIds);
+    scheduleByJob = closedSchedule.data ?? {};
+  }
 
   const failed = [
     ['work-in-progress', wip],
@@ -1160,8 +1143,32 @@ export async function fetchReports(session, options = {}) {
       code: 'reports_failed',
     });
   }
+
+  const perJob = emptyPerJobReports();
+  const reports = {
+    wip: wip.data,
+    profitability: profitability.data,
+    changeOrderProfit: changeOrderProfit.data,
+    cashflow: cashflow.data,
+    dailyLogs: dailyLogs.data,
+    userDailyLogsRecent: userDailyLogsRecent.data,
+    schedulePercentComplete: schedulePercentComplete.data,
+    baselineDuration: baselineDuration.data,
+    leadStatus: leadStatus.data,
+    jobs: jobs.data,
+    leads: leadsGrid.data,
+    jobsites: jobsites.data,
+    ochMasterTemplateId: masterTemplate.templateId,
+    ...perJob,
+    scheduleByJob,
+    siteWorkByJob: siteWorkByJobFromSchedule(scheduleByJob),
+  };
+
   return {
     reports,
+    jobIds,
+    scheduleJobIds,
+    masterTemplate,
     statuses: {
       wip: wip.status,
       profitability: profitability.status,
@@ -1175,11 +1182,93 @@ export async function fetchReports(session, options = {}) {
       jobs: jobs.status,
       leads: leadsGrid.status,
       jobsites: jobsites.status,
-      tasks: tasks.status,
-      scheduleByJob: scheduleByJob.status ?? 0,
-      siteWorkByJob: scheduleByJob.status ?? 0,
-      baselineSlipByJob: baselineSlipByJob.status ?? 0,
+      tasks: 0,
+      scheduleByJob: 0,
+      siteWorkByJob: 0,
+      baselineSlipByJob: 0,
       ochMasterTemplate: masterTemplate.status ?? 0,
+    },
+  };
+}
+
+/**
+ * Enrich a batch of open jobs (tasks, selections, schedule, baseline, etc.).
+ */
+export async function enrichReportsBatch(
+  session,
+  reports,
+  { batchJobIds, scheduleJobIds, templateTitles = new Set(), concurrency = 2 } = {},
+) {
+  const batch = [...new Set(batchJobIds.map(Number).filter(Boolean))];
+  if (!batch.length) return { reports };
+
+  const scheduleIds = batch.filter((id) => scheduleJobIds.includes(id));
+  const [tasks, actionItemsByJob, selectionsByJob, scheduleByJob, baselineSlipByJob, jobInfoContractByJob] =
+    await Promise.all([
+      fetchTasksForOpenJobs(session, batch, { concurrency }),
+      fetchActionItemsByJob(session, batch),
+      fetchSelectionsForOpenJobs(session, batch, { concurrency, pendingOnly: true }),
+      scheduleIds.length
+        ? fetchScheduleMilestonesByJob(session, scheduleIds)
+        : Promise.resolve({ ok: true, status: 200, data: {} }),
+      fetchBaselineSlipByJob(session, batch, { templateTitles, concurrency }),
+      fetchJobInfoContractByJob(session, batch, { concurrency }),
+    ]);
+
+  const existingTasks = reports.tasks ?? { tasks: [] };
+  const mergedTasks =
+    tasks.ok && tasks.data
+      ? mergeTasksListResponses([{ data: existingTasks }, { data: tasks.data }])
+      : existingTasks;
+
+  const scheduleData = { ...(reports.scheduleByJob ?? {}), ...(scheduleByJob.data ?? {}) };
+  const nextReports = {
+    ...reports,
+    tasks: mergedTasks,
+    actionItemsByJob: { ...(reports.actionItemsByJob ?? {}), ...actionItemsByJob },
+    selectionsByJob: { ...(reports.selectionsByJob ?? {}), ...selectionsByJob },
+    scheduleByJob: scheduleData,
+    siteWorkByJob: siteWorkByJobFromSchedule(scheduleData),
+    baselineSlipByJob: { ...(reports.baselineSlipByJob ?? {}), ...(baselineSlipByJob.data ?? {}) },
+    baselineItemsByJob: { ...(reports.baselineItemsByJob ?? {}), ...(baselineSlipByJob.itemsByJob ?? {}) },
+    jobInfoContractByJob: { ...(reports.jobInfoContractByJob ?? {}), ...jobInfoContractByJob },
+  };
+
+  return {
+    reports: nextReports,
+    statuses: {
+      tasks: tasks.status ?? 0,
+      scheduleByJob: scheduleByJob.status ?? 0,
+      baselineSlipByJob: baselineSlipByJob.status ?? 0,
+    },
+  };
+}
+
+export async function fetchReports(session, options = {}) {
+  const serverless = Boolean(options.serverless ?? process.env.VERCEL);
+  if (serverless) return fetchReportsServerless(session);
+
+  const perJobConcurrency = 5;
+  const core = await fetchReportsCore(session);
+  let reports = core.reports;
+  for (let i = 0; i < core.jobIds.length; i += perJobConcurrency) {
+    const batch = core.jobIds.slice(i, i + perJobConcurrency);
+    ({ reports } = await enrichReportsBatch(session, reports, {
+      batchJobIds: batch,
+      scheduleJobIds: core.scheduleJobIds,
+      templateTitles: core.masterTemplate.titles,
+      concurrency: perJobConcurrency,
+    }));
+  }
+
+  return {
+    reports,
+    statuses: {
+      ...core.statuses,
+      tasks: 200,
+      scheduleByJob: 200,
+      siteWorkByJob: 200,
+      baselineSlipByJob: 200,
     },
   };
 }
