@@ -71,3 +71,12 @@ export function renderCadElevationSvg(
   parts.push('</svg>');
   return parts.join('');
 }
+
+/** Data URL for the same SVG used on the Plate elevation tab (Massing facade texture). */
+export function elevationSvgDataUrl(
+  sheet: CadElevationSheet,
+  opts?: { padFt?: number; visibleLayers?: Set<string> },
+): string {
+  const svg = renderCadElevationSvg(sheet, { padFt: opts?.padFt ?? 0.25, visibleLayers: opts?.visibleLayers });
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}

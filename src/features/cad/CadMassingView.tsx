@@ -1,13 +1,28 @@
-import { useMemo } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
-import type { CadElevationSegmentFt, CadExtrusion, CadMassing, CadRoofMassing } from '../../lib/cadStudio';
+import type { CadExtrusion, CadMassing, CadPlanFace, CadRoofMassing } from '../../lib/cadStudio';
+import type { CadElevationSheet } from '../../lib/cadStudio/types';
+import { elevationSvgDataUrl } from '../../lib/cadStudio/renderCadElevationSvg';
+import { WORLD_ORIGIN } from '../../lib/geometry/placement';
+import { PIXELS_PER_METER } from '../../lib/geometry/snapping';
 import { world } from '../../components/scene3d/sceneWorld';
 import type { Wall } from '../../types';
 import { CadExtrudeSceneParts } from './CadExtrudeView';
 
 const FT_TO_M = 0.3048;
+const ROOF_THICKNESS = 0.14;
+
+function ftToPx(ft: number) {
+  return ft * FT_TO_M * PIXELS_PER_METER;
+}
+
+function planFtToWorld(xFt: number, yFt: number, centerFt: { cx: number; cy: number }): [number, number] {
+  const planX = WORLD_ORIGIN.x + ftToPx(xFt - centerFt.cx);
+  const planY = WORLD_ORIGIN.y + ftToPx(yFt - centerFt.cy);
+  return world(planX, planY);
+}
 
 function wallEnvelopeM(walls: Wall[]): { minX: number; maxX: number; minZ: number; maxZ: number } | null {
   if (!walls.length) return null;
@@ -41,113 +56,121 @@ function RoofMesh({
   const cx = (envelope.minX + envelope.maxX) / 2;
   const cz = (envelope.minZ + envelope.maxZ) / 2;
   const overhang = roof.overhangM;
-  const ridgeAlongX = roof.ridgeAlongX;
   const riseM = Math.max(0.35, roof.ridgeHeightM - storyHeightM);
+  const ridgeAlongX = roof.ridgeAlongX;
   const halfSpan = (ridgeAlongX ? w : d) / 2;
   const slopeLen = Math.hypot(halfSpan, riseM);
   const pitch = Math.atan2(riseM, halfSpan);
 
   return (
-    <group position={[cx, storyHeightM + 0.02, cz]}>
+    <group position={[cx, storyHeightM, cz]}>
       {ridgeAlongX ? (
         <>
-          <mesh position={[-halfSpan / 2, riseM / 2, 0]} rotation={[0, 0, pitch]} castShadow>
-            <boxGeometry args={[slopeLen, 0.05, d + overhang * 2]} />
-            <meshStandardMaterial color="#7c8491" roughness={0.82} side={THREE.DoubleSide} />
+          <mesh position={[-halfSpan / 2, riseM / 2, 0]} rotation={[0, 0, pitch]} castShadow receiveShadow>
+            <boxGeometry args={[slopeLen, ROOF_THICKNESS, d + overhang * 2]} />
+            <meshStandardMaterial color="#6b7280" roughness={0.78} metalness={0.05} side={THREE.DoubleSide} />
           </mesh>
-          <mesh position={[halfSpan / 2, riseM / 2, 0]} rotation={[0, 0, -pitch]} castShadow>
-            <boxGeometry args={[slopeLen, 0.05, d + overhang * 2]} />
-            <meshStandardMaterial color="#7c8491" roughness={0.82} side={THREE.DoubleSide} />
+          <mesh position={[halfSpan / 2, riseM / 2, 0]} rotation={[0, 0, -pitch]} castShadow receiveShadow>
+            <boxGeometry args={[slopeLen, ROOF_THICKNESS, d + overhang * 2]} />
+            <meshStandardMaterial color="#6b7280" roughness={0.78} metalness={0.05} side={THREE.DoubleSide} />
           </mesh>
         </>
       ) : (
         <>
-          <mesh position={[0, riseM / 2, -halfSpan / 2]} rotation={[pitch, 0, 0]} castShadow>
-            <boxGeometry args={[w + overhang * 2, 0.05, slopeLen]} />
-            <meshStandardMaterial color="#7c8491" roughness={0.82} side={THREE.DoubleSide} />
+          <mesh position={[0, riseM / 2, -halfSpan / 2]} rotation={[pitch, 0, 0]} castShadow receiveShadow>
+            <boxGeometry args={[w + overhang * 2, ROOF_THICKNESS, slopeLen]} />
+            <meshStandardMaterial color="#6b7280" roughness={0.78} metalness={0.05} side={THREE.DoubleSide} />
           </mesh>
-          <mesh position={[0, riseM / 2, halfSpan / 2]} rotation={[-pitch, 0, 0]} castShadow>
-            <boxGeometry args={[w + overhang * 2, 0.05, slopeLen]} />
-            <meshStandardMaterial color="#7c8491" roughness={0.82} side={THREE.DoubleSide} />
+          <mesh position={[0, riseM / 2, halfSpan / 2]} rotation={[-pitch, 0, 0]} castShadow receiveShadow>
+            <boxGeometry args={[w + overhang * 2, ROOF_THICKNESS, slopeLen]} />
+            <meshStandardMaterial color="#6b7280" roughness={0.78} metalness={0.05} side={THREE.DoubleSide} />
           </mesh>
         </>
-      )}
-      {roof.style === 'dxf' && roof.profile && roof.profile.length >= 3 && (
-        <mesh position={[0, riseM * 0.5, 0]}>
-          <boxGeometry args={[0.08, riseM, 0.08]} />
-          <meshStandardMaterial color="#94a3b8" />
-        </mesh>
       )}
     </group>
   );
 }
 
-function FacadeLinework({
-  segments,
-  massing,
-  envelope,
-}: {
-  segments: CadElevationSegmentFt[];
-  massing: CadMassing;
-  envelope: { minX: number; maxX: number; minZ: number; maxZ: number };
-}) {
-  const facadeSegs = segments.filter((s) => /WALL|ROOF|WINDOW|DOOR|OPEN|EXT|HATCH|PORCH|COLUMN/i.test(s.layer));
-  if (!facadeSegs.length) return null;
-
-  const widthM = massing.facadeWidthFt * FT_TO_M;
-  const cx = (envelope.minX + envelope.maxX) / 2;
-  const cz = (envelope.minZ + envelope.maxZ) / 2;
-  const offset = 0.12;
-  let position: [number, number, number];
-  let yaw = 0;
-
-  switch (massing.frontFace) {
+function facadeFacePlanCoords(
+  frontFace: CadPlanFace,
+  bounds: { minX: number; minY: number; maxX: number; maxY: number },
+): { xFt: number; yFt: number; yaw: number; outward: [number, number] } {
+  const cx = (bounds.minX + bounds.maxX) / 2;
+  const cy = (bounds.minY + bounds.maxY) / 2;
+  switch (frontFace) {
     case 'north':
-      position = [cx, 0, envelope.maxZ + offset];
-      yaw = Math.PI;
-      break;
+      return { xFt: cx, yFt: bounds.maxY, yaw: 0, outward: [0, 1] };
     case 'east':
-      position = [envelope.maxX + offset, 0, cz];
-      yaw = -Math.PI / 2;
-      break;
+      return { xFt: bounds.maxX, yFt: cy, yaw: -Math.PI / 2, outward: [1, 0] };
     case 'west':
-      position = [envelope.minX - offset, 0, cz];
-      yaw = Math.PI / 2;
-      break;
+      return { xFt: bounds.minX, yFt: cy, yaw: Math.PI / 2, outward: [-1, 0] };
     default:
-      position = [cx, 0, envelope.minZ - offset];
-      yaw = 0;
+      // South gable — plane normal must face outward (−Z in world).
+      return { xFt: cx, yFt: bounds.minY, yaw: Math.PI, outward: [0, -1] };
   }
+}
+
+/** Front facade = same SVG as Plate → Front elevation tab, mapped onto a plane at the wall face. */
+function ElevationFacadePlane({
+  sheet,
+  massing,
+  centerFt,
+}: {
+  sheet: CadElevationSheet;
+  massing: CadMassing;
+  centerFt: { cx: number; cy: number };
+}) {
+  const [texture, setTexture] = useState<THREE.Texture | null>(null);
+  const sheetKey = `${sheet.name}-${sheet.segments.length}-${massing.facadeWidthFt}`;
+
+  useEffect(() => {
+    let cancelled = false;
+    let tex: THREE.Texture | null = null;
+    const url = elevationSvgDataUrl(sheet, { padFt: 0.25 });
+    const img = new Image();
+    img.onload = () => {
+      if (cancelled) return;
+      tex = new THREE.Texture(img);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.needsUpdate = true;
+      setTexture(tex);
+    };
+    img.src = url;
+    return () => {
+      cancelled = true;
+      tex?.dispose();
+    };
+  }, [sheetKey, sheet]);
+
+  const wM = massing.facadeWidthFt * FT_TO_M;
+  const hM = massing.facadeHeightFt * FT_TO_M;
+  const face = facadeFacePlanCoords(massing.frontFace, massing.planBounds);
+  const [wx, wz] = planFtToWorld(face.xFt, face.yFt, centerFt);
+  const offset = 0.35;
+
+  if (!texture) return null;
 
   return (
-    <group position={position} rotation={[0, yaw, 0]}>
-      {facadeSegs.slice(0, 600).map((s, i) => {
-        const x1 = s.x1Ft * FT_TO_M - widthM / 2;
-        const x2 = s.x2Ft * FT_TO_M - widthM / 2;
-        const y1 = s.y1Ft * FT_TO_M;
-        const y2 = s.y2Ft * FT_TO_M;
-        const mx = (x1 + x2) / 2;
-        const my = (y1 + y2) / 2;
-        const len = Math.hypot(x2 - x1, y2 - y1) || 0.01;
-        const angle = Math.atan2(y2 - y1, x2 - x1);
-        const color = /ROOF/i.test(s.layer)
-          ? '#64748b'
-          : /WINDOW|DOOR|OPEN/i.test(s.layer)
-            ? '#7dd3fc'
-            : '#334155';
-        return (
-          <mesh key={`fac-${i}`} position={[mx, my, 0]} rotation={[0, 0, angle]}>
-            <boxGeometry args={[len, 0.035, 0.015]} />
-            <meshStandardMaterial color={color} />
-          </mesh>
-        );
-      })}
-    </group>
+    <mesh
+      position={[wx + face.outward[0]! * offset, hM / 2, wz + face.outward[1]! * offset]}
+      rotation={[0, face.yaw, 0]}
+      renderOrder={10}
+    >
+      <planeGeometry args={[wM, hM]} />
+      <meshBasicMaterial
+        map={texture}
+        toneMapped={false}
+        side={THREE.FrontSide}
+        depthTest={false}
+        depthWrite={false}
+      />
+    </mesh>
   );
 }
 
 function MassingScene({ extrusion }: { extrusion: CadExtrusion }) {
-  const { walls, openings, fixtures, centerFt, heightM, massing } = extrusion;
+  const { walls, openings, fixtures, centerFt, massing } = extrusion;
+  const storyHeightM = massing.storyHeightM;
   const envelope = useMemo(() => wallEnvelopeM(walls), [walls]);
   const floorSize = useMemo(() => {
     if (!envelope) return 24;
@@ -171,22 +194,32 @@ function MassingScene({ extrusion }: { extrusion: CadExtrusion }) {
         position={[0, 0.001, 0]}
       />
       <CadExtrudeSceneParts walls={walls} openings={openings} fixtures={fixtures} centerFt={centerFt} />
-      <RoofMesh roof={massing.roof} storyHeightM={heightM} envelope={envelope} />
+      <RoofMesh roof={massing.roof} storyHeightM={storyHeightM} envelope={envelope} />
       {massing.frontElevation && (
-        <FacadeLinework segments={massing.frontElevation.segments} massing={massing} envelope={envelope} />
+        <Suspense fallback={null}>
+          <ElevationFacadePlane sheet={massing.frontElevation} massing={massing} centerFt={centerFt} />
+        </Suspense>
       )}
-      <OrbitControls makeDefault target={[0, heightM * 0.65, 0]} />
+      <OrbitControls makeDefault target={[0, storyHeightM * 0.55, 0]} />
     </>
   );
 }
 
 export function CadMassingView({ extrusion }: { extrusion: CadExtrusion }) {
+  const [canvasKey, setCanvasKey] = useState(0);
+  const sheetId = extrusion.massing.frontElevation?.name ?? 'none';
+
+  useEffect(() => {
+    setCanvasKey((k) => k + 1);
+  }, [sheetId, extrusion.massing.facadeWidthFt, extrusion.massing.facadeHeightFt]);
+
   if (!extrusion.walls.length) {
     return <div className="cad-empty">No wall centerlines to mass yet. Import a DXF with wall layers.</div>;
   }
   return (
     <div className="cad-extrude-host">
       <Canvas
+        key={canvasKey}
         shadows
         camera={{ position: [22, 18, 22], fov: 42, near: 0.1, far: 500 }}
         onCreated={({ gl }) => {
