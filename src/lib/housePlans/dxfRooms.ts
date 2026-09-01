@@ -379,6 +379,144 @@ export function centerlinesFromDoubleWalls(segments: Seg[]): Seg[] {
   return mergeColinear(out);
 }
 
+function isHorizontalSeg(s: Seg): boolean {
+  return Math.abs(s.y1 - s.y2) <= FT_EPS;
+}
+
+function isVerticalSeg(s: Seg): boolean {
+  return Math.abs(s.x1 - s.x2) <= FT_EPS;
+}
+
+function onSegSpan(coord: number, a: number, b: number, pad = FT_EPS): boolean {
+  return coord >= Math.min(a, b) - pad && coord <= Math.max(a, b) + pad;
+}
+
+/** Intersection of a horizontal and vertical segment (centerlines). */
+function orthoSegIntersection(h: Seg, v: Seg): { x: number; y: number } | null {
+  if (!isHorizontalSeg(h) || !isVerticalSeg(v)) return null;
+  const hy = (h.y1 + h.y2) / 2;
+  const vx = (v.x1 + v.x2) / 2;
+  if (!onSegSpan(vx, h.x1, h.x2, FT_EPS) || !onSegSpan(hy, v.y1, v.y2, FT_EPS)) return null;
+  return { x: vx, y: hy };
+}
+
+/** Snap one endpoint to the nearest perpendicular junction within reach (trim overshoot or close gap). */
+function snapEndpointToJunction(
+  seg: Seg,
+  end: 'a' | 'b',
+  perpSegs: Seg[],
+  maxReach: number,
+): Seg {
+  const px = end === 'a' ? seg.x1 : seg.x2;
+  const py = end === 'a' ? seg.y1 : seg.y2;
+  const horiz = isHorizontalSeg(seg);
+  let best: { x: number; y: number; reach: number } | null = null;
+
+  for (const p of perpSegs) {
+    let ix: { x: number; y: number } | null = null;
+    let reach = Infinity;
+
+    if (horiz && isVerticalSeg(p)) {
+      const hy = (seg.y1 + seg.y2) / 2;
+      const vx = (p.x1 + p.x2) / 2;
+      reach = Math.abs(vx - px);
+      if (reach > maxReach) continue;
+      if (!onSegSpan(hy, p.y1, p.y2, maxReach)) continue;
+      ix = { x: vx, y: hy };
+    } else if (isVerticalSeg(seg) && isHorizontalSeg(p)) {
+      const vx = (seg.x1 + seg.x2) / 2;
+      const hy = (p.y1 + p.y2) / 2;
+      reach = Math.abs(hy - py);
+      if (reach > maxReach) continue;
+      if (!onSegSpan(vx, p.x1, p.x2, maxReach)) continue;
+      ix = { x: vx, y: hy };
+    }
+
+    if (!ix) continue;
+    if (!best || reach < best.reach) best = { x: ix.x, y: ix.y, reach };
+  }
+
+  if (!best) return seg;
+  if (end === 'a') return { ...seg, x1: best.x, y1: best.y };
+  return { ...seg, x2: best.x, y2: best.y };
+}
+
+/**
+ * Extend/trim orthogonal centerlines to meet at perpendicular junctions.
+ * Removes corner overshoot from double-line union extents and closes small gaps.
+ */
+export function joinOrthogonalWallCenterlines(segments: Seg[], maxReach = 1.0): Seg[] {
+  let horiz = segments.filter(isHorizontalSeg);
+  let vert = segments.filter(isVerticalSeg);
+  const other = segments.filter((s) => !isHorizontalSeg(s) && !isVerticalSeg(s));
+
+  horiz = horiz.map((s) => {
+    let cur = snapEndpointToJunction(s, 'a', vert, maxReach);
+    cur = snapEndpointToJunction(cur, 'b', vert, maxReach);
+    return cur;
+  });
+  vert = vert.map((s) => {
+    let cur = snapEndpointToJunction(s, 'a', horiz, maxReach);
+    cur = snapEndpointToJunction(cur, 'b', horiz, maxReach);
+    return cur;
+  });
+  horiz = horiz.map((s) => {
+    let cur = snapEndpointToJunction(s, 'a', vert, maxReach);
+    cur = snapEndpointToJunction(cur, 'b', vert, maxReach);
+    return cur;
+  });
+
+  return [...horiz, ...vert, ...other];
+}
+
+/**
+ * Full CAD Studio wall preprocessing: ortho snap, cluster, gap bridge, centerlines, junction join.
+ * Matches the room-import pipeline but keeps centerlines for extrusion instead of flood-fill paint.
+ */
+export function prepareCadWallCenterlines(rawWallSegments: Seg[]): (Seg & { exterior?: boolean })[] {
+  const ortho = rawWallSegments.filter(isNearOrtho).map(snapOrtho);
+  if (ortho.length < 4) {
+    return wallCenterlinesFromSegments(rawWallSegments);
+  }
+
+  const xs = ortho.flatMap((s) => [s.x1, s.x2]);
+  const ys = ortho.flatMap((s) => [s.y1, s.y2]);
+  const xMap = clusterValues(xs);
+  const yMap = clusterValues(ys);
+  const snapped = ortho.map((s) => snapSeg(s, xMap, yMap));
+  const bridged = closeSmallGaps(mergeColinear(snapped), 3.5);
+
+  const paired = centerlinesFromDoubleWalls(snapped);
+  const source = paired.length > 0 ? paired : bridged.filter((s) => segLength(s) >= 1.5);
+  const joined = joinOrthogonalWallCenterlines(source, 1.75);
+  const connected = dropIsolatedWallCenterlines(
+    joinOrthogonalWallCenterlines(joined, 0.85).filter((s) => segLength(s) >= 1.0),
+    0.45,
+  );
+
+  return connected.map((s) => ({
+    ...s,
+    exterior: isExteriorLayer(s.layer),
+  }));
+}
+
+/** Count how many wall endpoints land on another wall endpoint (connectivity metric). */
+export function wallEndpointJoinStats(segments: Seg[], eps = 0.35): { joined: number; total: number } {
+  const ends: { x: number; y: number }[] = [];
+  for (const s of segments) {
+    ends.push({ x: s.x1, y: s.y1 }, { x: s.x2, y: s.y2 });
+  }
+  let joined = 0;
+  for (let i = 0; i < ends.length; i++) {
+    const p = ends[i]!;
+    const hit = ends.some(
+      (q, j) => i !== j && Math.hypot(p.x - q.x, p.y - q.y) <= eps,
+    );
+    if (hit) joined++;
+  }
+  return { joined, total: ends.length };
+}
+
 /** Bridge small gaps (door openings) so rooms stay enclosed for flood-fill. */
 export function closeSmallGaps(segments: Seg[], maxGap = 3.5): Seg[] {
   const horiz = segments.filter((s) => Math.abs(s.y1 - s.y2) <= FT_EPS);

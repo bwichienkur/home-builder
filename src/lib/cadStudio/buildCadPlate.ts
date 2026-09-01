@@ -11,9 +11,9 @@ import {
 import { flipPlanLabels, flipPlanY } from '../housePlans/dxfImport';
 import { looksLikeRoomName } from '../housePlans/dxfParse';
 import {
+  prepareCadWallCenterlines,
   readInsUnits,
   scaleSegmentsToFeet,
-  wallCenterlinesFromSegments,
 } from '../housePlans/dxfRooms';
 import type { DrawingSheet } from '../housePlans/drawingPackage';
 import { buildCadElevationSheets } from './buildCadElevation';
@@ -182,7 +182,7 @@ export function buildCadPlateFromDxf(
   const flipped = flipPlanY(scaled);
 
   const wallRaw = flipped.filter((s) => isRoomWallLayer(s.layer ?? ''));
-  const centers = wallCenterlinesFromSegments(wallRaw);
+  const centers = prepareCadWallCenterlines(wallRaw);
   const wallCenterlines: CadWallCenterlineFt[] = centers.map((s) => ({
     x1: s.x1,
     y1: s.y1,

@@ -173,4 +173,6 @@ export type CadExtrusion = {
   centerFt: { cx: number; cy: number };
   heightM: number;
   massing: CadMassing;
+  /** Plan-feet centerlines used for corner miter trims in 3D. */
+  wallSegmentsFt: Array<{ x1: number; y1: number; x2: number; y2: number; exterior?: boolean }>;
 };

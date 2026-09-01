@@ -3,6 +3,7 @@ import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import type { CadExtrusion, CadFixtureInstance, CadFixtureKind } from '../../lib/cadStudio';
+import { trimmedWallLengthM, wallEndTrimsFt } from '../../lib/cadStudio/cadWallJoin';
 import { world } from '../../components/scene3d/sceneWorld';
 import { PIXELS_PER_METER } from '../../lib/geometry/snapping';
 import { WORLD_ORIGIN } from '../../lib/geometry/placement';
@@ -32,15 +33,34 @@ function fixtureColor(kind: CadFixtureKind): string {
   }
 }
 
-function WallMesh({ wall, openings }: { wall: Wall; openings: Opening[] }) {
+function WallMesh({
+  wall,
+  openings,
+  trim,
+}: {
+  wall: Wall;
+  openings: Opening[];
+  trim?: { startM: number; endM: number };
+}) {
   const [sx, sz] = world(wall.start.x, wall.start.y);
   const [ex, ez] = world(wall.end.x, wall.end.y);
   const dx = ex - sx;
   const dz = ez - sz;
-  const len = Math.hypot(dx, dz) || 0.01;
+  const fullLen = Math.hypot(dx, dz) || 0.01;
   const angle = Math.atan2(dz, dx);
-  const mid: [number, number, number] = [(sx + ex) / 2, wall.height / 2, (sz + ez) / 2];
+  const dirX = dx / fullLen;
+  const dirZ = dz / fullLen;
+  const fullLenFt = fullLen / FT_TO_M;
+  const { lenM } = trimmedWallLengthM(fullLenFt, trim ?? { startM: 0, endM: 0 });
+  const len = lenM || 0.01;
+  const shift = (trim?.startM ?? 0) - (trim?.endM ?? 0);
+  const mid: [number, number, number] = [
+    (sx + ex) / 2 + (dirX * shift) / 2,
+    wall.height / 2,
+    (sz + ez) / 2 + (dirZ * shift) / 2,
+  ];
   const wallOpenings = openings.filter((o) => o.wallId === wall.id);
+  const scaleLen = len / fullLen;
 
   return (
     <group position={mid} rotation={[0, -angle, 0]}>
@@ -53,7 +73,7 @@ function WallMesh({ wall, openings }: { wall: Wall; openings: Opening[] }) {
         const y = o.sill + o.height / 2;
         return (
           <mesh key={o.id} position={[localX, y - wall.height / 2, 0]}>
-            <boxGeometry args={[o.width, o.height, wall.thickness + 0.04]} />
+            <boxGeometry args={[o.width * scaleLen, o.height, wall.thickness + 0.04]} />
             <meshStandardMaterial
               color={o.type === 'window' ? '#7dd3fc' : '#1e293b'}
               transparent={o.type === 'window'}
@@ -131,16 +151,23 @@ export function CadExtrudeSceneParts({
   openings,
   fixtures,
   centerFt,
+  wallSegmentsFt,
 }: {
   walls: Wall[];
   openings: Opening[];
   fixtures: CadFixtureInstance[];
   centerFt: { cx: number; cy: number };
+  wallSegmentsFt?: Array<{ x1: number; y1: number; x2: number; y2: number; exterior?: boolean }>;
 }) {
+  const trims = useMemo(
+    () => (wallSegmentsFt?.length ? wallEndTrimsFt(wallSegmentsFt) : []),
+    [wallSegmentsFt],
+  );
+
   return (
     <>
-      {walls.map((w) => (
-        <WallMesh key={w.id} wall={w} openings={openings} />
+      {walls.map((w, i) => (
+        <WallMesh key={w.id} wall={w} openings={openings} trim={trims[i]} />
       ))}
       {fixtures.map((f) => (
         <FixtureMesh key={f.id} fixture={f} centerFt={centerFt} />
@@ -175,7 +202,13 @@ function Scene({ extrusion }: { extrusion: CadExtrusion }) {
         args={[floorSize, Math.max(10, Math.round(floorSize)), '#94a3b8', '#cbd5e1']}
         position={[0, 0.001, 0]}
       />
-      <CadExtrudeSceneParts walls={walls} openings={openings} fixtures={fixtures} centerFt={centerFt} />
+      <CadExtrudeSceneParts
+        walls={walls}
+        openings={openings}
+        fixtures={fixtures}
+        centerFt={centerFt}
+        wallSegmentsFt={extrusion.wallSegmentsFt}
+      />
       <OrbitControls makeDefault target={[0, 1.2, 0]} />
     </>
   );
