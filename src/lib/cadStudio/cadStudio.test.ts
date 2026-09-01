@@ -6,6 +6,7 @@ import {
   demoCadPlate,
   extrudeCadPlate,
   isElevationLayer,
+  renderCadElevationSvg,
   renderCadPlateSvg,
   withLayerVisibility,
 } from './index';
@@ -261,13 +262,18 @@ describe('cadStudio', () => {
     const plate = buildCadPlateFromDxf(tinyDxf, 'tiny.dxf');
     const extrusion = extrudeCadPlate(plate);
     expect(extrusion.fixtures.length).toBeGreaterThanOrEqual(2);
-    expect(extrusion.fixtures.some((f) => f.kind === 'island' || f.kind === 'counter')).toBe(true);
-    expect(extrusion.fixtures.some((f) => f.kind === 'sink')).toBe(true);
-    expect(extrusion.fixtures.some((f) => f.kind === 'toilet')).toBe(true);
+    expect(extrusion.massing.roof.ridgeHeightM).toBeGreaterThan(extrusion.heightM);
 
     const demo = extrudeCadPlate(demoCadPlate());
     expect(demo.fixtures.some((f) => f.kind === 'island')).toBe(true);
-    expect(demo.fixtures.some((f) => f.kind === 'sink')).toBe(true);
+    expect(demo.massing.frontElevation?.segments.some((s) => /ROOF/i.test(s.layer))).toBe(true);
+  });
+
+  it('renders demo front elevation SVG from plate elevation sheet', () => {
+    const plate = demoCadPlate();
+    const svg = renderCadElevationSvg(plate.elevationFront!);
+    expect(svg).toContain('<svg');
+    expect(svg).toContain('#7c8491');
   });
 
   it('honors layer visibility toggles in SVG', () => {

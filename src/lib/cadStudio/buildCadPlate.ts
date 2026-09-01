@@ -5,6 +5,7 @@ import {
   isOpeningLayer,
   isRoomWallLayer,
   openingKindFromLayer,
+  pickElevationViewports,
   pickFloorViewport,
 } from '../housePlans/dxfDrawingImport';
 import { flipPlanLabels, flipPlanY } from '../housePlans/dxfImport';
@@ -15,9 +16,11 @@ import {
   wallCenterlinesFromSegments,
 } from '../housePlans/dxfRooms';
 import type { DrawingSheet } from '../housePlans/drawingPackage';
+import { buildCadElevationSheets } from './buildCadElevation';
 import { classifyLayerKind, classifySegmentRole } from './classifyLayers';
 import type {
   CadBoundsFt,
+  CadElevationSheet,
   CadFixtureHintFt,
   CadLabelFt,
   CadLayerInfo,
@@ -46,7 +49,11 @@ function boundsOf(segs: { x1: number; y1: number; x2: number; y2: number }[]): C
   return { minX, minY, maxX, maxY };
 }
 
-function buildLayerIndex(segments: CadSegmentFt[], labels: CadLabelFt[] = []): CadLayerInfo[] {
+function buildLayerIndex(
+  segments: CadSegmentFt[],
+  labels: CadLabelFt[] = [],
+  elevationSheets: CadElevationSheet[] = [],
+): CadLayerInfo[] {
   const map = new Map<string, CadLayerInfo>();
   for (const s of segments) {
     const existing = map.get(s.layer);
@@ -65,6 +72,23 @@ function buildLayerIndex(segments: CadSegmentFt[], labels: CadLabelFt[] = []): C
         (role === 'wall' || role === 'opening' || role === 'fixture' || role === 'soft'),
       segmentCount: 1,
     });
+  }
+  for (const sheet of elevationSheets) {
+    for (const s of sheet.segments) {
+      const existing = map.get(s.layer);
+      if (existing) {
+        existing.segmentCount += 1;
+        if (existing.kind === 'elevation') existing.visible = existing.visible || /WALL|ROOF|WINDOW|DOOR|OPEN/i.test(s.layer);
+        continue;
+      }
+      map.set(s.layer, {
+        name: s.layer,
+        kind: 'elevation',
+        role: s.role,
+        visible: /WALL|ROOF|WINDOW|DOOR|OPEN/i.test(s.layer),
+        segmentCount: 1,
+      });
+    }
   }
   for (const label of labels) {
     const name = label.layer || 'TEXT ROOM';
@@ -264,17 +288,33 @@ export function buildCadPlateFromDxf(
     warnings.push(`Fixture poses: ${plateFixtureHints.length} (INSERT/CIRCLE for Extrude).`);
   }
 
+  const elevVps = pickElevationViewports(dxfText);
+  const { front: elevationFront, side: elevationSide, warnings: elevWarnings } = buildCadElevationSheets(
+    dxfText,
+    segs,
+    labels,
+    elevVps,
+  );
+  warnings.push(...elevWarnings);
+
+  const elevationLayers = buildLayerIndex(segments, plateLabels, [
+    ...(elevationFront ? [elevationFront] : []),
+    ...(elevationSide ? [elevationSide] : []),
+  ]);
+
   return {
     id: `cad-plate-${Date.now().toString(36)}`,
     sourceFileName,
     importedAt: new Date().toISOString(),
     warnings,
-    layers: buildLayerIndex(segments, plateLabels),
+    layers: elevationLayers,
     segments,
     wallCenterlines,
     openingHints,
     labels: plateLabels,
     fixtureHints: plateFixtureHints,
+    elevationFront: elevationFront ?? undefined,
+    elevationSide: elevationSide ?? undefined,
     sheets,
     bounds: boundsOf(segments.length ? segments : wallCenterlines),
     sheetSource,

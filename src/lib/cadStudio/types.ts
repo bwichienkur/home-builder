@@ -86,6 +86,54 @@ export type CadBoundsFt = {
   maxY: number;
 };
 
+/** Elevation sheet segment — X = width from left, Y = height above grade (feet). */
+export type CadElevationSegmentFt = {
+  x1Ft: number;
+  y1Ft: number;
+  x2Ft: number;
+  y2Ft: number;
+  layer: string;
+  role: CadSegmentRole;
+  linetype?: string;
+};
+
+export type CadElevationFace = 'front' | 'side' | 'rear';
+
+export type CadElevationSheet = {
+  face: CadElevationFace;
+  name: string;
+  segments: CadElevationSegmentFt[];
+  bounds: CadBoundsFt;
+  labels: CadLabelFt[];
+  gradeFt: number;
+};
+
+export type CadPlanFace = 'south' | 'north' | 'east' | 'west';
+
+export type CadRoofProfilePoint = { xFt: number; yFt: number };
+
+export type CadRoofMassing = {
+  style: 'procedural' | 'dxf';
+  ridgeHeightM: number;
+  /** True when the ridge runs parallel to plan X (front/back gable). */
+  ridgeAlongX: boolean;
+  /** Ridge envelope from ROOF linework on the front elevation (DXF mode). */
+  profile?: CadRoofProfilePoint[];
+  overhangM: number;
+  facadeWidthFt: number;
+  facadeDepthFt: number;
+};
+
+export type CadMassing = {
+  frontFace: CadPlanFace;
+  storyHeightM: number;
+  roof: CadRoofMassing;
+  frontElevation?: CadElevationSheet;
+  sideElevation?: CadElevationSheet;
+  facadeWidthFt: number;
+  facadeDepthFt: number;
+};
+
 /**
  * CAD plate — source of truth for the CAD-first studio.
  * Rooms are not required; walls extrude from wall-layer centerlines.
@@ -104,6 +152,10 @@ export type CadPlate = {
   labels: CadLabelFt[];
   /** INSERT/CIRCLE poses for procedural Extrude meshes. */
   fixtureHints: CadFixtureHintFt[];
+  /** Front elevation linework (width × height ft) when DXF has elevation viewports. */
+  elevationFront?: CadElevationSheet;
+  /** Side/rear elevation linework when available. */
+  elevationSide?: CadElevationSheet;
   sheets: DrawingSheet[];
   bounds: CadBoundsFt;
   sheetSource: 'dxf_viewport' | 'pdf' | 'static' | 'mixed' | 'synthetic';
@@ -116,4 +168,5 @@ export type CadExtrusion = {
   fixtures: CadFixtureInstance[];
   centerFt: { cx: number; cy: number };
   heightM: number;
+  massing: CadMassing;
 };

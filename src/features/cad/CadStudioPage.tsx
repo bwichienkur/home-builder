@@ -3,16 +3,19 @@ import {
   buildCadPlateFromDxf,
   demoCadPlate,
   extrudeCadPlate,
+  renderCadElevationSvg,
   renderCadPlateSvg,
   withLayerVisibility,
   type CadPlate,
 } from '../../lib/cadStudio';
 import { importDrawingFiles, type DrawingImportProgress } from '../../lib/housePlans/importDrawingFile';
 import { CadExtrudeView } from './CadExtrudeView';
+import { CadMassingView } from './CadMassingView';
 import { pdfViewerSrc, stillwaterCadSheetPlate } from './stillwaterCad';
 import './cadStudio.css';
 
-type ViewMode = 'plate' | 'extrude' | 'sheets';
+type ViewMode = 'plate' | 'extrude' | 'massing' | 'sheets';
+type PlateMode = 'floor' | 'front' | 'side';
 
 function progressLabel(p: DrawingImportProgress | null): string {
   if (!p) return '';
@@ -25,6 +28,7 @@ function progressLabel(p: DrawingImportProgress | null): string {
 export function CadStudioPage() {
   const [plate, setPlate] = useState<CadPlate | null>(() => demoCadPlate());
   const [view, setView] = useState<ViewMode>('plate');
+  const [plateMode, setPlateMode] = useState<PlateMode>('floor');
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<DrawingImportProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -37,10 +41,28 @@ export function CadStudioPage() {
     return map;
   }, [plate]);
 
+  const visibleLayerSet = useMemo(
+    () => new Set(plate?.layers.filter((l) => l.visible).map((l) => l.name) ?? []),
+    [plate],
+  );
+
   const plateSvg = useMemo(() => {
-    if (!plate?.segments.length) return null;
+    if (!plate) return null;
+    if (plateMode === 'front' && plate.elevationFront) {
+      return renderCadElevationSvg(plate.elevationFront, {
+        title: plate.elevationFront.name,
+        visibleLayers: visibleLayerSet,
+      });
+    }
+    if (plateMode === 'side' && plate.elevationSide) {
+      return renderCadElevationSvg(plate.elevationSide, {
+        title: plate.elevationSide.name,
+        visibleLayers: visibleLayerSet,
+      });
+    }
+    if (!plate.segments.length) return null;
     return renderCadPlateSvg(plate, { title: plate.sourceFileName });
-  }, [plate]);
+  }, [plate, plateMode, visibleLayerSet]);
 
   const extrusion = useMemo(() => (plate ? extrudeCadPlate(plate) : null), [plate]);
 
@@ -70,7 +92,6 @@ export function CadStudioPage() {
           { drawing: file },
           { planName: file.name.replace(/\.dwg$/i, ''), onProgress: setProgress },
         );
-        // Same plate builder as DXF so fixtures, soft borders, and room labels appear.
         const plate = buildCadPlateFromDxf(result.dxfText, file.name, {
           sheets: result.package.sheets,
           pdfUrl: result.package.pdfUrl,
@@ -84,6 +105,7 @@ export function CadStudioPage() {
         throw new Error('Use a .dxf or .dwg file.');
       }
       setView('plate');
+      setPlateMode('floor');
       setSheetId(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Import failed');
@@ -92,6 +114,9 @@ export function CadStudioPage() {
       setProgress(null);
     }
   };
+
+  const hasFrontElev = !!plate?.elevationFront?.segments.length;
+  const hasSideElev = !!plate?.elevationSide?.segments.length;
 
   return (
     <div className="cad-studio">
@@ -120,6 +145,7 @@ export function CadStudioPage() {
             onClick={() => {
               setPlate(demoCadPlate());
               setView('plate');
+              setPlateMode('floor');
             }}
           >
             Demo ranch
@@ -143,6 +169,14 @@ export function CadStudioPage() {
             disabled={!plate?.wallCenterlines.length}
           >
             Extrude 3D
+          </button>
+          <button
+            type="button"
+            className={view === 'massing' ? 'is-active' : ''}
+            onClick={() => setView('massing')}
+            disabled={!plate?.wallCenterlines.length}
+          >
+            Massing
           </button>
           <button
             type="button"
@@ -191,6 +225,10 @@ export function CadStudioPage() {
               <div>Openings: {plate?.openingHints.length ?? 0}</div>
               <div>Fixtures: {plate?.segments.filter((s) => s.role === 'fixture').length ?? 0}</div>
               <div>3D fixtures: {extrusion?.fixtures.length ?? 0}</div>
+              <div>Front elev: {plate?.elevationFront?.segments.length ?? 0} segs</div>
+              <div>Side elev: {plate?.elevationSide?.segments.length ?? 0} segs</div>
+              <div>Roof: {extrusion?.massing.roof.style ?? '—'}</div>
+              <div>Ridge: {extrusion ? `${extrusion.massing.roof.ridgeHeightM.toFixed(1)} m` : '—'}</div>
               <div>Soft borders: {plate?.segments.filter((s) => s.role === 'soft').length ?? 0}</div>
               <div>Labels: {plate?.labels?.length ?? 0}</div>
               <div>Vectors: {plate?.segments.length ?? 0}</div>
@@ -198,7 +236,7 @@ export function CadStudioPage() {
             </div>
             {!!plate?.warnings.length && (
               <ul className="cad-warnings">
-                {plate.warnings.slice(0, 6).map((warning) => (
+                {plate.warnings.slice(0, 8).map((warning) => (
                   <li key={warning}>{warning}</li>
                 ))}
               </ul>
@@ -209,11 +247,38 @@ export function CadStudioPage() {
         <main className="cad-main">
           {view === 'plate' && (
             <div className="cad-plate-host">
+              <div className="cad-plate-tabs">
+                <button
+                  type="button"
+                  className={plateMode === 'floor' ? 'is-active' : ''}
+                  onClick={() => setPlateMode('floor')}
+                >
+                  Floor plan
+                </button>
+                <button
+                  type="button"
+                  className={plateMode === 'front' ? 'is-active' : ''}
+                  onClick={() => setPlateMode('front')}
+                  disabled={!hasFrontElev}
+                >
+                  Front elevation
+                </button>
+                <button
+                  type="button"
+                  className={plateMode === 'side' ? 'is-active' : ''}
+                  onClick={() => setPlateMode('side')}
+                  disabled={!hasSideElev}
+                >
+                  Side elevation
+                </button>
+              </div>
               {plateSvg ? (
                 <div className="cad-plate-svg" dangerouslySetInnerHTML={{ __html: plateSvg }} />
               ) : (
                 <div className="cad-empty">
-                  Import a DXF/DWG to see the exact floor plate overlay, or load Demo ranch.
+                  {plateMode === 'floor'
+                    ? 'Import a DXF/DWG to see the exact floor plate overlay, or load Demo ranch.'
+                    : 'No elevation viewport detected for this drawing.'}
                 </div>
               )}
             </div>
@@ -222,6 +287,12 @@ export function CadStudioPage() {
           {view === 'extrude' && extrusion && (
             <div className="cad-extrude-host">
               <CadExtrudeView extrusion={extrusion} />
+            </div>
+          )}
+
+          {view === 'massing' && extrusion && (
+            <div className="cad-extrude-host">
+              <CadMassingView extrusion={extrusion} />
             </div>
           )}
 

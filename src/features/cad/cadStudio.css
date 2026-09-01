@@ -174,11 +174,47 @@
 
 .cad-plate-host {
   overflow: auto;
-  padding: 1rem;
+  padding: 0;
   display: flex;
-  justify-content: center;
-  align-items: flex-start;
+  flex-direction: column;
+  align-items: stretch;
   -webkit-overflow-scrolling: touch;
+}
+
+.cad-plate-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--cad-line);
+  background: rgba(255, 255, 255, 0.65);
+  flex-shrink: 0;
+}
+
+.cad-plate-tabs button {
+  appearance: none;
+  border: 1px solid var(--cad-line);
+  background: #fff;
+  color: var(--cad-ink);
+  border-radius: 8px;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.cad-plate-tabs button.is-active {
+  background: var(--cad-accent);
+  border-color: var(--cad-accent);
+  color: #f5faf8;
+}
+
+.cad-plate-tabs button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.cad-plate-host .cad-plate-svg {
+  margin: 1rem auto;
 }
 
 .cad-plate-svg {

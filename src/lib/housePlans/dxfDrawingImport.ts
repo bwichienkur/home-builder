@@ -380,6 +380,23 @@ export function pickFloorViewport(dxfText: string): Viewport | null {
   return ranked[0]?.vp ?? null;
 }
 
+/** Paper-space viewports for front and side elevation sheets (model-space crop targets). */
+export function pickElevationViewports(dxfText: string): { front: Viewport | null; side: Viewport | null } {
+  const papers = parsePaperBlocks(dxfText);
+  const ranked: { vp: Viewport; title: string }[] = [];
+  papers.forEach((meta, index) => {
+    const vp = pickPrimaryViewport(meta.viewports);
+    if (!vp || vp.modelW * vp.modelH < 200) return;
+    ranked.push({ vp, title: titleForPaper(meta, index) });
+  });
+  const front = ranked.find((r) => /FRONT\s*ELEV/i.test(r.title))?.vp ?? null;
+  const side =
+    ranked.find((r) => /SIDE\s*ELEV/i.test(r.title))?.vp ??
+    ranked.find((r) => /REAR\s*ELEV/i.test(r.title))?.vp ??
+    null;
+  return { front, side };
+}
+
 /** Keep segments that intersect a model-space viewport (floor plan crop). */
 export function cropSegmentsToViewport<T extends { x1: number; y1: number; x2: number; y2: number }>(
   segs: T[],
