@@ -19,10 +19,11 @@ export async function loadPdfProject(
 ): Promise<TakeoffProject> {
   onProgress?.({ stage: 'reading' });
   const buffer = await file.arrayBuffer();
+  // Create the blob URL before pdf.js may transfer/detach the ArrayBuffer.
+  const pdfBlob = new Blob([buffer.slice(0)], { type: 'application/pdf' });
+  const pdfUrl = URL.createObjectURL(pdfBlob);
   onProgress?.({ stage: 'parsing' });
   const pdf = await pdfjs.getDocument({ data: buffer }).promise;
-  const pdfBlob = new Blob([buffer], { type: 'application/pdf' });
-  const pdfUrl = URL.createObjectURL(pdfBlob);
 
   const pages: TakeoffPage[] = [];
   const total = pdf.numPages;
