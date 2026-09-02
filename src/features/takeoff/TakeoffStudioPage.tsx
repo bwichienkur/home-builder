@@ -3,6 +3,7 @@ import { extrudeCadPlate } from '../../lib/cadStudio';
 import {
   calibrateScaleFromPoints,
   capturePagePng,
+  classifyPageFromPdfText,
   clearPdfVectorCache,
   collectSnapCandidates,
   createTakeoffItem,
@@ -16,7 +17,9 @@ import {
   measureObject,
   newId,
   parseLengthFt,
+  pickPdfLineAlongDrag,
   pickPdfLineAtPoint,
+  pickPdfOpeningAtPoint,
   requestTakeoffAi,
   snapPoint,
   sumItemQuantity,
@@ -68,6 +71,8 @@ export function TakeoffStudioPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [newItemMode, setNewItemMode] = useState<TakeoffMeasureMode>('linear');
   const [newItemName, setNewItemName] = useState('');
+  const [previewPoints, setPreviewPoints] = useState<TakeoffPointPx[]>([]);
+  const dragStartRef = useRef<TakeoffPointPx | null>(null);
 
   const page = project?.pages.find((p) => p.id === pageId) ?? project?.pages[0] ?? null;
   const items = project?.items ?? [];
@@ -354,40 +359,110 @@ export function TakeoffStudioPage() {
     }
 
     if (tool === 'count' || tool === 'fixture') {
+      // Doors/windows: try to snap to an opening cue (swing arc) when available.
+      if (activeItem?.objectKind === 'door' || activeItem?.objectKind === 'window') {
+        void (async () => {
+          try {
+            const opening = await pickPdfOpeningAtPoint(project.pdfUrl, page.pageIndex, raw);
+            if (opening && opening.points.length >= 1) {
+              const mid = opening.points[Math.floor(opening.points.length / 2)]!;
+              commitDigitize('count', [mid], 'vector');
+              setStatus(
+                `${activeItem.name}: +1 EA (snapped to ${opening.role === 'opening' ? 'door/opening' : 'vector'})`,
+              );
+              return;
+            }
+          } catch {
+            /* fall through to plain count */
+          }
+          commitDigitize('count', [point], 'manual');
+        })();
+        return;
+      }
       commitDigitize('count', [point], 'manual');
       return;
     }
 
-    // Linear: PlanSwift-style click a PDF vector line for full length.
-    if ((tool === 'linear' || tool === 'wall') && draft.length === 0 && !event.altKey) {
-      void (async () => {
-        try {
-          setStatus('Snapping to PDF line…');
-          const hit = await pickPdfLineAtPoint(project.pdfUrl, page.pageIndex, raw, {
-            maxDistPx: 12,
-            minLengthPx: 6,
-          });
-          if (hit && hit.points.length >= 2) {
-            commitDigitize('linear', hit.points, 'vector');
-            return;
-          }
-          setDraft([point]);
-          setStatus('No vector line nearby — click more points, then Finish (Alt = always manual).');
-        } catch (err) {
-          setDraft([point]);
-          setStatus(
-            err instanceof Error
-              ? `Vector snap unavailable (${err.message}). Continue manually.`
-              : 'Vector snap unavailable — continue manually.',
-          );
-        }
-      })();
+    // Manual linear/area drafting (Alt on linear, or continued draft).
+    if (tool === 'linear' || tool === 'wall') {
+      if (event.altKey || draft.length > 0) {
+        setDraft((prev) => [...prev, point]);
+      }
       return;
     }
 
-    if (tool === 'linear' || tool === 'wall' || tool === 'area' || tool === 'room') {
+    if (tool === 'area' || tool === 'room') {
       setDraft((prev) => [...prev, point]);
     }
+  };
+
+  const onLinearDragStart = (point: TakeoffPointPx) => {
+    if (draft.length > 0) return;
+    dragStartRef.current = point;
+    setPreviewPoints([]);
+    setStatus('Drag along the wall — release to mark (dims ignored).');
+  };
+
+  const onLinearDragMove = (point: TakeoffPointPx) => {
+    if (!project || !page || !dragStartRef.current || draft.length > 0) return;
+    const start = dragStartRef.current;
+    void (async () => {
+      try {
+        const hit = await pickPdfLineAlongDrag(project.pdfUrl, page.pageIndex, start, point, {
+          preferWalls: true,
+          excludeDimensions: true,
+          maxDistPx: 16,
+          minLengthPx: 8,
+        });
+        if (hit?.points?.length) setPreviewPoints(hit.points);
+      } catch {
+        /* ignore preview errors */
+      }
+    })();
+  };
+
+  const onLinearDragEnd = (point: TakeoffPointPx) => {
+    if (!project || !page) return;
+    if (draft.length > 0) {
+      dragStartRef.current = null;
+      setPreviewPoints([]);
+      return;
+    }
+    const start = dragStartRef.current;
+    dragStartRef.current = null;
+    void (async () => {
+      try {
+        setStatus('Snapping to wall (ignoring dimensions)…');
+        const hit = start
+          ? await pickPdfLineAlongDrag(project.pdfUrl, page.pageIndex, start, point, {
+              preferWalls: true,
+              excludeDimensions: true,
+              maxDistPx: 16,
+              minLengthPx: 8,
+            })
+          : await pickPdfLineAtPoint(project.pdfUrl, page.pageIndex, point, {
+              preferWalls: true,
+              excludeDimensions: true,
+              maxDistPx: 16,
+              minLengthPx: 8,
+            });
+        setPreviewPoints([]);
+        if (hit && hit.points.length >= 2) {
+          commitDigitize('linear', hit.points, 'vector');
+          return;
+        }
+        setDraft([point]);
+        setStatus('No wall line nearby — click more points, then Finish (Alt = always manual).');
+      } catch (err) {
+        setPreviewPoints([]);
+        setDraft([point]);
+        setStatus(
+          err instanceof Error
+            ? `Vector snap unavailable (${err.message}). Continue manually.`
+            : 'Vector snap unavailable — continue manually.',
+        );
+      }
+    })();
   };
 
   const runAi = async (task: 'classify' | 'scale_hint' | 'elevation_heights') => {
@@ -396,8 +471,19 @@ export function TakeoffStudioPage() {
     setAiBusy(true);
     setError('');
     try {
-      const { base64 } = await capturePagePng(project.pdfUrl, page.pageIndex, 0.9);
-      const result = await requestTakeoffAi({ task, imageBase64: base64 });
+      let usedLocal = false;
+      let result;
+      try {
+        const { base64 } = await capturePagePng(project.pdfUrl, page.pageIndex, 0.9);
+        result = await requestTakeoffAi({ task, imageBase64: base64 });
+      } catch (apiErr) {
+        if (task === 'classify' || task === 'scale_hint') {
+          result = await classifyPageFromPdfText(project.pdfUrl, page.pageIndex);
+          usedLocal = true;
+        } else {
+          throw apiErr;
+        }
+      }
       setProject((prev) => {
         if (!prev) return prev;
         return {
@@ -419,9 +505,13 @@ export function TakeoffStudioPage() {
         };
       });
       setStatus(
-        `AI (${result.pageKind}${result.scaleHint ? ` · ${result.scaleHint}` : ''}${
-          result.confidence != null ? ` · ${Math.round(result.confidence * 100)}%` : ''
-        })`,
+        usedLocal
+          ? `Local classify → ${result.pageKind}${
+              result.scaleHint ? ` · ${result.scaleHint}` : ''
+            } (add ANTHROPIC_API_KEY / OPENAI_API_KEY for vision AI)`
+          : `AI (${result.pageKind}${result.scaleHint ? ` · ${result.scaleHint}` : ''}${
+              result.confidence != null ? ` · ${Math.round(result.confidence * 100)}%` : ''
+            })`,
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'AI assist failed.');
@@ -557,9 +647,13 @@ export function TakeoffStudioPage() {
                   pageHeightPt={page.heightPt}
                   objects={pageObjects}
                   draftPoints={draft}
+                  previewPoints={previewPoints}
                   tool={tool}
                   onCanvasClick={onCanvasClick}
                   onCanvasDoubleClick={finishDraft}
+                  onLinearDragStart={onLinearDragStart}
+                  onLinearDragMove={onLinearDragMove}
+                  onLinearDragEnd={onLinearDragEnd}
                 />
               ) : null}
               {view3d && extrudeError ? (
@@ -658,11 +752,11 @@ export function TakeoffStudioPage() {
                 {tool === 'calibrate'
                   ? 'Click two ends of a known dimension, then Finish (or double-click). Hold Shift for ortho.'
                   : tool === 'linear'
-                    ? 'Click a PDF line to grab full length into the active Linear item. Miss or Alt = manual points; Finish to commit.'
+                    ? 'Click-drag along a wall — prefers thick wall strokes and ignores dimension lines. Release to mark. Alt = manual points.'
                     : tool === 'area'
                       ? 'Click polygon corners for the active Area item. Double-click or Finish to commit (≥3 pts).'
                       : tool === 'count'
-                        ? 'Each click adds 1 EA to the active Count item.'
+                        ? 'Each click adds 1 EA. On Doors/Windows, tries to snap to opening/swing cues.'
                         : 'Select an object in the list, or pick a takeoff item to digitize.'}
               </p>
               {(tool === 'linear' || tool === 'area' || tool === 'calibrate') && draft.length > 0 ? (

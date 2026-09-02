@@ -9,9 +9,14 @@ type Props = {
   pageHeightPt: number;
   objects: TakeoffObject[];
   draftPoints: TakeoffPointPx[];
+  /** Live preview while dragging along a PDF wall (PlanSwift-style). */
+  previewPoints?: TakeoffPointPx[];
   tool: TakeoffTool;
   onCanvasClick: (point: TakeoffPointPx, event: React.MouseEvent) => void;
   onCanvasDoubleClick?: () => void;
+  onLinearDragStart?: (point: TakeoffPointPx) => void;
+  onLinearDragMove?: (point: TakeoffPointPx) => void;
+  onLinearDragEnd?: (point: TakeoffPointPx) => void;
 };
 
 const RENDER_SCALE = 1.25;
@@ -32,14 +37,21 @@ export function PdfTakeoffCanvas({
   pageHeightPt,
   objects,
   draftPoints,
+  previewPoints = [],
   tool,
   onCanvasClick,
   onCanvasDoubleClick,
+  onLinearDragStart,
+  onLinearDragMove,
+  onLinearDragEnd,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [renderScale, setRenderScale] = useState(RENDER_SCALE);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState('');
+  const dragActive = useRef(false);
+  const dragMoved = useRef(false);
+  const suppressClick = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -72,6 +84,9 @@ export function PdfTakeoffCanvas({
     return { x, y };
   };
 
+  const linearDragEnabled =
+    (tool === 'linear' || tool === 'wall') && Boolean(onLinearDragStart && onLinearDragEnd);
+
   return (
     <div className="takeoff-canvas-wrap">
       {error ? <p className="takeoff-error">{error}</p> : null}
@@ -81,9 +96,45 @@ export function PdfTakeoffCanvas({
         viewBox={`0 0 ${pageWidthPt} ${pageHeightPt}`}
         width={width}
         height={height}
-        style={{ cursor: tool === 'pan' ? 'grab' : 'crosshair' }}
+        style={{ cursor: tool === 'pan' ? 'grab' : 'crosshair', touchAction: 'none' }}
+        onPointerDown={(e) => {
+          if (!linearDragEnabled || e.button !== 0 || e.altKey) return;
+          const pt = toPagePx(e.clientX, e.clientY, e.currentTarget);
+          dragActive.current = true;
+          dragMoved.current = false;
+          suppressClick.current = false;
+          e.currentTarget.setPointerCapture(e.pointerId);
+          onLinearDragStart?.(pt);
+        }}
+        onPointerMove={(e) => {
+          if (!dragActive.current || !linearDragEnabled) return;
+          dragMoved.current = true;
+          const pt = toPagePx(e.clientX, e.clientY, e.currentTarget);
+          onLinearDragMove?.(pt);
+        }}
+        onPointerUp={(e) => {
+          if (!dragActive.current || !linearDragEnabled) return;
+          const pt = toPagePx(e.clientX, e.clientY, e.currentTarget);
+          dragActive.current = false;
+          if (dragMoved.current) suppressClick.current = true;
+          onLinearDragEnd?.(pt);
+          try {
+            e.currentTarget.releasePointerCapture(e.pointerId);
+          } catch {
+            /* already released */
+          }
+        }}
+        onPointerCancel={() => {
+          dragActive.current = false;
+        }}
         onClick={(e) => {
           if (tool === 'pan' || tool === 'select') return;
+          if (suppressClick.current) {
+            suppressClick.current = false;
+            return;
+          }
+          // Linear drag handler owns commit; skip click when drag enabled (pointerup already fired).
+          if (linearDragEnabled && !e.altKey) return;
           const pt = toPagePx(e.clientX, e.clientY, e.currentTarget);
           onCanvasClick(pt, e);
         }}
@@ -141,6 +192,18 @@ export function PdfTakeoffCanvas({
             />
           );
         })}
+        {previewPoints.length >= 2 ? (
+          <path
+            d={previewPoints.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x} ${p.y}`).join(' ')}
+            fill="none"
+            stroke="#c2410c"
+            strokeWidth={4}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            opacity={0.9}
+            style={{ pointerEvents: 'none' }}
+          />
+        ) : null}
         {draftPoints.length > 0 ? (
           <g>
             {draftPoints.length >= 2 ? (

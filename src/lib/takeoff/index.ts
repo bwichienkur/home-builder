@@ -32,7 +32,12 @@ export { loadPdfProject, loadDemoStillwaterProject, capturePagePng, renderPdfPag
 export {
   clearPdfVectorCache,
   extractPdfPageVectors,
+  pickPdfLineAlongDrag,
   pickPdfLineAtPoint,
+  pickPdfOpeningAtPoint,
+  pickPolylineAlongDrag,
   pickPolylineNearPoint,
 } from './pdfVectors';
+export { classifyPageFromPdfText } from './pageClassify';
 export { requestTakeoffAi } from './aiClient';
+
