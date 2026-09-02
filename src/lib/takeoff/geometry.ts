@@ -33,13 +33,18 @@ export function measureObject(
   points: TakeoffPointPx[],
   kind: TakeoffObject['kind'],
   scale: TakeoffScale | undefined,
-): { lengthFt?: number; areaSqFt?: number } {
-  if (kind === 'room') {
+  mode?: TakeoffObject['measureMode'],
+): { lengthFt?: number; areaSqFt?: number; count?: number } {
+  const measure = mode ?? (kind === 'room' ? 'area' : kind === 'fixture' ? 'count' : 'linear');
+  if (measure === 'area' || kind === 'room') {
     const areaPx = polygonAreaPx2(points);
     const areaSqFt = scale?.pixelsPerFoot
       ? areaPx / (scale.pixelsPerFoot * scale.pixelsPerFoot)
       : undefined;
     return { areaSqFt };
+  }
+  if (measure === 'count' || kind === 'fixture') {
+    return { count: 1 };
   }
   const lenPx = polylineLengthPx(points);
   return { lengthFt: pxToFt(lenPx, scale) };

@@ -94,16 +94,26 @@ export function PdfTakeoffCanvas({
       >
         {objects.map((obj) => {
           if (obj.points.length < 1) return null;
-          const stroke = KIND_STROKE[obj.kind] ?? '#334155';
-          if (obj.kind === 'fixture') {
+          const stroke = obj.color ?? KIND_STROKE[obj.kind] ?? '#334155';
+          if (obj.kind === 'fixture' || (obj.measureMode === 'count' && obj.points.length === 1)) {
             const p = obj.points[0]!;
             return (
               <g key={obj.id}>
-                <circle cx={p.x} cy={p.y} r={6} fill={stroke} opacity={0.85} />
+                <circle cx={p.x} cy={p.y} r={7} fill={stroke} opacity={0.9} />
+                <text
+                  x={p.x}
+                  y={p.y - 10}
+                  textAnchor="middle"
+                  fontSize={9}
+                  fill={stroke}
+                  style={{ pointerEvents: 'none' }}
+                >
+                  {obj.label?.slice(0, 12) || ''}
+                </text>
               </g>
             );
           }
-          if (obj.kind === 'room' && obj.points.length >= 3) {
+          if ((obj.kind === 'room' || obj.measureMode === 'area') && obj.points.length >= 3) {
             const d =
               obj.points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x} ${p.y}`).join(' ') + ' Z';
             return (
