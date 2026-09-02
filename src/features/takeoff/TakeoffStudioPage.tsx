@@ -1,9 +1,11 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { extrudeCadPlate } from '../../lib/cadStudio';
 import {
   calibrateScaleFromPoints,
   capturePagePng,
+  clearPdfVectorCache,
   collectSnapCandidates,
+  extractPdfPageVectors,
   formatFtIn,
   formatSqFt,
   loadDemoStillwaterProject,
@@ -11,6 +13,7 @@ import {
   measureObject,
   newId,
   parseLengthFt,
+  pickPdfLineAtPoint,
   requestTakeoffAi,
   snapPoint,
   takeoffToCadPlate,
@@ -86,6 +89,14 @@ export function TakeoffStudioPage() {
   const extrusion = extrusionResult.extrusion;
   const extrudeError = extrusionResult.error;
 
+  // Warm PDF vector cache for PlanSwift-style wall clicks on the active page.
+  useEffect(() => {
+    if (!project?.pdfUrl || page == null) return;
+    void extractPdfPageVectors(project.pdfUrl, page.pageIndex).catch(() => {
+      /* vector snap will fall back to manual */
+    });
+  }, [project?.pdfUrl, page?.pageIndex]);
+
   const loadFile = async (file: File) => {
     setBusy(true);
     setError('');
@@ -94,6 +105,7 @@ export function TakeoffStudioPage() {
       const next = await loadPdfProject(file, (p) =>
         setStatus(progressText(p.stage, p.page, p.total)),
       );
+      clearPdfVectorCache();
       setProject(next);
       setPageId(next.pages[0]?.id ?? null);
       setDraft([]);
@@ -114,6 +126,7 @@ export function TakeoffStudioPage() {
       const next = await loadDemoStillwaterProject((p) =>
         setStatus(progressText(p.stage, p.page, p.total)),
       );
+      clearPdfVectorCache();
       setProject(next);
       setPageId(next.pages[0]?.id ?? null);
       setDraft([]);
@@ -217,6 +230,29 @@ export function TakeoffStudioPage() {
     );
   }, [project, page, draft, tool, calibrateLen, updatePage, addObject]);
 
+  const commitWallFromPoints = useCallback(
+    (points: TakeoffPointPx[], source: TakeoffObject['source']) => {
+      if (!page || points.length < 2) return;
+      const measured = measureObject(points, 'wall', page.scale);
+      addObject({
+        id: newId('wall'),
+        pageId: page.id,
+        kind: 'wall',
+        points,
+        ...measured,
+        source,
+        createdAt: new Date().toISOString(),
+      });
+      setDraft([]);
+      setStatus(
+        source === 'vector'
+          ? `Wall (auto line) ${formatFtIn(measured.lengthFt)}`
+          : `Wall ${formatFtIn(measured.lengthFt)}`,
+      );
+    },
+    [page, addObject],
+  );
+
   const onCanvasClick = (raw: TakeoffPointPx, event: React.MouseEvent) => {
     if (!page || !project) return;
     const ortho = event.shiftKey && draft.length ? draft[draft.length - 1] : null;
@@ -262,6 +298,34 @@ export function TakeoffStudioPage() {
         setDraft([]);
         setStatus(`${tool} ${formatFtIn(measured.lengthFt)}`);
       }
+      return;
+    }
+
+    // PlanSwift-style: click a PDF vector line to take the whole run.
+    // Alt/Option forces manual point drafting. Continues manual if a draft is open.
+    if (tool === 'wall' && draft.length === 0 && !event.altKey) {
+      void (async () => {
+        try {
+          setStatus('Snapping to PDF line…');
+          const hit = await pickPdfLineAtPoint(project.pdfUrl, page.pageIndex, raw, {
+            maxDistPx: 12,
+            minLengthPx: 6,
+          });
+          if (hit && hit.points.length >= 2) {
+            commitWallFromPoints(hit.points, 'vector');
+            return;
+          }
+          setDraft([point]);
+          setStatus('No vector line nearby — click more points, then Finish (Alt = always manual).');
+        } catch (err) {
+          setDraft([point]);
+          setStatus(
+            err instanceof Error
+              ? `Vector snap unavailable (${err.message}). Continue manually.`
+              : 'Vector snap unavailable — continue manually.',
+          );
+        }
+      })();
       return;
     }
 
@@ -474,11 +538,13 @@ export function TakeoffStudioPage() {
               <p className="takeoff-hint">
                 {tool === 'calibrate'
                   ? 'Click two ends of a known dimension, then Finish (or double-click). Hold Shift for ortho.'
-                  : tool === 'wall' || tool === 'room'
-                    ? 'Click points along the path. Double-click or Finish to commit. Shift = ortho.'
-                    : tool === 'door' || tool === 'window'
-                      ? 'Click two points across the opening.'
-                      : 'Click to place.'}
+                  : tool === 'wall'
+                    ? 'Click a PDF line to grab its full length (PlanSwift-style). Miss or Alt = manual points; Finish / double-click to commit. Shift = ortho.'
+                    : tool === 'room'
+                      ? 'Click points along the path. Double-click or Finish to commit. Shift = ortho.'
+                      : tool === 'door' || tool === 'window'
+                        ? 'Click two points across the opening.'
+                        : 'Click to place.'}
               </p>
               {(tool === 'wall' || tool === 'room' || tool === 'calibrate') && draft.length > 0 ? (
                 <button type="button" className="takeoff-btn" style={{ marginTop: '0.5rem' }} onClick={finishDraft}>
