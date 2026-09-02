@@ -39,6 +39,12 @@
     },
     "api/drawing-packages.js": {
       "maxDuration": 60
+    },
+    "api/takeoff/ai.js": {
+      "maxDuration": 60
+    },
+    "api/takeoff/project.js": {
+      "maxDuration": 30
     }
   },
   "rewrites": [
