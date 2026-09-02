@@ -33,6 +33,7 @@
     "dotenv": "latest",
     "express": "latest",
     "lucide-react": "latest",
+    "pdfjs-dist": "^4.10.38",
     "pg": "latest",
     "react": "latest",
     "react-dom": "latest",

@@ -8,6 +8,8 @@ describe('app nav', () => {
       '/',
       '/build',
       '/plans',
+      '/cad',
+      '/takeoff',
       '/clients',
       '/vendors',
       '/inventory',
@@ -29,6 +31,8 @@ describe('app nav', () => {
   it('titles the current page for the shared top bar', () => {
     expect(pageTitleForPath('/')).toBe('Overview');
     expect(pageTitleForPath('/build')).toBe('Project');
+    expect(pageTitleForPath('/takeoff')).toBe('Plan Takeoff');
+    expect(pageTitleForPath('/cad')).toBe('CAD Studio');
     expect(pageTitleForPath('/config')).toBe('Config');
     expect(pageTitleForPath('/inventory')).toBe('Materials');
     expect(pageTitleForPath('/ops')).toBe('Operations');
