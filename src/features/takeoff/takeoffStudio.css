@@ -288,7 +288,17 @@
   position: relative;
 }
 
-.takeoff-3d .cad-extrude-host {
+.takeoff-3d-stage {
+  position: absolute;
+  inset: 0;
+  height: auto;
+  min-height: 520px;
+  border-radius: 0;
+  margin: 0;
+}
+
+.takeoff-3d .cad-extrude-host,
+.takeoff-3d-stage .cad-extrude-host {
   position: absolute;
   inset: 0;
   width: 100%;

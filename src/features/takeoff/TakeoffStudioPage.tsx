@@ -422,7 +422,11 @@ export function TakeoffStudioPage() {
 
           <div className="takeoff-stage">
             <div className="takeoff-stage-inner">
-              {page ? (
+              {view3d && extrusion && extrusion.walls.length > 0 ? (
+                <div className="takeoff-3d takeoff-3d-stage">
+                  <CadExtrudeView extrusion={extrusion} />
+                </div>
+              ) : page ? (
                 <PdfTakeoffCanvas
                   pdfUrl={project.pdfUrl}
                   pageIndex={page.pageIndex}
@@ -434,6 +438,11 @@ export function TakeoffStudioPage() {
                   onCanvasClick={onCanvasClick}
                   onCanvasDoubleClick={finishDraft}
                 />
+              ) : null}
+              {view3d && extrudeError ? (
+                <p className="takeoff-error" style={{ margin: '0.75rem' }}>
+                  {extrudeError}
+                </p>
               ) : null}
             </div>
           </div>
@@ -547,16 +556,15 @@ export function TakeoffStudioPage() {
             {view3d ? (
               <section className="takeoff-panel">
                 <h2>3D preview</h2>
+                <p className="takeoff-hint" style={{ marginTop: 0 }}>
+                  Showing in the main stage. Click Hide 3D to return to the PDF.
+                </p>
                 {extrudeError ? <p className="takeoff-hint">{extrudeError}</p> : null}
-                <div className="takeoff-3d">
-                  {extrusion && extrusion.walls.length > 0 ? (
-                    <CadExtrudeView extrusion={extrusion} />
-                  ) : (
-                    <p className="takeoff-hint" style={{ color: '#cbd5e1', padding: '1rem' }}>
-                      Calibrate scale and trace walls to preview.
-                    </p>
-                  )}
-                </div>
+                {extrusion ? (
+                  <p className="takeoff-hint">
+                    {extrusion.walls.length} walls · {extrusion.openings.length} openings
+                  </p>
+                ) : null}
               </section>
             ) : null}
           </aside>
