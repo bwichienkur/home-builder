@@ -12,17 +12,24 @@ describe('pdfVectors Stillwater integration', () => {
     const vectors = await extractPdfPageVectors(pdfUrl, 1); // page 2 = floor
     expect(vectors.polylines.length).toBeGreaterThan(500);
     expect(vectors.segments.length).toBeGreaterThan(1000);
-    const mid = vectors.segments.find((s) => {
-      const len = Math.hypot(s.b.x - s.a.x, s.b.y - s.a.y);
-      return len > 40;
-    });
+    expect(vectors.wallWidthHint).toBeGreaterThan(0);
+    const walls = vectors.polylines.filter((p) => p.role === 'wall');
+    const dims = vectors.polylines.filter((p) => p.role === 'dimension');
+    expect(walls.length).toBeGreaterThan(50);
+    expect(dims.length).toBeGreaterThan(50);
+    const mid = vectors.segments.find((s) => s.role === 'wall' && s.lengthPx > 40);
     expect(mid).toBeTruthy();
     const click = {
       x: (mid!.a.x + mid!.b.x) / 2,
       y: (mid!.a.y + mid!.b.y) / 2,
     };
-    const hit = pickPolylineNearPoint(vectors, click, { maxDistPx: 8 });
+    const hit = pickPolylineNearPoint(vectors, click, {
+      maxDistPx: 8,
+      preferWalls: true,
+      excludeDimensions: true,
+    });
     expect(hit).not.toBeNull();
+    expect(hit!.role).toBe('wall');
     expect(hit!.points.length).toBeGreaterThanOrEqual(2);
     expect(hit!.lengthPx).toBeGreaterThan(5);
   }, 30_000);
