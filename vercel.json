@@ -7,9 +7,6 @@
     "api/buildertrend/refresh.js": {
       "maxDuration": 300
     },
-    "api/buildertrend/ping.js": {
-      "maxDuration": 10
-    },
     "api/pipedrive/refresh.js": {
       "maxDuration": 60
     },
@@ -40,11 +37,8 @@
     "api/drawing-packages.js": {
       "maxDuration": 60
     },
-    "api/takeoff/ai.js": {
+    "api/takeoff.js": {
       "maxDuration": 60
-    },
-    "api/takeoff/project.js": {
-      "maxDuration": 30
     }
   },
   "rewrites": [
@@ -54,6 +48,9 @@
     { "source": "/api/crm/:collection", "destination": "/api/crm?collection=:collection" },
     { "source": "/api/designs/:code", "destination": "/api/designs?__code=:code" },
     { "source": "/api/drawing-packages/:id", "destination": "/api/drawing-packages?__id=:id" },
+    { "source": "/api/takeoff/ai", "destination": "/api/takeoff?__path=ai" },
+    { "source": "/api/takeoff/project", "destination": "/api/takeoff?__path=project" },
+    { "source": "/api/buildertrend/ping", "destination": "/api/buildertrend/dashboard?__ping=1" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }

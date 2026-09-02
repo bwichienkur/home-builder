@@ -121,7 +121,23 @@ export function mountBuildertrendRoutes(app) {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ ok: false, error: 'Use POST to refresh.' });
   });
+  app.all('/api/buildertrend/ping', (_req, res) => {
+    res.status(200).json({
+      ok: true,
+      service: 'buildertrend',
+      ping: true,
+      at: new Date().toISOString(),
+    });
+  });
   app.all('/api/buildertrend/dashboard', (req, res) => {
+    if (req.query?.__ping === '1' || req.query?.__ping === 'true') {
+      return res.status(200).json({
+        ok: true,
+        service: 'buildertrend',
+        ping: true,
+        at: new Date().toISOString(),
+      });
+    }
     if (req.method === 'GET') return void handleDashboard(req, res);
     res.setHeader('Allow', 'GET');
     return res.status(405).json({ ok: false, error: 'Use GET.' });
