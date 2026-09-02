@@ -5,8 +5,11 @@ import {
   capturePagePng,
   clearPdfVectorCache,
   collectSnapCandidates,
+  createTakeoffItem,
+  ensureProjectItems,
   extractPdfPageVectors,
   formatFtIn,
+  formatItemMode,
   formatSqFt,
   loadDemoStillwaterProject,
   loadPdfProject,
@@ -16,7 +19,10 @@ import {
   pickPdfLineAtPoint,
   requestTakeoffAi,
   snapPoint,
+  sumItemQuantity,
   takeoffToCadPlate,
+  type TakeoffItem,
+  type TakeoffMeasureMode,
   type TakeoffObject,
   type TakeoffPointPx,
   type TakeoffProject,
@@ -30,11 +36,9 @@ import './takeoffStudio.css';
 const TOOLS: { id: TakeoffTool; label: string }[] = [
   { id: 'select', label: 'Select' },
   { id: 'calibrate', label: 'Calibrate' },
-  { id: 'wall', label: 'Wall' },
-  { id: 'room', label: 'Room' },
-  { id: 'door', label: 'Door' },
-  { id: 'window', label: 'Window' },
-  { id: 'fixture', label: 'Fixture' },
+  { id: 'linear', label: 'Linear' },
+  { id: 'area', label: 'Area' },
+  { id: 'count', label: 'Count' },
 ];
 
 function progressText(stage: string, page?: number, total?: number) {
@@ -44,11 +48,16 @@ function progressText(stage: string, page?: number, total?: number) {
   return 'Ready';
 }
 
+function isMeasureTool(tool: TakeoffTool): tool is TakeoffMeasureMode {
+  return tool === 'linear' || tool === 'area' || tool === 'count';
+}
+
 export function TakeoffStudioPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [project, setProject] = useState<TakeoffProject | null>(null);
   const [pageId, setPageId] = useState<string | null>(null);
-  const [tool, setTool] = useState<TakeoffTool>('wall');
+  const [activeItemId, setActiveItemId] = useState<string | null>(null);
+  const [tool, setTool] = useState<TakeoffTool>('linear');
   const [draft, setDraft] = useState<TakeoffPointPx[]>([]);
   const [calibrateLen, setCalibrateLen] = useState("12'-0\"");
   const [busy, setBusy] = useState(false);
@@ -57,12 +66,24 @@ export function TakeoffStudioPage() {
   const [aiBusy, setAiBusy] = useState(false);
   const [view3d, setView3d] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [newItemMode, setNewItemMode] = useState<TakeoffMeasureMode>('linear');
+  const [newItemName, setNewItemName] = useState('');
 
   const page = project?.pages.find((p) => p.id === pageId) ?? project?.pages[0] ?? null;
+  const items = project?.items ?? [];
+  const activeItem = items.find((i) => i.id === activeItemId) ?? null;
   const pageObjects = useMemo(
     () => (project && page ? project.objects.filter((o) => o.pageId === page.id) : []),
     [project, page],
   );
+
+  const itemQuantities = useMemo(() => {
+    if (!project) return [];
+    return project.items.map((item) => ({
+      item,
+      qty: sumItemQuantity(item, project.objects, page?.scale),
+    }));
+  }, [project, page?.scale]);
 
   const extrusionResult = useMemo(() => {
     if (!project || !page?.scale || page.scale.pixelsPerFoot <= 0 || !view3d) {
@@ -89,13 +110,24 @@ export function TakeoffStudioPage() {
   const extrusion = extrusionResult.extrusion;
   const extrudeError = extrusionResult.error;
 
-  // Warm PDF vector cache for PlanSwift-style wall clicks on the active page.
   useEffect(() => {
     if (!project?.pdfUrl || page == null) return;
     void extractPdfPageVectors(project.pdfUrl, page.pageIndex).catch(() => {
       /* vector snap will fall back to manual */
     });
   }, [project?.pdfUrl, page?.pageIndex]);
+
+  const adoptProject = (next: TakeoffProject) => {
+    const withItems = ensureProjectItems(next);
+    setProject(withItems);
+    setPageId(withItems.pages[0]?.id ?? null);
+    setDraft([]);
+    setSelectedId(null);
+    const firstLinear = withItems.items.find((i) => i.mode === 'linear') ?? withItems.items[0];
+    setActiveItemId(firstLinear?.id ?? null);
+    setTool(firstLinear?.mode ?? 'linear');
+    setView3d(false);
+  };
 
   const loadFile = async (file: File) => {
     setBusy(true);
@@ -106,12 +138,8 @@ export function TakeoffStudioPage() {
         setStatus(progressText(p.stage, p.page, p.total)),
       );
       clearPdfVectorCache();
-      setProject(next);
-      setPageId(next.pages[0]?.id ?? null);
-      setDraft([]);
-      setSelectedId(null);
-      setView3d(false);
-      setStatus(`${next.pages.length} pages loaded`);
+      adoptProject(next);
+      setStatus(`${next.pages.length} pages · ${next.items.length} takeoff items`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'PDF load failed.');
     } finally {
@@ -127,9 +155,7 @@ export function TakeoffStudioPage() {
         setStatus(progressText(p.stage, p.page, p.total)),
       );
       clearPdfVectorCache();
-      setProject(next);
-      setPageId(next.pages[0]?.id ?? null);
-      setDraft([]);
+      adoptProject(next);
       setStatus('Stillwater demo PDF loaded');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Demo load failed.');
@@ -173,6 +199,113 @@ export function TakeoffStudioPage() {
     if (selectedId === id) setSelectedId(null);
   };
 
+  const deleteItem = (id: string) => {
+    setProject((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        updatedAt: new Date().toISOString(),
+        items: prev.items.filter((i) => i.id !== id),
+        objects: prev.objects.filter((o) => o.itemId !== id),
+      };
+    });
+    if (activeItemId === id) {
+      setActiveItemId(null);
+    }
+  };
+
+  const renameItem = (id: string, name: string) => {
+    setProject((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        updatedAt: new Date().toISOString(),
+        items: prev.items.map((i) => (i.id === id ? { ...i, name } : i)),
+      };
+    });
+  };
+
+  const addItem = () => {
+    const item = createTakeoffItem(newItemMode, newItemName || undefined);
+    setProject((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        updatedAt: new Date().toISOString(),
+        items: [...prev.items, item],
+      };
+    });
+    setActiveItemId(item.id);
+    setTool(item.mode);
+    setDraft([]);
+    setNewItemName('');
+    setStatus(`Added ${formatItemMode(item.mode)} item “${item.name}”`);
+  };
+
+  const selectItem = (item: TakeoffItem) => {
+    setActiveItemId(item.id);
+    setTool(item.mode);
+    setDraft([]);
+    setStatus(`Digitizing: ${item.name} (${formatItemMode(item.mode)})`);
+  };
+
+  const resolveActiveItem = useCallback(
+    (mode: TakeoffMeasureMode): TakeoffItem | null => {
+      if (!project) return null;
+      if (activeItem?.mode === mode) return activeItem;
+      const existing = project.items.find((i) => i.mode === mode);
+      if (existing) {
+        setActiveItemId(existing.id);
+        return existing;
+      }
+      const created = createTakeoffItem(mode);
+      setProject((prev) => {
+        if (!prev) return prev;
+        return { ...prev, items: [...prev.items, created], updatedAt: new Date().toISOString() };
+      });
+      setActiveItemId(created.id);
+      return created;
+    },
+    [project, activeItem],
+  );
+
+  const commitDigitize = useCallback(
+    (
+      mode: TakeoffMeasureMode,
+      points: TakeoffPointPx[],
+      source: TakeoffObject['source'],
+      itemOverride?: TakeoffItem | null,
+    ) => {
+      if (!page) return;
+      const item = itemOverride ?? resolveActiveItem(mode);
+      if (!item) return;
+      const kind = item.objectKind;
+      const measured = measureObject(points, kind, page.scale, mode);
+      addObject({
+        id: newId(mode),
+        pageId: page.id,
+        kind,
+        itemId: item.id,
+        measureMode: mode,
+        points,
+        label: item.name,
+        color: item.color,
+        ...measured,
+        source,
+        createdAt: new Date().toISOString(),
+      });
+      setDraft([]);
+      const piece =
+        mode === 'area'
+          ? formatSqFt(measured.areaSqFt)
+          : mode === 'count'
+            ? '1 EA'
+            : formatFtIn(measured.lengthFt);
+      setStatus(`${item.name}: +${piece}${source === 'vector' ? ' (auto line)' : ''}`);
+    },
+    [page, resolveActiveItem, addObject],
+  );
+
   const finishDraft = useCallback(() => {
     if (!project || !page || draft.length === 0) return;
 
@@ -189,121 +322,44 @@ export function TakeoffStudioPage() {
         setDraft([]);
         setStatus(`Scale set: ${scale.pixelsPerFoot.toFixed(2)} px/ft`);
         setError('');
-        setTool('wall');
+        setTool('linear');
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Calibration failed.');
       }
       return;
     }
 
-    const kind =
-      tool === 'wall' || tool === 'room' || tool === 'door' || tool === 'window' || tool === 'fixture'
-        ? tool
-        : null;
-    if (!kind) return;
-
-    const minPts = kind === 'fixture' ? 1 : kind === 'room' ? 3 : 2;
-    if (draft.length < minPts) return;
-
-    const points =
-      kind === 'room' && draft.length >= 3
-        ? draft
-        : kind === 'door' || kind === 'window'
-          ? draft.slice(0, 2)
-          : draft;
-
-    const measured = measureObject(points, kind, page.scale);
-    addObject({
-      id: newId(kind),
-      pageId: page.id,
-      kind,
-      points,
-      ...measured,
-      source: 'manual',
-      createdAt: new Date().toISOString(),
-    });
-    setDraft([]);
-    setStatus(
-      kind === 'room'
-        ? `Room ${formatSqFt(measured.areaSqFt)}`
-        : `${kind} ${formatFtIn(measured.lengthFt)}`,
-    );
-  }, [project, page, draft, tool, calibrateLen, updatePage, addObject]);
-
-  const commitWallFromPoints = useCallback(
-    (points: TakeoffPointPx[], source: TakeoffObject['source']) => {
-      if (!page || points.length < 2) return;
-      const measured = measureObject(points, 'wall', page.scale);
-      addObject({
-        id: newId('wall'),
-        pageId: page.id,
-        kind: 'wall',
-        points,
-        ...measured,
-        source,
-        createdAt: new Date().toISOString(),
-      });
-      setDraft([]);
-      setStatus(
-        source === 'vector'
-          ? `Wall (auto line) ${formatFtIn(measured.lengthFt)}`
-          : `Wall ${formatFtIn(measured.lengthFt)}`,
-      );
-    },
-    [page, addObject],
-  );
+    if (tool === 'linear' || tool === 'wall') {
+      if (draft.length < 2) return;
+      commitDigitize('linear', draft, 'manual');
+      return;
+    }
+    if (tool === 'area' || tool === 'room') {
+      if (draft.length < 3) return;
+      commitDigitize('area', draft, 'manual');
+    }
+  }, [project, page, draft, tool, calibrateLen, updatePage, commitDigitize]);
 
   const onCanvasClick = (raw: TakeoffPointPx, event: React.MouseEvent) => {
     if (!page || !project) return;
+    if (tool === 'select') return;
+
     const ortho = event.shiftKey && draft.length ? draft[draft.length - 1] : null;
     const candidates = collectSnapCandidates(project.objects, page.id);
     const point = snapPoint(raw, [...candidates, ...draft], ortho);
 
     if (tool === 'calibrate') {
-      setDraft((prev) => {
-        const next = [...prev, point].slice(0, 2);
-        return next;
-      });
+      setDraft((prev) => [...prev, point].slice(0, 2));
       return;
     }
 
-    if (tool === 'fixture') {
-      const measured = measureObject([point], 'fixture', page.scale);
-      addObject({
-        id: newId('fixture'),
-        pageId: page.id,
-        kind: 'fixture',
-        points: [point],
-        ...measured,
-        source: 'manual',
-        createdAt: new Date().toISOString(),
-      });
+    if (tool === 'count' || tool === 'fixture') {
+      commitDigitize('count', [point], 'manual');
       return;
     }
 
-    if (tool === 'door' || tool === 'window') {
-      const next = [...draft, point].slice(0, 2);
-      setDraft(next);
-      if (next.length === 2) {
-        const measured = measureObject(next, tool, page.scale);
-        addObject({
-          id: newId(tool),
-          pageId: page.id,
-          kind: tool,
-          points: next,
-          ...measured,
-          source: 'manual',
-          createdAt: new Date().toISOString(),
-        });
-        setDraft([]);
-        setStatus(`${tool} ${formatFtIn(measured.lengthFt)}`);
-      }
-      return;
-    }
-
-    // PlanSwift-style: click a PDF vector line to take the whole run.
-    // Alt/Option forces manual point drafting. Continues manual if a draft is open.
-    if (tool === 'wall' && draft.length === 0 && !event.altKey) {
+    // Linear: PlanSwift-style click a PDF vector line for full length.
+    if ((tool === 'linear' || tool === 'wall') && draft.length === 0 && !event.altKey) {
       void (async () => {
         try {
           setStatus('Snapping to PDF line…');
@@ -312,7 +368,7 @@ export function TakeoffStudioPage() {
             minLengthPx: 6,
           });
           if (hit && hit.points.length >= 2) {
-            commitWallFromPoints(hit.points, 'vector');
+            commitDigitize('linear', hit.points, 'vector');
             return;
           }
           setDraft([point]);
@@ -329,7 +385,7 @@ export function TakeoffStudioPage() {
       return;
     }
 
-    if (tool === 'wall' || tool === 'room') {
+    if (tool === 'linear' || tool === 'wall' || tool === 'area' || tool === 'room') {
       setDraft((prev) => [...prev, point]);
     }
   };
@@ -400,14 +456,16 @@ export function TakeoffStudioPage() {
     }
   };
 
+  const wallCount = project?.objects.filter((o) => o.kind === 'wall').length ?? 0;
+
   return (
     <div className="takeoff-page">
       <header className="takeoff-header">
         <div>
           <h1 className="takeoff-brand">Plan Takeoff</h1>
           <p className="takeoff-sub">
-            Import a plan PDF, calibrate scale, and trace walls and rooms — like PlanSwift. Optional
-            Claude/GPT assist for page type and scale hints. CAD Studio stays available for DWG.
+            PlanSwift-style Linear, Area, and Count takeoffs on a plan PDF. Quantities roll up per
+            item. Optional Claude/GPT assist for page type and scale.
           </p>
         </div>
         <div className="takeoff-actions">
@@ -439,7 +497,7 @@ export function TakeoffStudioPage() {
           <button
             type="button"
             className="takeoff-btn"
-            disabled={!page?.scale || !(page.scale.pixelsPerFoot > 0) || pageObjects.filter((o) => o.kind === 'wall').length === 0}
+            disabled={!page?.scale || !(page.scale.pixelsPerFoot > 0) || wallCount === 0}
             onClick={() => setView3d((v) => !v)}
           >
             {view3d ? 'Hide 3D' : 'Preview 3D'}
@@ -458,7 +516,8 @@ export function TakeoffStudioPage() {
         <div className="takeoff-empty">
           <div>
             <strong>Start with a plan set PDF</strong>
-            Upload your architect’s PDF, or load the Stillwater demo to try calibrate + trace.
+            Upload your architect’s PDF, or load the Stillwater demo. Digitize with Linear / Area /
+            Count items — quantities accumulate like PlanSwift.
           </div>
         </div>
       ) : (
@@ -513,6 +572,62 @@ export function TakeoffStudioPage() {
 
           <aside className="takeoff-side">
             <section className="takeoff-panel">
+              <h2>Takeoff items</h2>
+              <p className="takeoff-hint" style={{ marginTop: 0 }}>
+                Select an item, then digitize. Totals update as you click.
+              </p>
+              <ul className="takeoff-items">
+                {itemQuantities.map(({ item, qty }) => (
+                  <li key={item.id} className={activeItemId === item.id ? 'is-active' : undefined}>
+                    <button
+                      type="button"
+                      className="takeoff-item-main"
+                      onClick={() => selectItem(item)}
+                    >
+                      <span className="takeoff-item-swatch" style={{ background: item.color }} />
+                      <span className="takeoff-item-copy">
+                        <strong>{item.name}</strong>
+                        <span>
+                          {formatItemMode(item.mode)} · {qty.formatted}
+                          {qty.pieceCount ? ` · ${qty.pieceCount} pcs` : ''}
+                        </span>
+                      </span>
+                    </button>
+                    <input
+                      className="takeoff-item-rename"
+                      aria-label={`Rename ${item.name}`}
+                      value={item.name}
+                      onChange={(e) => renameItem(item.id, e.target.value)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <button type="button" className="takeoff-item-del" onClick={() => deleteItem(item.id)}>
+                      ×
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <div className="takeoff-item-add">
+                <select
+                  value={newItemMode}
+                  onChange={(e) => setNewItemMode(e.target.value as TakeoffMeasureMode)}
+                  aria-label="New item mode"
+                >
+                  <option value="linear">Linear (LF)</option>
+                  <option value="area">Area (SF)</option>
+                  <option value="count">Count (EA)</option>
+                </select>
+                <input
+                  placeholder="Name (optional)"
+                  value={newItemName}
+                  onChange={(e) => setNewItemName(e.target.value)}
+                />
+                <button type="button" className="takeoff-btn" onClick={addItem}>
+                  Add item
+                </button>
+              </div>
+            </section>
+
+            <section className="takeoff-panel">
               <h2>Tools</h2>
               <div className="takeoff-tools">
                 {TOOLS.map((t) => (
@@ -523,6 +638,10 @@ export function TakeoffStudioPage() {
                     onClick={() => {
                       setTool(t.id);
                       setDraft([]);
+                      if (isMeasureTool(t.id)) {
+                        const match = items.find((i) => i.mode === t.id);
+                        if (match) setActiveItemId(match.id);
+                      }
                     }}
                   >
                     {t.label}
@@ -538,15 +657,15 @@ export function TakeoffStudioPage() {
               <p className="takeoff-hint">
                 {tool === 'calibrate'
                   ? 'Click two ends of a known dimension, then Finish (or double-click). Hold Shift for ortho.'
-                  : tool === 'wall'
-                    ? 'Click a PDF line to grab its full length (PlanSwift-style). Miss or Alt = manual points; Finish / double-click to commit. Shift = ortho.'
-                    : tool === 'room'
-                      ? 'Click points along the path. Double-click or Finish to commit. Shift = ortho.'
-                      : tool === 'door' || tool === 'window'
-                        ? 'Click two points across the opening.'
-                        : 'Click to place.'}
+                  : tool === 'linear'
+                    ? 'Click a PDF line to grab full length into the active Linear item. Miss or Alt = manual points; Finish to commit.'
+                    : tool === 'area'
+                      ? 'Click polygon corners for the active Area item. Double-click or Finish to commit (≥3 pts).'
+                      : tool === 'count'
+                        ? 'Each click adds 1 EA to the active Count item.'
+                        : 'Select an object in the list, or pick a takeoff item to digitize.'}
               </p>
-              {(tool === 'wall' || tool === 'room' || tool === 'calibrate') && draft.length > 0 ? (
+              {(tool === 'linear' || tool === 'area' || tool === 'calibrate') && draft.length > 0 ? (
                 <button type="button" className="takeoff-btn" style={{ marginTop: '0.5rem' }} onClick={finishDraft}>
                   Finish ({draft.length} pts)
                 </button>
@@ -569,7 +688,7 @@ export function TakeoffStudioPage() {
                 Scale:{' '}
                 {page?.scale?.pixelsPerFoot && page.scale.pixelsPerFoot > 0
                   ? `${page.scale.pixelsPerFoot.toFixed(2)} px/ft`
-                  : 'not calibrated'}
+                  : 'not calibrated — Area/Linear ft need scale'}
                 {page?.scale?.scaleHint ? ` · ${page.scale.scaleHint}` : ''}
               </p>
               <div className="takeoff-actions" style={{ marginTop: '0.45rem' }}>
@@ -590,31 +709,44 @@ export function TakeoffStudioPage() {
                   AI scale hint
                 </button>
               </div>
-              <p className="takeoff-hint">Needs ANTHROPIC_API_KEY or OPENAI_API_KEY on the server.</p>
             </section>
 
             <section className="takeoff-panel">
-              <h2>Objects ({pageObjects.length})</h2>
+              <h2>
+                Pieces
+                {activeItem ? ` · ${activeItem.name}` : ''} ({pageObjects.length} on page)
+              </h2>
               <ul className="takeoff-list">
-                {pageObjects.map((o) => (
-                  <li key={o.id} className={selectedId === o.id ? 'is-active' : undefined}>
-                    <button
-                      type="button"
-                      style={{ background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', flex: 1 }}
-                      onClick={() => setSelectedId(o.id)}
-                    >
-                      {o.kind}
-                      {o.kind === 'room'
-                        ? ` · ${formatSqFt(o.areaSqFt)}`
-                        : o.lengthFt != null
-                          ? ` · ${formatFtIn(o.lengthFt)}`
-                          : ''}
-                    </button>
-                    <button type="button" onClick={() => deleteObject(o.id)}>
-                      Delete
-                    </button>
-                  </li>
-                ))}
+                {pageObjects.map((o) => {
+                  const itemName = items.find((i) => i.id === o.itemId)?.name;
+                  return (
+                    <li key={o.id} className={selectedId === o.id ? 'is-active' : undefined}>
+                      <button
+                        type="button"
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          flex: 1,
+                        }}
+                        onClick={() => setSelectedId(o.id)}
+                      >
+                        {itemName || o.kind}
+                        {o.measureMode === 'area' || o.kind === 'room'
+                          ? ` · ${formatSqFt(o.areaSqFt)}`
+                          : o.measureMode === 'count'
+                            ? ` · ${o.count ?? 1} EA`
+                            : o.lengthFt != null
+                              ? ` · ${formatFtIn(o.lengthFt)}`
+                              : ''}
+                      </button>
+                      <button type="button" onClick={() => deleteObject(o.id)}>
+                        Delete
+                      </button>
+                    </li>
+                  );
+                })}
                 {pageObjects.length === 0 ? <li style={{ background: 'transparent' }}>None yet</li> : null}
               </ul>
             </section>

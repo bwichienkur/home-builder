@@ -2,6 +2,9 @@
 
 export type TakeoffPageKind = 'floor' | 'elevation' | 'section' | 'schedule' | 'cover' | 'other';
 
+/** PlanSwift-style measure modes. */
+export type TakeoffMeasureMode = 'linear' | 'area' | 'count';
+
 export type TakeoffObjectKind = 'wall' | 'room' | 'door' | 'window' | 'fixture' | 'dimension';
 
 export type TakeoffSource = 'manual' | 'ai' | 'vector';
@@ -30,15 +33,33 @@ export type TakeoffPage = {
   thumbUrl?: string;
 };
 
+/** Named takeoff row (worksheet item) — quantities accumulate as you digitize. */
+export type TakeoffItem = {
+  id: string;
+  name: string;
+  mode: TakeoffMeasureMode;
+  color: string;
+  /** How digitized geometry maps into CAD / object kind. */
+  objectKind: TakeoffObjectKind;
+  unit: 'lf' | 'sf' | 'ea';
+};
+
 export type TakeoffObject = {
   id: string;
   pageId: string;
   kind: TakeoffObjectKind;
-  /** Polyline in page pixel space (pdf.js viewport scale = 1 → CSS px at 72dpi * device). */
+  /** Worksheet item this digitization belongs to. */
+  itemId?: string;
+  measureMode?: TakeoffMeasureMode;
+  /** Polyline / polygon / point in page pixel space (pdf.js viewport scale = 1). */
   points: TakeoffPointPx[];
   label?: string;
+  /** Stroke color snapshot from item at digitize time. */
+  color?: string;
   lengthFt?: number;
   areaSqFt?: number;
+  /** For count mode — usually 1 per click. */
+  count?: number;
   source: TakeoffSource;
   confidence?: number;
   createdAt: string;
@@ -54,6 +75,8 @@ export type TakeoffProject = {
   /** Original file name. */
   sourceFileName: string;
   pages: TakeoffPage[];
+  /** PlanSwift-style takeoff items (linear / area / count). */
+  items: TakeoffItem[];
   objects: TakeoffObject[];
   warnings: string[];
   /** Optional story height from elevation assist / user. */
@@ -64,6 +87,10 @@ export type TakeoffTool =
   | 'select'
   | 'pan'
   | 'calibrate'
+  | 'linear'
+  | 'area'
+  | 'count'
+  /** @deprecated Prefer linear/area/count; kept for older drafts. */
   | 'wall'
   | 'room'
   | 'door'

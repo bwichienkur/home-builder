@@ -2,9 +2,11 @@ export type {
   TakeoffProject,
   TakeoffPage,
   TakeoffObject,
+  TakeoffItem,
   TakeoffTool,
   TakeoffPageKind,
   TakeoffPointPx,
+  TakeoffMeasureMode,
   AiClassifyResult,
 } from './types';
 export {
@@ -17,6 +19,14 @@ export {
   parseLengthFt,
   snapPoint,
 } from './geometry';
+export {
+  createTakeoffItem,
+  defaultTakeoffItems,
+  ensureProjectItems,
+  formatItemMode,
+  sumItemQuantity,
+  toolForMode,
+} from './quantities';
 export { takeoffToCadPlate } from './toCadPlate';
 export { loadPdfProject, loadDemoStillwaterProject, capturePagePng, renderPdfPageToCanvas } from './pdfLoader';
 export {

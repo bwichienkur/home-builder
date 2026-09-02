@@ -1,6 +1,7 @@
 import * as pdfjs from 'pdfjs-dist';
 import type { TakeoffPage, TakeoffProject } from './types';
 import { newId } from './geometry';
+import { defaultTakeoffItems } from './quantities';
 
 // Vite-friendly worker
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
@@ -61,6 +62,7 @@ export async function loadPdfProject(
     pdfUrl,
     sourceFileName: file.name,
     pages,
+    items: defaultTakeoffItems(),
     objects: [],
     warnings: [],
   };

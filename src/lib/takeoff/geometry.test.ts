@@ -81,6 +81,7 @@ describe('takeoffToCadPlate', () => {
           scale: { pixelsPerFoot: 10 },
         },
       ],
+      items: [],
       objects: [
         {
           id: 'w1',
@@ -124,6 +125,7 @@ describe('takeoffToCadPlate', () => {
           scale: { pixelsPerFoot: 10 },
         },
       ],
+      items: [],
       objects: [
         {
           id: 'w1',
