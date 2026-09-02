@@ -104,4 +104,48 @@ describe('takeoffToCadPlate', () => {
     expect(plate.wallCenterlines[0]!.y1).toBeCloseTo(10);
     expect(plate.sheetSource).toBe('pdf');
   });
+
+  it('extrudes traced walls into 3D wall meshes', async () => {
+    const { extrudeCadPlate } = await import('../cadStudio/extrudeCadPlate');
+    const project: TakeoffProject = {
+      id: 'p1',
+      name: 'Demo',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      pdfUrl: 'blob:x',
+      sourceFileName: 'demo.pdf',
+      pages: [
+        {
+          id: 'page-1',
+          pageIndex: 0,
+          name: 'Floor',
+          widthPt: 400,
+          heightPt: 300,
+          scale: { pixelsPerFoot: 10 },
+        },
+      ],
+      objects: [
+        {
+          id: 'w1',
+          pageId: 'page-1',
+          kind: 'wall',
+          points: [
+            { x: 0, y: 0 },
+            { x: 200, y: 0 },
+            { x: 200, y: 150 },
+            { x: 0, y: 150 },
+            { x: 0, y: 0 },
+          ],
+          lengthFt: 70,
+          source: 'manual',
+          createdAt: '2026-01-01T00:00:00.000Z',
+        },
+      ],
+      warnings: [],
+    };
+    const plate = takeoffToCadPlate(project, project.pages[0]!, project.objects);
+    const extrusion = extrudeCadPlate(plate);
+    expect(plate.wallCenterlines.length).toBeGreaterThanOrEqual(4);
+    expect(extrusion.walls.length).toBeGreaterThan(0);
+  });
 });

@@ -61,15 +61,30 @@ export function TakeoffStudioPage() {
     [project, page],
   );
 
-  const extrusion = useMemo(() => {
-    if (!project || !page?.scale || page.scale.pixelsPerFoot <= 0 || !view3d) return null;
+  const extrusionResult = useMemo(() => {
+    if (!project || !page?.scale || page.scale.pixelsPerFoot <= 0 || !view3d) {
+      return { extrusion: null as ReturnType<typeof extrudeCadPlate> | null, error: '' };
+    }
     try {
       const plate = takeoffToCadPlate(project, page, project.objects);
-      return extrudeCadPlate(plate);
-    } catch {
-      return null;
+      const heightM = (project.storyHeightFt ?? 9) * 0.3048;
+      const next = extrudeCadPlate(plate, { heightM });
+      if (!next.walls.length) {
+        return {
+          extrusion: next,
+          error: `Plate has ${plate.wallCenterlines.length} centerlines but 0 extruded walls.`,
+        };
+      }
+      return { extrusion: next, error: '' };
+    } catch (err) {
+      return {
+        extrusion: null,
+        error: err instanceof Error ? err.message : '3D preview failed.',
+      };
     }
   }, [project, page, view3d]);
+  const extrusion = extrusionResult.extrusion;
+  const extrudeError = extrusionResult.error;
 
   const loadFile = async (file: File) => {
     setBusy(true);
@@ -532,9 +547,14 @@ export function TakeoffStudioPage() {
             {view3d ? (
               <section className="takeoff-panel">
                 <h2>3D preview</h2>
+                {extrudeError ? <p className="takeoff-hint">{extrudeError}</p> : null}
                 <div className="takeoff-3d">
-                  {extrusion ? <CadExtrudeView extrusion={extrusion} /> : (
-                    <p className="takeoff-hint">Calibrate scale and trace walls to preview.</p>
+                  {extrusion && extrusion.walls.length > 0 ? (
+                    <CadExtrudeView extrusion={extrusion} />
+                  ) : (
+                    <p className="takeoff-hint" style={{ color: '#cbd5e1', padding: '1rem' }}>
+                      Calibrate scale and trace walls to preview.
+                    </p>
                   )}
                 </div>
               </section>

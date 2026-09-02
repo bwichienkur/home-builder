@@ -101,9 +101,13 @@ export async function loadDemoStillwaterProject(
   onProgress?: (p: PdfLoadProgress) => void,
 ): Promise<TakeoffProject> {
   onProgress?.({ stage: 'reading' });
-  const res = await fetch('/plan-sheets/stillwater-183/plan-set.pdf');
+  const pdfUrl = '/plan-sheets/stillwater-183/plan-set.pdf';
+  const res = await fetch(pdfUrl);
   if (!res.ok) throw new Error('Could not load Stillwater demo PDF.');
   const blob = await res.blob();
   const file = new File([blob], 'stillwater-183-plan-set.pdf', { type: 'application/pdf' });
-  return loadPdfProject(file, onProgress);
+  const project = await loadPdfProject(file, onProgress);
+  // Prefer stable public URL over blob (survives reloads / avoids empty-buffer issues).
+  if (project.pdfUrl.startsWith('blob:')) URL.revokeObjectURL(project.pdfUrl);
+  return { ...project, pdfUrl, sourceFileName: 'stillwater-183-plan-set.pdf', name: 'Stillwater 183' };
 }
