@@ -2,8 +2,8 @@
  * Optional Claude / GPT assist for Plan Takeoff.
  * Keys: ANTHROPIC_API_KEY or OPENAI_API_KEY (server only).
  */
-import { readJsonBodySync } from '../buildertrend/vercelRefresh.js';
-import { saveTakeoffProject, loadTakeoffProject } from '../takeoffStore.js';
+import { readJsonBodySync } from './buildertrend/vercelRefresh.js';
+import { saveTakeoffProject, loadTakeoffProject } from './takeoffStore.js';
 
 const CLASSIFY_SCHEMA_HINT = `Return JSON only with keys:
 pageKind: one of floor|elevation|section|schedule|cover|other
