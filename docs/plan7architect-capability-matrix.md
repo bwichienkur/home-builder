@@ -273,10 +273,10 @@ Track coverage as we watch/annotate. Mark `□` → `▣` when behavior row abov
 - [ ] Guide Lines
 
 ### Complete houses (end-to-end)
-- [x] Complete House 1 (~25 min) — `V822AazKM-g` (transcript mined)
+- [x] Complete House 1 (~25 min) — https://youtu.be/V822AazKM-g (transcript mined)
 - [ ] Container House 2
-- [x] Complete House 3 (~12 min) — `mF5aFfIrqoE` (transcript mined)
-- [x] Complete House 5 (~6 min) — `jYPoIS6fm4M` (transcript mined)
+- [x] Complete House 3 (~12 min) — https://youtu.be/mF5aFfIrqoE (transcript mined)
+- [x] Complete House 5 (~6 min) — https://youtu.be/jYPoIS6fm4M (transcript mined)
 - [ ] Tiny House 6
 - [ ] Barndominium 7
 - [ ] Bungalow 8
