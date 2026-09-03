@@ -1,19 +1,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { CadFixtureKind, CadPlate, CadSegmentRole } from '../../lib/cadStudio/types';
+import type { CadFixtureKind, CadPlate, CadSegmentRole, CadSlabKind } from '../../lib/cadStudio/types';
 import {
   detectCadRoomStamps,
   formatDraftLength,
   formatRoomAreaSqFt,
 } from '../../lib/cadStudio/cadRoomStamps';
+import { computeExteriorDims } from '../../lib/cadStudio/cadExteriorDims';
 import {
   addFixtureHint,
   addOpeningHint,
+  addSlab,
   addWallCenterline,
   deleteSelection,
   formatWallLengthFt,
   moveFixtureHint,
   moveLabel,
   moveOpeningHint,
+  moveSlab,
   moveWallEndpoint,
   pickAtPoint,
   planToSvgFt,
@@ -43,7 +46,16 @@ const FIXTURE_COLOR: Record<CadFixtureKind, string> = {
   other: '#78716c',
 };
 
-const PAD = 2;
+const SLAB_FILL: Record<CadSlabKind, string> = {
+  terrace: '#c4a574',
+  driveway: '#8a8f98',
+  garden: '#6b8f71',
+  balcony: '#b7a99a',
+};
+
+/** Extra pad so exterior dim chains fit in the viewBox. */
+const PAD = 8;
+const SLAB_CLOSE_TOL_FT = 1.25;
 
 type Props = {
   plate: CadPlate;
@@ -53,6 +65,8 @@ type Props = {
   wallLayer?: string;
   /** Window sill height in feet when placing windows. */
   windowSillFt?: number;
+  slabKind?: CadSlabKind;
+  showExteriorDims?: boolean;
   selection: CadPlateSelection | null;
   onSelectionChange: (sel: CadPlateSelection | null) => void;
   onPlateChange: (plate: CadPlate) => void;
@@ -68,6 +82,10 @@ function clientToSvg(svg: SVGSVGElement, clientX: number, clientY: number) {
   return { x: local.x, y: local.y };
 }
 
+function polyPointsAttr(pts: Array<{ x: number; y: number }>): string {
+  return pts.map((p) => `${p.x},${p.y}`).join(' ');
+}
+
 export function CadPlateEditor({
   plate,
   tool,
@@ -75,6 +93,8 @@ export function CadPlateEditor({
   openingKind = 'door',
   wallLayer = 'WALLS',
   windowSillFt = 3,
+  slabKind = 'terrace',
+  showExteriorDims = true,
   selection,
   onSelectionChange,
   onPlateChange,
@@ -83,6 +103,8 @@ export function CadPlateEditor({
   const [draftLine, setDraftLine] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(
     null,
   );
+  const [draftPoly, setDraftPoly] = useState<Array<{ x: number; y: number }>>([]);
+  const [cursorPlan, setCursorPlan] = useState<{ x: number; y: number } | null>(null);
   const dragRef = useRef<{
     selection: CadPlateSelection;
     startPlan: { x: number; y: number };
@@ -106,6 +128,11 @@ export function CadPlateEditor({
   const segs = visibleSegments(plate);
   const labels = visibleLabels(plate);
   const roomStamps = useMemo(() => detectCadRoomStamps(plate), [plate]);
+  const exteriorDims = useMemo(
+    () => (showExteriorDims ? computeExteriorDims(plate) : []),
+    [plate, showExteriorDims],
+  );
+  const slabs = plate.slabs ?? [];
 
   const planFromEvent = useCallback(
     (e: React.PointerEvent<SVGSVGElement>) => {
@@ -117,6 +144,14 @@ export function CadPlateEditor({
     },
     [plate.bounds],
   );
+
+  const closeDraftPoly = useCallback(() => {
+    if (draftPoly.length >= 3) {
+      onPlateChange(addSlab(plate, slabKind, draftPoly));
+    }
+    setDraftPoly([]);
+    setCursorPlan(null);
+  }, [draftPoly, onPlateChange, plate, slabKind]);
 
   const handlePointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
     if (e.button !== 0) return;
@@ -130,6 +165,19 @@ export function CadPlateEditor({
         onPlateChange(deleteSelection(plate, hit));
         onSelectionChange(null);
       }
+      return;
+    }
+
+    if (tool === 'slab') {
+      if (draftPoly.length >= 3) {
+        const first = draftPoly[0]!;
+        if (Math.hypot(plan.x - first.x, plan.y - first.y) <= SLAB_CLOSE_TOL_FT) {
+          closeDraftPoly();
+          return;
+        }
+      }
+      setDraftPoly((prev) => [...prev, { x: plan.x, y: plan.y }]);
+      setCursorPlan(plan);
       return;
     }
 
@@ -178,6 +226,11 @@ export function CadPlateEditor({
     const plan = planFromEvent(e);
     if (!plan) return;
 
+    if (tool === 'slab' && draftPoly.length) {
+      setCursorPlan(plan);
+      return;
+    }
+
     if (draftLine) {
       setDraftLine({ ...draftLine, x2: plan.x, y2: plan.y });
       return;
@@ -222,6 +275,10 @@ export function CadPlateEditor({
         }
         break;
       }
+      case 'slab': {
+        onPlateChange(moveSlab(orig, sel.index, dx, dy));
+        break;
+      }
       default:
         break;
     }
@@ -231,17 +288,42 @@ export function CadPlateEditor({
     dragRef.current = null;
   };
 
-  // Escape cancels an in-progress wall/opening draft (Plan7-style).
+  const handleDoubleClick = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (tool !== 'slab' || draftPoly.length < 3) return;
+    e.preventDefault();
+    closeDraftPoly();
+  };
+
+  // Escape cancels drafts; Enter closes slab polygon (Plan7-style).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setDraftLine(null);
+      if (e.key === 'Escape') {
+        setDraftLine(null);
+        setDraftPoly([]);
+        setCursorPlan(null);
+      }
+      if (e.key === 'Enter' && tool === 'slab' && draftPoly.length >= 3) {
+        e.preventDefault();
+        closeDraftPoly();
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, []);
+  }, [closeDraftPoly, draftPoly.length, tool]);
+
+  useEffect(() => {
+    if (tool !== 'slab') {
+      setDraftPoly([]);
+      setCursorPlan(null);
+    }
+    if (tool !== 'wall' && tool !== 'opening') setDraftLine(null);
+  }, [tool]);
 
   const isSelected = (kind: CadPlateSelection['kind'], index: number) =>
     selection?.kind === kind && selection.index === index;
+
+  const draftPolyPreview =
+    draftPoly.length && cursorPlan ? [...draftPoly, cursorPlan] : draftPoly;
 
   return (
     <svg
@@ -256,9 +338,25 @@ export function CadPlateEditor({
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
+      onDoubleClick={handleDoubleClick}
     >
       <rect width="100%" height="100%" fill="#f1efe8" />
       <g transform={`translate(${(-ox).toFixed(3)} ${(h + oy).toFixed(3)}) scale(1,-1)`}>
+        {slabs.map((slab, i) => {
+          const selected = isSelected('slab', i);
+          return (
+            <polygon
+              key={slab.id}
+              points={polyPointsAttr(slab.points)}
+              fill={SLAB_FILL[slab.kind]}
+              fillOpacity={selected ? 0.55 : 0.32}
+              stroke={selected ? '#1f4e46' : SLAB_FILL[slab.kind]}
+              strokeWidth={stroke * (selected ? 2.8 : 1.4)}
+              strokeLinejoin="round"
+            />
+          );
+        })}
+
         {segs
           .filter((s) => s.role !== 'wall')
           .map((s, i) => {
@@ -373,7 +471,70 @@ export function CadPlateEditor({
             strokeLinecap="round"
           />
         )}
+
+        {draftPolyPreview.length >= 2 && (
+          <polyline
+            points={polyPointsAttr(draftPolyPreview)}
+            fill="none"
+            stroke="#1f4e46"
+            strokeWidth={stroke * 2.2}
+            strokeDasharray="0.45 0.3"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+        )}
+        {draftPoly.map((p, i) => (
+          <circle
+            key={`dp-${i}`}
+            cx={p.x}
+            cy={p.y}
+            r={stroke * (i === 0 ? 7 : 5)}
+            fill={i === 0 ? '#1f4e46' : '#5b6b7c'}
+            fillOpacity={0.85}
+          />
+        ))}
       </g>
+
+      {exteriorDims.map((dim) => {
+        const a = planToSvgFt(dim.x1, dim.y1, plate.bounds, PAD);
+        const b = planToSvgFt(dim.x2, dim.y2, plate.bounds, PAD);
+        const lp = planToSvgFt(dim.labelX, dim.labelY, plate.bounds, PAD);
+        const tick = fontSize * 0.45;
+        return (
+          <g key={dim.id} className="cad-ext-dim">
+            <line
+              x1={a.x}
+              y1={a.y}
+              x2={b.x}
+              y2={b.y}
+              stroke="#5b6b7c"
+              strokeWidth={1.1}
+            />
+            <line x1={a.x - tick} y1={a.y - tick} x2={a.x + tick} y2={a.y + tick} stroke="#5b6b7c" strokeWidth={1} />
+            <line x1={b.x - tick} y1={b.y - tick} x2={b.x + tick} y2={b.y + tick} stroke="#5b6b7c" strokeWidth={1} />
+            <rect
+              x={lp.x - fontSize * 2.1}
+              y={lp.y - fontSize * 0.7}
+              width={fontSize * 4.2}
+              height={fontSize * 1.35}
+              rx={fontSize * 0.2}
+              fill="rgba(241,239,232,0.92)"
+            />
+            <text
+              x={lp.x}
+              y={lp.y}
+              fill="#334155"
+              fontSize={fontSize * 0.78}
+              fontFamily="IBM Plex Sans, Segoe UI, sans-serif"
+              fontWeight={600}
+              textAnchor="middle"
+              dominantBaseline="middle"
+            >
+              {dim.label}
+            </text>
+          </g>
+        );
+      })}
 
       {roomStamps.map((room) => {
         const sp = planToSvgFt(room.x, room.y, plate.bounds, PAD);

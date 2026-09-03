@@ -3,23 +3,41 @@ import type {
   CadBoundsFt,
   CadFixtureHintFt,
   CadFixtureKind,
-  CadLabelFt,
   CadLayerInfo,
   CadOpeningHintFt,
   CadPlate,
   CadSegmentFt,
   CadSegmentRole,
+  CadSlabFt,
+  CadSlabKind,
   CadWallCenterlineFt,
 } from './types';
 
-export type CadEditTool = 'select' | 'wall' | 'opening' | 'fixture' | 'delete';
+export type CadEditTool = 'select' | 'wall' | 'opening' | 'fixture' | 'slab' | 'delete';
 
 export type CadPlateSelection =
   | { kind: 'wall'; index: number }
   | { kind: 'label'; index: number }
   | { kind: 'fixture'; index: number }
   | { kind: 'opening'; index: number }
+  | { kind: 'slab'; index: number }
   | { kind: 'segment'; index: number };
+
+const SLAB_DEFAULTS: Record<
+  CadSlabKind,
+  { thicknessFt: number; elevationFt: number; layer: string }
+> = {
+  terrace: { thicknessFt: 0.5, elevationFt: 0, layer: 'SLAB TERRACE' },
+  driveway: { thicknessFt: 0.5, elevationFt: -0.15, layer: 'SLAB DRIVE' },
+  garden: { thicknessFt: 0.25, elevationFt: -0.05, layer: 'SLAB GARDEN' },
+  balcony: { thicknessFt: 0.5, elevationFt: 0, layer: 'SLAB BALCONY' },
+};
+
+let slabSeq = 0;
+function nextSlabId(kind: CadSlabKind): string {
+  slabSeq += 1;
+  return `slab-${kind}-${slabSeq.toString(36)}`;
+}
 
 export function segLengthFt(s: { x1: number; y1: number; x2: number; y2: number }): number {
   return Math.hypot(s.x2 - s.x1, s.y2 - s.y1);
@@ -63,6 +81,7 @@ export function recomputePlateBounds(plate: CadPlate): CadBoundsFt {
     ]),
     ...plate.labels.map((l) => ({ x: l.x, y: l.y })),
     ...plate.fixtureHints.map((f) => ({ x: f.xFt, y: f.yFt })),
+    ...(plate.slabs ?? []).flatMap((s) => s.points),
   ];
   return boundsOfPoints(pts);
 }
@@ -268,6 +287,82 @@ export function addFixtureHint(plate: CadPlate, kind: CadFixtureKind, xFt: numbe
   return syncWallSegments({ ...plate, fixtureHints });
 }
 
+export function addSlab(
+  plate: CadPlate,
+  kind: CadSlabKind,
+  points: Array<{ x: number; y: number }>,
+  opts?: { thicknessFt?: number; elevationFt?: number },
+): CadPlate {
+  if (points.length < 3) return plate;
+  const d = SLAB_DEFAULTS[kind];
+  const slab: CadSlabFt = {
+    id: nextSlabId(kind),
+    kind,
+    points: points.map((p) => ({ x: p.x, y: p.y })),
+    thicknessFt: opts?.thicknessFt ?? d.thicknessFt,
+    elevationFt: opts?.elevationFt ?? d.elevationFt,
+    layer: d.layer,
+  };
+  const slabs = [...(plate.slabs ?? []), slab];
+  return syncWallSegments({
+    ...plate,
+    slabs,
+    bounds: recomputePlateBounds({ ...plate, slabs }),
+  });
+}
+
+export function updateSlab(
+  plate: CadPlate,
+  index: number,
+  patch: Partial<Pick<CadSlabFt, 'kind' | 'thicknessFt' | 'elevationFt' | 'points'>>,
+): CadPlate {
+  const slabs = (plate.slabs ?? []).map((s, i) => {
+    if (i !== index) return s;
+    const next = { ...s, ...patch };
+    if (patch.kind && patch.kind !== s.kind && !patch.thicknessFt && !patch.elevationFt) {
+      const d = SLAB_DEFAULTS[patch.kind];
+      next.thicknessFt = d.thicknessFt;
+      next.elevationFt = d.elevationFt;
+      next.layer = d.layer;
+    }
+    return next;
+  });
+  return syncWallSegments({
+    ...plate,
+    slabs,
+    bounds: recomputePlateBounds({ ...plate, slabs }),
+  });
+}
+
+export function moveSlab(plate: CadPlate, index: number, dx: number, dy: number): CadPlate {
+  const slabs = (plate.slabs ?? []).map((s, i) =>
+    i === index
+      ? { ...s, points: s.points.map((p) => ({ x: p.x + dx, y: p.y + dy })) }
+      : s,
+  );
+  return syncWallSegments({
+    ...plate,
+    slabs,
+    bounds: recomputePlateBounds({ ...plate, slabs }),
+  });
+}
+
+/** Point-in-polygon (ray cast). */
+function pointInPolygon(px: number, py: number, pts: Array<{ x: number; y: number }>): boolean {
+  if (pts.length < 3) return false;
+  let inside = false;
+  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+    const xi = pts[i]!.x;
+    const yi = pts[i]!.y;
+    const xj = pts[j]!.x;
+    const yj = pts[j]!.y;
+    const intersect =
+      yi > py !== yj > py && px < ((xj - xi) * (py - yi)) / (yj - yi + 1e-12) + xi;
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
 export function addSegment(
   plate: CadPlate,
   seg: Omit<CadSegmentFt, 'role'> & { role?: CadSegmentRole },
@@ -309,6 +404,14 @@ export function deleteSelection(plate: CadPlate, sel: CadPlateSelection): CadPla
         : plate.segments;
       return syncWallSegments({ ...plate, openingHints, segments });
     }
+    case 'slab': {
+      const slabs = (plate.slabs ?? []).filter((_, i) => i !== sel.index);
+      return syncWallSegments({
+        ...plate,
+        slabs,
+        bounds: recomputePlateBounds({ ...plate, slabs }),
+      });
+    }
     case 'segment': {
       const segments = plate.segments.filter((_, i) => i !== sel.index);
       return syncWallSegments({ ...plate, segments });
@@ -339,6 +442,11 @@ export function selectionSummary(plate: CadPlate, sel: CadPlateSelection): strin
       const sill =
         o.kind === 'window' && o.sillFt != null ? ` · sill ${formatWallLengthFt(o.sillFt)}` : '';
       return `${o.kind} ${formatWallLengthFt(segLengthFt(o))}${sill}`;
+    }
+    case 'slab': {
+      const s = plate.slabs?.[sel.index];
+      if (!s) return 'Slab';
+      return `${s.kind} · ${formatWallLengthFt(s.thicknessFt)} thick · Z ${formatWallLengthFt(s.elevationFt)}`;
     }
     case 'segment': {
       const s = plate.segments[sel.index];
@@ -439,6 +547,14 @@ export function hitTestOpening(plate: CadPlate, px: number, py: number, tolFt = 
   return best >= 0 ? best : null;
 }
 
+export function hitTestSlab(plate: CadPlate, px: number, py: number): number | null {
+  const slabs = plate.slabs ?? [];
+  for (let i = slabs.length - 1; i >= 0; i--) {
+    if (pointInPolygon(px, py, slabs[i]!.points)) return i;
+  }
+  return null;
+}
+
 export function pickAtPoint(plate: CadPlate, px: number, py: number): CadPlateSelection | null {
   const label = hitTestLabel(plate, px, py);
   if (label != null) return { kind: 'label', index: label };
@@ -448,5 +564,7 @@ export function pickAtPoint(plate: CadPlate, px: number, py: number): CadPlateSe
   if (opening != null) return { kind: 'opening', index: opening };
   const wall = hitTestWall(plate, px, py);
   if (wall != null) return { kind: 'wall', index: wall };
+  const slab = hitTestSlab(plate, px, py);
+  if (slab != null) return { kind: 'slab', index: slab };
   return null;
 }

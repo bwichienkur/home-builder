@@ -2,7 +2,13 @@ import { useMemo } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
-import type { CadExtrusion, CadFixtureInstance, CadFixtureKind } from '../../lib/cadStudio';
+import type {
+  CadExtrusion,
+  CadFixtureInstance,
+  CadFixtureKind,
+  CadSlabFt,
+  CadSlabKind,
+} from '../../lib/cadStudio';
 import { CadGroundPlane, CadSceneEnvironment } from './CadSceneEnvironment';
 import { WallMesh } from './CadRealisticWalls';
 import { world } from '../../components/scene3d/sceneWorld';
@@ -11,6 +17,21 @@ import { WORLD_ORIGIN } from '../../lib/geometry/placement';
 import type { Opening, Wall } from '../../types';
 
 const FT_TO_M = 0.3048;
+
+function slabColor(kind: CadSlabKind): string {
+  switch (kind) {
+    case 'terrace':
+      return '#c4a574';
+    case 'driveway':
+      return '#8a8f98';
+    case 'garden':
+      return '#6b8f71';
+    case 'balcony':
+      return '#b7a99a';
+    default:
+      return '#a8a29e';
+  }
+}
 
 function ftToPx(ft: number) {
   return ft * FT_TO_M * PIXELS_PER_METER;
@@ -93,23 +114,65 @@ function FixtureMesh({
   );
 }
 
+function SlabMesh({
+  slab,
+  centerFt,
+}: {
+  slab: CadSlabFt;
+  centerFt: { cx: number; cy: number };
+}) {
+  const geometry = useMemo(() => {
+    if (slab.points.length < 3) return null;
+    const shape = new THREE.Shape();
+    const worldPts = slab.points.map((p) => {
+      const planX = WORLD_ORIGIN.x + ftToPx(p.x - centerFt.cx);
+      const planY = WORLD_ORIGIN.y + ftToPx(p.y - centerFt.cy);
+      const [wx, wz] = world(planX, planY);
+      return { x: wx, z: wz };
+    });
+    shape.moveTo(worldPts[0]!.x, worldPts[0]!.z);
+    for (let i = 1; i < worldPts.length; i++) {
+      shape.lineTo(worldPts[i]!.x, worldPts[i]!.z);
+    }
+    shape.closePath();
+    const thickness = Math.max(0.04, slab.thicknessFt * FT_TO_M);
+    const geom = new THREE.ExtrudeGeometry(shape, { depth: thickness, bevelEnabled: false });
+    // Shape is drawn in X/Y; map to X/Z floor plane with thickness along +Y.
+    geom.rotateX(-Math.PI / 2);
+    geom.translate(0, slab.elevationFt * FT_TO_M, 0);
+    return geom;
+  }, [slab, centerFt]);
+
+  if (!geometry) return null;
+  return (
+    <mesh geometry={geometry} castShadow receiveShadow>
+      <meshStandardMaterial color={slabColor(slab.kind)} roughness={0.85} metalness={0.02} />
+    </mesh>
+  );
+}
+
 /** Shared walls + fixtures for Extrude and Massing views. */
 export function CadExtrudeSceneParts({
   walls,
   openings,
   fixtures,
+  slabs = [],
   centerFt,
   mode = 'extrude',
 }: {
   walls: Wall[];
   openings: Opening[];
   fixtures: CadFixtureInstance[];
+  slabs?: CadSlabFt[];
   centerFt: { cx: number; cy: number };
   wallSegmentsFt?: Array<{ x1: number; y1: number; x2: number; y2: number; exterior?: boolean }>;
   mode?: 'extrude' | 'massing';
 }) {
   return (
     <>
+      {slabs.map((s) => (
+        <SlabMesh key={s.id} slab={s} centerFt={centerFt} />
+      ))}
       {walls.map((w) => (
         <WallMesh key={w.id} wall={w} openings={openings} mode={mode} />
       ))}
@@ -121,7 +184,7 @@ export function CadExtrudeSceneParts({
 }
 
 function Scene({ extrusion }: { extrusion: CadExtrusion }) {
-  const { walls, openings, fixtures, centerFt } = extrusion;
+  const { walls, openings, fixtures, slabs, centerFt } = extrusion;
   const floorSize = useMemo(() => {
     if (!walls.length) return 20;
     let max = 10;
@@ -137,7 +200,13 @@ function Scene({ extrusion }: { extrusion: CadExtrusion }) {
     <>
       <CadSceneEnvironment targetY={1.2} />
       <CadGroundPlane size={floorSize} />
-      <CadExtrudeSceneParts walls={walls} openings={openings} fixtures={fixtures} centerFt={centerFt} />
+      <CadExtrudeSceneParts
+        walls={walls}
+        openings={openings}
+        fixtures={fixtures}
+        slabs={slabs}
+        centerFt={centerFt}
+      />
       <OrbitControls makeDefault target={[0, 1.2, 0]} maxPolarAngle={Math.PI / 2.05} />
     </>
   );

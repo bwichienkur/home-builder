@@ -30,6 +30,7 @@ export function stillwaterCadSheetPlate(): CadPlate {
     openingHints: [],
     labels: [],
     fixtureHints: [],
+    slabs: [],
     sheets: pkg.sheets.map((s) => ({
       ...s,
       imageUrl: SHEET_IMAGES[s.order] ?? s.imageUrl,

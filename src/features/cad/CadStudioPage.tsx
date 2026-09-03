@@ -11,12 +11,13 @@ import {
   selectionSummary,
   setLayerClassify,
   showWallsAndDoorsPreset,
+  updateSlab,
   withLayerVisibility,
   type CadEditTool,
   type CadLayerClassify,
   type CadPlateSelection,
 } from '../../lib/cadStudio';
-import type { CadFixtureKind, CadPlate } from '../../lib/cadStudio/types';
+import type { CadFixtureKind, CadPlate, CadSlabKind } from '../../lib/cadStudio/types';
 import { CadPlateEditor } from './CadPlateEditor';
 import { importDrawingFiles, type DrawingImportProgress } from '../../lib/housePlans/importDrawingFile';
 import { CadExtrudeView } from './CadExtrudeView';
@@ -70,6 +71,8 @@ export function CadStudioPage() {
   const [openingKind, setOpeningKind] = useState<OpeningKind>('door');
   const [wallLayer, setWallLayer] = useState('WALLS EXT');
   const [windowSillFt, setWindowSillFt] = useState(3);
+  const [slabKind, setSlabKind] = useState<CadSlabKind>('terrace');
+  const [showExteriorDims, setShowExteriorDims] = useState(true);
   const [selection, setSelection] = useState<CadPlateSelection | null>(null);
   const [layerFilter, setLayerFilter] = useState('');
   const [snapOn, setSnapOn] = useState(true);
@@ -135,12 +138,16 @@ export function CadStudioPage() {
     setPlate(withLayerVisibility(plate, { ...visibility, [name]: !visibility[name] }));
   };
 
-  const pickTool = (tool: CadEditTool, opts?: { wallLayer?: string; opening?: OpeningKind; fixture?: CadFixtureKind }) => {
+  const pickTool = (
+    tool: CadEditTool,
+    opts?: { wallLayer?: string; opening?: OpeningKind; fixture?: CadFixtureKind; slab?: CadSlabKind },
+  ) => {
     setEditTool(tool);
     setSelection(null);
     if (opts?.wallLayer) setWallLayer(opts.wallLayer);
     if (opts?.opening) setOpeningKind(opts.opening);
     if (opts?.fixture) setFixtureKind(opts.fixture);
+    if (opts?.slab) setSlabKind(opts.slab);
     if (layout === 'massing' || layout === 'sheets') setLayout('split');
   };
 
@@ -202,6 +209,8 @@ export function CadStudioPage() {
           openingKind={openingKind}
           wallLayer={wallLayer}
           windowSillFt={windowSillFt}
+          slabKind={slabKind}
+          showExteriorDims={showExteriorDims}
           selection={selection}
           onSelectionChange={setSelection}
           onPlateChange={setPlate}
@@ -525,12 +534,37 @@ export function CadStudioPage() {
               <section>
                 <h2>Site</h2>
                 <p className="cad-edit-hint">
-                  Terrace, driveway, garden, and balcony slabs are on the Wave 1–2 roadmap (Plan7 plate
-                  tool). Use Layers for now to hide site noise from DXF imports.
+                  Click polygon corners on the 2D plan. Close by clicking near the first point, double-click,
+                  or Enter. Escape cancels.
                 </p>
-                <button type="button" className="cad-catalog-soon" disabled>
-                  Slab / terrace (coming soon)
-                </button>
+                <div className="cad-catalog-items">
+                  {(
+                    [
+                      { id: 'terrace' as const, label: 'Terrace', hint: 'Patio / deck plate' },
+                      { id: 'driveway' as const, label: 'Driveway', hint: 'Paved approach' },
+                      { id: 'garden' as const, label: 'Garden', hint: 'Planting bed plate' },
+                      { id: 'balcony' as const, label: 'Balcony', hint: 'Elevated slab' },
+                    ] as const
+                  ).map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      className={editTool === 'slab' && slabKind === item.id ? 'is-active' : ''}
+                      onClick={() => pickTool('slab', { slab: item.id })}
+                    >
+                      <strong>{item.label}</strong>
+                      <span>{item.hint}</span>
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    className={editTool === 'select' ? 'is-active' : ''}
+                    onClick={() => pickTool('select')}
+                  >
+                    <strong>Select / move</strong>
+                    <span>Drag slabs on plan</span>
+                  </button>
+                </div>
               </section>
             )}
 
@@ -552,6 +586,40 @@ export function CadStudioPage() {
               {selection && plate ? (
                 <div className="cad-selection-inspector">
                   <div className="cad-selection-title">{selectionSummary(plate, selection)}</div>
+                  {selection.kind === 'slab' && plate.slabs?.[selection.index] && (
+                    <div className="cad-sill-control">
+                      <label>
+                        Thickness (ft)
+                        <input
+                          type="number"
+                          min={0.1}
+                          max={2}
+                          step={0.05}
+                          value={plate.slabs[selection.index]!.thicknessFt}
+                          onChange={(e) => {
+                            const v = Number(e.target.value);
+                            if (!Number.isFinite(v)) return;
+                            setPlate(updateSlab(plate, selection.index, { thicknessFt: v }));
+                          }}
+                        />
+                      </label>
+                      <label>
+                        Elevation Z (ft)
+                        <input
+                          type="number"
+                          min={-2}
+                          max={40}
+                          step={0.25}
+                          value={plate.slabs[selection.index]!.elevationFt}
+                          onChange={(e) => {
+                            const v = Number(e.target.value);
+                            if (!Number.isFinite(v)) return;
+                            setPlate(updateSlab(plate, selection.index, { elevationFt: v }));
+                          }}
+                        />
+                      </label>
+                    </div>
+                  )}
                   <button
                     type="button"
                     className="cad-delete-btn"
@@ -564,15 +632,21 @@ export function CadStudioPage() {
                   </button>
                 </div>
               ) : (
-                <p className="cad-edit-hint">Select a wall, door, fixture, or label on the 2D plan.</p>
+                <p className="cad-edit-hint">Select a wall, door, fixture, slab, or label on the 2D plan.</p>
               )}
               <div className="cad-stats">
                 <div>File: {plate?.sourceFileName ?? '—'}</div>
                 <div>Walls: {plate?.wallCenterlines.length ?? 0}</div>
                 <div>Openings: {plate?.openingHints.length ?? 0}</div>
+                <div>Slabs: {plate?.slabs?.length ?? 0}</div>
                 <div>Fixtures: {plate?.segments.filter((s) => s.role === 'fixture').length ?? 0}</div>
                 <div>3D fixtures: {extrusion?.fixtures.length ?? 0}</div>
-                <div>Tool: {editTool}{editTool === 'wall' ? ` · ${wallLayer}` : ''}{editTool === 'opening' ? ` · ${openingKind}` : ''}</div>
+                <div>
+                  Tool: {editTool}
+                  {editTool === 'wall' ? ` · ${wallLayer}` : ''}
+                  {editTool === 'opening' ? ` · ${openingKind}` : ''}
+                  {editTool === 'slab' ? ` · ${slabKind}` : ''}
+                </div>
               </div>
               {!!plate?.warnings.length && (
                 <ul className="cad-warnings">
@@ -622,8 +696,16 @@ export function CadStudioPage() {
                 >
                   Snap {snapOn ? 'on' : 'off'}
                 </button>
+                <button
+                  type="button"
+                  className={showExteriorDims ? 'is-active' : ''}
+                  onClick={() => setShowExteriorDims((v) => !v)}
+                  title="Automatic exterior dimension chains"
+                >
+                  Ext dims {showExteriorDims ? 'on' : 'off'}
+                </button>
                 <span className="cad-unit-pill">{unitLabel === 'ft-in' ? 'ft / in' : 'm'}</span>
-                <span className="cad-aid-hint">W · wall align · Esc cancel</span>
+                <span className="cad-aid-hint">W · wall align · Esc cancel · Enter close slab</span>
               </div>
             </div>
           )}

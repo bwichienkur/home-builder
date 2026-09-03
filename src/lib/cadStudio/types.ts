@@ -88,6 +88,21 @@ export type CadBoundsFt = {
   maxY: number;
 };
 
+/** Site / outdoor plate (Plan7-style terrace, driveway, garden, balcony). */
+export type CadSlabKind = 'terrace' | 'driveway' | 'garden' | 'balcony';
+
+export type CadSlabFt = {
+  id: string;
+  kind: CadSlabKind;
+  /** Closed polygon in plan feet (first ≠ last; closed on render). */
+  points: Array<{ x: number; y: number }>;
+  /** Vertical thickness in feet. */
+  thicknessFt: number;
+  /** Bottom of slab relative to finished floor (feet). */
+  elevationFt: number;
+  layer: string;
+};
+
 /** Elevation sheet segment — X = width from left, Y = height above grade (feet). */
 export type CadElevationSegmentFt = {
   x1Ft: number;
@@ -158,6 +173,8 @@ export type CadPlate = {
   labels: CadLabelFt[];
   /** INSERT/CIRCLE poses for procedural Extrude meshes. */
   fixtureHints: CadFixtureHintFt[];
+  /** Site slabs (terrace, driveway, garden, balcony) in plan feet. */
+  slabs: CadSlabFt[];
   /** Front elevation linework (width × height ft) when DXF has elevation viewports. */
   elevationFront?: CadElevationSheet;
   /** Side/rear elevation linework when available. */
@@ -172,6 +189,7 @@ export type CadExtrusion = {
   walls: Wall[];
   openings: Opening[];
   fixtures: CadFixtureInstance[];
+  slabs: CadSlabFt[];
   centerFt: { cx: number; cy: number };
   heightM: number;
   massing: CadMassing;

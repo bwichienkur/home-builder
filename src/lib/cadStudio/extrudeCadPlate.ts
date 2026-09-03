@@ -86,6 +86,7 @@ export function extrudeCadPlate(plate: CadPlate, opts?: { heightM?: number }): C
     walls: builtWithOpenings.scene.walls,
     openings: builtWithOpenings.scene.openings,
     fixtures,
+    slabs: plate.slabs ?? [],
     centerFt,
     heightM,
     massing,
