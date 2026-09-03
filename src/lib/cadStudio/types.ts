@@ -32,6 +32,8 @@ export type CadOpeningHintFt = {
   y2: number;
   kind: 'door' | 'window';
   layer?: string;
+  /** Window sill height above finished floor (feet). Doors/passages use 0. */
+  sillFt?: number;
 };
 
 export type CadWallCenterlineFt = {

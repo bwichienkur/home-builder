@@ -51,6 +51,7 @@ export function extrudeCadPlate(plate: CadPlate, opts?: { heightM?: number }): C
       y2: h.y2,
       kind: h.kind,
       layer: h.layer,
+      sillFt: h.sillFt,
     })),
   };
 
@@ -67,6 +68,7 @@ export function extrudeCadPlate(plate: CadPlate, opts?: { heightM?: number }): C
       y2: h.y2,
       kind: h.kind,
       layer: h.layer,
+      sillFt: 'sillFt' in h ? h.sillFt : undefined,
     })),
   };
 

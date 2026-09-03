@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CadFixtureKind, CadPlate, CadSegmentRole } from '../../lib/cadStudio/types';
 import {
+  detectCadRoomStamps,
+  formatDraftLength,
+  formatRoomAreaSqFt,
+} from '../../lib/cadStudio/cadRoomStamps';
+import {
   addFixtureHint,
   addOpeningHint,
   addWallCenterline,
@@ -46,6 +51,8 @@ type Props = {
   fixtureKind: CadFixtureKind;
   openingKind?: 'door' | 'window';
   wallLayer?: string;
+  /** Window sill height in feet when placing windows. */
+  windowSillFt?: number;
   selection: CadPlateSelection | null;
   onSelectionChange: (sel: CadPlateSelection | null) => void;
   onPlateChange: (plate: CadPlate) => void;
@@ -67,6 +74,7 @@ export function CadPlateEditor({
   fixtureKind,
   openingKind = 'door',
   wallLayer = 'WALLS',
+  windowSillFt = 3,
   selection,
   onSelectionChange,
   onPlateChange,
@@ -97,6 +105,7 @@ export function CadPlateEditor({
 
   const segs = visibleSegments(plate);
   const labels = visibleLabels(plate);
+  const roomStamps = useMemo(() => detectCadRoomStamps(plate), [plate]);
 
   const planFromEvent = useCallback(
     (e: React.PointerEvent<SVGSVGElement>) => {
@@ -133,7 +142,17 @@ export function CadPlateEditor({
           if (tool === 'wall') {
             onPlateChange(addWallCenterline(plate, x1, y1, plan.x, plan.y, wallLayer));
           } else {
-            onPlateChange(addOpeningHint(plate, x1, y1, plan.x, plan.y, openingKind));
+            onPlateChange(
+              addOpeningHint(
+                plate,
+                x1,
+                y1,
+                plan.x,
+                plan.y,
+                openingKind,
+                openingKind === 'window' ? windowSillFt : 0,
+              ),
+            );
           }
         }
         setDraftLine(null);
@@ -356,7 +375,81 @@ export function CadPlateEditor({
         )}
       </g>
 
+      {roomStamps.map((room) => {
+        const sp = planToSvgFt(room.x, room.y, plate.bounds, PAD);
+        return (
+          <g key={room.id} className="cad-room-stamp">
+            <text
+              x={sp.x}
+              y={sp.y - fontSize * 0.55}
+              fill="#0f172a"
+              fontSize={fontSize * 0.95}
+              fontFamily="IBM Plex Sans, Segoe UI, sans-serif"
+              fontWeight={650}
+              textAnchor="middle"
+              dominantBaseline="middle"
+            >
+              {room.name}
+            </text>
+            <text
+              x={sp.x}
+              y={sp.y + fontSize * 0.55}
+              fill="#5b6b7c"
+              fontSize={fontSize * 0.78}
+              fontFamily="IBM Plex Sans, Segoe UI, sans-serif"
+              fontWeight={500}
+              textAnchor="middle"
+              dominantBaseline="middle"
+            >
+              {formatRoomAreaSqFt(room.areaSqFt)}
+            </text>
+          </g>
+        );
+      })}
+
+      {draftLine &&
+        (() => {
+          const len = formatDraftLength(draftLine);
+          const mid = planToSvgFt(
+            (draftLine.x1 + draftLine.x2) / 2,
+            (draftLine.y1 + draftLine.y2) / 2,
+            plate.bounds,
+            PAD,
+          );
+          return (
+            <g className="cad-draft-dim">
+              <rect
+                x={mid.x - fontSize * 2.2}
+                y={mid.y - fontSize * 0.95}
+                width={fontSize * 4.4}
+                height={fontSize * 1.5}
+                rx={fontSize * 0.25}
+                fill="rgba(255,255,255,0.92)"
+                stroke="#1f4e46"
+                strokeWidth={0.8}
+              />
+              <text
+                x={mid.x}
+                y={mid.y}
+                fill="#1f4e46"
+                fontSize={fontSize * 0.9}
+                fontFamily="IBM Plex Sans, Segoe UI, sans-serif"
+                fontWeight={700}
+                textAnchor="middle"
+                dominantBaseline="middle"
+              >
+                {len}
+              </text>
+            </g>
+          );
+        })()}
+
       {labels.map((label, i) => {
+        // Skip labels that already appear as room stamps (same text near stamp).
+        const covered = roomStamps.some(
+          (r) => r.name === label.text && Math.hypot(r.x - label.x, r.y - label.y) < 6,
+        );
+        if (covered) return null;
         const sp = planToSvgFt(label.x, label.y, plate.bounds, PAD);
         const selected = isSelected('label', i);
         return (

@@ -210,10 +210,19 @@ export function addOpeningHint(
   x2: number,
   y2: number,
   kind: 'door' | 'window' = 'door',
+  sillFt?: number,
 ): CadPlate {
   const openingHints: CadOpeningHintFt[] = [
     ...plate.openingHints,
-    { x1, y1, x2, y2, kind, layer: kind === 'window' ? 'WINDOWS' : 'DOORS' },
+    {
+      x1,
+      y1,
+      x2,
+      y2,
+      kind,
+      layer: kind === 'window' ? 'WINDOWS' : 'DOORS',
+      sillFt: kind === 'window' ? (sillFt ?? 3) : 0,
+    },
   ];
   const segments: CadSegmentFt[] = [
     ...plate.segments,
@@ -327,7 +336,9 @@ export function selectionSummary(plate: CadPlate, sel: CadPlateSelection): strin
     case 'opening': {
       const o = plate.openingHints[sel.index];
       if (!o) return 'Opening';
-      return `${o.kind} ${formatWallLengthFt(segLengthFt(o))}`;
+      const sill =
+        o.kind === 'window' && o.sillFt != null ? ` · sill ${formatWallLengthFt(o.sillFt)}` : '';
+      return `${o.kind} ${formatWallLengthFt(segLengthFt(o))}${sill}`;
     }
     case 'segment': {
       const s = plate.segments[sel.index];

@@ -69,6 +69,7 @@ export function CadStudioPage() {
   const [fixtureKind, setFixtureKind] = useState<CadFixtureKind>('sink');
   const [openingKind, setOpeningKind] = useState<OpeningKind>('door');
   const [wallLayer, setWallLayer] = useState('WALLS EXT');
+  const [windowSillFt, setWindowSillFt] = useState(3);
   const [selection, setSelection] = useState<CadPlateSelection | null>(null);
   const [layerFilter, setLayerFilter] = useState('');
   const [snapOn, setSnapOn] = useState(true);
@@ -200,6 +201,7 @@ export function CadStudioPage() {
           fixtureKind={fixtureKind}
           openingKind={openingKind}
           wallLayer={wallLayer}
+          windowSillFt={windowSillFt}
           selection={selection}
           onSelectionChange={setSelection}
           onPlateChange={setPlate}
@@ -369,7 +371,7 @@ export function CadStudioPage() {
                     onClick={() => pickTool('opening', { opening: 'window' })}
                   >
                     <strong>Window</strong>
-                    <span>Sill editable later · place span</span>
+                    <span>Sill {windowSillFt}' AFF · place span</span>
                   </button>
                   <button
                     type="button"
@@ -380,6 +382,20 @@ export function CadStudioPage() {
                     <span>Drag opening center</span>
                   </button>
                 </div>
+                <label className="cad-fixture-pick">
+                  Window sill (ft above floor)
+                  <input
+                    type="number"
+                    min={0}
+                    max={8}
+                    step={0.25}
+                    value={windowSillFt}
+                    onChange={(e) => setWindowSillFt(Number(e.target.value) || 0)}
+                  />
+                </label>
+                <p className="cad-edit-hint">
+                  Set sill before placing a window. Live length shows while you drag the span.
+                </p>
               </section>
             )}
 

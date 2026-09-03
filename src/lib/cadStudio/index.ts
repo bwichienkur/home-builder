@@ -39,6 +39,12 @@ export { extrudeCadPlate } from './extrudeCadPlate';
 export { detectCadFixtures } from './detectCadFixtures';
 export { demoCadPlate } from './demoCadPlate';
 export {
+  detectCadRoomStamps,
+  formatDraftLength,
+  formatRoomAreaSqFt,
+  type CadRoomStamp,
+} from './cadRoomStamps';
+export {
   addFixtureHint,
   addOpeningHint,
   addWallCenterline,
