@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CadFixtureKind, CadPlate, CadSegmentRole } from '../../lib/cadStudio/types';
 import {
   addFixtureHint,
@@ -44,6 +44,8 @@ type Props = {
   plate: CadPlate;
   tool: CadEditTool;
   fixtureKind: CadFixtureKind;
+  openingKind?: 'door' | 'window';
+  wallLayer?: string;
   selection: CadPlateSelection | null;
   onSelectionChange: (sel: CadPlateSelection | null) => void;
   onPlateChange: (plate: CadPlate) => void;
@@ -63,6 +65,8 @@ export function CadPlateEditor({
   plate,
   tool,
   fixtureKind,
+  openingKind = 'door',
+  wallLayer = 'WALLS',
   selection,
   onSelectionChange,
   onPlateChange,
@@ -127,9 +131,9 @@ export function CadPlateEditor({
         const { x1, y1 } = draftLine;
         if (Math.hypot(plan.x - x1, plan.y - y1) >= 0.5) {
           if (tool === 'wall') {
-            onPlateChange(addWallCenterline(plate, x1, y1, plan.x, plan.y));
+            onPlateChange(addWallCenterline(plate, x1, y1, plan.x, plan.y, wallLayer));
           } else {
-            onPlateChange(addOpeningHint(plate, x1, y1, plan.x, plan.y, 'door'));
+            onPlateChange(addOpeningHint(plate, x1, y1, plan.x, plan.y, openingKind));
           }
         }
         setDraftLine(null);
@@ -207,6 +211,15 @@ export function CadPlateEditor({
   const handlePointerUp = () => {
     dragRef.current = null;
   };
+
+  // Escape cancels an in-progress wall/opening draft (Plan7-style).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setDraftLine(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   const isSelected = (kind: CadPlateSelection['kind'], index: number) =>
     selection?.kind === kind && selection.index === index;
