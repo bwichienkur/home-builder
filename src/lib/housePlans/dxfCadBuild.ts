@@ -19,6 +19,8 @@ export type PlanOpeningHintFt = {
   y2: number;
   kind: 'door' | 'window';
   layer?: string;
+  /** Optional sill height in feet (windows). */
+  sillFt?: number;
 };
 
 function ftToPx(ft: number) {
@@ -121,6 +123,7 @@ export function openingsFromCadHints(
     widthFt: number,
     kind: 'door' | 'window',
     idSuffix: string,
+    sillFt?: number,
   ) => {
     const wall = walls[wallIdx]!;
     const wallLenFt = segLen(segments[wallIdx]!);
@@ -135,6 +138,12 @@ export function openingsFromCadHints(
     const key = `${wall.id}:${kind}:${clamped.toFixed(2)}:${widthM.toFixed(2)}`;
     if (used.has(key)) return;
     used.add(key);
+    const sillM =
+      kind === 'window'
+        ? sillFt != null && Number.isFinite(sillFt)
+          ? Math.max(0, sillFt * FT_TO_M)
+          : 0.9
+        : 0;
     openings.push({
       id: `${wall.id}-${idSuffix}`,
       wallId: wall.id,
@@ -142,7 +151,7 @@ export function openingsFromCadHints(
       offset: clamped,
       width: widthM,
       height: kind === 'window' ? Math.min(1.4, height * 0.45) : Math.min(2.1, height * 0.95),
-      sill: kind === 'window' ? 0.9 : 0,
+      sill: sillM,
       swing: kind === 'door' ? 'left' : undefined,
     });
   };
@@ -173,7 +182,7 @@ export function openingsFromCadHints(
     // Must sit near a wall (within ~2.5 ft of centerline).
     if (bestIdx < 0 || bestDist > 2.5) continue;
     const widthFt = Math.min(8, Math.max(hint.kind === 'window' ? 2 : 2.5, hintLen));
-    addOpening(bestIdx, bestT, widthFt, hint.kind, `hint-${hi}`);
+    addOpening(bestIdx, bestT, widthFt, hint.kind, `hint-${hi}`, hint.sillFt);
   }
 
   // 2) Colinear wall gaps (1.8–4.5 ft) → passage/door openings when no hint covered them.
