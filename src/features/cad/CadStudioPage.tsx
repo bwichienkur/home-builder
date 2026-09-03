@@ -2,12 +2,18 @@ import { useMemo, useRef, useState } from 'react';
 import {
   buildCadPlateFromDxf,
   demoCadPlate,
-  extrudeCadPlate,
-  renderCadElevationSvg,
   deleteSelection,
+  extrudeCadPlate,
+  hideNonFloorPreset,
+  removeLayer,
+  renderCadElevationSvg,
+  roleToClassify,
   selectionSummary,
+  setLayerClassify,
+  showWallsAndDoorsPreset,
   withLayerVisibility,
   type CadEditTool,
+  type CadLayerClassify,
   type CadPlateSelection,
 } from '../../lib/cadStudio';
 import type { CadFixtureKind, CadPlate } from '../../lib/cadStudio/types';
@@ -20,6 +26,16 @@ import './cadStudio.css';
 
 type ViewMode = 'plate' | 'extrude' | 'massing' | 'sheets';
 type PlateMode = 'floor' | 'front' | 'side';
+
+const CLASSIFY_OPTIONS: { id: CadLayerClassify; label: string }[] = [
+  { id: 'wall', label: 'Wall' },
+  { id: 'door', label: 'Door' },
+  { id: 'fixture', label: 'Fixture' },
+  { id: 'soft', label: 'Soft' },
+  { id: 'dim', label: 'Dim' },
+  { id: 'ignore', label: 'Ignore' },
+  { id: 'other', label: 'Other' },
+];
 
 function progressLabel(p: DrawingImportProgress | null): string {
   if (!p) return '';
@@ -40,6 +56,7 @@ export function CadStudioPage() {
   const [editTool, setEditTool] = useState<CadEditTool>('select');
   const [fixtureKind, setFixtureKind] = useState<CadFixtureKind>('sink');
   const [selection, setSelection] = useState<CadPlateSelection | null>(null);
+  const [layerFilter, setLayerFilter] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
   const visibility = useMemo(() => {
@@ -78,6 +95,19 @@ export function CadStudioPage() {
     plate?.sheets[0] ??
     null;
 
+  const filteredLayers = useMemo(() => {
+    const q = layerFilter.trim().toLowerCase();
+    const list = plate?.layers ?? [];
+    if (!q) return list;
+    return list.filter(
+      (l) =>
+        l.name.toLowerCase().includes(q) ||
+        l.role.includes(q) ||
+        l.kind.includes(q) ||
+        roleToClassify(l.role, l.kind, l.name).includes(q),
+    );
+  }, [plate, layerFilter]);
+
   const toggleLayer = (name: string) => {
     if (!plate) return;
     setPlate(withLayerVisibility(plate, { ...visibility, [name]: !visibility[name] }));
@@ -98,14 +128,14 @@ export function CadStudioPage() {
           { drawing: file },
           { planName: file.name.replace(/\.dwg$/i, ''), onProgress: setProgress },
         );
-        const plate = buildCadPlateFromDxf(result.dxfText, file.name, {
+        const next = buildCadPlateFromDxf(result.dxfText, file.name, {
           sheets: result.package.sheets,
           pdfUrl: result.package.pdfUrl,
           sheetSource: result.package.sheetSource === 'pdf' ? 'pdf' : 'dxf_viewport',
         });
         setPlate({
-          ...plate,
-          warnings: [...result.package.warnings, ...plate.warnings],
+          ...next,
+          warnings: [...result.package.warnings, ...next.warnings],
         });
       } else {
         throw new Error('Use a .dxf or .dwg file.');
@@ -113,6 +143,7 @@ export function CadStudioPage() {
       setView('plate');
       setPlateMode('floor');
       setSheetId(null);
+      setSelection(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Import failed');
     } finally {
@@ -123,13 +154,18 @@ export function CadStudioPage() {
 
   const hasFrontElev = !!plate?.elevationFront?.segments.length;
   const hasSideElev = !!plate?.elevationSide?.segments.length;
+  const visibleCount = plate?.layers.filter((l) => l.visible).length ?? 0;
+  const layerCount = plate?.layers.length ?? 0;
 
   return (
     <div className="cad-studio">
       <header className="cad-studio-top">
         <div className="cad-studio-brand">
           <h1>CAD Studio</h1>
-          <p>CAD plate is source of truth — layers, overlay, then extrude. Parallel to Plan Engine.</p>
+          <p>
+            Import every DXF/DWG layer — hide, remove, or classify — then rebuild the floor plate and
+            3D.
+          </p>
         </div>
         <div className="cad-studio-actions">
           <label className="cad-file-btn">
@@ -152,6 +188,7 @@ export function CadStudioPage() {
               setPlate(demoCadPlate());
               setView('plate');
               setPlateMode('floor');
+              setSelection(null);
             }}
           >
             Demo ranch
@@ -198,31 +235,106 @@ export function CadStudioPage() {
 
       <div className="cad-studio-body">
         <aside className="cad-side">
-          <section>
+          <section className="cad-layer-panel">
             <h2>Layers</h2>
-            {plate?.layers.length ? (
+            <p className="cad-layer-summary">
+              {visibleCount} visible · {layerCount} total · walls rebuild when you change layers
+            </p>
+            <div className="cad-layer-presets">
+              <button
+                type="button"
+                disabled={!plate}
+                onClick={() => plate && setPlate(hideNonFloorPreset(plate))}
+              >
+                Hide dims / roof / noise
+              </button>
+              <button
+                type="button"
+                disabled={!plate}
+                onClick={() => plate && setPlate(showWallsAndDoorsPreset(plate))}
+              >
+                Walls + doors only
+              </button>
+              <button
+                type="button"
+                disabled={!plate}
+                onClick={() => {
+                  if (!plate) return;
+                  const allOn: Record<string, boolean> = {};
+                  for (const l of plate.layers) allOn[l.name] = true;
+                  setPlate(withLayerVisibility(plate, allOn));
+                }}
+              >
+                Show all
+              </button>
+            </div>
+            <label className="cad-layer-filter">
+              <span className="sr-only">Filter layers</span>
+              <input
+                type="search"
+                placeholder="Filter layers…"
+                value={layerFilter}
+                onChange={(e) => setLayerFilter(e.target.value)}
+              />
+            </label>
+            {filteredLayers.length ? (
               <ul className="cad-layer-list">
-                {plate.layers.map((layer) => (
-                  <li key={layer.name}>
-                    <input
-                      type="checkbox"
-                      checked={layer.visible}
-                      onChange={() => toggleLayer(layer.name)}
-                      aria-label={`Toggle ${layer.name}`}
-                    />
-                    <span title={layer.name}>{layer.name}</span>
-                    <span className="role">
-                      {layer.kind}/{layer.role} · {layer.segmentCount}
-                    </span>
-                  </li>
-                ))}
+                {filteredLayers.map((layer) => {
+                  const classify = roleToClassify(layer.role, layer.kind, layer.name);
+                  return (
+                    <li key={layer.name} className={layer.visible ? '' : 'is-off'}>
+                      <input
+                        type="checkbox"
+                        checked={layer.visible}
+                        onChange={() => toggleLayer(layer.name)}
+                        aria-label={`Toggle ${layer.name}`}
+                      />
+                      <div className="cad-layer-meta">
+                        <span className="cad-layer-name" title={layer.name}>
+                          {layer.name}
+                        </span>
+                        <span className="role">
+                          {layer.kind} · {layer.segmentCount}
+                        </span>
+                      </div>
+                      <select
+                        className="cad-layer-classify"
+                        value={classify}
+                        aria-label={`Classify ${layer.name}`}
+                        onChange={(e) => {
+                          if (!plate) return;
+                          setPlate(setLayerClassify(plate, layer.name, e.target.value as CadLayerClassify));
+                        }}
+                      >
+                        {CLASSIFY_OPTIONS.map((opt) => (
+                          <option key={opt.id} value={opt.id}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        className="cad-layer-remove"
+                        title={`Remove ${layer.name}`}
+                        aria-label={`Remove ${layer.name}`}
+                        onClick={() => {
+                          if (!plate) return;
+                          setPlate(removeLayer(plate, layer.name));
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             ) : (
               <p className="cad-empty" style={{ padding: 0, textAlign: 'left' }}>
-                No CAD layers yet. Import a DXF or load Demo ranch.
+                {plate ? 'No layers match this filter.' : 'Import a DXF or load Demo ranch.'}
               </p>
             )}
           </section>
+
           <section>
             <h2>Edit plan</h2>
             <div className="cad-edit-tools">
@@ -280,10 +392,11 @@ export function CadStudioPage() {
               </div>
             )}
             <p className="cad-edit-hint">
-              Click a wall to see its length. Drag labels, fixtures, doors, and wall endpoints in Select mode.
-              Add-wall and Add-door: click start, then end. Edits update Extrude 3D live.
+              Classify layers as Wall or Door to rebuild the plate and Extrude 3D. Dim / Ignore stay
+              out of the model.
             </p>
           </section>
+
           <section>
             <h2>Plate</h2>
             <div className="cad-stats">
@@ -303,7 +416,7 @@ export function CadStudioPage() {
             </div>
             {!!plate?.warnings.length && (
               <ul className="cad-warnings">
-                {plate.warnings.slice(0, 8).map((warning) => (
+                {plate.warnings.slice(0, 10).map((warning) => (
                   <li key={warning}>{warning}</li>
                 ))}
               </ul>

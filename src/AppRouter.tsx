@@ -17,9 +17,6 @@ const StudioApp = lazy(() => import('./StudioApp'));
 const CadStudioPage = lazy(() =>
   import('./features/cad/CadStudioPage').then((m) => ({ default: m.CadStudioPage })),
 );
-const TakeoffStudioPage = lazy(() =>
-  import('./features/takeoff/TakeoffStudioPage').then((m) => ({ default: m.TakeoffStudioPage })),
-);
 const AdminPage = lazy(() =>
   import('./components/admin/AdminPage').then((m) => ({ default: m.AdminPage })),
 );
@@ -98,14 +95,6 @@ export function AppRouter() {
             element={
               <Lazy>
                 <CadStudioPage />
-              </Lazy>
-            }
-          />
-          <Route
-            path="takeoff"
-            element={
-              <Lazy>
-                <TakeoffStudioPage />
               </Lazy>
             }
           />

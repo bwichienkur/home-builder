@@ -2,8 +2,6 @@ import {
   buildSheetsFromDxf,
   cropSegmentsToViewport,
   extractDxfModelGeometry,
-  isOpeningLayer,
-  isRoomWallLayer,
   openingKindFromLayer,
   pickElevationViewports,
   pickFloorViewport,
@@ -17,7 +15,13 @@ import {
 } from '../housePlans/dxfRooms';
 import type { DrawingSheet } from '../housePlans/drawingPackage';
 import { buildCadElevationSheets } from './buildCadElevation';
-import { classifyLayerKind, classifySegmentRole } from './classifyLayers';
+import {
+  classifyLayerKind,
+  classifySegmentRole,
+  classifyToRole,
+  defaultLayerVisible,
+  type CadLayerClassify,
+} from './classifyLayers';
 import type {
   CadBoundsFt,
   CadElevationSheet,
@@ -27,10 +31,12 @@ import type {
   CadOpeningHintFt,
   CadPlate,
   CadSegmentFt,
+  CadSegmentRole,
   CadWallCenterlineFt,
 } from './types';
 
-const MAX_SEGMENTS = 12_000;
+/** Cap imported linework for browser memory; prefer layer visibility over dropping layers. */
+const MAX_SEGMENTS = 40_000;
 const MAX_LABELS = 200;
 
 function boundsOf(segs: { x1: number; y1: number; x2: number; y2: number }[]): CadBoundsFt {
@@ -49,74 +55,13 @@ function boundsOf(segs: { x1: number; y1: number; x2: number; y2: number }[]): C
   return { minX, minY, maxX, maxY };
 }
 
-function buildLayerIndex(
-  segments: CadSegmentFt[],
-  labels: CadLabelFt[] = [],
-  elevationSheets: CadElevationSheet[] = [],
-): CadLayerInfo[] {
-  const map = new Map<string, CadLayerInfo>();
-  for (const s of segments) {
-    const existing = map.get(s.layer);
-    if (existing) {
-      existing.segmentCount += 1;
-      continue;
-    }
-    const kind = classifyLayerKind(s.layer);
-    const role = classifySegmentRole(s.layer);
-    map.set(s.layer, {
-      name: s.layer,
-      kind,
-      role,
-      visible:
-        kind === 'floor' &&
-        (role === 'wall' || role === 'opening' || role === 'fixture' || role === 'soft'),
-      segmentCount: 1,
-    });
-  }
-  for (const sheet of elevationSheets) {
-    for (const s of sheet.segments) {
-      const existing = map.get(s.layer);
-      if (existing) {
-        existing.segmentCount += 1;
-        if (existing.kind === 'elevation') existing.visible = existing.visible || /WALL|ROOF|WINDOW|DOOR|OPEN/i.test(s.layer);
-        continue;
-      }
-      map.set(s.layer, {
-        name: s.layer,
-        kind: 'elevation',
-        role: s.role,
-        visible: /WALL|ROOF|WINDOW|DOOR|OPEN/i.test(s.layer),
-        segmentCount: 1,
-      });
-    }
-  }
-  for (const label of labels) {
-    const name = label.layer || 'TEXT ROOM';
-    if (map.has(name)) continue;
-    map.set(name, {
-      name,
-      kind: 'annotation',
-      role: 'other',
-      visible: true,
-      segmentCount: 0,
-    });
-  }
-  // Annotation linework (generic TEXT notes) stays off by default; room-name layer stays on.
-  for (const layer of map.values()) {
-    if (layer.kind === 'annotation' && layer.role === 'other' && !/ROOM/i.test(layer.name)) {
-      layer.visible = false;
-    }
-  }
-  return [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
-}
-
 function exteriorFromLayer(layer?: string): boolean {
   const u = (layer ?? '').toUpperCase();
   if (/INT|INTERIOR/.test(u) && !/EXT/.test(u)) return false;
   return /EXT|EXTERIOR|OUT/.test(u);
 }
 
-function segmentRole(layer: string, linetype?: string): CadSegmentFt['role'] {
+function segmentRole(layer: string, linetype?: string): CadSegmentRole {
   const lt = (linetype ?? '').toUpperCase();
   if (
     /DASH|HIDDEN|PHANTOM|DOT/.test(lt) &&
@@ -127,9 +72,144 @@ function segmentRole(layer: string, linetype?: string): CadSegmentFt['role'] {
   return classifySegmentRole(layer);
 }
 
+function buildLayerIndex(
+  segments: CadSegmentFt[],
+  labels: CadLabelFt[] = [],
+  elevationSheets: CadElevationSheet[] = [],
+  prior?: CadLayerInfo[],
+): CadLayerInfo[] {
+  const priorMap = new Map((prior ?? []).map((l) => [l.name, l]));
+  const map = new Map<string, CadLayerInfo>();
+
+  for (const s of segments) {
+    const existing = map.get(s.layer);
+    if (existing) {
+      existing.segmentCount += 1;
+      continue;
+    }
+    const prev = priorMap.get(s.layer);
+    const kind = prev?.kind ?? classifyLayerKind(s.layer);
+    const role = prev?.role ?? s.role ?? classifySegmentRole(s.layer);
+    map.set(s.layer, {
+      name: s.layer,
+      kind,
+      role,
+      visible: prev?.visible ?? defaultLayerVisible(s.layer, kind, role),
+      segmentCount: 1,
+    });
+  }
+
+  for (const sheet of elevationSheets) {
+    for (const s of sheet.segments) {
+      const existing = map.get(s.layer);
+      if (existing) {
+        existing.segmentCount += 1;
+        continue;
+      }
+      const prev = priorMap.get(s.layer);
+      map.set(s.layer, {
+        name: s.layer,
+        kind: 'elevation',
+        role: s.role,
+        visible: prev?.visible ?? false,
+        segmentCount: 1,
+      });
+    }
+  }
+
+  for (const label of labels) {
+    const name = label.layer || 'TEXT ROOM';
+    if (map.has(name)) continue;
+    const prev = priorMap.get(name);
+    const kind = prev?.kind ?? 'annotation';
+    const role = prev?.role ?? 'other';
+    map.set(name, {
+      name,
+      kind,
+      role,
+      visible: prev?.visible ?? defaultLayerVisible(name, kind, role),
+      segmentCount: 0,
+    });
+  }
+
+  // Preserve prior layers that lost all geometry (user may re-show after remove undo).
+  for (const prev of prior ?? []) {
+    if (!map.has(prev.name)) {
+      map.set(prev.name, { ...prev, segmentCount: 0 });
+    }
+  }
+
+  return [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/**
+ * Rebuild wall centerlines + openings from visible classified layers.
+ * Call after hide / show / classify / remove so plate + 3D stay in sync.
+ */
+export function rebuildPlateFromLayerSettings(plate: CadPlate): CadPlate {
+  const roleByLayer = new Map(plate.layers.map((l) => [l.name, l.role]));
+  const visible = new Set(plate.layers.filter((l) => l.visible).map((l) => l.name));
+
+  const segments: CadSegmentFt[] = plate.segments.map((s) => ({
+    ...s,
+    role: roleByLayer.get(s.layer) ?? s.role,
+  }));
+
+  const wallRaw = segments.filter((s) => s.role === 'wall' && visible.has(s.layer));
+  const centers = prepareCadWallCenterlines(
+    wallRaw.map((s) => ({
+      x1: s.x1,
+      y1: s.y1,
+      x2: s.x2,
+      y2: s.y2,
+      layer: s.layer,
+    })),
+  );
+  const wallCenterlines: CadWallCenterlineFt[] = centers.map((s) => ({
+    x1: s.x1,
+    y1: s.y1,
+    x2: s.x2,
+    y2: s.y2,
+    layer: s.layer,
+    exterior: s.exterior ?? exteriorFromLayer(s.layer),
+  }));
+
+  const openingHints: CadOpeningHintFt[] = segments
+    .filter((s) => s.role === 'opening' && visible.has(s.layer))
+    .map((s) => ({
+      x1: s.x1,
+      y1: s.y1,
+      x2: s.x2,
+      y2: s.y2,
+      kind: openingKindFromLayer(s.layer),
+      layer: s.layer,
+    }));
+
+  const fixtureHints = (plate.fixtureHints ?? []).filter(
+    (f) => !f.layer || visible.has(f.layer) || !plate.layers.some((l) => l.name === f.layer),
+  );
+
+  const layers = buildLayerIndex(
+    segments,
+    plate.labels,
+    [plate.elevationFront, plate.elevationSide].filter(Boolean) as CadElevationSheet[],
+    plate.layers,
+  );
+
+  return {
+    ...plate,
+    segments,
+    wallCenterlines,
+    openingHints,
+    fixtureHints,
+    layers,
+    bounds: boundsOf(segments.length ? segments.filter((s) => visible.has(s.layer)) : wallCenterlines),
+  };
+}
+
 /**
  * Build a CAD plate from DXF text.
- * Floor plate linework is cropped to the floor viewport when available.
+ * Imports all model-space layers; smart defaults hide dims / roof / text / MEP.
  */
 export function buildCadPlateFromDxf(
   dxfText: string,
@@ -172,59 +252,24 @@ export function buildCadPlateFromDxf(
     warnings.push('No floor viewport found — using full model-space linework.');
   }
 
-  const preferred = working.filter((s) => {
-    const role = segmentRole(s.layer, s.linetype);
-    const kind = classifyLayerKind(s.layer);
-    return kind === 'floor' || role !== 'other';
-  });
-  const pool = preferred.length >= 8 ? preferred : working;
-  const { scale, segments: scaled } = scaleSegmentsToFeet(pool.slice(0, MAX_SEGMENTS), insUnits);
+  // Import every layer (no preferred-pool drop). Cap count for memory.
+  if (working.length > MAX_SEGMENTS) {
+    warnings.push(
+      `Imported first ${MAX_SEGMENTS.toLocaleString()} of ${working.length.toLocaleString()} segments — hide unused layers, then re-import a floor-only DXF if needed.`,
+    );
+  }
+  const { scale, segments: scaled } = scaleSegmentsToFeet(working.slice(0, MAX_SEGMENTS), insUnits);
   const flipped = flipPlanY(scaled);
 
-  const wallRaw = flipped.filter((s) => isRoomWallLayer(s.layer ?? ''));
-  const centers = prepareCadWallCenterlines(wallRaw);
-  const wallCenterlines: CadWallCenterlineFt[] = centers.map((s) => ({
+  const segments: CadSegmentFt[] = flipped.map((s) => ({
     x1: s.x1,
     y1: s.y1,
     x2: s.x2,
     y2: s.y2,
-    layer: s.layer,
-    exterior: s.exterior ?? exteriorFromLayer(s.layer),
+    layer: s.layer ?? '0',
+    role: segmentRole(s.layer ?? '0', s.linetype),
+    linetype: s.linetype,
   }));
-
-  // Plate walls = paired centerlines only. Raw wall-layer faces often include
-  // unpaired measurement / witness / tick lines that must not draw as walls.
-  const nonWall = flipped.filter((s) => !isRoomWallLayer(s.layer ?? ''));
-  const segments: CadSegmentFt[] = [
-    ...wallCenterlines.map((s) => ({
-      x1: s.x1,
-      y1: s.y1,
-      x2: s.x2,
-      y2: s.y2,
-      layer: s.layer ?? 'WALLS',
-      role: 'wall' as const,
-    })),
-    ...nonWall.map((s) => ({
-      x1: s.x1,
-      y1: s.y1,
-      x2: s.x2,
-      y2: s.y2,
-      layer: s.layer ?? '0',
-      role: segmentRole(s.layer ?? '0', s.linetype),
-      linetype: s.linetype,
-    })),
-  ];
-
-  const openingHints: CadOpeningHintFt[] = flipped
-    .filter((s) => isOpeningLayer(s.layer ?? ''))
-    .map((s) => ({
-      x1: s.x1,
-      y1: s.y1,
-      x2: s.x2,
-      y2: s.y2,
-      kind: openingKindFromLayer(s.layer ?? ''),
-      layer: s.layer,
-    }));
 
   const plateLabels: CadLabelFt[] = flipPlanLabels(
     workingLabels
@@ -272,22 +317,6 @@ export function buildCadPlateFromDxf(
     sheetSource = sheets.length ? 'dxf_viewport' : 'static';
   }
 
-  if (wallCenterlines.length < 4) {
-    warnings.push('Few wall centerlines detected — check wall layer names in the DXF.');
-  }
-  const fixtureCount = segments.filter((s) => s.role === 'fixture').length;
-  const softCount = segments.filter((s) => s.role === 'soft').length;
-  if (fixtureCount) {
-    warnings.push(`Fixture linework: ${fixtureCount} segment(s) (counters, sinks, appliances).`);
-  }
-  if (softCount) {
-    warnings.push(`Soft room borders: ${softCount} segment(s) (ceiling / space boundaries).`);
-  }
-  if (plateLabels.length) warnings.push(`Room labels: ${plateLabels.length}.`);
-  if (plateFixtureHints.length) {
-    warnings.push(`Fixture poses: ${plateFixtureHints.length} (INSERT/CIRCLE for Extrude).`);
-  }
-
   const elevVps = pickElevationViewports(dxfText);
   const { front: elevationFront, side: elevationSide, warnings: elevWarnings } = buildCadElevationSheets(
     dxfText,
@@ -297,40 +326,128 @@ export function buildCadPlateFromDxf(
   );
   warnings.push(...elevWarnings);
 
-  const elevationLayers = buildLayerIndex(segments, plateLabels, [
-    ...(elevationFront ? [elevationFront] : []),
-    ...(elevationSide ? [elevationSide] : []),
-  ]);
+  const layers = buildLayerIndex(
+    segments,
+    plateLabels,
+    [elevationFront, elevationSide].filter(Boolean) as CadElevationSheet[],
+  );
 
-  return {
+  const layerCount = layers.length;
+  const onCount = layers.filter((l) => l.visible).length;
+  warnings.push(`Layers: ${layerCount} imported · ${onCount} visible by default (dims/roof/text/MEP off).`);
+
+  const draft: CadPlate = {
     id: `cad-plate-${Date.now().toString(36)}`,
     sourceFileName,
     importedAt: new Date().toISOString(),
     warnings,
-    layers: elevationLayers,
+    layers,
     segments,
-    wallCenterlines,
-    openingHints,
+    wallCenterlines: [],
+    openingHints: [],
     labels: plateLabels,
     fixtureHints: plateFixtureHints,
     elevationFront: elevationFront ?? undefined,
     elevationSide: elevationSide ?? undefined,
     sheets,
-    bounds: boundsOf(segments.length ? segments : wallCenterlines),
+    bounds: boundsOf(segments),
     sheetSource,
     pdfUrl: opts?.pdfUrl,
   };
+
+  const plate = rebuildPlateFromLayerSettings(draft);
+
+  if (plate.wallCenterlines.length < 4) {
+    plate.warnings.push('Few wall centerlines — classify wall layers in the panel, then rebuild.');
+  }
+  const fixtureCount = plate.segments.filter((s) => s.role === 'fixture').length;
+  const softCount = plate.segments.filter((s) => s.role === 'soft').length;
+  if (fixtureCount) {
+    plate.warnings.push(`Fixture linework: ${fixtureCount} segment(s).`);
+  }
+  if (softCount) {
+    plate.warnings.push(`Soft room borders: ${softCount} segment(s).`);
+  }
+  if (plate.labels.length) plate.warnings.push(`Room labels: ${plate.labels.length}.`);
+  if (plate.fixtureHints.length) {
+    plate.warnings.push(`Fixture poses: ${plate.fixtureHints.length} (INSERT/CIRCLE for Extrude).`);
+  }
+
+  return plate;
 }
 
-/** Apply layer visibility toggles without rebuilding geometry. */
+/** Toggle visibility and rebuild walls / openings / 3D inputs. */
 export function withLayerVisibility(plate: CadPlate, visibility: Record<string, boolean>): CadPlate {
-  return {
+  return rebuildPlateFromLayerSettings({
     ...plate,
     layers: plate.layers.map((l) => ({
       ...l,
       visible: visibility[l.name] ?? l.visible,
     })),
-  };
+  });
+}
+
+/** Set layer classify (Wall / Door / Dim / Ignore / …) and rebuild. */
+export function setLayerClassify(plate: CadPlate, layerName: string, classify: CadLayerClassify): CadPlate {
+  const role = classifyToRole(classify);
+  const kind =
+    classify === 'dim'
+      ? 'annotation'
+      : classify === 'ignore'
+        ? 'other'
+        : classify === 'wall' || classify === 'door' || classify === 'fixture' || classify === 'soft'
+          ? 'floor'
+          : classifyLayerKind(layerName);
+
+  const layers = plate.layers.map((l) => {
+    if (l.name !== layerName) return l;
+    const visible =
+      classify === 'dim' || classify === 'ignore'
+        ? false
+        : l.visible || role === 'wall' || role === 'opening';
+    return { ...l, role, kind, visible };
+  });
+
+  const segments = plate.segments.map((s) => (s.layer === layerName ? { ...s, role } : s));
+  return rebuildPlateFromLayerSettings({ ...plate, layers, segments });
+}
+
+/** Permanently drop a layer’s geometry from the plate. */
+export function removeLayer(plate: CadPlate, layerName: string): CadPlate {
+  const segments = plate.segments.filter((s) => s.layer !== layerName);
+  const labels = plate.labels.filter((l) => (l.layer || 'TEXT ROOM') !== layerName);
+  const fixtureHints = plate.fixtureHints.filter((f) => f.layer !== layerName);
+  const layers = plate.layers.filter((l) => l.name !== layerName);
+  return rebuildPlateFromLayerSettings({
+    ...plate,
+    segments,
+    labels,
+    fixtureHints,
+    layers,
+  });
+}
+
+/** Hide all annotation / dim / roof / noise layers in one click. */
+export function hideNonFloorPreset(plate: CadPlate): CadPlate {
+  const layers = plate.layers.map((l) => {
+    const shouldHide =
+      l.kind === 'annotation' ||
+      l.kind === 'elevation' ||
+      l.kind === 'foundation' ||
+      l.role === 'other' ||
+      l.role === 'elevation';
+    return shouldHide ? { ...l, visible: false } : l;
+  });
+  return rebuildPlateFromLayerSettings({ ...plate, layers });
+}
+
+/** Show only layers classified as wall or door (opening). */
+export function showWallsAndDoorsPreset(plate: CadPlate): CadPlate {
+  const layers = plate.layers.map((l) => ({
+    ...l,
+    visible: l.role === 'wall' || l.role === 'opening',
+  }));
+  return rebuildPlateFromLayerSettings({ ...plate, layers });
 }
 
 export function visibleSegments(plate: CadPlate): CadSegmentFt[] {

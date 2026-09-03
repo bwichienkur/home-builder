@@ -6,8 +6,10 @@ import {
   demoCadPlate,
   extrudeCadPlate,
   isElevationLayer,
+  removeLayer,
   renderCadElevationSvg,
   renderCadPlateSvg,
+  setLayerClassify,
   withLayerVisibility,
 } from './index';
 
@@ -280,5 +282,118 @@ describe('cadStudio', () => {
     const plate = withLayerVisibility(demoCadPlate(), { DOORS: false, WINDOWS: false });
     const svg = renderCadPlateSvg(plate);
     expect(svg).not.toContain('#b45309');
+  });
+
+  it('imports dim layers off by default and rebuilds walls when classified', () => {
+    const dxf = `  0
+SECTION
+  2
+HEADER
+  9
+$INSUNITS
+ 70
+2
+  0
+ENDSEC
+  0
+SECTION
+  2
+ENTITIES
+  0
+LINE
+  8
+WALLS EXT
+ 10
+0
+ 20
+0
+ 11
+30
+ 21
+0
+  0
+LINE
+  8
+WALLS EXT
+ 10
+30
+ 20
+0
+ 11
+30
+ 21
+20
+  0
+LINE
+  8
+WALLS EXT
+ 10
+30
+ 20
+20
+ 11
+0
+ 21
+20
+  0
+LINE
+  8
+WALLS EXT
+ 10
+0
+ 20
+20
+ 11
+0
+ 21
+0
+  0
+LINE
+  8
+DIMS
+ 10
+0
+ 20
+-2
+ 11
+30
+ 21
+-2
+  0
+LINE
+  8
+ROOF PLAN
+ 10
+-5
+ 20
+-5
+ 11
+35
+ 21
+-5
+  0
+ENDSEC
+  0
+EOF
+`;
+    const plate = buildCadPlateFromDxf(dxf, 'layers.dxf');
+    expect(plate.layers.some((l) => l.name === 'DIMS')).toBe(true);
+    expect(plate.layers.some((l) => l.name === 'ROOF PLAN')).toBe(true);
+    expect(plate.layers.find((l) => l.name === 'DIMS')?.visible).toBe(false);
+    expect(plate.layers.find((l) => l.name === 'ROOF PLAN')?.visible).toBe(false);
+
+    const wallsBefore = plate.wallCenterlines.length;
+    expect(wallsBefore).toBeGreaterThanOrEqual(4);
+
+    const hiddenWalls = withLayerVisibility(plate, { 'WALLS EXT': false });
+    expect(hiddenWalls.wallCenterlines.length).toBe(0);
+
+    const asIgnore = setLayerClassify(plate, 'WALLS EXT', 'ignore');
+    expect(asIgnore.wallCenterlines.length).toBe(0);
+    expect(asIgnore.layers.find((l) => l.name === 'WALLS EXT')?.visible).toBe(false);
+
+    const removed = removeLayer(plate, 'DIMS');
+    expect(removed.layers.some((l) => l.name === 'DIMS')).toBe(false);
+    expect(removed.segments.some((s) => s.layer === 'DIMS')).toBe(false);
   });
 });

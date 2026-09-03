@@ -475,10 +475,7 @@ export function extractDxfModelGeometry(dxfText: string): {
       wallEntities.push(...raw);
     }
 
-    const keepLayer =
-      SHEET_LAYERS.has(layer) || isSheetWallLayer(layer) || isFixtureGeometryLayer(layer);
-    if (!keepLayer) continue;
-
+    // Import every model-space layer. CAD Studio decides visibility / role defaults.
     if (type === 'LINE') {
       const x1 = Number(fields['10']);
       const y1 = Number(fields['20']);
@@ -486,7 +483,7 @@ export function extractDxfModelGeometry(dxfText: string): {
       const y2 = Number(fields['21']);
       const linetype = fields['6'];
       if ([x1, y1, x2, y2].every(Number.isFinite)) segs.push({ x1, y1, x2, y2, layer, linetype });
-    } else if (type === 'LWPOLYLINE') {
+    } else if (type === 'LWPOLYLINE' || type === 'POLYLINE') {
       const verts: { x: number; y: number }[] = [];
       let pendingX: number | null = null;
       let closed = false;
@@ -511,16 +508,16 @@ export function extractDxfModelGeometry(dxfText: string): {
         const b = verts[0]!;
         segs.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y, layer, linetype });
       }
-    } else if (type === 'CIRCLE' && isFixtureGeometryLayer(layer)) {
+    } else if (type === 'CIRCLE') {
       const cx = Number(fields['10']);
       const cy = Number(fields['20']);
       const r = Number(fields['40']);
       segs.push(...circleToSegments(cx, cy, r, layer, fields['6']));
-      if (Number.isFinite(cx + cy + r) && r > 0) {
+      if (isFixtureGeometryLayer(layer) && Number.isFinite(cx + cy + r) && r > 0) {
         const kind = r >= 8 ? 'toilet' : r >= 3 ? 'sink' : 'other'; // inches when INSUNITS=1
         fixtureHints.push({ x: cx, y: cy, radius: r, layer, kind });
       }
-    } else if (type === 'ARC' && isFixtureGeometryLayer(layer)) {
+    } else if (type === 'ARC') {
       segs.push(
         ...arcToSegments(
           Number(fields['10']),

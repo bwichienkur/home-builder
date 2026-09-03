@@ -12,10 +12,27 @@ export type {
   CadRoofMassing,
   CadPlanFace,
 } from './types';
-export { buildCadPlateFromDxf, withLayerVisibility, visibleSegments, visibleLabels } from './buildCadPlate';
+export {
+  buildCadPlateFromDxf,
+  withLayerVisibility,
+  setLayerClassify,
+  removeLayer,
+  hideNonFloorPreset,
+  showWallsAndDoorsPreset,
+  rebuildPlateFromLayerSettings,
+  visibleSegments,
+  visibleLabels,
+} from './buildCadPlate';
 export { buildCadElevationSheets, extractRoofProfileFromElevation } from './buildCadElevation';
 export { buildCadMassing, detectFrontFace } from './buildCadMassing';
-export { classifyLayerKind, classifySegmentRole, isElevationLayer } from './classifyLayers';
+export {
+  classifyLayerKind,
+  classifySegmentRole,
+  isElevationLayer,
+  defaultLayerVisible,
+  roleToClassify,
+  type CadLayerClassify,
+} from './classifyLayers';
 export { renderCadPlateSvg } from './renderCadPlateSvg';
 export { renderCadElevationSvg, elevationSvgDataUrl } from './renderCadElevationSvg';
 export { extrudeCadPlate } from './extrudeCadPlate';
