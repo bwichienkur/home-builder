@@ -3,6 +3,7 @@ import type {
   CadBoundsFt,
   CadFixtureHintFt,
   CadFixtureKind,
+  CadGuidelineFt,
   CadLayerInfo,
   CadOpeningHintFt,
   CadPlate,
@@ -12,8 +13,9 @@ import type {
   CadSlabKind,
   CadWallCenterlineFt,
 } from './types';
+import { defaultWallThicknessFt } from './cadDrawSnap';
 
-export type CadEditTool = 'select' | 'wall' | 'opening' | 'fixture' | 'slab' | 'delete';
+export type CadEditTool = 'select' | 'wall' | 'opening' | 'fixture' | 'slab' | 'guide' | 'delete';
 
 export type CadPlateSelection =
   | { kind: 'wall'; index: number }
@@ -21,22 +23,28 @@ export type CadPlateSelection =
   | { kind: 'fixture'; index: number }
   | { kind: 'opening'; index: number }
   | { kind: 'slab'; index: number }
+  | { kind: 'guide'; index: number }
   | { kind: 'segment'; index: number };
 
 const SLAB_DEFAULTS: Record<
   CadSlabKind,
-  { thicknessFt: number; elevationFt: number; layer: string }
+  { thicknessFt: number; elevationFt: number; layer: string; railing?: boolean }
 > = {
   terrace: { thicknessFt: 0.5, elevationFt: 0, layer: 'SLAB TERRACE' },
   driveway: { thicknessFt: 0.5, elevationFt: -0.15, layer: 'SLAB DRIVE' },
   garden: { thicknessFt: 0.25, elevationFt: -0.05, layer: 'SLAB GARDEN' },
-  balcony: { thicknessFt: 0.5, elevationFt: 0, layer: 'SLAB BALCONY' },
+  balcony: { thicknessFt: 0.5, elevationFt: 0, layer: 'SLAB BALCONY', railing: true },
 };
 
 let slabSeq = 0;
+let guideSeq = 0;
 function nextSlabId(kind: CadSlabKind): string {
   slabSeq += 1;
   return `slab-${kind}-${slabSeq.toString(36)}`;
+}
+function nextGuideId(): string {
+  guideSeq += 1;
+  return `guide-${guideSeq.toString(36)}`;
 }
 
 export function segLengthFt(s: { x1: number; y1: number; x2: number; y2: number }): number {
@@ -214,12 +222,28 @@ export function addWallCenterline(
   x2: number,
   y2: number,
   layer = 'WALLS',
+  thicknessFt?: number,
 ): CadPlate {
+  const exterior = /EXT/i.test(layer);
   const wallCenterlines = [
     ...plate.wallCenterlines,
-    { x1, y1, x2, y2, layer, exterior: /EXT/i.test(layer) },
+    {
+      x1,
+      y1,
+      x2,
+      y2,
+      layer,
+      exterior,
+      thicknessFt: thicknessFt ?? defaultWallThicknessFt({ exterior, layer }),
+    },
   ];
   return syncWallSegments({ ...plate, wallCenterlines });
+}
+
+export function setWallThickness(plate: CadPlate, index: number, thicknessFt: number): CadPlate {
+  const w = plate.wallCenterlines[index];
+  if (!w) return plate;
+  return updateWallCenterline(plate, index, { ...w, thicknessFt: Math.max(0.15, thicknessFt) });
 }
 
 export function addOpeningHint(
@@ -228,9 +252,10 @@ export function addOpeningHint(
   y1: number,
   x2: number,
   y2: number,
-  kind: 'door' | 'window' = 'door',
+  kind: 'door' | 'window' | 'passage' = 'door',
   sillFt?: number,
 ): CadPlate {
+  const layer = kind === 'window' ? 'WINDOWS' : kind === 'passage' ? 'OPENINGS' : 'DOORS';
   const openingHints: CadOpeningHintFt[] = [
     ...plate.openingHints,
     {
@@ -239,7 +264,7 @@ export function addOpeningHint(
       x2,
       y2,
       kind,
-      layer: kind === 'window' ? 'WINDOWS' : 'DOORS',
+      layer,
       sillFt: kind === 'window' ? (sillFt ?? 3) : 0,
     },
   ];
@@ -250,7 +275,7 @@ export function addOpeningHint(
       y1,
       x2,
       y2,
-      layer: kind === 'window' ? 'WINDOWS' : 'DOORS',
+      layer,
       role: 'opening',
     },
   ];
@@ -291,7 +316,7 @@ export function addSlab(
   plate: CadPlate,
   kind: CadSlabKind,
   points: Array<{ x: number; y: number }>,
-  opts?: { thicknessFt?: number; elevationFt?: number },
+  opts?: { thicknessFt?: number; elevationFt?: number; railing?: boolean },
 ): CadPlate {
   if (points.length < 3) return plate;
   const d = SLAB_DEFAULTS[kind];
@@ -302,6 +327,7 @@ export function addSlab(
     thicknessFt: opts?.thicknessFt ?? d.thicknessFt,
     elevationFt: opts?.elevationFt ?? d.elevationFt,
     layer: d.layer,
+    railing: opts?.railing ?? d.railing ?? false,
   };
   const slabs = [...(plate.slabs ?? []), slab];
   return syncWallSegments({
@@ -311,10 +337,23 @@ export function addSlab(
   });
 }
 
+export function addGuideline(
+  plate: CadPlate,
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+): CadPlate {
+  if (Math.hypot(x2 - x1, y2 - y1) < 0.5) return plate;
+  const guide: CadGuidelineFt = { id: nextGuideId(), x1, y1, x2, y2 };
+  const guidelines = [...(plate.guidelines ?? []), guide];
+  return { ...plate, guidelines };
+}
+
 export function updateSlab(
   plate: CadPlate,
   index: number,
-  patch: Partial<Pick<CadSlabFt, 'kind' | 'thicknessFt' | 'elevationFt' | 'points'>>,
+  patch: Partial<Pick<CadSlabFt, 'kind' | 'thicknessFt' | 'elevationFt' | 'points' | 'railing'>>,
 ): CadPlate {
   const slabs = (plate.slabs ?? []).map((s, i) => {
     if (i !== index) return s;
@@ -412,6 +451,10 @@ export function deleteSelection(plate: CadPlate, sel: CadPlateSelection): CadPla
         bounds: recomputePlateBounds({ ...plate, slabs }),
       });
     }
+    case 'guide': {
+      const guidelines = (plate.guidelines ?? []).filter((_, i) => i !== sel.index);
+      return { ...plate, guidelines };
+    }
     case 'segment': {
       const segments = plate.segments.filter((_, i) => i !== sel.index);
       return syncWallSegments({ ...plate, segments });
@@ -426,7 +469,8 @@ export function selectionSummary(plate: CadPlate, sel: CadPlateSelection): strin
     case 'wall': {
       const w = plate.wallCenterlines[sel.index];
       if (!w) return 'Wall (missing)';
-      return `Wall ${formatWallLengthFt(segLengthFt(w))}${w.exterior ? ' · exterior' : ''}`;
+      const thick = defaultWallThicknessFt(w);
+      return `Wall ${formatWallLengthFt(segLengthFt(w))} · ${formatWallLengthFt(thick)} thick${w.exterior ? ' · exterior' : ''}`;
     }
     case 'label': {
       const l = plate.labels[sel.index];
@@ -446,7 +490,12 @@ export function selectionSummary(plate: CadPlate, sel: CadPlateSelection): strin
     case 'slab': {
       const s = plate.slabs?.[sel.index];
       if (!s) return 'Slab';
-      return `${s.kind} · ${formatWallLengthFt(s.thicknessFt)} thick · Z ${formatWallLengthFt(s.elevationFt)}`;
+      const rail = s.railing ? ' · railing' : '';
+      return `${s.kind} · ${formatWallLengthFt(s.thicknessFt)} thick · Z ${formatWallLengthFt(s.elevationFt)}${rail}`;
+    }
+    case 'guide': {
+      const g = plate.guidelines?.[sel.index];
+      return g ? `Guide ${formatWallLengthFt(segLengthFt(g))}` : 'Guide';
     }
     case 'segment': {
       const s = plate.segments[sel.index];
