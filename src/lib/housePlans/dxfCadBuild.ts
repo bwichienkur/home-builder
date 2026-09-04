@@ -11,13 +11,13 @@ import type { Seg } from './dxfRooms';
 
 const FT_TO_M = 0.3048;
 
-export type PlanWallSegmentFt = Seg & { exterior?: boolean };
+export type PlanWallSegmentFt = Seg & { exterior?: boolean; thicknessFt?: number };
 export type PlanOpeningHintFt = {
   x1: number;
   y1: number;
   x2: number;
   y2: number;
-  kind: 'door' | 'window';
+  kind: 'door' | 'window' | 'passage';
   layer?: string;
   /** Optional sill height in feet (windows). */
   sillFt?: number;
@@ -121,7 +121,7 @@ export function openingsFromCadHints(
     wallIdx: number,
     offset: number,
     widthFt: number,
-    kind: 'door' | 'window',
+    kind: 'door' | 'window' | 'passage',
     idSuffix: string,
     sillFt?: number,
   ) => {
@@ -295,14 +295,22 @@ export function buildFloorFromCadWalls(
   }));
 
   const height = ceilingMeters(rooms);
-  const walls: Wall[] = segments.map((s, i) => ({
-    id: `${floor.id}-cad-${i}`,
-    start: toPoint(s.x1, s.y1),
-    end: toPoint(s.x2, s.y2),
-    thickness: s.exterior ? 0.18 : 0.12,
-    height,
-    assembly: s.exterior ? 'exterior' : 'interior',
-  }));
+  const walls: Wall[] = segments.map((s, i) => {
+    const thicknessM =
+      s.thicknessFt != null && Number.isFinite(s.thicknessFt)
+        ? Math.max(0.05, s.thicknessFt * FT_TO_M)
+        : s.exterior
+          ? 0.18
+          : 0.12;
+    return {
+      id: `${floor.id}-cad-${i}`,
+      start: toPoint(s.x1, s.y1),
+      end: toPoint(s.x2, s.y2),
+      thickness: thicknessM,
+      height,
+      assembly: s.exterior ? 'exterior' : 'interior',
+    };
+  });
 
   const openings = openingsFromCadHints(walls, segments, hints, height);
 

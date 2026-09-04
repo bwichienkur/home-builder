@@ -51,9 +51,9 @@ export type HousePlanFloor = {
   name: string;
   rooms: PlanRoomRect[];
   /** CAD wall centerlines (feet, local origin). When set, walls render from these — not room box edges. */
-  wallSegmentsFt?: { x1: number; y1: number; x2: number; y2: number; layer?: string; exterior?: boolean }[];
-  /** Door/window hints from DXF layers (feet, same local origin as wallSegmentsFt). */
-  openingHintsFt?: { x1: number; y1: number; x2: number; y2: number; kind: 'door' | 'window'; layer?: string }[];
+  wallSegmentsFt?: { x1: number; y1: number; x2: number; y2: number; layer?: string; exterior?: boolean; thicknessFt?: number }[];
+  /** Door/window/passage hints from DXF layers (feet, same local origin as wallSegmentsFt). */
+  openingHintsFt?: { x1: number; y1: number; x2: number; y2: number; kind: 'door' | 'window' | 'passage'; layer?: string; sillFt?: number }[];
   /**
    * Exact DXF linework for Plan-view CAD overlay (feet, same local origin).
    * Plan is the source of truth for layout; 3D extrudes walls/rooms derived from the plan model.

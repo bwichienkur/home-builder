@@ -5,9 +5,11 @@ import {
   formatDraftLength,
   formatRoomAreaSqFt,
 } from '../../lib/cadStudio/cadRoomStamps';
-import { computeExteriorDims } from '../../lib/cadStudio/cadExteriorDims';
+import { computeExteriorDims, computeInteriorDims } from '../../lib/cadStudio/cadExteriorDims';
+import { snapCadDraftPoint, type CadSnapResult } from '../../lib/cadStudio/cadDrawSnap';
 import {
   addFixtureHint,
+  addGuideline,
   addOpeningHint,
   addSlab,
   addWallCenterline,
@@ -53,6 +55,17 @@ const SLAB_FILL: Record<CadSlabKind, string> = {
   balcony: '#b7a99a',
 };
 
+const ROOM_FILL_PALETTE = [
+  '#93c5fd',
+  '#a7f3d0',
+  '#fde68a',
+  '#fbcfe8',
+  '#c4b5fd',
+  '#fdba74',
+  '#99f6e4',
+  '#ddd6fe',
+];
+
 /** Extra pad so exterior dim chains fit in the viewBox. */
 const PAD = 8;
 const SLAB_CLOSE_TOL_FT = 1.25;
@@ -61,12 +74,15 @@ type Props = {
   plate: CadPlate;
   tool: CadEditTool;
   fixtureKind: CadFixtureKind;
-  openingKind?: 'door' | 'window';
+  openingKind?: 'door' | 'window' | 'passage';
   wallLayer?: string;
   /** Window sill height in feet when placing windows. */
   windowSillFt?: number;
   slabKind?: CadSlabKind;
   showExteriorDims?: boolean;
+  snapOn?: boolean;
+  showInteriorDims?: boolean;
+  showRoomFills?: boolean;
   selection: CadPlateSelection | null;
   onSelectionChange: (sel: CadPlateSelection | null) => void;
   onPlateChange: (plate: CadPlate) => void;
@@ -95,6 +111,9 @@ export function CadPlateEditor({
   windowSillFt = 3,
   slabKind = 'terrace',
   showExteriorDims = true,
+  snapOn = true,
+  showInteriorDims = false,
+  showRoomFills = true,
   selection,
   onSelectionChange,
   onPlateChange,
@@ -105,6 +124,8 @@ export function CadPlateEditor({
   );
   const [draftPoly, setDraftPoly] = useState<Array<{ x: number; y: number }>>([]);
   const [cursorPlan, setCursorPlan] = useState<{ x: number; y: number } | null>(null);
+  const [shiftHeld, setShiftHeld] = useState(false);
+  const [lastSnap, setLastSnap] = useState<CadSnapResult | null>(null);
   const dragRef = useRef<{
     selection: CadPlateSelection;
     startPlan: { x: number; y: number };
@@ -132,7 +153,12 @@ export function CadPlateEditor({
     () => (showExteriorDims ? computeExteriorDims(plate) : []),
     [plate, showExteriorDims],
   );
+  const interiorDims = useMemo(
+    () => (showInteriorDims ? computeInteriorDims(plate) : []),
+    [plate, showInteriorDims],
+  );
   const slabs = plate.slabs ?? [];
+  const guidelines = plate.guidelines ?? [];
 
   const planFromEvent = useCallback(
     (e: React.PointerEvent<SVGSVGElement>) => {
@@ -145,22 +171,36 @@ export function CadPlateEditor({
     [plate.bounds],
   );
 
+  const snapPlan = useCallback(
+    (plan: { x: number; y: number }, from?: { x: number; y: number } | null): CadSnapResult => {
+      const snapped = snapCadDraftPoint(plate, plan.x, plan.y, {
+        enabled: snapOn,
+        ortho: shiftHeld,
+        from: from ?? null,
+      });
+      setLastSnap(snapped);
+      return snapped;
+    },
+    [plate, snapOn, shiftHeld],
+  );
+
   const closeDraftPoly = useCallback(() => {
     if (draftPoly.length >= 3) {
       onPlateChange(addSlab(plate, slabKind, draftPoly));
     }
     setDraftPoly([]);
     setCursorPlan(null);
+    setLastSnap(null);
   }, [draftPoly, onPlateChange, plate, slabKind]);
 
   const handlePointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
     if (e.button !== 0) return;
-    const plan = planFromEvent(e);
-    if (!plan) return;
+    const raw = planFromEvent(e);
+    if (!raw) return;
     svgRef.current?.setPointerCapture(e.pointerId);
 
     if (tool === 'delete') {
-      const hit = pickAtPoint(plate, plan.x, plan.y);
+      const hit = pickAtPoint(plate, raw.x, raw.y);
       if (hit) {
         onPlateChange(deleteSelection(plate, hit));
         onSelectionChange(null);
@@ -169,6 +209,8 @@ export function CadPlateEditor({
     }
 
     if (tool === 'slab') {
+      const from = draftPoly.length ? draftPoly[draftPoly.length - 1]! : null;
+      const plan = snapPlan(raw, from);
       if (draftPoly.length >= 3) {
         const first = draftPoly[0]!;
         if (Math.hypot(plan.x - first.x, plan.y - first.y) <= SLAB_CLOSE_TOL_FT) {
@@ -177,18 +219,22 @@ export function CadPlateEditor({
         }
       }
       setDraftPoly((prev) => [...prev, { x: plan.x, y: plan.y }]);
-      setCursorPlan(plan);
+      setCursorPlan({ x: plan.x, y: plan.y });
       return;
     }
 
-    if (tool === 'wall' || tool === 'opening') {
+    if (tool === 'wall' || tool === 'opening' || tool === 'guide') {
       if (!draftLine) {
+        const plan = snapPlan(raw);
         setDraftLine({ x1: plan.x, y1: plan.y, x2: plan.x, y2: plan.y });
       } else {
         const { x1, y1 } = draftLine;
+        const plan = snapPlan(raw, { x: x1, y: y1 });
         if (Math.hypot(plan.x - x1, plan.y - y1) >= 0.5) {
           if (tool === 'wall') {
             onPlateChange(addWallCenterline(plate, x1, y1, plan.x, plan.y, wallLayer));
+          } else if (tool === 'guide') {
+            onPlateChange(addGuideline(plate, x1, y1, plan.x, plan.y));
           } else {
             onPlateChange(
               addOpeningHint(
@@ -204,42 +250,52 @@ export function CadPlateEditor({
           }
         }
         setDraftLine(null);
+        setLastSnap(null);
       }
       return;
     }
 
     if (tool === 'fixture') {
-      onPlateChange(addFixtureHint(plate, fixtureKind, plan.x, plan.y));
+      onPlateChange(addFixtureHint(plate, fixtureKind, raw.x, raw.y));
       return;
     }
 
-    const hit = pickAtPoint(plate, plan.x, plan.y);
+    const hit = pickAtPoint(plate, raw.x, raw.y);
     onSelectionChange(hit);
     if (hit) {
-      dragRef.current = { selection: hit, startPlan: plan, orig: plate };
+      dragRef.current = { selection: hit, startPlan: raw, orig: plate };
     } else {
       dragRef.current = null;
     }
   };
 
   const handlePointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
-    const plan = planFromEvent(e);
-    if (!plan) return;
+    const raw = planFromEvent(e);
+    if (!raw) return;
 
     if (tool === 'slab' && draftPoly.length) {
-      setCursorPlan(plan);
+      const from = draftPoly[draftPoly.length - 1]!;
+      const plan = snapPlan(raw, from);
+      setCursorPlan({ x: plan.x, y: plan.y });
+      return;
+    }
+
+    if (draftLine && (tool === 'wall' || tool === 'opening' || tool === 'guide')) {
+      const plan = snapPlan(raw, { x: draftLine.x1, y: draftLine.y1 });
+      setDraftLine({ ...draftLine, x2: plan.x, y2: plan.y });
+      setCursorPlan({ x: plan.x, y: plan.y });
       return;
     }
 
     if (draftLine) {
-      setDraftLine({ ...draftLine, x2: plan.x, y2: plan.y });
+      setDraftLine({ ...draftLine, x2: raw.x, y2: raw.y });
       return;
     }
 
     const drag = dragRef.current;
     if (!drag || tool !== 'select') return;
-    const dx = plan.x - drag.startPlan.x;
-    const dy = plan.y - drag.startPlan.y;
+    const dx = raw.x - drag.startPlan.x;
+    const dy = raw.y - drag.startPlan.y;
     const { selection: sel, orig } = drag;
 
     switch (sel.kind) {
@@ -295,20 +351,30 @@ export function CadPlateEditor({
   };
 
   // Escape cancels drafts; Enter closes slab polygon (Plan7-style).
+  // Track Shift for ortho snap.
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Shift') setShiftHeld(true);
       if (e.key === 'Escape') {
         setDraftLine(null);
         setDraftPoly([]);
         setCursorPlan(null);
+        setLastSnap(null);
       }
       if (e.key === 'Enter' && tool === 'slab' && draftPoly.length >= 3) {
         e.preventDefault();
         closeDraftPoly();
       }
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.key === 'Shift') setShiftHeld(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+    };
   }, [closeDraftPoly, draftPoly.length, tool]);
 
   useEffect(() => {
@@ -316,7 +382,10 @@ export function CadPlateEditor({
       setDraftPoly([]);
       setCursorPlan(null);
     }
-    if (tool !== 'wall' && tool !== 'opening') setDraftLine(null);
+    if (tool !== 'wall' && tool !== 'opening' && tool !== 'guide') {
+      setDraftLine(null);
+      setLastSnap(null);
+    }
   }, [tool]);
 
   const isSelected = (kind: CadPlateSelection['kind'], index: number) =>
@@ -324,6 +393,10 @@ export function CadPlateEditor({
 
   const draftPolyPreview =
     draftPoly.length && cursorPlan ? [...draftPoly, cursorPlan] : draftPoly;
+  const showSnapMarker =
+    Boolean(draftLine || draftPoly.length) &&
+    cursorPlan &&
+    (lastSnap?.kind === 'endpoint' || lastSnap?.kind === 'guide');
 
   return (
     <svg
@@ -356,6 +429,19 @@ export function CadPlateEditor({
             />
           );
         })}
+
+        {showRoomFills &&
+          roomStamps.map((room, i) =>
+            room.points.length >= 3 ? (
+              <polygon
+                key={`fill-${room.id}`}
+                points={polyPointsAttr(room.points)}
+                fill={ROOM_FILL_PALETTE[i % ROOM_FILL_PALETTE.length]}
+                fillOpacity={0.18}
+                stroke="none"
+              />
+            ) : null,
+          )}
 
         {segs
           .filter((s) => s.role !== 'wall')
@@ -414,6 +500,21 @@ export function CadPlateEditor({
           );
         })}
 
+        {guidelines.map((g, gi) => (
+          <line
+            key={g.id}
+            x1={g.x1}
+            y1={g.y1}
+            x2={g.x2}
+            y2={g.y2}
+            stroke={gi % 2 === 0 ? '#c026d3' : '#0d9488'}
+            strokeWidth={stroke * 1.1}
+            strokeDasharray="0.55 0.35"
+            strokeOpacity={0.85}
+            strokeLinecap="round"
+          />
+        ))}
+
         {plate.openingHints.map((o, i) => {
           const selected = isSelected('opening', i);
           return (
@@ -465,7 +566,7 @@ export function CadPlateEditor({
             y1={draftLine.y1}
             x2={draftLine.x2}
             y2={draftLine.y2}
-            stroke="#1f4e46"
+            stroke={tool === 'guide' ? '#0d9488' : '#1f4e46'}
             strokeWidth={stroke * 2.5}
             strokeDasharray="0.4 0.3"
             strokeLinecap="round"
@@ -493,6 +594,17 @@ export function CadPlateEditor({
             fillOpacity={0.85}
           />
         ))}
+
+        {showSnapMarker && cursorPlan && (
+          <circle
+            cx={cursorPlan.x}
+            cy={cursorPlan.y}
+            r={stroke * 6}
+            fill="none"
+            stroke={lastSnap?.kind === 'guide' ? '#0d9488' : '#c026d3'}
+            strokeWidth={stroke * 1.8}
+          />
+        )}
       </g>
 
       {exteriorDims.map((dim) => {
@@ -527,6 +639,47 @@ export function CadPlateEditor({
               fontSize={fontSize * 0.78}
               fontFamily="IBM Plex Sans, Segoe UI, sans-serif"
               fontWeight={600}
+              textAnchor="middle"
+              dominantBaseline="middle"
+            >
+              {dim.label}
+            </text>
+          </g>
+        );
+      })}
+
+      {interiorDims.map((dim) => {
+        const a = planToSvgFt(dim.x1, dim.y1, plate.bounds, PAD);
+        const b = planToSvgFt(dim.x2, dim.y2, plate.bounds, PAD);
+        const lp = planToSvgFt(dim.labelX, dim.labelY, plate.bounds, PAD);
+        const tick = fontSize * 0.35;
+        return (
+          <g key={dim.id} className="cad-int-dim">
+            <line
+              x1={a.x}
+              y1={a.y}
+              x2={b.x}
+              y2={b.y}
+              stroke="#94a3b8"
+              strokeWidth={0.9}
+            />
+            <line x1={a.x - tick} y1={a.y - tick} x2={a.x + tick} y2={a.y + tick} stroke="#94a3b8" strokeWidth={0.85} />
+            <line x1={b.x - tick} y1={b.y - tick} x2={b.x + tick} y2={b.y + tick} stroke="#94a3b8" strokeWidth={0.85} />
+            <rect
+              x={lp.x - fontSize * 1.85}
+              y={lp.y - fontSize * 0.55}
+              width={fontSize * 3.7}
+              height={fontSize * 1.1}
+              rx={fontSize * 0.15}
+              fill="rgba(241,239,232,0.88)"
+            />
+            <text
+              x={lp.x}
+              y={lp.y}
+              fill="#64748b"
+              fontSize={fontSize * 0.65}
+              fontFamily="IBM Plex Sans, Segoe UI, sans-serif"
+              fontWeight={500}
               textAnchor="middle"
               dominantBaseline="middle"
             >

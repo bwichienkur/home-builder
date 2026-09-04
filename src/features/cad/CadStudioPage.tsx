@@ -10,14 +10,18 @@ import {
   roleToClassify,
   selectionSummary,
   setLayerClassify,
+  setPlateRoof,
+  setWallThickness,
   showWallsAndDoorsPreset,
   updateSlab,
   withLayerVisibility,
+  DEFAULT_ROOF_OVERRIDES,
   type CadEditTool,
   type CadLayerClassify,
   type CadPlateSelection,
 } from '../../lib/cadStudio';
-import type { CadFixtureKind, CadPlate, CadSlabKind } from '../../lib/cadStudio/types';
+import type { CadFixtureKind, CadPlate, CadRoofKind, CadSlabKind } from '../../lib/cadStudio/types';
+import { defaultWallThicknessFt } from '../../lib/cadStudio/cadDrawSnap';
 import { CadPlateEditor } from './CadPlateEditor';
 import { importDrawingFiles, type DrawingImportProgress } from '../../lib/housePlans/importDrawingFile';
 import { CadExtrudeView } from './CadExtrudeView';
@@ -28,7 +32,7 @@ import './cadStudio.css';
 type LayoutMode = 'split' | 'plate' | 'extrude' | 'massing' | 'sheets';
 type PlateMode = 'floor' | 'front' | 'side';
 type CatalogTab = 'walls' | 'openings' | 'fixtures' | 'layers' | 'site' | 'roof';
-type OpeningKind = 'door' | 'window';
+type OpeningKind = 'door' | 'window' | 'passage';
 
 const CLASSIFY_OPTIONS: { id: CadLayerClassify; label: string }[] = [
   { id: 'wall', label: 'Wall' },
@@ -73,6 +77,8 @@ export function CadStudioPage() {
   const [windowSillFt, setWindowSillFt] = useState(3);
   const [slabKind, setSlabKind] = useState<CadSlabKind>('terrace');
   const [showExteriorDims, setShowExteriorDims] = useState(true);
+  const [showInteriorDims, setShowInteriorDims] = useState(false);
+  const [showRoomFills, setShowRoomFills] = useState(true);
   const [selection, setSelection] = useState<CadPlateSelection | null>(null);
   const [layerFilter, setLayerFilter] = useState('');
   const [snapOn, setSnapOn] = useState(true);
@@ -210,7 +216,10 @@ export function CadStudioPage() {
           wallLayer={wallLayer}
           windowSillFt={windowSillFt}
           slabKind={slabKind}
+          snapOn={snapOn}
           showExteriorDims={showExteriorDims}
+          showInteriorDims={showInteriorDims}
+          showRoomFills={showRoomFills}
           selection={selection}
           onSelectionChange={setSelection}
           onPlateChange={setPlate}
@@ -353,6 +362,14 @@ export function CadStudioPage() {
                     <strong>Select / move</strong>
                     <span>Edit endpoints & length</span>
                   </button>
+                  <button
+                    type="button"
+                    className={editTool === 'guide' ? 'is-active' : ''}
+                    onClick={() => pickTool('guide')}
+                  >
+                    <strong>Guide line</strong>
+                    <span>Construction aid · snap target</span>
+                  </button>
                   <button type="button" className={editTool === 'delete' ? 'is-active' : ''} onClick={() => pickTool('delete')}>
                     <strong>Delete</strong>
                     <span>Remove selected geometry</span>
@@ -381,6 +398,14 @@ export function CadStudioPage() {
                   >
                     <strong>Window</strong>
                     <span>Sill {windowSillFt}' AFF · place span</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={editTool === 'opening' && openingKind === 'passage' ? 'is-active' : ''}
+                    onClick={() => pickTool('opening', { opening: 'passage' })}
+                  >
+                    <strong>Passage</strong>
+                    <span>Opening without door leaf</span>
                   </button>
                   <button
                     type="button"
@@ -572,9 +597,78 @@ export function CadStudioPage() {
               <section>
                 <h2>Roof</h2>
                 <p className="cad-edit-hint">
-                  Auto roof from contour, gables, overhang, and dormers are Wave 2–3. Massing view uses
-                  the current elevation-driven roof today.
+                  Styles rebuild from the exterior wall contour. Auto keeps a DXF elevation profile when
+                  present.
                 </p>
+                <div className="cad-catalog-items">
+                  {(
+                    [
+                      { id: 'auto' as const, label: 'Auto', hint: 'DXF profile or gable' },
+                      { id: 'gable' as const, label: 'Gable', hint: 'Dual slope from contour' },
+                      { id: 'flat' as const, label: 'Flat', hint: 'Low plate roof' },
+                      { id: 'shed' as const, label: 'Shed', hint: 'Single slope' },
+                    ] as const
+                  ).map((item) => {
+                    const active = (plate?.roof?.kind ?? 'auto') === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        className={active ? 'is-active' : ''}
+                        disabled={!plate}
+                        onClick={() => {
+                          if (!plate) return;
+                          setPlate(
+                            setPlateRoof(plate, {
+                              kind: item.id as CadRoofKind,
+                              forceProcedural: item.id !== 'auto',
+                            }),
+                          );
+                          setLayout('massing');
+                        }}
+                      >
+                        <strong>{item.label}</strong>
+                        <span>{item.hint}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="cad-sill-control">
+                  <label>
+                    Pitch (rise / 12)
+                    <input
+                      type="number"
+                      min={0}
+                      max={18}
+                      step={1}
+                      disabled={!plate}
+                      value={plate?.roof?.pitchRise12 ?? DEFAULT_ROOF_OVERRIDES.pitchRise12}
+                      onChange={(e) => {
+                        if (!plate) return;
+                        const v = Number(e.target.value);
+                        if (!Number.isFinite(v)) return;
+                        setPlate(setPlateRoof(plate, { pitchRise12: v, forceProcedural: true }));
+                      }}
+                    />
+                  </label>
+                  <label>
+                    Overhang (ft)
+                    <input
+                      type="number"
+                      min={0}
+                      max={4}
+                      step={0.25}
+                      disabled={!plate}
+                      value={plate?.roof?.overhangFt ?? DEFAULT_ROOF_OVERRIDES.overhangFt}
+                      onChange={(e) => {
+                        if (!plate) return;
+                        const v = Number(e.target.value);
+                        if (!Number.isFinite(v)) return;
+                        setPlate(setPlateRoof(plate, { overhangFt: v }));
+                      }}
+                    />
+                  </label>
+                </div>
                 <button type="button" onClick={() => setLayout('massing')} disabled={!can3d}>
                   Open massing roof view
                 </button>
@@ -586,6 +680,41 @@ export function CadStudioPage() {
               {selection && plate ? (
                 <div className="cad-selection-inspector">
                   <div className="cad-selection-title">{selectionSummary(plate, selection)}</div>
+                  {selection.kind === 'wall' && plate.wallCenterlines[selection.index] && (
+                    <div className="cad-sill-control">
+                      <label>
+                        Thickness (ft)
+                        <input
+                          type="number"
+                          min={0.2}
+                          max={1.5}
+                          step={0.05}
+                          value={defaultWallThicknessFt(plate.wallCenterlines[selection.index]!)}
+                          onChange={(e) => {
+                            const v = Number(e.target.value);
+                            if (!Number.isFinite(v)) return;
+                            setPlate(setWallThickness(plate, selection.index, v));
+                          }}
+                        />
+                      </label>
+                      <div className="cad-catalog-items" style={{ marginTop: 6 }}>
+                        <button
+                          type="button"
+                          onClick={() => setPlate(setWallThickness(plate, selection.index, 0.5))}
+                        >
+                          <strong>Exterior 6"</strong>
+                          <span>0.50 ft</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPlate(setWallThickness(plate, selection.index, 0.333))}
+                        >
+                          <strong>Interior 4"</strong>
+                          <span>0.33 ft</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   {selection.kind === 'slab' && plate.slabs?.[selection.index] && (
                     <div className="cad-sill-control">
                       <label>
@@ -617,6 +746,16 @@ export function CadStudioPage() {
                             setPlate(updateSlab(plate, selection.index, { elevationFt: v }));
                           }}
                         />
+                      </label>
+                      <label className="cad-fixture-pick">
+                        <input
+                          type="checkbox"
+                          checked={!!plate.slabs[selection.index]!.railing}
+                          onChange={(e) =>
+                            setPlate(updateSlab(plate, selection.index, { railing: e.target.checked }))
+                          }
+                        />{' '}
+                        Perimeter railing
                       </label>
                     </div>
                   )}
@@ -704,8 +843,24 @@ export function CadStudioPage() {
                 >
                   Ext dims {showExteriorDims ? 'on' : 'off'}
                 </button>
+                <button
+                  type="button"
+                  className={showInteriorDims ? 'is-active' : ''}
+                  onClick={() => setShowInteriorDims((v) => !v)}
+                  title="Interior wall dimensions"
+                >
+                  Int dims {showInteriorDims ? 'on' : 'off'}
+                </button>
+                <button
+                  type="button"
+                  className={showRoomFills ? 'is-active' : ''}
+                  onClick={() => setShowRoomFills((v) => !v)}
+                  title="Room fill polygons"
+                >
+                  Fills {showRoomFills ? 'on' : 'off'}
+                </button>
                 <span className="cad-unit-pill">{unitLabel === 'ft-in' ? 'ft / in' : 'm'}</span>
-                <span className="cad-aid-hint">W · wall align · Esc cancel · Enter close slab</span>
+                <span className="cad-aid-hint">Shift ortho · Esc cancel · Enter close slab</span>
               </div>
             </div>
           )}

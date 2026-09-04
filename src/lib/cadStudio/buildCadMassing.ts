@@ -5,16 +5,45 @@ import type {
   CadMassing,
   CadPlanFace,
   CadPlate,
+  CadRoofKind,
   CadRoofMassing,
+  CadRoofOverrides,
+  CadWallCenterlineFt,
 } from './types';
 
 const FT_TO_M = 0.3048;
+
+export const DEFAULT_ROOF_OVERRIDES: CadRoofOverrides = {
+  kind: 'auto',
+  pitchRise12: 6,
+  overhangFt: 1.15,
+  forceProcedural: false,
+};
 
 function planSpan(bounds: CadBoundsFt): { widthFt: number; depthFt: number } {
   return {
     widthFt: Math.max(1, bounds.maxX - bounds.minX),
     depthFt: Math.max(1, bounds.maxY - bounds.minY),
   };
+}
+
+/** Exterior wall AABB when available (Plan7-style roof from building contour). */
+export function exteriorContourBounds(plate: CadPlate): CadBoundsFt {
+  const exterior = plate.wallCenterlines.filter((w) => w.exterior);
+  const walls: CadWallCenterlineFt[] = exterior.length ? exterior : plate.wallCenterlines;
+  if (!walls.length) return { ...plate.bounds };
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const w of walls) {
+    minX = Math.min(minX, w.x1, w.x2);
+    minY = Math.min(minY, w.y1, w.y2);
+    maxX = Math.max(maxX, w.x1, w.x2);
+    maxY = Math.max(maxY, w.y1, w.y2);
+  }
+  if (!Number.isFinite(minX)) return { ...plate.bounds };
+  return { minX, minY, maxX, maxY };
 }
 
 /** Pick which plan edge the front elevation width aligns with. */
@@ -43,47 +72,97 @@ function wallTopFtFromElevation(front: CadElevationSheet | null | undefined): nu
   return maxY > 1 ? maxY : null;
 }
 
+function resolveKind(
+  overrides: CadRoofOverrides | undefined,
+  hasDxfProfile: boolean,
+): 'gable' | 'flat' | 'shed' {
+  const k: CadRoofKind = overrides?.kind ?? 'auto';
+  if (k === 'flat' || k === 'shed' || k === 'gable') return k;
+  // auto
+  if (hasDxfProfile && !overrides?.forceProcedural) return 'gable';
+  return 'gable';
+}
+
+function riseFromPitch(spanFt: number, pitchRise12: number): number {
+  const halfSpanFt = spanFt / 2;
+  const riseFt = (halfSpanFt * pitchRise12) / 12;
+  return Math.max(0.25, riseFt * FT_TO_M);
+}
+
 function buildRoofMassing(
   plate: CadPlate,
   front: CadElevationSheet | null | undefined,
   storyHeightM: number,
   frontFace: CadPlanFace,
 ): CadRoofMassing {
-  const { widthFt, depthFt } = planSpan(plate.bounds);
+  const contour = exteriorContourBounds(plate);
+  const { widthFt, depthFt } = planSpan(contour);
+  const overrides = plate.roof ?? undefined;
+  const overhangM = (overrides?.overhangFt ?? DEFAULT_ROOF_OVERRIDES.overhangFt) * FT_TO_M;
+  const pitchRise12 = overrides?.pitchRise12 ?? DEFAULT_ROOF_OVERRIDES.pitchRise12;
   const profile = front ? extractRoofProfileFromElevation(front) : [];
+  const hasProfile = profile.length >= 3;
   const wallTopFt = wallTopFtFromElevation(front);
   const effectiveStoryM =
     wallTopFt != null ? Math.max(storyHeightM, wallTopFt * FT_TO_M) : storyHeightM;
-  const ridgeFt = profile.length ? Math.max(...profile.map((p) => p.yFt)) : effectiveStoryM / FT_TO_M + 4;
   const facadeWidthFt = front
     ? Math.max(1, front.bounds.maxX - front.bounds.minX)
     : frontFace === 'south' || frontFace === 'north'
       ? widthFt
       : depthFt;
   const facadeDepthFt = frontFace === 'south' || frontFace === 'north' ? depthFt : widthFt;
-  const ridgeAlongX = ridgeRunsAlongPlanX(frontFace);
+  const ridgeAlongX =
+    overrides?.ridgeAlongX != null ? overrides.ridgeAlongX : ridgeRunsAlongPlanX(frontFace);
+  const kind = resolveKind(overrides, hasProfile);
+  const useDxf =
+    hasProfile &&
+    kind === 'gable' &&
+    !overrides?.forceProcedural &&
+    (overrides?.kind === 'auto' || overrides?.kind == null);
 
-  if (profile.length >= 3) {
+  if (useDxf) {
     const maxY = Math.max(...profile.map((p) => p.yFt));
     return {
       style: 'dxf',
+      kind: 'gable',
       ridgeHeightM: Math.max(effectiveStoryM + 0.35, maxY * FT_TO_M),
       ridgeAlongX,
       profile: profile.map((p) => ({ xFt: p.xFt, yFt: p.yFt })),
-      overhangM: 0.35,
+      overhangM,
       facadeWidthFt,
       facadeDepthFt,
+      pitchRise12,
     };
   }
 
-  const riseM = Math.min(1.1, Math.max(0.4, Math.min(facadeWidthFt, facadeDepthFt) * FT_TO_M * 0.2));
+  if (kind === 'flat') {
+    return {
+      style: 'procedural',
+      kind: 'flat',
+      ridgeHeightM: effectiveStoryM + 0.18,
+      ridgeAlongX,
+      overhangM,
+      facadeWidthFt: widthFt,
+      facadeDepthFt: depthFt,
+      pitchRise12: 0,
+    };
+  }
+
+  const spanFt = ridgeAlongX ? depthFt : widthFt;
+  const riseM =
+    kind === 'shed'
+      ? Math.max(0.35, (spanFt * pitchRise12) / 12 * FT_TO_M)
+      : riseFromPitch(spanFt, pitchRise12);
+
   return {
     style: 'procedural',
+    kind,
     ridgeHeightM: effectiveStoryM + riseM,
     ridgeAlongX,
-    overhangM: 0.35,
-    facadeWidthFt,
-    facadeDepthFt,
+    overhangM,
+    facadeWidthFt: widthFt,
+    facadeDepthFt: depthFt,
+    pitchRise12,
   };
 }
 
@@ -91,7 +170,8 @@ function buildRoofMassing(
 export function buildCadMassing(plate: CadPlate, storyHeightM: number): CadMassing {
   const front = plate.elevationFront ?? null;
   const side = plate.elevationSide ?? null;
-  const frontFace = front ? detectFrontFace(plate.bounds, front) : 'south';
+  const contour = exteriorContourBounds(plate);
+  const frontFace = front ? detectFrontFace(contour, front) : 'south';
   const roof = buildRoofMassing(plate, front, storyHeightM, frontFace);
   const facadeHeightFt = front
     ? Math.max(1, front.bounds.maxY - front.bounds.minY)
@@ -109,6 +189,11 @@ export function buildCadMassing(plate: CadPlate, storyHeightM: number): CadMassi
     facadeWidthFt: roof.facadeWidthFt,
     facadeDepthFt: roof.facadeDepthFt,
     facadeHeightFt,
-    planBounds: { ...plate.bounds },
+    planBounds: { ...contour },
   };
+}
+
+export function setPlateRoof(plate: CadPlate, patch: Partial<CadRoofOverrides>): CadPlate {
+  const base = plate.roof ?? { ...DEFAULT_ROOF_OVERRIDES };
+  return { ...plate, roof: { ...base, ...patch } };
 }

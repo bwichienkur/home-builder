@@ -146,6 +146,21 @@ export function demoCadPlate(): CadPlate {
         thicknessFt: 0.5,
         elevationFt: 0,
         layer: 'SLAB TERRACE',
+        railing: false,
+      },
+      {
+        id: 'slab-demo-balcony',
+        kind: 'balcony',
+        points: [
+          { x: 40, y: 16 },
+          { x: 48, y: 16 },
+          { x: 48, y: 24 },
+          { x: 40, y: 24 },
+        ],
+        thicknessFt: 0.5,
+        elevationFt: 0,
+        layer: 'SLAB BALCONY',
+        railing: true,
       },
     ],
     elevationFront,
@@ -154,7 +169,7 @@ export function demoCadPlate(): CadPlate {
       { id: 'demo-floor', name: 'SHT. 1 FLOOR', order: 1, kind: 'floor' },
       { id: 'demo-front', name: 'SHT. 2 FRONT ELEVATION', order: 2, kind: 'elevation' },
     ],
-    bounds: { minX: 0, minY: -8, maxX: 40, maxY: 28 },
+    bounds: { minX: 0, minY: -8, maxX: 48, maxY: 28 },
     sheetSource: 'synthetic',
   };
 }

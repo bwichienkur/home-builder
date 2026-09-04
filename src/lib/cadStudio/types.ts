@@ -30,7 +30,7 @@ export type CadOpeningHintFt = {
   y1: number;
   x2: number;
   y2: number;
-  kind: 'door' | 'window';
+  kind: 'door' | 'window' | 'passage';
   layer?: string;
   /** Window sill height above finished floor (feet). Doors/passages use 0. */
   sillFt?: number;
@@ -43,6 +43,8 @@ export type CadWallCenterlineFt = {
   y2: number;
   layer?: string;
   exterior?: boolean;
+  /** Wall thickness in feet (defaults: exterior 0.59 ≈ 7", interior 0.39 ≈ 4.7"). */
+  thicknessFt?: number;
 };
 
 export type CadLabelFt = {
@@ -50,6 +52,29 @@ export type CadLabelFt = {
   y: number;
   text: string;
   layer?: string;
+};
+
+/** Construction guide line (non-built; snap target). */
+export type CadGuidelineFt = {
+  id: string;
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+};
+
+/** Architectural roof style for procedural massing (Plan7-inspired). */
+export type CadRoofKind = 'auto' | 'gable' | 'flat' | 'shed';
+
+/** User roof overrides on the CAD plate (catalog / inspector). */
+export type CadRoofOverrides = {
+  kind: CadRoofKind;
+  /** Rise inches per 12" run (e.g. 6 = 6/12). Ignored for flat. */
+  pitchRise12: number;
+  overhangFt: number;
+  ridgeAlongX?: boolean;
+  /** Prefer procedural roof over DXF elevation profile. */
+  forceProcedural?: boolean;
 };
 
 /** Raw fixture pose from DXF INSERT / CIRCLE (plan feet after plate build). */
@@ -101,6 +126,8 @@ export type CadSlabFt = {
   /** Bottom of slab relative to finished floor (feet). */
   elevationFt: number;
   layer: string;
+  /** Auto perimeter railing (balcony default on). */
+  railing?: boolean;
 };
 
 /** Elevation sheet segment — X = width from left, Y = height above grade (feet). */
@@ -131,6 +158,8 @@ export type CadRoofProfilePoint = { xFt: number; yFt: number };
 
 export type CadRoofMassing = {
   style: 'procedural' | 'dxf';
+  /** Architectural kind used by procedural mesh (flat/gable/shed). */
+  kind: 'gable' | 'flat' | 'shed';
   ridgeHeightM: number;
   /** True when the ridge runs parallel to plan X (side-elevation / eave faces front). */
   ridgeAlongX: boolean;
@@ -139,6 +168,8 @@ export type CadRoofMassing = {
   overhangM: number;
   facadeWidthFt: number;
   facadeDepthFt: number;
+  /** Pitch as rise/12 when procedural. */
+  pitchRise12?: number;
 };
 
 export type CadMassing = {
@@ -175,6 +206,10 @@ export type CadPlate = {
   fixtureHints: CadFixtureHintFt[];
   /** Site slabs (terrace, driveway, garden, balcony) in plan feet. */
   slabs: CadSlabFt[];
+  /** Construction guidelines (snap aids; not extruded). */
+  guidelines?: CadGuidelineFt[];
+  /** Roof catalog overrides (null/undefined = auto from DXF elevation or procedural gable). */
+  roof?: CadRoofOverrides;
   /** Front elevation linework (width × height ft) when DXF has elevation viewports. */
   elevationFront?: CadElevationSheet;
   /** Side/rear elevation linework when available. */

@@ -137,17 +137,67 @@ function SlabMesh({
     shape.closePath();
     const thickness = Math.max(0.04, slab.thicknessFt * FT_TO_M);
     const geom = new THREE.ExtrudeGeometry(shape, { depth: thickness, bevelEnabled: false });
-    // Shape is drawn in X/Y; map to X/Z floor plane with thickness along +Y.
     geom.rotateX(-Math.PI / 2);
     geom.translate(0, slab.elevationFt * FT_TO_M, 0);
     return geom;
   }, [slab, centerFt]);
 
+  const railings = useMemo(() => {
+    if (!slab.railing || slab.points.length < 3) return [];
+    const topY = (slab.elevationFt + slab.thicknessFt) * FT_TO_M + 0.02;
+    const railH = 1.05;
+    const pts = slab.points.map((p) => {
+      const planX = WORLD_ORIGIN.x + ftToPx(p.x - centerFt.cx);
+      const planY = WORLD_ORIGIN.y + ftToPx(p.y - centerFt.cy);
+      const [wx, wz] = world(planX, planY);
+      return { x: wx, z: wz };
+    });
+    const items: Array<{ key: string; x: number; z: number; rot: number; len: number }> = [];
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[i]!;
+      const b = pts[(i + 1) % pts.length]!;
+      const dx = b.x - a.x;
+      const dz = b.z - a.z;
+      const len = Math.hypot(dx, dz);
+      if (len < 0.4) continue;
+      items.push({
+        key: `${slab.id}-rail-${i}`,
+        x: (a.x + b.x) / 2,
+        z: (a.z + b.z) / 2,
+        rot: Math.atan2(dx, dz),
+        len,
+      });
+    }
+    return items.map((it) => ({ ...it, topY, railH }));
+  }, [slab, centerFt]);
+
   if (!geometry) return null;
   return (
-    <mesh geometry={geometry} castShadow receiveShadow>
-      <meshStandardMaterial color={slabColor(slab.kind)} roughness={0.85} metalness={0.02} />
-    </mesh>
+    <group>
+      <mesh geometry={geometry} castShadow receiveShadow>
+        <meshStandardMaterial color={slabColor(slab.kind)} roughness={0.85} metalness={0.02} />
+      </mesh>
+      {railings.map((r) => (
+        <group key={r.key} position={[r.x, r.topY, r.z]} rotation={[0, r.rot, 0]}>
+          <mesh position={[-r.len / 2, r.railH / 2, 0]} castShadow>
+            <boxGeometry args={[0.05, r.railH, 0.05]} />
+            <meshStandardMaterial color="#64748b" metalness={0.35} roughness={0.4} />
+          </mesh>
+          <mesh position={[r.len / 2, r.railH / 2, 0]} castShadow>
+            <boxGeometry args={[0.05, r.railH, 0.05]} />
+            <meshStandardMaterial color="#64748b" metalness={0.35} roughness={0.4} />
+          </mesh>
+          <mesh position={[0, r.railH, 0]} castShadow>
+            <boxGeometry args={[r.len, 0.04, 0.04]} />
+            <meshStandardMaterial color="#64748b" metalness={0.35} roughness={0.4} />
+          </mesh>
+          <mesh position={[0, r.railH * 0.55, 0]} castShadow>
+            <boxGeometry args={[r.len, 0.03, 0.03]} />
+            <meshStandardMaterial color="#94a3b8" metalness={0.25} roughness={0.45} />
+          </mesh>
+        </group>
+      ))}
+    </group>
   );
 }
 

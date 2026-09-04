@@ -61,7 +61,7 @@
 | UX-03 | Properties on selection (2D or 3D) | Window height/sill edits in demos | Partial | Unified inspector | P0 |
 | UX-04 | Story / floor manager (active floor marker) | Floor management in demos | Partial | Story strip + active indicator | P0 |
 | UX-05 | Layer management (show/hide/assign) | Tutorials: Assign Elements to Layers | Partial (CAD layer panel) | Extend to authored geometry layers | P1 |
-| UX-06 | Guidelines / construction aids | Tutorials: Guide Lines | Missing | Guide lines + virtual walls | P1 |
+| UX-06 | Guidelines / construction aids | Tutorials: Guide Lines | Partial | Guide lines + virtual walls | P1 |
 | UX-07 | Snaps / angles / ortho | Tutorials: Snap Points & Angles; demos toggle snap | Partial | Angle/ortho/endpoint snaps + live length | P0 |
 | UX-08 | Units metric ↔ imperial anytime | Unit Settings tutorial; Pro page | Exists | Keep; make global toggle obvious | P0 |
 | UX-09 | Keyboard shortcuts (e.g. W wall align) | Tutorials tip: Ctrl+W / W | Partial | Document + implement align/escape | P1 |
@@ -125,9 +125,9 @@
 | R-01 | Automatic room detection when walls close | demos; automatic Raumerkennung | Partial | Stamp on closed polygons | P0 |
 | R-02 | Room area calculation | Floor Areas; WoFlV/DIN (DE) | Partial (takeoff) | On-plan area + schedule | P0 |
 | R-03 | Room labels / names | Room Labels | Partial | Editable stamps | P0 |
-| R-04 | Room fills / hatch in 2D | Room Fills & Hatch Patterns | Partial | Mapped 2D fills | P1 |
+| R-04 | Room fills / hatch in 2D | Room Fills & Hatch Patterns | Partial | Soft polygon fills (hatch later) | P1 |
 | R-05 | Automatic exterior dimensions | Automatic Exterior Dimensions | Partial | Outer dim chains | P1 |
-| R-06 | Interior interactive dims | demos | Missing | Toggle dim display | P1 |
+| R-06 | Interior interactive dims | demos | Partial | Toggle dim display | P1 |
 | R-07 | Living/usable area standards (WoFlV, DIN 277) | DE comparison | skip / approx | US builder areas first | P3 |
 | R-08 | Area/room schedules / lists | Listen Erstellung | Partial | Export room schedule | P1 |
 
@@ -165,7 +165,7 @@
 | ID | Plan7 capability | Public evidence | Olsen today | Strategy | Priority |
 |---|---|---|---|---|---|
 | T-01 | Plate/slab tool (terrace, driveway, garden) | All three house demos | Partial | Polygon slab + thickness + Z | P0 |
-| T-02 | Balcony slab + railing | Balcony & Railing; demos | Missing | Slab + railing combo | P1 |
+| T-02 | Balcony slab + railing | Balcony & Railing; demos | Partial | Slab + railing combo | P1 |
 | T-03 | Garage / carport symbols or editors | Symbol catalog; Carport tutorial | Partial | Placeable massing + carport editor later | P1 |
 | T-04 | Terrain modeling (contours, hills, etc.) | Terrain Modeling; Pro Gelände | Missing | Approx heightfield later | P2 |
 | T-05 | Site layout / plot boundary | Site Layout; Grundstückmarkierung | Missing | Lot polyline | P2 |
@@ -178,9 +178,9 @@
 
 | ID | Plan7 capability | Public evidence | Olsen today | Strategy | Priority |
 |---|---|---|---|---|---|
-| RF-01 | Auto roof from building contour | demos; Drawing a Roof | Partial (massing) | Auto roof from exterior | P1 |
-| RF-02 | Gable / flat / shed / hip styles | Gable, Flat, Staggered Shed tutorials | Partial | Style picker | P1 |
-| RF-03 | Pitch, overhang, eave controls | demos roof side settings | Partial | Per-side params | P1 |
+| RF-01 | Auto roof from building contour | demos; Drawing a Roof | Partial | Auto roof from exterior contour | P1 |
+| RF-02 | Gable / flat / shed / hip styles | Gable, Flat, Staggered Shed tutorials | Partial | Gable/flat/shed picker (hip later) | P1 |
+| RF-03 | Pitch, overhang, eave controls | demos roof side settings | Partial | Pitch + overhang controls | P1 |
 | RF-04 | Roof intersections / complex roofs | Complex Roofs & Intersections | Missing | Boolean roof faces | P2 |
 | RF-05 | Dormers | Dormers; Flat Roof Dormer | Missing | Dormer tool | P2 |
 | RF-06 | Rooftop terrace | Rooftop Terrace | Missing | Flat cut + slab | P2 |
@@ -314,4 +314,5 @@ Spiral stairs, muntins, timber mode, solar, MEP, scan recognition, walkthrough v
 ### Changelog
 | Date | Change |
 |---|---|
+| 2026-09-04 | Wave 1 next: roof catalog (gable/flat/shed), snaps+guides, wall thickness, passage, interior dims, room fills, balcony railing (#297 slabs/dims merged first) |
 | 2026-09-03 | Initial matrix from tutorials index, DE version comparison, Pro page, and 3 YouTube house demos |
