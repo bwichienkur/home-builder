@@ -399,14 +399,39 @@ export function CadStudioPage() {
 
   return (
     <div className="cad-studio">
-      <header className="cad-studio-top">
-        <div className="cad-studio-brand">
+      <header className="cad-app-bar">
+        <div className="cad-app-brand">
+          <span className="cad-app-mark">Olsen</span>
           <h1>CAD Studio</h1>
-          <p>Draw · modify · annotate — import DXF layers, edit plan, rebuild 3D.</p>
         </div>
-        <div className="cad-studio-actions">
-          <label className="cad-file-btn">
-            {busy ? 'Importing…' : 'Import DXF / DWG'}
+        <div className="cad-app-actions">
+          <button
+            type="button"
+            className="cad-btn cad-btn-ghost"
+            disabled={!history.past.length}
+            onClick={() => {
+              gestureBaselineRef.current = null;
+              setHistory((h) => undoCadHistory(h));
+            }}
+            title="Undo (Ctrl+Z)"
+          >
+            Undo
+          </button>
+          <button
+            type="button"
+            className="cad-btn cad-btn-ghost"
+            disabled={!history.future.length}
+            onClick={() => {
+              gestureBaselineRef.current = null;
+              setHistory((h) => redoCadHistory(h));
+            }}
+            title="Redo (Ctrl+Y)"
+          >
+            Redo
+          </button>
+          <span className="cad-action-sep" aria-hidden />
+          <label className="cad-btn cad-btn-primary cad-file-btn">
+            {busy ? 'Importing…' : 'Import'}
             <input
               ref={fileRef}
               type="file"
@@ -419,89 +444,74 @@ export function CadStudioPage() {
               }}
             />
           </label>
-          <button
-            type="button"
-            onClick={() => {
-              loadPlate(demoCadPlate());
-              setLayout('split');
-              setPlateMode('floor');
-              setStudioMode('draw');
-              setSelection(null);
-              setWallMulti([]);
-            }}
-          >
-            Demo ranch
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              loadPlate(stillwaterCadSheetPlate());
-              setLayout('sheets');
-            }}
-          >
-            Stillwater sheets
-          </button>
+          <details className="cad-samples-menu">
+            <summary className="cad-btn cad-btn-ghost">Samples</summary>
+            <div className="cad-samples-panel">
+              <button
+                type="button"
+                onClick={() => {
+                  loadPlate(demoCadPlate());
+                  setLayout('split');
+                  setPlateMode('floor');
+                  setStudioMode('draw');
+                  setSelection(null);
+                  setWallMulti([]);
+                }}
+              >
+                Demo ranch
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  loadPlate(stillwaterCadSheetPlate());
+                  setLayout('sheets');
+                }}
+              >
+                Stillwater sheets
+              </button>
+            </div>
+          </details>
           <span className="cad-action-sep" aria-hidden />
-          <button
-            type="button"
-            disabled={!history.past.length}
-            onClick={() => {
-              gestureBaselineRef.current = null;
-              setHistory((h) => undoCadHistory(h));
-            }}
-            title="Undo (Ctrl+Z)"
-          >
-            Undo
-          </button>
-          <button
-            type="button"
-            disabled={!history.future.length}
-            onClick={() => {
-              gestureBaselineRef.current = null;
-              setHistory((h) => redoCadHistory(h));
-            }}
-            title="Redo (Ctrl+Y)"
-          >
-            Redo
-          </button>
-          <span className="cad-action-sep" aria-hidden />
-          <button type="button" className={layout === 'split' ? 'is-active' : ''} onClick={() => setLayout('split')}>
-            2D + 3D
-          </button>
-          <button type="button" className={layout === 'plate' ? 'is-active' : ''} onClick={() => setLayout('plate')}>
-            2D only
-          </button>
-          <button
-            type="button"
-            className={layout === 'extrude' ? 'is-active' : ''}
-            onClick={() => setLayout('extrude')}
-            disabled={!can3d}
-          >
-            3D only
-          </button>
-          <button
-            type="button"
-            className={layout === 'massing' ? 'is-active' : ''}
-            onClick={() => setLayout('massing')}
-            disabled={!can3d}
-          >
-            Massing
-          </button>
-          <button
-            type="button"
-            className={layout === 'sheets' ? 'is-active' : ''}
-            onClick={() => setLayout('sheets')}
-            disabled={!plate?.sheets.length}
-          >
-            Sheets
-          </button>
+          <div className="cad-layout-toggle" role="group" aria-label="Layout">
+            <button type="button" className={layout === 'split' ? 'is-active' : ''} onClick={() => setLayout('split')} title="2D + 3D">
+              Split
+            </button>
+            <button type="button" className={layout === 'plate' ? 'is-active' : ''} onClick={() => setLayout('plate')} title="2D only">
+              2D
+            </button>
+            <button
+              type="button"
+              className={layout === 'extrude' ? 'is-active' : ''}
+              onClick={() => setLayout('extrude')}
+              disabled={!can3d}
+              title="3D only"
+            >
+              3D
+            </button>
+            <button
+              type="button"
+              className={layout === 'massing' ? 'is-active' : ''}
+              onClick={() => setLayout('massing')}
+              disabled={!can3d}
+              title="Massing"
+            >
+              Mass
+            </button>
+            <button
+              type="button"
+              className={layout === 'sheets' ? 'is-active' : ''}
+              onClick={() => setLayout('sheets')}
+              disabled={!plate?.sheets.length}
+              title="Sheets"
+            >
+              Sheets
+            </button>
+          </div>
         </div>
-        <div className="cad-status">{error ? <span className="cad-error">{error}</span> : progressLabel(progress)}</div>
       </header>
 
-      <div className="cad-studio-body cad-studio-body-shell">
-        <aside className="cad-catalog" aria-label="Studio tools">
-          <div className="cad-mode-ribbon" role="tablist" aria-label="Studio modes">
+      <div className="cad-ribbon-row">
+        <div className="cad-mode-ribbon" role="tablist" aria-label="Studio modes">
             {STUDIO_MODES.map((mode) => (
               <button
                 key={mode.id}
@@ -519,6 +529,10 @@ export function CadStudioPage() {
               </button>
             ))}
           </div>
+      </div>
+
+      <div className="cad-studio-shell">
+        <aside className="cad-tools" aria-label="Studio tools">
 
           {(studioMode === 'draw' || studioMode === 'modify' || studioMode === 'annotate') && (
           <div className="cad-context-strip">
@@ -531,72 +545,63 @@ export function CadStudioPage() {
                     className={editTool === 'wall' && wallLayer === 'WALLS EXT' ? 'is-active' : ''}
                     onClick={() => pickTool('wall', { wallLayer: 'WALLS EXT' })}
                   >
-                    <strong>Exterior wall</strong>
-                    <span>Thick · WALLS EXT</span>
+                    Exterior wall
                   </button>
                   <button
                     type="button"
                     className={editTool === 'wall' && wallLayer === 'WALLS INT' ? 'is-active' : ''}
                     onClick={() => pickTool('wall', { wallLayer: 'WALLS INT' })}
                   >
-                    <strong>Interior wall</strong>
-                    <span>Thin · WALLS INT</span>
+                    Interior wall
                   </button>
                   <button
                     type="button"
                     className={editTool === 'opening' && openingKind === 'door' ? 'is-active' : ''}
                     onClick={() => pickTool('opening', { opening: 'door' })}
                   >
-                    <strong>Door</strong>
-                    <span>Hosted on wall</span>
+                    Door
                   </button>
                   <button
                     type="button"
                     className={editTool === 'opening' && openingKind === 'window' ? 'is-active' : ''}
                     onClick={() => pickTool('opening', { opening: 'window' })}
                   >
-                    <strong>Window</strong>
-                    <span>Sill {windowSillFt}' AFF</span>
+                    Window
                   </button>
                   <button
                     type="button"
                     className={editTool === 'opening' && openingKind === 'passage' ? 'is-active' : ''}
                     onClick={() => pickTool('opening', { opening: 'passage' })}
                   >
-                    <strong>Passage</strong>
-                    <span>Opening without leaf</span>
+                    Passage
                   </button>
                   <button
                     type="button"
                     className={editTool === 'opening' && openingKind === 'garage' ? 'is-active' : ''}
                     onClick={() => pickTool('opening', { opening: 'garage' })}
                   >
-                    <strong>Garage</strong>
-                    <span>~16' sectional</span>
+                    Garage
                   </button>
                   <button
                     type="button"
                     className={editTool === 'stair' ? 'is-active' : ''}
                     onClick={() => pickTool('stair')}
                   >
-                    <strong>Stair</strong>
-                    <span>Single click · straight run</span>
+                    Stair
                   </button>
                   <button
                     type="button"
                     className={editTool === 'guide' ? 'is-active' : ''}
                     onClick={() => pickTool('guide')}
                   >
-                    <strong>Guide</strong>
-                    <span>Construction aid</span>
+                    Guide
                   </button>
                   <button
                     type="button"
                     className={editTool === 'select' ? 'is-active' : ''}
                     onClick={() => pickTool('select')}
                   >
-                    <strong>Select</strong>
-                    <span>Grips · move · multi</span>
+                    Select
                   </button>
                 </div>
                 <label className="cad-fixture-pick">
@@ -632,9 +637,7 @@ export function CadStudioPage() {
                     </button>
                   ))}
                 </div>
-                <p className="cad-edit-hint">
-                  Walls & openings: click start then end (Tab for length HUD). Escape cancels.
-                </p>
+                <p className="cad-edit-hint">Click start → end · Tab length · Esc cancel.</p>
               </section>
             )}
 
@@ -644,28 +647,28 @@ export function CadStudioPage() {
                 <div className="cad-modify-bar" role="group" aria-label="Modify tools">
                   <button
                     type="button"
-                    className={editTool === 'select' ? 'is-active' : ''}
+                    className={`cad-tool-primary ${editTool === 'select' ? 'is-active' : ''}`}
                     onClick={() => pickTool('select')}
                   >
                     Select
                   </button>
                   <button
                     type="button"
-                    className={editTool === 'trim' ? 'is-active' : ''}
+                    className={`cad-tool-primary ${editTool === 'trim' ? 'is-active' : ''}`}
                     onClick={() => pickTool('trim')}
                   >
                     Trim
                   </button>
                   <button
                     type="button"
-                    className={editTool === 'extend' ? 'is-active' : ''}
+                    className={`cad-tool-primary ${editTool === 'extend' ? 'is-active' : ''}`}
                     onClick={() => pickTool('extend')}
                   >
                     Extend
                   </button>
                   <button
                     type="button"
-                    className={editTool === 'break' ? 'is-active' : ''}
+                    className={`cad-tool-primary ${editTool === 'break' ? 'is-active' : ''}`}
                     onClick={() => pickTool('break')}
                   >
                     Break
@@ -715,8 +718,10 @@ export function CadStudioPage() {
                   >
                     Delete
                   </button>
+                  <span className="cad-tool-group-label">Cleanup</span>
                   <button
                     type="button"
+                    className="cad-tool-secondary"
                     disabled={selectedWallIndices.length < 2}
                     title="Align midpoints of selected walls on X"
                     onClick={() => {
@@ -728,6 +733,7 @@ export function CadStudioPage() {
                   </button>
                   <button
                     type="button"
+                    className="cad-tool-secondary"
                     disabled={selectedWallIndices.length < 2}
                     title="Align midpoints of selected walls on Y"
                     onClick={() => {
@@ -739,6 +745,7 @@ export function CadStudioPage() {
                   </button>
                   <button
                     type="button"
+                    className="cad-tool-secondary"
                     title="Merge collinear abutting walls"
                     onClick={() => {
                       const before = plate.wallCenterlines.length;
@@ -804,10 +811,7 @@ export function CadStudioPage() {
                     />
                   </label>
                 )}
-                <p className="cad-edit-hint">
-                  Trim / Extend need two wall clicks. Break / Offset are single-click. Shift+click multi-selects.
-                  Endpoint grips stretch shared nodes. Click a temp dim to type exact length.
-                </p>
+                <p className="cad-edit-hint">Trim/Extend: two clicks · Break/Offset: one · Shift multi-select · temp dims for exact length.</p>
               </section>
             )}
 
@@ -820,8 +824,7 @@ export function CadStudioPage() {
                     className={editTool === 'section' ? 'is-active' : ''}
                     onClick={() => pickTool('section')}
                   >
-                    <strong>Section cut</strong>
-                    <span>Draw cut line on plan</span>
+                    Section cut
                   </button>
                 </div>
                 <div className="cad-modify-bar" role="group" aria-label="Annotation toggles">
@@ -1030,8 +1033,7 @@ export function CadStudioPage() {
                       className={editTool === 'slab' && slabKind === item.id ? 'is-active' : ''}
                       onClick={() => pickTool('slab', { slab: item.id })}
                     >
-                      <strong>{item.label}</strong>
-                      <span>{item.hint}</span>
+                    {item.label}
                     </button>
                   ))}
                   <button
@@ -1039,8 +1041,7 @@ export function CadStudioPage() {
                     className={editTool === 'select' ? 'is-active' : ''}
                     onClick={() => pickTool('select')}
                   >
-                    <strong>Select / move</strong>
-                    <span>Drag slabs on plan</span>
+                    Select / move
                   </button>
                 </div>
                 <div className="cad-underlay-panel" style={{ marginTop: 12 }}>
@@ -1279,8 +1280,7 @@ export function CadStudioPage() {
                           setLayout('massing');
                         }}
                       >
-                        <strong>{item.label}</strong>
-                        <span>{item.hint}</span>
+                    {item.label}
                       </button>
                     );
                   })}
@@ -1330,8 +1330,7 @@ export function CadStudioPage() {
                     className={editTool === 'dormer' ? 'is-active' : ''}
                     onClick={() => pickTool('dormer')}
                   >
-                    <strong>Place dormer</strong>
-                    <span>Click on plan near roof</span>
+                    Place dormer
                   </button>
                 </div>
               </section>
@@ -1491,342 +1490,6 @@ export function CadStudioPage() {
           </div>
           )}
 
-            <section className="cad-inspector cad-inspector-sticky">
-              <h2>Properties</h2>
-              {selection ? (
-                <div className="cad-selection-inspector">
-                  <div className="cad-selection-title">{selectionSummary(plate, selection)}</div>
-                  {selection.kind === 'wall' && plate.wallCenterlines[selection.index] && (
-                    <div className="cad-sill-control">
-                      <label>
-                        Length
-                        <input
-                          ref={wallLengthInputRef}
-                          type="text"
-                          key={`wall-len-${selection.index}-${formatWallLengthFt(segLengthFt(plate.wallCenterlines[selection.index]!))}`}
-                          defaultValue={formatWallLengthFt(segLengthFt(plate.wallCenterlines[selection.index]!))}
-                          onBlur={(e) => {
-                            const len = parseArchitecturalLength(e.target.value);
-                            if (len == null) return;
-                            setPlate(
-                              resyncHostedOpenings(
-                                setWallLength(plate, selection.index, len, 'start'),
-                                selection.index,
-                              ),
-                            );
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key !== 'Enter') return;
-                            (e.target as HTMLInputElement).blur();
-                          }}
-                        />
-                      </label>
-                      <label>
-                        Angle (°)
-                        <input
-                          type="text"
-                          key={`wall-ang-${selection.index}-${wallAngleDeg(plate.wallCenterlines[selection.index]!).toFixed(1)}`}
-                          defaultValue={wallAngleDeg(plate.wallCenterlines[selection.index]!).toFixed(1)}
-                          onBlur={(e) => {
-                            const ang = parseAngleDeg(e.target.value);
-                            if (ang == null) return;
-                            setPlate(
-                              resyncHostedOpenings(
-                                setWallAngle(plate, selection.index, ang, 'mid'),
-                                selection.index,
-                              ),
-                            );
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key !== 'Enter') return;
-                            (e.target as HTMLInputElement).blur();
-                          }}
-                        />
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setPlate(resyncHostedOpenings(flipWall(plate, selection.index), selection.index))
-                        }
-                      >
-                        Flip 180°
-                      </button>
-                      <label>
-                        Thickness (ft)
-                        <input
-                          type="number"
-                          min={0.2}
-                          max={1.5}
-                          step={0.05}
-                          value={defaultWallThicknessFt(plate.wallCenterlines[selection.index]!)}
-                          onChange={(e) => {
-                            const v = Number(e.target.value);
-                            if (!Number.isFinite(v)) return;
-                            setPlate(setWallThickness(plate, selection.index, v));
-                          }}
-                        />
-                      </label>
-                      <div className="cad-catalog-items" style={{ marginTop: 6 }}>
-                        <button
-                          type="button"
-                          onClick={() => setPlate(setWallThickness(plate, selection.index, 0.5))}
-                        >
-                          <strong>Exterior 6"</strong>
-                          <span>0.50 ft</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setPlate(setWallThickness(plate, selection.index, 0.333))}
-                        >
-                          <strong>Interior 4"</strong>
-                          <span>0.33 ft</span>
-                        </button>
-                      </div>
-                      <div className="cad-paint-presets" role="group" aria-label="Wall paint">
-                        <span className="cad-paint-label">Paint</span>
-                        {CAD_WALL_MATERIALS.map((mat) => {
-                          const active =
-                            (plate.wallCenterlines[selection.index]!.materialId ??
-                              (plate.wallCenterlines[selection.index]!.exterior ? 'stucco' : 'interior')) ===
-                            mat.id;
-                          return (
-                            <button
-                              key={mat.id}
-                              type="button"
-                              className={active ? 'is-active' : ''}
-                              onClick={() =>
-                                setPlate(setWallMaterial(plate, selection.index, mat.id as CadWallMaterialId))
-                              }
-                            >
-                              {mat.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                  {selection.kind === 'opening' && plate.openingHints[selection.index] && (
-                    <div className="cad-sill-control">
-                      <label>
-                        Mark
-                        <input
-                          type="text"
-                          key={`open-mark-${selection.index}-${plate.openingHints[selection.index]!.mark ?? ''}`}
-                          defaultValue={plate.openingHints[selection.index]!.mark ?? ''}
-                          onBlur={(e) => {
-                            const mark = e.target.value.trim();
-                            const openings = plate.openingHints.map((o, i) =>
-                              i === selection.index ? { ...o, mark: mark || undefined } : o,
-                            );
-                            setPlate({ ...plate, openingHints: openings });
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key !== 'Enter') return;
-                            (e.target as HTMLInputElement).blur();
-                          }}
-                        />
-                      </label>
-                      <label>
-                        Width (ft)
-                        <input
-                          type="number"
-                          min={0.5}
-                          max={20}
-                          step={0.25}
-                          value={
-                            plate.openingHints[selection.index]!.widthFt ??
-                            segLengthFt(plate.openingHints[selection.index]!)
-                          }
-                          onChange={(e) => {
-                            const v = Number(e.target.value);
-                            if (!Number.isFinite(v)) return;
-                            setPlate(setOpeningWidth(plate, selection.index, v));
-                          }}
-                        />
-                      </label>
-                      {plate.openingHints[selection.index]!.kind === 'window' && (
-                        <label>
-                          Sill (ft AFF)
-                          <input
-                            type="number"
-                            min={0}
-                            max={8}
-                            step={0.25}
-                            value={plate.openingHints[selection.index]!.sillFt ?? 0}
-                            onChange={(e) => {
-                              const v = Number(e.target.value);
-                              if (!Number.isFinite(v)) return;
-                              setPlate(setOpeningSill(plate, selection.index, v));
-                            }}
-                          />
-                        </label>
-                      )}
-                      <button type="button" onClick={() => setPlate(flipOpeningHand(plate, selection.index))}>
-                        Flip hand
-                      </button>
-                    </div>
-                  )}
-                  {selection.kind === 'label' && plate.labels[selection.index] && (
-                    <div className="cad-sill-control">
-                      <label>
-                        Room / label name
-                        <input
-                          type="text"
-                          key={`label-${selection.index}-${plate.labels[selection.index]!.text}`}
-                          defaultValue={plate.labels[selection.index]!.text}
-                          onBlur={(e) => {
-                            const name = e.target.value.trim();
-                            if (!name) return;
-                            setPlate(renameRoomLabel(plate, selection.index, name));
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key !== 'Enter') return;
-                            (e.target as HTMLInputElement).blur();
-                          }}
-                        />
-                      </label>
-                    </div>
-                  )}
-                  {selection.kind === 'stair' && plate.stairs?.[selection.index] && (
-                    <div className="cad-sill-control">
-                      <label>
-                        Steps
-                        <input
-                          type="number"
-                          min={3}
-                          max={40}
-                          step={1}
-                          value={plate.stairs[selection.index]!.steps}
-                          onChange={(e) => {
-                            const v = Number(e.target.value);
-                            if (!Number.isFinite(v)) return;
-                            setPlate(updateStair(plate, selection.index, { steps: Math.round(v) }));
-                          }}
-                        />
-                      </label>
-                      <label>
-                        Run (ft)
-                        <input
-                          type="number"
-                          min={2}
-                          max={30}
-                          step={0.25}
-                          value={plate.stairs[selection.index]!.runFt}
-                          onChange={(e) => {
-                            const v = Number(e.target.value);
-                            if (!Number.isFinite(v)) return;
-                            setPlate(updateStair(plate, selection.index, { runFt: v }));
-                          }}
-                        />
-                      </label>
-                      <label className="cad-fixture-pick">
-                        <input
-                          type="checkbox"
-                          checked={!!plate.stairs[selection.index]!.railing}
-                          onChange={(e) =>
-                            setPlate(updateStair(plate, selection.index, { railing: e.target.checked }))
-                          }
-                        />{' '}
-                        Railing
-                      </label>
-                    </div>
-                  )}
-                  {selection.kind === 'slab' && plate.slabs?.[selection.index] && (
-                    <div className="cad-sill-control">
-                      <label>
-                        Thickness (ft)
-                        <input
-                          type="number"
-                          min={0.1}
-                          max={2}
-                          step={0.05}
-                          value={plate.slabs[selection.index]!.thicknessFt}
-                          onChange={(e) => {
-                            const v = Number(e.target.value);
-                            if (!Number.isFinite(v)) return;
-                            setPlate(updateSlab(plate, selection.index, { thicknessFt: v }));
-                          }}
-                        />
-                      </label>
-                      <label>
-                        Elevation Z (ft)
-                        <input
-                          type="number"
-                          min={-2}
-                          max={40}
-                          step={0.25}
-                          value={plate.slabs[selection.index]!.elevationFt}
-                          onChange={(e) => {
-                            const v = Number(e.target.value);
-                            if (!Number.isFinite(v)) return;
-                            setPlate(updateSlab(plate, selection.index, { elevationFt: v }));
-                          }}
-                        />
-                      </label>
-                      <label className="cad-fixture-pick">
-                        <input
-                          type="checkbox"
-                          checked={!!plate.slabs[selection.index]!.railing}
-                          onChange={(e) =>
-                            setPlate(updateSlab(plate, selection.index, { railing: e.target.checked }))
-                          }
-                        />{' '}
-                        Perimeter railing
-                      </label>
-                    </div>
-                  )}
-                  <button
-                    type="button"
-                    className="cad-delete-btn"
-                    onClick={() => {
-                      setPlate(deleteSelection(plate, selection));
-                      setSelection(null);
-                      setWallMulti([]);
-                    }}
-                  >
-                    Delete selected
-                  </button>
-                </div>
-              ) : (
-                <p className="cad-edit-hint">Select a wall, door, fixture, slab, stair, or label on the 2D plan.</p>
-              )}
-              {roomSchedule.length > 0 && (
-                <div className="cad-room-schedule">
-                  <h3>Room schedule</h3>
-                  <ul>
-                    {roomSchedule.map((r) => (
-                      <li key={`${r.name}-${r.areaSqFt}`}>
-                        <span>{r.name}</span>
-                        <span>{r.areaLabel}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              <div className="cad-stats">
-                <div>File: {plate?.sourceFileName ?? '—'}</div>
-                <div>Walls: {plate?.wallCenterlines.length ?? 0}</div>
-                <div>Openings: {plate?.openingHints.length ?? 0}</div>
-                <div>Stairs: {plate?.stairs?.length ?? 0}</div>
-                <div>Slabs: {plate?.slabs?.length ?? 0}</div>
-                <div>Fixtures: {plate?.segments.filter((s) => s.role === 'fixture').length ?? 0}</div>
-                <div>3D fixtures: {extrusion?.fixtures.length ?? 0}</div>
-                <div>
-                  Tool: {editTool}
-                  {editTool === 'wall' ? ` · ${wallLayer}` : ''}
-                  {editTool === 'opening' ? ` · ${openingKind}` : ''}
-                  {editTool === 'slab' ? ` · ${slabKind}` : ''}
-                </div>
-              </div>
-              {!!plate?.warnings.length && (
-                <ul className="cad-warnings">
-                  {plate.warnings.slice(0, 6).map((warning) => (
-                    <li key={warning}>{warning}</li>
-                  ))}
-                </ul>
-              )}
-
-            </section>
         </aside>
 
         <div className="cad-workspace">
@@ -2046,7 +1709,341 @@ export function CadStudioPage() {
             )}
           </main>
         </div>
+
+        <aside className="cad-props" aria-label="Properties">
+            <section className="cad-inspector cad-inspector-sticky">
+              <h2>Properties</h2>
+              {selection ? (
+                <div className="cad-selection-inspector">
+                  <div className="cad-selection-title">{selectionSummary(plate, selection)}</div>
+                  {selection.kind === 'wall' && plate.wallCenterlines[selection.index] && (
+                    <div className="cad-sill-control">
+                      <label>
+                        Length
+                        <input
+                          ref={wallLengthInputRef}
+                          type="text"
+                          key={`wall-len-${selection.index}-${formatWallLengthFt(segLengthFt(plate.wallCenterlines[selection.index]!))}`}
+                          defaultValue={formatWallLengthFt(segLengthFt(plate.wallCenterlines[selection.index]!))}
+                          onBlur={(e) => {
+                            const len = parseArchitecturalLength(e.target.value);
+                            if (len == null) return;
+                            setPlate(
+                              resyncHostedOpenings(
+                                setWallLength(plate, selection.index, len, 'start'),
+                                selection.index,
+                              ),
+                            );
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key !== 'Enter') return;
+                            (e.target as HTMLInputElement).blur();
+                          }}
+                        />
+                      </label>
+                      <label>
+                        Angle (°)
+                        <input
+                          type="text"
+                          key={`wall-ang-${selection.index}-${wallAngleDeg(plate.wallCenterlines[selection.index]!).toFixed(1)}`}
+                          defaultValue={wallAngleDeg(plate.wallCenterlines[selection.index]!).toFixed(1)}
+                          onBlur={(e) => {
+                            const ang = parseAngleDeg(e.target.value);
+                            if (ang == null) return;
+                            setPlate(
+                              resyncHostedOpenings(
+                                setWallAngle(plate, selection.index, ang, 'mid'),
+                                selection.index,
+                              ),
+                            );
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key !== 'Enter') return;
+                            (e.target as HTMLInputElement).blur();
+                          }}
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setPlate(resyncHostedOpenings(flipWall(plate, selection.index), selection.index))
+                        }
+                      >
+                        Flip 180°
+                      </button>
+                      <label>
+                        Thickness (ft)
+                        <input
+                          type="number"
+                          min={0.2}
+                          max={1.5}
+                          step={0.05}
+                          value={defaultWallThicknessFt(plate.wallCenterlines[selection.index]!)}
+                          onChange={(e) => {
+                            const v = Number(e.target.value);
+                            if (!Number.isFinite(v)) return;
+                            setPlate(setWallThickness(plate, selection.index, v));
+                          }}
+                        />
+                      </label>
+                      <div className="cad-catalog-items" style={{ marginTop: 6 }}>
+                        <button
+                          type="button"
+                          onClick={() => setPlate(setWallThickness(plate, selection.index, 0.5))}
+                        >
+                    Exterior 6"
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPlate(setWallThickness(plate, selection.index, 0.333))}
+                        >
+                    Interior 4"
+                        </button>
+                      </div>
+                      <div className="cad-paint-presets" role="group" aria-label="Wall paint">
+                        <span className="cad-paint-label">Paint</span>
+                        {CAD_WALL_MATERIALS.map((mat) => {
+                          const active =
+                            (plate.wallCenterlines[selection.index]!.materialId ??
+                              (plate.wallCenterlines[selection.index]!.exterior ? 'stucco' : 'interior')) ===
+                            mat.id;
+                          return (
+                            <button
+                              key={mat.id}
+                              type="button"
+                              className={active ? 'is-active' : ''}
+                              onClick={() =>
+                                setPlate(setWallMaterial(plate, selection.index, mat.id as CadWallMaterialId))
+                              }
+                            >
+                              {mat.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  {selection.kind === 'opening' && plate.openingHints[selection.index] && (
+                    <div className="cad-sill-control">
+                      <label>
+                        Mark
+                        <input
+                          type="text"
+                          key={`open-mark-${selection.index}-${plate.openingHints[selection.index]!.mark ?? ''}`}
+                          defaultValue={plate.openingHints[selection.index]!.mark ?? ''}
+                          onBlur={(e) => {
+                            const mark = e.target.value.trim();
+                            const openings = plate.openingHints.map((o, i) =>
+                              i === selection.index ? { ...o, mark: mark || undefined } : o,
+                            );
+                            setPlate({ ...plate, openingHints: openings });
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key !== 'Enter') return;
+                            (e.target as HTMLInputElement).blur();
+                          }}
+                        />
+                      </label>
+                      <label>
+                        Width (ft)
+                        <input
+                          type="number"
+                          min={0.5}
+                          max={20}
+                          step={0.25}
+                          value={
+                            plate.openingHints[selection.index]!.widthFt ??
+                            segLengthFt(plate.openingHints[selection.index]!)
+                          }
+                          onChange={(e) => {
+                            const v = Number(e.target.value);
+                            if (!Number.isFinite(v)) return;
+                            setPlate(setOpeningWidth(plate, selection.index, v));
+                          }}
+                        />
+                      </label>
+                      {plate.openingHints[selection.index]!.kind === 'window' && (
+                        <label>
+                          Sill (ft AFF)
+                          <input
+                            type="number"
+                            min={0}
+                            max={8}
+                            step={0.25}
+                            value={plate.openingHints[selection.index]!.sillFt ?? 0}
+                            onChange={(e) => {
+                              const v = Number(e.target.value);
+                              if (!Number.isFinite(v)) return;
+                              setPlate(setOpeningSill(plate, selection.index, v));
+                            }}
+                          />
+                        </label>
+                      )}
+                      <button type="button" onClick={() => setPlate(flipOpeningHand(plate, selection.index))}>
+                        Flip hand
+                      </button>
+                    </div>
+                  )}
+                  {selection.kind === 'label' && plate.labels[selection.index] && (
+                    <div className="cad-sill-control">
+                      <label>
+                        Room / label name
+                        <input
+                          type="text"
+                          key={`label-${selection.index}-${plate.labels[selection.index]!.text}`}
+                          defaultValue={plate.labels[selection.index]!.text}
+                          onBlur={(e) => {
+                            const name = e.target.value.trim();
+                            if (!name) return;
+                            setPlate(renameRoomLabel(plate, selection.index, name));
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key !== 'Enter') return;
+                            (e.target as HTMLInputElement).blur();
+                          }}
+                        />
+                      </label>
+                    </div>
+                  )}
+                  {selection.kind === 'stair' && plate.stairs?.[selection.index] && (
+                    <div className="cad-sill-control">
+                      <label>
+                        Steps
+                        <input
+                          type="number"
+                          min={3}
+                          max={40}
+                          step={1}
+                          value={plate.stairs[selection.index]!.steps}
+                          onChange={(e) => {
+                            const v = Number(e.target.value);
+                            if (!Number.isFinite(v)) return;
+                            setPlate(updateStair(plate, selection.index, { steps: Math.round(v) }));
+                          }}
+                        />
+                      </label>
+                      <label>
+                        Run (ft)
+                        <input
+                          type="number"
+                          min={2}
+                          max={30}
+                          step={0.25}
+                          value={plate.stairs[selection.index]!.runFt}
+                          onChange={(e) => {
+                            const v = Number(e.target.value);
+                            if (!Number.isFinite(v)) return;
+                            setPlate(updateStair(plate, selection.index, { runFt: v }));
+                          }}
+                        />
+                      </label>
+                      <label className="cad-fixture-pick">
+                        <input
+                          type="checkbox"
+                          checked={!!plate.stairs[selection.index]!.railing}
+                          onChange={(e) =>
+                            setPlate(updateStair(plate, selection.index, { railing: e.target.checked }))
+                          }
+                        />{' '}
+                        Railing
+                      </label>
+                    </div>
+                  )}
+                  {selection.kind === 'slab' && plate.slabs?.[selection.index] && (
+                    <div className="cad-sill-control">
+                      <label>
+                        Thickness (ft)
+                        <input
+                          type="number"
+                          min={0.1}
+                          max={2}
+                          step={0.05}
+                          value={plate.slabs[selection.index]!.thicknessFt}
+                          onChange={(e) => {
+                            const v = Number(e.target.value);
+                            if (!Number.isFinite(v)) return;
+                            setPlate(updateSlab(plate, selection.index, { thicknessFt: v }));
+                          }}
+                        />
+                      </label>
+                      <label>
+                        Elevation Z (ft)
+                        <input
+                          type="number"
+                          min={-2}
+                          max={40}
+                          step={0.25}
+                          value={plate.slabs[selection.index]!.elevationFt}
+                          onChange={(e) => {
+                            const v = Number(e.target.value);
+                            if (!Number.isFinite(v)) return;
+                            setPlate(updateSlab(plate, selection.index, { elevationFt: v }));
+                          }}
+                        />
+                      </label>
+                      <label className="cad-fixture-pick">
+                        <input
+                          type="checkbox"
+                          checked={!!plate.slabs[selection.index]!.railing}
+                          onChange={(e) =>
+                            setPlate(updateSlab(plate, selection.index, { railing: e.target.checked }))
+                          }
+                        />{' '}
+                        Perimeter railing
+                      </label>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    className="cad-delete-btn"
+                    onClick={() => {
+                      setPlate(deleteSelection(plate, selection));
+                      setSelection(null);
+                      setWallMulti([]);
+                    }}
+                  >
+                    Delete selected
+                  </button>
+                </div>
+              ) : (
+                <p className="cad-edit-hint">Select a wall, opening, fixture, slab, stair, or label.</p>
+              )}
+              {roomSchedule.length > 0 && (
+                <details className="cad-room-schedule">
+                  <summary>Room schedule ({roomSchedule.length})</summary>
+                  <ul>
+                    {roomSchedule.map((r) => (
+                      <li key={`${r.name}-${r.areaSqFt}`}>
+                        <span>{r.name}</span>
+                        <span>{r.areaLabel}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
+              {!!plate?.warnings.length && (
+                <ul className="cad-warnings">
+                  {plate.warnings.slice(0, 6).map((warning) => (
+                    <li key={warning}>{warning}</li>
+                  ))}
+                </ul>
+              )}
+
+            </section>
+
+        </aside>
       </div>
+
+      <footer className="cad-status-bar" role="status">
+        <span className="cad-status-left">{error ? <span className="cad-error">{error}</span> : progressLabel(progress) || statusAid || modifyHint}</span>
+        <span className="cad-status-mid">
+          <span>{plate?.sourceFileName ?? '—'}</span>
+          <span>{plate?.wallCenterlines.length ?? 0} walls</span>
+          <span>{plate?.openingHints.length ?? 0} openings</span>
+          <span>{unitLabel === 'ft-in' ? 'ft / in' : 'm'}</span>
+        </span>
+        <span className="cad-status-right">Shift ortho · Esc cancel · Tab length · Ctrl+Z undo</span>
+      </footer>
     </div>
   );
 }
