@@ -9,9 +9,28 @@ type Envelope = { minX: number; maxX: number; minZ: number; maxZ: number };
 
 /**
  * Roof mesh from DXF elevation profile — front silhouette extruded to plan depth.
- * Falls back to dual-slope gable boxes when profile is sparse.
+ * Procedural flat / shed / gable when no DXF profile (or forced).
  */
 export function CadProfileRoofMesh({
+  roof,
+  storyHeightM,
+  envelope,
+}: {
+  roof: CadRoofMassing;
+  storyHeightM: number;
+  envelope: Envelope;
+}) {
+  const kind = roof.kind ?? 'gable';
+  if (kind === 'flat') {
+    return <CadFlatRoof roof={roof} storyHeightM={storyHeightM} envelope={envelope} />;
+  }
+  if (kind === 'shed') {
+    return <CadShedRoof roof={roof} storyHeightM={storyHeightM} envelope={envelope} />;
+  }
+  return <CadGableOrProfileRoof roof={roof} storyHeightM={storyHeightM} envelope={envelope} />;
+}
+
+function CadGableOrProfileRoof({
   roof,
   storyHeightM,
   envelope,
@@ -29,7 +48,7 @@ export function CadProfileRoofMesh({
     const eaveM = storyHeightM;
     const profile = roof.profile ?? [];
 
-    if (profile.length >= 4 && !roof.ridgeAlongX) {
+    if (roof.style === 'dxf' && profile.length >= 4 && !roof.ridgeAlongX) {
       const sorted = [...profile].sort((a, b) => a.xFt - b.xFt);
       const widthFt = sorted[sorted.length - 1]!.xFt - sorted[0]!.xFt || roof.facadeWidthFt;
       const xScale = (w + overhang * 2) / Math.max(1, widthFt * FT_TO_M);
@@ -85,6 +104,80 @@ export function CadProfileRoofMesh({
   }
 
   return <CadGableRoofFallback roof={roof} storyHeightM={storyHeightM} envelope={envelope} />;
+}
+
+function CadFlatRoof({
+  roof,
+  storyHeightM,
+  envelope,
+}: {
+  roof: CadRoofMassing;
+  storyHeightM: number;
+  envelope: Envelope;
+}) {
+  const w = Math.max(0.5, envelope.maxX - envelope.minX) + roof.overhangM * 2;
+  const d = Math.max(0.5, envelope.maxZ - envelope.minZ) + roof.overhangM * 2;
+  const cx = (envelope.minX + envelope.maxX) / 2;
+  const cz = (envelope.minZ + envelope.maxZ) / 2;
+  const thick = 0.14;
+  return (
+    <mesh
+      position={[cx, storyHeightM + thick / 2, cz]}
+      castShadow
+      receiveShadow
+      material={metalRoofMaterial()}
+    >
+      <boxGeometry args={[w, thick, d]} />
+    </mesh>
+  );
+}
+
+function CadShedRoof({
+  roof,
+  storyHeightM,
+  envelope,
+}: {
+  roof: CadRoofMassing;
+  storyHeightM: number;
+  envelope: Envelope;
+}) {
+  const w = Math.max(0.5, envelope.maxX - envelope.minX);
+  const d = Math.max(0.5, envelope.maxZ - envelope.minZ);
+  const cx = (envelope.minX + envelope.maxX) / 2;
+  const cz = (envelope.minZ + envelope.maxZ) / 2;
+  const overhang = roof.overhangM;
+  const riseM = Math.max(0.35, roof.ridgeHeightM - storyHeightM);
+  const span = roof.ridgeAlongX ? w : d;
+  const slopeLen = Math.hypot(span, riseM);
+  const pitch = Math.atan2(riseM, span);
+  const thick = 0.12;
+  const mat = metalRoofMaterial();
+
+  return (
+    <group position={[cx, storyHeightM, cz]}>
+      {roof.ridgeAlongX ? (
+        <mesh
+          position={[0, riseM / 2, 0]}
+          rotation={[0, 0, pitch]}
+          castShadow
+          receiveShadow
+          material={mat}
+        >
+          <boxGeometry args={[slopeLen, thick, d + overhang * 2]} />
+        </mesh>
+      ) : (
+        <mesh
+          position={[0, riseM / 2, 0]}
+          rotation={[pitch, 0, 0]}
+          castShadow
+          receiveShadow
+          material={mat}
+        >
+          <boxGeometry args={[w + overhang * 2, thick, slopeLen]} />
+        </mesh>
+      )}
+    </group>
+  );
 }
 
 function CadGableRoofFallback({

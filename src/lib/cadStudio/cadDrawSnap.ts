@@ -123,7 +123,9 @@ export function snapCadDraftPoint(
 }
 
 /** Default wall thickness (feet) from layer / exterior flag. */
-export function defaultWallThicknessFt(wall: Pick<CadWallCenterlineFt, 'exterior' | 'layer'>): number {
+export function defaultWallThicknessFt(
+  wall: Pick<CadWallCenterlineFt, 'exterior' | 'layer' | 'thicknessFt'>,
+): number {
   if (wall.thicknessFt != null && Number.isFinite(wall.thicknessFt)) return wall.thicknessFt;
   if (wall.exterior || /EXT/i.test(wall.layer ?? '')) return 0.5;
   return 0.333;

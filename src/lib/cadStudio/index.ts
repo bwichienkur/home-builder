@@ -8,6 +8,9 @@ export type {
   CadFixtureInstance,
   CadSlabKind,
   CadSlabFt,
+  CadRoofKind,
+  CadRoofOverrides,
+  CadGuidelineFt,
   CadElevationSheet,
   CadElevationSegmentFt,
   CadMassing,
@@ -26,7 +29,13 @@ export {
   visibleLabels,
 } from './buildCadPlate';
 export { buildCadElevationSheets, extractRoofProfileFromElevation } from './buildCadElevation';
-export { buildCadMassing, detectFrontFace } from './buildCadMassing';
+export {
+  buildCadMassing,
+  detectFrontFace,
+  setPlateRoof,
+  DEFAULT_ROOF_OVERRIDES,
+  exteriorContourBounds,
+} from './buildCadMassing';
 export {
   classifyLayerKind,
   classifySegmentRole,
@@ -46,9 +55,15 @@ export {
   formatRoomAreaSqFt,
   type CadRoomStamp,
 } from './cadRoomStamps';
-export { computeExteriorDims, type CadExteriorDim } from './cadExteriorDims';
+export {
+  computeExteriorDims,
+  computeInteriorDims,
+  type CadExteriorDim,
+} from './cadExteriorDims';
+export { snapCadDraftPoint, defaultWallThicknessFt, type CadSnapResult } from './cadDrawSnap';
 export {
   addFixtureHint,
+  addGuideline,
   addOpeningHint,
   addSlab,
   addWallCenterline,
@@ -61,6 +76,7 @@ export {
   pickAtPoint,
   segLengthFt,
   selectionSummary,
+  setWallThickness,
   syncWallSegments,
   updateSlab,
   type CadEditTool,

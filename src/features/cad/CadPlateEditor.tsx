@@ -74,7 +74,7 @@ type Props = {
   plate: CadPlate;
   tool: CadEditTool;
   fixtureKind: CadFixtureKind;
-  openingKind?: 'door' | 'window';
+  openingKind?: 'door' | 'window' | 'passage';
   wallLayer?: string;
   /** Window sill height in feet when placing windows. */
   windowSillFt?: number;
