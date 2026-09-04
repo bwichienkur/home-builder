@@ -110,7 +110,7 @@
 | O-04 | Custom door/window editor | Custom Doors & Windows | Missing | Parametric opening editor | P2 |
 | O-05 | Corner windows | Corner Windows | Missing | Corner opening | P3 |
 | O-06 | Roof windows / skylights | Roof Windows | Missing | Roof host openings | P2 |
-| O-07 | Garage doors | Garage Doors | Partial (heuristics) | Garage door type | P1 |
+| O-07 | Garage doors | Garage Doors | Partial | Garage door type + sectional mesh | P1 |
 | O-08 | Window grids / muntins | Window Grids | Missing | Grid pattern param | P3 |
 | O-09 | Sloped reveals | Sloped Reveals | Missing | skip early | P3 |
 | O-10 | Basement windows | Basement Window | Missing | Low-sill preset | P3 |
@@ -129,7 +129,7 @@
 | R-05 | Automatic exterior dimensions | Automatic Exterior Dimensions | Partial | Outer dim chains | P1 |
 | R-06 | Interior interactive dims | demos | Partial | Toggle dim display | P1 |
 | R-07 | Living/usable area standards (WoFlV, DIN 277) | DE comparison | skip / approx | US builder areas first | P3 |
-| R-08 | Area/room schedules / lists | Listen Erstellung | Partial | Export room schedule | P1 |
+| R-08 | Area/room schedules / lists | Listen Erstellung | Partial | On-plan list + CSV export | P1 |
 
 ---
 
@@ -137,7 +137,7 @@
 
 | ID | Plan7 capability | Public evidence | Olsen today | Strategy | Priority |
 |---|---|---|---|---|---|
-| S-01 | Straight stair with width/rise params | Staircases; demos | Partial | Parametric stair | P1 |
+| S-01 | Straight stair with width/rise params | Staircases; demos | Partial | Parametric stair on CAD plate | P1 |
 | S-02 | Auto cut opening in floor above | demos | Partial | Keep/improve cutouts | P1 |
 | S-03 | Railings (incl. sloped) | Sloped Railings; demos | Partial | Railing presets | P1 |
 | S-04 | Spiral stairs | Spiral Staircase | Missing | Later | P3 |
@@ -197,7 +197,7 @@
 
 | ID | Plan7 capability | Public evidence | Olsen today | Strategy | Priority |
 |---|---|---|---|---|---|
-| M-01 | Paint textures on walls/floors/objects | Assign Textures; demos | Partial | Material paint tool | P1 |
+| M-01 | Paint textures on walls/floors/objects | Assign Textures; demos | Partial | Wall paint presets | P1 |
 | M-02 | Import custom textures | Import Your Own Textures | Missing | Image → material | P1 |
 | M-03 | Material pipette / copy | DE: Pipette | Missing | Eyedropper | P2 |
 | M-04 | Mapped colored 2D plan | demos “map 2D view” | Missing | Texture preview in 2D | P1 |
@@ -217,8 +217,8 @@
 | V-02 | Orbit / pan / zoom (mouse wheel) | demos | Exists | Polish controls | P0 |
 | V-03 | Walkthrough / virtual tour | 3D Walkthrough | Partial | First-person mode | P1 |
 | V-04 | Walkthrough video export | DE: Rundgang-Videos | hand-off | Screen record or Twinmotion | P3 |
-| V-05 | Daylight / sun path | Lighting & Sun; demos shadow recalc | Missing | Sun direction + time | P1 |
-| V-06 | Shadow recalculation | demos | Missing | Bake / realtime shadows toggle | P1 |
+| V-05 | Daylight / sun path | Lighting & Sun; demos shadow recalc | Partial | Sun hour slider | P1 |
+| V-06 | Shadow recalculation | demos | Partial | Shadows on/off toggle | P1 |
 | V-07 | Lighting manager (place lights) | Pro Light Sources | Missing | Point/spot lights list | P2 |
 | V-08 | Panorama / background images | Background Image; Panorama | Missing | HDRI / plate backdrop | P2 |
 | V-09 | 3D sections | 3D Sections | Missing | Clip plane | P2 |
@@ -246,7 +246,7 @@
 | ID | Plan7 capability | Public evidence | Olsen today | Strategy | Priority |
 |---|---|---|---|---|---|
 | X-01 | DWG/DXF import | DWG / DXF Import | Exists (CAD Studio strength) | Keep leading | P0 |
-| X-02 | DWG/DXF export | DWG / DXF Export | Partial | Round-trip export | P1 |
+| X-02 | DWG/DXF export | DWG / DXF Export | Partial | CadPlate DXF export | P1 |
 | X-03 | Floor plan image import / trace | Import Floor Plan Image | Missing | Underlay + calibrate | P1 |
 | X-04 | PDF export | Print as PDF | Partial | Sheet PDF | P1 |
 | X-05 | Image export | Pro | Partial | PNG/JPG | P1 |
@@ -314,5 +314,6 @@ Spiral stairs, muntins, timber mode, solar, MEP, scan recognition, walkthrough v
 ### Changelog
 | Date | Change |
 |---|---|
+| 2026-09-04 | Wave 2: garage, stairs, wall paint, sun/shadows, room CSV, DXF/PNG export
 | 2026-09-04 | Wave 1 next: roof catalog (gable/flat/shed), snaps+guides, wall thickness, passage, interior dims, room fills, balcony railing (#297 slabs/dims merged first) |
 | 2026-09-03 | Initial matrix from tutorials index, DE version comparison, Pro page, and 3 YouTube house demos |
