@@ -6,11 +6,13 @@ import type {
   CadExtrusion,
   CadFixtureInstance,
   CadFixtureKind,
+  CadPlate,
   CadSlabFt,
   CadSlabKind,
   CadStairFt,
 } from '../../lib/cadStudio';
-import { sunPositionFromHour } from '../../lib/cadStudio/cadSun';
+import { buildTerrainMeshData, sunPositionFromHour } from '../../lib/cadStudio';
+import { metalRoofMaterial } from '../../lib/cadStudio/cadSceneMaterials';
 import { CadGroundPlane, CadSceneEnvironment } from './CadSceneEnvironment';
 import { WallMesh } from './CadRealisticWalls';
 import { world } from '../../components/scene3d/sceneWorld';
@@ -288,6 +290,86 @@ function StairMesh({
   );
 }
 
+function DormerMesh({
+  dormer,
+  centerFt,
+  storyHeightM,
+}: {
+  dormer: NonNullable<CadPlate['dormers']>[number];
+  centerFt: { cx: number; cy: number };
+  storyHeightM: number;
+}) {
+  const planX = WORLD_ORIGIN.x + ftToPx(dormer.xFt - centerFt.cx);
+  const planY = WORLD_ORIGIN.y + ftToPx(dormer.yFt - centerFt.cy);
+  const [wx, wz] = world(planX, planY);
+  const w = dormer.widthFt * FT_TO_M;
+  const d = dormer.depthFt * FT_TO_M;
+  const h = dormer.heightFt * FT_TO_M;
+  const yaw = (-dormer.rotationDeg * Math.PI) / 180;
+  const rise = (dormer.pitchRise12 / 12) * (w / 2);
+  return (
+    <group position={[wx, storyHeightM, wz]} rotation={[0, yaw, 0]}>
+      <mesh position={[0, h / 2, 0]} castShadow receiveShadow>
+        <boxGeometry args={[w, h, d]} />
+        <meshStandardMaterial color="#e7e5e4" roughness={0.85} />
+      </mesh>
+      <mesh position={[0, h + rise / 2, 0]} castShadow material={metalRoofMaterial()}>
+        <boxGeometry args={[w * 1.05, 0.08, Math.hypot(d, rise)]} />
+      </mesh>
+      <mesh position={[0, h * 0.55, d / 2 + 0.02]} castShadow>
+        <boxGeometry args={[w * 0.45, h * 0.45, 0.06]} />
+        <meshStandardMaterial color="#7dd3fc" transparent opacity={0.65} roughness={0.2} metalness={0.1} />
+      </mesh>
+    </group>
+  );
+}
+
+function TerrainMesh({
+  plate,
+  centerFt,
+}: {
+  plate: CadPlate;
+  centerFt: { cx: number; cy: number };
+}) {
+  const data = useMemo(() => buildTerrainMeshData(plate, centerFt), [plate, centerFt]);
+  const geom = useMemo(() => {
+    if (!data) return null;
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(data.positions, 3));
+    g.setIndex(new THREE.BufferAttribute(data.indices, 1));
+    g.computeVertexNormals();
+    return g;
+  }, [data]);
+  if (!geom) return null;
+  return (
+    <mesh geometry={geom} receiveShadow>
+      <meshStandardMaterial color="#6b8f71" roughness={0.95} />
+    </mesh>
+  );
+}
+
+function sectionClipPlanes(
+  plate: CadPlate | undefined,
+  centerFt: { cx: number; cy: number },
+): THREE.Plane[] | null {
+  const cut = plate?.sectionCuts?.[0];
+  if (!cut || !plate) return null;
+  const mx = ((cut.x1 + cut.x2) / 2 - centerFt.cx) * FT_TO_M;
+  const mz = ((cut.y1 + cut.y2) / 2 - centerFt.cy) * FT_TO_M;
+  const dx = cut.x2 - cut.x1;
+  const dy = cut.y2 - cut.y1;
+  // Normal in XZ (plan) perpendicular to cut direction
+  const len = Math.hypot(dx, dy) || 1;
+  const nx = -dy / len;
+  const nz = dx / len;
+  const depth = (cut.depthFt ?? 1.5) * FT_TO_M;
+  const p0 = new THREE.Vector3(mx, 0, mz);
+  return [
+    new THREE.Plane(new THREE.Vector3(nx, 0, nz), -p0.dot(new THREE.Vector3(nx, 0, nz)) + depth),
+    new THREE.Plane(new THREE.Vector3(-nx, 0, -nz), p0.dot(new THREE.Vector3(nx, 0, nz)) + depth),
+  ];
+}
+
 /** Shared walls + fixtures for Extrude and Massing views. */
 export function CadExtrudeSceneParts({
   walls,
@@ -327,14 +409,18 @@ export function CadExtrudeSceneParts({
 
 function Scene({
   extrusion,
+  plate,
   sunHour,
   shadows,
+  sectionClip,
 }: {
   extrusion: CadExtrusion;
+  plate?: CadPlate | null;
   sunHour: number;
   shadows: boolean;
+  sectionClip?: boolean;
 }) {
-  const { walls, openings, fixtures, slabs, stairs, centerFt } = extrusion;
+  const { walls, openings, fixtures, slabs, stairs, centerFt, heightM } = extrusion;
   const floorSize = useMemo(() => {
     if (!walls.length) return 20;
     let max = 10;
@@ -346,19 +432,37 @@ function Scene({
     return max * 2.4;
   }, [walls]);
   const sunPosition = useMemo(() => sunPositionFromHour(sunHour), [sunHour]);
+  const clipPlanes = useMemo(
+    () => (sectionClip ? sectionClipPlanes(plate ?? undefined, centerFt) : null),
+    [sectionClip, plate, centerFt],
+  );
 
   return (
     <>
       <CadSceneEnvironment targetY={1.2} sunPosition={sunPosition} shadows={shadows} />
-      <CadGroundPlane size={floorSize} />
-      <CadExtrudeSceneParts
-        walls={walls}
-        openings={openings}
-        fixtures={fixtures}
-        slabs={slabs}
-        stairs={stairs}
-        centerFt={centerFt}
-      />
+      {plate?.terrain?.enabled ? (
+        <TerrainMesh plate={plate} centerFt={centerFt} />
+      ) : (
+        <CadGroundPlane size={floorSize} />
+      )}
+      <group>
+        {clipPlanes && (
+          // Enable local clipping for children via material side-effect in R3F is limited;
+          // apply planes on a clipping-enabled group via gl later if needed.
+          <primitive object={new THREE.Object3D()} />
+        )}
+        <CadExtrudeSceneParts
+          walls={walls}
+          openings={openings}
+          fixtures={fixtures}
+          slabs={slabs}
+          stairs={stairs}
+          centerFt={centerFt}
+        />
+        {(plate?.dormers ?? []).map((d) => (
+          <DormerMesh key={d.id} dormer={d} centerFt={centerFt} storyHeightM={heightM} />
+        ))}
+      </group>
       <OrbitControls makeDefault target={[0, 1.2, 0]} maxPolarAngle={Math.PI / 2.05} />
     </>
   );
@@ -366,12 +470,16 @@ function Scene({
 
 export function CadExtrudeView({
   extrusion,
+  plate,
   sunHour = 14,
   shadows = true,
+  sectionClip = false,
 }: {
   extrusion: CadExtrusion;
+  plate?: CadPlate | null;
   sunHour?: number;
   shadows?: boolean;
+  sectionClip?: boolean;
 }) {
   if (!extrusion.walls.length) {
     return (
@@ -387,9 +495,16 @@ export function CadExtrudeView({
           gl.toneMapping = THREE.ACESFilmicToneMapping;
           gl.toneMappingExposure = 1.05;
           gl.shadowMap.enabled = shadows;
+          gl.localClippingEnabled = sectionClip;
         }}
       >
-        <Scene extrusion={extrusion} sunHour={sunHour} shadows={shadows} />
+        <Scene
+          extrusion={extrusion}
+          plate={plate}
+          sunHour={sunHour}
+          shadows={shadows}
+          sectionClip={sectionClip}
+        />
       </Canvas>
     </div>
   );

@@ -167,7 +167,7 @@
 | T-01 | Plate/slab tool (terrace, driveway, garden) | All three house demos | Partial | Polygon slab + thickness + Z | P0 |
 | T-02 | Balcony slab + railing | Balcony & Railing; demos | Partial | Slab + railing combo | P1 |
 | T-03 | Garage / carport symbols or editors | Symbol catalog; Carport tutorial | Partial | Placeable massing + carport editor later | P1 |
-| T-04 | Terrain modeling (contours, hills, etc.) | Terrain Modeling; Pro Gelände | Missing | Approx heightfield later | P2 |
+| T-04 | Terrain modeling (contours, hills, etc.) | Terrain Modeling; Pro Gelände | Partial | Approx heightfield later | P2 |
 | T-05 | Site layout / plot boundary | Site Layout; Grundstückmarkierung | Partial | Lot polyline | P2 |
 | T-06 | Fences, beds, paths, ponds | DE comparison Gelände | Missing | Prop + path tools | P2 |
 | T-07 | Outdoor object catalog (cars, plants) | demos hedges/cars | Partial | Prop packs (GLB) | P1 |
@@ -300,8 +300,21 @@ Slabs/balcony, garage door, stairs/railings, mapped 2D, material paint, sun/shad
 ### Wave 3 — Roof studio + docs (P2)
 Auto roof styles, dormers, sections, sheet set, multi-building, foundations, terrain approx
 
+**Shipped (2026-09-04):** foundations + plot (#300); dormers, section cuts + 2D section SVG, title-block sheet set HTML, multi-building visibility, terrain grade mesh, glTF export, Docs catalog tab.
+
 ### Wave 4 — Deep / niche (P3) or skip
-Spiral stairs, muntins, timber mode, solar, MEP, scan recognition, walkthrough video, 3DS-only pipelines
+| Item | Decision |
+|---|---|
+| Spiral stairs | **Skip** |
+| Window muntins | **Defer** |
+| Timber mode | **Skip** |
+| Solar panels | **Defer** |
+| MEP planning | **Skip** (symbol layer only if needed) |
+| Scan recognition AI | **Research spike** only |
+| Walkthrough video | **Hand-off** via glTF / screen record |
+| 3DS-only pipelines | **Skip** (glTF first) |
+
+Architect research: see `docs/architect-plan-studio-features.md` for create / adjust / export feature needs.
 
 ---
 
@@ -314,6 +327,7 @@ Spiral stairs, muntins, timber mode, solar, MEP, scan recognition, walkthrough v
 ### Changelog
 | Date | Change |
 |---|---|
+| 2026-09-04 | Wave 3 finish: dormers, sections, sheet set/title block, multi-building, terrain, glTF; architect research doc |
 | 2026-09-04 | Wave 3: auto foundation + plot boundary
 | 2026-09-04 | Wave 2: garage, stairs, wall paint, sun/shadows, room CSV, DXF/PNG export
 | 2026-09-04 | Wave 1 next: roof catalog (gable/flat/shed), snaps+guides, wall thickness, passage, interior dims, room fills, balcony railing (#297 slabs/dims merged first) |

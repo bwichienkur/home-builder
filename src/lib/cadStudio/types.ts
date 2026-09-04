@@ -47,6 +47,8 @@ export type CadWallCenterlineFt = {
   thicknessFt?: number;
   /** Paint / finish preset id (stucco, paint, brick, stone, wood). */
   materialId?: CadWallMaterialId;
+  /** Multi-building membership (default = primary building). */
+  buildingId?: string;
 };
 
 export type CadWallMaterialId = 'stucco' | 'paint' | 'brick' | 'stone' | 'wood' | 'interior';
@@ -166,6 +168,69 @@ export type CadFoundationOverrides = {
   footingDepthFt: number;
 };
 
+/** Gable dormer seated on the roof (plan feet). */
+export type CadDormerFt = {
+  id: string;
+  /** Center of dormer face on plan. */
+  xFt: number;
+  yFt: number;
+  widthFt: number;
+  depthFt: number;
+  /** Height of dormer walls above eave (feet). */
+  heightFt: number;
+  /** Face rotation degrees (0 = faces +Y). */
+  rotationDeg: number;
+  pitchRise12: number;
+  layer: string;
+  buildingId?: string;
+};
+
+/** Plan section cut line (looking toward the right when walking start→end). */
+export type CadSectionCutFt = {
+  id: string;
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  /** Half-depth of cutting plane (feet) for 3D clip. */
+  depthFt: number;
+  label: string;
+  layer: string;
+};
+
+/** Named building on a multi-building plate. */
+export type CadBuilding = {
+  id: string;
+  name: string;
+  /** Optional plan offset for satellite buildings (feet). */
+  offsetXFt: number;
+  offsetYFt: number;
+  visible: boolean;
+};
+
+/** Approx site terrain (Plan7 Gelände-inspired heightfield). */
+export type CadTerrainOverrides = {
+  enabled: boolean;
+  /** Rise over run as percent grade (e.g. 4 = 4%). */
+  gradePercent: number;
+  /** Direction of uphill (degrees; 0 = +X). */
+  directionDeg: number;
+  /** Grid extent padding beyond plate bounds (feet). */
+  padFt: number;
+};
+
+/** Title block metadata for sheet-set export. */
+export type CadTitleBlock = {
+  projectName: string;
+  sheetTitle: string;
+  drawnBy: string;
+  checkedBy: string;
+  scaleLabel: string;
+  dateLabel: string;
+  revision: string;
+  address?: string;
+};
+
 /** Elevation sheet segment — X = width from left, Y = height above grade (feet). */
 export type CadElevationSegmentFt = {
   x1Ft: number;
@@ -250,6 +315,16 @@ export type CadPlate = {
   roof?: CadRoofOverrides;
   /** Auto foundation under exterior walls. */
   foundation?: CadFoundationOverrides;
+  /** Roof dormers. */
+  dormers?: CadDormerFt[];
+  /** Plan section cut lines. */
+  sectionCuts?: CadSectionCutFt[];
+  /** Named buildings (primary + satellites). */
+  buildings?: CadBuilding[];
+  /** Site terrain approx. */
+  terrain?: CadTerrainOverrides;
+  /** Title block defaults for sheet-set export. */
+  titleBlock?: CadTitleBlock;
   /** Front elevation linework (width × height ft) when DXF has elevation viewports. */
   elevationFront?: CadElevationSheet;
   /** Side/rear elevation linework when available. */
@@ -258,6 +333,24 @@ export type CadPlate = {
   bounds: CadBoundsFt;
   sheetSource: 'dxf_viewport' | 'pdf' | 'static' | 'mixed' | 'synthetic';
   pdfUrl?: string;
+};
+
+/** Computed 2D building section from a cut line. */
+export type CadSectionHit = {
+  stationFt: number;
+  thicknessFt: number;
+  heightFt: number;
+  exterior: boolean;
+  openings: Array<{ sillFt: number; headFt: number; widthFt: number }>;
+};
+
+export type CadSectionDrawing = {
+  cut: CadSectionCutFt;
+  lengthFt: number;
+  storyHeightFt: number;
+  ridgeHeightFt: number;
+  hits: CadSectionHit[];
+  gradeFt: number;
 };
 
 export type CadExtrusion = {

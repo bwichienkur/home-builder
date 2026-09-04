@@ -192,6 +192,52 @@ export function demoCadPlate(): CadPlate {
         layer: 'STAIRS',
       },
     ],
+    dormers: [
+      {
+        id: 'dormer-demo-1',
+        xFt: 20,
+        yFt: 26,
+        widthFt: 8,
+        depthFt: 6,
+        heightFt: 5,
+        rotationDeg: 0,
+        pitchRise12: 8,
+        layer: 'A-ROOF-DORM',
+        buildingId: 'bldg-main',
+      },
+    ],
+    sectionCuts: [
+      {
+        id: 'section-demo-a',
+        x1: -2,
+        y1: 14,
+        x2: 50,
+        y2: 14,
+        depthFt: 1.5,
+        label: 'SECTION A-A',
+        layer: 'A-SECT',
+      },
+    ],
+    buildings: [
+      { id: 'bldg-main', name: 'Main house', offsetXFt: 0, offsetYFt: 0, visible: true },
+      { id: 'bldg-garage', name: 'Detached garage', offsetXFt: 0, offsetYFt: 0, visible: true },
+    ],
+    terrain: {
+      enabled: true,
+      gradePercent: 3,
+      directionDeg: 15,
+      padFt: 14,
+    },
+    titleBlock: {
+      projectName: 'Demo Ranch',
+      sheetTitle: 'CAD Studio Sheet Set',
+      drawnBy: 'Olsen CAD',
+      checkedBy: '—',
+      scaleLabel: '1/4" = 1\'-0"',
+      dateLabel: '2026-09-04',
+      revision: 'A',
+      address: 'Sample Lot',
+    },
     foundation: {
       enabled: true,
       mode: 'slab+footing',
@@ -205,9 +251,44 @@ export function demoCadPlate(): CadPlate {
     sheets: [
       { id: 'demo-floor', name: 'SHT. 1 FLOOR', order: 1, kind: 'floor' },
       { id: 'demo-front', name: 'SHT. 2 FRONT ELEVATION', order: 2, kind: 'elevation' },
+      { id: 'demo-section', name: 'SHT. 3 SECTION A-A', order: 3, kind: 'details' },
     ],
     bounds: { minX: 0, minY: -8, maxX: 48, maxY: 28 },
     sheetSource: 'synthetic',
   };
+
+  // Detached garage as second building (multi-building)
+  const garageWalls = [
+    { x1: 52, y1: 4, x2: 68, y2: 4, layer: 'WALLS EXT', exterior: true, buildingId: 'bldg-garage' },
+    { x1: 68, y1: 4, x2: 68, y2: 20, layer: 'WALLS EXT', exterior: true, buildingId: 'bldg-garage' },
+    { x1: 68, y1: 20, x2: 52, y2: 20, layer: 'WALLS EXT', exterior: true, buildingId: 'bldg-garage' },
+    { x1: 52, y1: 20, x2: 52, y2: 4, layer: 'WALLS EXT', exterior: true, buildingId: 'bldg-garage' },
+  ];
+  plate.wallCenterlines = [
+    ...plate.wallCenterlines.map((w) => ({ ...w, buildingId: 'bldg-main' })),
+    ...garageWalls,
+  ];
+  plate.openingHints = [
+    ...plate.openingHints,
+    { x1: 54, y1: 4, x2: 66, y2: 4, kind: 'garage' as const, layer: 'DOORS' },
+  ];
+  plate.segments = [
+    ...plate.segments,
+    ...garageWalls.map((s) => ({
+      x1: s.x1,
+      y1: s.y1,
+      x2: s.x2,
+      y2: s.y2,
+      layer: s.layer,
+      role: 'wall' as const,
+    })),
+    { x1: 54, y1: 4, x2: 66, y2: 4, layer: 'DOORS', role: 'opening' as const },
+  ];
+  plate.bounds = { minX: 0, minY: -8, maxX: 70, maxY: 28 };
+  plate.labels = [
+    ...plate.labels,
+    { x: 60, y: 12, text: 'GARAGE', layer: 'TEXT ROOM' },
+  ];
+
   return applyAutoFoundation(plate, { enabled: true });
 }

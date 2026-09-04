@@ -8,9 +8,11 @@ import {
 import { computeExteriorDims, computeInteriorDims } from '../../lib/cadStudio/cadExteriorDims';
 import { snapCadDraftPoint, type CadSnapResult } from '../../lib/cadStudio/cadDrawSnap';
 import {
+  addDormer,
   addFixtureHint,
   addGuideline,
   addOpeningHint,
+  addSectionCut,
   addSlab,
   addStair,
   addWallCenterline,
@@ -254,7 +256,7 @@ export function CadPlateEditor({
       return;
     }
 
-    if (tool === 'wall' || tool === 'opening' || tool === 'guide') {
+    if (tool === 'wall' || tool === 'opening' || tool === 'guide' || tool === 'section') {
       if (!draftLine) {
         const plan = snapPlan(raw);
         setDraftLine({ x1: plan.x, y1: plan.y, x2: plan.x, y2: plan.y });
@@ -266,6 +268,8 @@ export function CadPlateEditor({
             onPlateChange(addWallCenterline(plate, x1, y1, plan.x, plan.y, wallLayer));
           } else if (tool === 'guide') {
             onPlateChange(addGuideline(plate, x1, y1, plan.x, plan.y));
+          } else if (tool === 'section') {
+            onPlateChange(addSectionCut(plate, x1, y1, plan.x, plan.y));
           } else {
             onPlateChange(
               addOpeningHint(
@@ -297,6 +301,12 @@ export function CadPlateEditor({
       return;
     }
 
+    if (tool === 'dormer') {
+      const plan = snapPlan(raw);
+      onPlateChange(addDormer(plate, plan.x, plan.y));
+      return;
+    }
+
     const hit = pickAtPoint(plate, raw.x, raw.y);
     onSelectionChange(hit);
     if (hit) {
@@ -317,7 +327,7 @@ export function CadPlateEditor({
       return;
     }
 
-    if (draftLine && (tool === 'wall' || tool === 'opening' || tool === 'guide')) {
+    if (draftLine && (tool === 'wall' || tool === 'opening' || tool === 'guide' || tool === 'section')) {
       const plan = snapPlan(raw, { x: draftLine.x1, y: draftLine.y1 });
       setDraftLine({ ...draftLine, x2: plan.x, y2: plan.y });
       setCursorPlan({ x: plan.x, y: plan.y });
@@ -425,7 +435,7 @@ export function CadPlateEditor({
       setDraftPoly([]);
       setCursorPlan(null);
     }
-    if (tool !== 'wall' && tool !== 'opening' && tool !== 'guide') {
+    if (tool !== 'wall' && tool !== 'opening' && tool !== 'guide' && tool !== 'section') {
       setDraftLine(null);
       setLastSnap(null);
     }
@@ -638,13 +648,64 @@ export function CadPlateEditor({
           );
         })}
 
+        {(plate.dormers ?? []).map((d, i) => {
+          const selected = isSelected('dormer', i);
+          const hw = d.widthFt / 2;
+          const hd = d.depthFt / 2;
+          return (
+            <g key={d.id}>
+              <rect
+                x={d.xFt - hw}
+                y={d.yFt - hd}
+                width={d.widthFt}
+                height={d.depthFt}
+                fill={selected ? '#0f766e' : '#14b8a6'}
+                fillOpacity={0.25}
+                stroke={selected ? '#134e4a' : '#0f766e'}
+                strokeWidth={stroke * (selected ? 2.4 : 1.5)}
+              />
+              <text
+                x={d.xFt}
+                y={d.yFt}
+                fill="#134e4a"
+                fontSize={Math.max(0.9, stroke * 8)}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                style={{ pointerEvents: 'none' }}
+              >
+                DORMER
+              </text>
+            </g>
+          );
+        })}
+
+        {(plate.sectionCuts ?? []).map((c, i) => {
+          const selected = isSelected('section', i);
+          return (
+            <g key={c.id}>
+              <line
+                x1={c.x1}
+                y1={c.y1}
+                x2={c.x2}
+                y2={c.y2}
+                stroke={selected ? '#b91c1c' : '#dc2626'}
+                strokeWidth={stroke * (selected ? 3 : 2)}
+                strokeDasharray="0.6 0.35"
+                strokeLinecap="round"
+              />
+              <circle cx={c.x1} cy={c.y1} r={stroke * 3} fill="#dc2626" />
+              <circle cx={c.x2} cy={c.y2} r={stroke * 3} fill="#dc2626" />
+            </g>
+          );
+        })}
+
         {draftLine && (
           <line
             x1={draftLine.x1}
             y1={draftLine.y1}
             x2={draftLine.x2}
             y2={draftLine.y2}
-            stroke={tool === 'guide' ? '#0d9488' : '#1f4e46'}
+            stroke={tool === 'guide' ? '#0d9488' : tool === 'section' ? '#dc2626' : '#1f4e46'}
             strokeWidth={stroke * 2.5}
             strokeDasharray="0.4 0.3"
             strokeLinecap="round"
