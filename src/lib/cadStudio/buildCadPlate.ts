@@ -378,15 +378,15 @@ export function buildCadPlateFromDxf(
   return plate;
 }
 
-/** Toggle visibility and rebuild walls / openings / 3D inputs. */
+/** Toggle visibility without destroying authored wall metadata (thickness, material, hosts). */
 export function withLayerVisibility(plate: CadPlate, visibility: Record<string, boolean>): CadPlate {
-  return rebuildPlateFromLayerSettings({
+  return {
     ...plate,
     layers: plate.layers.map((l) => ({
       ...l,
       visible: visibility[l.name] ?? l.visible,
     })),
-  });
+  };
 }
 
 /** Set layer classify (Wall / Door / Dim / Ignore / …) and rebuild. */
@@ -433,25 +433,29 @@ export function removeLayer(plate: CadPlate, layerName: string): CadPlate {
 
 /** Hide all annotation / dim / roof / noise layers in one click. */
 export function hideNonFloorPreset(plate: CadPlate): CadPlate {
-  const layers = plate.layers.map((l) => {
-    const shouldHide =
-      l.kind === 'annotation' ||
-      l.kind === 'elevation' ||
-      l.kind === 'foundation' ||
-      l.role === 'other' ||
-      l.role === 'elevation';
-    return shouldHide ? { ...l, visible: false } : l;
-  });
-  return rebuildPlateFromLayerSettings({ ...plate, layers });
+  return {
+    ...plate,
+    layers: plate.layers.map((l) => {
+      const shouldHide =
+        l.kind === 'annotation' ||
+        l.kind === 'elevation' ||
+        l.kind === 'foundation' ||
+        l.role === 'other' ||
+        l.role === 'elevation';
+      return shouldHide ? { ...l, visible: false } : l;
+    }),
+  };
 }
 
 /** Show only layers classified as wall or door (opening). */
 export function showWallsAndDoorsPreset(plate: CadPlate): CadPlate {
-  const layers = plate.layers.map((l) => ({
-    ...l,
-    visible: l.role === 'wall' || l.role === 'opening',
-  }));
-  return rebuildPlateFromLayerSettings({ ...plate, layers });
+  return {
+    ...plate,
+    layers: plate.layers.map((l) => ({
+      ...l,
+      visible: l.role === 'wall' || l.role === 'opening',
+    })),
+  };
 }
 
 export function visibleSegments(plate: CadPlate): CadSegmentFt[] {

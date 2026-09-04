@@ -1,6 +1,13 @@
 import { buildFloorFromCadWalls } from '../housePlans/dxfCadBuild';
 import type { HousePlanFloor } from '../housePlans/buildPlan';
 import { buildCadMassing } from './buildCadMassing';
+import {
+  visibleFixtures,
+  visibleOpeningHints,
+  visibleSlabs,
+  visibleStairs,
+  visibleWallCenterlines,
+} from './cadLayerVisibility';
 import { detectCadFixtures } from './detectCadFixtures';
 import { elevationOpeningHintsFt } from './elevationOpenings';
 import type { CadExtrusion, CadPlate } from './types';
@@ -9,7 +16,7 @@ const DEFAULT_HEIGHT_M = 2.74;
 
 /**
  * Extrude 3D walls + openings + procedural fixtures from a CAD plate.
- * Fixtures are never walls — counters/sinks/toilets are separate meshes.
+ * Respects layer visibility and building visibility toggles.
  */
 export function extrudeCadPlate(plate: CadPlate, opts?: { heightM?: number }): CadExtrusion {
   const heightM = opts?.heightM ?? DEFAULT_HEIGHT_M;
@@ -22,9 +29,12 @@ export function extrudeCadPlate(plate: CadPlate, opts?: { heightM?: number }): C
   const hiddenBuildings = new Set(
     (plate.buildings ?? []).filter((b) => !b.visible).map((b) => b.id),
   );
-  const wallCenterlines = plate.wallCenterlines.filter(
+  const wallCenterlines = visibleWallCenterlines(plate).filter(
     (w) => !w.buildingId || !hiddenBuildings.has(w.buildingId),
   );
+  const openingHints = visibleOpeningHints(plate);
+  const slabs = visibleSlabs(plate);
+  const stairs = visibleStairs(plate);
 
   const floor: HousePlanFloor = {
     id: `${plate.id}-floor`,
@@ -53,7 +63,7 @@ export function extrudeCadPlate(plate: CadPlate, opts?: { heightM?: number }): C
       thicknessFt: s.thicknessFt,
       materialId: s.materialId,
     })),
-    openingHintsFt: plate.openingHints.map((h) => ({
+    openingHintsFt: openingHints.map((h) => ({
       x1: h.x1,
       y1: h.y1,
       x2: h.x2,
@@ -66,7 +76,7 @@ export function extrudeCadPlate(plate: CadPlate, opts?: { heightM?: number }): C
 
   const massing = buildCadMassing(plate, heightM);
   const elevHints = elevationOpeningHintsFt(plate, massing);
-  const allHints = [...plate.openingHints, ...elevHints];
+  const allHints = [...openingHints, ...elevHints];
 
   const floorWithHints: HousePlanFloor = {
     ...floor,
@@ -82,7 +92,11 @@ export function extrudeCadPlate(plate: CadPlate, opts?: { heightM?: number }): C
   };
 
   const builtWithOpenings = buildFloorFromCadWalls(floorWithHints, { centerFt });
-  const fixtures = detectCadFixtures(plate);
+  const fixtures = detectCadFixtures({
+    ...plate,
+    fixtureHints: visibleFixtures(plate),
+  });
+
   const wallSegmentsFt = wallCenterlines.map((s) => ({
     x1: s.x1,
     y1: s.y1,
@@ -95,8 +109,8 @@ export function extrudeCadPlate(plate: CadPlate, opts?: { heightM?: number }): C
     walls: builtWithOpenings.scene.walls,
     openings: builtWithOpenings.scene.openings,
     fixtures,
-    slabs: plate.slabs ?? [],
-    stairs: plate.stairs ?? [],
+    slabs,
+    stairs,
     centerFt,
     heightM,
     massing,

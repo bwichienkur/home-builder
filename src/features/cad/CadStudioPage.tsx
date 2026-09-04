@@ -4,6 +4,8 @@ import {
   buildCadPlateFromDxf,
   CAD_WALL_MATERIALS,
   clearAutoFoundation,
+  createCadHistory,
+  copyWalls,
   demoCadPlate,
   deleteSelection,
   downloadSvgAsPng,
@@ -13,28 +15,46 @@ import {
   exportCadRoomScheduleCsv,
   exportCadSheetSetHtml,
   extrudeCadPlate,
+  flipOpeningHand,
+  flipWall,
+  formatWallLengthFt,
   hideNonFloorPreset,
+  mirrorWalls,
+  parseAngleDeg,
+  parseArchitecturalLength,
+  pushCadHistory,
+  redoCadHistory,
   removeLayer,
   renderCadElevationSvg,
   renderCadPlateSvg,
   renderCadSectionSvg,
+  replaceCadPresent,
   buildCadSectionDrawing,
+  resyncHostedOpenings,
   roleToClassify,
   roomScheduleSummary,
+  segLengthFt,
   selectionSummary,
   setLayerClassify,
+  setOpeningSill,
+  setOpeningWidth,
   setPlateRoof,
   setPlateTerrain,
   setPlateTitleBlock,
+  setWallAngle,
+  setWallLength,
   setWallMaterial,
   setWallThickness,
   showWallsAndDoorsPreset,
   toggleBuildingVisible,
+  undoCadHistory,
   updateSlab,
   updateStair,
+  wallAngleDeg,
   withLayerVisibility,
   DEFAULT_ROOF_OVERRIDES,
   type CadEditTool,
+  type CadHistoryState,
   type CadLayerClassify,
   type CadPlateSelection,
   type CadWallMaterialId,
@@ -82,7 +102,17 @@ function progressLabel(p: DrawingImportProgress | null): string {
 }
 
 export function CadStudioPage() {
-  const [plate, setPlate] = useState<CadPlate | null>(() => demoCadPlate());
+  const [history, setHistory] = useState<CadHistoryState>(() => createCadHistory(demoCadPlate()));
+  const plate = history.present;
+  const setPlate = (next: CadPlate | ((p: CadPlate) => CadPlate)) => {
+    setHistory((h) => {
+      const resolved = typeof next === 'function' ? next(h.present) : next;
+      return pushCadHistory(h, resolved);
+    });
+  };
+  const loadPlate = (p: CadPlate) => {
+    setHistory((h) => replaceCadPresent(h, p));
+  };
   const [layout, setLayout] = useState<LayoutMode>('split');
   const [plateMode, setPlateMode] = useState<PlateMode>('floor');
   const [catalogTab, setCatalogTab] = useState<CatalogTab>('walls');
@@ -100,6 +130,8 @@ export function CadStudioPage() {
   const [showInteriorDims, setShowInteriorDims] = useState(false);
   const [showRoomFills, setShowRoomFills] = useState(true);
   const [selection, setSelection] = useState<CadPlateSelection | null>(null);
+  const [wallMulti, setWallMulti] = useState<number[]>([]);
+  const [statusAid, setStatusAid] = useState('');
   const [layerFilter, setLayerFilter] = useState('');
   const [snapOn, setSnapOn] = useState(true);
   const [unitLabel] = useState<'ft-in' | 'm'>('ft-in');
@@ -107,20 +139,20 @@ export function CadStudioPage() {
   const [shadowsOn, setShadowsOn] = useState(true);
   const [sectionClip, setSectionClip] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const wallLengthInputRef = useRef<HTMLInputElement>(null);
 
   const visibility = useMemo(() => {
     const map: Record<string, boolean> = {};
-    for (const layer of plate?.layers ?? []) map[layer.name] = layer.visible;
+    for (const layer of plate.layers) map[layer.name] = layer.visible;
     return map;
   }, [plate]);
 
   const visibleLayerSet = useMemo(
-    () => new Set(plate?.layers.filter((l) => l.visible).map((l) => l.name) ?? []),
+    () => new Set(plate.layers.filter((l) => l.visible).map((l) => l.name)),
     [plate],
   );
 
   const plateSvg = useMemo(() => {
-    if (!plate) return null;
     if (plateMode === 'front' && plate.elevationFront) {
       return renderCadElevationSvg(plate.elevationFront, {
         title: plate.elevationFront.name,
@@ -143,24 +175,24 @@ export function CadStudioPage() {
     return null;
   }, [plate, plateMode, visibleLayerSet]);
 
-  const extrusion = useMemo(() => (plate ? extrudeCadPlate(plate) : null), [plate]);
+  const extrusion = useMemo(() => extrudeCadPlate(plate), [plate]);
 
-  const roomSchedule = useMemo(() => (plate ? roomScheduleSummary(plate) : []), [plate]);
+  const roomSchedule = useMemo(() => roomScheduleSummary(plate), [plate]);
 
   const storySheets = useMemo(
-    () => plate?.sheets.filter((s) => s.kind === 'floor' || s.kind === 'elevation') ?? [],
+    () => plate.sheets.filter((s) => s.kind === 'floor' || s.kind === 'elevation'),
     [plate],
   );
 
   const activeSheet =
-    plate?.sheets.find((s) => s.id === sheetId) ??
-    plate?.sheets.find((s) => s.kind === 'floor') ??
-    plate?.sheets[0] ??
+    plate.sheets.find((s) => s.id === sheetId) ??
+    plate.sheets.find((s) => s.kind === 'floor') ??
+    plate.sheets[0] ??
     null;
 
   const filteredLayers = useMemo(() => {
     const q = layerFilter.trim().toLowerCase();
-    const list = plate?.layers ?? [];
+    const list = plate.layers;
     if (!q) return list;
     return list.filter(
       (l) =>
@@ -172,7 +204,6 @@ export function CadStudioPage() {
   }, [plate, layerFilter]);
 
   const toggleLayer = (name: string) => {
-    if (!plate) return;
     setPlate(withLayerVisibility(plate, { ...visibility, [name]: !visibility[name] }));
   };
 
@@ -182,6 +213,7 @@ export function CadStudioPage() {
   ) => {
     setEditTool(tool);
     setSelection(null);
+    setWallMulti([]);
     if (opts?.wallLayer) setWallLayer(opts.wallLayer);
     if (opts?.opening) setOpeningKind(opts.opening);
     if (opts?.fixture) setFixtureKind(opts.fixture);
@@ -198,7 +230,7 @@ export function CadStudioPage() {
       if (lower.endsWith('.dxf')) {
         setProgress({ stage: 'parsing', detail: file.name });
         const text = await file.text();
-        setPlate(buildCadPlateFromDxf(text, file.name));
+        loadPlate(buildCadPlateFromDxf(text, file.name));
       } else if (lower.endsWith('.dwg')) {
         const result = await importDrawingFiles(
           { drawing: file },
@@ -209,7 +241,7 @@ export function CadStudioPage() {
           pdfUrl: result.package.pdfUrl,
           sheetSource: result.package.sheetSource === 'pdf' ? 'pdf' : 'dxf_viewport',
         });
-        setPlate({
+        loadPlate({
           ...next,
           warnings: [...result.package.warnings, ...next.warnings],
         });
@@ -221,6 +253,7 @@ export function CadStudioPage() {
       setCatalogTab('layers');
       setSheetId(null);
       setSelection(null);
+      setWallMulti([]);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Import failed');
     } finally {
@@ -229,16 +262,41 @@ export function CadStudioPage() {
     }
   };
 
-  const hasFrontElev = !!plate?.elevationFront?.segments.length;
-  const hasSideElev = !!plate?.elevationSide?.segments.length;
-  const visibleCount = plate?.layers.filter((l) => l.visible).length ?? 0;
-  const layerCount = plate?.layers.length ?? 0;
+  const requestWallLengthEdit = (index: number) => {
+    setSelection({ kind: 'wall', index });
+    setCatalogTab('walls');
+    const wall = plate.wallCenterlines[index];
+    if (!wall) return;
+    const current = formatWallLengthFt(segLengthFt(wall));
+    const raw = window.prompt('Wall length', current);
+    if (raw == null) return;
+    const len = parseArchitecturalLength(raw);
+    if (len == null) return;
+    setPlate(resyncHostedOpenings(setWallLength(plate, index, len, 'start'), index));
+    queueMicrotask(() => wallLengthInputRef.current?.focus());
+  };
+
+  const modifyHint =
+    editTool === 'trim'
+      ? 'Trim: click cutter wall, then wall to shorten'
+      : editTool === 'extend'
+        ? 'Extend: click boundary wall, then wall to lengthen'
+        : editTool === 'break'
+          ? 'Break: click wall at split point'
+          : editTool === 'offset'
+            ? 'Offset: click wall to copy parallel 1 ft'
+            : statusAid || 'Shift ortho · Esc cancel · Tab length · Ctrl+Z undo';
+
+  const hasFrontElev = !!plate.elevationFront?.segments.length;
+  const hasSideElev = !!plate.elevationSide?.segments.length;
+  const visibleCount = plate.layers.filter((l) => l.visible).length;
+  const layerCount = plate.layers.length;
   const show2d = layout === 'split' || layout === 'plate';
   const show3d = (layout === 'split' || layout === 'extrude') && !!extrusion;
-  const can3d = !!plate?.wallCenterlines.length;
+  const can3d = !!plate.wallCenterlines.length;
 
   const renderFloorPane = () => {
-    if (plateMode === 'floor' && plate?.segments.length) {
+    if (plateMode === 'floor' && plate.segments.length) {
       return (
         <CadPlateEditor
           plate={plate}
@@ -254,7 +312,13 @@ export function CadStudioPage() {
           showRoomFills={showRoomFills}
           selection={selection}
           onSelectionChange={setSelection}
+          wallMulti={wallMulti}
+          onWallMultiChange={setWallMulti}
           onPlateChange={setPlate}
+          onStatus={setStatusAid}
+          onUndo={() => setHistory((h) => undoCadHistory(h))}
+          onRedo={() => setHistory((h) => redoCadHistory(h))}
+          onRequestWallLengthEdit={requestWallLengthEdit}
         />
       );
     }
@@ -297,11 +361,12 @@ export function CadStudioPage() {
           <button
             type="button"
             onClick={() => {
-              setPlate(demoCadPlate());
+              loadPlate(demoCadPlate());
               setLayout('split');
               setPlateMode('floor');
               setCatalogTab('walls');
               setSelection(null);
+              setWallMulti([]);
             }}
           >
             Demo ranch
@@ -309,11 +374,28 @@ export function CadStudioPage() {
           <button
             type="button"
             onClick={() => {
-              setPlate(stillwaterCadSheetPlate());
+              loadPlate(stillwaterCadSheetPlate());
               setLayout('sheets');
             }}
           >
             Stillwater sheets
+          </button>
+          <span className="cad-action-sep" aria-hidden />
+          <button
+            type="button"
+            disabled={!history.past.length}
+            onClick={() => setHistory((h) => undoCadHistory(h))}
+            title="Undo (Ctrl+Z)"
+          >
+            Undo
+          </button>
+          <button
+            type="button"
+            disabled={!history.future.length}
+            onClick={() => setHistory((h) => redoCadHistory(h))}
+            title="Redo (Ctrl+Y)"
+          >
+            Redo
           </button>
           <span className="cad-action-sep" aria-hidden />
           <button type="button" className={layout === 'split' ? 'is-active' : ''} onClick={() => setLayout('split')}>
@@ -394,7 +476,7 @@ export function CadStudioPage() {
                     onClick={() => pickTool('select')}
                   >
                     <strong>Select / move</strong>
-                    <span>Edit endpoints & length</span>
+                    <span>Grips · Shift multi · length dim</span>
                   </button>
                   <button
                     type="button"
@@ -417,8 +499,78 @@ export function CadStudioPage() {
                     <span>Remove selected geometry</span>
                   </button>
                 </div>
+                <h2 style={{ marginTop: '0.85rem' }}>Modify</h2>
+                <div className="cad-modify-bar" role="group" aria-label="Wall modify tools">
+                  <button
+                    type="button"
+                    className={editTool === 'select' ? 'is-active' : ''}
+                    onClick={() => pickTool('select')}
+                  >
+                    Select
+                  </button>
+                  <button
+                    type="button"
+                    className={editTool === 'trim' ? 'is-active' : ''}
+                    onClick={() => pickTool('trim')}
+                  >
+                    Trim
+                  </button>
+                  <button
+                    type="button"
+                    className={editTool === 'extend' ? 'is-active' : ''}
+                    onClick={() => pickTool('extend')}
+                  >
+                    Extend
+                  </button>
+                  <button
+                    type="button"
+                    className={editTool === 'break' ? 'is-active' : ''}
+                    onClick={() => pickTool('break')}
+                  >
+                    Break
+                  </button>
+                  <button
+                    type="button"
+                    className={editTool === 'offset' ? 'is-active' : ''}
+                    onClick={() => pickTool('offset')}
+                  >
+                    Offset
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!selection || selection.kind !== 'wall'}
+                    onClick={() => {
+                      if (!selection || selection.kind !== 'wall') return;
+                      const indices = wallMulti.includes(selection.index)
+                        ? wallMulti
+                        : [selection.index];
+                      setPlate(copyWalls(plate, indices, 2, 0));
+                      setStatusAid(`Copied ${indices.length} wall(s) +2' in X`);
+                    }}
+                  >
+                    Copy
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!selection || selection.kind !== 'wall'}
+                    onClick={() => {
+                      if (!selection || selection.kind !== 'wall') return;
+                      const indices = wallMulti.includes(selection.index)
+                        ? wallMulti
+                        : [selection.index];
+                      const w = plate.wallCenterlines[selection.index]!;
+                      const cx = (w.x1 + w.x2) / 2;
+                      const cy = (w.y1 + w.y2) / 2;
+                      setPlate(mirrorWalls(plate, indices, 'x', { x: cx, y: cy }));
+                      setStatusAid(`Mirrored ${indices.length} wall(s)`);
+                    }}
+                  >
+                    Mirror
+                  </button>
+                </div>
                 <p className="cad-edit-hint">
-                  Walls: click start, then end. Stairs: single click to place. Escape cancels a draft line.
+                  Walls: click start, then end (Tab for length). Modify: Trim / Extend / Break / Offset /
+                  Copy / Mirror. Escape cancels. Shift+click multi-select walls.
                 </p>
               </section>
             )}
@@ -480,7 +632,8 @@ export function CadStudioPage() {
                   />
                 </label>
                 <p className="cad-edit-hint">
-                  Set sill before placing a window. Live length shows while you drag the span.
+                  Click near a wall to host a door/window (defaults 3'/4'). Far from walls: two-click span.
+                  Set sill before placing a window.
                 </p>
               </section>
             )}
@@ -517,20 +670,21 @@ export function CadStudioPage() {
               <section className="cad-layer-panel">
                 <h2>Layers</h2>
                 <p className="cad-layer-summary">
-                  {visibleCount} visible · {layerCount} total · rebuilds walls on change
+                  {visibleCount} visible · {layerCount} total · soft hide (keeps authored walls)
+                </p>
+                <p className="cad-edit-hint">
+                  Toggles hide layers in both 2D plan and 3D extrude.
                 </p>
                 <div className="cad-layer-presets">
-                  <button type="button" disabled={!plate} onClick={() => plate && setPlate(hideNonFloorPreset(plate))}>
+                  <button type="button" onClick={() => setPlate(hideNonFloorPreset(plate))}>
                     Hide dims / roof / noise
                   </button>
-                  <button type="button" disabled={!plate} onClick={() => plate && setPlate(showWallsAndDoorsPreset(plate))}>
+                  <button type="button" onClick={() => setPlate(showWallsAndDoorsPreset(plate))}>
                     Walls + doors only
                   </button>
                   <button
                     type="button"
-                    disabled={!plate}
                     onClick={() => {
-                      if (!plate) return;
                       const allOn: Record<string, boolean> = {};
                       for (const l of plate.layers) allOn[l.name] = true;
                       setPlate(withLayerVisibility(plate, allOn));
@@ -915,11 +1069,64 @@ export function CadStudioPage() {
 
             <section className="cad-inspector">
               <h2>Properties</h2>
-              {selection && plate ? (
+              {selection ? (
                 <div className="cad-selection-inspector">
                   <div className="cad-selection-title">{selectionSummary(plate, selection)}</div>
                   {selection.kind === 'wall' && plate.wallCenterlines[selection.index] && (
                     <div className="cad-sill-control">
+                      <label>
+                        Length
+                        <input
+                          ref={wallLengthInputRef}
+                          type="text"
+                          key={`wall-len-${selection.index}-${formatWallLengthFt(segLengthFt(plate.wallCenterlines[selection.index]!))}`}
+                          defaultValue={formatWallLengthFt(segLengthFt(plate.wallCenterlines[selection.index]!))}
+                          onBlur={(e) => {
+                            const len = parseArchitecturalLength(e.target.value);
+                            if (len == null) return;
+                            setPlate(
+                              resyncHostedOpenings(
+                                setWallLength(plate, selection.index, len, 'start'),
+                                selection.index,
+                              ),
+                            );
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key !== 'Enter') return;
+                            (e.target as HTMLInputElement).blur();
+                          }}
+                        />
+                      </label>
+                      <label>
+                        Angle (°)
+                        <input
+                          type="text"
+                          key={`wall-ang-${selection.index}-${wallAngleDeg(plate.wallCenterlines[selection.index]!).toFixed(1)}`}
+                          defaultValue={wallAngleDeg(plate.wallCenterlines[selection.index]!).toFixed(1)}
+                          onBlur={(e) => {
+                            const ang = parseAngleDeg(e.target.value);
+                            if (ang == null) return;
+                            setPlate(
+                              resyncHostedOpenings(
+                                setWallAngle(plate, selection.index, ang, 'mid'),
+                                selection.index,
+                              ),
+                            );
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key !== 'Enter') return;
+                            (e.target as HTMLInputElement).blur();
+                          }}
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setPlate(resyncHostedOpenings(flipWall(plate, selection.index), selection.index))
+                        }
+                      >
+                        Flip 180°
+                      </button>
                       <label>
                         Thickness (ft)
                         <input
@@ -972,6 +1179,48 @@ export function CadStudioPage() {
                           );
                         })}
                       </div>
+                    </div>
+                  )}
+                  {selection.kind === 'opening' && plate.openingHints[selection.index] && (
+                    <div className="cad-sill-control">
+                      <label>
+                        Width (ft)
+                        <input
+                          type="number"
+                          min={0.5}
+                          max={20}
+                          step={0.25}
+                          value={
+                            plate.openingHints[selection.index]!.widthFt ??
+                            segLengthFt(plate.openingHints[selection.index]!)
+                          }
+                          onChange={(e) => {
+                            const v = Number(e.target.value);
+                            if (!Number.isFinite(v)) return;
+                            setPlate(setOpeningWidth(plate, selection.index, v));
+                          }}
+                        />
+                      </label>
+                      {plate.openingHints[selection.index]!.kind === 'window' && (
+                        <label>
+                          Sill (ft AFF)
+                          <input
+                            type="number"
+                            min={0}
+                            max={8}
+                            step={0.25}
+                            value={plate.openingHints[selection.index]!.sillFt ?? 0}
+                            onChange={(e) => {
+                              const v = Number(e.target.value);
+                              if (!Number.isFinite(v)) return;
+                              setPlate(setOpeningSill(plate, selection.index, v));
+                            }}
+                          />
+                        </label>
+                      )}
+                      <button type="button" onClick={() => setPlate(flipOpeningHand(plate, selection.index))}>
+                        Flip hand
+                      </button>
                     </div>
                   )}
                   {selection.kind === 'stair' && plate.stairs?.[selection.index] && (
@@ -1068,6 +1317,7 @@ export function CadStudioPage() {
                     onClick={() => {
                       setPlate(deleteSelection(plate, selection));
                       setSelection(null);
+                      setWallMulti([]);
                     }}
                   >
                     Delete selected
@@ -1282,7 +1532,7 @@ export function CadStudioPage() {
                   Shadows {shadowsOn ? 'on' : 'off'}
                 </button>
                 <span className="cad-unit-pill">{unitLabel === 'ft-in' ? 'ft / in' : 'm'}</span>
-                <span className="cad-aid-hint">Shift ortho · Esc cancel · Enter close slab</span>
+                <span className="cad-aid-hint">{modifyHint}</span>
               </div>
             </div>
           )}

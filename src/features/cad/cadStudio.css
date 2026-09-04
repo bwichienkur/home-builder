@@ -205,6 +205,31 @@
   box-shadow: inset 3px 0 0 var(--cad-accent);
 }
 
+.cad-modify-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.35rem 0 0.5rem;
+}
+
+.cad-modify-bar button {
+  appearance: none;
+  border: 1px solid var(--cad-line);
+  background: #fff;
+  border-radius: 6px;
+  padding: 0.35rem 0.55rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  color: var(--cad-ink);
+}
+
+.cad-modify-bar button.is-active {
+  border-color: var(--cad-accent);
+  background: #eef6f3;
+  color: var(--cad-accent);
+  font-weight: 650;
+}
+
 .cad-catalog-soon {
   opacity: 0.55;
   cursor: not-allowed;

@@ -24,6 +24,8 @@ export type {
   CadBuilding,
   CadTerrainOverrides,
   CadTitleBlock,
+  CadOpeningHintFt,
+  CadWallCenterlineFt,
 } from './types';
 export {
   buildCadPlateFromDxf,
@@ -96,6 +98,52 @@ export {
 } from './cadExteriorDims';
 export { snapCadDraftPoint, defaultWallThicknessFt, type CadSnapResult } from './cadDrawSnap';
 export {
+  parseArchitecturalLength,
+  parseAngleDeg,
+  wallAngleDeg,
+} from './cadLengthParse';
+export {
+  createCadHistory,
+  pushCadHistory,
+  undoCadHistory,
+  redoCadHistory,
+  replaceCadPresent,
+  type CadHistoryState,
+} from './cadHistory';
+export {
+  softToggleLayer,
+  softSetAllLayers,
+  softSetLayerVisibility,
+  visibleWallCenterlines,
+  visibleOpeningHints,
+  visibleSlabs,
+  visibleStairs,
+  visibleFixtures,
+  isLayerOn,
+  layerVisibleSet,
+} from './cadLayerVisibility';
+export {
+  setWallLength,
+  setWallAngle,
+  flipWall,
+  moveWall,
+  moveWalls,
+  autoJoinWallEndpoints,
+  trimWallTo,
+  extendWallTo,
+  breakWallAt,
+  offsetWall,
+  copyWalls,
+  mirrorWalls,
+  placeHostedOpening,
+  setOpeningWidth,
+  setOpeningSill,
+  flipOpeningHand,
+  resyncHostedOpenings,
+  applyWallLengthDim,
+  wallHeadingLabel,
+} from './cadWallModify';
+export {
   addDormer,
   addFixtureHint,
   addGuideline,
@@ -110,6 +158,8 @@ export {
   moveLabel,
   moveOpeningHint,
   moveSlab,
+  moveWallEndpoint,
+  nearestWallHost,
   pickAtPoint,
   segLengthFt,
   selectionSummary,
@@ -119,8 +169,11 @@ export {
   toggleBuildingVisible,
   updateSlab,
   updateStair,
+  updateWallCenterline,
   type CadEditTool,
   type CadPlateSelection,
+  type CadGripKind,
+  type CadDragTarget,
 } from './editCadPlate';
 export {
   CAD_WALL_MATERIALS,

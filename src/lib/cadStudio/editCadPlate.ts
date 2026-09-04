@@ -30,6 +30,10 @@ export type CadEditTool =
   | 'guide'
   | 'section'
   | 'dormer'
+  | 'trim'
+  | 'extend'
+  | 'break'
+  | 'offset'
   | 'delete';
 
 export type CadPlateSelection =
@@ -43,6 +47,12 @@ export type CadPlateSelection =
   | { kind: 'dormer'; index: number }
   | { kind: 'section'; index: number }
   | { kind: 'segment'; index: number };
+
+export type CadGripKind = 'start' | 'end' | 'mid';
+
+export type CadDragTarget =
+  | { kind: 'selection'; selection: CadPlateSelection }
+  | { kind: 'grip'; wallIndex: number; grip: CadGripKind };
 
 const SLAB_DEFAULTS: Record<
   CadSlabKind,
@@ -831,6 +841,25 @@ export function hitTestSection(plate: CadPlate, px: number, py: number, tolFt = 
   return best >= 0 ? best : null;
 }
 
+export function hitTestGuide(plate: CadPlate, px: number, py: number, tolFt = 0.55): number | null {
+  let best = -1;
+  let bestD = tolFt;
+  (plate.guidelines ?? []).forEach((g, i) => {
+    const dx = g.x2 - g.x1;
+    const dy = g.y2 - g.y1;
+    const len2 = dx * dx + dy * dy;
+    if (len2 < 1e-12) return;
+    let t = ((px - g.x1) * dx + (py - g.y1) * dy) / len2;
+    t = Math.max(0, Math.min(1, t));
+    const d = Math.hypot(px - (g.x1 + t * dx), py - (g.y1 + t * dy));
+    if (d < bestD) {
+      bestD = d;
+      best = i;
+    }
+  });
+  return best >= 0 ? best : null;
+}
+
 export function pickAtPoint(plate: CadPlate, px: number, py: number): CadPlateSelection | null {
   const label = hitTestLabel(plate, px, py);
   if (label != null) return { kind: 'label', index: label };
@@ -844,9 +873,34 @@ export function pickAtPoint(plate: CadPlate, px: number, py: number): CadPlateSe
   if (stair != null) return { kind: 'stair', index: stair };
   const section = hitTestSection(plate, px, py);
   if (section != null) return { kind: 'section', index: section };
+  const guide = hitTestGuide(plate, px, py);
+  if (guide != null) return { kind: 'guide', index: guide };
   const wall = hitTestWall(plate, px, py);
   if (wall != null) return { kind: 'wall', index: wall };
   const slab = hitTestSlab(plate, px, py);
   if (slab != null) return { kind: 'slab', index: slab };
   return null;
+}
+
+/** Nearest wall index and parametric t for hosting an opening. */
+export function nearestWallHost(
+  plate: CadPlate,
+  px: number,
+  py: number,
+  tolFt = 2.5,
+): { wallIndex: number; t: number } | null {
+  let best: { wallIndex: number; t: number; d: number } | null = null;
+  for (let i = 0; i < plate.wallCenterlines.length; i++) {
+    const w = plate.wallCenterlines[i]!;
+    const dx = w.x2 - w.x1;
+    const dy = w.y2 - w.y1;
+    const len2 = dx * dx + dy * dy;
+    if (len2 < 1e-12) continue;
+    let t = ((px - w.x1) * dx + (py - w.y1) * dy) / len2;
+    t = Math.max(0, Math.min(1, t));
+    const d = Math.hypot(px - (w.x1 + t * dx), py - (w.y1 + t * dy));
+    if (d <= tolFt && (!best || d < best.d)) best = { wallIndex: i, t, d };
+  }
+  if (!best) return null;
+  return { wallIndex: best.wallIndex, t: best.t };
 }
