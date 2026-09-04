@@ -47,7 +47,7 @@ function planBoundsEnvelopeM(
 }
 
 function MassingScene({ extrusion }: { extrusion: CadExtrusion }) {
-  const { walls, openings, fixtures, slabs, centerFt, massing } = extrusion;
+  const { walls, openings, fixtures, slabs, stairs, centerFt, massing } = extrusion;
   const storyHeightM = massing.storyHeightM;
   const envelope = useMemo(
     () => planBoundsEnvelopeM(massing.planBounds, centerFt),
@@ -67,6 +67,7 @@ function MassingScene({ extrusion }: { extrusion: CadExtrusion }) {
         openings={openings}
         fixtures={fixtures}
         slabs={slabs}
+        stairs={stairs}
         centerFt={centerFt}
         mode="massing"
       />

@@ -159,3 +159,67 @@ export function clearFacadeMaterialCache(): void {
   facadeMatCache.forEach((m) => m.dispose());
   facadeMatCache.clear();
 }
+
+const paintCache = new Map<string, THREE.MeshStandardMaterial>();
+
+/** CAD Studio wall paint / finish presets. */
+export function wallPaintMaterial(
+  materialId: string | undefined,
+  assembly?: string,
+  opacity = 1,
+): THREE.MeshStandardMaterial {
+  if (!materialId || materialId === 'interior') {
+    return interiorWallMaterial(opacity);
+  }
+  if (materialId === 'stucco' && (!assembly || assembly === 'exterior')) {
+    return exteriorWallMaterialTextured();
+  }
+  const key = `${materialId}:${opacity.toFixed(2)}`;
+  const hit = paintCache.get(key);
+  if (hit) return hit;
+
+  const presets: Record<string, { color: string; roughness: number; metalness: number }> = {
+    stucco: { color: '#ebe5d9', roughness: 0.92, metalness: 0.02 },
+    paint: { color: '#f8fafc', roughness: 0.86, metalness: 0 },
+    brick: { color: '#b4532a', roughness: 0.9, metalness: 0.02 },
+    stone: { color: '#9ca3af', roughness: 0.93, metalness: 0.01 },
+    wood: { color: '#a16207', roughness: 0.78, metalness: 0.04 },
+  };
+  const p = presets[materialId] ?? presets.paint!;
+  const mat = new THREE.MeshStandardMaterial({
+    color: p.color,
+    roughness: p.roughness,
+    metalness: p.metalness,
+    transparent: opacity < 0.99,
+    opacity,
+    depthWrite: opacity >= 0.99,
+  });
+  paintCache.set(key, mat);
+  return mat;
+}
+
+export const CAD_WALL_MATERIALS = [
+  { id: 'stucco', label: 'Stucco' },
+  { id: 'paint', label: 'Paint' },
+  { id: 'brick', label: 'Brick' },
+  { id: 'stone', label: 'Stone' },
+  { id: 'wood', label: 'Wood' },
+  { id: 'interior', label: 'Interior' },
+] as const;
+
+export function wallStrokeForMaterial(materialId: string | undefined, exterior?: boolean): string {
+  switch (materialId) {
+    case 'brick':
+      return '#b4532a';
+    case 'stone':
+      return '#78716c';
+    case 'wood':
+      return '#a16207';
+    case 'paint':
+      return '#64748b';
+    case 'stucco':
+      return '#92400e';
+    default:
+      return exterior ? '#1e293b' : '#334155';
+  }
+}

@@ -102,10 +102,11 @@ export type OpeningScheduleRow = {
 };
 
 export function buildOpeningSchedule(openings: Opening[]): OpeningScheduleRow[] {
-  const byType: Record<Opening['type'], number> = { door: 0, window: 0, passage: 0 };
+  const byType: Record<Opening['type'], number> = { door: 0, window: 0, passage: 0, garage: 0 };
   return openings.map((o) => {
     byType[o.type] += 1;
-    const prefix = o.type === 'door' ? 'D' : o.type === 'window' ? 'W' : 'P';
+    const prefix =
+      o.type === 'door' ? 'D' : o.type === 'window' ? 'W' : o.type === 'garage' ? 'G' : 'P';
     return {
       mark: `${prefix}${byType[o.type]}`,
       type: o.type,

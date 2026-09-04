@@ -4,9 +4,11 @@ import { ContactShadows, Environment, Sky } from '@react-three/drei';
 export function CadSceneEnvironment({
   sunPosition = [40, 28, 20] as [number, number, number],
   targetY = 2.8,
+  shadows = true,
 }: {
   sunPosition?: [number, number, number];
   targetY?: number;
+  shadows?: boolean;
 }) {
   return (
     <>
@@ -17,7 +19,7 @@ export function CadSceneEnvironment({
       <directionalLight
         position={sunPosition}
         intensity={1.35}
-        castShadow
+        castShadow={shadows}
         shadow-mapSize={[2048, 2048]}
         shadow-camera-far={120}
         shadow-camera-left={-40}
@@ -27,14 +29,16 @@ export function CadSceneEnvironment({
         shadow-bias={-0.0002}
       />
       <directionalLight position={[-12, 8, -10]} intensity={0.25} />
-      <ContactShadows
-        position={[0, 0.002, 0]}
-        opacity={0.45}
-        scale={80}
-        blur={2.5}
-        far={30}
-        resolution={512}
-      />
+      {shadows && (
+        <ContactShadows
+          position={[0, 0.002, 0]}
+          opacity={0.45}
+          scale={80}
+          blur={2.5}
+          far={30}
+          resolution={512}
+        />
+      )}
     </>
   );
 }

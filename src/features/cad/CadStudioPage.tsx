@@ -1,24 +1,34 @@
 import { useMemo, useRef, useState } from 'react';
 import {
   buildCadPlateFromDxf,
+  CAD_WALL_MATERIALS,
   demoCadPlate,
   deleteSelection,
+  downloadSvgAsPng,
+  downloadTextFile,
+  exportCadPlateDxf,
+  exportCadRoomScheduleCsv,
   extrudeCadPlate,
   hideNonFloorPreset,
   removeLayer,
   renderCadElevationSvg,
+  renderCadPlateSvg,
   roleToClassify,
+  roomScheduleSummary,
   selectionSummary,
   setLayerClassify,
   setPlateRoof,
+  setWallMaterial,
   setWallThickness,
   showWallsAndDoorsPreset,
   updateSlab,
+  updateStair,
   withLayerVisibility,
   DEFAULT_ROOF_OVERRIDES,
   type CadEditTool,
   type CadLayerClassify,
   type CadPlateSelection,
+  type CadWallMaterialId,
 } from '../../lib/cadStudio';
 import type { CadFixtureKind, CadPlate, CadRoofKind, CadSlabKind } from '../../lib/cadStudio/types';
 import { defaultWallThicknessFt } from '../../lib/cadStudio/cadDrawSnap';
@@ -32,7 +42,7 @@ import './cadStudio.css';
 type LayoutMode = 'split' | 'plate' | 'extrude' | 'massing' | 'sheets';
 type PlateMode = 'floor' | 'front' | 'side';
 type CatalogTab = 'walls' | 'openings' | 'fixtures' | 'layers' | 'site' | 'roof';
-type OpeningKind = 'door' | 'window' | 'passage';
+type OpeningKind = 'door' | 'window' | 'passage' | 'garage';
 
 const CLASSIFY_OPTIONS: { id: CadLayerClassify; label: string }[] = [
   { id: 'wall', label: 'Wall' },
@@ -83,6 +93,8 @@ export function CadStudioPage() {
   const [layerFilter, setLayerFilter] = useState('');
   const [snapOn, setSnapOn] = useState(true);
   const [unitLabel] = useState<'ft-in' | 'm'>('ft-in');
+  const [sunHour, setSunHour] = useState(14);
+  const [shadowsOn, setShadowsOn] = useState(true);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const visibility = useMemo(() => {
@@ -114,6 +126,8 @@ export function CadStudioPage() {
   }, [plate, plateMode, visibleLayerSet]);
 
   const extrusion = useMemo(() => (plate ? extrudeCadPlate(plate) : null), [plate]);
+
+  const roomSchedule = useMemo(() => (plate ? roomScheduleSummary(plate) : []), [plate]);
 
   const storySheets = useMemo(
     () => plate?.sheets.filter((s) => s.kind === 'floor' || s.kind === 'elevation') ?? [],
@@ -370,12 +384,22 @@ export function CadStudioPage() {
                     <strong>Guide line</strong>
                     <span>Construction aid · snap target</span>
                   </button>
+                  <button
+                    type="button"
+                    className={editTool === 'stair' ? 'is-active' : ''}
+                    onClick={() => pickTool('stair')}
+                  >
+                    <strong>Stair</strong>
+                    <span>Single click · straight run</span>
+                  </button>
                   <button type="button" className={editTool === 'delete' ? 'is-active' : ''} onClick={() => pickTool('delete')}>
                     <strong>Delete</strong>
                     <span>Remove selected geometry</span>
                   </button>
                 </div>
-                <p className="cad-edit-hint">Click start, then end on the 2D plan. Escape cancels a draft line.</p>
+                <p className="cad-edit-hint">
+                  Walls: click start, then end. Stairs: single click to place. Escape cancels a draft line.
+                </p>
               </section>
             )}
 
@@ -406,6 +430,14 @@ export function CadStudioPage() {
                   >
                     <strong>Passage</strong>
                     <span>Opening without door leaf</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={editTool === 'opening' && openingKind === 'garage' ? 'is-active' : ''}
+                    onClick={() => pickTool('opening', { opening: 'garage' })}
+                  >
+                    <strong>Garage</strong>
+                    <span>~16' sectional door</span>
                   </button>
                   <button
                     type="button"
@@ -713,6 +745,71 @@ export function CadStudioPage() {
                           <span>0.33 ft</span>
                         </button>
                       </div>
+                      <div className="cad-paint-presets" role="group" aria-label="Wall paint">
+                        <span className="cad-paint-label">Paint</span>
+                        {CAD_WALL_MATERIALS.map((mat) => {
+                          const active =
+                            (plate.wallCenterlines[selection.index]!.materialId ??
+                              (plate.wallCenterlines[selection.index]!.exterior ? 'stucco' : 'interior')) ===
+                            mat.id;
+                          return (
+                            <button
+                              key={mat.id}
+                              type="button"
+                              className={active ? 'is-active' : ''}
+                              onClick={() =>
+                                setPlate(setWallMaterial(plate, selection.index, mat.id as CadWallMaterialId))
+                              }
+                            >
+                              {mat.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  {selection.kind === 'stair' && plate.stairs?.[selection.index] && (
+                    <div className="cad-sill-control">
+                      <label>
+                        Steps
+                        <input
+                          type="number"
+                          min={3}
+                          max={40}
+                          step={1}
+                          value={plate.stairs[selection.index]!.steps}
+                          onChange={(e) => {
+                            const v = Number(e.target.value);
+                            if (!Number.isFinite(v)) return;
+                            setPlate(updateStair(plate, selection.index, { steps: Math.round(v) }));
+                          }}
+                        />
+                      </label>
+                      <label>
+                        Run (ft)
+                        <input
+                          type="number"
+                          min={2}
+                          max={30}
+                          step={0.25}
+                          value={plate.stairs[selection.index]!.runFt}
+                          onChange={(e) => {
+                            const v = Number(e.target.value);
+                            if (!Number.isFinite(v)) return;
+                            setPlate(updateStair(plate, selection.index, { runFt: v }));
+                          }}
+                        />
+                      </label>
+                      <label className="cad-fixture-pick">
+                        <input
+                          type="checkbox"
+                          checked={!!plate.stairs[selection.index]!.railing}
+                          onChange={(e) =>
+                            setPlate(updateStair(plate, selection.index, { railing: e.target.checked }))
+                          }
+                        />{' '}
+                        Railing
+                      </label>
                     </div>
                   )}
                   {selection.kind === 'slab' && plate.slabs?.[selection.index] && (
@@ -771,12 +868,67 @@ export function CadStudioPage() {
                   </button>
                 </div>
               ) : (
-                <p className="cad-edit-hint">Select a wall, door, fixture, slab, or label on the 2D plan.</p>
+                <p className="cad-edit-hint">Select a wall, door, fixture, slab, stair, or label on the 2D plan.</p>
               )}
+              {roomSchedule.length > 0 && (
+                <div className="cad-room-schedule">
+                  <h3>Room schedule</h3>
+                  <ul>
+                    {roomSchedule.map((r) => (
+                      <li key={`${r.name}-${r.areaSqFt}`}>
+                        <span>{r.name}</span>
+                        <span>{r.areaLabel}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              <div className="cad-export-actions">
+                <h3>Export</h3>
+                <button
+                  type="button"
+                  disabled={!plate}
+                  onClick={() => {
+                    if (!plate) return;
+                    const base = (plate.sourceFileName || 'cad-plate').replace(/\.(dxf|dwg)$/i, '');
+                    downloadTextFile(`${base}.dxf`, exportCadPlateDxf(plate), 'application/dxf');
+                  }}
+                >
+                  Download DXF
+                </button>
+                <button
+                  type="button"
+                  disabled={!plate}
+                  onClick={() => {
+                    if (!plate) return;
+                    const base = (plate.sourceFileName || 'cad-plate').replace(/\.(dxf|dwg)$/i, '');
+                    downloadTextFile(
+                      `${base}-rooms.csv`,
+                      exportCadRoomScheduleCsv(plate),
+                      'text/csv;charset=utf-8',
+                    );
+                  }}
+                >
+                  Download room CSV
+                </button>
+                <button
+                  type="button"
+                  disabled={!plate}
+                  onClick={() => {
+                    if (!plate) return;
+                    const base = (plate.sourceFileName || 'cad-plate').replace(/\.(dxf|dwg)$/i, '');
+                    const svg = renderCadPlateSvg(plate, { title: plate.sourceFileName });
+                    void downloadSvgAsPng(svg, `${base}-floor.png`);
+                  }}
+                >
+                  Download floor PNG
+                </button>
+              </div>
               <div className="cad-stats">
                 <div>File: {plate?.sourceFileName ?? '—'}</div>
                 <div>Walls: {plate?.wallCenterlines.length ?? 0}</div>
                 <div>Openings: {plate?.openingHints.length ?? 0}</div>
+                <div>Stairs: {plate?.stairs?.length ?? 0}</div>
                 <div>Slabs: {plate?.slabs?.length ?? 0}</div>
                 <div>Fixtures: {plate?.segments.filter((s) => s.role === 'fixture').length ?? 0}</div>
                 <div>3D fixtures: {extrusion?.fixtures.length ?? 0}</div>
@@ -859,6 +1011,25 @@ export function CadStudioPage() {
                 >
                   Fills {showRoomFills ? 'on' : 'off'}
                 </button>
+                <label className="cad-sun-control" title="Sun hour for 3D lighting">
+                  Sun {sunHour}:00
+                  <input
+                    type="range"
+                    min={6}
+                    max={18}
+                    step={1}
+                    value={sunHour}
+                    onChange={(e) => setSunHour(Number(e.target.value))}
+                  />
+                </label>
+                <button
+                  type="button"
+                  className={shadowsOn ? 'is-active' : ''}
+                  onClick={() => setShadowsOn((v) => !v)}
+                  title="Toggle 3D shadows"
+                >
+                  Shadows {shadowsOn ? 'on' : 'off'}
+                </button>
                 <span className="cad-unit-pill">{unitLabel === 'ft-in' ? 'ft / in' : 'm'}</span>
                 <span className="cad-aid-hint">Shift ortho · Esc cancel · Enter close slab</span>
               </div>
@@ -902,7 +1073,7 @@ export function CadStudioPage() {
             {show3d && extrusion && (
               <div className="cad-extrude-host" aria-label="Live 3D">
                 <div className="cad-pane-label">3D</div>
-                <CadExtrudeView extrusion={extrusion} />
+                <CadExtrudeView extrusion={extrusion} sunHour={sunHour} shadows={shadowsOn} />
               </div>
             )}
 

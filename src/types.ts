@@ -8,16 +8,18 @@ export type Wall = {
   height: number;
   /** Structural assembly role for takeoffs / exports. */
   assembly?: WallAssembly;
+  /** CAD Studio paint preset. */
+  materialId?: string;
 };
 export type OpeningShape = 'rect' | 'arch' | 'wide';
 export type Opening = {
   id: string;
   wallId: string;
-  type: 'door' | 'window' | 'passage';
+  type: 'door' | 'window' | 'passage' | 'garage';
   offset: number;
   width: number;
   height: number;
-  /** Doors/passages stay on the floor (sill = 0). Windows may float. */
+  /** Doors/passages/garages stay on the floor (sill = 0). Windows may float. */
   sill: number;
   swing?: 'left' | 'right' | 'none';
   /** Which side of the wall the door swings into (`in` = left-of-run, `out` = opposite). */

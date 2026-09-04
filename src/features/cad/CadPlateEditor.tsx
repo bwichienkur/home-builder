@@ -12,6 +12,7 @@ import {
   addGuideline,
   addOpeningHint,
   addSlab,
+  addStair,
   addWallCenterline,
   deleteSelection,
   formatWallLengthFt,
@@ -24,10 +25,13 @@ import {
   planToSvgFt,
   segLengthFt,
   svgToPlanFt,
+  updateStair,
   type CadEditTool,
   type CadPlateSelection,
 } from '../../lib/cadStudio/editCadPlate';
+import { wallStrokeForMaterial } from '../../lib/cadStudio/cadSceneMaterials';
 import { visibleLabels, visibleSegments } from '../../lib/cadStudio/buildCadPlate';
+import type { CadStairFt } from '../../lib/cadStudio/types';
 
 const ROLE_STROKE: Record<CadSegmentRole, string> = {
   wall: '#1e293b',
@@ -74,7 +78,7 @@ type Props = {
   plate: CadPlate;
   tool: CadEditTool;
   fixtureKind: CadFixtureKind;
-  openingKind?: 'door' | 'window' | 'passage';
+  openingKind?: 'door' | 'window' | 'passage' | 'garage';
   wallLayer?: string;
   /** Window sill height in feet when placing windows. */
   windowSillFt?: number;
@@ -100,6 +104,30 @@ function clientToSvg(svg: SVGSVGElement, clientX: number, clientY: number) {
 
 function polyPointsAttr(pts: Array<{ x: number; y: number }>): string {
   return pts.map((p) => `${p.x},${p.y}`).join(' ');
+}
+
+/** Plan-space corners + tread lines for a stair (local origin at bottom-left). */
+function stairPlanGeom(st: CadStairFt) {
+  const rad = (st.rotationDeg * Math.PI) / 180;
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+  const toWorld = (lx: number, ly: number) => ({
+    x: st.xFt + lx * cos - ly * sin,
+    y: st.yFt + lx * sin + ly * cos,
+  });
+  const corners = [
+    toWorld(0, 0),
+    toWorld(st.runFt, 0),
+    toWorld(st.runFt, st.widthFt),
+    toWorld(0, st.widthFt),
+  ];
+  const treads: Array<[{ x: number; y: number }, { x: number; y: number }]> = [];
+  const steps = Math.max(2, st.steps);
+  for (let i = 1; i < steps; i++) {
+    const t = (i / steps) * st.runFt;
+    treads.push([toWorld(t, 0), toWorld(t, st.widthFt)]);
+  }
+  return { corners, treads };
 }
 
 export function CadPlateEditor({
@@ -260,6 +288,12 @@ export function CadPlateEditor({
       return;
     }
 
+    if (tool === 'stair') {
+      const plan = snapPlan(raw);
+      onPlateChange(addStair(plate, plan.x, plan.y));
+      return;
+    }
+
     const hit = pickAtPoint(plate, raw.x, raw.y);
     onSelectionChange(hit);
     if (hit) {
@@ -333,6 +367,12 @@ export function CadPlateEditor({
       }
       case 'slab': {
         onPlateChange(moveSlab(orig, sel.index, dx, dy));
+        break;
+      }
+      case 'stair': {
+        const st = orig.stairs?.[sel.index];
+        if (!st) break;
+        onPlateChange(updateStair(orig, sel.index, { xFt: st.xFt + dx, yFt: st.yFt + dy }));
         break;
       }
       default:
@@ -468,6 +508,9 @@ export function CadPlateEditor({
           const selected = isSelected('wall', i);
           const len = formatWallLengthFt(segLengthFt(wall));
           const mid = { x: (wall.x1 + wall.x2) / 2, y: (wall.y1 + wall.y2) / 2 };
+          const wallStroke = selected
+            ? '#1f4e46'
+            : wallStrokeForMaterial(wall.materialId, wall.exterior);
           return (
             <g key={`wall-${i}`}>
               <line
@@ -475,7 +518,7 @@ export function CadPlateEditor({
                 y1={wall.y1}
                 x2={wall.x2}
                 y2={wall.y2}
-                stroke={selected ? '#1f4e46' : '#1e293b'}
+                stroke={wallStroke}
                 strokeWidth={stroke * (selected ? 3.5 : 2)}
                 strokeOpacity={0.95}
                 strokeLinecap="round"
@@ -557,6 +600,36 @@ export function CadPlateEditor({
               strokeWidth={stroke * (selected ? 2.5 : 1.2)}
               rx={stroke * 2}
             />
+          );
+        })}
+
+        {(plate.stairs ?? []).map((st, i) => {
+          const selected = isSelected('stair', i);
+          const { corners, treads } = stairPlanGeom(st);
+          return (
+            <g key={st.id}>
+              <polygon
+                points={polyPointsAttr(corners)}
+                fill={selected ? '#1f4e46' : '#64748b'}
+                fillOpacity={selected ? 0.28 : 0.14}
+                stroke={selected ? '#1f4e46' : '#475569'}
+                strokeWidth={stroke * (selected ? 2.6 : 1.6)}
+                strokeLinejoin="round"
+              />
+              {treads.map(([a, b], ti) => (
+                <line
+                  key={`tread-${st.id}-${ti}`}
+                  x1={a.x}
+                  y1={a.y}
+                  x2={b.x}
+                  y2={b.y}
+                  stroke={selected ? '#1f4e46' : '#64748b'}
+                  strokeWidth={stroke * 0.9}
+                  strokeOpacity={0.75}
+                  strokeLinecap="round"
+                />
+              ))}
+            </g>
           );
         })}
 
