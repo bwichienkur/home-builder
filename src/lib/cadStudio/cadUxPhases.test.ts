@@ -3,7 +3,9 @@ import {
   applyTempDimEdit,
   buildTempDimsForSelection,
 } from './cadDimEdit';
+import { computeExteriorDims } from './cadExteriorDims';
 import { assignOpeningMarks } from './cadMarks';
+import { flipPlan } from './cadPlanOps';
 import { ensureDefaultStories } from './cadStories';
 import { calibrateUnderlay, setUnderlay } from './cadUnderlay';
 import {
@@ -11,6 +13,7 @@ import {
   combineCollinearWalls,
   setDistanceBetweenWalls,
   signedWallDistanceFt,
+  stretchSharedNode,
 } from './cadWallGraph';
 import { demoCadPlate } from './demoCadPlate';
 import { addOpeningHint, addWallCenterline, segLengthFt } from './editCadPlate';
@@ -107,5 +110,56 @@ describe('CAD UX phases U2–U5 libraries', () => {
     plate = calibrateUnderlay(plate, 40, 20);
     expect(plate.underlay!.widthFt).toBeCloseTo(80, 5);
     expect(plate.underlay!.heightFt).toBeCloseTo(56, 5);
+  });
+
+  it('computeExteriorDims keeps annotative manuals and skips overlapping auto', () => {
+    let plate = demoCadPlate();
+    const auto = computeExteriorDims({ ...plate, annotativeDims: undefined });
+    const overall = auto.find((d) => d.id === 'overall-w');
+    expect(overall).toBeTruthy();
+    plate = {
+      ...plate,
+      annotativeDims: [
+        {
+          id: 'manual-w',
+          x1: overall!.x1,
+          y1: overall!.y1,
+          x2: overall!.x2,
+          y2: overall!.y2,
+          label: `KEEP`,
+          labelX: overall!.labelX,
+          labelY: overall!.labelY,
+          valueFt: overall!.valueFt,
+        },
+      ],
+    };
+    const dims = computeExteriorDims(plate);
+    expect(dims.some((d) => d.id === 'manual-w')).toBe(true);
+    expect(dims.some((d) => d.id === 'overall-w')).toBe(false);
+  });
+
+  it('flipPlan mirrors wall endpoints about bounds center X', () => {
+    let plate = demoCadPlate();
+    const before = plate.wallCenterlines[0]!;
+    const cx = (plate.bounds.minX + plate.bounds.maxX) / 2;
+    plate = flipPlan(plate, 'x');
+    const after = plate.wallCenterlines[0]!;
+    expect(after.x1).toBeCloseTo(2 * cx - before.x1, 4);
+    expect(after.x2).toBeCloseTo(2 * cx - before.x2, 4);
+    expect(after.y1).toBeCloseTo(before.y1, 4);
+  });
+
+  it('stretchSharedNode moves connected wall endpoints together', () => {
+    let plate = demoCadPlate();
+    // Horizontal + vertical sharing (10, 0)
+    plate = addWallCenterline(plate, 0, 0, 10, 0, 'WALLS JOIN');
+    const h = plate.wallCenterlines.length - 1;
+    plate = addWallCenterline(plate, 10, 0, 10, 8, 'WALLS JOIN');
+    const v = plate.wallCenterlines.length - 1;
+    plate = stretchSharedNode(plate, h, 'b', 12, 1, 0.6);
+    expect(plate.wallCenterlines[h]!.x2).toBeCloseTo(12, 4);
+    expect(plate.wallCenterlines[h]!.y2).toBeCloseTo(1, 4);
+    expect(plate.wallCenterlines[v]!.x1).toBeCloseTo(12, 4);
+    expect(plate.wallCenterlines[v]!.y1).toBeCloseTo(1, 4);
   });
 });

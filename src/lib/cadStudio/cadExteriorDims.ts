@@ -1,5 +1,5 @@
 import { formatWallLengthFt, segLengthFt } from './editCadPlate';
-import type { CadPlate, CadWallCenterlineFt } from './types';
+import type { CadAnnotativeDim, CadPlate, CadWallCenterlineFt } from './types';
 
 export type CadExteriorDim = {
   id: string;
@@ -11,6 +11,8 @@ export type CadExteriorDim = {
   label: string;
   labelX: number;
   labelY: number;
+  locked?: boolean;
+  valueFt?: number;
 };
 
 function wallMid(w: CadWallCenterlineFt) {
@@ -47,11 +49,29 @@ function inwardOffset(
   return { ox: -out.ox, oy: -out.oy };
 }
 
-/**
- * Automatic exterior dimension chains (Plan7-inspired).
- * Places overall AABB dims plus per exterior-wall segment dims outside the plate.
- */
-export function computeExteriorDims(plate: CadPlate, offsetFt = 3.5): CadExteriorDim[] {
+function isMostlyHorizontal(d: { x1: number; y1: number; x2: number; y2: number }): boolean {
+  return Math.abs(d.x2 - d.x1) >= Math.abs(d.y2 - d.y1);
+}
+
+/** True when auto dim would collide with a preserved manual dim (SoftPlan lesson). */
+export function dimCoveredByManual(
+  auto: CadExteriorDim,
+  manuals: CadAnnotativeDim[],
+  tolFt = 4,
+): boolean {
+  const aHoriz = isMostlyHorizontal(auto);
+  const amx = (auto.x1 + auto.x2) / 2;
+  const amy = (auto.y1 + auto.y2) / 2;
+  for (const m of manuals) {
+    if (isMostlyHorizontal(m) !== aHoriz) continue;
+    const mmx = (m.x1 + m.x2) / 2;
+    const mmy = (m.y1 + m.y2) / 2;
+    if (Math.hypot(amx - mmx, amy - mmy) <= tolFt) return true;
+  }
+  return false;
+}
+
+function buildAutoExteriorDims(plate: CadPlate, offsetFt: number): CadExteriorDim[] {
   const exterior = plate.wallCenterlines.filter((w) => w.exterior);
   const walls = exterior.length ? exterior : plate.wallCenterlines;
   if (!walls.length) return [];
@@ -83,6 +103,7 @@ export function computeExteriorDims(plate: CadPlate, offsetFt = 3.5): CadExterio
     label: formatWallLengthFt(width),
     labelX: cx,
     labelY: minY - offsetFt - 1.1,
+    valueFt: width,
   });
 
   dims.push({
@@ -94,6 +115,7 @@ export function computeExteriorDims(plate: CadPlate, offsetFt = 3.5): CadExterio
     label: formatWallLengthFt(depth),
     labelX: minX - offsetFt - 1.1,
     labelY: cy,
+    valueFt: depth,
   });
 
   const segOffset = offsetFt + 2.2;
@@ -114,10 +136,63 @@ export function computeExteriorDims(plate: CadPlate, offsetFt = 3.5): CadExterio
       label: formatWallLengthFt(len),
       labelX: (x1 + x2) / 2 + ox * 0.15,
       labelY: (y1 + y2) / 2 + oy * 0.15,
+      valueFt: len,
     });
   });
 
   return dims;
+}
+
+/**
+ * Automatic exterior dimension chains (Plan7-inspired).
+ * Places overall AABB dims plus per exterior-wall segment dims outside the plate.
+ * Manual `annotativeDims` are always kept; auto dims that collide with manuals are skipped.
+ */
+export function computeExteriorDims(plate: CadPlate, offsetFt = 3.5): CadExteriorDim[] {
+  const manuals: CadExteriorDim[] = (plate.annotativeDims ?? []).map((d) => ({
+    id: d.id,
+    x1: d.x1,
+    y1: d.y1,
+    x2: d.x2,
+    y2: d.y2,
+    label: d.label,
+    labelX: d.labelX,
+    labelY: d.labelY,
+    locked: d.locked,
+    valueFt: d.valueFt,
+  }));
+  const auto = buildAutoExteriorDims(plate, offsetFt).filter(
+    (d) => !dimCoveredByManual(d, plate.annotativeDims ?? []),
+  );
+  return [...manuals, ...auto];
+}
+
+/** Append or replace an annotative (manual) dim by id. */
+export function upsertAnnotativeDim(plate: CadPlate, dim: CadAnnotativeDim): CadPlate {
+  const list = [...(plate.annotativeDims ?? [])];
+  const i = list.findIndex((d) => d.id === dim.id);
+  if (i >= 0) list[i] = dim;
+  else list.push(dim);
+  return { ...plate, annotativeDims: list };
+}
+
+/** Toggle or set lock on an annotative dim (U5 lite constraints). */
+export function setAnnotativeDimLocked(
+  plate: CadPlate,
+  dimId: string,
+  locked: boolean,
+): CadPlate {
+  const list = plate.annotativeDims;
+  if (!list?.length) return plate;
+  let changed = false;
+  const next = list.map((d) => {
+    if (d.id !== dimId) return d;
+    if (!!d.locked === locked) return d;
+    changed = true;
+    return { ...d, locked };
+  });
+  if (!changed) return plate;
+  return { ...plate, annotativeDims: next };
 }
 
 /** Interior wall segment dimensions (offset toward building center). */
@@ -157,6 +232,7 @@ export function computeInteriorDims(plate: CadPlate, offsetFt = 1.4): CadExterio
       label: formatWallLengthFt(len),
       labelX: (x1 + x2) / 2,
       labelY: (y1 + y2) / 2,
+      valueFt: len,
     });
   });
 

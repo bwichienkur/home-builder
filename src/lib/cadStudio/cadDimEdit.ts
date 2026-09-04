@@ -1,3 +1,4 @@
+import { upsertAnnotativeDim } from './cadExteriorDims';
 import { setDistanceBetweenWalls } from './cadWallGraph';
 import {
   resyncHostedOpenings,
@@ -172,4 +173,26 @@ export function applyTempDimEdit(
   }
 
   return plate;
+}
+
+/** Convert a temporary dim into a permanent annotative dim (auto dims won't wipe it). */
+export function promoteTempDimToAnnotative(plate: CadPlate, dim: CadTempDim): CadPlate {
+  const mx = (dim.x1 + dim.x2) / 2;
+  const my = (dim.y1 + dim.y2) / 2;
+  const { nx, ny } = (() => {
+    const len = Math.hypot(dim.x2 - dim.x1, dim.y2 - dim.y1) || 1;
+    return { nx: -(dim.y2 - dim.y1) / len, ny: (dim.x2 - dim.x1) / len };
+  })();
+  return upsertAnnotativeDim(plate, {
+    id: `anno-${dim.id}`,
+    x1: dim.x1,
+    y1: dim.y1,
+    x2: dim.x2,
+    y2: dim.y2,
+    label: dim.label,
+    labelX: mx + nx * 1.1,
+    labelY: my + ny * 1.1,
+    valueFt: dim.valueFt,
+    locked: false,
+  });
 }

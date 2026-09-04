@@ -1,29 +1,40 @@
 import { useMemo, useRef, useState } from 'react';
 import {
+  addStory,
+  alignWalls,
   applyAutoFoundation,
+  assignOpeningMarks,
+  autoHostOpenings,
   buildCadPlateFromDxf,
   CAD_WALL_MATERIALS,
+  calibrateUnderlay,
   clearAutoFoundation,
+  combineCollinearWalls,
   createCadHistory,
   copyWalls,
   demoCadPlate,
   deleteSelection,
   downloadSvgAsPng,
   downloadTextFile,
+  ensureDefaultStories,
   exportCadPlateDxf,
   exportCadPlateGltf,
   exportCadRoomScheduleCsv,
   exportCadSheetSetHtml,
+  exportDoorWindowScheduleCsv,
   extrudeCadPlate,
   flipOpeningHand,
+  flipPlan,
   flipWall,
   formatWallLengthFt,
   hideNonFloorPreset,
   mirrorWalls,
   parseAngleDeg,
   parseArchitecturalLength,
+  promoteTempDimToAnnotative,
   redoCadHistory,
   removeLayer,
+  renameRoomLabel,
   renderCadElevationSvg,
   renderCadPlateSvg,
   renderCadSectionSvg,
@@ -36,12 +47,17 @@ import {
   roomScheduleSummary,
   segLengthFt,
   selectionSummary,
+  setActiveStory,
+  setAnnotativeDimLocked,
+  setDistanceBetweenWalls,
   setLayerClassify,
   setOpeningSill,
   setOpeningWidth,
   setPlateRoof,
   setPlateTerrain,
   setPlateTitleBlock,
+  setUnderlay,
+  setUnderlayOpacity,
   setWallAngle,
   setWallLength,
   setWallMaterial,
@@ -58,6 +74,7 @@ import {
   type CadHistoryState,
   type CadLayerClassify,
   type CadPlateSelection,
+  type CadTempDim,
   type CadWallMaterialId,
 } from '../../lib/cadStudio';
 import type { CadFixtureKind, CadPlate, CadRoofKind, CadSlabKind } from '../../lib/cadStudio/types';
@@ -129,7 +146,8 @@ export function CadStudioPage() {
 
   const loadPlate = (p: CadPlate) => {
     gestureBaselineRef.current = null;
-    setHistory((h) => replaceCadPresent(h, p));
+    const cleaned = ensureDefaultStories(autoHostOpenings(assignOpeningMarks(p)));
+    setHistory((h) => replaceCadPresent(h, cleaned));
   };
   const [layout, setLayout] = useState<LayoutMode>('split');
   const [plateMode, setPlateMode] = useState<PlateMode>('floor');
@@ -156,7 +174,13 @@ export function CadStudioPage() {
   const [sunHour, setSunHour] = useState(14);
   const [shadowsOn, setShadowsOn] = useState(true);
   const [sectionClip, setSectionClip] = useState(false);
+  const [setDistanceInput, setSetDistanceInput] = useState(`4'-0"`);
+  const [underlayKnownFt, setUnderlayKnownFt] = useState(`40'-0"`);
+  const [underlayMeasuredFt, setUnderlayMeasuredFt] = useState(`20'-0"`);
+  const [newStoryName, setNewStoryName] = useState('Level 2');
+  const [newStoryLevel, setNewStoryLevel] = useState(10);
   const fileRef = useRef<HTMLInputElement>(null);
+  const underlayFileRef = useRef<HTMLInputElement>(null);
   const wallLengthInputRef = useRef<HTMLInputElement>(null);
 
   const visibility = useMemo(() => {
@@ -280,18 +304,23 @@ export function CadStudioPage() {
     }
   };
 
+  const storyLevels = useMemo(() => ensureDefaultStories(plate).stories ?? [], [plate]);
+
+  const selectedWallIndices = useMemo(() => {
+    if (!selection || selection.kind !== 'wall') return [] as number[];
+    const set = new Set([selection.index, ...wallMulti]);
+    return [...set];
+  }, [selection, wallMulti]);
+
   const requestWallLengthEdit = (index: number) => {
     setSelection({ kind: 'wall', index });
     setStudioMode('modify');
-    const wall = plate.wallCenterlines[index];
-    if (!wall) return;
-    const current = formatWallLengthFt(segLengthFt(wall));
-    const raw = window.prompt('Wall length', current);
-    if (raw == null) return;
-    const len = parseArchitecturalLength(raw);
-    if (len == null) return;
-    setPlate(resyncHostedOpenings(setWallLength(plate, index, len, 'start'), index));
     queueMicrotask(() => wallLengthInputRef.current?.focus());
+  };
+
+  const onPromoteTempDim = (dim: CadTempDim) => {
+    setPlate(promoteTempDimToAnnotative(plate, dim));
+    setStatusAid('Promoted temp dim to annotative (auto dims will not wipe it)');
   };
 
   const modifyHint =
@@ -350,6 +379,7 @@ export function CadStudioPage() {
             setHistory((h) => redoCadHistory(h));
           }}
           onRequestWallLengthEdit={requestWallLengthEdit}
+          onPromoteTempDim={onPromoteTempDim}
         />
       );
     }
@@ -685,15 +715,98 @@ export function CadStudioPage() {
                   >
                     Delete
                   </button>
-                  <button type="button" disabled title="Coming">
-                    Align
+                  <button
+                    type="button"
+                    disabled={selectedWallIndices.length < 2}
+                    title="Align midpoints of selected walls on X"
+                    onClick={() => {
+                      setPlate(alignWalls(plate, selectedWallIndices, 'x'));
+                      setStatusAid(`Aligned ${selectedWallIndices.length} walls on X`);
+                    }}
+                  >
+                    Align X
                   </button>
-                  <button type="button" disabled title="Coming">
+                  <button
+                    type="button"
+                    disabled={selectedWallIndices.length < 2}
+                    title="Align midpoints of selected walls on Y"
+                    onClick={() => {
+                      setPlate(alignWalls(plate, selectedWallIndices, 'y'));
+                      setStatusAid(`Aligned ${selectedWallIndices.length} walls on Y`);
+                    }}
+                  >
+                    Align Y
+                  </button>
+                  <button
+                    type="button"
+                    title="Merge collinear abutting walls"
+                    onClick={() => {
+                      const before = plate.wallCenterlines.length;
+                      const next = combineCollinearWalls(plate);
+                      setPlate(next);
+                      setStatusAid(
+                        `Combine: ${before} → ${next.wallCenterlines.length} walls`,
+                      );
+                    }}
+                  >
                     Combine
                   </button>
+                  <button
+                    type="button"
+                    disabled={selectedWallIndices.length !== 2}
+                    title="Set centerline distance between two selected walls"
+                    onClick={() => {
+                      if (selectedWallIndices.length !== 2) return;
+                      const dist = parseArchitecturalLength(setDistanceInput);
+                      if (dist == null) {
+                        setStatusAid('Enter a distance like 4\'-0"');
+                        return;
+                      }
+                      const [a, b] = selectedWallIndices;
+                      setPlate(setDistanceBetweenWalls(plate, a!, b!, dist));
+                      setStatusAid(`Set distance to ${formatWallLengthFt(dist)}`);
+                    }}
+                  >
+                    Set distance
+                  </button>
+                  <button
+                    type="button"
+                    title="Attach unhosted openings to nearest walls"
+                    onClick={() => {
+                      const before = plate.openingHints.filter((o) => o.hostWallIndex == null).length;
+                      const next = autoHostOpenings(plate);
+                      setPlate(next);
+                      const after = next.openingHints.filter((o) => o.hostWallIndex == null).length;
+                      setStatusAid(`Auto-host: ${before - after} openings attached`);
+                    }}
+                  >
+                    Auto-host
+                  </button>
+                  <button
+                    type="button"
+                    title="Mirror whole plan about vertical center (scheme flip)"
+                    onClick={() => {
+                      setPlate(flipPlan(plate, 'x'));
+                      setStatusAid('Flipped plan on X');
+                    }}
+                  >
+                    Flip X
+                  </button>
                 </div>
+                {selectedWallIndices.length === 2 && (
+                  <label className="cad-set-distance">
+                    Distance
+                    <input
+                      type="text"
+                      value={setDistanceInput}
+                      onChange={(e) => setSetDistanceInput(e.target.value)}
+                      aria-label="Set distance between walls"
+                    />
+                  </label>
+                )}
                 <p className="cad-edit-hint">
                   Trim / Extend need two wall clicks. Break / Offset are single-click. Shift+click multi-selects.
+                  Endpoint grips stretch shared nodes. Click a temp dim to type exact length.
                 </p>
               </section>
             )}
@@ -751,9 +864,43 @@ export function CadStudioPage() {
                   >
                     3D section clip
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPlate(assignOpeningMarks(plate));
+                      setStatusAid('Assigned door/window marks');
+                    }}
+                  >
+                    Assign marks
+                  </button>
                 </div>
+                {(plate.annotativeDims?.length ?? 0) > 0 && (
+                  <div className="cad-anno-locks" style={{ marginTop: 10 }}>
+                    <h3 style={{ margin: '0 0 6px', fontSize: '0.85rem' }}>Annotative dims</h3>
+                    <ul className="cad-anno-lock-list">
+                      {plate.annotativeDims!.map((d) => (
+                        <li key={d.id}>
+                          <span>{d.label}</span>
+                          <button
+                            type="button"
+                            className={d.locked ? 'is-active' : ''}
+                            onClick={() =>
+                              setPlate(setAnnotativeDimLocked(plate, d.id, !d.locked))
+                            }
+                          >
+                            {d.locked ? 'Unlock' : 'Lock'}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="cad-edit-hint">
+                      Double-click a temp dim (or Keep in HUD) to promote. Locked dims keep their value.
+                    </p>
+                  </div>
+                )}
                 <p className="cad-edit-hint">
-                  Dimension-driven wall edit is coming — for now edit length in Properties after select.
+                  Select a wall or opening to show temporary dims — click the value, type length, Enter.
+                  Shift+select two walls for a between-walls distance dim.
                 </p>
               </section>
             )}
@@ -895,6 +1042,107 @@ export function CadStudioPage() {
                     <strong>Select / move</strong>
                     <span>Drag slabs on plan</span>
                   </button>
+                </div>
+                <div className="cad-underlay-panel" style={{ marginTop: 12 }}>
+                  <h3 style={{ margin: '0 0 6px', fontSize: '0.9rem' }}>Underlay</h3>
+                  <input
+                    ref={underlayFileRef}
+                    type="file"
+                    accept="image/*,.pdf"
+                    hidden
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      e.target.value = '';
+                      if (!file || !plate) return;
+                      const reader = new FileReader();
+                      reader.onload = () => {
+                        const url = String(reader.result ?? '');
+                        if (!url) return;
+                        const { minX, minY, maxX, maxY } = plate.bounds;
+                        const widthFt = Math.max(10, maxX - minX);
+                        const heightFt = Math.max(10, maxY - minY);
+                        setPlate(
+                          setUnderlay(plate, {
+                            id: `underlay-${Date.now().toString(36)}`,
+                            imageUrl: url,
+                            xFt: minX,
+                            yFt: minY,
+                            widthFt,
+                            heightFt,
+                            opacity: 0.45,
+                            locked: false,
+                          }),
+                        );
+                        setStatusAid(`Underlay loaded: ${file.name}`);
+                      };
+                      reader.readAsDataURL(file);
+                    }}
+                  />
+                  <div className="cad-modify-bar">
+                    <button type="button" onClick={() => underlayFileRef.current?.click()}>
+                      Load image
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!plate.underlay}
+                      onClick={() => {
+                        setPlate(setUnderlay(plate, null));
+                        setStatusAid('Underlay cleared');
+                      }}
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  {plate.underlay && (
+                    <>
+                      <label>
+                        Opacity
+                        <input
+                          type="range"
+                          min={0.1}
+                          max={1}
+                          step={0.05}
+                          value={plate.underlay.opacity}
+                          onChange={(e) =>
+                            setPlate(setUnderlayOpacity(plate, Number(e.target.value)))
+                          }
+                        />
+                      </label>
+                      <div className="cad-sill-control">
+                        <label>
+                          Known length
+                          <input
+                            type="text"
+                            value={underlayKnownFt}
+                            onChange={(e) => setUnderlayKnownFt(e.target.value)}
+                          />
+                        </label>
+                        <label>
+                          Measured on underlay
+                          <input
+                            type="text"
+                            value={underlayMeasuredFt}
+                            onChange={(e) => setUnderlayMeasuredFt(e.target.value)}
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const known = parseArchitecturalLength(underlayKnownFt);
+                            const measured = parseArchitecturalLength(underlayMeasuredFt);
+                            if (known == null || measured == null) {
+                              setStatusAid('Enter known and measured lengths');
+                              return;
+                            }
+                            setPlate(calibrateUnderlay(plate, known, measured));
+                            setStatusAid('Underlay calibrated');
+                          }}
+                        >
+                          Calibrate
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
                 <div className="cad-sill-control" style={{ marginTop: 12 }}>
                   <label className="cad-fixture-pick">
@@ -1168,6 +1416,23 @@ export function CadStudioPage() {
                   onClick={() => {
                     if (!plate) return;
                     const base = (plate.sourceFileName || 'cad-plate').replace(/\.(dxf|dwg)$/i, '');
+                    const marked = assignOpeningMarks(plate);
+                    setPlate(marked);
+                    downloadTextFile(
+                      `${base}-openings.csv`,
+                      exportDoorWindowScheduleCsv(marked),
+                      'text/csv;charset=utf-8',
+                    );
+                  }}
+                >
+                  Download door/window CSV
+                </button>
+                <button
+                  type="button"
+                  disabled={!plate}
+                  onClick={() => {
+                    if (!plate) return;
+                    const base = (plate.sourceFileName || 'cad-plate').replace(/\.(dxf|dwg)$/i, '');
                     const svg = renderCadPlateSvg(plate, { title: plate.sourceFileName });
                     void downloadSvgAsPng(svg, `${base}-floor.png`);
                   }}
@@ -1343,6 +1608,25 @@ export function CadStudioPage() {
                   {selection.kind === 'opening' && plate.openingHints[selection.index] && (
                     <div className="cad-sill-control">
                       <label>
+                        Mark
+                        <input
+                          type="text"
+                          key={`open-mark-${selection.index}-${plate.openingHints[selection.index]!.mark ?? ''}`}
+                          defaultValue={plate.openingHints[selection.index]!.mark ?? ''}
+                          onBlur={(e) => {
+                            const mark = e.target.value.trim();
+                            const openings = plate.openingHints.map((o, i) =>
+                              i === selection.index ? { ...o, mark: mark || undefined } : o,
+                            );
+                            setPlate({ ...plate, openingHints: openings });
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key !== 'Enter') return;
+                            (e.target as HTMLInputElement).blur();
+                          }}
+                        />
+                      </label>
+                      <label>
                         Width (ft)
                         <input
                           type="number"
@@ -1380,6 +1664,27 @@ export function CadStudioPage() {
                       <button type="button" onClick={() => setPlate(flipOpeningHand(plate, selection.index))}>
                         Flip hand
                       </button>
+                    </div>
+                  )}
+                  {selection.kind === 'label' && plate.labels[selection.index] && (
+                    <div className="cad-sill-control">
+                      <label>
+                        Room / label name
+                        <input
+                          type="text"
+                          key={`label-${selection.index}-${plate.labels[selection.index]!.text}`}
+                          defaultValue={plate.labels[selection.index]!.text}
+                          onBlur={(e) => {
+                            const name = e.target.value.trim();
+                            if (!name) return;
+                            setPlate(renameRoomLabel(plate, selection.index, name));
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key !== 'Enter') return;
+                            (e.target as HTMLInputElement).blur();
+                          }}
+                        />
+                      </label>
                     </div>
                   )}
                   {selection.kind === 'stair' && plate.stairs?.[selection.index] && (
@@ -1529,27 +1834,62 @@ export function CadStudioPage() {
             <div className="cad-story-bar" aria-label="Stories and aids">
               <div className="cad-story-list">
                 <span className="cad-story-label">Stories</span>
-                {storySheets.length ? (
-                  storySheets.map((sheet) => (
-                    <button
-                      key={sheet.id}
-                      type="button"
-                      className={activeSheet?.id === sheet.id ? 'is-active' : ''}
-                      onClick={() => {
-                        setSheetId(sheet.id);
-                        if (sheet.kind === 'elevation') {
-                          setPlateMode(/side|left|right/i.test(sheet.name) ? 'side' : 'front');
-                          setLayout(layout === 'extrude' ? 'split' : layout === 'massing' ? 'split' : layout);
-                        } else {
-                          setPlateMode('floor');
-                        }
-                      }}
-                    >
-                      {sheet.name}
-                    </button>
-                  ))
-                ) : (
-                  <span className="cad-story-empty">Floor 1 (active)</span>
+                {storyLevels.map((story) => (
+                  <button
+                    key={story.id}
+                    type="button"
+                    className={
+                      (plate.activeStoryId ?? storyLevels[0]?.id) === story.id ? 'is-active' : ''
+                    }
+                    onClick={() => {
+                      setPlate(setActiveStory(plate, story.id));
+                      setPlateMode('floor');
+                    }}
+                    title={`${story.name} @ ${story.levelFt.toFixed(1)} ft`}
+                  >
+                    {story.name}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  className="cad-story-add"
+                  title="Add story"
+                  onClick={() => {
+                    const next = addStory(plate, newStoryName || 'Level', newStoryLevel);
+                    const added = next.stories?.[next.stories.length - 1];
+                    setPlate(added ? setActiveStory(next, added.id) : next);
+                    setNewStoryName(`Level ${(next.stories?.length ?? 1) + 1}`);
+                    setNewStoryLevel(newStoryLevel + 10);
+                  }}
+                >
+                  + Story
+                </button>
+                {storySheets.length > 0 && (
+                  <>
+                    <span className="cad-story-label" style={{ marginLeft: 8 }}>
+                      Sheets
+                    </span>
+                    {storySheets.map((sheet) => (
+                      <button
+                        key={sheet.id}
+                        type="button"
+                        className={activeSheet?.id === sheet.id ? 'is-active' : ''}
+                        onClick={() => {
+                          setSheetId(sheet.id);
+                          if (sheet.kind === 'elevation') {
+                            setPlateMode(/side|left|right/i.test(sheet.name) ? 'side' : 'front');
+                            setLayout(
+                              layout === 'extrude' ? 'split' : layout === 'massing' ? 'split' : layout,
+                            );
+                          } else {
+                            setPlateMode('floor');
+                          }
+                        }}
+                      >
+                        {sheet.name}
+                      </button>
+                    ))}
+                  </>
                 )}
               </div>
               <div className="cad-aid-toggles">

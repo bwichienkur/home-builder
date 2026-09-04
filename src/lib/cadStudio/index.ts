@@ -26,6 +26,7 @@ export type {
   CadTitleBlock,
   CadStory,
   CadUnderlay,
+  CadAnnotativeDim,
   CadOpeningHintFt,
   CadWallCenterlineFt,
 } from './types';
@@ -96,6 +97,9 @@ export {
 export {
   computeExteriorDims,
   computeInteriorDims,
+  dimCoveredByManual,
+  upsertAnnotativeDim,
+  setAnnotativeDimLocked,
   type CadExteriorDim,
 } from './cadExteriorDims';
 export { snapCadDraftPoint, defaultWallThicknessFt, type CadSnapResult } from './cadDrawSnap';
@@ -151,6 +155,7 @@ export {
   buildTempDimsForSelection,
   buildBetweenWallDim,
   applyTempDimEdit,
+  promoteTempDimToAnnotative,
   signedCenterlineDistanceFt,
   type CadTempDim,
   type CadTempDimSelection,
@@ -178,6 +183,7 @@ export {
   calibrateUnderlay,
   setUnderlayOpacity,
 } from './cadUnderlay';
+export { flipPlan } from './cadPlanOps';
 export {
   addDormer,
   addFixtureHint,
