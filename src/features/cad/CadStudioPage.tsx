@@ -22,13 +22,14 @@ import {
   mirrorWalls,
   parseAngleDeg,
   parseArchitecturalLength,
-  pushCadHistory,
   redoCadHistory,
   removeLayer,
   renderCadElevationSvg,
   renderCadPlateSvg,
   renderCadSectionSvg,
   replaceCadPresent,
+  previewCadPresent,
+  commitCadPresent,
   buildCadSectionDrawing,
   resyncHostedOpenings,
   roleToClassify,
@@ -70,7 +71,7 @@ import './cadStudio.css';
 
 type LayoutMode = 'split' | 'plate' | 'extrude' | 'massing' | 'sheets';
 type PlateMode = 'floor' | 'front' | 'side' | 'section';
-type CatalogTab = 'walls' | 'openings' | 'fixtures' | 'layers' | 'site' | 'roof' | 'docs';
+type StudioMode = 'draw' | 'modify' | 'annotate' | 'site' | 'roof' | 'layers' | 'sheets';
 type OpeningKind = 'door' | 'window' | 'passage' | 'garage';
 
 const CLASSIFY_OPTIONS: { id: CadLayerClassify; label: string }[] = [
@@ -83,14 +84,14 @@ const CLASSIFY_OPTIONS: { id: CadLayerClassify; label: string }[] = [
   { id: 'other', label: 'Other' },
 ];
 
-const CATALOG_TABS: { id: CatalogTab; label: string }[] = [
-  { id: 'walls', label: 'Walls' },
-  { id: 'openings', label: 'Openings' },
-  { id: 'fixtures', label: 'Fixtures' },
-  { id: 'layers', label: 'Layers' },
+const STUDIO_MODES: { id: StudioMode; label: string }[] = [
+  { id: 'draw', label: 'Draw' },
+  { id: 'modify', label: 'Modify' },
+  { id: 'annotate', label: 'Annotate' },
   { id: 'site', label: 'Site' },
   { id: 'roof', label: 'Roof' },
-  { id: 'docs', label: 'Docs' },
+  { id: 'layers', label: 'Layers' },
+  { id: 'sheets', label: 'Sheets' },
 ];
 
 function progressLabel(p: DrawingImportProgress | null): string {
@@ -104,18 +105,35 @@ function progressLabel(p: DrawingImportProgress | null): string {
 export function CadStudioPage() {
   const [history, setHistory] = useState<CadHistoryState>(() => createCadHistory(demoCadPlate()));
   const plate = history.present;
-  const setPlate = (next: CadPlate | ((p: CadPlate) => CadPlate)) => {
+  const gestureBaselineRef = useRef<CadPlate | null>(null);
+
+  const commitPlate = (next: CadPlate | ((p: CadPlate) => CadPlate)) => {
     setHistory((h) => {
       const resolved = typeof next === 'function' ? next(h.present) : next;
-      return pushCadHistory(h, resolved);
+      const baseline = gestureBaselineRef.current;
+      gestureBaselineRef.current = null;
+      return commitCadPresent(h, resolved, baseline);
     });
   };
+
+  const previewPlate = (next: CadPlate | ((p: CadPlate) => CadPlate)) => {
+    setHistory((h) => {
+      const resolved = typeof next === 'function' ? next(h.present) : next;
+      if (!gestureBaselineRef.current) gestureBaselineRef.current = h.present;
+      return previewCadPresent(h, resolved);
+    });
+  };
+
+  /** Discrete edits — always push history (trim, draw complete, inspector). */
+  const setPlate = commitPlate;
+
   const loadPlate = (p: CadPlate) => {
+    gestureBaselineRef.current = null;
     setHistory((h) => replaceCadPresent(h, p));
   };
   const [layout, setLayout] = useState<LayoutMode>('split');
   const [plateMode, setPlateMode] = useState<PlateMode>('floor');
-  const [catalogTab, setCatalogTab] = useState<CatalogTab>('walls');
+  const [studioMode, setStudioMode] = useState<StudioMode>('draw');
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<DrawingImportProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -250,7 +268,7 @@ export function CadStudioPage() {
       }
       setLayout('split');
       setPlateMode('floor');
-      setCatalogTab('layers');
+      setStudioMode('layers');
       setSheetId(null);
       setSelection(null);
       setWallMulti([]);
@@ -264,7 +282,7 @@ export function CadStudioPage() {
 
   const requestWallLengthEdit = (index: number) => {
     setSelection({ kind: 'wall', index });
-    setCatalogTab('walls');
+    setStudioMode('modify');
     const wall = plate.wallCenterlines[index];
     if (!wall) return;
     const current = formatWallLengthFt(segLengthFt(wall));
@@ -286,6 +304,11 @@ export function CadStudioPage() {
           : editTool === 'offset'
             ? 'Offset: click wall to copy parallel 1 ft'
             : statusAid || 'Shift ortho · Esc cancel · Tab length · Ctrl+Z undo';
+
+  const modeBanner =
+    editTool === 'trim' || editTool === 'extend' || editTool === 'break'
+      ? modifyHint
+      : null;
 
   const hasFrontElev = !!plate.elevationFront?.segments.length;
   const hasSideElev = !!plate.elevationSide?.segments.length;
@@ -314,10 +337,18 @@ export function CadStudioPage() {
           onSelectionChange={setSelection}
           wallMulti={wallMulti}
           onWallMultiChange={setWallMulti}
-          onPlateChange={setPlate}
+          onPlateChange={commitPlate}
+          onPlatePreview={previewPlate}
+          onPlateCommit={commitPlate}
           onStatus={setStatusAid}
-          onUndo={() => setHistory((h) => undoCadHistory(h))}
-          onRedo={() => setHistory((h) => redoCadHistory(h))}
+          onUndo={() => {
+            gestureBaselineRef.current = null;
+            setHistory((h) => undoCadHistory(h));
+          }}
+          onRedo={() => {
+            gestureBaselineRef.current = null;
+            setHistory((h) => redoCadHistory(h));
+          }}
           onRequestWallLengthEdit={requestWallLengthEdit}
         />
       );
@@ -330,7 +361,7 @@ export function CadStudioPage() {
         {plateMode === 'floor'
           ? 'Import a DXF/DWG to see the exact floor plate overlay, or load Demo ranch.'
           : plateMode === 'section'
-            ? 'Draw a section cut on the Roof catalog (Section cut tool).'
+            ? 'Draw a section cut (Annotate → Section cut tool).'
             : 'No elevation viewport detected for this drawing.'}
       </div>
     );
@@ -341,7 +372,7 @@ export function CadStudioPage() {
       <header className="cad-studio-top">
         <div className="cad-studio-brand">
           <h1>CAD Studio</h1>
-          <p>Catalog · 2D plan · live 3D — import DXF layers, draw, rebuild.</p>
+          <p>Draw · modify · annotate — import DXF layers, edit plan, rebuild 3D.</p>
         </div>
         <div className="cad-studio-actions">
           <label className="cad-file-btn">
@@ -364,7 +395,7 @@ export function CadStudioPage() {
               loadPlate(demoCadPlate());
               setLayout('split');
               setPlateMode('floor');
-              setCatalogTab('walls');
+              setStudioMode('draw');
               setSelection(null);
               setWallMulti([]);
             }}
@@ -384,7 +415,10 @@ export function CadStudioPage() {
           <button
             type="button"
             disabled={!history.past.length}
-            onClick={() => setHistory((h) => undoCadHistory(h))}
+            onClick={() => {
+              gestureBaselineRef.current = null;
+              setHistory((h) => undoCadHistory(h));
+            }}
             title="Undo (Ctrl+Z)"
           >
             Undo
@@ -392,7 +426,10 @@ export function CadStudioPage() {
           <button
             type="button"
             disabled={!history.future.length}
-            onClick={() => setHistory((h) => redoCadHistory(h))}
+            onClick={() => {
+              gestureBaselineRef.current = null;
+              setHistory((h) => redoCadHistory(h));
+            }}
             title="Redo (Ctrl+Y)"
           >
             Redo
@@ -433,26 +470,31 @@ export function CadStudioPage() {
       </header>
 
       <div className="cad-studio-body cad-studio-body-shell">
-        <aside className="cad-catalog" aria-label="Catalog">
-          <div className="cad-catalog-tabs" role="tablist">
-            {CATALOG_TABS.map((tab) => (
+        <aside className="cad-catalog" aria-label="Studio tools">
+          <div className="cad-mode-ribbon" role="tablist" aria-label="Studio modes">
+            {STUDIO_MODES.map((mode) => (
               <button
-                key={tab.id}
+                key={mode.id}
                 type="button"
                 role="tab"
-                aria-selected={catalogTab === tab.id}
-                className={catalogTab === tab.id ? 'is-active' : ''}
-                onClick={() => setCatalogTab(tab.id)}
+                aria-selected={studioMode === mode.id}
+                className={studioMode === mode.id ? 'is-active' : ''}
+                onClick={() => {
+                  setStudioMode(mode.id);
+                  if (mode.id === 'sheets') setLayout('sheets');
+                  else if (layout === 'sheets') setLayout('split');
+                }}
               >
-                {tab.label}
+                {mode.label}
               </button>
             ))}
           </div>
 
-          <div className="cad-catalog-body">
-            {catalogTab === 'walls' && (
+          {(studioMode === 'draw' || studioMode === 'modify' || studioMode === 'annotate') && (
+          <div className="cad-context-strip">
+            {studioMode === 'draw' && (
               <section>
-                <h2>Wall catalog</h2>
+                <h2>Draw</h2>
                 <div className="cad-catalog-items">
                   <button
                     type="button"
@@ -472,19 +514,35 @@ export function CadStudioPage() {
                   </button>
                   <button
                     type="button"
-                    className={editTool === 'select' ? 'is-active' : ''}
-                    onClick={() => pickTool('select')}
+                    className={editTool === 'opening' && openingKind === 'door' ? 'is-active' : ''}
+                    onClick={() => pickTool('opening', { opening: 'door' })}
                   >
-                    <strong>Select / move</strong>
-                    <span>Grips · Shift multi · length dim</span>
+                    <strong>Door</strong>
+                    <span>Hosted on wall</span>
                   </button>
                   <button
                     type="button"
-                    className={editTool === 'guide' ? 'is-active' : ''}
-                    onClick={() => pickTool('guide')}
+                    className={editTool === 'opening' && openingKind === 'window' ? 'is-active' : ''}
+                    onClick={() => pickTool('opening', { opening: 'window' })}
                   >
-                    <strong>Guide line</strong>
-                    <span>Construction aid · snap target</span>
+                    <strong>Window</strong>
+                    <span>Sill {windowSillFt}' AFF</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={editTool === 'opening' && openingKind === 'passage' ? 'is-active' : ''}
+                    onClick={() => pickTool('opening', { opening: 'passage' })}
+                  >
+                    <strong>Passage</strong>
+                    <span>Opening without leaf</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={editTool === 'opening' && openingKind === 'garage' ? 'is-active' : ''}
+                    onClick={() => pickTool('opening', { opening: 'garage' })}
+                  >
+                    <strong>Garage</strong>
+                    <span>~16' sectional</span>
                   </button>
                   <button
                     type="button"
@@ -494,13 +552,66 @@ export function CadStudioPage() {
                     <strong>Stair</strong>
                     <span>Single click · straight run</span>
                   </button>
-                  <button type="button" className={editTool === 'delete' ? 'is-active' : ''} onClick={() => pickTool('delete')}>
-                    <strong>Delete</strong>
-                    <span>Remove selected geometry</span>
+                  <button
+                    type="button"
+                    className={editTool === 'guide' ? 'is-active' : ''}
+                    onClick={() => pickTool('guide')}
+                  >
+                    <strong>Guide</strong>
+                    <span>Construction aid</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={editTool === 'select' ? 'is-active' : ''}
+                    onClick={() => pickTool('select')}
+                  >
+                    <strong>Select</strong>
+                    <span>Grips · move · multi</span>
                   </button>
                 </div>
-                <h2 style={{ marginTop: '0.85rem' }}>Modify</h2>
-                <div className="cad-modify-bar" role="group" aria-label="Wall modify tools">
+                <label className="cad-fixture-pick">
+                  Window sill (ft above floor)
+                  <input
+                    type="number"
+                    min={0}
+                    max={8}
+                    step={0.25}
+                    value={windowSillFt}
+                    onChange={(e) => setWindowSillFt(Number(e.target.value) || 0)}
+                  />
+                </label>
+                <h2 style={{ marginTop: '0.75rem' }}>Fixtures</h2>
+                <div className="cad-modify-bar" role="group" aria-label="Fixture tools">
+                  {(
+                    [
+                      ['sink', 'Sink'],
+                      ['toilet', 'Toilet'],
+                      ['tub', 'Tub'],
+                      ['appliance', 'Appliance'],
+                      ['counter', 'Counter'],
+                      ['island', 'Island'],
+                    ] as const
+                  ).map(([id, label]) => (
+                    <button
+                      key={id}
+                      type="button"
+                      className={editTool === 'fixture' && fixtureKind === id ? 'is-active' : ''}
+                      onClick={() => pickTool('fixture', { fixture: id })}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <p className="cad-edit-hint">
+                  Walls & openings: click start then end (Tab for length HUD). Escape cancels.
+                </p>
+              </section>
+            )}
+
+            {studioMode === 'modify' && (
+              <section>
+                <h2>Modify</h2>
+                <div className="cad-modify-bar" role="group" aria-label="Modify tools">
                   <button
                     type="button"
                     className={editTool === 'select' ? 'is-active' : ''}
@@ -567,106 +678,94 @@ export function CadStudioPage() {
                   >
                     Mirror
                   </button>
+                  <button
+                    type="button"
+                    className={editTool === 'delete' ? 'is-active' : ''}
+                    onClick={() => pickTool('delete')}
+                  >
+                    Delete
+                  </button>
+                  <button type="button" disabled title="Coming">
+                    Align
+                  </button>
+                  <button type="button" disabled title="Coming">
+                    Combine
+                  </button>
                 </div>
                 <p className="cad-edit-hint">
-                  Walls: click start, then end (Tab for length). Modify: Trim / Extend / Break / Offset /
-                  Copy / Mirror. Escape cancels. Shift+click multi-select walls.
+                  Trim / Extend need two wall clicks. Break / Offset are single-click. Shift+click multi-selects.
                 </p>
               </section>
             )}
 
-            {catalogTab === 'openings' && (
+            {studioMode === 'annotate' && (
               <section>
-                <h2>Openings</h2>
+                <h2>Annotate</h2>
                 <div className="cad-catalog-items">
                   <button
                     type="button"
-                    className={editTool === 'opening' && openingKind === 'door' ? 'is-active' : ''}
-                    onClick={() => pickTool('opening', { opening: 'door' })}
+                    className={editTool === 'section' ? 'is-active' : ''}
+                    onClick={() => pickTool('section')}
                   >
-                    <strong>Door</strong>
-                    <span>Place on a wall span</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={editTool === 'opening' && openingKind === 'window' ? 'is-active' : ''}
-                    onClick={() => pickTool('opening', { opening: 'window' })}
-                  >
-                    <strong>Window</strong>
-                    <span>Sill {windowSillFt}' AFF · place span</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={editTool === 'opening' && openingKind === 'passage' ? 'is-active' : ''}
-                    onClick={() => pickTool('opening', { opening: 'passage' })}
-                  >
-                    <strong>Passage</strong>
-                    <span>Opening without door leaf</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={editTool === 'opening' && openingKind === 'garage' ? 'is-active' : ''}
-                    onClick={() => pickTool('opening', { opening: 'garage' })}
-                  >
-                    <strong>Garage</strong>
-                    <span>~16' sectional door</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={editTool === 'select' ? 'is-active' : ''}
-                    onClick={() => pickTool('select')}
-                  >
-                    <strong>Select / move</strong>
-                    <span>Drag opening center</span>
+                    <strong>Section cut</strong>
+                    <span>Draw cut line on plan</span>
                   </button>
                 </div>
-                <label className="cad-fixture-pick">
-                  Window sill (ft above floor)
-                  <input
-                    type="number"
-                    min={0}
-                    max={8}
-                    step={0.25}
-                    value={windowSillFt}
-                    onChange={(e) => setWindowSillFt(Number(e.target.value) || 0)}
-                  />
-                </label>
+                <div className="cad-modify-bar" role="group" aria-label="Annotation toggles">
+                  <button
+                    type="button"
+                    className={showExteriorDims ? 'is-active' : ''}
+                    onClick={() => setShowExteriorDims((v) => !v)}
+                  >
+                    Ext dims {showExteriorDims ? 'on' : 'off'}
+                  </button>
+                  <button
+                    type="button"
+                    className={showInteriorDims ? 'is-active' : ''}
+                    onClick={() => setShowInteriorDims((v) => !v)}
+                  >
+                    Int dims {showInteriorDims ? 'on' : 'off'}
+                  </button>
+                  <button
+                    type="button"
+                    className={showRoomFills ? 'is-active' : ''}
+                    onClick={() => setShowRoomFills((v) => !v)}
+                  >
+                    Room fills {showRoomFills ? 'on' : 'off'}
+                  </button>
+                  <button
+                    type="button"
+                    className={plateMode === 'section' ? 'is-active' : ''}
+                    disabled={!plate?.sectionCuts?.length}
+                    onClick={() => {
+                      setPlateMode('section');
+                      setLayout('plate');
+                    }}
+                  >
+                    View section
+                  </button>
+                  <button
+                    type="button"
+                    className={sectionClip ? 'is-active' : ''}
+                    onClick={() => setSectionClip((v) => !v)}
+                  >
+                    3D section clip
+                  </button>
+                </div>
                 <p className="cad-edit-hint">
-                  Click near a wall to host a door/window (defaults 3'/4'). Far from walls: two-click span.
-                  Set sill before placing a window.
+                  Dimension-driven wall edit is coming — for now edit length in Properties after select.
                 </p>
               </section>
             )}
+          </div>
+          )}
 
-            {catalogTab === 'fixtures' && (
-              <section>
-                <h2>Fixtures</h2>
-                <div className="cad-catalog-items">
-                  {(
-                    [
-                      ['sink', 'Sink'],
-                      ['toilet', 'Toilet'],
-                      ['tub', 'Tub'],
-                      ['appliance', 'Appliance'],
-                      ['counter', 'Counter'],
-                      ['island', 'Island'],
-                    ] as const
-                  ).map(([id, label]) => (
-                    <button
-                      key={id}
-                      type="button"
-                      className={editTool === 'fixture' && fixtureKind === id ? 'is-active' : ''}
-                      onClick={() => pickTool('fixture', { fixture: id })}
-                    >
-                      <strong>{label}</strong>
-                      <span>Click to place on plan</span>
-                    </button>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {catalogTab === 'layers' && (
+          {(studioMode === 'layers' ||
+            studioMode === 'site' ||
+            studioMode === 'roof' ||
+            studioMode === 'sheets') && (
+          <div className="cad-catalog-body">
+            {studioMode === 'layers' && (
               <section className="cad-layer-panel">
                 <h2>Layers</h2>
                 <p className="cad-layer-summary">
@@ -761,7 +860,7 @@ export function CadStudioPage() {
               </section>
             )}
 
-            {catalogTab === 'site' && (
+            {studioMode === 'site' && (
               <section>
                 <h2>Site</h2>
                 <p className="cad-edit-hint">
@@ -898,7 +997,7 @@ export function CadStudioPage() {
               </section>
             )}
 
-            {catalogTab === 'roof' && (
+            {studioMode === 'roof' && (
               <section>
                 <h2>Roof</h2>
                 <p className="cad-edit-hint">
@@ -986,23 +1085,16 @@ export function CadStudioPage() {
                     <strong>Place dormer</strong>
                     <span>Click on plan near roof</span>
                   </button>
-                  <button
-                    type="button"
-                    className={editTool === 'section' ? 'is-active' : ''}
-                    onClick={() => pickTool('section')}
-                  >
-                    <strong>Section cut</strong>
-                    <span>Draw cut line on plan</span>
-                  </button>
                 </div>
               </section>
             )}
 
-            {catalogTab === 'docs' && (
+
+            {studioMode === 'sheets' && (
               <section>
-                <h2>Docs</h2>
+                <h2>Sheets</h2>
                 <p className="cad-edit-hint">
-                  Title block, sheet set, and section exports for permit / client packages.
+                  Title block, sheet set, and export package for permit / client deliverables.
                 </p>
                 <div className="cad-sill-control">
                   <label>
@@ -1042,32 +1134,99 @@ export function CadStudioPage() {
                     />
                   </label>
                 </div>
-                <div className="cad-catalog-items" style={{ marginTop: 8 }}>
-                  <button
-                    type="button"
-                    className={plateMode === 'section' ? 'is-active' : ''}
-                    disabled={!plate?.sectionCuts?.length}
-                    onClick={() => {
-                      setPlateMode('section');
-                      setLayout('plate');
-                    }}
-                  >
-                    <strong>View section</strong>
-                    <span>2D cut from section line</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={sectionClip ? 'is-active' : ''}
-                    onClick={() => setSectionClip((v) => !v)}
-                  >
-                    <strong>3D section clip</strong>
-                    <span>Clip Extrude at cut A</span>
-                  </button>
-                </div>
+              <div className="cad-export-actions">
+                <h3>Export</h3>
+                <button
+                  type="button"
+                  disabled={!plate}
+                  onClick={() => {
+                    if (!plate) return;
+                    const base = (plate.sourceFileName || 'cad-plate').replace(/\.(dxf|dwg)$/i, '');
+                    downloadTextFile(`${base}.dxf`, exportCadPlateDxf(plate), 'application/dxf');
+                  }}
+                >
+                  Download DXF
+                </button>
+                <button
+                  type="button"
+                  disabled={!plate}
+                  onClick={() => {
+                    if (!plate) return;
+                    const base = (plate.sourceFileName || 'cad-plate').replace(/\.(dxf|dwg)$/i, '');
+                    downloadTextFile(
+                      `${base}-rooms.csv`,
+                      exportCadRoomScheduleCsv(plate),
+                      'text/csv;charset=utf-8',
+                    );
+                  }}
+                >
+                  Download room CSV
+                </button>
+                <button
+                  type="button"
+                  disabled={!plate}
+                  onClick={() => {
+                    if (!plate) return;
+                    const base = (plate.sourceFileName || 'cad-plate').replace(/\.(dxf|dwg)$/i, '');
+                    const svg = renderCadPlateSvg(plate, { title: plate.sourceFileName });
+                    void downloadSvgAsPng(svg, `${base}-floor.png`);
+                  }}
+                >
+                  Download floor PNG
+                </button>
+                <button
+                  type="button"
+                  disabled={!plate}
+                  onClick={() => {
+                    if (!plate) return;
+                    const base = (plate.sourceFileName || 'cad-plate').replace(/\.(dxf|dwg)$/i, '');
+                    downloadTextFile(
+                      `${base}-sheet-set.html`,
+                      exportCadSheetSetHtml(plate),
+                      'text/html;charset=utf-8',
+                    );
+                  }}
+                >
+                  Download sheet set
+                </button>
+                <button
+                  type="button"
+                  disabled={!plate}
+                  onClick={() => {
+                    if (!plate) return;
+                    const base = (plate.sourceFileName || 'cad-plate').replace(/\.(dxf|dwg)$/i, '');
+                    downloadTextFile(
+                      `${base}.gltf`,
+                      exportCadPlateGltf(plate),
+                      'model/gltf+json',
+                    );
+                  }}
+                >
+                  Download glTF
+                </button>
+                <button
+                  type="button"
+                  disabled={!plate?.sectionCuts?.length}
+                  onClick={() => {
+                    if (!plate?.sectionCuts?.[0]) return;
+                    const base = (plate.sourceFileName || 'cad-plate').replace(/\.(dxf|dwg)$/i, '');
+                    const svg = renderCadSectionSvg(
+                      buildCadSectionDrawing(plate, plate.sectionCuts[0]),
+                      { title: plate.sectionCuts[0].label },
+                    );
+                    void downloadSvgAsPng(svg, `${base}-section.png`);
+                  }}
+                >
+                  Download section PNG
+                </button>
+              </div>
+
               </section>
             )}
+          </div>
+          )}
 
-            <section className="cad-inspector">
+            <section className="cad-inspector cad-inspector-sticky">
               <h2>Properties</h2>
               {selection ? (
                 <div className="cad-selection-inspector">
@@ -1339,92 +1498,6 @@ export function CadStudioPage() {
                   </ul>
                 </div>
               )}
-              <div className="cad-export-actions">
-                <h3>Export</h3>
-                <button
-                  type="button"
-                  disabled={!plate}
-                  onClick={() => {
-                    if (!plate) return;
-                    const base = (plate.sourceFileName || 'cad-plate').replace(/\.(dxf|dwg)$/i, '');
-                    downloadTextFile(`${base}.dxf`, exportCadPlateDxf(plate), 'application/dxf');
-                  }}
-                >
-                  Download DXF
-                </button>
-                <button
-                  type="button"
-                  disabled={!plate}
-                  onClick={() => {
-                    if (!plate) return;
-                    const base = (plate.sourceFileName || 'cad-plate').replace(/\.(dxf|dwg)$/i, '');
-                    downloadTextFile(
-                      `${base}-rooms.csv`,
-                      exportCadRoomScheduleCsv(plate),
-                      'text/csv;charset=utf-8',
-                    );
-                  }}
-                >
-                  Download room CSV
-                </button>
-                <button
-                  type="button"
-                  disabled={!plate}
-                  onClick={() => {
-                    if (!plate) return;
-                    const base = (plate.sourceFileName || 'cad-plate').replace(/\.(dxf|dwg)$/i, '');
-                    const svg = renderCadPlateSvg(plate, { title: plate.sourceFileName });
-                    void downloadSvgAsPng(svg, `${base}-floor.png`);
-                  }}
-                >
-                  Download floor PNG
-                </button>
-                <button
-                  type="button"
-                  disabled={!plate}
-                  onClick={() => {
-                    if (!plate) return;
-                    const base = (plate.sourceFileName || 'cad-plate').replace(/\.(dxf|dwg)$/i, '');
-                    downloadTextFile(
-                      `${base}-sheet-set.html`,
-                      exportCadSheetSetHtml(plate),
-                      'text/html;charset=utf-8',
-                    );
-                  }}
-                >
-                  Download sheet set
-                </button>
-                <button
-                  type="button"
-                  disabled={!plate}
-                  onClick={() => {
-                    if (!plate) return;
-                    const base = (plate.sourceFileName || 'cad-plate').replace(/\.(dxf|dwg)$/i, '');
-                    downloadTextFile(
-                      `${base}.gltf`,
-                      exportCadPlateGltf(plate),
-                      'model/gltf+json',
-                    );
-                  }}
-                >
-                  Download glTF
-                </button>
-                <button
-                  type="button"
-                  disabled={!plate?.sectionCuts?.length}
-                  onClick={() => {
-                    if (!plate?.sectionCuts?.[0]) return;
-                    const base = (plate.sourceFileName || 'cad-plate').replace(/\.(dxf|dwg)$/i, '');
-                    const svg = renderCadSectionSvg(
-                      buildCadSectionDrawing(plate, plate.sectionCuts[0]),
-                      { title: plate.sectionCuts[0].label },
-                    );
-                    void downloadSvgAsPng(svg, `${base}-section.png`);
-                  }}
-                >
-                  Download section PNG
-                </button>
-              </div>
               <div className="cad-stats">
                 <div>File: {plate?.sourceFileName ?? '—'}</div>
                 <div>Walls: {plate?.wallCenterlines.length ?? 0}</div>
@@ -1447,8 +1520,8 @@ export function CadStudioPage() {
                   ))}
                 </ul>
               )}
+
             </section>
-          </div>
         </aside>
 
         <div className="cad-workspace">
@@ -1542,6 +1615,11 @@ export function CadStudioPage() {
           >
             {show2d && (
               <div className="cad-plate-host">
+                {modeBanner && (
+                  <div className="cad-mode-banner" role="status">
+                    {modeBanner}
+                  </div>
+                )}
                 <div className="cad-plate-tabs">
                   <button
                     type="button"

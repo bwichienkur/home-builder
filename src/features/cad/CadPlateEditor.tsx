@@ -110,7 +110,12 @@ type Props = {
   showRoomFills?: boolean;
   selection: CadPlateSelection | null;
   onSelectionChange: (sel: CadPlateSelection | null) => void;
+  /** Discrete edits (draw complete, trim, delete, etc.) — pushes undo history. */
   onPlateChange: (plate: CadPlate) => void;
+  /** Live grip/move updates — replaces present without pushing history. */
+  onPlatePreview?: (plate: CadPlate) => void;
+  /** End of a drag gesture — one history entry for the whole move. */
+  onPlateCommit?: (plate: CadPlate) => void;
   /** Extra wall indices selected with Shift+click (primary is `selection`). */
   wallMulti?: number[];
   onWallMultiChange?: (indices: number[]) => void;
@@ -197,6 +202,8 @@ export function CadPlateEditor({
   selection,
   onSelectionChange,
   onPlateChange,
+  onPlatePreview,
+  onPlateCommit,
   wallMulti = [],
   onWallMultiChange,
   onStatus,
@@ -204,7 +211,9 @@ export function CadPlateEditor({
   onRedo,
   onRequestWallLengthEdit,
 }: Props) {
+  const hostRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+  const lengthInputRef = useRef<HTMLInputElement>(null);
   const [draftLine, setDraftLine] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(
     null,
   );
@@ -213,6 +222,13 @@ export function CadPlateEditor({
   const [shiftHeld, setShiftHeld] = useState(false);
   const [lastSnap, setLastSnap] = useState<CadSnapResult | null>(null);
   const [cutterWallIndex, setCutterWallIndex] = useState<number | null>(null);
+  const [lengthHud, setLengthHud] = useState<{
+    value: string;
+    left: number;
+    top: number;
+  } | null>(null);
+  const lastPointerClientRef = useRef<{ x: number; y: number } | null>(null);
+  const lastPreviewRef = useRef<CadPlate | null>(null);
   const dragRef = useRef<{
     kind: 'grip' | 'selection';
     grip?: CadGripKind;
@@ -221,7 +237,17 @@ export function CadPlateEditor({
     startPlan: { x: number; y: number };
     orig: CadPlate;
     multi: number[];
+    moved: boolean;
   } | null>(null);
+
+  const emitPreview = useCallback(
+    (next: CadPlate) => {
+      lastPreviewRef.current = next;
+      if (onPlatePreview) onPlatePreview(next);
+      else onPlateChange(next);
+    },
+    [onPlateChange, onPlatePreview],
+  );
 
   const { w, h, ox, oy, stroke, fontSize } = useMemo(() => {
     const { minX, minY, maxX, maxY } = plate.bounds;
@@ -474,7 +500,9 @@ export function CadPlateEditor({
             startPlan: raw,
             orig: plate,
             multi: wallMulti,
+            moved: false,
           };
+          lastPreviewRef.current = null;
           return;
         }
       }
@@ -507,13 +535,16 @@ export function CadPlateEditor({
         startPlan: raw,
         orig: plate,
         multi: [],
+        moved: false,
       };
+      lastPreviewRef.current = null;
     } else {
       dragRef.current = null;
     }
   };
 
   const handlePointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
+    lastPointerClientRef.current = { x: e.clientX, y: e.clientY };
     const raw = planFromEvent(e);
     if (!raw) return;
 
@@ -540,18 +571,20 @@ export function CadPlateEditor({
     if (!drag || tool !== 'select') return;
     const dx = raw.x - drag.startPlan.x;
     const dy = raw.y - drag.startPlan.y;
+    if (Math.hypot(dx, dy) < 1e-9 && !drag.moved) return;
+    drag.moved = true;
     const { selection: sel, orig } = drag;
 
     if (drag.kind === 'grip' && drag.wallIndex != null && drag.grip) {
       const w0 = orig.wallCenterlines[drag.wallIndex];
       if (!w0) return;
       if (drag.grip === 'start') {
-        onPlateChange(moveWallEndpoint(orig, drag.wallIndex, 'a', w0.x1 + dx, w0.y1 + dy));
+        emitPreview(moveWallEndpoint(orig, drag.wallIndex, 'a', w0.x1 + dx, w0.y1 + dy));
       } else if (drag.grip === 'end') {
-        onPlateChange(moveWallEndpoint(orig, drag.wallIndex, 'b', w0.x2 + dx, w0.y2 + dy));
+        emitPreview(moveWallEndpoint(orig, drag.wallIndex, 'b', w0.x2 + dx, w0.y2 + dy));
       } else {
         const indices = [drag.wallIndex, ...drag.multi.filter((i) => i !== drag.wallIndex)];
-        onPlateChange(indices.length > 1 ? moveWalls(orig, indices, dx, dy) : moveWall(orig, drag.wallIndex, dx, dy));
+        emitPreview(indices.length > 1 ? moveWalls(orig, indices, dx, dy) : moveWall(orig, drag.wallIndex, dx, dy));
       }
       return;
     }
@@ -560,36 +593,36 @@ export function CadPlateEditor({
       case 'label': {
         const l = orig.labels[sel.index];
         if (!l) break;
-        onPlateChange(moveLabel(orig, sel.index, l.x + dx, l.y + dy));
+        emitPreview(moveLabel(orig, sel.index, l.x + dx, l.y + dy));
         break;
       }
       case 'fixture': {
         const f = orig.fixtureHints[sel.index];
         if (!f) break;
-        onPlateChange(moveFixtureHint(orig, sel.index, f.xFt + dx, f.yFt + dy));
+        emitPreview(moveFixtureHint(orig, sel.index, f.xFt + dx, f.yFt + dy));
         break;
       }
       case 'opening': {
         const o = orig.openingHints[sel.index];
         if (!o) break;
-        onPlateChange(
+        emitPreview(
           moveOpeningHint(orig, sel.index, (o.x1 + o.x2) / 2 + dx, (o.y1 + o.y2) / 2 + dy),
         );
         break;
       }
       case 'wall': {
         const indices = [sel.index, ...drag.multi.filter((i) => i !== sel.index)];
-        onPlateChange(indices.length > 1 ? moveWalls(orig, indices, dx, dy) : moveWall(orig, sel.index, dx, dy));
+        emitPreview(indices.length > 1 ? moveWalls(orig, indices, dx, dy) : moveWall(orig, sel.index, dx, dy));
         break;
       }
       case 'slab': {
-        onPlateChange(moveSlab(orig, sel.index, dx, dy));
+        emitPreview(moveSlab(orig, sel.index, dx, dy));
         break;
       }
       case 'stair': {
         const st = orig.stairs?.[sel.index];
         if (!st) break;
-        onPlateChange(updateStair(orig, sel.index, { xFt: st.xFt + dx, yFt: st.yFt + dy }));
+        emitPreview(updateStair(orig, sel.index, { xFt: st.xFt + dx, yFt: st.yFt + dy }));
         break;
       }
       default:
@@ -598,6 +631,15 @@ export function CadPlateEditor({
   };
 
   const handlePointerUp = () => {
+    const drag = dragRef.current;
+    if (drag?.moved) {
+      const finalPlate = lastPreviewRef.current;
+      if (finalPlate) {
+        if (onPlateCommit) onPlateCommit(finalPlate);
+        else onPlateChange(finalPlate);
+      }
+    }
+    lastPreviewRef.current = null;
     dragRef.current = null;
   };
 
@@ -608,39 +650,58 @@ export function CadPlateEditor({
   };
 
   // Escape cancels drafts; Enter closes slab polygon (Plan7-style).
-  // Tab types length while drafting; Ctrl+Z/Y undo/redo.
+  // Tab opens inline length HUD while drafting; Ctrl+Z/Y undo/redo.
   // Track Shift for ortho snap.
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Shift') setShiftHeld(true);
       if (e.key === 'Escape') {
+        if (lengthHud) {
+          setLengthHud(null);
+          return;
+        }
         setDraftLine(null);
         setDraftPoly([]);
         setCursorPlan(null);
         setLastSnap(null);
         setCutterWallIndex(null);
       }
-      if (e.key === 'Enter' && tool === 'slab' && draftPoly.length >= 3) {
+      if (e.key === 'Enter' && tool === 'slab' && draftPoly.length >= 3 && !lengthHud) {
         e.preventDefault();
         closeDraftPoly();
       }
-      if (e.key === 'Tab' && draftLine && (tool === 'wall' || tool === 'opening' || tool === 'guide')) {
+      if (
+        e.key === 'Tab' &&
+        draftLine &&
+        !lengthHud &&
+        (tool === 'wall' || tool === 'opening' || tool === 'guide')
+      ) {
         e.preventDefault();
         const dx = draftLine.x2 - draftLine.x1;
         const dy = draftLine.y2 - draftLine.y1;
         const cur = Math.hypot(dx, dy);
-        const ux = cur > 1e-9 ? dx / cur : 1;
-        const uy = cur > 1e-9 ? dy / cur : 0;
-        const raw = window.prompt('Length', cur > 0.5 ? formatWallLengthFt(cur) : `10'-0"`);
-        if (raw == null) return;
-        const len = parseArchitecturalLength(raw);
-        if (len == null || len < 0.5) return;
-        const x2 = draftLine.x1 + ux * len;
-        const y2 = draftLine.y1 + uy * len;
-        commitDraftLine(draftLine.x1, draftLine.y1, x2, y2);
-        setDraftLine(null);
-        setLastSnap(null);
-        onStatus?.(`Committed length ${formatWallLengthFt(len)}`);
+        const host = hostRef.current;
+        const client = lastPointerClientRef.current;
+        let left = 16;
+        let top = 16;
+        if (host && client) {
+          const rect = host.getBoundingClientRect();
+          left = client.x - rect.left + 12;
+          top = client.y - rect.top - 40;
+        } else if (host) {
+          const rect = host.getBoundingClientRect();
+          left = rect.width / 2 - 60;
+          top = 24;
+        }
+        setLengthHud({
+          value: cur > 0.5 ? formatWallLengthFt(cur) : `10'-0"`,
+          left: Math.max(8, left),
+          top: Math.max(8, top),
+        });
+        queueMicrotask(() => {
+          lengthInputRef.current?.focus();
+          lengthInputRef.current?.select();
+        });
       }
       const mod = e.ctrlKey || e.metaKey;
       if (mod && (e.key === 'z' || e.key === 'Z') && !e.shiftKey) {
@@ -663,14 +724,35 @@ export function CadPlateEditor({
     };
   }, [
     closeDraftPoly,
-    commitDraftLine,
     draftLine,
     draftPoly.length,
+    lengthHud,
     onRedo,
-    onStatus,
     onUndo,
     tool,
   ]);
+
+  const commitLengthHud = useCallback(() => {
+    if (!lengthHud || !draftLine) return;
+    if (!(tool === 'wall' || tool === 'opening' || tool === 'guide')) return;
+    const dx = draftLine.x2 - draftLine.x1;
+    const dy = draftLine.y2 - draftLine.y1;
+    const cur = Math.hypot(dx, dy);
+    const ux = cur > 1e-9 ? dx / cur : 1;
+    const uy = cur > 1e-9 ? dy / cur : 0;
+    const len = parseArchitecturalLength(lengthHud.value);
+    if (len == null || len < 0.5) {
+      onStatus?.('Enter a length like 12\'-0" or 10.5');
+      return;
+    }
+    const x2 = draftLine.x1 + ux * len;
+    const y2 = draftLine.y1 + uy * len;
+    commitDraftLine(draftLine.x1, draftLine.y1, x2, y2);
+    setDraftLine(null);
+    setLastSnap(null);
+    setLengthHud(null);
+    onStatus?.(`Committed length ${formatWallLengthFt(len)}`);
+  }, [commitDraftLine, draftLine, lengthHud, onStatus, tool]);
 
   useEffect(() => {
     if (tool !== 'slab') {
@@ -680,11 +762,16 @@ export function CadPlateEditor({
     if (tool !== 'wall' && tool !== 'opening' && tool !== 'guide' && tool !== 'section') {
       setDraftLine(null);
       setLastSnap(null);
+      setLengthHud(null);
     }
     if (tool !== 'trim' && tool !== 'extend') {
       setCutterWallIndex(null);
     }
   }, [tool]);
+
+  useEffect(() => {
+    if (!draftLine) setLengthHud(null);
+  }, [draftLine]);
 
   useEffect(() => {
     if (tool === 'trim') onStatus?.('Trim: click cutter wall, then wall to shorten');
@@ -707,6 +794,7 @@ export function CadPlateEditor({
     (lastSnap?.kind === 'endpoint' || lastSnap?.kind === 'guide');
 
   return (
+    <div className="cad-plate-editor-host" ref={hostRef}>
     <svg
       ref={svgRef}
       className="cad-plate-editor-svg"
@@ -1222,5 +1310,39 @@ export function CadPlateEditor({
         );
       })}
     </svg>
+    {lengthHud && (
+      <div
+        className="cad-length-hud"
+        style={{ left: lengthHud.left, top: lengthHud.top }}
+        onPointerDown={(e) => e.stopPropagation()}
+      >
+        <label>
+          <span className="cad-length-hud-label">Length</span>
+          <input
+            ref={lengthInputRef}
+            type="text"
+            value={lengthHud.value}
+            aria-label="Draft length"
+            onChange={(e) => setLengthHud({ ...lengthHud, value: e.target.value })}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                e.stopPropagation();
+                commitLengthHud();
+              }
+              if (e.key === 'Escape') {
+                e.preventDefault();
+                e.stopPropagation();
+                setLengthHud(null);
+              }
+              if (e.key === 'Tab') {
+                e.preventDefault();
+              }
+            }}
+          />
+        </label>
+      </div>
+    )}
+    </div>
   );
 }

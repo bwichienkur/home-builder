@@ -41,3 +41,26 @@ export function redoCadHistory(state: CadHistoryState): CadHistoryState {
 export function replaceCadPresent(state: CadHistoryState, present: CadPlate): CadHistoryState {
   return { ...state, present, past: [], future: [] };
 }
+
+/** Update present without touching undo/redo stacks (live drag preview). */
+export function previewCadPresent(state: CadHistoryState, present: CadPlate): CadHistoryState {
+  if (present === state.present) return state;
+  return { ...state, present };
+}
+
+/**
+ * Commit a plate after a preview gesture: push `baseline` (pre-gesture) onto past
+ * and keep `present` as the final plate. When baseline is omitted, behaves like pushCadHistory.
+ */
+export function commitCadPresent(
+  state: CadHistoryState,
+  present: CadPlate,
+  baseline?: CadPlate | null,
+): CadHistoryState {
+  if (baseline) {
+    if (present === baseline) return { ...state, present: baseline };
+    const past = [...state.past, baseline].slice(-MAX_STACK);
+    return { past, present, future: [] };
+  }
+  return pushCadHistory(state, present);
+}
