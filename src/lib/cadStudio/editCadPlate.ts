@@ -209,8 +209,37 @@ export function moveOpeningHint(
   cy: number,
   lenFt?: number,
 ): CadPlate {
+  // Prefer wall-locked slide when hosted (O1). Free XY only for unhosted.
   const hint = plate.openingHints[index];
   if (!hint) return plate;
+  if (hint.hostWallIndex != null) {
+    // Dynamic import avoided — inline reseat using wall param
+    const w = plate.wallCenterlines[hint.hostWallIndex];
+    if (w) {
+      const width = lenFt ?? hint.widthFt ?? segLengthFt(hint);
+      const wlen = segLengthFt(w) || 1;
+      const ux = (w.x2 - w.x1) / wlen;
+      const uy = (w.y2 - w.y1) / wlen;
+      const t = ((cx - w.x1) * ux + (cy - w.y1) * uy) / wlen;
+      const half = Math.min(Math.max(0.5, width) / 2, wlen * 0.45);
+      const tMin = half / wlen + 0.02;
+      const tMax = 1 - half / wlen - 0.02;
+      const tt = Math.max(tMin, Math.min(tMax, t));
+      const mx = w.x1 + ux * wlen * tt;
+      const my = w.y1 + uy * wlen * tt;
+      const updated = {
+        ...hint,
+        hostT: tt,
+        widthFt: half * 2,
+        x1: mx - ux * half,
+        y1: my - uy * half,
+        x2: mx + ux * half,
+        y2: my + uy * half,
+      };
+      const openingHints = plate.openingHints.map((h, i) => (i === index ? updated : h));
+      return syncWallSegments({ ...plate, openingHints });
+    }
+  }
   const length = lenFt ?? segLengthFt(hint);
   const half = length / 2;
   const dx = hint.x2 - hint.x1;

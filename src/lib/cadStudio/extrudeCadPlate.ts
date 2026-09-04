@@ -71,6 +71,8 @@ export function extrudeCadPlate(plate: CadPlate, opts?: { heightM?: number }): C
       kind: h.kind,
       layer: h.layer,
       sillFt: h.sillFt,
+      heightFt: h.heightFt,
+      swing: h.swing,
     })),
   };
 
@@ -88,6 +90,8 @@ export function extrudeCadPlate(plate: CadPlate, opts?: { heightM?: number }): C
       kind: h.kind,
       layer: h.layer,
       sillFt: 'sillFt' in h ? h.sillFt : undefined,
+      heightFt: 'heightFt' in h ? (h as { heightFt?: number }).heightFt : undefined,
+      swing: 'swing' in h ? (h as { swing?: 'left' | 'right' | 'none' }).swing : undefined,
     })),
   };
 

@@ -25,6 +25,9 @@ export type PlanOpeningHintFt = {
   layer?: string;
   /** Optional sill height in feet (windows). */
   sillFt?: number;
+  /** Optional clear opening height in feet. */
+  heightFt?: number;
+  swing?: 'left' | 'right' | 'none';
 };
 
 function ftToPx(ft: number) {
@@ -128,6 +131,8 @@ export function openingsFromCadHints(
     kind: 'door' | 'window' | 'passage' | 'garage',
     idSuffix: string,
     sillFt?: number,
+    heightFt?: number,
+    swing?: 'left' | 'right' | 'none',
   ) => {
     const wall = walls[wallIdx]!;
     const wallLenFt = segLen(segments[wallIdx]!);
@@ -147,11 +152,13 @@ export function openingsFromCadHints(
           : 0.9
         : 0;
     const heightM =
-      kind === 'window'
-        ? Math.min(1.4, height * 0.45)
-        : kind === 'garage'
-          ? Math.min(2.4, height * 0.92)
-          : Math.min(2.1, height * 0.95);
+      heightFt != null && Number.isFinite(heightFt)
+        ? Math.min(height * 0.98, Math.max(0.4, heightFt * FT_TO_M))
+        : kind === 'window'
+          ? Math.min(1.4, height * 0.45)
+          : kind === 'garage'
+            ? Math.min(2.4, height * 0.92)
+            : Math.min(2.1, height * 0.95);
     openings.push({
       id: `${wall.id}-${idSuffix}`,
       wallId: wall.id,
@@ -160,7 +167,7 @@ export function openingsFromCadHints(
       width: widthM,
       height: heightM,
       sill: sillM,
-      swing: kind === 'door' ? 'left' : undefined,
+      swing: swing ?? (kind === 'door' ? 'left' : undefined),
       shape: kind === 'garage' ? 'wide' : undefined,
     });
   };
@@ -197,7 +204,16 @@ export function openingsFromCadHints(
         hintLen,
       ),
     );
-    addOpening(bestIdx, bestT, widthFt, hint.kind, `hint-${hi}`, hint.sillFt);
+    addOpening(
+      bestIdx,
+      bestT,
+      widthFt,
+      hint.kind,
+      `hint-${hi}`,
+      hint.sillFt,
+      hint.heightFt,
+      hint.swing,
+    );
   }
 
   // 2) Colinear wall gaps (1.8–4.5 ft) → passage/door openings when no hint covered them.

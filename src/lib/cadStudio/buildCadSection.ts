@@ -82,8 +82,8 @@ export function buildCadSectionDrawing(
       if (Math.hypot(midX - hx, midY - hy) > 2.5) continue;
       const widthFt = Math.hypot(o.x2 - o.x1, o.y2 - o.y1);
       const sillFt = o.kind === 'window' ? (o.sillFt ?? 2.5) : 0;
-      const headFt =
-        o.kind === 'window' ? Math.min(story - 0.5, sillFt + 4) : Math.min(story - 0.25, 7);
+      const heightFt = o.heightFt ?? (o.kind === 'window' ? 4 : o.kind === 'garage' ? 7 : 6.67);
+      const headFt = Math.min(story - 0.25, sillFt + heightFt);
       openings.push({ sillFt, headFt, widthFt });
     }
     hits.push({

@@ -89,13 +89,14 @@ export function flipWall(plate: CadPlate, index: number): CadPlate {
 export function moveWall(plate: CadPlate, index: number, dx: number, dy: number): CadPlate {
   const w = plate.wallCenterlines[index];
   if (!w) return plate;
-  return updateWallCenterline(plate, index, {
+  const next = updateWallCenterline(plate, index, {
     ...w,
     x1: w.x1 + dx,
     y1: w.y1 + dy,
     x2: w.x2 + dx,
     y2: w.y2 + dy,
   });
+  return resyncHostedOpenings(next, index);
 }
 
 export function moveWalls(plate: CadPlate, indices: number[], dx: number, dy: number): CadPlate {
@@ -330,9 +331,11 @@ export function placeHostedOpening(
     kind,
     layer,
     sillFt: kind === 'window' ? sillFt : 0,
+    heightFt: kind === 'window' ? 4 : kind === 'garage' ? 7 : 6 + 8 / 12,
     hostWallIndex: wallIndex,
     hostT: tt,
     widthFt: half * 2,
+    swing: kind === 'door' ? 'left' : kind === 'passage' || kind === 'garage' ? 'none' : undefined,
   };
   return syncWallSegments({
     ...plate,
