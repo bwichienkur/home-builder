@@ -3,6 +3,7 @@ import {
   addStory,
   alignWalls,
   applyAutoFoundation,
+  applyOpeningPreset,
   assignOpeningMarks,
   autoHostOpenings,
   buildCadPlateFromDxf,
@@ -10,10 +11,13 @@ import {
   calibrateUnderlay,
   clearAutoFoundation,
   combineCollinearWalls,
+  convertSegmentToOpening,
+  copySelectionToStory,
   createCadHistory,
   copyWalls,
   demoCadPlate,
   deleteSelection,
+  detectOpeningClashes,
   downloadSvgAsPng,
   downloadTextFile,
   ensureDefaultStories,
@@ -28,7 +32,11 @@ import {
   flipWall,
   formatWallLengthFt,
   hideNonFloorPreset,
+  listConvertibleOpeningSegments,
+  listUnhostedOpenings,
   mirrorWalls,
+  normalizeOpeningDefaults,
+  OLSEN_OPENING_PRESETS,
   parseAngleDeg,
   parseArchitecturalLength,
   promoteTempDimToAnnotative,
@@ -42,16 +50,20 @@ import {
   previewCadPresent,
   commitCadPresent,
   buildCadSectionDrawing,
+  restoreDesignSnapshot,
   resyncHostedOpenings,
   roleToClassify,
   roomScheduleSummary,
+  saveDesignSnapshot,
   segLengthFt,
   selectionSummary,
   setActiveStory,
   setAnnotativeDimLocked,
   setDistanceBetweenWalls,
   setLayerClassify,
+  setOpeningHeight,
   setOpeningSill,
+  setOpeningSwing,
   setOpeningWidth,
   setPlateRoof,
   setPlateTerrain,
@@ -78,6 +90,7 @@ import {
   type CadWallMaterialId,
 } from '../../lib/cadStudio';
 import type { CadFixtureKind, CadPlate, CadRoofKind, CadSlabKind } from '../../lib/cadStudio/types';
+import { defaultOpeningHeightFt } from '../../lib/cadStudio/cadOpeningEdit';
 import { defaultWallThicknessFt } from '../../lib/cadStudio/cadDrawSnap';
 import { CadPlateEditor } from './CadPlateEditor';
 import { importDrawingFiles, type DrawingImportProgress } from '../../lib/housePlans/importDrawingFile';
@@ -120,7 +133,9 @@ function progressLabel(p: DrawingImportProgress | null): string {
 }
 
 export function CadStudioPage() {
-  const [history, setHistory] = useState<CadHistoryState>(() => createCadHistory(demoCadPlate()));
+  const [history, setHistory] = useState<CadHistoryState>(() =>
+    createCadHistory(normalizeOpeningDefaults(demoCadPlate())),
+  );
   const plate = history.present;
   const gestureBaselineRef = useRef<CadPlate | null>(null);
 
@@ -146,7 +161,9 @@ export function CadStudioPage() {
 
   const loadPlate = (p: CadPlate) => {
     gestureBaselineRef.current = null;
-    const cleaned = ensureDefaultStories(autoHostOpenings(assignOpeningMarks(p)));
+    const cleaned = normalizeOpeningDefaults(
+      ensureDefaultStories(autoHostOpenings(assignOpeningMarks(p))),
+    );
     setHistory((h) => replaceCadPresent(h, cleaned));
   };
   const [layout, setLayout] = useState<LayoutMode>('split');
@@ -167,7 +184,9 @@ export function CadStudioPage() {
   const [showRoomFills, setShowRoomFills] = useState(true);
   const [selection, setSelection] = useState<CadPlateSelection | null>(null);
   const [wallMulti, setWallMulti] = useState<number[]>([]);
+  const [openingMulti, setOpeningMulti] = useState<number[]>([]);
   const [statusAid, setStatusAid] = useState('');
+  const [snapshotName, setSnapshotName] = useState('Scheme A');
   const [layerFilter, setLayerFilter] = useState('');
   const [snapOn, setSnapOn] = useState(true);
   const [unitLabel] = useState<'ft-in' | 'm'>('ft-in');
@@ -220,6 +239,9 @@ export function CadStudioPage() {
   const extrusion = useMemo(() => extrudeCadPlate(plate), [plate]);
 
   const roomSchedule = useMemo(() => roomScheduleSummary(plate), [plate]);
+  const openingClashes = useMemo(() => detectOpeningClashes(plate), [plate]);
+  const unhostedOpenings = useMemo(() => listUnhostedOpenings(plate), [plate]);
+  const convertibleSegments = useMemo(() => listConvertibleOpeningSegments(plate), [plate]);
 
   const storySheets = useMemo(
     () => plate.sheets.filter((s) => s.kind === 'floor' || s.kind === 'elevation'),
@@ -256,6 +278,7 @@ export function CadStudioPage() {
     setEditTool(tool);
     setSelection(null);
     setWallMulti([]);
+    setOpeningMulti([]);
     if (opts?.wallLayer) setWallLayer(opts.wallLayer);
     if (opts?.opening) setOpeningKind(opts.opening);
     if (opts?.fixture) setFixtureKind(opts.fixture);
@@ -366,6 +389,8 @@ export function CadStudioPage() {
           onSelectionChange={setSelection}
           wallMulti={wallMulti}
           onWallMultiChange={setWallMulti}
+          openingMulti={openingMulti}
+          onOpeningMultiChange={setOpeningMulti}
           onPlateChange={commitPlate}
           onPlatePreview={previewPlate}
           onPlateCommit={commitPlate}
@@ -900,8 +925,49 @@ export function CadStudioPage() {
                 )}
                 <p className="cad-edit-hint">
                   Select a wall or opening to show temporary dims — click the value, type length, Enter.
-                  Shift+select two walls for a between-walls distance dim.
+                  Shift+select two walls for a between-walls distance dim. Shift+select two openings for
+                  between-opening spacing. Click overall exterior dims to resize the plan.
                 </p>
+                {(unhostedOpenings.length > 0 || convertibleSegments.length > 0) && (
+                  <div className="cad-opening-review" style={{ marginTop: 10 }}>
+                    <h3 style={{ margin: '0 0 6px', fontSize: '0.85rem' }}>Opening import review</h3>
+                    {unhostedOpenings.length > 0 && (
+                      <>
+                        <p className="cad-edit-hint">{unhostedOpenings.length} unhosted</p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPlate(autoHostOpenings(plate));
+                            setStatusAid('Auto-hosted openings');
+                          }}
+                        >
+                          Auto-host all
+                        </button>
+                      </>
+                    )}
+                    {convertibleSegments.slice(0, 6).map((s) => (
+                      <button
+                        key={s.segmentIndex}
+                        type="button"
+                        style={{ display: 'block', marginTop: 4 }}
+                        onClick={() => {
+                          const kind = /win/i.test(s.layer) ? 'window' : 'door';
+                          setPlate(convertSegmentToOpening(plate, s.segmentIndex, kind));
+                          setStatusAid(`Converted segment on ${s.layer}`);
+                        }}
+                      >
+                        Convert {s.layer} ({s.lengthFt.toFixed(1)}′) → opening
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {openingClashes.length > 0 && (
+                  <ul className="cad-warnings" style={{ marginTop: 8 }}>
+                    {openingClashes.slice(0, 4).map((c, i) => (
+                      <li key={`${c.kind}-${c.openingIndex}-${i}`}>{c.message}</li>
+                    ))}
+                  </ul>
+                )}
               </section>
             )}
           </div>
@@ -1627,6 +1693,29 @@ export function CadStudioPage() {
                         />
                       </label>
                       <label>
+                        Preset
+                        <select
+                          value=""
+                          onChange={(e) => {
+                            const id = e.target.value;
+                            if (!id) return;
+                            setPlate(applyOpeningPreset(plate, selection.index, id));
+                            setStatusAid(`Applied preset ${id}`);
+                          }}
+                        >
+                          <option value="">Olsen sizes…</option>
+                          {OLSEN_OPENING_PRESETS.filter(
+                            (p) =>
+                              p.kind === plate.openingHints[selection.index]!.kind ||
+                              plate.openingHints[selection.index]!.kind === 'door',
+                          ).map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
                         Width (ft)
                         <input
                           type="number"
@@ -1644,7 +1733,26 @@ export function CadStudioPage() {
                           }}
                         />
                       </label>
-                      {plate.openingHints[selection.index]!.kind === 'window' && (
+                      <label>
+                        Height (ft)
+                        <input
+                          type="number"
+                          min={0.5}
+                          max={12}
+                          step={0.25}
+                          value={
+                            plate.openingHints[selection.index]!.heightFt ??
+                            defaultOpeningHeightFt(plate.openingHints[selection.index]!.kind)
+                          }
+                          onChange={(e) => {
+                            const v = Number(e.target.value);
+                            if (!Number.isFinite(v)) return;
+                            setPlate(setOpeningHeight(plate, selection.index, v));
+                          }}
+                        />
+                      </label>
+                      {(plate.openingHints[selection.index]!.kind === 'window' ||
+                        plate.openingHints[selection.index]!.kind === 'door') && (
                         <label>
                           Sill (ft AFF)
                           <input
@@ -1661,6 +1769,33 @@ export function CadStudioPage() {
                           />
                         </label>
                       )}
+                      {plate.openingHints[selection.index]!.kind === 'door' && (
+                        <label>
+                          Swing
+                          <select
+                            value={plate.openingHints[selection.index]!.swing ?? 'left'}
+                            onChange={(e) =>
+                              setPlate(
+                                setOpeningSwing(
+                                  plate,
+                                  selection.index,
+                                  e.target.value as 'left' | 'right' | 'none',
+                                ),
+                              )
+                            }
+                          >
+                            <option value="left">Left</option>
+                            <option value="right">Right</option>
+                            <option value="none">None</option>
+                          </select>
+                        </label>
+                      )}
+                      <div className="cad-edit-hint">
+                        Host:{' '}
+                        {plate.openingHints[selection.index]!.hostWallIndex != null
+                          ? `Wall ${plate.openingHints[selection.index]!.hostWallIndex}`
+                          : 'Unhosted — use Auto-host'}
+                      </div>
                       <button type="button" onClick={() => setPlate(flipOpeningHand(plate, selection.index))}>
                         Flip hand
                       </button>
@@ -1864,6 +1999,66 @@ export function CadStudioPage() {
                 >
                   + Story
                 </button>
+                <button
+                  type="button"
+                  title="Copy selected walls/openings onto the active story"
+                  disabled={
+                    !(
+                      (selection?.kind === 'wall' && selectedWallIndices.length) ||
+                      (selection?.kind === 'opening' && selection)
+                    )
+                  }
+                  onClick={() => {
+                    const storyId = plate.activeStoryId ?? storyLevels[0]?.id;
+                    if (!storyId) return;
+                    const walls =
+                      selection?.kind === 'wall' ? selectedWallIndices : ([] as number[]);
+                    const openings =
+                      selection?.kind === 'opening'
+                        ? [selection.index, ...openingMulti]
+                        : ([] as number[]);
+                    setPlate(copySelectionToStory(plate, storyId, walls, openings));
+                    setStatusAid('Copied selection to active story');
+                  }}
+                >
+                  Copy to story
+                </button>
+                <button
+                  type="button"
+                  title="Save design option snapshot"
+                  onClick={() => {
+                    setPlate(saveDesignSnapshot(plate, snapshotName));
+                    setStatusAid(`Saved snapshot “${snapshotName}”`);
+                  }}
+                >
+                  Save option
+                </button>
+                {(plate.designSnapshots?.length ?? 0) > 0 && (
+                  <select
+                    aria-label="Restore design option"
+                    value=""
+                    onChange={(e) => {
+                      const id = e.target.value;
+                      if (!id) return;
+                      setPlate(restoreDesignSnapshot(plate, id));
+                      setStatusAid('Restored design option');
+                    }}
+                  >
+                    <option value="">Restore…</option>
+                    {plate.designSnapshots!.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                <input
+                  type="text"
+                  value={snapshotName}
+                  onChange={(e) => setSnapshotName(e.target.value)}
+                  aria-label="Snapshot name"
+                  style={{ width: '6.5rem', fontSize: '0.75rem' }}
+                />
                 {storySheets.length > 0 && (
                   <>
                     <span className="cad-story-label" style={{ marginLeft: 8 }}>
@@ -2006,6 +2201,20 @@ export function CadStudioPage() {
                   sunHour={sunHour}
                   shadows={shadowsOn}
                   sectionClip={sectionClip}
+                  onPickOpening={(index) => {
+                    setSelection({ kind: 'opening', index });
+                    setOpeningMulti([]);
+                    setWallMulti([]);
+                    setStudioMode('modify');
+                    setStatusAid(`Selected opening from 3D`);
+                  }}
+                  onPickWall={(index) => {
+                    setSelection({ kind: 'wall', index });
+                    setWallMulti([]);
+                    setOpeningMulti([]);
+                    setStudioMode('modify');
+                    setStatusAid(`Selected wall from 3D`);
+                  }}
                 />
               </div>
             )}

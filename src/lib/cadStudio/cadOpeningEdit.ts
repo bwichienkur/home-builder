@@ -309,21 +309,21 @@ export type UnhostedOpeningRow = {
 };
 
 export function listUnhostedOpenings(plate: CadPlate, tolFt = 2.5): UnhostedOpeningRow[] {
-  return plate.openingHints
-    .map((o, index) => {
-      if (o.hostWallIndex != null) return null;
-      const cx = (o.x1 + o.x2) / 2;
-      const cy = (o.y1 + o.y2) / 2;
-      const host = nearestWallHost(plate, cx, cy, tolFt);
-      return {
-        index,
-        kind: o.kind,
-        mark: o.mark,
-        widthFt: o.widthFt ?? segLengthFt(o),
-        nearWall: Boolean(host),
-      };
-    })
-    .filter((r): r is UnhostedOpeningRow => r != null);
+  const rows: UnhostedOpeningRow[] = [];
+  plate.openingHints.forEach((o, index) => {
+    if (o.hostWallIndex != null) return;
+    const cx = (o.x1 + o.x2) / 2;
+    const cy = (o.y1 + o.y2) / 2;
+    const host = nearestWallHost(plate, cx, cy, tolFt);
+    rows.push({
+      index,
+      kind: o.kind,
+      mark: o.mark,
+      widthFt: o.widthFt ?? segLengthFt(o),
+      nearWall: Boolean(host),
+    });
+  });
+  return rows;
 }
 
 /** Candidate DXF segments that look like doors/windows but aren't hosted hints. */
