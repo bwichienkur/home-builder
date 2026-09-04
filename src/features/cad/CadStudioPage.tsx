@@ -1,7 +1,9 @@
 import { useMemo, useRef, useState } from 'react';
 import {
+  applyAutoFoundation,
   buildCadPlateFromDxf,
   CAD_WALL_MATERIALS,
+  clearAutoFoundation,
   demoCadPlate,
   deleteSelection,
   downloadSvgAsPng,
@@ -601,6 +603,7 @@ export function CadStudioPage() {
                       { id: 'driveway' as const, label: 'Driveway', hint: 'Paved approach' },
                       { id: 'garden' as const, label: 'Garden', hint: 'Planting bed plate' },
                       { id: 'balcony' as const, label: 'Balcony', hint: 'Elevated slab' },
+                      { id: 'plot' as const, label: 'Plot boundary', hint: 'Lot polyline' },
                     ] as const
                   ).map((item) => (
                     <button
@@ -620,6 +623,51 @@ export function CadStudioPage() {
                   >
                     <strong>Select / move</strong>
                     <span>Drag slabs on plan</span>
+                  </button>
+                </div>
+                <div className="cad-sill-control" style={{ marginTop: 12 }}>
+                  <label className="cad-fixture-pick">
+                    <input
+                      type="checkbox"
+                      checked={!!plate?.foundation?.enabled}
+                      disabled={!plate}
+                      onChange={(e) => {
+                        if (!plate) return;
+                        setPlate(applyAutoFoundation(plate, { enabled: e.target.checked }));
+                      }}
+                    />{' '}
+                    Auto foundation
+                  </label>
+                  <label>
+                    Mode
+                    <select
+                      disabled={!plate}
+                      value={plate?.foundation?.mode ?? 'slab+footing'}
+                      onChange={(e) => {
+                        if (!plate) return;
+                        const mode = e.target.value as 'slab' | 'footing' | 'slab+footing';
+                        setPlate(
+                          applyAutoFoundation(plate, {
+                            enabled: true,
+                            mode,
+                          }),
+                        );
+                      }}
+                    >
+                      <option value="slab">Slab only</option>
+                      <option value="footing">Footing only</option>
+                      <option value="slab+footing">Slab + footing</option>
+                    </select>
+                  </label>
+                  <button
+                    type="button"
+                    disabled={!plate?.foundation?.enabled}
+                    onClick={() => {
+                      if (!plate) return;
+                      setPlate(clearAutoFoundation(plate));
+                    }}
+                  >
+                    Clear auto foundation
                   </button>
                 </div>
               </section>

@@ -57,6 +57,9 @@ const SLAB_FILL: Record<CadSlabKind, string> = {
   driveway: '#8a8f98',
   garden: '#6b8f71',
   balcony: '#b7a99a',
+  footing: '#78716c',
+  foundation: '#a8a29e',
+  plot: '#0f766e',
 };
 
 const ROOM_FILL_PALETTE = [
@@ -457,14 +460,16 @@ export function CadPlateEditor({
       <g transform={`translate(${(-ox).toFixed(3)} ${(h + oy).toFixed(3)}) scale(1,-1)`}>
         {slabs.map((slab, i) => {
           const selected = isSelected('slab', i);
+          const isPlot = slab.kind === 'plot';
           return (
             <polygon
               key={slab.id}
               points={polyPointsAttr(slab.points)}
-              fill={SLAB_FILL[slab.kind]}
-              fillOpacity={selected ? 0.55 : 0.32}
+              fill={isPlot ? 'none' : SLAB_FILL[slab.kind]}
+              fillOpacity={isPlot ? 0 : selected ? 0.55 : 0.32}
               stroke={selected ? '#1f4e46' : SLAB_FILL[slab.kind]}
-              strokeWidth={stroke * (selected ? 2.8 : 1.4)}
+              strokeWidth={stroke * (selected ? 2.8 : isPlot ? 2.2 : 1.4)}
+              strokeDasharray={isPlot ? '0.5 0.35' : undefined}
               strokeLinejoin="round"
             />
           );

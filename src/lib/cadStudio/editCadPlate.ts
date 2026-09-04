@@ -37,6 +37,9 @@ const SLAB_DEFAULTS: Record<
   driveway: { thicknessFt: 0.5, elevationFt: -0.15, layer: 'SLAB DRIVE' },
   garden: { thicknessFt: 0.25, elevationFt: -0.05, layer: 'SLAB GARDEN' },
   balcony: { thicknessFt: 0.5, elevationFt: 0, layer: 'SLAB BALCONY', railing: true },
+  footing: { thicknessFt: 1, elevationFt: -1.67, layer: 'A-FND-FTG' },
+  foundation: { thicknessFt: 0.67, elevationFt: -0.67, layer: 'A-FND-SLAB' },
+  plot: { thicknessFt: 0.05, elevationFt: -0.02, layer: 'A-SITE-PLOT' },
 };
 
 let slabSeq = 0;

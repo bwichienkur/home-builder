@@ -71,11 +71,19 @@ export function exportCadPlateDxf(plate: CadPlate): string {
     ents.push(...line(layer, o.x1, o.y1, o.x2, o.y2));
   }
   for (const s of plate.slabs ?? []) {
+    const layer =
+      s.kind === 'foundation'
+        ? 'A-FND-SLAB'
+        : s.kind === 'footing'
+          ? 'A-FND-FTG'
+          : s.kind === 'plot'
+            ? 'A-SITE-PLOT'
+            : 'A-SLAB';
     const pts = s.points;
     for (let i = 0; i < pts.length; i++) {
       const a = pts[i]!;
       const b = pts[(i + 1) % pts.length]!;
-      ents.push(...line('A-SLAB', a.x, a.y, b.x, b.y));
+      ents.push(...line(layer, a.x, a.y, b.x, b.y));
     }
   }
   for (const st of plate.stairs ?? []) {
@@ -132,6 +140,9 @@ export function exportCadPlateDxf(plate: CadPlate): string {
     ...layerDef('A-GLAZ', 4),
     ...layerDef('A-OPEN', 3),
     ...layerDef('A-SLAB', 8),
+    ...layerDef('A-FND-SLAB', 8),
+    ...layerDef('A-FND-FTG', 8),
+    ...layerDef('A-SITE-PLOT', 3),
     ...layerDef('A-STAIR', 2),
     ...layerDef('A-GUIDE', 8),
     ...layerDef('TEXT', 2),

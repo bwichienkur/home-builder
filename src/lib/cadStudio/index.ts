@@ -39,6 +39,13 @@ export {
   exteriorContourBounds,
 } from './buildCadMassing';
 export {
+  applyAutoFoundation,
+  clearAutoFoundation,
+  buildAutoFoundationSlabs,
+  DEFAULT_FOUNDATION,
+} from './buildCadFoundation';
+export type { CadFoundationOverrides } from './types';
+export {
   classifyLayerKind,
   classifySegmentRole,
   isElevationLayer,

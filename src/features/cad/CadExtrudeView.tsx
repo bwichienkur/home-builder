@@ -30,6 +30,12 @@ function slabColor(kind: CadSlabKind): string {
       return '#6b8f71';
     case 'balcony':
       return '#b7a99a';
+    case 'foundation':
+      return '#a8a29e';
+    case 'footing':
+      return '#78716c';
+    case 'plot':
+      return '#0f766e';
     default:
       return '#a8a29e';
   }
@@ -174,6 +180,34 @@ function SlabMesh({
   }, [slab, centerFt]);
 
   if (!geometry) return null;
+  if (slab.kind === 'plot') {
+    // Thin ribbon outline for lot boundary
+    const edges = slab.points.map((p, i) => {
+      const a = p;
+      const b = slab.points[(i + 1) % slab.points.length]!;
+      const planAx = WORLD_ORIGIN.x + ftToPx(a.x - centerFt.cx);
+      const planAy = WORLD_ORIGIN.y + ftToPx(a.y - centerFt.cy);
+      const planBx = WORLD_ORIGIN.x + ftToPx(b.x - centerFt.cx);
+      const planBy = WORLD_ORIGIN.y + ftToPx(b.y - centerFt.cy);
+      const [ax, az] = world(planAx, planAy);
+      const [bx, bz] = world(planBx, planBy);
+      const len = Math.hypot(bx - ax, bz - az);
+      const midX = (ax + bx) / 2;
+      const midZ = (az + bz) / 2;
+      const rot = Math.atan2(bx - ax, bz - az);
+      return { key: `${slab.id}-e-${i}`, midX, midZ, rot, len };
+    });
+    return (
+      <group>
+        {edges.map((e) => (
+          <mesh key={e.key} position={[e.midX, 0.03, e.midZ]} rotation={[0, e.rot, 0]}>
+            <boxGeometry args={[0.08, 0.06, e.len]} />
+            <meshStandardMaterial color="#0f766e" roughness={0.7} />
+          </mesh>
+        ))}
+      </group>
+    );
+  }
   return (
     <group>
       <mesh geometry={geometry} castShadow receiveShadow>
