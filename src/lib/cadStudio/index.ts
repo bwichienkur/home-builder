@@ -24,6 +24,8 @@ export type {
   CadBuilding,
   CadTerrainOverrides,
   CadTitleBlock,
+  CadStory,
+  CadUnderlay,
   CadOpeningHintFt,
   CadWallCenterlineFt,
 } from './types';
@@ -108,6 +110,8 @@ export {
   undoCadHistory,
   redoCadHistory,
   replaceCadPresent,
+  previewCadPresent,
+  commitCadPresent,
   type CadHistoryState,
 } from './cadHistory';
 export {
@@ -143,6 +147,37 @@ export {
   applyWallLengthDim,
   wallHeadingLabel,
 } from './cadWallModify';
+export {
+  buildTempDimsForSelection,
+  buildBetweenWallDim,
+  applyTempDimEdit,
+  signedCenterlineDistanceFt,
+  type CadTempDim,
+  type CadTempDimSelection,
+} from './cadDimEdit';
+export {
+  combineCollinearWalls,
+  stretchSharedNode,
+  alignWalls,
+  setDistanceBetweenWalls,
+  autoHostOpenings,
+  signedWallDistanceFt,
+} from './cadWallGraph';
+export {
+  assignOpeningMarks,
+  renameRoomLabel,
+  exportDoorWindowScheduleCsv,
+} from './cadMarks';
+export {
+  ensureDefaultStories,
+  setActiveStory,
+  addStory,
+} from './cadStories';
+export {
+  setUnderlay,
+  calibrateUnderlay,
+  setUnderlayOpacity,
+} from './cadUnderlay';
 export {
   addDormer,
   addFixtureHint,
