@@ -1,12 +1,14 @@
 import type { CadGuidelineFt, CadPlate, CadWallCenterlineFt } from './types';
 
 const ENDPOINT_TOL_FT = 0.85;
+const MIDPOINT_TOL_FT = 0.75;
 const GUIDE_TOL_FT = 0.65;
+const ANGLE_SNAP_DEG = 15;
 
 export type CadSnapResult = {
   x: number;
   y: number;
-  kind: 'endpoint' | 'guide' | 'ortho' | 'free';
+  kind: 'endpoint' | 'midpoint' | 'guide' | 'ortho' | 'angle' | 'free';
 };
 
 function collectEndpoints(plate: CadPlate): Array<{ x: number; y: number }> {
@@ -24,6 +26,13 @@ function collectEndpoints(plate: CadPlate): Array<{ x: number; y: number }> {
     for (const p of s.points) pts.push(p);
   }
   return pts;
+}
+
+function collectMidpoints(plate: CadPlate): Array<{ x: number; y: number }> {
+  return plate.wallCenterlines.map((w) => ({
+    x: (w.x1 + w.x2) / 2,
+    y: (w.y1 + w.y2) / 2,
+  }));
 }
 
 function nearestEndpoint(
@@ -54,7 +63,6 @@ function projectToGuide(
   const dy = g.y2 - g.y1;
   const len2 = dx * dx + dy * dy;
   if (len2 < 1e-12) return null;
-  // Infinite line projection (guides extend virtually).
   const t = ((x - g.x1) * dx + (y - g.y1) * dy) / len2;
   const qx = g.x1 + t * dx;
   const qy = g.y1 + t * dy;
@@ -63,7 +71,6 @@ function projectToGuide(
   return { x: qx, y: qy };
 }
 
-/** Lock draft end to horizontal or vertical from start when closer than 45°. */
 export function applyOrtho(
   start: { x: number; y: number },
   end: { x: number; y: number },
@@ -72,11 +79,9 @@ export function applyOrtho(
   const dx = end.x - start.x;
   const dy = end.y - start.y;
   if (!force && Math.abs(dx) >= 0.01 && Math.abs(dy) >= 0.01) {
-    // Prefer axis with larger delta unless nearly diagonal.
     const ax = Math.abs(dx);
     const ay = Math.abs(dy);
     if (ax > 0 && ay / ax > 0.35 && ay / ax < 2.85) {
-      // Not close enough to axis — leave free unless Shift forces.
       return end;
     }
   }
@@ -84,10 +89,22 @@ export function applyOrtho(
   return { x: start.x, y: end.y };
 }
 
-/**
- * Snap a plan-feet cursor for CAD drafting.
- * Priority: wall/opening endpoints → guidelines → optional ortho from draft start.
- */
+export function applyAngleSnap(
+  start: { x: number; y: number },
+  end: { x: number; y: number },
+  stepDeg = ANGLE_SNAP_DEG,
+): { x: number; y: number } | null {
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const len = Math.hypot(dx, dy);
+  if (len < 0.2) return null;
+  const ang = (Math.atan2(dy, dx) * 180) / Math.PI;
+  const snapped = Math.round(ang / stepDeg) * stepDeg;
+  if (Math.abs(ang - snapped) > stepDeg * 0.35) return null;
+  const rad = (snapped * Math.PI) / 180;
+  return { x: start.x + Math.cos(rad) * len, y: start.y + Math.sin(rad) * len };
+}
+
 export function snapCadDraftPoint(
   plate: CadPlate,
   x: number,
@@ -95,6 +112,7 @@ export function snapCadDraftPoint(
   opts?: {
     enabled?: boolean;
     ortho?: boolean;
+    angleSnap?: boolean;
     from?: { x: number; y: number } | null;
   },
 ): CadSnapResult {
@@ -102,6 +120,9 @@ export function snapCadDraftPoint(
 
   const ep = nearestEndpoint(x, y, collectEndpoints(plate), ENDPOINT_TOL_FT);
   if (ep) return { x: ep.x, y: ep.y, kind: 'endpoint' };
+
+  const mid = nearestEndpoint(x, y, collectMidpoints(plate), MIDPOINT_TOL_FT);
+  if (mid) return { x: mid.x, y: mid.y, kind: 'midpoint' };
 
   for (const g of plate.guidelines ?? []) {
     const hit = projectToGuide(x, y, g, GUIDE_TOL_FT);
@@ -113,16 +134,19 @@ export function snapCadDraftPoint(
     return { x: o.x, y: o.y, kind: 'ortho' };
   }
 
-  // Soft ortho when nearly axis-aligned from draft start.
   if (opts?.from) {
     const soft = applyOrtho(opts.from, { x, y }, false);
     if (soft.x !== x || soft.y !== y) return { x: soft.x, y: soft.y, kind: 'ortho' };
   }
 
+  if (opts?.angleSnap !== false && opts?.from) {
+    const a = applyAngleSnap(opts.from, { x, y });
+    if (a) return { x: a.x, y: a.y, kind: 'angle' };
+  }
+
   return { x, y, kind: 'free' };
 }
 
-/** Default wall thickness (feet) from layer / exterior flag. */
 export function defaultWallThicknessFt(
   wall: Pick<CadWallCenterlineFt, 'exterior' | 'layer' | 'thicknessFt'>,
 ): number {

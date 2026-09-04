@@ -459,7 +459,13 @@ function Scene({
           stairs={stairs}
           centerFt={centerFt}
         />
-        {(plate?.dormers ?? []).map((d) => (
+        {(plate?.dormers ?? [])
+          .filter((d) => {
+            if (!plate) return true;
+            const info = plate.layers.find((l) => l.name === d.layer);
+            return !info || info.visible;
+          })
+          .map((d) => (
           <DormerMesh key={d.id} dormer={d} centerFt={centerFt} storyHeightM={heightM} />
         ))}
       </group>

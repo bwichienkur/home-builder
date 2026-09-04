@@ -7,6 +7,18 @@ import {
 } from '../../lib/cadStudio/cadRoomStamps';
 import { computeExteriorDims, computeInteriorDims } from '../../lib/cadStudio/cadExteriorDims';
 import { snapCadDraftPoint, type CadSnapResult } from '../../lib/cadStudio/cadDrawSnap';
+import { parseArchitecturalLength } from '../../lib/cadStudio/cadLengthParse';
+import { isLayerOn } from '../../lib/cadStudio/cadLayerVisibility';
+import {
+  autoJoinWallEndpoints,
+  breakWallAt,
+  extendWallTo,
+  moveWall,
+  moveWalls,
+  offsetWall,
+  placeHostedOpening,
+  trimWallTo,
+} from '../../lib/cadStudio/cadWallModify';
 import {
   addDormer,
   addFixtureHint,
@@ -23,12 +35,14 @@ import {
   moveOpeningHint,
   moveSlab,
   moveWallEndpoint,
+  nearestWallHost,
   pickAtPoint,
   planToSvgFt,
   segLengthFt,
   svgToPlanFt,
   updateStair,
   type CadEditTool,
+  type CadGripKind,
   type CadPlateSelection,
 } from '../../lib/cadStudio/editCadPlate';
 import { wallStrokeForMaterial } from '../../lib/cadStudio/cadSceneMaterials';
@@ -78,6 +92,8 @@ const ROOM_FILL_PALETTE = [
 /** Extra pad so exterior dim chains fit in the viewBox. */
 const PAD = 8;
 const SLAB_CLOSE_TOL_FT = 1.25;
+const GRIP_HIT_FT = 1.2;
+const OPENING_HOST_TOL_FT = 2.5;
 
 type Props = {
   plate: CadPlate;
@@ -95,7 +111,38 @@ type Props = {
   selection: CadPlateSelection | null;
   onSelectionChange: (sel: CadPlateSelection | null) => void;
   onPlateChange: (plate: CadPlate) => void;
+  /** Extra wall indices selected with Shift+click (primary is `selection`). */
+  wallMulti?: number[];
+  onWallMultiChange?: (indices: number[]) => void;
+  onStatus?: (msg: string) => void;
+  onUndo?: () => void;
+  onRedo?: () => void;
+  onRequestWallLengthEdit?: (index: number) => void;
 };
+
+function hitWallGrip(
+  wall: { x1: number; y1: number; x2: number; y2: number },
+  px: number,
+  py: number,
+  tolFt = GRIP_HIT_FT,
+): CadGripKind | null {
+  const mid = { x: (wall.x1 + wall.x2) / 2, y: (wall.y1 + wall.y2) / 2 };
+  const dStart = Math.hypot(px - wall.x1, py - wall.y1);
+  const dEnd = Math.hypot(px - wall.x2, py - wall.y2);
+  const dMid = Math.hypot(px - mid.x, py - mid.y);
+  const best = Math.min(dStart, dEnd, dMid);
+  if (best > tolFt) return null;
+  if (best === dStart) return 'start';
+  if (best === dEnd) return 'end';
+  return 'mid';
+}
+
+function defaultOpeningWidthFt(kind: 'door' | 'window' | 'passage' | 'garage'): number {
+  if (kind === 'window') return 4;
+  if (kind === 'garage') return 16;
+  if (kind === 'passage') return 3;
+  return 3;
+}
 
 function clientToSvg(svg: SVGSVGElement, clientX: number, clientY: number) {
   const pt = svg.createSVGPoint();
@@ -150,6 +197,12 @@ export function CadPlateEditor({
   selection,
   onSelectionChange,
   onPlateChange,
+  wallMulti = [],
+  onWallMultiChange,
+  onStatus,
+  onUndo,
+  onRedo,
+  onRequestWallLengthEdit,
 }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [draftLine, setDraftLine] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(
@@ -159,10 +212,15 @@ export function CadPlateEditor({
   const [cursorPlan, setCursorPlan] = useState<{ x: number; y: number } | null>(null);
   const [shiftHeld, setShiftHeld] = useState(false);
   const [lastSnap, setLastSnap] = useState<CadSnapResult | null>(null);
+  const [cutterWallIndex, setCutterWallIndex] = useState<number | null>(null);
   const dragRef = useRef<{
+    kind: 'grip' | 'selection';
+    grip?: CadGripKind;
+    wallIndex?: number;
     selection: CadPlateSelection;
     startPlan: { x: number; y: number };
     orig: CadPlate;
+    multi: number[];
   } | null>(null);
 
   const { w, h, ox, oy, stroke, fontSize } = useMemo(() => {
@@ -226,6 +284,35 @@ export function CadPlateEditor({
     setLastSnap(null);
   }, [draftPoly, onPlateChange, plate, slabKind]);
 
+  const commitDraftLine = useCallback(
+    (x1: number, y1: number, x2: number, y2: number) => {
+      if (Math.hypot(x2 - x1, y2 - y1) < 0.5) return;
+      if (tool === 'wall') {
+        let next = addWallCenterline(plate, x1, y1, x2, y2, wallLayer);
+        const last = next.wallCenterlines.length - 1;
+        next = autoJoinWallEndpoints(next, last);
+        onPlateChange(next);
+      } else if (tool === 'guide') {
+        onPlateChange(addGuideline(plate, x1, y1, x2, y2));
+      } else if (tool === 'section') {
+        onPlateChange(addSectionCut(plate, x1, y1, x2, y2));
+      } else if (tool === 'opening') {
+        onPlateChange(
+          addOpeningHint(
+            plate,
+            x1,
+            y1,
+            x2,
+            y2,
+            openingKind,
+            openingKind === 'window' ? windowSillFt : 0,
+          ),
+        );
+      }
+    },
+    [onPlateChange, openingKind, plate, tool, wallLayer, windowSillFt],
+  );
+
   const handlePointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
     if (e.button !== 0) return;
     const raw = planFromEvent(e);
@@ -237,7 +324,67 @@ export function CadPlateEditor({
       if (hit) {
         onPlateChange(deleteSelection(plate, hit));
         onSelectionChange(null);
+        onWallMultiChange?.([]);
       }
+      return;
+    }
+
+    if (tool === 'trim' || tool === 'extend') {
+      const hit = pickAtPoint(plate, raw.x, raw.y);
+      if (!hit || hit.kind !== 'wall') {
+        onStatus?.(
+          tool === 'trim'
+            ? 'Trim: click a wall (cutter first, then wall to shorten)'
+            : 'Extend: click a wall (boundary first, then wall to lengthen)',
+        );
+        return;
+      }
+      if (cutterWallIndex == null) {
+        setCutterWallIndex(hit.index);
+        onSelectionChange(hit);
+        onStatus?.(
+          tool === 'trim'
+            ? 'Trim: now click the wall to shorten'
+            : 'Extend: now click the wall to lengthen',
+        );
+        return;
+      }
+      if (hit.index === cutterWallIndex) {
+        onStatus?.('Pick a different wall for the second click');
+        return;
+      }
+      const next =
+        tool === 'trim'
+          ? trimWallTo(plate, hit.index, cutterWallIndex)
+          : extendWallTo(plate, hit.index, cutterWallIndex);
+      onPlateChange(next);
+      setCutterWallIndex(null);
+      onSelectionChange({ kind: 'wall', index: hit.index });
+      onStatus?.(tool === 'trim' ? 'Trim applied' : 'Extend applied');
+      return;
+    }
+
+    if (tool === 'break') {
+      const hit = pickAtPoint(plate, raw.x, raw.y);
+      if (!hit || hit.kind !== 'wall') {
+        onStatus?.('Break: click a wall at the split point');
+        return;
+      }
+      onPlateChange(breakWallAt(plate, hit.index, raw.x, raw.y));
+      onSelectionChange(null);
+      onStatus?.('Wall broken');
+      return;
+    }
+
+    if (tool === 'offset') {
+      const hit = pickAtPoint(plate, raw.x, raw.y);
+      if (!hit || hit.kind !== 'wall') {
+        onStatus?.('Offset: click a wall (default 1 ft)');
+        return;
+      }
+      onPlateChange(offsetWall(plate, hit.index, 1));
+      onSelectionChange({ kind: 'wall', index: plate.wallCenterlines.length });
+      onStatus?.('Wall offset 1 ft');
       return;
     }
 
@@ -256,6 +403,31 @@ export function CadPlateEditor({
       return;
     }
 
+    if (tool === 'opening' && !draftLine) {
+      const host = nearestWallHost(plate, raw.x, raw.y, OPENING_HOST_TOL_FT);
+      if (host) {
+        const width = defaultOpeningWidthFt(openingKind);
+        onPlateChange(
+          placeHostedOpening(
+            plate,
+            host.wallIndex,
+            host.t,
+            width,
+            openingKind,
+            openingKind === 'window' ? windowSillFt : 0,
+          ),
+        );
+        onSelectionChange({ kind: 'opening', index: plate.openingHints.length });
+        onStatus?.(`Placed ${openingKind} (${width}' wide)`);
+        return;
+      }
+      // Fallback: two-click line when no host nearby
+      const plan = snapPlan(raw);
+      setDraftLine({ x1: plan.x, y1: plan.y, x2: plan.x, y2: plan.y });
+      onStatus?.('No wall nearby — click second point for free opening span');
+      return;
+    }
+
     if (tool === 'wall' || tool === 'opening' || tool === 'guide' || tool === 'section') {
       if (!draftLine) {
         const plan = snapPlan(raw);
@@ -263,27 +435,7 @@ export function CadPlateEditor({
       } else {
         const { x1, y1 } = draftLine;
         const plan = snapPlan(raw, { x: x1, y: y1 });
-        if (Math.hypot(plan.x - x1, plan.y - y1) >= 0.5) {
-          if (tool === 'wall') {
-            onPlateChange(addWallCenterline(plate, x1, y1, plan.x, plan.y, wallLayer));
-          } else if (tool === 'guide') {
-            onPlateChange(addGuideline(plate, x1, y1, plan.x, plan.y));
-          } else if (tool === 'section') {
-            onPlateChange(addSectionCut(plate, x1, y1, plan.x, plan.y));
-          } else {
-            onPlateChange(
-              addOpeningHint(
-                plate,
-                x1,
-                y1,
-                plan.x,
-                plan.y,
-                openingKind,
-                openingKind === 'window' ? windowSillFt : 0,
-              ),
-            );
-          }
-        }
+        commitDraftLine(x1, y1, plan.x, plan.y);
         setDraftLine(null);
         setLastSnap(null);
       }
@@ -307,10 +459,55 @@ export function CadPlateEditor({
       return;
     }
 
+    // Select / move — prefer grips on current wall selection
+    if (selection?.kind === 'wall') {
+      const wall = plate.wallCenterlines[selection.index];
+      if (wall && isLayerOn(plate, wall.layer)) {
+        const grip = hitWallGrip(wall, raw.x, raw.y);
+        if (grip) {
+          onSelectionChange(selection);
+          dragRef.current = {
+            kind: 'grip',
+            grip,
+            wallIndex: selection.index,
+            selection,
+            startPlan: raw,
+            orig: plate,
+            multi: wallMulti,
+          };
+          return;
+        }
+      }
+    }
+
     const hit = pickAtPoint(plate, raw.x, raw.y);
+    if (hit?.kind === 'wall' && (e.shiftKey || shiftHeld)) {
+      const primary = hit.index;
+      onSelectionChange(hit);
+      const prevPrimary =
+        selection?.kind === 'wall' && selection.index !== primary ? selection.index : null;
+      let others = wallMulti.filter((i) => i !== primary);
+      if (wallMulti.includes(primary)) {
+        // Toggle off this wall from the multi set (still becomes primary)
+        others = wallMulti.filter((i) => i !== primary);
+      } else {
+        if (prevPrimary != null && !others.includes(prevPrimary)) others = [...others, prevPrimary];
+      }
+      onWallMultiChange?.(others);
+      dragRef.current = null;
+      return;
+    }
+
     onSelectionChange(hit);
+    onWallMultiChange?.([]);
     if (hit) {
-      dragRef.current = { selection: hit, startPlan: raw, orig: plate };
+      dragRef.current = {
+        kind: 'selection',
+        selection: hit,
+        startPlan: raw,
+        orig: plate,
+        multi: [],
+      };
     } else {
       dragRef.current = null;
     }
@@ -345,6 +542,20 @@ export function CadPlateEditor({
     const dy = raw.y - drag.startPlan.y;
     const { selection: sel, orig } = drag;
 
+    if (drag.kind === 'grip' && drag.wallIndex != null && drag.grip) {
+      const w0 = orig.wallCenterlines[drag.wallIndex];
+      if (!w0) return;
+      if (drag.grip === 'start') {
+        onPlateChange(moveWallEndpoint(orig, drag.wallIndex, 'a', w0.x1 + dx, w0.y1 + dy));
+      } else if (drag.grip === 'end') {
+        onPlateChange(moveWallEndpoint(orig, drag.wallIndex, 'b', w0.x2 + dx, w0.y2 + dy));
+      } else {
+        const indices = [drag.wallIndex, ...drag.multi.filter((i) => i !== drag.wallIndex)];
+        onPlateChange(indices.length > 1 ? moveWalls(orig, indices, dx, dy) : moveWall(orig, drag.wallIndex, dx, dy));
+      }
+      return;
+    }
+
     switch (sel.kind) {
       case 'label': {
         const l = orig.labels[sel.index];
@@ -367,15 +578,8 @@ export function CadPlateEditor({
         break;
       }
       case 'wall': {
-        const w0 = orig.wallCenterlines[sel.index];
-        if (!w0) break;
-        const dStart = Math.hypot(drag.startPlan.x - w0.x1, drag.startPlan.y - w0.y1);
-        const dEnd = Math.hypot(drag.startPlan.x - w0.x2, drag.startPlan.y - w0.y2);
-        if (dStart <= dEnd) {
-          onPlateChange(moveWallEndpoint(orig, sel.index, 'a', w0.x1 + dx, w0.y1 + dy));
-        } else {
-          onPlateChange(moveWallEndpoint(orig, sel.index, 'b', w0.x2 + dx, w0.y2 + dy));
-        }
+        const indices = [sel.index, ...drag.multi.filter((i) => i !== sel.index)];
+        onPlateChange(indices.length > 1 ? moveWalls(orig, indices, dx, dy) : moveWall(orig, sel.index, dx, dy));
         break;
       }
       case 'slab': {
@@ -404,6 +608,7 @@ export function CadPlateEditor({
   };
 
   // Escape cancels drafts; Enter closes slab polygon (Plan7-style).
+  // Tab types length while drafting; Ctrl+Z/Y undo/redo.
   // Track Shift for ortho snap.
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -413,10 +618,38 @@ export function CadPlateEditor({
         setDraftPoly([]);
         setCursorPlan(null);
         setLastSnap(null);
+        setCutterWallIndex(null);
       }
       if (e.key === 'Enter' && tool === 'slab' && draftPoly.length >= 3) {
         e.preventDefault();
         closeDraftPoly();
+      }
+      if (e.key === 'Tab' && draftLine && (tool === 'wall' || tool === 'opening' || tool === 'guide')) {
+        e.preventDefault();
+        const dx = draftLine.x2 - draftLine.x1;
+        const dy = draftLine.y2 - draftLine.y1;
+        const cur = Math.hypot(dx, dy);
+        const ux = cur > 1e-9 ? dx / cur : 1;
+        const uy = cur > 1e-9 ? dy / cur : 0;
+        const raw = window.prompt('Length', cur > 0.5 ? formatWallLengthFt(cur) : `10'-0"`);
+        if (raw == null) return;
+        const len = parseArchitecturalLength(raw);
+        if (len == null || len < 0.5) return;
+        const x2 = draftLine.x1 + ux * len;
+        const y2 = draftLine.y1 + uy * len;
+        commitDraftLine(draftLine.x1, draftLine.y1, x2, y2);
+        setDraftLine(null);
+        setLastSnap(null);
+        onStatus?.(`Committed length ${formatWallLengthFt(len)}`);
+      }
+      const mod = e.ctrlKey || e.metaKey;
+      if (mod && (e.key === 'z' || e.key === 'Z') && !e.shiftKey) {
+        e.preventDefault();
+        onUndo?.();
+      }
+      if (mod && (e.key === 'y' || e.key === 'Y' || (e.shiftKey && (e.key === 'z' || e.key === 'Z')))) {
+        e.preventDefault();
+        onRedo?.();
       }
     };
     const onKeyUp = (e: KeyboardEvent) => {
@@ -428,7 +661,16 @@ export function CadPlateEditor({
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
     };
-  }, [closeDraftPoly, draftPoly.length, tool]);
+  }, [
+    closeDraftPoly,
+    commitDraftLine,
+    draftLine,
+    draftPoly.length,
+    onRedo,
+    onStatus,
+    onUndo,
+    tool,
+  ]);
 
   useEffect(() => {
     if (tool !== 'slab') {
@@ -439,10 +681,23 @@ export function CadPlateEditor({
       setDraftLine(null);
       setLastSnap(null);
     }
+    if (tool !== 'trim' && tool !== 'extend') {
+      setCutterWallIndex(null);
+    }
   }, [tool]);
+
+  useEffect(() => {
+    if (tool === 'trim') onStatus?.('Trim: click cutter wall, then wall to shorten');
+    else if (tool === 'extend') onStatus?.('Extend: click boundary wall, then wall to lengthen');
+    else if (tool === 'break') onStatus?.('Break: click wall at split point');
+    else if (tool === 'offset') onStatus?.('Offset: click wall to copy parallel 1 ft');
+  }, [tool, onStatus]);
 
   const isSelected = (kind: CadPlateSelection['kind'], index: number) =>
     selection?.kind === kind && selection.index === index;
+
+  const isWallHighlighted = (index: number) =>
+    isSelected('wall', index) || wallMulti.includes(index);
 
   const draftPolyPreview =
     draftPoly.length && cursorPlan ? [...draftPoly, cursorPlan] : draftPoly;
@@ -469,6 +724,7 @@ export function CadPlateEditor({
       <rect width="100%" height="100%" fill="#f1efe8" />
       <g transform={`translate(${(-ox).toFixed(3)} ${(h + oy).toFixed(3)}) scale(1,-1)`}>
         {slabs.map((slab, i) => {
+          if (!isLayerOn(plate, slab.layer)) return null;
           const selected = isSelected('slab', i);
           const isPlot = slab.kind === 'plot';
           return (
@@ -520,12 +776,14 @@ export function CadPlateEditor({
           })}
 
         {plate.wallCenterlines.map((wall, i) => {
-          const selected = isSelected('wall', i);
-          const len = formatWallLengthFt(segLengthFt(wall));
-          const mid = { x: (wall.x1 + wall.x2) / 2, y: (wall.y1 + wall.y2) / 2 };
+          if (!isLayerOn(plate, wall.layer)) return null;
+          const selected = isWallHighlighted(i);
+          const primary = isSelected('wall', i);
           const wallStroke = selected
             ? '#1f4e46'
             : wallStrokeForMaterial(wall.materialId, wall.exterior);
+          const mid = { x: (wall.x1 + wall.x2) / 2, y: (wall.y1 + wall.y2) / 2 };
+          const gripR = stroke * 10;
           return (
             <g key={`wall-${i}`}>
               <line
@@ -538,21 +796,12 @@ export function CadPlateEditor({
                 strokeOpacity={0.95}
                 strokeLinecap="round"
               />
-              {selected && (
-                <>
-                  <circle cx={wall.x1} cy={wall.y1} r={stroke * 8} fill="#1f4e46" />
-                  <circle cx={wall.x2} cy={wall.y2} r={stroke * 8} fill="#1f4e46" />
-                  <text
-                    x={mid.x}
-                    y={mid.y + fontSize * 0.4}
-                    fill="#1f4e46"
-                    fontSize={fontSize * 0.85}
-                    fontWeight="700"
-                    textAnchor="middle"
-                  >
-                    {len}
-                  </text>
-                </>
+              {primary && (
+                <g className="cad-grips">
+                  <circle className="cad-grip" cx={wall.x1} cy={wall.y1} r={gripR} fill="#1f4e46" fillOpacity={0.9} />
+                  <circle className="cad-grip" cx={wall.x2} cy={wall.y2} r={gripR} fill="#1f4e46" fillOpacity={0.9} />
+                  <circle className="cad-grip" cx={mid.x} cy={mid.y} r={gripR * 0.85} fill="#fff" stroke="#1f4e46" strokeWidth={stroke * 2} />
+                </g>
               )}
             </g>
           );
@@ -574,6 +823,7 @@ export function CadPlateEditor({
         ))}
 
         {plate.openingHints.map((o, i) => {
+          if (!isLayerOn(plate, o.layer)) return null;
           const selected = isSelected('opening', i);
           return (
             <g key={`open-${i}`}>
@@ -598,6 +848,7 @@ export function CadPlateEditor({
         })}
 
         {plate.fixtureHints.map((f, i) => {
+          if (!isLayerOn(plate, f.layer)) return null;
           const selected = isSelected('fixture', i);
           const kind = f.kind ?? 'other';
           const hw = (f.widthFt ?? 2) / 2;
@@ -619,6 +870,7 @@ export function CadPlateEditor({
         })}
 
         {(plate.stairs ?? []).map((st, i) => {
+          if (!isLayerOn(plate, st.layer)) return null;
           const selected = isSelected('stair', i);
           const { corners, treads } = stairPlanGeom(st);
           return (
@@ -649,6 +901,7 @@ export function CadPlateEditor({
         })}
 
         {(plate.dormers ?? []).map((d, i) => {
+          if (!isLayerOn(plate, d.layer)) return null;
           const selected = isSelected('dormer', i);
           const hw = d.widthFt / 2;
           const hd = d.depthFt / 2;
@@ -746,6 +999,53 @@ export function CadPlateEditor({
         )}
       </g>
 
+      {selection?.kind === 'wall' &&
+        plate.wallCenterlines[selection.index] &&
+        isLayerOn(plate, plate.wallCenterlines[selection.index]!.layer) &&
+        (() => {
+          const wall = plate.wallCenterlines[selection.index]!;
+          const len = formatWallLengthFt(segLengthFt(wall));
+          const mid = planToSvgFt(
+            (wall.x1 + wall.x2) / 2,
+            (wall.y1 + wall.y2) / 2,
+            plate.bounds,
+            PAD,
+          );
+          return (
+            <g
+              className="cad-wall-temp-dim"
+              data-wall-length-index={selection.index}
+              style={{ cursor: 'pointer' }}
+              onPointerDown={(ev) => {
+                ev.stopPropagation();
+                onRequestWallLengthEdit?.(selection.index);
+              }}
+            >
+              <rect
+                x={mid.x - fontSize * 2.2}
+                y={mid.y - fontSize * 1.8}
+                width={fontSize * 4.4}
+                height={fontSize * 1.45}
+                rx={fontSize * 0.22}
+                fill="rgba(255,255,255,0.95)"
+                stroke="#1f4e46"
+                strokeWidth={1}
+              />
+              <text
+                x={mid.x}
+                y={mid.y - fontSize * 1.05}
+                fill="#1f4e46"
+                fontSize={fontSize * 0.85}
+                fontFamily="IBM Plex Sans, Segoe UI, sans-serif"
+                fontWeight={700}
+                textAnchor="middle"
+                dominantBaseline="middle"
+              >
+                {len}
+              </text>
+            </g>
+          );
+        })()}
       {exteriorDims.map((dim) => {
         const a = planToSvgFt(dim.x1, dim.y1, plate.bounds, PAD);
         const b = planToSvgFt(dim.x2, dim.y2, plate.bounds, PAD);

@@ -34,6 +34,14 @@ export type CadOpeningHintFt = {
   layer?: string;
   /** Window sill height above finished floor (feet). Doors/passages/garages use 0. */
   sillFt?: number;
+  /** Host wall index when placed on a wall centerline. */
+  hostWallIndex?: number;
+  /** Parameter along host wall [0..1]. */
+  hostT?: number;
+  /** Opening clear width (feet). */
+  widthFt?: number;
+  /** Schedule mark e.g. D1 / W2. */
+  mark?: string;
 };
 
 export type CadWallCenterlineFt = {
