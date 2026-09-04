@@ -9,20 +9,27 @@ import {
   downloadSvgAsPng,
   downloadTextFile,
   exportCadPlateDxf,
+  exportCadPlateGltf,
   exportCadRoomScheduleCsv,
+  exportCadSheetSetHtml,
   extrudeCadPlate,
   hideNonFloorPreset,
   removeLayer,
   renderCadElevationSvg,
   renderCadPlateSvg,
+  renderCadSectionSvg,
+  buildCadSectionDrawing,
   roleToClassify,
   roomScheduleSummary,
   selectionSummary,
   setLayerClassify,
   setPlateRoof,
+  setPlateTerrain,
+  setPlateTitleBlock,
   setWallMaterial,
   setWallThickness,
   showWallsAndDoorsPreset,
+  toggleBuildingVisible,
   updateSlab,
   updateStair,
   withLayerVisibility,
@@ -42,8 +49,8 @@ import { pdfViewerSrc, stillwaterCadSheetPlate } from './stillwaterCad';
 import './cadStudio.css';
 
 type LayoutMode = 'split' | 'plate' | 'extrude' | 'massing' | 'sheets';
-type PlateMode = 'floor' | 'front' | 'side';
-type CatalogTab = 'walls' | 'openings' | 'fixtures' | 'layers' | 'site' | 'roof';
+type PlateMode = 'floor' | 'front' | 'side' | 'section';
+type CatalogTab = 'walls' | 'openings' | 'fixtures' | 'layers' | 'site' | 'roof' | 'docs';
 type OpeningKind = 'door' | 'window' | 'passage' | 'garage';
 
 const CLASSIFY_OPTIONS: { id: CadLayerClassify; label: string }[] = [
@@ -63,6 +70,7 @@ const CATALOG_TABS: { id: CatalogTab; label: string }[] = [
   { id: 'layers', label: 'Layers' },
   { id: 'site', label: 'Site' },
   { id: 'roof', label: 'Roof' },
+  { id: 'docs', label: 'Docs' },
 ];
 
 function progressLabel(p: DrawingImportProgress | null): string {
@@ -97,6 +105,7 @@ export function CadStudioPage() {
   const [unitLabel] = useState<'ft-in' | 'm'>('ft-in');
   const [sunHour, setSunHour] = useState(14);
   const [shadowsOn, setShadowsOn] = useState(true);
+  const [sectionClip, setSectionClip] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const visibility = useMemo(() => {
@@ -116,13 +125,20 @@ export function CadStudioPage() {
       return renderCadElevationSvg(plate.elevationFront, {
         title: plate.elevationFront.name,
         visibleLayers: visibleLayerSet,
+        richFills: true,
       });
     }
     if (plateMode === 'side' && plate.elevationSide) {
       return renderCadElevationSvg(plate.elevationSide, {
         title: plate.elevationSide.name,
         visibleLayers: visibleLayerSet,
+        richFills: true,
       });
+    }
+    if (plateMode === 'section') {
+      const cut = plate.sectionCuts?.[0];
+      if (!cut) return null;
+      return renderCadSectionSvg(buildCadSectionDrawing(plate, cut), { title: cut.label });
     }
     return null;
   }, [plate, plateMode, visibleLayerSet]);
@@ -249,7 +265,9 @@ export function CadStudioPage() {
       <div className="cad-empty">
         {plateMode === 'floor'
           ? 'Import a DXF/DWG to see the exact floor plate overlay, or load Demo ranch.'
-          : 'No elevation viewport detected for this drawing.'}
+          : plateMode === 'section'
+            ? 'Draw a section cut on the Roof catalog (Section cut tool).'
+            : 'No elevation viewport detected for this drawing.'}
       </div>
     );
   };
@@ -670,6 +688,59 @@ export function CadStudioPage() {
                     Clear auto foundation
                   </button>
                 </div>
+                <div className="cad-sill-control" style={{ marginTop: 12 }}>
+                  <label className="cad-fixture-pick">
+                    <input
+                      type="checkbox"
+                      checked={!!plate?.terrain?.enabled}
+                      disabled={!plate}
+                      onChange={(e) => {
+                        if (!plate) return;
+                        setPlate(setPlateTerrain(plate, { enabled: e.target.checked }));
+                      }}
+                    />{' '}
+                    Terrain slope
+                  </label>
+                  <label>
+                    Grade %
+                    <input
+                      type="number"
+                      min={0}
+                      max={20}
+                      step={0.5}
+                      disabled={!plate}
+                      value={plate?.terrain?.gradePercent ?? 4}
+                      onChange={(e) => {
+                        if (!plate) return;
+                        setPlate(
+                          setPlateTerrain(plate, {
+                            enabled: true,
+                            gradePercent: Number(e.target.value) || 0,
+                          }),
+                        );
+                      }}
+                    />
+                  </label>
+                </div>
+                {(plate?.buildings?.length ?? 0) > 0 && (
+                  <div className="cad-room-schedule" style={{ marginTop: 12 }}>
+                    <h3>Buildings</h3>
+                    <ul>
+                      {plate!.buildings!.map((b) => (
+                        <li key={b.id}>
+                          <label className="cad-fixture-pick">
+                            <input
+                              type="checkbox"
+                              checked={b.visible}
+                              onChange={() => setPlate(toggleBuildingVisible(plate!, b.id))}
+                            />{' '}
+                            {b.name}
+                          </label>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </section>
             )}
 
@@ -752,6 +823,93 @@ export function CadStudioPage() {
                 <button type="button" onClick={() => setLayout('massing')} disabled={!can3d}>
                   Open massing roof view
                 </button>
+                <div className="cad-catalog-items" style={{ marginTop: 12 }}>
+                  <button
+                    type="button"
+                    className={editTool === 'dormer' ? 'is-active' : ''}
+                    onClick={() => pickTool('dormer')}
+                  >
+                    <strong>Place dormer</strong>
+                    <span>Click on plan near roof</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={editTool === 'section' ? 'is-active' : ''}
+                    onClick={() => pickTool('section')}
+                  >
+                    <strong>Section cut</strong>
+                    <span>Draw cut line on plan</span>
+                  </button>
+                </div>
+              </section>
+            )}
+
+            {catalogTab === 'docs' && (
+              <section>
+                <h2>Docs</h2>
+                <p className="cad-edit-hint">
+                  Title block, sheet set, and section exports for permit / client packages.
+                </p>
+                <div className="cad-sill-control">
+                  <label>
+                    Project name
+                    <input
+                      type="text"
+                      disabled={!plate}
+                      value={plate?.titleBlock?.projectName ?? ''}
+                      onChange={(e) => {
+                        if (!plate) return;
+                        setPlate(setPlateTitleBlock(plate, { projectName: e.target.value }));
+                      }}
+                    />
+                  </label>
+                  <label>
+                    Scale
+                    <input
+                      type="text"
+                      disabled={!plate}
+                      value={plate?.titleBlock?.scaleLabel ?? '1/4" = 1\'-0"'}
+                      onChange={(e) => {
+                        if (!plate) return;
+                        setPlate(setPlateTitleBlock(plate, { scaleLabel: e.target.value }));
+                      }}
+                    />
+                  </label>
+                  <label>
+                    Revision
+                    <input
+                      type="text"
+                      disabled={!plate}
+                      value={plate?.titleBlock?.revision ?? 'A'}
+                      onChange={(e) => {
+                        if (!plate) return;
+                        setPlate(setPlateTitleBlock(plate, { revision: e.target.value }));
+                      }}
+                    />
+                  </label>
+                </div>
+                <div className="cad-catalog-items" style={{ marginTop: 8 }}>
+                  <button
+                    type="button"
+                    className={plateMode === 'section' ? 'is-active' : ''}
+                    disabled={!plate?.sectionCuts?.length}
+                    onClick={() => {
+                      setPlateMode('section');
+                      setLayout('plate');
+                    }}
+                  >
+                    <strong>View section</strong>
+                    <span>2D cut from section line</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={sectionClip ? 'is-active' : ''}
+                    onClick={() => setSectionClip((v) => !v)}
+                  >
+                    <strong>3D section clip</strong>
+                    <span>Clip Extrude at cut A</span>
+                  </button>
+                </div>
               </section>
             )}
 
@@ -971,6 +1129,51 @@ export function CadStudioPage() {
                 >
                   Download floor PNG
                 </button>
+                <button
+                  type="button"
+                  disabled={!plate}
+                  onClick={() => {
+                    if (!plate) return;
+                    const base = (plate.sourceFileName || 'cad-plate').replace(/\.(dxf|dwg)$/i, '');
+                    downloadTextFile(
+                      `${base}-sheet-set.html`,
+                      exportCadSheetSetHtml(plate),
+                      'text/html;charset=utf-8',
+                    );
+                  }}
+                >
+                  Download sheet set
+                </button>
+                <button
+                  type="button"
+                  disabled={!plate}
+                  onClick={() => {
+                    if (!plate) return;
+                    const base = (plate.sourceFileName || 'cad-plate').replace(/\.(dxf|dwg)$/i, '');
+                    downloadTextFile(
+                      `${base}.gltf`,
+                      exportCadPlateGltf(plate),
+                      'model/gltf+json',
+                    );
+                  }}
+                >
+                  Download glTF
+                </button>
+                <button
+                  type="button"
+                  disabled={!plate?.sectionCuts?.length}
+                  onClick={() => {
+                    if (!plate?.sectionCuts?.[0]) return;
+                    const base = (plate.sourceFileName || 'cad-plate').replace(/\.(dxf|dwg)$/i, '');
+                    const svg = renderCadSectionSvg(
+                      buildCadSectionDrawing(plate, plate.sectionCuts[0]),
+                      { title: plate.sectionCuts[0].label },
+                    );
+                    void downloadSvgAsPng(svg, `${base}-section.png`);
+                  }}
+                >
+                  Download section PNG
+                </button>
               </div>
               <div className="cad-stats">
                 <div>File: {plate?.sourceFileName ?? '—'}</div>
@@ -1113,6 +1316,14 @@ export function CadStudioPage() {
                   >
                     Side elevation
                   </button>
+                  <button
+                    type="button"
+                    className={plateMode === 'section' ? 'is-active' : ''}
+                    onClick={() => setPlateMode('section')}
+                    disabled={!plate?.sectionCuts?.length}
+                  >
+                    Section
+                  </button>
                 </div>
                 <div className="cad-pane-scroll">{renderFloorPane()}</div>
               </div>
@@ -1121,7 +1332,13 @@ export function CadStudioPage() {
             {show3d && extrusion && (
               <div className="cad-extrude-host" aria-label="Live 3D">
                 <div className="cad-pane-label">3D</div>
-                <CadExtrudeView extrusion={extrusion} sunHour={sunHour} shadows={shadowsOn} />
+                <CadExtrudeView
+                  extrusion={extrusion}
+                  plate={plate}
+                  sunHour={sunHour}
+                  shadows={shadowsOn}
+                  sectionClip={sectionClip}
+                />
               </div>
             )}
 

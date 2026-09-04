@@ -19,10 +19,17 @@ export function extrudeCadPlate(plate: CadPlate, opts?: { heightM?: number }): C
     cy: (plate.bounds.minY + plate.bounds.maxY) / 2,
   };
 
+  const hiddenBuildings = new Set(
+    (plate.buildings ?? []).filter((b) => !b.visible).map((b) => b.id),
+  );
+  const wallCenterlines = plate.wallCenterlines.filter(
+    (w) => !w.buildingId || !hiddenBuildings.has(w.buildingId),
+  );
+
   const floor: HousePlanFloor = {
     id: `${plate.id}-floor`,
     name: 'CAD plate',
-    rooms: plate.wallCenterlines.length
+    rooms: wallCenterlines.length
       ? [
           {
             id: 'cad-envelope',
@@ -36,7 +43,7 @@ export function extrudeCadPlate(plate: CadPlate, opts?: { heightM?: number }): C
           },
         ]
       : [],
-    wallSegmentsFt: plate.wallCenterlines.map((s) => ({
+    wallSegmentsFt: wallCenterlines.map((s) => ({
       x1: s.x1,
       y1: s.y1,
       x2: s.x2,
@@ -76,7 +83,7 @@ export function extrudeCadPlate(plate: CadPlate, opts?: { heightM?: number }): C
 
   const builtWithOpenings = buildFloorFromCadWalls(floorWithHints, { centerFt });
   const fixtures = detectCadFixtures(plate);
-  const wallSegmentsFt = plate.wallCenterlines.map((s) => ({
+  const wallSegmentsFt = wallCenterlines.map((s) => ({
     x1: s.x1,
     y1: s.y1,
     x2: s.x2,
