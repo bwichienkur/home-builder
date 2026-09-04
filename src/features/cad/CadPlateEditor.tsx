@@ -6,6 +6,12 @@ import {
   formatRoomAreaSqFt,
 } from '../../lib/cadStudio/cadRoomStamps';
 import { computeExteriorDims, computeInteriorDims } from '../../lib/cadStudio/cadExteriorDims';
+import {
+  applyTempDimEdit,
+  buildBetweenWallDim,
+  buildTempDimsForSelection,
+  type CadTempDim,
+} from '../../lib/cadStudio/cadDimEdit';
 import { snapCadDraftPoint, type CadSnapResult } from '../../lib/cadStudio/cadDrawSnap';
 import { parseArchitecturalLength } from '../../lib/cadStudio/cadLengthParse';
 import { isLayerOn } from '../../lib/cadStudio/cadLayerVisibility';
@@ -19,6 +25,7 @@ import {
   placeHostedOpening,
   trimWallTo,
 } from '../../lib/cadStudio/cadWallModify';
+import { stretchSharedNode } from '../../lib/cadStudio/cadWallGraph';
 import {
   addDormer,
   addFixtureHint,
@@ -34,7 +41,6 @@ import {
   moveLabel,
   moveOpeningHint,
   moveSlab,
-  moveWallEndpoint,
   nearestWallHost,
   pickAtPoint,
   planToSvgFt,
@@ -110,14 +116,21 @@ type Props = {
   showRoomFills?: boolean;
   selection: CadPlateSelection | null;
   onSelectionChange: (sel: CadPlateSelection | null) => void;
+  /** Discrete edits (draw complete, trim, delete, etc.) — pushes undo history. */
   onPlateChange: (plate: CadPlate) => void;
+  /** Live grip/move updates — replaces present without pushing history. */
+  onPlatePreview?: (plate: CadPlate) => void;
+  /** End of a drag gesture — one history entry for the whole move. */
+  onPlateCommit?: (plate: CadPlate) => void;
   /** Extra wall indices selected with Shift+click (primary is `selection`). */
   wallMulti?: number[];
   onWallMultiChange?: (indices: number[]) => void;
   onStatus?: (msg: string) => void;
   onUndo?: () => void;
   onRedo?: () => void;
+  /** @deprecated Prefer click-to-edit on temporary dims; kept for Properties focus. */
   onRequestWallLengthEdit?: (index: number) => void;
+  onPromoteTempDim?: (dim: CadTempDim) => void;
 };
 
 function hitWallGrip(
@@ -197,14 +210,20 @@ export function CadPlateEditor({
   selection,
   onSelectionChange,
   onPlateChange,
+  onPlatePreview,
+  onPlateCommit,
   wallMulti = [],
   onWallMultiChange,
   onStatus,
   onUndo,
   onRedo,
   onRequestWallLengthEdit,
+  onPromoteTempDim,
 }: Props) {
+  const hostRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+  const lengthInputRef = useRef<HTMLInputElement>(null);
+  const tempDimInputRef = useRef<HTMLInputElement>(null);
   const [draftLine, setDraftLine] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(
     null,
   );
@@ -213,6 +232,19 @@ export function CadPlateEditor({
   const [shiftHeld, setShiftHeld] = useState(false);
   const [lastSnap, setLastSnap] = useState<CadSnapResult | null>(null);
   const [cutterWallIndex, setCutterWallIndex] = useState<number | null>(null);
+  const [lengthHud, setLengthHud] = useState<{
+    value: string;
+    left: number;
+    top: number;
+  } | null>(null);
+  const [tempDimHud, setTempDimHud] = useState<{
+    dim: CadTempDim;
+    value: string;
+    left: number;
+    top: number;
+  } | null>(null);
+  const lastPointerClientRef = useRef<{ x: number; y: number } | null>(null);
+  const lastPreviewRef = useRef<CadPlate | null>(null);
   const dragRef = useRef<{
     kind: 'grip' | 'selection';
     grip?: CadGripKind;
@@ -221,7 +253,17 @@ export function CadPlateEditor({
     startPlan: { x: number; y: number };
     orig: CadPlate;
     multi: number[];
+    moved: boolean;
   } | null>(null);
+
+  const emitPreview = useCallback(
+    (next: CadPlate) => {
+      lastPreviewRef.current = next;
+      if (onPlatePreview) onPlatePreview(next);
+      else onPlateChange(next);
+    },
+    [onPlateChange, onPlatePreview],
+  );
 
   const { w, h, ox, oy, stroke, fontSize } = useMemo(() => {
     const { minX, minY, maxX, maxY } = plate.bounds;
@@ -248,8 +290,25 @@ export function CadPlateEditor({
     () => (showInteriorDims ? computeInteriorDims(plate) : []),
     [plate, showInteriorDims],
   );
+  const tempDims = useMemo(() => {
+    if (!selection) return [] as CadTempDim[];
+    if (selection.kind === 'wall') {
+      const dims = buildTempDimsForSelection(plate, { kind: 'wall', index: selection.index });
+      const other = wallMulti.find((i) => i !== selection.index);
+      if (other != null) {
+        const between = buildBetweenWallDim(plate, selection.index, other);
+        if (between) dims.push(between);
+      }
+      return dims;
+    }
+    if (selection.kind === 'opening') {
+      return buildTempDimsForSelection(plate, { kind: 'opening', index: selection.index });
+    }
+    return [];
+  }, [plate, selection, wallMulti]);
   const slabs = plate.slabs ?? [];
   const guidelines = plate.guidelines ?? [];
+  const underlay = plate.underlay;
 
   const planFromEvent = useCallback(
     (e: React.PointerEvent<SVGSVGElement>) => {
@@ -474,7 +533,9 @@ export function CadPlateEditor({
             startPlan: raw,
             orig: plate,
             multi: wallMulti,
+            moved: false,
           };
+          lastPreviewRef.current = null;
           return;
         }
       }
@@ -507,13 +568,16 @@ export function CadPlateEditor({
         startPlan: raw,
         orig: plate,
         multi: [],
+        moved: false,
       };
+      lastPreviewRef.current = null;
     } else {
       dragRef.current = null;
     }
   };
 
   const handlePointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
+    lastPointerClientRef.current = { x: e.clientX, y: e.clientY };
     const raw = planFromEvent(e);
     if (!raw) return;
 
@@ -540,18 +604,24 @@ export function CadPlateEditor({
     if (!drag || tool !== 'select') return;
     const dx = raw.x - drag.startPlan.x;
     const dy = raw.y - drag.startPlan.y;
+    if (Math.hypot(dx, dy) < 1e-9 && !drag.moved) return;
+    drag.moved = true;
     const { selection: sel, orig } = drag;
 
     if (drag.kind === 'grip' && drag.wallIndex != null && drag.grip) {
       const w0 = orig.wallCenterlines[drag.wallIndex];
       if (!w0) return;
       if (drag.grip === 'start') {
-        onPlateChange(moveWallEndpoint(orig, drag.wallIndex, 'a', w0.x1 + dx, w0.y1 + dy));
+        emitPreview(
+          stretchSharedNode(orig, drag.wallIndex, 'a', w0.x1 + dx, w0.y1 + dy),
+        );
       } else if (drag.grip === 'end') {
-        onPlateChange(moveWallEndpoint(orig, drag.wallIndex, 'b', w0.x2 + dx, w0.y2 + dy));
+        emitPreview(
+          stretchSharedNode(orig, drag.wallIndex, 'b', w0.x2 + dx, w0.y2 + dy),
+        );
       } else {
         const indices = [drag.wallIndex, ...drag.multi.filter((i) => i !== drag.wallIndex)];
-        onPlateChange(indices.length > 1 ? moveWalls(orig, indices, dx, dy) : moveWall(orig, drag.wallIndex, dx, dy));
+        emitPreview(indices.length > 1 ? moveWalls(orig, indices, dx, dy) : moveWall(orig, drag.wallIndex, dx, dy));
       }
       return;
     }
@@ -560,36 +630,36 @@ export function CadPlateEditor({
       case 'label': {
         const l = orig.labels[sel.index];
         if (!l) break;
-        onPlateChange(moveLabel(orig, sel.index, l.x + dx, l.y + dy));
+        emitPreview(moveLabel(orig, sel.index, l.x + dx, l.y + dy));
         break;
       }
       case 'fixture': {
         const f = orig.fixtureHints[sel.index];
         if (!f) break;
-        onPlateChange(moveFixtureHint(orig, sel.index, f.xFt + dx, f.yFt + dy));
+        emitPreview(moveFixtureHint(orig, sel.index, f.xFt + dx, f.yFt + dy));
         break;
       }
       case 'opening': {
         const o = orig.openingHints[sel.index];
         if (!o) break;
-        onPlateChange(
+        emitPreview(
           moveOpeningHint(orig, sel.index, (o.x1 + o.x2) / 2 + dx, (o.y1 + o.y2) / 2 + dy),
         );
         break;
       }
       case 'wall': {
         const indices = [sel.index, ...drag.multi.filter((i) => i !== sel.index)];
-        onPlateChange(indices.length > 1 ? moveWalls(orig, indices, dx, dy) : moveWall(orig, sel.index, dx, dy));
+        emitPreview(indices.length > 1 ? moveWalls(orig, indices, dx, dy) : moveWall(orig, sel.index, dx, dy));
         break;
       }
       case 'slab': {
-        onPlateChange(moveSlab(orig, sel.index, dx, dy));
+        emitPreview(moveSlab(orig, sel.index, dx, dy));
         break;
       }
       case 'stair': {
         const st = orig.stairs?.[sel.index];
         if (!st) break;
-        onPlateChange(updateStair(orig, sel.index, { xFt: st.xFt + dx, yFt: st.yFt + dy }));
+        emitPreview(updateStair(orig, sel.index, { xFt: st.xFt + dx, yFt: st.yFt + dy }));
         break;
       }
       default:
@@ -598,6 +668,15 @@ export function CadPlateEditor({
   };
 
   const handlePointerUp = () => {
+    const drag = dragRef.current;
+    if (drag?.moved) {
+      const finalPlate = lastPreviewRef.current;
+      if (finalPlate) {
+        if (onPlateCommit) onPlateCommit(finalPlate);
+        else onPlateChange(finalPlate);
+      }
+    }
+    lastPreviewRef.current = null;
     dragRef.current = null;
   };
 
@@ -608,39 +687,63 @@ export function CadPlateEditor({
   };
 
   // Escape cancels drafts; Enter closes slab polygon (Plan7-style).
-  // Tab types length while drafting; Ctrl+Z/Y undo/redo.
+  // Tab opens inline length HUD while drafting; Ctrl+Z/Y undo/redo.
   // Track Shift for ortho snap.
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Shift') setShiftHeld(true);
       if (e.key === 'Escape') {
+        if (tempDimHud) {
+          setTempDimHud(null);
+          return;
+        }
+        if (lengthHud) {
+          setLengthHud(null);
+          return;
+        }
         setDraftLine(null);
         setDraftPoly([]);
         setCursorPlan(null);
         setLastSnap(null);
         setCutterWallIndex(null);
       }
-      if (e.key === 'Enter' && tool === 'slab' && draftPoly.length >= 3) {
+      if (e.key === 'Enter' && tool === 'slab' && draftPoly.length >= 3 && !lengthHud) {
         e.preventDefault();
         closeDraftPoly();
       }
-      if (e.key === 'Tab' && draftLine && (tool === 'wall' || tool === 'opening' || tool === 'guide')) {
+      if (
+        e.key === 'Tab' &&
+        draftLine &&
+        !lengthHud &&
+        !tempDimHud &&
+        (tool === 'wall' || tool === 'opening' || tool === 'guide')
+      ) {
         e.preventDefault();
         const dx = draftLine.x2 - draftLine.x1;
         const dy = draftLine.y2 - draftLine.y1;
         const cur = Math.hypot(dx, dy);
-        const ux = cur > 1e-9 ? dx / cur : 1;
-        const uy = cur > 1e-9 ? dy / cur : 0;
-        const raw = window.prompt('Length', cur > 0.5 ? formatWallLengthFt(cur) : `10'-0"`);
-        if (raw == null) return;
-        const len = parseArchitecturalLength(raw);
-        if (len == null || len < 0.5) return;
-        const x2 = draftLine.x1 + ux * len;
-        const y2 = draftLine.y1 + uy * len;
-        commitDraftLine(draftLine.x1, draftLine.y1, x2, y2);
-        setDraftLine(null);
-        setLastSnap(null);
-        onStatus?.(`Committed length ${formatWallLengthFt(len)}`);
+        const host = hostRef.current;
+        const client = lastPointerClientRef.current;
+        let left = 16;
+        let top = 16;
+        if (host && client) {
+          const rect = host.getBoundingClientRect();
+          left = client.x - rect.left + 12;
+          top = client.y - rect.top - 40;
+        } else if (host) {
+          const rect = host.getBoundingClientRect();
+          left = rect.width / 2 - 60;
+          top = 24;
+        }
+        setLengthHud({
+          value: cur > 0.5 ? formatWallLengthFt(cur) : `10'-0"`,
+          left: Math.max(8, left),
+          top: Math.max(8, top),
+        });
+        queueMicrotask(() => {
+          lengthInputRef.current?.focus();
+          lengthInputRef.current?.select();
+        });
       }
       const mod = e.ctrlKey || e.metaKey;
       if (mod && (e.key === 'z' || e.key === 'Z') && !e.shiftKey) {
@@ -663,14 +766,85 @@ export function CadPlateEditor({
     };
   }, [
     closeDraftPoly,
-    commitDraftLine,
     draftLine,
     draftPoly.length,
+    lengthHud,
+    tempDimHud,
     onRedo,
-    onStatus,
     onUndo,
     tool,
   ]);
+
+  const commitLengthHud = useCallback(() => {
+    if (!lengthHud || !draftLine) return;
+    if (!(tool === 'wall' || tool === 'opening' || tool === 'guide')) return;
+    const dx = draftLine.x2 - draftLine.x1;
+    const dy = draftLine.y2 - draftLine.y1;
+    const cur = Math.hypot(dx, dy);
+    const ux = cur > 1e-9 ? dx / cur : 1;
+    const uy = cur > 1e-9 ? dy / cur : 0;
+    const len = parseArchitecturalLength(lengthHud.value);
+    if (len == null || len < 0.5) {
+      onStatus?.('Enter a length like 12\'-0" or 10.5');
+      return;
+    }
+    const x2 = draftLine.x1 + ux * len;
+    const y2 = draftLine.y1 + uy * len;
+    commitDraftLine(draftLine.x1, draftLine.y1, x2, y2);
+    setDraftLine(null);
+    setLastSnap(null);
+    setLengthHud(null);
+    onStatus?.(`Committed length ${formatWallLengthFt(len)}`);
+  }, [commitDraftLine, draftLine, lengthHud, onStatus, tool]);
+
+  const openTempDimHud = useCallback(
+    (dim: CadTempDim, clientX?: number, clientY?: number) => {
+      const host = hostRef.current;
+      let left = 16;
+      let top = 16;
+      if (host && clientX != null && clientY != null) {
+        const rect = host.getBoundingClientRect();
+        left = clientX - rect.left + 12;
+        top = clientY - rect.top - 40;
+      } else if (host) {
+        const mid = planToSvgFt(
+          (dim.x1 + dim.x2) / 2,
+          (dim.y1 + dim.y2) / 2,
+          plate.bounds,
+          PAD,
+        );
+        // Approximate: place near center of host
+        left = Math.max(8, host.clientWidth * 0.35);
+        top = Math.max(8, host.clientHeight * 0.2);
+        void mid;
+      }
+      setLengthHud(null);
+      setTempDimHud({
+        dim,
+        value: dim.label,
+        left: Math.max(8, left),
+        top: Math.max(8, top),
+      });
+      queueMicrotask(() => {
+        tempDimInputRef.current?.focus();
+        tempDimInputRef.current?.select();
+      });
+    },
+    [plate.bounds],
+  );
+
+  const commitTempDimHud = useCallback(() => {
+    if (!tempDimHud) return;
+    const len = parseArchitecturalLength(tempDimHud.value);
+    if (len == null || len < 0.25) {
+      onStatus?.('Enter a length like 4\'-0" or 10.5');
+      return;
+    }
+    const next = applyTempDimEdit(plate, tempDimHud.dim, len);
+    onPlateChange(next);
+    setTempDimHud(null);
+    onStatus?.(`Dim set to ${formatWallLengthFt(len)}`);
+  }, [onPlateChange, onStatus, plate, tempDimHud]);
 
   useEffect(() => {
     if (tool !== 'slab') {
@@ -680,11 +854,20 @@ export function CadPlateEditor({
     if (tool !== 'wall' && tool !== 'opening' && tool !== 'guide' && tool !== 'section') {
       setDraftLine(null);
       setLastSnap(null);
+      setLengthHud(null);
     }
     if (tool !== 'trim' && tool !== 'extend') {
       setCutterWallIndex(null);
     }
   }, [tool]);
+
+  useEffect(() => {
+    if (!draftLine) setLengthHud(null);
+  }, [draftLine]);
+
+  useEffect(() => {
+    if (!selection) setTempDimHud(null);
+  }, [selection]);
 
   useEffect(() => {
     if (tool === 'trim') onStatus?.('Trim: click cutter wall, then wall to shorten');
@@ -707,6 +890,7 @@ export function CadPlateEditor({
     (lastSnap?.kind === 'endpoint' || lastSnap?.kind === 'guide');
 
   return (
+    <div className="cad-plate-editor-host" ref={hostRef}>
     <svg
       ref={svgRef}
       className="cad-plate-editor-svg"
@@ -723,6 +907,21 @@ export function CadPlateEditor({
     >
       <rect width="100%" height="100%" fill="#f1efe8" />
       <g transform={`translate(${(-ox).toFixed(3)} ${(h + oy).toFixed(3)}) scale(1,-1)`}>
+        {underlay && (
+          <g
+            className="cad-underlay"
+            transform={`translate(${underlay.xFt} ${underlay.yFt + underlay.heightFt}) scale(1,-1)`}
+            pointerEvents="none"
+          >
+            <image
+              href={underlay.imageUrl}
+              width={underlay.widthFt}
+              height={underlay.heightFt}
+              opacity={underlay.opacity}
+              preserveAspectRatio="none"
+            />
+          </g>
+        )}
         {slabs.map((slab, i) => {
           if (!isLayerOn(plate, slab.layer)) return null;
           const selected = isSelected('slab', i);
@@ -843,6 +1042,21 @@ export function CadPlateEditor({
                 fill={selected ? '#c2410c' : '#b45309'}
                 fillOpacity={0.35}
               />
+              {o.mark && (
+                <g transform={`translate(${(o.x1 + o.x2) / 2} ${(o.y1 + o.y2) / 2}) scale(1,-1)`}>
+                  <text
+                    y={-stroke * 10}
+                    fill="#9a3412"
+                    fontSize={Math.max(0.85, stroke * 9)}
+                    fontFamily="IBM Plex Sans, Segoe UI, sans-serif"
+                    fontWeight={700}
+                    textAnchor="middle"
+                    style={{ pointerEvents: 'none' }}
+                  >
+                    {o.mark}
+                  </text>
+                </g>
+              )}
             </g>
           );
         })}
@@ -999,70 +1213,71 @@ export function CadPlateEditor({
         )}
       </g>
 
-      {selection?.kind === 'wall' &&
-        plate.wallCenterlines[selection.index] &&
-        isLayerOn(plate, plate.wallCenterlines[selection.index]!.layer) &&
-        (() => {
-          const wall = plate.wallCenterlines[selection.index]!;
-          const len = formatWallLengthFt(segLengthFt(wall));
-          const mid = planToSvgFt(
-            (wall.x1 + wall.x2) / 2,
-            (wall.y1 + wall.y2) / 2,
-            plate.bounds,
-            PAD,
-          );
-          return (
-            <g
-              className="cad-wall-temp-dim"
-              data-wall-length-index={selection.index}
-              style={{ cursor: 'pointer' }}
-              onPointerDown={(ev) => {
-                ev.stopPropagation();
-                onRequestWallLengthEdit?.(selection.index);
-              }}
+      {tempDims.map((dim) => {
+        const a = planToSvgFt(dim.x1, dim.y1, plate.bounds, PAD);
+        const b = planToSvgFt(dim.x2, dim.y2, plate.bounds, PAD);
+        const lp = planToSvgFt((dim.x1 + dim.x2) / 2, (dim.y1 + dim.y2) / 2, plate.bounds, PAD);
+        const tick = fontSize * 0.4;
+        return (
+          <g
+            key={dim.id}
+            className="cad-temp-dim"
+            style={{ cursor: 'pointer' }}
+            onPointerDown={(ev) => {
+              ev.stopPropagation();
+              openTempDimHud(dim, ev.clientX, ev.clientY);
+            }}
+            onDoubleClick={(ev) => {
+              ev.stopPropagation();
+              onPromoteTempDim?.(dim);
+            }}
+          >
+            <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#1f4e46" strokeWidth={1.35} />
+            <line x1={a.x - tick} y1={a.y - tick} x2={a.x + tick} y2={a.y + tick} stroke="#1f4e46" strokeWidth={1.1} />
+            <line x1={b.x - tick} y1={b.y - tick} x2={b.x + tick} y2={b.y + tick} stroke="#1f4e46" strokeWidth={1.1} />
+            <rect
+              x={lp.x - fontSize * 2.3}
+              y={lp.y - fontSize * 0.75}
+              width={fontSize * 4.6}
+              height={fontSize * 1.45}
+              rx={fontSize * 0.22}
+              fill="rgba(255,255,255,0.96)"
+              stroke="#1f4e46"
+              strokeWidth={1.1}
+            />
+            <text
+              x={lp.x}
+              y={lp.y}
+              fill="#1f4e46"
+              fontSize={fontSize * 0.85}
+              fontFamily="IBM Plex Sans, Segoe UI, sans-serif"
+              fontWeight={700}
+              textAnchor="middle"
+              dominantBaseline="middle"
             >
-              <rect
-                x={mid.x - fontSize * 2.2}
-                y={mid.y - fontSize * 1.8}
-                width={fontSize * 4.4}
-                height={fontSize * 1.45}
-                rx={fontSize * 0.22}
-                fill="rgba(255,255,255,0.95)"
-                stroke="#1f4e46"
-                strokeWidth={1}
-              />
-              <text
-                x={mid.x}
-                y={mid.y - fontSize * 1.05}
-                fill="#1f4e46"
-                fontSize={fontSize * 0.85}
-                fontFamily="IBM Plex Sans, Segoe UI, sans-serif"
-                fontWeight={700}
-                textAnchor="middle"
-                dominantBaseline="middle"
-              >
-                {len}
-              </text>
-            </g>
-          );
-        })()}
+              {dim.label}
+            </text>
+          </g>
+        );
+      })}
       {exteriorDims.map((dim) => {
         const a = planToSvgFt(dim.x1, dim.y1, plate.bounds, PAD);
         const b = planToSvgFt(dim.x2, dim.y2, plate.bounds, PAD);
         const lp = planToSvgFt(dim.labelX, dim.labelY, plate.bounds, PAD);
         const tick = fontSize * 0.45;
+        const isManual = (plate.annotativeDims ?? []).some((d) => d.id === dim.id);
         return (
-          <g key={dim.id} className="cad-ext-dim">
+          <g key={dim.id} className={isManual ? 'cad-ext-dim cad-ext-dim-manual' : 'cad-ext-dim'}>
             <line
               x1={a.x}
               y1={a.y}
               x2={b.x}
               y2={b.y}
-              stroke="#5b6b7c"
-              strokeWidth={1.1}
+              stroke={isManual ? '#1f4e46' : '#5b6b7c'}
+              strokeWidth={isManual ? 1.35 : 1.1}
             />
-            <line x1={a.x - tick} y1={a.y - tick} x2={a.x + tick} y2={a.y + tick} stroke="#5b6b7c" strokeWidth={1} />
-            <line x1={b.x - tick} y1={b.y - tick} x2={b.x + tick} y2={b.y + tick} stroke="#5b6b7c" strokeWidth={1} />
+            <line x1={a.x - tick} y1={a.y - tick} x2={a.x + tick} y2={a.y + tick} stroke={isManual ? '#1f4e46' : '#5b6b7c'} strokeWidth={1} />
+            <line x1={b.x - tick} y1={b.y - tick} x2={b.x + tick} y2={b.y + tick} stroke={isManual ? '#1f4e46' : '#5b6b7c'} strokeWidth={1} />
             <rect
               x={lp.x - fontSize * 2.1}
               y={lp.y - fontSize * 0.7}
@@ -1070,18 +1285,20 @@ export function CadPlateEditor({
               height={fontSize * 1.35}
               rx={fontSize * 0.2}
               fill="rgba(241,239,232,0.92)"
+              stroke={dim.locked ? '#9a3412' : isManual ? '#1f4e46' : 'none'}
+              strokeWidth={dim.locked || isManual ? 1 : 0}
             />
             <text
               x={lp.x}
               y={lp.y}
-              fill="#334155"
+              fill={dim.locked ? '#9a3412' : '#334155'}
               fontSize={fontSize * 0.78}
               fontFamily="IBM Plex Sans, Segoe UI, sans-serif"
               fontWeight={600}
               textAnchor="middle"
               dominantBaseline="middle"
             >
-              {dim.label}
+              {dim.locked ? `[L] ${dim.label}` : dim.label}
             </text>
           </g>
         );
@@ -1222,5 +1439,87 @@ export function CadPlateEditor({
         );
       })}
     </svg>
+    {lengthHud && (
+      <div
+        className="cad-length-hud"
+        style={{ left: lengthHud.left, top: lengthHud.top }}
+        onPointerDown={(e) => e.stopPropagation()}
+      >
+        <label>
+          <span className="cad-length-hud-label">Length</span>
+          <input
+            ref={lengthInputRef}
+            type="text"
+            value={lengthHud.value}
+            aria-label="Draft length"
+            onChange={(e) => setLengthHud({ ...lengthHud, value: e.target.value })}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                e.stopPropagation();
+                commitLengthHud();
+              }
+              if (e.key === 'Escape') {
+                e.preventDefault();
+                e.stopPropagation();
+                setLengthHud(null);
+              }
+              if (e.key === 'Tab') {
+                e.preventDefault();
+              }
+            }}
+          />
+        </label>
+      </div>
+    )}
+    {tempDimHud && (
+      <div
+        className="cad-length-hud cad-temp-dim-hud"
+        style={{ left: tempDimHud.left, top: tempDimHud.top }}
+        onPointerDown={(e) => e.stopPropagation()}
+      >
+        <label>
+          <span className="cad-length-hud-label">
+            {tempDimHud.dim.kind === 'between-walls'
+              ? 'Distance'
+              : tempDimHud.dim.kind === 'opening-width'
+                ? 'Width'
+                : 'Length'}
+          </span>
+          <input
+            ref={tempDimInputRef}
+            type="text"
+            value={tempDimHud.value}
+            aria-label="Temporary dimension value"
+            onChange={(e) => setTempDimHud({ ...tempDimHud, value: e.target.value })}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                e.stopPropagation();
+                commitTempDimHud();
+              }
+              if (e.key === 'Escape') {
+                e.preventDefault();
+                e.stopPropagation();
+                setTempDimHud(null);
+              }
+            }}
+          />
+        </label>
+        {onPromoteTempDim && (
+          <button
+            type="button"
+            className="cad-temp-dim-promote"
+            onClick={() => {
+              onPromoteTempDim(tempDimHud.dim);
+              setTempDimHud(null);
+            }}
+          >
+            Keep
+          </button>
+        )}
+      </div>
+    )}
+    </div>
   );
 }

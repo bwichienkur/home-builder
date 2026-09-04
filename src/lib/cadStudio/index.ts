@@ -24,6 +24,9 @@ export type {
   CadBuilding,
   CadTerrainOverrides,
   CadTitleBlock,
+  CadStory,
+  CadUnderlay,
+  CadAnnotativeDim,
   CadOpeningHintFt,
   CadWallCenterlineFt,
 } from './types';
@@ -94,6 +97,9 @@ export {
 export {
   computeExteriorDims,
   computeInteriorDims,
+  dimCoveredByManual,
+  upsertAnnotativeDim,
+  setAnnotativeDimLocked,
   type CadExteriorDim,
 } from './cadExteriorDims';
 export { snapCadDraftPoint, defaultWallThicknessFt, type CadSnapResult } from './cadDrawSnap';
@@ -108,6 +114,8 @@ export {
   undoCadHistory,
   redoCadHistory,
   replaceCadPresent,
+  previewCadPresent,
+  commitCadPresent,
   type CadHistoryState,
 } from './cadHistory';
 export {
@@ -143,6 +151,39 @@ export {
   applyWallLengthDim,
   wallHeadingLabel,
 } from './cadWallModify';
+export {
+  buildTempDimsForSelection,
+  buildBetweenWallDim,
+  applyTempDimEdit,
+  promoteTempDimToAnnotative,
+  signedCenterlineDistanceFt,
+  type CadTempDim,
+  type CadTempDimSelection,
+} from './cadDimEdit';
+export {
+  combineCollinearWalls,
+  stretchSharedNode,
+  alignWalls,
+  setDistanceBetweenWalls,
+  autoHostOpenings,
+  signedWallDistanceFt,
+} from './cadWallGraph';
+export {
+  assignOpeningMarks,
+  renameRoomLabel,
+  exportDoorWindowScheduleCsv,
+} from './cadMarks';
+export {
+  ensureDefaultStories,
+  setActiveStory,
+  addStory,
+} from './cadStories';
+export {
+  setUnderlay,
+  calibrateUnderlay,
+  setUnderlayOpacity,
+} from './cadUnderlay';
+export { flipPlan } from './cadPlanOps';
 export {
   addDormer,
   addFixtureHint,

@@ -239,6 +239,41 @@ export type CadTitleBlock = {
   address?: string;
 };
 
+/** Story / level for multi-floor plates (U5). */
+export type CadStory = {
+  id: string;
+  name: string;
+  levelFt: number;
+  active?: boolean;
+};
+
+/** PDF/image underlay for tracing (U5). */
+export type CadUnderlay = {
+  id: string;
+  imageUrl: string;
+  xFt: number;
+  yFt: number;
+  widthFt: number;
+  heightFt: number;
+  opacity: number;
+  locked: boolean;
+};
+
+/** Manual / promoted annotative dimension (survives auto-dim refresh). */
+export type CadAnnotativeDim = {
+  id: string;
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  label: string;
+  labelX: number;
+  labelY: number;
+  /** When true, click-to-edit is blocked (Revit-lite lock). */
+  locked?: boolean;
+  valueFt?: number;
+};
+
 /** Elevation sheet segment — X = width from left, Y = height above grade (feet). */
 export type CadElevationSegmentFt = {
   x1Ft: number;
@@ -333,6 +368,14 @@ export type CadPlate = {
   terrain?: CadTerrainOverrides;
   /** Title block defaults for sheet-set export. */
   titleBlock?: CadTitleBlock;
+  /** Story / level list (optional; ensureDefaultStories fills Level 1). */
+  stories?: CadStory[];
+  /** Active story id when stories are present. */
+  activeStoryId?: string;
+  /** PDF/image underlay for calibrate + trace. */
+  underlay?: CadUnderlay;
+  /** Hand-placed or promoted dims — auto exterior dims never wipe these. */
+  annotativeDims?: CadAnnotativeDim[];
   /** Front elevation linework (width × height ft) when DXF has elevation viewports. */
   elevationFront?: CadElevationSheet;
   /** Side/rear elevation linework when available. */
