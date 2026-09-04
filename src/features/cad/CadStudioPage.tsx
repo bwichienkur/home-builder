@@ -413,101 +413,128 @@ export function CadStudioPage() {
       <header className="cad-studio-top">
         <div className="cad-studio-brand">
           <h1>CAD Studio</h1>
-          <p>Draw · modify · annotate — import DXF layers, edit plan, rebuild 3D.</p>
+          <p>Olsen Custom Homes</p>
         </div>
+
         <div className="cad-studio-actions">
-          <label className="cad-file-btn">
-            {busy ? 'Importing…' : 'Import DXF / DWG'}
-            <input
-              ref={fileRef}
-              type="file"
-              accept=".dxf,.dwg"
-              disabled={busy}
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) void onImportFile(file);
-                e.target.value = '';
+          <div className="cad-action-group" aria-label="File">
+            <label className="cad-file-btn cad-btn-primary">
+              {busy ? 'Importing…' : 'Import'}
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".dxf,.dwg"
+                disabled={busy}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) void onImportFile(file);
+                  e.target.value = '';
+                }}
+              />
+            </label>
+            <details className="cad-samples-menu">
+              <summary className="cad-btn">Samples</summary>
+              <div className="cad-samples-panel" role="menu">
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={(e) => {
+                    loadPlate(demoCadPlate());
+                    setLayout('split');
+                    setPlateMode('floor');
+                    setStudioMode('draw');
+                    setSelection(null);
+                    setWallMulti([]);
+                    const menu = e.currentTarget.closest('details');
+                    if (menu) menu.open = false;
+                  }}
+                >
+                  Demo ranch
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={(e) => {
+                    loadPlate(stillwaterCadSheetPlate());
+                    setLayout('sheets');
+                    const menu = e.currentTarget.closest('details');
+                    if (menu) menu.open = false;
+                  }}
+                >
+                  Stillwater sheets
+                </button>
+              </div>
+            </details>
+          </div>
+
+          <span className="cad-action-sep" aria-hidden />
+
+          <div className="cad-action-group" aria-label="History">
+            <button
+              type="button"
+              className="cad-btn"
+              disabled={!history.past.length}
+              onClick={() => {
+                gestureBaselineRef.current = null;
+                setHistory((h) => undoCadHistory(h));
               }}
-            />
-          </label>
-          <button
-            type="button"
-            onClick={() => {
-              loadPlate(demoCadPlate());
-              setLayout('split');
-              setPlateMode('floor');
-              setStudioMode('draw');
-              setSelection(null);
-              setWallMulti([]);
-            }}
-          >
-            Demo ranch
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              loadPlate(stillwaterCadSheetPlate());
-              setLayout('sheets');
-            }}
-          >
-            Stillwater sheets
-          </button>
+              title="Undo (Ctrl+Z)"
+            >
+              Undo
+            </button>
+            <button
+              type="button"
+              className="cad-btn"
+              disabled={!history.future.length}
+              onClick={() => {
+                gestureBaselineRef.current = null;
+                setHistory((h) => redoCadHistory(h));
+              }}
+              title="Redo (Ctrl+Y)"
+            >
+              Redo
+            </button>
+          </div>
+
           <span className="cad-action-sep" aria-hidden />
-          <button
-            type="button"
-            disabled={!history.past.length}
-            onClick={() => {
-              gestureBaselineRef.current = null;
-              setHistory((h) => undoCadHistory(h));
-            }}
-            title="Undo (Ctrl+Z)"
-          >
-            Undo
-          </button>
-          <button
-            type="button"
-            disabled={!history.future.length}
-            onClick={() => {
-              gestureBaselineRef.current = null;
-              setHistory((h) => redoCadHistory(h));
-            }}
-            title="Redo (Ctrl+Y)"
-          >
-            Redo
-          </button>
-          <span className="cad-action-sep" aria-hidden />
-          <button type="button" className={layout === 'split' ? 'is-active' : ''} onClick={() => setLayout('split')}>
-            2D + 3D
-          </button>
-          <button type="button" className={layout === 'plate' ? 'is-active' : ''} onClick={() => setLayout('plate')}>
-            2D only
-          </button>
-          <button
-            type="button"
-            className={layout === 'extrude' ? 'is-active' : ''}
-            onClick={() => setLayout('extrude')}
-            disabled={!can3d}
-          >
-            3D only
-          </button>
-          <button
-            type="button"
-            className={layout === 'massing' ? 'is-active' : ''}
-            onClick={() => setLayout('massing')}
-            disabled={!can3d}
-          >
-            Massing
-          </button>
-          <button
-            type="button"
-            className={layout === 'sheets' ? 'is-active' : ''}
-            onClick={() => setLayout('sheets')}
-            disabled={!plate?.sheets.length}
-          >
-            Sheets
-          </button>
+
+          <div className="cad-view-toggle" role="group" aria-label="Layout">
+            <button type="button" className={layout === 'split' ? 'is-active' : ''} onClick={() => setLayout('split')}>
+              Split
+            </button>
+            <button type="button" className={layout === 'plate' ? 'is-active' : ''} onClick={() => setLayout('plate')}>
+              2D
+            </button>
+            <button
+              type="button"
+              className={layout === 'extrude' ? 'is-active' : ''}
+              onClick={() => setLayout('extrude')}
+              disabled={!can3d}
+            >
+              3D
+            </button>
+            <button
+              type="button"
+              className={layout === 'massing' ? 'is-active' : ''}
+              onClick={() => setLayout('massing')}
+              disabled={!can3d}
+            >
+              Mass
+            </button>
+            <button
+              type="button"
+              className={layout === 'sheets' ? 'is-active' : ''}
+              onClick={() => setLayout('sheets')}
+              disabled={!plate?.sheets.length}
+            >
+              Sheets
+            </button>
+          </div>
         </div>
-        <div className="cad-status">{error ? <span className="cad-error">{error}</span> : progressLabel(progress)}</div>
+
+        <div className="cad-status">
+          {error ? <span className="cad-error">{error}</span> : progressLabel(progress) || 'Shift ortho · Esc cancel · Ctrl+Z undo'}
+        </div>
       </header>
 
       <div className="cad-studio-body cad-studio-body-shell">

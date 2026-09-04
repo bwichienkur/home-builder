@@ -53,27 +53,121 @@
 .cad-studio-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.55rem 0.65rem;
   align-items: center;
+  flex: 1 1 auto;
+  justify-content: center;
+}
+
+.cad-action-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 .cad-studio-actions button,
-.cad-file-btn {
+.cad-file-btn,
+.cad-samples-menu > summary {
   appearance: none;
   border: 1px solid var(--cad-line);
   background: #fff;
   color: var(--cad-ink);
-  border-radius: 8px;
-  padding: 0.45rem 0.75rem;
-  font-size: 0.85rem;
+  border-radius: 7px;
+  padding: 0.4rem 0.7rem;
+  font-size: 0.82rem;
+  line-height: 1.2;
   cursor: pointer;
 }
 
-.cad-studio-actions button.is-active,
-.cad-file-btn {
+.cad-studio-actions .cad-btn-primary,
+.cad-file-btn.cad-btn-primary {
   background: var(--cad-accent);
   border-color: var(--cad-accent);
   color: #f5faf8;
+  font-weight: 560;
+}
+
+.cad-view-toggle {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--cad-line);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.cad-view-toggle button {
+  border: 0;
+  border-radius: 0;
+  border-right: 1px solid var(--cad-line);
+  background: transparent;
+  padding: 0.4rem 0.65rem;
+  min-width: 2.6rem;
+}
+
+.cad-view-toggle button:last-child {
+  border-right: 0;
+}
+
+.cad-view-toggle button.is-active {
+  background: var(--cad-accent);
+  border-color: var(--cad-accent);
+  color: #f5faf8;
+}
+
+.cad-samples-menu {
+  position: relative;
+}
+
+.cad-samples-menu > summary {
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  user-select: none;
+}
+
+.cad-samples-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.cad-samples-menu > summary::after {
+  content: '';
+  width: 0.35rem;
+  height: 0.35rem;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg) translateY(-1px);
+  opacity: 0.7;
+}
+
+.cad-samples-panel {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  left: 0;
+  z-index: 40;
+  min-width: 11.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.35rem;
+  border: 1px solid var(--cad-line);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(20, 32, 51, 0.12);
+}
+
+.cad-samples-panel button {
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  border-radius: 6px;
+  padding: 0.45rem 0.55rem;
+}
+
+.cad-samples-panel button:hover {
+  background: #eef3f1;
 }
 
 .cad-studio-actions button:disabled {
@@ -1024,8 +1118,12 @@
 }
 
 .cad-status {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: var(--cad-muted);
+  max-width: 16rem;
+  text-align: right;
+  line-height: 1.35;
+  flex-shrink: 0;
 }
 
 .cad-error {

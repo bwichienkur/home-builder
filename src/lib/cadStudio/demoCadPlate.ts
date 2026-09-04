@@ -164,16 +164,18 @@ export function demoCadPlate(): CadPlate {
         railing: true,
       },
       {
+        // Lot must clear main house (0–40 × 0–28) and detached garage (52–68 × 4–20)
+        // with a readable setback so the parcel is not swallowed by the building.
         id: 'slab-demo-plot',
         kind: 'plot',
         points: [
-          { x: -8, y: -14 },
-          { x: 56, y: -14 },
-          { x: 56, y: 36 },
-          { x: -8, y: 36 },
+          { x: -22, y: -28 },
+          { x: 90, y: -28 },
+          { x: 90, y: 52 },
+          { x: -22, y: 52 },
         ],
-        thicknessFt: 0.05,
-        elevationFt: -0.02,
+        thicknessFt: 0.08,
+        elevationFt: -0.04,
         layer: 'A-SITE-PLOT',
         railing: false,
       },
@@ -224,9 +226,10 @@ export function demoCadPlate(): CadPlate {
     ],
     terrain: {
       enabled: true,
-      gradePercent: 3,
+      gradePercent: 2,
       directionDeg: 15,
-      padFt: 14,
+      // Extra site pad beyond building envelope so land reads larger than the house.
+      padFt: 28,
     },
     titleBlock: {
       projectName: 'Demo Ranch',
@@ -253,7 +256,7 @@ export function demoCadPlate(): CadPlate {
       { id: 'demo-front', name: 'SHT. 2 FRONT ELEVATION', order: 2, kind: 'elevation' },
       { id: 'demo-section', name: 'SHT. 3 SECTION A-A', order: 3, kind: 'details' },
     ],
-    bounds: { minX: 0, minY: -8, maxX: 48, maxY: 28 },
+    bounds: { minX: -22, minY: -28, maxX: 90, maxY: 52 },
     sheetSource: 'synthetic',
   };
 
@@ -284,7 +287,8 @@ export function demoCadPlate(): CadPlate {
     })),
     { x1: 54, y1: 4, x2: 66, y2: 4, layer: 'DOORS', role: 'opening' as const },
   ];
-  plate.bounds = { minX: 0, minY: -8, maxX: 70, maxY: 28 };
+  // Keep plate bounds = full lot (not only building envelope).
+  plate.bounds = { minX: -22, minY: -28, maxX: 90, maxY: 52 };
   plate.labels = [
     ...plate.labels,
     { x: 60, y: 12, text: 'GARAGE', layer: 'TEXT ROOM' },

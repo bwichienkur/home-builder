@@ -405,8 +405,16 @@ export function storyHeightFt(plate: CadPlate, storyId: string | undefined, fall
 /** Exterior contour rectangle as a floor slab for a story (M5). */
 export function ensureStoryFloorSlab(plate: CadPlate, storyId: string): CadPlate {
   const storyPlate = filterPlateToStory(plate, storyId);
-  const walls = storyPlate.wallCenterlines.filter((w) => w.exterior);
-  const use = walls.length ? walls : storyPlate.wallCenterlines;
+  const exterior = storyPlate.wallCenterlines.filter((w) => w.exterior);
+  let use = exterior.length ? exterior : storyPlate.wallCenterlines;
+  // Prefer main house when detached buildings exist so floor isn't a site-wide AABB.
+  const buildingIds = [...new Set(use.map((w) => w.buildingId).filter(Boolean))] as string[];
+  if (buildingIds.length > 1) {
+    const preferred =
+      plate.buildings?.find((b) => /main/i.test(b.id) || /main/i.test(b.name))?.id ?? buildingIds[0]!;
+    const filtered = use.filter((w) => w.buildingId === preferred);
+    if (filtered.length) use = filtered;
+  }
   if (!use.length) return plate;
   let minX = Infinity;
   let minY = Infinity;

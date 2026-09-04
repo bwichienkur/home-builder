@@ -18,6 +18,36 @@ describe('cad wave3 foundations + plot', () => {
     expect(plate.slabs.some((s) => s.kind === 'plot')).toBe(true);
   });
 
+  it('demo ranch plot fully contains house and detached garage with setback', () => {
+    const plate = demoCadPlate();
+    const plot = plate.slabs.find((s) => s.kind === 'plot');
+    expect(plot).toBeTruthy();
+    const xs = plot!.points.map((p) => p.x);
+    const ys = plot!.points.map((p) => p.y);
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const minY = Math.min(...ys);
+    const maxY = Math.max(...ys);
+    // Main house 0–40 × 0–28; garage 52–68 × 4–20 — need clear setback on all sides.
+    expect(minX).toBeLessThanOrEqual(-16);
+    expect(maxX).toBeGreaterThanOrEqual(80);
+    expect(minY).toBeLessThanOrEqual(-20);
+    expect(maxY).toBeGreaterThanOrEqual(44);
+    expect(plate.bounds.minX).toBeLessThanOrEqual(minX);
+    expect(plate.bounds.maxX).toBeGreaterThanOrEqual(maxX);
+    for (const w of plate.wallCenterlines) {
+      for (const [x, y] of [
+        [w.x1, w.y1],
+        [w.x2, w.y2],
+      ] as const) {
+        expect(x).toBeGreaterThan(minX);
+        expect(x).toBeLessThan(maxX);
+        expect(y).toBeGreaterThan(minY);
+        expect(y).toBeLessThan(maxY);
+      }
+    }
+  });
+
   it('applyAutoFoundation rebuilds footing strips without removing terrace', () => {
     let plate = clearAutoFoundation(demoCadPlate());
     expect(plate.slabs.every((s) => !s.auto)).toBe(true);

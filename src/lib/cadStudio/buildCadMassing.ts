@@ -27,10 +27,23 @@ function planSpan(bounds: CadBoundsFt): { widthFt: number; depthFt: number } {
   };
 }
 
+/** Prefer the main house when a plate has multiple buildings (e.g. detached garage). */
+function primaryBuildingWalls(walls: CadWallCenterlineFt[], plate: CadPlate): CadWallCenterlineFt[] {
+  const ids = [...new Set(walls.map((w) => w.buildingId).filter(Boolean))] as string[];
+  if (ids.length <= 1) return walls;
+  const preferred =
+    plate.buildings?.find((b) => /main/i.test(b.id) || /main/i.test(b.name))?.id ?? ids[0]!;
+  const filtered = walls.filter((w) => w.buildingId === preferred);
+  return filtered.length ? filtered : walls;
+}
+
 /** Exterior wall AABB when available (Plan7-style roof from building contour). */
 export function exteriorContourBounds(plate: CadPlate): CadBoundsFt {
   const exterior = plate.wallCenterlines.filter((w) => w.exterior);
-  const walls: CadWallCenterlineFt[] = exterior.length ? exterior : plate.wallCenterlines;
+  const walls: CadWallCenterlineFt[] = primaryBuildingWalls(
+    exterior.length ? exterior : plate.wallCenterlines,
+    plate,
+  );
   if (!walls.length) return { ...plate.bounds };
   let minX = Infinity;
   let minY = Infinity;

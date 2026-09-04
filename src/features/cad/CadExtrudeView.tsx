@@ -184,7 +184,7 @@ function SlabMesh({
 
   if (!geometry) return null;
   if (slab.kind === 'plot') {
-    // Thin ribbon outline for lot boundary
+    // Filled lawn + boundary so the lot clearly contains the building (not a thin edge only).
     const edges = slab.points.map((p, i) => {
       const a = p;
       const b = slab.points[(i + 1) % slab.points.length]!;
@@ -202,10 +202,13 @@ function SlabMesh({
     });
     return (
       <group>
+        <mesh geometry={geometry} receiveShadow>
+          <meshStandardMaterial color="#8fbc8f" roughness={0.95} metalness={0} />
+        </mesh>
         {edges.map((e) => (
-          <mesh key={e.key} position={[e.midX, 0.03, e.midZ]} rotation={[0, e.rot, 0]}>
-            <boxGeometry args={[0.08, 0.06, e.len]} />
-            <meshStandardMaterial color="#0f766e" roughness={0.7} />
+          <mesh key={e.key} position={[e.midX, 0.05, e.midZ]} rotation={[0, e.rot, 0]}>
+            <boxGeometry args={[0.1, 0.08, e.len]} />
+            <meshStandardMaterial color="#0f766e" roughness={0.65} />
           </mesh>
         ))}
       </group>
@@ -427,6 +430,19 @@ function Scene({
 }) {
   const { walls, openings, fixtures, slabs, stairs, centerFt, heightM } = extrusion;
   const floorSize = useMemo(() => {
+    // Prefer plot parcel extent so the ground reads larger than the house.
+    const plot = plate?.slabs?.find((s) => s.kind === 'plot');
+    if (plot && plot.points.length >= 3) {
+      let max = 10;
+      for (const p of plot.points) {
+        const [x, z] = world(
+          WORLD_ORIGIN.x + ftToPx(p.x - centerFt.cx),
+          WORLD_ORIGIN.y + ftToPx(p.y - centerFt.cy),
+        );
+        max = Math.max(max, Math.abs(x), Math.abs(z));
+      }
+      return max * 2.15;
+    }
     if (!walls.length) return 20;
     let max = 10;
     for (const w of walls) {
@@ -434,8 +450,8 @@ function Scene({
       const [x2, z2] = world(w.end.x, w.end.y);
       max = Math.max(max, Math.abs(x1), Math.abs(z1), Math.abs(x2), Math.abs(z2));
     }
-    return max * 2.4;
-  }, [walls]);
+    return max * 2.8;
+  }, [walls, plate, centerFt]);
   const sunPosition = useMemo(() => sunPositionFromHour(sunHour), [sunHour]);
   const clipPlanes = useMemo(
     () => (sectionClip ? sectionClipPlanes(plate ?? undefined, centerFt) : null),
