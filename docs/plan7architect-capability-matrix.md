@@ -154,7 +154,7 @@
 | F-03 | Roof as its own story / level | demos create roof floor | Partial | Roof story convention | P1 |
 | F-04 | Multiple buildings on site | Multiple Buildings | Missing | Multi-building project | P2 |
 | F-05 | Move/copy/mirror building | DE comparison | Missing | Transform building | P2 |
-| F-06 | Foundations (auto) | Foundation tutorial; auto Fundament | Missing | Slab/footing massing | P2 |
+| F-06 | Foundations (auto) | Foundation tutorial; auto Fundament | Partial | Slab/footing massing | P2 |
 | F-07 | Split-level rooms | Split-Level Rooms | Missing | Room Z offsets | P2 |
 | F-08 | Show/hide stories in 3D | demos | Partial | Story visibility toggles | P1 |
 
@@ -168,7 +168,7 @@
 | T-02 | Balcony slab + railing | Balcony & Railing; demos | Partial | Slab + railing combo | P1 |
 | T-03 | Garage / carport symbols or editors | Symbol catalog; Carport tutorial | Partial | Placeable massing + carport editor later | P1 |
 | T-04 | Terrain modeling (contours, hills, etc.) | Terrain Modeling; Pro Gelände | Missing | Approx heightfield later | P2 |
-| T-05 | Site layout / plot boundary | Site Layout; Grundstückmarkierung | Missing | Lot polyline | P2 |
+| T-05 | Site layout / plot boundary | Site Layout; Grundstückmarkierung | Partial | Lot polyline | P2 |
 | T-06 | Fences, beds, paths, ponds | DE comparison Gelände | Missing | Prop + path tools | P2 |
 | T-07 | Outdoor object catalog (cars, plants) | demos hedges/cars | Partial | Prop packs (GLB) | P1 |
 
@@ -314,6 +314,7 @@ Spiral stairs, muntins, timber mode, solar, MEP, scan recognition, walkthrough v
 ### Changelog
 | Date | Change |
 |---|---|
+| 2026-09-04 | Wave 3: auto foundation + plot boundary
 | 2026-09-04 | Wave 2: garage, stairs, wall paint, sun/shadows, room CSV, DXF/PNG export
 | 2026-09-04 | Wave 1 next: roof catalog (gable/flat/shed), snaps+guides, wall thickness, passage, interior dims, room fills, balcony railing (#297 slabs/dims merged first) |
 | 2026-09-03 | Initial matrix from tutorials index, DE version comparison, Pro page, and 3 YouTube house demos |

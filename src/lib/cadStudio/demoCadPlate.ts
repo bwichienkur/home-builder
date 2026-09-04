@@ -1,4 +1,5 @@
 import type { CadPlate } from './types';
+import { applyAutoFoundation } from './buildCadFoundation';
 
 /** Tiny orthogonal ranch used as an offline CAD Studio demo (no Stillwater DXF required). */
 export function demoCadPlate(): CadPlate {
@@ -98,7 +99,7 @@ export function demoCadPlate(): CadPlate {
     ],
   };
 
-  return {
+  const plate: CadPlate = {
     id: 'cad-demo-ranch',
     sourceFileName: 'demo-ranch.dxf',
     importedAt: new Date().toISOString(),
@@ -162,6 +163,20 @@ export function demoCadPlate(): CadPlate {
         layer: 'SLAB BALCONY',
         railing: true,
       },
+      {
+        id: 'slab-demo-plot',
+        kind: 'plot',
+        points: [
+          { x: -8, y: -14 },
+          { x: 56, y: -14 },
+          { x: 56, y: 36 },
+          { x: -8, y: 36 },
+        ],
+        thicknessFt: 0.05,
+        elevationFt: -0.02,
+        layer: 'A-SITE-PLOT',
+        railing: false,
+      },
     ],
     stairs: [
       {
@@ -177,6 +192,14 @@ export function demoCadPlate(): CadPlate {
         layer: 'STAIRS',
       },
     ],
+    foundation: {
+      enabled: true,
+      mode: 'slab+footing',
+      offsetFt: 0.5,
+      slabThicknessFt: 0.67,
+      footingWidthFt: 2,
+      footingDepthFt: 1,
+    },
     elevationFront,
     elevationSide,
     sheets: [
@@ -186,4 +209,5 @@ export function demoCadPlate(): CadPlate {
     bounds: { minX: 0, minY: -8, maxX: 48, maxY: 28 },
     sheetSource: 'synthetic',
   };
+  return applyAutoFoundation(plate, { enabled: true });
 }
