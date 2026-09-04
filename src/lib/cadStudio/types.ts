@@ -25,7 +25,28 @@ export type CadSegmentFt = {
   linetype?: string;
 };
 
+/** Catalog type id for walls (assemblies). */
+export type CadWallTypeId =
+  | 'wall-ext-2x6'
+  | 'wall-ext-2x4'
+  | 'wall-int-2x4'
+  | 'wall-int-partition';
+
+/** Catalog type id for openings (families). */
+export type CadOpeningTypeId =
+  | 'door-3068'
+  | 'door-2868'
+  | 'door-garage-16'
+  | 'window-3040'
+  | 'window-6030'
+  | 'passage-30'
+  | 'passage-36';
+
+export type CadOpeningSwing = 'left' | 'right' | 'slider' | 'none';
+
 export type CadOpeningHintFt = {
+  /** Stable element id (M1). */
+  id?: string;
   x1: number;
   y1: number;
   x2: number;
@@ -34,17 +55,31 @@ export type CadOpeningHintFt = {
   layer?: string;
   /** Window sill height above finished floor (feet). Doors/passages/garages use 0. */
   sillFt?: number;
-  /** Host wall index when placed on a wall centerline. */
+  /** Clear opening height (feet). When omitted, extrude uses kind defaults. */
+  heightFt?: number;
+  /** Head height AFF = sillFt + heightFt (optional convenience). */
+  headFt?: number;
+  /** Host wall index when placed on a wall centerline (legacy; prefer hostWallId). */
   hostWallIndex?: number;
+  /** Stable host wall element id (M2). */
+  hostWallId?: string;
   /** Parameter along host wall [0..1]. */
   hostT?: number;
   /** Opening clear width (feet). */
   widthFt?: number;
   /** Schedule mark e.g. D1 / W2. */
   mark?: string;
+  /** Catalog type id. */
+  typeId?: CadOpeningTypeId;
+  /** Door/window hand / operation. */
+  swing?: CadOpeningSwing;
+  /** Story membership (M3). */
+  storyId?: string;
 };
 
 export type CadWallCenterlineFt = {
+  /** Stable element id (M1). */
+  id?: string;
   x1: number;
   y1: number;
   x2: number;
@@ -53,10 +88,16 @@ export type CadWallCenterlineFt = {
   exterior?: boolean;
   /** Wall thickness in feet (defaults: exterior 0.59 ≈ 7", interior 0.39 ≈ 4.7"). */
   thicknessFt?: number;
+  /** Unconstrained wall height override (feet). Default = story height. */
+  heightFt?: number;
   /** Paint / finish preset id (stucco, paint, brick, stone, wood). */
   materialId?: CadWallMaterialId;
   /** Multi-building membership (default = primary building). */
   buildingId?: string;
+  /** Catalog type id. */
+  typeId?: CadWallTypeId;
+  /** Story membership (M3). */
+  storyId?: string;
 };
 
 export type CadWallMaterialId = 'stucco' | 'paint' | 'brick' | 'stone' | 'wood' | 'interior';
@@ -152,6 +193,8 @@ export type CadSlabKind = 'terrace' | 'driveway' | 'garden' | 'balcony' | 'footi
 export type CadSlabFt = {
   id: string;
   kind: CadSlabKind;
+  /** Story membership for floor plates (M3/M5). */
+  storyId?: string;
   /** Closed polygon in plan feet (first ≠ last; closed on render). */
   points: Array<{ x: number; y: number }>;
   /** Vertical thickness in feet. */

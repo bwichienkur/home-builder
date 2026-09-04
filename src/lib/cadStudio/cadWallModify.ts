@@ -2,6 +2,12 @@ import type { CadOpeningHintFt, CadPlate, CadWallCenterlineFt } from './types';
 import { wallAngleDeg } from './cadLengthParse';
 import { defaultWallThicknessFt } from './cadDrawSnap';
 import { segLengthFt, syncWallSegments, updateWallCenterline } from './editCadPlate';
+import {
+  ensureModelKernel,
+  nextOpeningElementId,
+  resolveOpeningHostIndex,
+  resyncHostedOpeningsByWall,
+} from './cadModelKernel';
 
 const JOIN_TOL = 0.55;
 
@@ -22,30 +28,30 @@ export function setWallLength(
   const len = Math.max(0.25, lengthFt);
   const { ux, uy, len: cur } = unit(w);
   if (anchor === 'start') {
-    return updateWallCenterline(plate, index, {
+    return resyncHostedOpenings(updateWallCenterline(plate, index, {
       ...w,
       x2: w.x1 + ux * len,
       y2: w.y1 + uy * len,
-    });
+    }), index);
   }
   if (anchor === 'end') {
-    return updateWallCenterline(plate, index, {
+    return resyncHostedOpenings(updateWallCenterline(plate, index, {
       ...w,
       x1: w.x2 - ux * len,
       y1: w.y2 - uy * len,
-    });
+    }), index);
   }
   const mx = (w.x1 + w.x2) / 2;
   const my = (w.y1 + w.y2) / 2;
   const half = len / 2;
   void cur;
-  return updateWallCenterline(plate, index, {
+  return resyncHostedOpenings(updateWallCenterline(plate, index, {
     ...w,
     x1: mx - ux * half,
     y1: my - uy * half,
     x2: mx + ux * half,
     y2: my + uy * half,
-  });
+  }), index);
 }
 
 /** Rotate wall about start or midpoint. */
@@ -62,45 +68,46 @@ export function setWallAngle(
   const ux = Math.cos(rad);
   const uy = Math.sin(rad);
   if (pivot === 'start') {
-    return updateWallCenterline(plate, index, {
+    return resyncHostedOpenings(updateWallCenterline(plate, index, {
       ...w,
       x2: w.x1 + ux * len,
       y2: w.y1 + uy * len,
-    });
+    }), index);
   }
   const mx = (w.x1 + w.x2) / 2;
   const my = (w.y1 + w.y2) / 2;
   const half = len / 2;
-  return updateWallCenterline(plate, index, {
+  return resyncHostedOpenings(updateWallCenterline(plate, index, {
     ...w,
     x1: mx - ux * half,
     y1: my - uy * half,
     x2: mx + ux * half,
     y2: my + uy * half,
-  });
+  }), index);
 }
 
 export function flipWall(plate: CadPlate, index: number): CadPlate {
   const w = plate.wallCenterlines[index];
   if (!w) return plate;
-  return updateWallCenterline(plate, index, { ...w, x1: w.x2, y1: w.y2, x2: w.x1, y2: w.y1 });
+  return resyncHostedOpenings(updateWallCenterline(plate, index, { ...w, x1: w.x2, y1: w.y2, x2: w.x1, y2: w.y1 }), index);
 }
 
 export function moveWall(plate: CadPlate, index: number, dx: number, dy: number): CadPlate {
   const w = plate.wallCenterlines[index];
   if (!w) return plate;
-  return updateWallCenterline(plate, index, {
+  return resyncHostedOpenings(updateWallCenterline(plate, index, {
     ...w,
     x1: w.x1 + dx,
     y1: w.y1 + dy,
     x2: w.x2 + dx,
     y2: w.y2 + dy,
-  });
+  }), index);
 }
 
 export function moveWalls(plate: CadPlate, indices: number[], dx: number, dy: number): CadPlate {
   let next = plate;
   for (const i of indices) next = moveWall(next, i, dx, dy);
+  // moveWall already resyncs each index
   return next;
 }
 
@@ -168,16 +175,16 @@ export function trimWallTo(
   const dEnd = Math.hypot(target.x2 - hit.x, target.y2 - hit.y);
   // Prefer keeping the longer remaining stub from the end that is outside the cutter segment
   if (hit.tA < 0) {
-    return updateWallCenterline(plate, targetIndex, { ...target, x1: hit.x, y1: hit.y });
+    return resyncHostedOpenings(updateWallCenterline(plate, targetIndex, { ...target, x1: hit.x, y1: hit.y }), targetIndex);
   }
   if (hit.tA > 1) {
-    return updateWallCenterline(plate, targetIndex, { ...target, x2: hit.x, y2: hit.y });
+    return resyncHostedOpenings(updateWallCenterline(plate, targetIndex, { ...target, x2: hit.x, y2: hit.y }), targetIndex);
   }
   // Intersection on segment: keep the longer side
   if (dStart >= dEnd) {
-    return updateWallCenterline(plate, targetIndex, { ...target, x2: hit.x, y2: hit.y });
+    return resyncHostedOpenings(updateWallCenterline(plate, targetIndex, { ...target, x2: hit.x, y2: hit.y }), targetIndex);
   }
-  return updateWallCenterline(plate, targetIndex, { ...target, x1: hit.x, y1: hit.y });
+  return resyncHostedOpenings(updateWallCenterline(plate, targetIndex, { ...target, x1: hit.x, y1: hit.y }), targetIndex);
 }
 
 /** Extend wall `target` to meet cutter (infinite line of cutter). */
@@ -192,34 +199,58 @@ export function extendWallTo(
   const hit = lineIntersect(target, cutter);
   if (!hit) return plate;
   if (hit.tA < 0.5) {
-    return updateWallCenterline(plate, targetIndex, { ...target, x1: hit.x, y1: hit.y });
+    return resyncHostedOpenings(updateWallCenterline(plate, targetIndex, { ...target, x1: hit.x, y1: hit.y }), targetIndex);
   }
-  return updateWallCenterline(plate, targetIndex, { ...target, x2: hit.x, y2: hit.y });
+  return resyncHostedOpenings(updateWallCenterline(plate, targetIndex, { ...target, x2: hit.x, y2: hit.y }), targetIndex);
 }
 
-/** Break wall at plan point into two segments. */
+/** Break wall at plan point into two segments; remap hosted openings by hostT. */
 export function breakWallAt(
   plate: CadPlate,
   index: number,
   x: number,
   y: number,
 ): CadPlate {
-  const w = plate.wallCenterlines[index];
+  const normalized = ensureModelKernel(plate);
+  const w = normalized.wallCenterlines[index];
   if (!w) return plate;
   const { ux, uy, len } = unit(w);
   let t = ((x - w.x1) * ux + (y - w.y1) * uy) / len;
   t = Math.max(0.05, Math.min(0.95, t));
   const bx = w.x1 + ux * len * t;
   const by = w.y1 + uy * len * t;
-  const a: CadWallCenterlineFt = { ...w, x2: bx, y2: by };
-  const b: CadWallCenterlineFt = { ...w, x1: bx, y1: by };
+  const idA = w.id || nextOpeningElementId().replace('opn', 'wall');
+  const idB = `${idA}-b`;
+  const a: CadWallCenterlineFt = { ...w, id: idA, x2: bx, y2: by };
+  const b: CadWallCenterlineFt = { ...w, id: idB, x1: bx, y1: by };
   const wallCenterlines = [
-    ...plate.wallCenterlines.slice(0, index),
+    ...normalized.wallCenterlines.slice(0, index),
     a,
     b,
-    ...plate.wallCenterlines.slice(index + 1),
+    ...normalized.wallCenterlines.slice(index + 1),
   ];
-  return syncWallSegments({ ...plate, wallCenterlines });
+  const openingHints = normalized.openingHints.map((o) => {
+    const hostIdx = resolveOpeningHostIndex(normalized, o);
+    if (hostIdx !== index || o.hostT == null) {
+      if (o.hostWallIndex != null && o.hostWallIndex > index) {
+        return { ...o, hostWallIndex: o.hostWallIndex + 1 };
+      }
+      return o;
+    }
+    if (o.hostT <= t) {
+      const localT = t < 1e-6 ? 0 : o.hostT / t;
+      return { ...o, hostWallId: idA, hostWallIndex: index, hostT: Math.min(0.98, localT) };
+    }
+    const localT = (o.hostT - t) / Math.max(1e-6, 1 - t);
+    return {
+      ...o,
+      hostWallId: idB,
+      hostWallIndex: index + 1,
+      hostT: Math.min(0.98, Math.max(0.02, localT)),
+    };
+  });
+  const next = syncWallSegments({ ...normalized, wallCenterlines, openingHints });
+  return resyncHostedOpenings(resyncHostedOpenings(next, index), index + 1);
 }
 
 /** Offset wall parallel by distance (positive = left of direction). */
@@ -322,17 +353,25 @@ export function placeHostedOpening(
         : kind === 'passage'
           ? 'OPENINGS'
           : 'DOORS';
+  const heightFt = kind === 'window' ? 4 : kind === 'garage' ? 7 : 6.667;
+  const sill = kind === 'window' ? sillFt : 0;
   const hint: CadOpeningHintFt = {
+    id: nextOpeningElementId(),
     x1: cx - ux * half,
     y1: cy - uy * half,
     x2: cx + ux * half,
     y2: cy + uy * half,
     kind,
     layer,
-    sillFt: kind === 'window' ? sillFt : 0,
+    sillFt: sill,
+    heightFt,
+    headFt: sill + heightFt,
     hostWallIndex: wallIndex,
+    hostWallId: w.id,
     hostT: tt,
     widthFt: half * 2,
+    storyId: w.storyId,
+    swing: kind === 'door' ? 'left' : 'none',
   };
   return syncWallSegments({
     ...plate,
@@ -354,8 +393,8 @@ export function placeHostedOpening(
 export function setOpeningWidth(plate: CadPlate, index: number, widthFt: number): CadPlate {
   const o = plate.openingHints[index];
   if (!o) return plate;
-  const w =
-    o.hostWallIndex != null ? plate.wallCenterlines[o.hostWallIndex] : null;
+  const hostIdx = resolveOpeningHostIndex(plate, o);
+  const w = hostIdx >= 0 ? plate.wallCenterlines[hostIdx] : null;
   if (w && o.hostT != null) {
     const { ux, uy, len } = unit(w);
     const half = Math.min(Math.max(0.5, widthFt) / 2, len * 0.45);
@@ -409,25 +448,9 @@ export function flipOpeningHand(plate: CadPlate, index: number): CadPlate {
   return syncWallSegments({ ...plate, openingHints });
 }
 
-/** After wall edit, re-seat hosted openings on that wall. */
+/** After wall edit, re-seat hosted openings on that wall (id + index). */
 export function resyncHostedOpenings(plate: CadPlate, wallIndex: number): CadPlate {
-  const w = plate.wallCenterlines[wallIndex];
-  if (!w) return plate;
-  const { ux, uy, len } = unit(w);
-  const openingHints = plate.openingHints.map((o) => {
-    if (o.hostWallIndex !== wallIndex || o.hostT == null) return o;
-    const half = (o.widthFt ?? segLengthFt(o)) / 2;
-    const cx = w.x1 + ux * len * o.hostT;
-    const cy = w.y1 + uy * len * o.hostT;
-    return {
-      ...o,
-      x1: cx - ux * half,
-      y1: cy - uy * half,
-      x2: cx + ux * half,
-      y2: cy + uy * half,
-    };
-  });
-  return syncWallSegments({ ...plate, openingHints });
+  return resyncHostedOpeningsByWall(ensureModelKernel(plate), wallIndex);
 }
 
 /** Apply a temporary length dim: set selected wall length. */

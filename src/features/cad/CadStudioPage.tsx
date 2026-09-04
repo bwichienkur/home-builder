@@ -70,6 +70,15 @@ import {
   wallAngleDeg,
   withLayerVisibility,
   DEFAULT_ROOF_OVERRIDES,
+  ensureModelKernel,
+  CAD_WALL_TYPES,
+  CAD_OPENING_TYPES,
+  applyWallType,
+  applyOpeningType,
+  setOpeningHeight,
+  setOpeningSwing,
+  setWallStory,
+  setOpeningStory,
   type CadEditTool,
   type CadHistoryState,
   type CadLayerClassify,
@@ -146,7 +155,9 @@ export function CadStudioPage() {
 
   const loadPlate = (p: CadPlate) => {
     gestureBaselineRef.current = null;
-    const cleaned = ensureDefaultStories(autoHostOpenings(assignOpeningMarks(p)));
+    const cleaned = ensureModelKernel(
+      ensureDefaultStories(autoHostOpenings(assignOpeningMarks(p))),
+    );
     setHistory((h) => replaceCadPresent(h, cleaned));
   };
   const [layout, setLayout] = useState<LayoutMode>('split');
@@ -1603,6 +1614,36 @@ export function CadStudioPage() {
                           );
                         })}
                       </div>
+                      <label>
+                        Wall type
+                        <select
+                          value={plate.wallCenterlines[selection.index]!.typeId ?? (plate.wallCenterlines[selection.index]!.exterior ? 'wall-ext-2x6' : 'wall-int-2x4')}
+                          onChange={(e) =>
+                            setPlate(applyWallType(plate, selection.index, e.target.value as import('../../lib/cadStudio/types').CadWallTypeId))
+                          }
+                        >
+                          {CAD_WALL_TYPES.map((wt) => (
+                            <option key={wt.id} value={wt.id}>
+                              {wt.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      {!!plate.stories?.length && (
+                        <label>
+                          Story
+                          <select
+                            value={plate.wallCenterlines[selection.index]!.storyId ?? plate.activeStoryId ?? ''}
+                            onChange={(e) => setPlate(setWallStory(plate, selection.index, e.target.value))}
+                          >
+                            {plate.stories.map((s) => (
+                              <option key={s.id} value={s.id}>
+                                {s.name}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      )}
                     </div>
                   )}
                   {selection.kind === 'opening' && plate.openingHints[selection.index] && (
@@ -1664,6 +1705,67 @@ export function CadStudioPage() {
                       <button type="button" onClick={() => setPlate(flipOpeningHand(plate, selection.index))}>
                         Flip hand
                       </button>
+                      <label>
+                        Opening type
+                        <select
+                          value={plate.openingHints[selection.index]!.typeId ?? 'door-3068'}
+                          onChange={(e) =>
+                            setPlate(
+                              applyOpeningType(
+                                plate,
+                                selection.index,
+                                e.target.value as import('../../lib/cadStudio/types').CadOpeningTypeId,
+                              ),
+                            )
+                          }
+                        >
+                          {CAD_OPENING_TYPES.filter(
+                            (ot) =>
+                              ot.kind === plate.openingHints[selection.index]!.kind ||
+                              true,
+                          ).map((ot) => (
+                            <option key={ot.id} value={ot.id}>
+                              {ot.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        Height (ft)
+                        <input
+                          type="number"
+                          min={0.5}
+                          max={12}
+                          step={0.125}
+                          value={plate.openingHints[selection.index]!.heightFt ?? 6.667}
+                          onChange={(e) => {
+                            const v = Number(e.target.value);
+                            if (!Number.isFinite(v)) return;
+                            setPlate(setOpeningHeight(plate, selection.index, v));
+                          }}
+                        />
+                      </label>
+                      <label>
+                        Swing
+                        <select
+                          value={plate.openingHints[selection.index]!.swing ?? 'none'}
+                          onChange={(e) =>
+                            setPlate(
+                              setOpeningSwing(
+                                plate,
+                                selection.index,
+                                e.target.value as import('../../lib/cadStudio/types').CadOpeningSwing,
+                              ),
+                            )
+                          }
+                        >
+                          <option value="left">Left</option>
+                          <option value="right">Right</option>
+                          <option value="slider">Slider</option>
+                          <option value="none">None</option>
+                        </select>
+                      </label>
+
                     </div>
                   )}
                   {selection.kind === 'label' && plate.labels[selection.index] && (
@@ -2006,6 +2108,23 @@ export function CadStudioPage() {
                   sunHour={sunHour}
                   shadows={shadowsOn}
                   sectionClip={sectionClip}
+                  onSelectOpening={(openingId) => {
+                    const bare = openingId.replace(/^z[0-9.]+\|/, '').replace(/-hint-\d+$/, '');
+                    // Match by plate opening id or by wall-hint index suffix
+                    const byId = plate.openingHints.findIndex((o) => o.id && openingId.includes(o.id));
+                    if (byId >= 0) {
+                      setSelection({ kind: 'opening', index: byId });
+                      return;
+                    }
+                    const m = /-hint-(\d+)$/.exec(openingId);
+                    if (m) {
+                      const idx = Number(m[1]);
+                      if (Number.isFinite(idx) && plate.openingHints[idx]) {
+                        setSelection({ kind: 'opening', index: idx });
+                      }
+                    }
+                    void bare;
+                  }}
                 />
               </div>
             )}
