@@ -347,6 +347,7 @@ export function buildCadPlateFromDxf(
     openingHints: [],
     labels: plateLabels,
     fixtureHints: plateFixtureHints,
+    slabs: [],
     elevationFront: elevationFront ?? undefined,
     elevationSide: elevationSide ?? undefined,
     sheets,
@@ -417,12 +418,14 @@ export function removeLayer(plate: CadPlate, layerName: string): CadPlate {
   const segments = plate.segments.filter((s) => s.layer !== layerName);
   const labels = plate.labels.filter((l) => (l.layer || 'TEXT ROOM') !== layerName);
   const fixtureHints = plate.fixtureHints.filter((f) => f.layer !== layerName);
+  const slabs = (plate.slabs ?? []).filter((s) => s.layer !== layerName);
   const layers = plate.layers.filter((l) => l.name !== layerName);
   return rebuildPlateFromLayerSettings({
     ...plate,
     segments,
     labels,
     fixtureHints,
+    slabs,
     layers,
   });
 }

@@ -6,6 +6,8 @@ export type {
   CadFixtureKind,
   CadFixtureHintFt,
   CadFixtureInstance,
+  CadSlabKind,
+  CadSlabFt,
   CadElevationSheet,
   CadElevationSegmentFt,
   CadMassing,
@@ -44,19 +46,23 @@ export {
   formatRoomAreaSqFt,
   type CadRoomStamp,
 } from './cadRoomStamps';
+export { computeExteriorDims, type CadExteriorDim } from './cadExteriorDims';
 export {
   addFixtureHint,
   addOpeningHint,
+  addSlab,
   addWallCenterline,
   deleteSelection,
   formatWallLengthFt,
   moveFixtureHint,
   moveLabel,
   moveOpeningHint,
+  moveSlab,
   pickAtPoint,
   segLengthFt,
   selectionSummary,
   syncWallSegments,
+  updateSlab,
   type CadEditTool,
   type CadPlateSelection,
 } from './editCadPlate';

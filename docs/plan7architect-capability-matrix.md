@@ -87,7 +87,7 @@
 | ID | Plan7 capability | Public evidence | Olsen today | Strategy | Priority |
 |---|---|---|---|---|---|
 | W-01 | Draw exterior/interior walls from catalog | Drawing Walls; house demos | Partial | Catalog thicknesses + draw tool | P0 |
-| W-02 | Live interactive dimensions while drawing | House demos (“interactive dimensions”) | Missing | Rubber-band length + segment dims | P0 |
+| W-02 | Live interactive dimensions while drawing | House demos (“interactive dimensions”) | Partial | Rubber-band length + segment dims | P0 |
 | W-03 | Wall thickness adjust | Adjusting Wall Thickness | Partial | Inspector + presets | P0 |
 | W-04 | Multi-layer / custom wall assemblies | Custom Walls, Wall Layers; Pro wood structures | Partial (assembly presets) | Full layer stack editor | P2 |
 | W-05 | Round walls | Round Walls tutorial | Missing | Arc wall tool | P2 |
@@ -126,7 +126,7 @@
 | R-02 | Room area calculation | Floor Areas; WoFlV/DIN (DE) | Partial (takeoff) | On-plan area + schedule | P0 |
 | R-03 | Room labels / names | Room Labels | Partial | Editable stamps | P0 |
 | R-04 | Room fills / hatch in 2D | Room Fills & Hatch Patterns | Partial | Mapped 2D fills | P1 |
-| R-05 | Automatic exterior dimensions | Automatic Exterior Dimensions | Missing | Outer dim chains | P1 |
+| R-05 | Automatic exterior dimensions | Automatic Exterior Dimensions | Partial | Outer dim chains | P1 |
 | R-06 | Interior interactive dims | demos | Missing | Toggle dim display | P1 |
 | R-07 | Living/usable area standards (WoFlV, DIN 277) | DE comparison | skip / approx | US builder areas first | P3 |
 | R-08 | Area/room schedules / lists | Listen Erstellung | Partial | Export room schedule | P1 |
@@ -164,7 +164,7 @@
 
 | ID | Plan7 capability | Public evidence | Olsen today | Strategy | Priority |
 |---|---|---|---|---|---|
-| T-01 | Plate/slab tool (terrace, driveway, garden) | All three house demos | Missing | Polygon slab + thickness + Z | P0 |
+| T-01 | Plate/slab tool (terrace, driveway, garden) | All three house demos | Partial | Polygon slab + thickness + Z | P0 |
 | T-02 | Balcony slab + railing | Balcony & Railing; demos | Missing | Slab + railing combo | P1 |
 | T-03 | Garage / carport symbols or editors | Symbol catalog; Carport tutorial | Partial | Placeable massing + carport editor later | P1 |
 | T-04 | Terrain modeling (contours, hills, etc.) | Terrain Modeling; Pro Gelände | Missing | Approx heightfield later | P2 |

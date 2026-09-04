@@ -133,13 +133,28 @@ export function demoCadPlate(): CadPlate {
     fixtureHints: [
       { xFt: 16, yFt: 20.5, widthFt: 1.5, depthFt: 1.2, layer: 'FIXTURES', kind: 'sink', blockName: 'pv_snk_double' },
     ],
+    slabs: [
+      {
+        id: 'slab-demo-terrace',
+        kind: 'terrace',
+        points: [
+          { x: 8, y: -8 },
+          { x: 28, y: -8 },
+          { x: 28, y: -1 },
+          { x: 8, y: -1 },
+        ],
+        thicknessFt: 0.5,
+        elevationFt: 0,
+        layer: 'SLAB TERRACE',
+      },
+    ],
     elevationFront,
     elevationSide,
     sheets: [
       { id: 'demo-floor', name: 'SHT. 1 FLOOR', order: 1, kind: 'floor' },
       { id: 'demo-front', name: 'SHT. 2 FRONT ELEVATION', order: 2, kind: 'elevation' },
     ],
-    bounds: { minX: 0, minY: 0, maxX: 40, maxY: 28 },
+    bounds: { minX: 0, minY: -8, maxX: 40, maxY: 28 },
     sheetSource: 'synthetic',
   };
 }
