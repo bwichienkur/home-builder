@@ -21,7 +21,7 @@ export type Opening = {
   height: number;
   /** Doors/passages/garages stay on the floor (sill = 0). Windows may float. */
   sill: number;
-  swing?: 'left' | 'right' | 'none';
+  swing?: 'left' | 'right' | 'slider' | 'none';
   /** Which side of the wall the door swings into (`in` = left-of-run, `out` = opposite). */
   face?: 'in' | 'out';
   shape?: OpeningShape;

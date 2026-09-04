@@ -29,7 +29,31 @@ export type {
   CadAnnotativeDim,
   CadOpeningHintFt,
   CadWallCenterlineFt,
+  CadWallTypeId,
+  CadOpeningTypeId,
+  CadOpeningSwing,
 } from './types';
+
+export {
+  CAD_WALL_TYPES,
+  CAD_OPENING_TYPES,
+  ensureModelKernel,
+  ensureAllStoryFloorSlabs,
+  ensureStoryFloorSlab,
+  applyWallType,
+  applyOpeningType,
+  setOpeningHeight,
+  setOpeningSwing,
+  setWallStory,
+  setOpeningStory,
+  filterPlateToStory,
+  storyHeightFt,
+  resyncAllHostedOpenings,
+  wallTypeById,
+  openingTypeById,
+} from './cadModelKernel';
+export { storyZFromEntityId } from './extrudeCadPlate';
+
 export {
   buildCadPlateFromDxf,
   withLayerVisibility,

@@ -30,7 +30,7 @@ function DoorLeaf({
   angle: number;
   width: number;
   height: number;
-  swing: 'left' | 'right' | 'none';
+  swing: 'left' | 'right' | 'slider' | 'none';
   face?: 'in' | 'out';
   shape?: 'rect' | 'arch' | 'wide';
 }) {
@@ -81,7 +81,7 @@ function DoorLeaf({
           <meshStandardMaterial color="#c4a574" roughness={0.7} />
         </mesh>
       )}
-      {swing !== 'none' && (
+      {swing !== 'none' && swing !== 'slider' && (
         <>
           {/* Blocked clear space: door-width × door-width into the room (hinge-independent). */}
           <mesh position={[0, 0.014, clearZ]} rotation={[-Math.PI / 2, 0, 0]} raycast={() => {}}>

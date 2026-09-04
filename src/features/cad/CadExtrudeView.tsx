@@ -15,6 +15,7 @@ import { buildTerrainMeshData, sunPositionFromHour } from '../../lib/cadStudio';
 import { metalRoofMaterial } from '../../lib/cadStudio/cadSceneMaterials';
 import { CadGroundPlane, CadSceneEnvironment } from './CadSceneEnvironment';
 import { WallMesh } from './CadRealisticWalls';
+import { CadProfileRoofMesh } from './CadProfileRoofMesh';
 import { world } from '../../components/scene3d/sceneWorld';
 import { PIXELS_PER_METER } from '../../lib/geometry/snapping';
 import { WORLD_ORIGIN } from '../../lib/geometry/placement';
@@ -379,6 +380,7 @@ export function CadExtrudeSceneParts({
   stairs = [],
   centerFt,
   mode = 'extrude',
+  onSelectOpening,
 }: {
   walls: Wall[];
   openings: Opening[];
@@ -388,6 +390,7 @@ export function CadExtrudeSceneParts({
   centerFt: { cx: number; cy: number };
   wallSegmentsFt?: Array<{ x1: number; y1: number; x2: number; y2: number; exterior?: boolean }>;
   mode?: 'extrude' | 'massing';
+  onSelectOpening?: (openingId: string) => void;
 }) {
   return (
     <>
@@ -398,7 +401,7 @@ export function CadExtrudeSceneParts({
         <StairMesh key={s.id} stair={s} centerFt={centerFt} />
       ))}
       {walls.map((w) => (
-        <WallMesh key={w.id} wall={w} openings={openings} mode={mode} />
+        <WallMesh key={w.id} wall={w} openings={openings} mode={mode} onSelectOpening={onSelectOpening} />
       ))}
       {fixtures.map((f) => (
         <FixtureMesh key={f.id} fixture={f} centerFt={centerFt} />
@@ -413,12 +416,14 @@ function Scene({
   sunHour,
   shadows,
   sectionClip,
+  onSelectOpening,
 }: {
   extrusion: CadExtrusion;
   plate?: CadPlate | null;
   sunHour: number;
   shadows: boolean;
   sectionClip?: boolean;
+  onSelectOpening?: (openingId: string) => void;
 }) {
   const { walls, openings, fixtures, slabs, stairs, centerFt, heightM } = extrusion;
   const floorSize = useMemo(() => {
@@ -452,6 +457,7 @@ function Scene({
           <primitive object={new THREE.Object3D()} />
         )}
         <CadExtrudeSceneParts
+          onSelectOpening={onSelectOpening}
           walls={walls}
           openings={openings}
           fixtures={fixtures}
@@ -480,12 +486,14 @@ export function CadExtrudeView({
   sunHour = 14,
   shadows = true,
   sectionClip = false,
+  onSelectOpening,
 }: {
   extrusion: CadExtrusion;
   plate?: CadPlate | null;
   sunHour?: number;
   shadows?: boolean;
   sectionClip?: boolean;
+  onSelectOpening?: (openingId: string) => void;
 }) {
   if (!extrusion.walls.length) {
     return (
@@ -505,6 +513,7 @@ export function CadExtrudeView({
         }}
       >
         <Scene
+        onSelectOpening={onSelectOpening}
           extrusion={extrusion}
           plate={plate}
           sunHour={sunHour}

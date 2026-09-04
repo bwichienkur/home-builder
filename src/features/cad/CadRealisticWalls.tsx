@@ -8,17 +8,20 @@ import {
   wallPaintMaterial,
   windowGlassMaterial,
 } from '../../lib/cadStudio/cadSceneMaterials';
+import { storyZFromEntityId } from '../../lib/cadStudio/extrudeCadPlate';
 
 function OpeningMesh({
   opening,
   wallLen,
   wallHeight,
   wallThickness,
+  onSelect,
 }: {
   opening: Opening;
   wallLen: number;
   wallHeight: number;
   wallThickness: number;
+  onSelect?: (openingId: string) => void;
 }) {
   const localX = (opening.offset - 0.5) * wallLen;
   const y = opening.sill + opening.height / 2 - wallHeight / 2;
@@ -27,9 +30,18 @@ function OpeningMesh({
   const isPassage = opening.type === 'passage';
   const isGarage = opening.type === 'garage';
 
+  const pickProps = onSelect
+    ? {
+        onClick: (e: { stopPropagation: () => void }) => {
+          e.stopPropagation();
+          onSelect(opening.id);
+        },
+      }
+    : {};
+
   if (isPassage) {
     return (
-      <group position={[localX, y, 0]}>
+      <group position={[localX, y, 0]} {...pickProps}>
         <mesh>
           <boxGeometry args={[opening.width + frameW * 2, opening.height + frameW * 2, wallThickness + 0.02]} />
           <primitive object={openingFrameMaterial()} attach="material" />
@@ -42,7 +54,7 @@ function OpeningMesh({
     const panels = 4;
     const panelH = opening.height / panels;
     return (
-      <group position={[localX, y, 0]}>
+      <group position={[localX, y, 0]} {...pickProps}>
         <mesh>
           <boxGeometry args={[opening.width + frameW * 2, opening.height + frameW * 2, wallThickness + 0.02]} />
           <primitive object={openingFrameMaterial()} attach="material" />
@@ -62,7 +74,7 @@ function OpeningMesh({
   }
 
   return (
-    <group position={[localX, y, 0]}>
+    <group position={[localX, y, 0]} {...pickProps}>
       <mesh>
         <boxGeometry args={[opening.width + frameW * 2, opening.height + frameW * 2, wallThickness + 0.02]} />
         <primitive object={openingFrameMaterial()} attach="material" />
@@ -79,10 +91,12 @@ function WallMesh({
   wall,
   openings,
   mode,
+  onSelectOpening,
 }: {
   wall: Wall;
   openings: Opening[];
   mode: 'extrude' | 'massing';
+  onSelectOpening?: (openingId: string) => void;
 }) {
   const [sx, sz] = world(wall.start.x, wall.start.y);
   const [ex, ez] = world(wall.end.x, wall.end.y);
@@ -90,7 +104,8 @@ function WallMesh({
   const dz = ez - sz;
   const len = Math.hypot(dx, dz) || 0.01;
   const angle = Math.atan2(dz, dx);
-  const mid: [number, number, number] = [(sx + ex) / 2, wall.height / 2, (sz + ez) / 2];
+  const storyZ = storyZFromEntityId(wall.id);
+  const mid: [number, number, number] = [(sx + ex) / 2, storyZ + wall.height / 2, (sz + ez) / 2];
   const wallOpenings = openings.filter((o) => o.wallId === wall.id);
   const isExterior = wall.assembly === 'exterior';
   const wallMat = wall.materialId
@@ -115,6 +130,7 @@ function WallMesh({
           wallLen={len}
           wallHeight={wall.height}
           wallThickness={wall.thickness}
+          onSelect={onSelectOpening}
         />
       ))}
     </group>
