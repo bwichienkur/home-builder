@@ -16,6 +16,8 @@ export type {
   CadMassing,
   CadRoofMassing,
   CadPlanFace,
+  CadStairFt,
+  CadWallMaterialId,
 } from './types';
 export {
   buildCadPlateFromDxf,
@@ -66,6 +68,7 @@ export {
   addGuideline,
   addOpeningHint,
   addSlab,
+  addStair,
   addWallCenterline,
   deleteSelection,
   formatWallLengthFt,
@@ -76,9 +79,25 @@ export {
   pickAtPoint,
   segLengthFt,
   selectionSummary,
+  setWallMaterial,
   setWallThickness,
   syncWallSegments,
   updateSlab,
+  updateStair,
   type CadEditTool,
   type CadPlateSelection,
 } from './editCadPlate';
+export {
+  CAD_WALL_MATERIALS,
+  wallStrokeForMaterial,
+  wallPaintMaterial,
+} from './cadSceneMaterials';
+export {
+  exportCadPlateDxf,
+  downloadTextFile,
+  exportCadRoomScheduleCsv,
+  roomScheduleSummary,
+  downloadSvgAsPng,
+  wallLengthSummary,
+} from './exportCadPlate';
+export { sunPositionFromHour } from './cadSun';

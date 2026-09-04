@@ -163,6 +163,20 @@ export function demoCadPlate(): CadPlate {
         railing: true,
       },
     ],
+    stairs: [
+      {
+        id: 'stair-demo-1',
+        xFt: 27,
+        yFt: 15,
+        runFt: 10,
+        widthFt: 3.5,
+        riseFt: 9,
+        steps: 14,
+        rotationDeg: 90,
+        railing: true,
+        layer: 'STAIRS',
+      },
+    ],
     elevationFront,
     elevationSide,
     sheets: [

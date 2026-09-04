@@ -44,6 +44,7 @@ export function extrudeCadPlate(plate: CadPlate, opts?: { heightM?: number }): C
       layer: s.layer,
       exterior: s.exterior,
       thicknessFt: s.thicknessFt,
+      materialId: s.materialId,
     })),
     openingHintsFt: plate.openingHints.map((h) => ({
       x1: h.x1,
@@ -88,6 +89,7 @@ export function extrudeCadPlate(plate: CadPlate, opts?: { heightM?: number }): C
     openings: builtWithOpenings.scene.openings,
     fixtures,
     slabs: plate.slabs ?? [],
+    stairs: plate.stairs ?? [],
     centerFt,
     heightM,
     massing,

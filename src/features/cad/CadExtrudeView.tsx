@@ -8,7 +8,9 @@ import type {
   CadFixtureKind,
   CadSlabFt,
   CadSlabKind,
+  CadStairFt,
 } from '../../lib/cadStudio';
+import { sunPositionFromHour } from '../../lib/cadStudio/cadSun';
 import { CadGroundPlane, CadSceneEnvironment } from './CadSceneEnvironment';
 import { WallMesh } from './CadRealisticWalls';
 import { world } from '../../components/scene3d/sceneWorld';
@@ -201,12 +203,64 @@ function SlabMesh({
   );
 }
 
+function StairMesh({
+  stair,
+  centerFt,
+}: {
+  stair: CadStairFt;
+  centerFt: { cx: number; cy: number };
+}) {
+  const runM = stair.runFt * FT_TO_M;
+  const widthM = stair.widthFt * FT_TO_M;
+  const riseM = stair.riseFt * FT_TO_M;
+  const steps = Math.max(3, stair.steps);
+  const tread = runM / steps;
+  const riser = riseM / steps;
+  const planX = WORLD_ORIGIN.x + ftToPx(stair.xFt + stair.runFt / 2 - centerFt.cx);
+  const planY = WORLD_ORIGIN.y + ftToPx(stair.yFt + stair.widthFt / 2 - centerFt.cy);
+  const [wx, wz] = world(planX, planY);
+  const yaw = (-stair.rotationDeg * Math.PI) / 180;
+
+  return (
+    <group position={[wx, 0, wz]} rotation={[0, yaw, 0]}>
+      {Array.from({ length: steps }).map((_, i) => (
+        <mesh
+          key={i}
+          castShadow
+          receiveShadow
+          position={[
+            -runM / 2 + tread * (i + 0.5),
+            riser * (i + 0.5),
+            0,
+          ]}
+        >
+          <boxGeometry args={[tread * 0.92, riser * 0.92, widthM]} />
+          <meshStandardMaterial color="#d6d3d1" roughness={0.75} />
+        </mesh>
+      ))}
+      {stair.railing && (
+        <>
+          <mesh position={[0, riseM * 0.55, widthM / 2 + 0.04]} castShadow>
+            <boxGeometry args={[runM, 0.04, 0.04]} />
+            <meshStandardMaterial color="#64748b" metalness={0.3} roughness={0.4} />
+          </mesh>
+          <mesh position={[0, riseM * 0.55, -widthM / 2 - 0.04]} castShadow>
+            <boxGeometry args={[runM, 0.04, 0.04]} />
+            <meshStandardMaterial color="#64748b" metalness={0.3} roughness={0.4} />
+          </mesh>
+        </>
+      )}
+    </group>
+  );
+}
+
 /** Shared walls + fixtures for Extrude and Massing views. */
 export function CadExtrudeSceneParts({
   walls,
   openings,
   fixtures,
   slabs = [],
+  stairs = [],
   centerFt,
   mode = 'extrude',
 }: {
@@ -214,6 +268,7 @@ export function CadExtrudeSceneParts({
   openings: Opening[];
   fixtures: CadFixtureInstance[];
   slabs?: CadSlabFt[];
+  stairs?: CadStairFt[];
   centerFt: { cx: number; cy: number };
   wallSegmentsFt?: Array<{ x1: number; y1: number; x2: number; y2: number; exterior?: boolean }>;
   mode?: 'extrude' | 'massing';
@@ -222,6 +277,9 @@ export function CadExtrudeSceneParts({
     <>
       {slabs.map((s) => (
         <SlabMesh key={s.id} slab={s} centerFt={centerFt} />
+      ))}
+      {stairs.map((s) => (
+        <StairMesh key={s.id} stair={s} centerFt={centerFt} />
       ))}
       {walls.map((w) => (
         <WallMesh key={w.id} wall={w} openings={openings} mode={mode} />
@@ -233,8 +291,16 @@ export function CadExtrudeSceneParts({
   );
 }
 
-function Scene({ extrusion }: { extrusion: CadExtrusion }) {
-  const { walls, openings, fixtures, slabs, centerFt } = extrusion;
+function Scene({
+  extrusion,
+  sunHour,
+  shadows,
+}: {
+  extrusion: CadExtrusion;
+  sunHour: number;
+  shadows: boolean;
+}) {
+  const { walls, openings, fixtures, slabs, stairs, centerFt } = extrusion;
   const floorSize = useMemo(() => {
     if (!walls.length) return 20;
     let max = 10;
@@ -245,16 +311,18 @@ function Scene({ extrusion }: { extrusion: CadExtrusion }) {
     }
     return max * 2.4;
   }, [walls]);
+  const sunPosition = useMemo(() => sunPositionFromHour(sunHour), [sunHour]);
 
   return (
     <>
-      <CadSceneEnvironment targetY={1.2} />
+      <CadSceneEnvironment targetY={1.2} sunPosition={sunPosition} shadows={shadows} />
       <CadGroundPlane size={floorSize} />
       <CadExtrudeSceneParts
         walls={walls}
         openings={openings}
         fixtures={fixtures}
         slabs={slabs}
+        stairs={stairs}
         centerFt={centerFt}
       />
       <OrbitControls makeDefault target={[0, 1.2, 0]} maxPolarAngle={Math.PI / 2.05} />
@@ -262,7 +330,15 @@ function Scene({ extrusion }: { extrusion: CadExtrusion }) {
   );
 }
 
-export function CadExtrudeView({ extrusion }: { extrusion: CadExtrusion }) {
+export function CadExtrudeView({
+  extrusion,
+  sunHour = 14,
+  shadows = true,
+}: {
+  extrusion: CadExtrusion;
+  sunHour?: number;
+  shadows?: boolean;
+}) {
   if (!extrusion.walls.length) {
     return (
       <div className="cad-empty">No wall centerlines to extrude yet. Import a DXF with wall layers.</div>
@@ -271,15 +347,15 @@ export function CadExtrudeView({ extrusion }: { extrusion: CadExtrusion }) {
   return (
     <div className="cad-extrude-host">
       <Canvas
-        shadows
+        shadows={shadows}
         camera={{ position: [18, 14, 18], fov: 42, near: 0.1, far: 500 }}
         onCreated={({ gl }) => {
           gl.toneMapping = THREE.ACESFilmicToneMapping;
           gl.toneMappingExposure = 1.05;
-          gl.shadowMap.enabled = true;
+          gl.shadowMap.enabled = shadows;
         }}
       >
-        <Scene extrusion={extrusion} />
+        <Scene extrusion={extrusion} sunHour={sunHour} shadows={shadows} />
       </Canvas>
     </div>
   );

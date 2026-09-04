@@ -3,9 +3,9 @@ import type { Opening, Wall } from '../../types';
 import { world } from '../../components/scene3d/sceneWorld';
 import {
   doorMaterial,
-  exteriorWallMaterialTextured,
   interiorWallMaterial,
   openingFrameMaterial,
+  wallPaintMaterial,
   windowGlassMaterial,
 } from '../../lib/cadStudio/cadSceneMaterials';
 
@@ -24,6 +24,42 @@ function OpeningMesh({
   const y = opening.sill + opening.height / 2 - wallHeight / 2;
   const frameW = 0.06;
   const isWindow = opening.type === 'window';
+  const isPassage = opening.type === 'passage';
+  const isGarage = opening.type === 'garage';
+
+  if (isPassage) {
+    return (
+      <group position={[localX, y, 0]}>
+        <mesh>
+          <boxGeometry args={[opening.width + frameW * 2, opening.height + frameW * 2, wallThickness + 0.02]} />
+          <primitive object={openingFrameMaterial()} attach="material" />
+        </mesh>
+      </group>
+    );
+  }
+
+  if (isGarage) {
+    const panels = 4;
+    const panelH = opening.height / panels;
+    return (
+      <group position={[localX, y, 0]}>
+        <mesh>
+          <boxGeometry args={[opening.width + frameW * 2, opening.height + frameW * 2, wallThickness + 0.02]} />
+          <primitive object={openingFrameMaterial()} attach="material" />
+        </mesh>
+        {Array.from({ length: panels }).map((_, i) => (
+          <mesh
+            key={i}
+            position={[0, -opening.height / 2 + panelH * (i + 0.5), wallThickness * 0.2]}
+            castShadow
+          >
+            <boxGeometry args={[opening.width * 0.96, panelH * 0.88, 0.04]} />
+            <meshStandardMaterial color="#4b5563" roughness={0.55} metalness={0.25} />
+          </mesh>
+        ))}
+      </group>
+    );
+  }
 
   return (
     <group position={[localX, y, 0]}>
@@ -57,9 +93,11 @@ function WallMesh({
   const mid: [number, number, number] = [(sx + ex) / 2, wall.height / 2, (sz + ez) / 2];
   const wallOpenings = openings.filter((o) => o.wallId === wall.id);
   const isExterior = wall.assembly === 'exterior';
-  const wallMat = isExterior
-    ? exteriorWallMaterialTextured()
-    : interiorWallMaterial(mode === 'massing' ? 0.14 : 1);
+  const wallMat = wall.materialId
+    ? wallPaintMaterial(wall.materialId, wall.assembly, mode === 'massing' && !isExterior ? 0.14 : 1)
+    : isExterior
+      ? wallPaintMaterial('stucco', 'exterior')
+      : interiorWallMaterial(mode === 'massing' ? 0.14 : 1);
 
   if (mode === 'massing' && !isExterior) {
     return null;

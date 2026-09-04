@@ -348,6 +348,7 @@ export function buildCadPlateFromDxf(
     labels: plateLabels,
     fixtureHints: plateFixtureHints,
     slabs: [],
+    stairs: [],
     elevationFront: elevationFront ?? undefined,
     elevationSide: elevationSide ?? undefined,
     sheets,

@@ -30,9 +30,9 @@ export type CadOpeningHintFt = {
   y1: number;
   x2: number;
   y2: number;
-  kind: 'door' | 'window' | 'passage';
+  kind: 'door' | 'window' | 'passage' | 'garage';
   layer?: string;
-  /** Window sill height above finished floor (feet). Doors/passages use 0. */
+  /** Window sill height above finished floor (feet). Doors/passages/garages use 0. */
   sillFt?: number;
 };
 
@@ -45,6 +45,29 @@ export type CadWallCenterlineFt = {
   exterior?: boolean;
   /** Wall thickness in feet (defaults: exterior 0.59 ≈ 7", interior 0.39 ≈ 4.7"). */
   thicknessFt?: number;
+  /** Paint / finish preset id (stucco, paint, brick, stone, wood). */
+  materialId?: CadWallMaterialId;
+};
+
+export type CadWallMaterialId = 'stucco' | 'paint' | 'brick' | 'stone' | 'wood' | 'interior';
+
+/** Straight run stair on the CAD plate (Plan7-inspired). */
+export type CadStairFt = {
+  id: string;
+  /** Bottom-left of run in plan feet (toward first step). */
+  xFt: number;
+  yFt: number;
+  /** Horizontal run length (feet). */
+  runFt: number;
+  /** Stair width (feet). */
+  widthFt: number;
+  /** Total rise (feet). */
+  riseFt: number;
+  steps: number;
+  /** Rotation degrees (0 = run along +X). */
+  rotationDeg: number;
+  railing?: boolean;
+  layer: string;
 };
 
 export type CadLabelFt = {
@@ -206,6 +229,8 @@ export type CadPlate = {
   fixtureHints: CadFixtureHintFt[];
   /** Site slabs (terrace, driveway, garden, balcony) in plan feet. */
   slabs: CadSlabFt[];
+  /** Straight stairs (plan feet). */
+  stairs: CadStairFt[];
   /** Construction guidelines (snap aids; not extruded). */
   guidelines?: CadGuidelineFt[];
   /** Roof catalog overrides (null/undefined = auto from DXF elevation or procedural gable). */
@@ -225,6 +250,7 @@ export type CadExtrusion = {
   openings: Opening[];
   fixtures: CadFixtureInstance[];
   slabs: CadSlabFt[];
+  stairs: CadStairFt[];
   centerFt: { cx: number; cy: number };
   heightM: number;
   massing: CadMassing;

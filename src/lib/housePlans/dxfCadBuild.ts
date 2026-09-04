@@ -11,13 +11,17 @@ import type { Seg } from './dxfRooms';
 
 const FT_TO_M = 0.3048;
 
-export type PlanWallSegmentFt = Seg & { exterior?: boolean; thicknessFt?: number };
+export type PlanWallSegmentFt = Seg & {
+  exterior?: boolean;
+  thicknessFt?: number;
+  materialId?: string;
+};
 export type PlanOpeningHintFt = {
   x1: number;
   y1: number;
   x2: number;
   y2: number;
-  kind: 'door' | 'window' | 'passage';
+  kind: 'door' | 'window' | 'passage' | 'garage';
   layer?: string;
   /** Optional sill height in feet (windows). */
   sillFt?: number;
@@ -121,18 +125,16 @@ export function openingsFromCadHints(
     wallIdx: number,
     offset: number,
     widthFt: number,
-    kind: 'door' | 'window' | 'passage',
+    kind: 'door' | 'window' | 'passage' | 'garage',
     idSuffix: string,
     sillFt?: number,
   ) => {
     const wall = walls[wallIdx]!;
     const wallLenFt = segLen(segments[wallIdx]!);
     if (wallLenFt < 1.5) return;
-    const widthM = Math.min(
-      kind === 'window' ? 2.4 : 1.2,
-      Math.max(kind === 'window' ? 0.6 : 0.7, widthFt * FT_TO_M),
-      wallLenFt * FT_TO_M * 0.85,
-    );
+    const maxW = kind === 'garage' ? 5.5 : kind === 'window' ? 2.4 : 1.2;
+    const minW = kind === 'garage' ? 2.4 : kind === 'window' ? 0.6 : 0.7;
+    const widthM = Math.min(maxW, Math.max(minW, widthFt * FT_TO_M), wallLenFt * FT_TO_M * 0.95);
     const half = widthM / 2 / (wallLenFt * FT_TO_M);
     const clamped = Math.max(half + 0.02, Math.min(1 - half - 0.02, offset));
     const key = `${wall.id}:${kind}:${clamped.toFixed(2)}:${widthM.toFixed(2)}`;
@@ -144,15 +146,22 @@ export function openingsFromCadHints(
           ? Math.max(0, sillFt * FT_TO_M)
           : 0.9
         : 0;
+    const heightM =
+      kind === 'window'
+        ? Math.min(1.4, height * 0.45)
+        : kind === 'garage'
+          ? Math.min(2.4, height * 0.92)
+          : Math.min(2.1, height * 0.95);
     openings.push({
       id: `${wall.id}-${idSuffix}`,
       wallId: wall.id,
       type: kind,
       offset: clamped,
       width: widthM,
-      height: kind === 'window' ? Math.min(1.4, height * 0.45) : Math.min(2.1, height * 0.95),
+      height: heightM,
       sill: sillM,
       swing: kind === 'door' ? 'left' : undefined,
+      shape: kind === 'garage' ? 'wide' : undefined,
     });
   };
 
@@ -181,7 +190,13 @@ export function openingsFromCadHints(
     }
     // Must sit near a wall (within ~2.5 ft of centerline).
     if (bestIdx < 0 || bestDist > 2.5) continue;
-    const widthFt = Math.min(8, Math.max(hint.kind === 'window' ? 2 : 2.5, hintLen));
+    const widthFt = Math.min(
+      18,
+      Math.max(
+        hint.kind === 'window' ? 2 : hint.kind === 'garage' ? 9 : 2.5,
+        hintLen,
+      ),
+    );
     addOpening(bestIdx, bestT, widthFt, hint.kind, `hint-${hi}`, hint.sillFt);
   }
 
@@ -309,6 +324,7 @@ export function buildFloorFromCadWalls(
       thickness: thicknessM,
       height,
       assembly: s.exterior ? 'exterior' : 'interior',
+      materialId: s.materialId,
     };
   });
 

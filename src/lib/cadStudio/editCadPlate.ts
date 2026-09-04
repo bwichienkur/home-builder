@@ -11,11 +11,13 @@ import type {
   CadSegmentRole,
   CadSlabFt,
   CadSlabKind,
+  CadStairFt,
   CadWallCenterlineFt,
+  CadWallMaterialId,
 } from './types';
 import { defaultWallThicknessFt } from './cadDrawSnap';
 
-export type CadEditTool = 'select' | 'wall' | 'opening' | 'fixture' | 'slab' | 'guide' | 'delete';
+export type CadEditTool = 'select' | 'wall' | 'opening' | 'fixture' | 'slab' | 'stair' | 'guide' | 'delete';
 
 export type CadPlateSelection =
   | { kind: 'wall'; index: number }
@@ -23,6 +25,7 @@ export type CadPlateSelection =
   | { kind: 'fixture'; index: number }
   | { kind: 'opening'; index: number }
   | { kind: 'slab'; index: number }
+  | { kind: 'stair'; index: number }
   | { kind: 'guide'; index: number }
   | { kind: 'segment'; index: number };
 
@@ -38,6 +41,7 @@ const SLAB_DEFAULTS: Record<
 
 let slabSeq = 0;
 let guideSeq = 0;
+let stairSeq = 0;
 function nextSlabId(kind: CadSlabKind): string {
   slabSeq += 1;
   return `slab-${kind}-${slabSeq.toString(36)}`;
@@ -45,6 +49,10 @@ function nextSlabId(kind: CadSlabKind): string {
 function nextGuideId(): string {
   guideSeq += 1;
   return `guide-${guideSeq.toString(36)}`;
+}
+function nextStairId(): string {
+  stairSeq += 1;
+  return `stair-${stairSeq.toString(36)}`;
 }
 
 export function segLengthFt(s: { x1: number; y1: number; x2: number; y2: number }): number {
@@ -90,6 +98,10 @@ export function recomputePlateBounds(plate: CadPlate): CadBoundsFt {
     ...plate.labels.map((l) => ({ x: l.x, y: l.y })),
     ...plate.fixtureHints.map((f) => ({ x: f.xFt, y: f.yFt })),
     ...(plate.slabs ?? []).flatMap((s) => s.points),
+    ...(plate.stairs ?? []).flatMap((s) => [
+      { x: s.xFt, y: s.yFt },
+      { x: s.xFt + s.runFt, y: s.yFt + s.widthFt },
+    ]),
   ];
   return boundsOfPoints(pts);
 }
@@ -246,16 +258,29 @@ export function setWallThickness(plate: CadPlate, index: number, thicknessFt: nu
   return updateWallCenterline(plate, index, { ...w, thicknessFt: Math.max(0.15, thicknessFt) });
 }
 
+export function setWallMaterial(plate: CadPlate, index: number, materialId: CadWallMaterialId): CadPlate {
+  const w = plate.wallCenterlines[index];
+  if (!w) return plate;
+  return updateWallCenterline(plate, index, { ...w, materialId });
+}
+
 export function addOpeningHint(
   plate: CadPlate,
   x1: number,
   y1: number,
   x2: number,
   y2: number,
-  kind: 'door' | 'window' | 'passage' = 'door',
+  kind: 'door' | 'window' | 'passage' | 'garage' = 'door',
   sillFt?: number,
 ): CadPlate {
-  const layer = kind === 'window' ? 'WINDOWS' : kind === 'passage' ? 'OPENINGS' : 'DOORS';
+  const layer =
+    kind === 'window'
+      ? 'WINDOWS'
+      : kind === 'passage'
+        ? 'OPENINGS'
+        : kind === 'garage'
+          ? 'GARAGE DOORS'
+          : 'DOORS';
   const openingHints: CadOpeningHintFt[] = [
     ...plate.openingHints,
     {
@@ -348,6 +373,45 @@ export function addGuideline(
   const guide: CadGuidelineFt = { id: nextGuideId(), x1, y1, x2, y2 };
   const guidelines = [...(plate.guidelines ?? []), guide];
   return { ...plate, guidelines };
+}
+
+export function addStair(
+  plate: CadPlate,
+  xFt: number,
+  yFt: number,
+  opts?: Partial<Pick<CadStairFt, 'runFt' | 'widthFt' | 'riseFt' | 'steps' | 'rotationDeg' | 'railing'>>,
+): CadPlate {
+  const stair: CadStairFt = {
+    id: nextStairId(),
+    xFt,
+    yFt,
+    runFt: opts?.runFt ?? 10,
+    widthFt: opts?.widthFt ?? 3.5,
+    riseFt: opts?.riseFt ?? 9,
+    steps: opts?.steps ?? 14,
+    rotationDeg: opts?.rotationDeg ?? 0,
+    railing: opts?.railing ?? true,
+    layer: 'STAIRS',
+  };
+  const stairs = [...(plate.stairs ?? []), stair];
+  return {
+    ...plate,
+    stairs,
+    bounds: recomputePlateBounds({ ...plate, stairs }),
+  };
+}
+
+export function updateStair(
+  plate: CadPlate,
+  index: number,
+  patch: Partial<Omit<CadStairFt, 'id' | 'layer'>>,
+): CadPlate {
+  const stairs = (plate.stairs ?? []).map((s, i) => (i === index ? { ...s, ...patch } : s));
+  return {
+    ...plate,
+    stairs,
+    bounds: recomputePlateBounds({ ...plate, stairs }),
+  };
 }
 
 export function updateSlab(
@@ -455,6 +519,14 @@ export function deleteSelection(plate: CadPlate, sel: CadPlateSelection): CadPla
       const guidelines = (plate.guidelines ?? []).filter((_, i) => i !== sel.index);
       return { ...plate, guidelines };
     }
+    case 'stair': {
+      const stairs = (plate.stairs ?? []).filter((_, i) => i !== sel.index);
+      return {
+        ...plate,
+        stairs,
+        bounds: recomputePlateBounds({ ...plate, stairs }),
+      };
+    }
     case 'segment': {
       const segments = plate.segments.filter((_, i) => i !== sel.index);
       return syncWallSegments({ ...plate, segments });
@@ -496,6 +568,11 @@ export function selectionSummary(plate: CadPlate, sel: CadPlateSelection): strin
     case 'guide': {
       const g = plate.guidelines?.[sel.index];
       return g ? `Guide ${formatWallLengthFt(segLengthFt(g))}` : 'Guide';
+    }
+    case 'stair': {
+      const s = plate.stairs?.[sel.index];
+      if (!s) return 'Stair';
+      return `Stair ${s.steps} risers · ${formatWallLengthFt(s.runFt)} run${s.railing ? ' · rail' : ''}`;
     }
     case 'segment': {
       const s = plate.segments[sel.index];
@@ -604,6 +681,22 @@ export function hitTestSlab(plate: CadPlate, px: number, py: number): number | n
   return null;
 }
 
+export function hitTestStair(plate: CadPlate, px: number, py: number): number | null {
+  const stairs = plate.stairs ?? [];
+  for (let i = stairs.length - 1; i >= 0; i--) {
+    const s = stairs[i]!;
+    const rad = (s.rotationDeg * Math.PI) / 180;
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+    const lx = px - s.xFt;
+    const ly = py - s.yFt;
+    const localX = lx * cos + ly * sin;
+    const localY = -lx * sin + ly * cos;
+    if (localX >= 0 && localX <= s.runFt && localY >= 0 && localY <= s.widthFt) return i;
+  }
+  return null;
+}
+
 export function pickAtPoint(plate: CadPlate, px: number, py: number): CadPlateSelection | null {
   const label = hitTestLabel(plate, px, py);
   if (label != null) return { kind: 'label', index: label };
@@ -611,6 +704,8 @@ export function pickAtPoint(plate: CadPlate, px: number, py: number): CadPlateSe
   if (fixture != null) return { kind: 'fixture', index: fixture };
   const opening = hitTestOpening(plate, px, py);
   if (opening != null) return { kind: 'opening', index: opening };
+  const stair = hitTestStair(plate, px, py);
+  if (stair != null) return { kind: 'stair', index: stair };
   const wall = hitTestWall(plate, px, py);
   if (wall != null) return { kind: 'wall', index: wall };
   const slab = hitTestSlab(plate, px, py);

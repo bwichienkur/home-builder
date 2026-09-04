@@ -664,6 +664,124 @@
   cursor: pointer;
 }
 
+.cad-paint-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  align-items: center;
+  margin-top: 0.55rem;
+}
+
+.cad-paint-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--cad-muted);
+  font-weight: 650;
+  width: 100%;
+}
+
+.cad-paint-presets button {
+  appearance: none;
+  border: 1px solid var(--cad-line);
+  background: #fff;
+  border-radius: 6px;
+  padding: 0.22rem 0.45rem;
+  font-size: 0.7rem;
+  cursor: pointer;
+  color: var(--cad-ink);
+}
+
+.cad-paint-presets button.is-active {
+  border-color: var(--cad-accent);
+  color: var(--cad-accent);
+  background: rgba(31, 78, 70, 0.06);
+}
+
+.cad-room-schedule,
+.cad-export-actions {
+  margin-top: 0.75rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--cad-line);
+}
+
+.cad-room-schedule h3,
+.cad-export-actions h3 {
+  margin: 0 0 0.4rem;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--cad-muted);
+  font-weight: 650;
+}
+
+.cad-room-schedule ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.cad-room-schedule li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--cad-ink);
+}
+
+.cad-room-schedule li span:last-child {
+  color: var(--cad-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.cad-export-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.cad-export-actions button {
+  appearance: none;
+  border: 1px solid var(--cad-line);
+  background: #fff;
+  border-radius: 6px;
+  padding: 0.4rem 0.55rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  text-align: left;
+  color: var(--cad-ink);
+}
+
+.cad-export-actions button:hover:not(:disabled) {
+  border-color: var(--cad-accent);
+  color: var(--cad-accent);
+}
+
+.cad-export-actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.cad-sun-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  color: var(--cad-ink);
+  border: 1px solid var(--cad-line);
+  border-radius: 6px;
+  padding: 0.18rem 0.45rem;
+  background: #fff;
+}
+
+.cad-sun-control input[type='range'] {
+  width: 72px;
+  accent-color: var(--cad-accent);
+}
+
 .cad-edit-hint {
   margin: 0;
   font-size: 0.74rem;
