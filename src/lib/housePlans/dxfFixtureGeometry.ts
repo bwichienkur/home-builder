@@ -11,16 +11,21 @@ export type FixtureSeg = {
 
 export function isFixtureGeometryLayer(layer: string): boolean {
   const u = layer.trim().toUpperCase();
-  return /FIXTURE|COUNTER|CABINET|APPLIANCE|PLUMB|SHELF|SINK|TOILET|TUB|BATH|ISLAND|RANGE|STOVE|OVEN/.test(
+  return /FIXTURE|COUNTER|CABINET|APPLIANCE|PLUMB|SHELF|SINK|TOILET|TUB|BATH|ISLAND|RANGE|STOVE|OVEN|MIRROR/.test(
     u,
   );
 }
 
-export function fixtureKindFromBlockName(name: string): 'sink' | 'toilet' | 'tub' | 'appliance' | 'other' {
+export function fixtureKindFromBlockName(
+  name: string,
+): 'counter' | 'island' | 'sink' | 'toilet' | 'tub' | 'appliance' | 'mirror' | 'other' {
   const u = name.toUpperCase();
+  if (/MIRR/.test(u)) return 'mirror';
   if (/SNK|SINK/.test(u)) return 'sink';
   if (/TOI|TOILET|PTOI|WC\b/.test(u)) return 'toilet';
   if (/TUB|BATH|SHOWER/.test(u)) return 'tub';
+  if (/ISLAND/.test(u)) return 'island';
+  if (/COUNTER|CABINET|VANITY|\bCAB\b/.test(u)) return 'counter';
   if (/OVEN|RANGE|STOVE|FRIDGE|REF|MICRO|AP[_-]|DISHW|WASHER|DRYER/.test(u)) return 'appliance';
   return 'other';
 }
@@ -35,7 +40,7 @@ export type FixtureHint = {
   rotationDeg?: number;
   layer: string;
   blockName?: string;
-  kind?: 'sink' | 'toilet' | 'tub' | 'appliance' | 'other';
+  kind?: 'counter' | 'island' | 'sink' | 'toilet' | 'tub' | 'appliance' | 'mirror' | 'other';
 };
 
 /** Approximate a circle as closed polyline chords. */

@@ -127,6 +127,7 @@ export {
   type CadExteriorDim,
 } from './cadExteriorDims';
 export { snapCadDraftPoint, defaultWallThicknessFt, type CadSnapResult } from './cadDrawSnap';
+export { wallFootprintQuad, wallFootprintPointsAttr, type WallFootprintQuad } from './cadWallFootprint';
 export {
   parseArchitecturalLength,
   parseAngleDeg,

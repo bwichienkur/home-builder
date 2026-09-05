@@ -56,7 +56,12 @@ import {
 import { wallStrokeForMaterial } from '../../lib/cadStudio/cadSceneMaterials';
 import { visibleLabels, visibleSegments } from '../../lib/cadStudio/buildCadPlate';
 import type { CadStairFt } from '../../lib/cadStudio/types';
+<<<<<<< HEAD
 import { CadDimMark } from './cadDimSvg';
+=======
+import { CadFixturePlanSymbol } from './cadFixturePlanSymbol';
+import { wallFootprintPointsAttr, wallFootprintQuad } from '../../lib/cadStudio/cadWallFootprint';
+>>>>>>> a946d59 (Improve 2D CAD fixture and wall representation)
 
 const ROLE_STROKE: Record<CadSegmentRole, string> = {
   wall: '#1e293b',
@@ -65,16 +70,6 @@ const ROLE_STROKE: Record<CadSegmentRole, string> = {
   soft: '#475569',
   elevation: '#64748b',
   other: '#94a3b8',
-};
-
-const FIXTURE_COLOR: Record<CadFixtureKind, string> = {
-  counter: '#b8956c',
-  island: '#a16207',
-  sink: '#0284c7',
-  toilet: '#64748b',
-  tub: '#94a3b8',
-  appliance: '#475569',
-  other: '#78716c',
 };
 
 const SLAB_FILL: Record<CadSlabKind, string> = {
@@ -1090,17 +1085,17 @@ export function CadPlateEditor({
             : wallStrokeForMaterial(wall.materialId, wall.exterior);
           const mid = { x: (wall.x1 + wall.x2) / 2, y: (wall.y1 + wall.y2) / 2 };
           const gripR = stroke * 10;
+          const foot = wallFootprintQuad(wall);
+          const fill = wall.exterior ? wallStroke : '#94a3b8';
           return (
             <g key={`wall-${i}`}>
-              <line
-                x1={wall.x1}
-                y1={wall.y1}
-                x2={wall.x2}
-                y2={wall.y2}
+              <polygon
+                points={wallFootprintPointsAttr(foot)}
+                fill={fill}
+                fillOpacity={selected ? 0.92 : wall.exterior ? 0.88 : 0.55}
                 stroke={wallStroke}
-                strokeWidth={stroke * (selected ? 3.5 : 2)}
-                strokeOpacity={0.95}
-                strokeLinecap="round"
+                strokeWidth={stroke * (selected ? 1.4 : 0.75)}
+                strokeLinejoin="round"
               />
               {primary && (
                 <g className="cad-grips">
@@ -1201,21 +1196,33 @@ export function CadPlateEditor({
           if (!isLayerOn(plate, f.layer)) return null;
           const selected = isSelected('fixture', i);
           const kind = f.kind ?? 'other';
-          const hw = (f.widthFt ?? 2) / 2;
-          const hd = (f.depthFt ?? 2) / 2;
+          const w = f.widthFt ?? 2;
+          const d = f.depthFt ?? 2;
+          const rot = f.rotationDeg ?? 0;
           return (
-            <rect
+            <g
               key={`fix-${i}`}
-              x={f.xFt - hw}
-              y={f.yFt - hd}
-              width={hw * 2}
-              height={hd * 2}
-              fill={FIXTURE_COLOR[kind]}
-              fillOpacity={selected ? 0.75 : 0.45}
-              stroke={selected ? '#1f4e46' : FIXTURE_COLOR[kind]}
-              strokeWidth={stroke * (selected ? 2.5 : 1.2)}
-              rx={stroke * 2}
-            />
+              transform={`translate(${f.xFt} ${f.yFt}) rotate(${rot})`}
+              style={{ cursor: 'pointer' }}
+            >
+              <CadFixturePlanSymbol
+                kind={kind}
+                widthFt={w}
+                depthFt={d}
+                stroke={stroke}
+                selected={selected}
+                blockName={f.blockName}
+              />
+              {/* Hit target */}
+              <rect
+                x={-w / 2}
+                y={-d / 2}
+                width={w}
+                height={d}
+                fill="transparent"
+                stroke="none"
+              />
+            </g>
           );
         })}
 

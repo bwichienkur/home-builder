@@ -154,7 +154,15 @@ export type CadRoofOverrides = {
 };
 
 /** Raw fixture pose from DXF INSERT / CIRCLE (plan feet after plate build). */
-export type CadFixtureKind = 'counter' | 'island' | 'sink' | 'toilet' | 'tub' | 'appliance' | 'other';
+export type CadFixtureKind =
+  | 'counter'
+  | 'island'
+  | 'sink'
+  | 'toilet'
+  | 'tub'
+  | 'appliance'
+  | 'mirror'
+  | 'other';
 
 export type CadFixtureHintFt = {
   xFt: number;
