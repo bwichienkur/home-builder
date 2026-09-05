@@ -2253,3 +2253,204 @@
     border-bottom: 1px solid var(--cad-line);
   }
 }
+
+/* —— Mobile / phone: canvas-first, scrollable tools, compact chrome —— */
+@media (max-width: 900px) {
+  .cad-studio {
+    height: 100%;
+    max-height: 100dvh;
+    overflow: hidden;
+  }
+
+  .cad-app-bar,
+  .cad-studio-top {
+    flex-wrap: nowrap;
+    gap: 0.35rem;
+    padding: 0.3rem 0.5rem;
+    min-height: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .cad-app-brand h1,
+  .cad-studio-brand h1 {
+    white-space: nowrap;
+  }
+
+  .cad-studio-actions,
+  .cad-app-actions {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: 0.3rem;
+  }
+
+  .cad-action-sep {
+    display: none;
+  }
+
+  .cad-ribbon-row {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding-right: 0.45rem;
+  }
+
+  .cad-ribbon-row .cad-mode-ribbon {
+    flex: 1 1 auto;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .cad-ribbon-row .cad-mode-ribbon::-webkit-scrollbar {
+    display: none;
+  }
+
+  .cad-ribbon-row .cad-mode-ribbon button {
+    flex: 0 0 auto;
+    padding: 0.45rem 0.7rem;
+    font-size: 0.72rem;
+    white-space: nowrap;
+  }
+
+  .cad-mobile-tools-toggle {
+    display: inline-flex;
+    flex: 0 0 auto;
+    appearance: none;
+    border: 1px solid var(--cad-line);
+    background: #fff;
+    color: var(--cad-ink);
+    border-radius: var(--cad-radius);
+    padding: 0.35rem 0.55rem;
+    font-size: 0.68rem;
+    font-weight: 650;
+    font-family: var(--cad-font);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .cad-mobile-tools-toggle.is-open {
+    border-color: var(--cad-accent);
+    color: #115e59;
+    background: var(--cad-accent-soft);
+  }
+
+  .cad-studio-shell {
+    display: flex !important;
+    flex-direction: column !important;
+    grid-template-columns: none !important;
+    grid-template-rows: none !important;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  /* Canvas first so the plan is always on screen */
+  .cad-workspace {
+    order: 1;
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+  }
+
+  .cad-tools {
+    order: 2;
+    flex: 0 1 auto;
+    max-height: min(42dvh, 22rem);
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    border-right: 0;
+    border-top: 1px solid var(--cad-line);
+    border-bottom: 0;
+  }
+
+  .cad-studio-shell.is-tools-collapsed .cad-tools,
+  .cad-tools[hidden] {
+    display: none !important;
+  }
+
+  .cad-context-strip,
+  .cad-catalog-body {
+    flex: 1 1 auto;
+    min-height: 0 !important;
+    max-height: 100%;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    padding: 0.55rem 0.65rem 0.85rem;
+  }
+
+  .cad-tools > .cad-catalog-body,
+  .cad-tools > .cad-context-strip {
+    /* Ensure the only scrollport is the tools body, not the page */
+    height: 100%;
+  }
+
+  .cad-catalog-items button,
+  .cad-catalog-soon {
+    padding: 0.4rem 0.5rem;
+  }
+
+  .cad-story-bar {
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.45rem !important;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  .cad-story-list,
+  .cad-aid-toggles {
+    flex-wrap: nowrap;
+    flex: 0 0 auto;
+  }
+
+  .cad-aid-hint,
+  .cad-status-right,
+  .cad-sun-control {
+    display: none !important;
+  }
+
+  .cad-main-split {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: minmax(0, 1fr) !important;
+  }
+
+  .cad-main-split .cad-extrude-host {
+    display: none;
+  }
+
+  .cad-plate-tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .cad-status-bar {
+    flex-wrap: nowrap;
+    gap: 0.45rem;
+    padding: 0.22rem 0.5rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .cad-status-center {
+    gap: 0.55rem;
+  }
+
+  .cad-props {
+    display: none !important;
+  }
+}
+
+@media (min-width: 901px) {
+  .cad-mobile-tools-toggle {
+    display: none !important;
+  }
+}

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   addStory,
@@ -176,9 +176,37 @@ export function CadStudioPage() {
     );
     setHistory((h) => replaceCadPresent(h, cleaned));
   };
-  const [layout, setLayout] = useState<LayoutMode>('split');
+  const [layout, setLayout] = useState<LayoutMode>(() =>
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 900px)').matches
+      ? 'plate'
+      : 'split',
+  );
   const [plateMode, setPlateMode] = useState<PlateMode>('floor');
   const [studioMode, setStudioMode] = useState<StudioMode>('draw');
+  const [mobileToolsOpen, setMobileToolsOpen] = useState(true);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 900px)');
+    const onChange = () => {
+      if (mq.matches) {
+        // Split wastes vertical space on phones — prefer a single 2D pane.
+        setLayout((cur) => (cur === 'split' ? 'plate' : cur));
+      }
+    };
+    onChange();
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+
+  const setLayoutResponsive = (mode: LayoutMode) => {
+    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 900px)').matches) {
+      if (mode === 'split') {
+        setLayout('plate');
+        return;
+      }
+    }
+    setLayout(mode);
+  };
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<DrawingImportProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -294,7 +322,7 @@ export function CadStudioPage() {
     if (opts?.opening) setOpeningKind(opts.opening);
     if (opts?.fixture) setFixtureKind(opts.fixture);
     if (opts?.slab) setSlabKind(opts.slab);
-    if (layout === 'massing' || layout === 'sheets') setLayout('split');
+    if (layout === 'massing' || layout === 'sheets') setLayoutResponsive('split');
   };
 
   const onImportFile = async (file: File) => {
@@ -324,7 +352,7 @@ export function CadStudioPage() {
       } else {
         throw new Error('Use a .dxf or .dwg file.');
       }
-      setLayout('split');
+      setLayoutResponsive('split');
       setPlateMode('floor');
       setStudioMode('layers');
       setSheetId(null);
@@ -469,7 +497,7 @@ export function CadStudioPage() {
                   role="menuitem"
                   onClick={(e) => {
                     loadPlate(demoCadPlate());
-                    setLayout('split');
+                    setLayoutResponsive('split');
                     setPlateMode('floor');
                     setStudioMode('draw');
                     setSelection(null);
@@ -529,7 +557,7 @@ export function CadStudioPage() {
 
           <div className="cad-action-group" aria-label="Layout">
             <div className="cad-view-toggle" role="group" aria-label="Layout">
-              <button type="button" className={layout === 'split' ? 'is-active' : ''} onClick={() => setLayout('split')}>
+              <button type="button" className={layout === 'split' ? 'is-active' : ''} onClick={() => setLayoutResponsive('split')}>
                 Split
               </button>
               <button type="button" className={layout === 'plate' ? 'is-active' : ''} onClick={() => setLayout('plate')}>
@@ -576,18 +604,32 @@ export function CadStudioPage() {
               className={studioMode === mode.id ? 'is-active' : ''}
               onClick={() => {
                 setStudioMode(mode.id);
+                setMobileToolsOpen(true);
                 if (mode.id === 'sheets') setLayout('sheets');
-                else if (layout === 'sheets') setLayout('split');
+                else if (layout === 'sheets') {
+                  setLayout(
+                    window.matchMedia('(max-width: 900px)').matches ? 'plate' : 'split',
+                  );
+                }
               }}
             >
               {mode.label}
             </button>
           ))}
         </div>
+        <button
+          type="button"
+          className={`cad-mobile-tools-toggle${mobileToolsOpen ? ' is-open' : ''}`}
+          aria-expanded={mobileToolsOpen}
+          aria-controls="cad-tools-panel"
+          onClick={() => setMobileToolsOpen((v) => !v)}
+        >
+          {mobileToolsOpen ? 'Hide tools' : 'Show tools'}
+        </button>
       </div>
 
-      <div className="cad-studio-shell">
-        <aside className="cad-tools" aria-label="Studio tools">
+      <div className={`cad-studio-shell${mobileToolsOpen ? '' : ' is-tools-collapsed'}`}>
+        <aside id="cad-tools-panel" className="cad-tools" aria-label="Studio tools" hidden={!mobileToolsOpen}>
 
           {(studioMode === 'draw' || studioMode === 'modify' || studioMode === 'annotate') && (
           <div className="cad-context-strip">
