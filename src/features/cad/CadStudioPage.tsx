@@ -896,7 +896,7 @@ export function CadStudioPage() {
                     className={showExteriorDims ? 'is-active' : ''}
                     onClick={() => setShowExteriorDims((v) => !v)}
                   >
-                    Ext dims {showExteriorDims ? 'on' : 'off'}
+                    Measurements {showExteriorDims ? 'on' : 'off'}
                   </button>
                   <button
                     type="button"
@@ -2240,9 +2240,9 @@ export function CadStudioPage() {
                   type="button"
                   className={showExteriorDims ? 'is-active' : ''}
                   onClick={() => setShowExteriorDims((v) => !v)}
-                  title="Automatic exterior dimension chains"
+                  title="Automatic exterior measurement chains"
                 >
-                  Ext dims {showExteriorDims ? 'on' : 'off'}
+                  Measurements {showExteriorDims ? 'on' : 'off'}
                 </button>
                 <button
                   type="button"

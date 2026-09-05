@@ -132,9 +132,19 @@ function buildAutoExteriorDims(plate: CadPlate, offsetFt: number): CadExteriorDi
   });
 
   const segOffset = offsetFt + 2.8;
+  /** Skip wall segments that duplicate the overall AABB dims on the same side. */
+  const near = (a: number, b: number, tol = 0.6) => Math.abs(a - b) <= tol;
   walls.forEach((w, i) => {
     const len = segLengthFt(w);
     if (len < 1.5) return;
+    const horiz = Math.abs(w.x2 - w.x1) >= Math.abs(w.y2 - w.y1);
+    // overall-w sits below minY; overall-d sits left of minX.
+    if (horiz && near(len, width) && near(Math.min(w.y1, w.y2), minY, 1.25)) return;
+    if (!horiz && near(len, depth) && near(Math.min(w.x1, w.x2), minX, 1.25)) return;
+    // Right-hand full-depth wall equals overall-d — omit the twin.
+    if (!horiz && near(len, depth) && near(Math.max(w.x1, w.x2), maxX, 1.25)) return;
+    // Top full-width wall equals overall-w — omit the twin (overall is already on bottom).
+    if (horiz && near(len, width) && near(Math.max(w.y1, w.y2), maxY, 1.25)) return;
     const { ox, oy } = outwardOffset(w, cx, cy, segOffset);
     const x1 = w.x1 + ox;
     const y1 = w.y1 + oy;
