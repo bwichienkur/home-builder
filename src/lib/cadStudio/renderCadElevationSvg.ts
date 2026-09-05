@@ -128,6 +128,51 @@ export function renderCadElevationSvg(
     );
   }
 
+
+  // Level markers + overall height dim (Plan7 elevation finish)
+  const gradeY = h - ((sheet.gradeFt ?? minY) - oy);
+  const ridgeY = Math.min(
+    ...segs.map((s) => h - (Math.max(s.y1Ft, s.y2Ft) - oy)),
+    h - pad,
+  );
+  const eaveCandidates = segs
+    .filter((s) => /WALL|EXT|BRG|FACADE/i.test(s.layer))
+    .map((s) => h - (Math.max(s.y1Ft, s.y2Ft) - oy));
+  const eaveY = eaveCandidates.length ? Math.min(...eaveCandidates) : (gradeY + ridgeY) / 2;
+  const levels: Array<{ label: string; y: number }> = [
+    { label: 'GRADE', y: gradeY },
+    { label: 'EAVE', y: eaveY },
+    { label: 'RIDGE', y: ridgeY },
+  ];
+  const lx = w - pad * 0.35;
+  for (const lvl of levels) {
+    parts.push(
+      `<line x1="${pad.toFixed(2)}" y1="${lvl.y.toFixed(2)}" x2="${(w - pad * 0.55).toFixed(2)}" y2="${lvl.y.toFixed(2)}" stroke="#a8a29e" stroke-width="0.03" stroke-dasharray="0.25 0.18"/>`,
+    );
+    parts.push(
+      `<polygon points="${lx.toFixed(2)},${lvl.y.toFixed(2)} ${(lx - 0.35).toFixed(2)},${(lvl.y - 0.18).toFixed(2)} ${(lx - 0.35).toFixed(2)},${(lvl.y + 0.18).toFixed(2)}" fill="#0f172a"/>`,
+    );
+    parts.push(
+      `<text x="${(lx - 0.5).toFixed(2)}" y="${(lvl.y + 0.12).toFixed(2)}" fill="#0f172a" font-size="${(fontSize * 0.7).toFixed(3)}" font-family="IBM Plex Sans, Segoe UI, sans-serif" font-weight="600" text-anchor="end">${escapeXml(lvl.label)}</text>`,
+    );
+  }
+  // Overall height dimension on the left
+  const dimX = pad * 0.45;
+  parts.push(
+    `<line x1="${dimX.toFixed(2)}" y1="${gradeY.toFixed(2)}" x2="${dimX.toFixed(2)}" y2="${ridgeY.toFixed(2)}" stroke="#475569" stroke-width="0.05"/>`,
+  );
+  parts.push(
+    `<line x1="${(dimX - 0.25).toFixed(2)}" y1="${gradeY.toFixed(2)}" x2="${(dimX + 0.25).toFixed(2)}" y2="${gradeY.toFixed(2)}" stroke="#475569" stroke-width="0.05"/>`,
+  );
+  parts.push(
+    `<line x1="${(dimX - 0.25).toFixed(2)}" y1="${ridgeY.toFixed(2)}" x2="${(dimX + 0.25).toFixed(2)}" y2="${ridgeY.toFixed(2)}" stroke="#475569" stroke-width="0.05"/>`,
+  );
+  const heightFt = Math.abs((sheet.gradeFt ?? minY) - (maxY));
+  const midY = (gradeY + ridgeY) / 2;
+  parts.push(
+    `<text x="${(dimX + 0.35).toFixed(2)}" y="${midY.toFixed(2)}" fill="#334155" font-size="${(fontSize * 0.75).toFixed(3)}" font-family="IBM Plex Sans, Segoe UI, sans-serif" transform="rotate(-90 ${(dimX + 0.35).toFixed(2)} ${midY.toFixed(2)})" text-anchor="middle">${heightFt.toFixed(1)}'</text>`,
+  );
+
   if (opts?.title) {
     parts.push(
       `<text x="16" y="24" fill="#0f172a" font-size="18" font-family="IBM Plex Sans, Segoe UI, sans-serif" font-weight="600">${escapeXml(opts.title)}</text>`,

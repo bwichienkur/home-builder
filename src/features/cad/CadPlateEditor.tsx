@@ -63,6 +63,11 @@ import type { CadStairFt } from '../../lib/cadStudio/types';
 import { CadDimMark } from './cadDimSvg';
 import { CadFixturePlanSymbol } from './cadFixturePlanSymbol';
 import { wallFootprintPointsAttr, wallFootprintQuad } from '../../lib/cadStudio/cadWallFootprint';
+import {
+  cadWallHatchPatternDefs,
+  wallHatchLegendForPlate,
+  wallHatchStyleForWall,
+} from '../../lib/cadStudio/cadWallHatch';
 
 const ROLE_STROKE: Record<CadSegmentRole, string> = {
   wall: '#1e293b',
@@ -1116,6 +1121,12 @@ export function CadPlateEditor({
     cursorPlan &&
     (lastSnap?.kind === 'endpoint' || lastSnap?.kind === 'guide');
 
+
+    const wallHatchLegend = useMemo(
+      () => wallHatchLegendForPlate(plate.wallCenterlines),
+      [plate.wallCenterlines],
+    );
+
   return (
     <div className="cad-plate-editor-host" ref={hostRef}>
     <div className="cad-view-controls" role="toolbar" aria-label="2D view">
@@ -1124,7 +1135,21 @@ export function CadPlateEditor({
       </button>
       <span className="cad-view-hint">Wheel zoom · Space/Alt/Middle pan · R rotate fixture</span>
     </div>
-    <svg
+        {wallHatchLegend.length > 0 && (
+      <div className="cad-wall-hatch-legend" aria-label="Wall type legend">
+        <span className="cad-wall-hatch-legend-title">Wall types</span>
+        {wallHatchLegend.map((item) => (
+          <span key={item.id} className="cad-wall-hatch-legend-item">
+            <svg width="18" height="12" aria-hidden>
+              <defs dangerouslySetInnerHTML={{ __html: cadWallHatchPatternDefs() }} />
+              <rect width="18" height="12" fill={`url(#${item.patternId})`} stroke={item.stroke} strokeWidth="1" />
+            </svg>
+            {item.label}
+          </span>
+        ))}
+      </div>
+    )}
+<svg
       ref={svgRef}
       className="cad-plate-editor-svg"
       viewBox={`${view.x.toFixed(3)} ${view.y.toFixed(3)} ${view.w.toFixed(3)} ${view.h.toFixed(3)}`}
@@ -1170,6 +1195,7 @@ export function CadPlateEditor({
             strokeWidth={0.06}
           />
         </pattern>
+        <g dangerouslySetInnerHTML={{ __html: cadWallHatchPatternDefs() }} />
       </defs>
       <g transform={`translate(${(-ox).toFixed(3)} ${(h + oy).toFixed(3)}) scale(1,-1)`}>
         {showGrid && (
@@ -1267,13 +1293,14 @@ export function CadPlateEditor({
           const mid = { x: (wall.x1 + wall.x2) / 2, y: (wall.y1 + wall.y2) / 2 };
           const gripR = stroke * 10;
           const foot = wallFootprintQuad(wall);
-          const fill = wall.exterior ? wallStroke : '#94a3b8';
+          const hatch = wallHatchStyleForWall(wall);
+          const fill = selected ? (wall.exterior ? wallStroke : '#94a3b8') : `url(#${hatch.patternId})`;
           return (
             <g key={`wall-${i}`}>
               <polygon
                 points={wallFootprintPointsAttr(foot)}
                 fill={fill}
-                fillOpacity={selected ? 0.92 : wall.exterior ? 0.88 : 0.55}
+                fillOpacity={selected ? 0.92 : 1}
                 stroke={wallStroke}
                 strokeWidth={stroke * (selected ? 1.4 : 0.75)}
                 strokeLinejoin="round"

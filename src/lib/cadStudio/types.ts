@@ -464,6 +464,19 @@ export type CadSectionHit = {
   openings: Array<{ sillFt: number; headFt: number; widthFt: number }>;
 };
 
+export type CadSectionLevelMarker = {
+  label: string;
+  elevationFt: number;
+};
+
+export type CadSectionSlabBand = {
+  stationStartFt: number;
+  stationEndFt: number;
+  topFt: number;
+  thicknessFt: number;
+  kind: 'floor' | 'foundation' | 'footing';
+};
+
 export type CadSectionDrawing = {
   cut: CadSectionCutFt;
   lengthFt: number;
@@ -471,6 +484,10 @@ export type CadSectionDrawing = {
   ridgeHeightFt: number;
   hits: CadSectionHit[];
   gradeFt: number;
+  /** Finish floor / ceiling / ridge markers for drafting. */
+  levels?: CadSectionLevelMarker[];
+  /** Horizontal structure bands (slab, footing). */
+  slabs?: CadSectionSlabBand[];
 };
 
 export type CadExtrusion = {
