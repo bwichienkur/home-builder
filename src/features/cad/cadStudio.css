@@ -2454,3 +2454,66 @@
     display: none !important;
   }
 }
+
+
+/* Stable 2D view controls (pan / zoom / fit) */
+.cad-plate-editor-host {
+  position: relative;
+}
+.cad-view-controls {
+  position: absolute;
+  z-index: 3;
+  top: 0.55rem;
+  left: 0.55rem;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  pointer-events: none;
+}
+.cad-view-controls .cad-view-fit {
+  pointer-events: auto;
+  border: 1px solid var(--cad-line);
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--cad-ink);
+  border-radius: 6px;
+  padding: 0.28rem 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.cad-view-controls .cad-view-fit:hover {
+  background: #fff;
+  border-color: var(--cad-accent);
+}
+.cad-view-hint {
+  font-size: 0.72rem;
+  color: var(--cad-muted);
+  background: rgba(247, 248, 250, 0.88);
+  border-radius: 4px;
+  padding: 0.15rem 0.4rem;
+}
+.cad-room-schedule-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+.cad-room-schedule-head h3 {
+  margin: 0;
+}
+.cad-btn-mini {
+  border: 1px solid var(--cad-line);
+  background: #fff;
+  border-radius: 5px;
+  padding: 0.2rem 0.45rem;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+.cad-btn-mini:hover {
+  border-color: var(--cad-accent);
+}
+.cad-autosave-note {
+  color: #a7f3d0;
+  margin-right: 0.75rem;
+}

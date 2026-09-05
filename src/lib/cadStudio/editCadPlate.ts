@@ -388,21 +388,109 @@ const FIXTURE_DEFAULTS: Record<
   other: { widthFt: 2, depthFt: 2, layer: 'FIXTURE', blockName: 'FIXTURE' },
 };
 
-export function addFixtureHint(plate: CadPlate, kind: CadFixtureKind, xFt: number, yFt: number): CadPlate {
+export function addFixtureHint(
+  plate: CadPlate,
+  kind: CadFixtureKind,
+  xFt: number,
+  yFt: number,
+  opts?: { rotationDeg?: number; alignToWall?: boolean; wallTolFt?: number },
+): CadPlate {
   const d = FIXTURE_DEFAULTS[kind];
+  let x = xFt;
+  let y = yFt;
+  let rotationDeg = opts?.rotationDeg ?? 0;
+  if (opts?.alignToWall !== false) {
+    const aligned = alignFixturePoseToNearestWall(plate, x, y, d.depthFt, opts?.wallTolFt ?? 3);
+    if (aligned) {
+      x = aligned.xFt;
+      y = aligned.yFt;
+      rotationDeg = aligned.rotationDeg;
+    }
+  }
   const fixtureHints: CadFixtureHintFt[] = [
     ...plate.fixtureHints,
     {
-      xFt,
-      yFt,
+      xFt: x,
+      yFt: y,
       widthFt: d.widthFt,
       depthFt: d.depthFt,
       layer: d.layer,
       blockName: d.blockName,
       kind,
+      rotationDeg,
     },
   ];
   return syncWallSegments({ ...plate, fixtureHints });
+}
+
+/** Face the fixture into the room with its back toward the nearest wall. */
+export function alignFixturePoseToNearestWall(
+  plate: CadPlate,
+  xFt: number,
+  yFt: number,
+  depthFt: number,
+  tolFt = 3,
+): { xFt: number; yFt: number; rotationDeg: number } | null {
+  const host = nearestWallHost(plate, xFt, yFt, tolFt);
+  if (!host) return null;
+  const w = plate.wallCenterlines[host.wallIndex];
+  if (!w) return null;
+  const dx = w.x2 - w.x1;
+  const dy = w.y2 - w.y1;
+  const len = Math.hypot(dx, dy) || 1;
+  const ux = dx / len;
+  const uy = dy / len;
+  // Outward normal (left of wall direction); flip so it points toward the click.
+  let nx = -uy;
+  let ny = ux;
+  const mx = w.x1 + ux * len * host.t;
+  const my = w.y1 + uy * len * host.t;
+  if ((xFt - mx) * nx + (yFt - my) * ny < 0) {
+    nx = -nx;
+    ny = -ny;
+  }
+  const standoff = Math.max(0.15, depthFt / 2 + 0.05);
+  // Symbol +Y is the "back" (wall/tank side); rotate so +Y faces the wall (-normal).
+  const rotationDeg = (Math.atan2(-nx, -ny) * 180) / Math.PI;
+  return {
+    xFt: mx + nx * standoff,
+    yFt: my + ny * standoff,
+    rotationDeg,
+  };
+}
+
+export function rotateFixtureHint(plate: CadPlate, index: number, deltaDeg: number): CadPlate {
+  const fixtureHints = plate.fixtureHints.map((f, i) => {
+    if (i !== index) return f;
+    const next = ((f.rotationDeg ?? 0) + deltaDeg) % 360;
+    return { ...f, rotationDeg: next < 0 ? next + 360 : next };
+  });
+  return syncWallSegments({ ...plate, fixtureHints });
+}
+
+export function setFixtureHintRotation(plate: CadPlate, index: number, rotationDeg: number): CadPlate {
+  const fixtureHints = plate.fixtureHints.map((f, i) =>
+    i === index ? { ...f, rotationDeg } : f,
+  );
+  return syncWallSegments({ ...plate, fixtureHints });
+}
+
+export function alignFixtureHintToWall(plate: CadPlate, index: number, tolFt = 4): CadPlate {
+  const f = plate.fixtureHints[index];
+  if (!f) return plate;
+  const depth = f.depthFt ?? FIXTURE_DEFAULTS[f.kind ?? 'other'].depthFt;
+  const aligned = alignFixturePoseToNearestWall(plate, f.xFt, f.yFt, depth, tolFt);
+  if (!aligned) return plate;
+  const fixtureHints = plate.fixtureHints.map((item, i) =>
+    i === index
+      ? { ...item, xFt: aligned.xFt, yFt: aligned.yFt, rotationDeg: aligned.rotationDeg }
+      : item,
+  );
+  return syncWallSegments({
+    ...plate,
+    fixtureHints,
+    bounds: recomputePlateBounds({ ...plate, fixtureHints }),
+  });
 }
 
 export function addSlab(

@@ -126,7 +126,7 @@ export {
   setAnnotativeDimLocked,
   type CadExteriorDim,
 } from './cadExteriorDims';
-export { snapCadDraftPoint, defaultWallThicknessFt, type CadSnapResult } from './cadDrawSnap';
+export { snapCadDraftPoint, snapToGridFt, defaultWallThicknessFt, type CadSnapResult } from './cadDrawSnap';
 export { wallFootprintQuad, wallFootprintPointsAttr, type WallFootprintQuad } from './cadWallFootprint';
 export {
   parseArchitecturalLength,
@@ -239,6 +239,8 @@ export type { CadDesignSnapshot } from './types';
 export {
   addDormer,
   addFixtureHint,
+  alignFixtureHintToWall,
+  alignFixturePoseToNearestWall,
   addGuideline,
   addOpeningHint,
   addSectionCut,
@@ -248,6 +250,8 @@ export {
   deleteSelection,
   formatWallLengthFt,
   moveFixtureHint,
+  rotateFixtureHint,
+  setFixtureHintRotation,
   moveLabel,
   moveOpeningHint,
   moveSlab,
@@ -282,3 +286,11 @@ export {
   wallLengthSummary,
 } from './exportCadPlate';
 export { sunPositionFromHour } from './cadSun';
+
+export {
+  loadCadAutosave,
+  saveCadAutosave,
+  clearCadAutosave,
+  formatCadAutosaveTime,
+  type CadAutosavePayload,
+} from './cadAutosave';

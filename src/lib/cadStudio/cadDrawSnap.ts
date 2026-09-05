@@ -8,7 +8,7 @@ const ANGLE_SNAP_DEG = 15;
 export type CadSnapResult = {
   x: number;
   y: number;
-  kind: 'endpoint' | 'midpoint' | 'guide' | 'ortho' | 'angle' | 'free';
+  kind: 'endpoint' | 'midpoint' | 'guide' | 'ortho' | 'angle' | 'grid' | 'free';
 };
 
 function collectEndpoints(plate: CadPlate): Array<{ x: number; y: number }> {
@@ -105,6 +105,22 @@ export function applyAngleSnap(
   return { x: start.x + Math.cos(rad) * len, y: start.y + Math.sin(rad) * len };
 }
 
+
+/** Quantize to an axis-aligned drafting grid (default 1′). */
+export function snapToGridFt(
+  x: number,
+  y: number,
+  stepFt = 1,
+): { x: number; y: number } {
+  const step = stepFt > 1e-9 ? stepFt : 1;
+  const qx = Math.round(x / step) * step;
+  const qy = Math.round(y / step) * step;
+  return {
+    x: Object.is(qx, -0) ? 0 : qx,
+    y: Object.is(qy, -0) ? 0 : qy,
+  };
+}
+
 export function snapCadDraftPoint(
   plate: CadPlate,
   x: number,
@@ -113,6 +129,8 @@ export function snapCadDraftPoint(
     enabled?: boolean;
     ortho?: boolean;
     angleSnap?: boolean;
+    /** Snap free points to a regular grid (default 1′ when true). */
+    grid?: boolean | number;
     from?: { x: number; y: number } | null;
   },
 ): CadSnapResult {
@@ -142,6 +160,12 @@ export function snapCadDraftPoint(
   if (opts?.angleSnap !== false && opts?.from) {
     const a = applyAngleSnap(opts.from, { x, y });
     if (a) return { x: a.x, y: a.y, kind: 'angle' };
+  }
+
+  if (opts?.grid) {
+    const step = typeof opts.grid === 'number' ? opts.grid : 1;
+    const g = snapToGridFt(x, y, step);
+    return { x: g.x, y: g.y, kind: 'grid' };
   }
 
   return { x, y, kind: 'free' };
