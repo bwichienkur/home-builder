@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   addStory,
   alignWalls,
@@ -437,6 +438,9 @@ export function CadStudioPage() {
     <div className="cad-studio">
       <header className="cad-app-bar">
         <div className="cad-app-brand">
+          <Link to="/" className="cad-app-home" title="Back to workspace" aria-label="Back to workspace">
+            ←
+          </Link>
           <span className="cad-app-mark">Olsen</span>
           <h1>CAD Studio</h1>
         </div>

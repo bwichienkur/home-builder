@@ -45,7 +45,8 @@ export function AppShell() {
   const navigate = useNavigate();
   const location = useLocation();
   const showUsers = canManageUsers(user?.role);
-  const isBuild = location.pathname.startsWith('/build') || location.pathname.startsWith('/cad');
+  const isCad = location.pathname.startsWith('/cad');
+  const isBuild = location.pathname.startsWith('/build') || isCad;
   const pageTitle = pageTitleForPath(location.pathname);
   const wide = useWideLayout();
   const canDock = wide && !isBuild;
@@ -116,46 +117,48 @@ export function AppShell() {
   return (
     <AppNavProvider value={navValue}>
       <div
-        className={`app-shell${isBuild ? ' is-build' : ''}${docked ? ' is-nav-docked' : ''}${overlay ? ' is-nav-overlay' : ''}`}
+        className={`app-shell${isBuild ? ' is-build' : ''}${isCad ? ' is-cad' : ''}${docked ? ' is-nav-docked' : ''}${overlay ? ' is-nav-overlay' : ''}`}
       >
-        <header className="app-shell-top">
-          <button
-            type="button"
-            className="app-shell-menu"
-            onClick={toggleNav}
-            aria-label={navOpen ? 'Close navigation' : 'Open navigation'}
-            aria-expanded={navOpen}
-            aria-controls="app-nav-pane"
-          >
-            {overlay ? (
-              <X size={18} strokeWidth={1.75} />
-            ) : docked ? (
-              <PanelLeftClose size={18} strokeWidth={1.75} />
-            ) : (
-              <Menu size={18} strokeWidth={1.75} />
-            )}
-          </button>
-          <NavLink to="/" className="app-shell-brand" end>
-            Olsen Custom Homes
-          </NavLink>
-          <span className="app-shell-page">{pageTitle}</span>
-          <div className="app-shell-user">
-            <span className="app-shell-user-name" title={user?.email}>
-              {user?.name ?? user?.email}
-            </span>
+        {!isCad && (
+          <header className="app-shell-top">
             <button
               type="button"
-              className="app-shell-logout"
-              onClick={() => {
-                void logout().then(() => navigate('/login'));
-              }}
-              title="Sign out"
-              aria-label="Sign out"
+              className="app-shell-menu"
+              onClick={toggleNav}
+              aria-label={navOpen ? 'Close navigation' : 'Open navigation'}
+              aria-expanded={navOpen}
+              aria-controls="app-nav-pane"
             >
-              <LogOut size={16} strokeWidth={1.75} />
+              {overlay ? (
+                <X size={18} strokeWidth={1.75} />
+              ) : docked ? (
+                <PanelLeftClose size={18} strokeWidth={1.75} />
+              ) : (
+                <Menu size={18} strokeWidth={1.75} />
+              )}
             </button>
-          </div>
-        </header>
+            <NavLink to="/" className="app-shell-brand" end>
+              Olsen Custom Homes
+            </NavLink>
+            <span className="app-shell-page">{pageTitle}</span>
+            <div className="app-shell-user">
+              <span className="app-shell-user-name" title={user?.email}>
+                {user?.name ?? user?.email}
+              </span>
+              <button
+                type="button"
+                className="app-shell-logout"
+                onClick={() => {
+                  void logout().then(() => navigate('/login'));
+                }}
+                title="Sign out"
+                aria-label="Sign out"
+              >
+                <LogOut size={16} strokeWidth={1.75} />
+              </button>
+            </div>
+          </header>
+        )}
         {overlay && (
           <button type="button" className="app-nav-backdrop" aria-label="Close navigation" onClick={closeNav} />
         )}
