@@ -56,6 +56,7 @@ import {
 import { wallStrokeForMaterial } from '../../lib/cadStudio/cadSceneMaterials';
 import { visibleLabels, visibleSegments } from '../../lib/cadStudio/buildCadPlate';
 import type { CadStairFt } from '../../lib/cadStudio/types';
+import { CadDimMark } from './cadDimSvg';
 
 const ROLE_STROKE: Record<CadSegmentRole, string> = {
   wall: '#1e293b',
@@ -98,7 +99,7 @@ const ROOM_FILL_PALETTE = [
 ];
 
 /** Extra pad so exterior dim chains fit in the viewBox. */
-const PAD = 8;
+const PAD = 10;
 const SLAB_CLOSE_TOL_FT = 1.25;
 const GRIP_HIT_FT = 1.2;
 const OPENING_HOST_TOL_FT = 2.5;
@@ -1352,12 +1353,20 @@ export function CadPlateEditor({
         const a = planToSvgFt(dim.x1, dim.y1, plate.bounds, PAD);
         const b = planToSvgFt(dim.x2, dim.y2, plate.bounds, PAD);
         const lp = planToSvgFt((dim.x1 + dim.x2) / 2, (dim.y1 + dim.y2) / 2, plate.bounds, PAD);
-        const tick = fontSize * 0.4;
         return (
-          <g
+          <CadDimMark
             key={dim.id}
             className="cad-temp-dim"
             style={{ cursor: 'pointer' }}
+            x1={a.x}
+            y1={a.y}
+            x2={b.x}
+            y2={b.y}
+            labelX={lp.x}
+            labelY={lp.y}
+            label={dim.label}
+            fontSize={fontSize}
+            tone="temp"
             onPointerDown={(ev) => {
               ev.stopPropagation();
               openTempDimHud(dim, ev.clientX, ev.clientY);
@@ -1366,47 +1375,48 @@ export function CadPlateEditor({
               ev.stopPropagation();
               onPromoteTempDim?.(dim);
             }}
-          >
-            <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#1f4e46" strokeWidth={1.35} />
-            <line x1={a.x - tick} y1={a.y - tick} x2={a.x + tick} y2={a.y + tick} stroke="#1f4e46" strokeWidth={1.1} />
-            <line x1={b.x - tick} y1={b.y - tick} x2={b.x + tick} y2={b.y + tick} stroke="#1f4e46" strokeWidth={1.1} />
-            <rect
-              x={lp.x - fontSize * 2.3}
-              y={lp.y - fontSize * 0.75}
-              width={fontSize * 4.6}
-              height={fontSize * 1.45}
-              rx={fontSize * 0.22}
-              fill="rgba(255,255,255,0.96)"
-              stroke="#1f4e46"
-              strokeWidth={1.1}
-            />
-            <text
-              x={lp.x}
-              y={lp.y}
-              fill="#1f4e46"
-              fontSize={fontSize * 0.85}
-              fontFamily="IBM Plex Sans, Segoe UI, sans-serif"
-              fontWeight={700}
-              textAnchor="middle"
-              dominantBaseline="middle"
-            >
-              {dim.label}
-            </text>
-          </g>
+          />
         );
       })}
       {exteriorDims.map((dim) => {
         const a = planToSvgFt(dim.x1, dim.y1, plate.bounds, PAD);
         const b = planToSvgFt(dim.x2, dim.y2, plate.bounds, PAD);
         const lp = planToSvgFt(dim.labelX, dim.labelY, plate.bounds, PAD);
-        const tick = fontSize * 0.45;
+        const w1 =
+          dim.wx1 != null && dim.wy1 != null
+            ? planToSvgFt(dim.wx1, dim.wy1, plate.bounds, PAD)
+            : null;
+        const w2 =
+          dim.wx2 != null && dim.wy2 != null
+            ? planToSvgFt(dim.wx2, dim.wy2, plate.bounds, PAD)
+            : null;
         const isManual = (plate.annotativeDims ?? []).some((d) => d.id === dim.id);
         const associative = dim.id === 'overall-w' || dim.id === 'overall-d';
+        const tone = dim.locked
+          ? 'locked'
+          : isManual
+            ? 'manual'
+            : associative
+              ? 'overall'
+              : 'segment';
         return (
-          <g
+          <CadDimMark
             key={dim.id}
             className={isManual ? 'cad-ext-dim cad-ext-dim-manual' : 'cad-ext-dim'}
             style={associative || isManual ? { cursor: dim.locked ? 'not-allowed' : 'pointer' } : undefined}
+            x1={a.x}
+            y1={a.y}
+            x2={b.x}
+            y2={b.y}
+            labelX={lp.x}
+            labelY={lp.y}
+            label={dim.locked ? `[L] ${dim.label}` : dim.label}
+            fontSize={fontSize}
+            tone={tone}
+            wx1={w1?.x}
+            wy1={w1?.y}
+            wx2={w2?.x}
+            wy2={w2?.y}
             onPointerDown={(ev) => {
               if (!associative && !isManual) return;
               if (dim.locked) return;
@@ -1436,40 +1446,7 @@ export function CadPlateEditor({
                 tempDimInputRef.current?.select();
               });
             }}
-          >
-            <line
-              x1={a.x}
-              y1={a.y}
-              x2={b.x}
-              y2={b.y}
-              stroke={isManual ? '#1f4e46' : '#5b6b7c'}
-              strokeWidth={isManual ? 1.35 : 1.1}
-            />
-            <line x1={a.x - tick} y1={a.y - tick} x2={a.x + tick} y2={a.y + tick} stroke={isManual ? '#1f4e46' : '#5b6b7c'} strokeWidth={1} />
-            <line x1={b.x - tick} y1={b.y - tick} x2={b.x + tick} y2={b.y + tick} stroke={isManual ? '#1f4e46' : '#5b6b7c'} strokeWidth={1} />
-            <rect
-              x={lp.x - fontSize * 2.1}
-              y={lp.y - fontSize * 0.7}
-              width={fontSize * 4.2}
-              height={fontSize * 1.35}
-              rx={fontSize * 0.2}
-              fill="rgba(241,239,232,0.92)"
-              stroke={dim.locked ? '#9a3412' : isManual ? '#1f4e46' : 'none'}
-              strokeWidth={dim.locked || isManual ? 1 : 0}
-            />
-            <text
-              x={lp.x}
-              y={lp.y}
-              fill={dim.locked ? '#9a3412' : '#334155'}
-              fontSize={fontSize * 0.78}
-              fontFamily="IBM Plex Sans, Segoe UI, sans-serif"
-              fontWeight={600}
-              textAnchor="middle"
-              dominantBaseline="middle"
-            >
-              {dim.locked ? `[L] ${dim.label}` : dim.label}
-            </text>
-          </g>
+          />
         );
       })}
 
@@ -1477,70 +1454,89 @@ export function CadPlateEditor({
         const a = planToSvgFt(dim.x1, dim.y1, plate.bounds, PAD);
         const b = planToSvgFt(dim.x2, dim.y2, plate.bounds, PAD);
         const lp = planToSvgFt(dim.labelX, dim.labelY, plate.bounds, PAD);
-        const tick = fontSize * 0.35;
+        const w1 =
+          dim.wx1 != null && dim.wy1 != null
+            ? planToSvgFt(dim.wx1, dim.wy1, plate.bounds, PAD)
+            : null;
+        const w2 =
+          dim.wx2 != null && dim.wy2 != null
+            ? planToSvgFt(dim.wx2, dim.wy2, plate.bounds, PAD)
+            : null;
         return (
-          <g key={dim.id} className="cad-int-dim">
-            <line
-              x1={a.x}
-              y1={a.y}
-              x2={b.x}
-              y2={b.y}
-              stroke="#94a3b8"
-              strokeWidth={0.9}
-            />
-            <line x1={a.x - tick} y1={a.y - tick} x2={a.x + tick} y2={a.y + tick} stroke="#94a3b8" strokeWidth={0.85} />
-            <line x1={b.x - tick} y1={b.y - tick} x2={b.x + tick} y2={b.y + tick} stroke="#94a3b8" strokeWidth={0.85} />
-            <rect
-              x={lp.x - fontSize * 1.85}
-              y={lp.y - fontSize * 0.55}
-              width={fontSize * 3.7}
-              height={fontSize * 1.1}
-              rx={fontSize * 0.15}
-              fill="rgba(241,239,232,0.88)"
-            />
-            <text
-              x={lp.x}
-              y={lp.y}
-              fill="#64748b"
-              fontSize={fontSize * 0.65}
-              fontFamily="IBM Plex Sans, Segoe UI, sans-serif"
-              fontWeight={500}
-              textAnchor="middle"
-              dominantBaseline="middle"
-            >
-              {dim.label}
-            </text>
-          </g>
+          <CadDimMark
+            key={dim.id}
+            className="cad-int-dim"
+            x1={a.x}
+            y1={a.y}
+            x2={b.x}
+            y2={b.y}
+            labelX={lp.x}
+            labelY={lp.y}
+            label={dim.label}
+            fontSize={fontSize}
+            tone="interior"
+            wx1={w1?.x}
+            wy1={w1?.y}
+            wx2={w2?.x}
+            wy2={w2?.y}
+          />
         );
       })}
 
       {roomStamps.map((room) => {
         const sp = planToSvgFt(room.x, room.y, plate.bounds, PAD);
+        const nameSize = fontSize * 0.92;
+        const areaSize = fontSize * 0.72;
+        const name = room.name;
+        const area = formatRoomAreaSqFt(room.areaSqFt);
+        const chipW = Math.max(
+          name.length * nameSize * 0.52,
+          area.length * areaSize * 0.48,
+        ) + fontSize * 1.1;
+        const chipH = fontSize * 2.35;
         return (
-          <g key={room.id} className="cad-room-stamp">
+          <g key={room.id} className="cad-room-stamp" pointerEvents="none">
+            <rect
+              x={sp.x - chipW / 2}
+              y={sp.y - chipH / 2}
+              width={chipW}
+              height={chipH}
+              rx={fontSize * 0.18}
+              fill="rgba(255,255,255,0.88)"
+              stroke="rgba(15,23,42,0.08)"
+              strokeWidth={0.7}
+            />
             <text
               x={sp.x}
-              y={sp.y - fontSize * 0.55}
+              y={sp.y - fontSize * 0.42}
               fill="#0f172a"
-              fontSize={fontSize * 0.95}
+              fontSize={nameSize}
               fontFamily="IBM Plex Sans, Segoe UI, sans-serif"
               fontWeight={650}
               textAnchor="middle"
               dominantBaseline="middle"
             >
-              {room.name}
+              {name}
             </text>
+            <line
+              x1={sp.x - chipW * 0.28}
+              y1={sp.y + fontSize * 0.05}
+              x2={sp.x + chipW * 0.28}
+              y2={sp.y + fontSize * 0.05}
+              stroke="rgba(15,23,42,0.12)"
+              strokeWidth={0.55}
+            />
             <text
               x={sp.x}
               y={sp.y + fontSize * 0.55}
               fill="#5b6b7c"
-              fontSize={fontSize * 0.78}
+              fontSize={areaSize}
               fontFamily="IBM Plex Sans, Segoe UI, sans-serif"
               fontWeight={500}
               textAnchor="middle"
               dominantBaseline="middle"
             >
-              {formatRoomAreaSqFt(room.areaSqFt)}
+              {area}
             </text>
           </g>
         );
