@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { CadFixtureKind, CadPlate, CadSegmentRole, CadSlabKind } from '../../lib/cadStudio/types';
 import {
   detectCadRoomStamps,
@@ -116,6 +116,8 @@ type Props = {
   snapOn?: boolean;
   showInteriorDims?: boolean;
   showRoomFills?: boolean;
+  /** Drafting paper grid (1' minor / 4' major), Plan7-style. */
+  showGrid?: boolean;
   selection: CadPlateSelection | null;
   onSelectionChange: (sel: CadPlateSelection | null) => void;
   /** Discrete edits (draw complete, trim, delete, etc.) — pushes undo history. */
@@ -212,6 +214,7 @@ export function CadPlateEditor({
   snapOn = true,
   showInteriorDims = false,
   showRoomFills = true,
+  showGrid = true,
   selection,
   onSelectionChange,
   onPlateChange,
@@ -228,6 +231,9 @@ export function CadPlateEditor({
   openingMulti = [],
   onOpeningMultiChange,
 }: Props) {
+  const gridId = useId().replace(/:/g, '');
+  const gridMinorId = `cad-grid-minor-${gridId}`;
+  const gridMajorId = `cad-grid-major-${gridId}`;
   const hostRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const lengthInputRef = useRef<HTMLInputElement>(null);
@@ -957,8 +963,56 @@ export function CadPlateEditor({
       onPointerLeave={handlePointerUp}
       onDoubleClick={handleDoubleClick}
     >
-      <rect width="100%" height="100%" fill="#f1efe8" />
+      {/* Drafting paper — cool light field like Plan7 tutorial plan views */}
+      <rect width="100%" height="100%" fill="#f7f8fa" />
+      <defs>
+        {/* 1' minor / 4' major grid in plan feet (userSpaceOnUse inside flipped group). */}
+        <pattern
+          id={gridMinorId}
+          width="1"
+          height="1"
+          patternUnits="userSpaceOnUse"
+        >
+          <path
+            d="M 1 0 L 0 0 0 1"
+            fill="none"
+            stroke="#b0bac6"
+            strokeWidth={0.035}
+          />
+        </pattern>
+        <pattern
+          id={gridMajorId}
+          width="4"
+          height="4"
+          patternUnits="userSpaceOnUse"
+        >
+          <path
+            d="M 4 0 L 0 0 0 4"
+            fill="none"
+            stroke="#7b8794"
+            strokeWidth={0.06}
+          />
+        </pattern>
+      </defs>
       <g transform={`translate(${(-ox).toFixed(3)} ${(h + oy).toFixed(3)}) scale(1,-1)`}>
+        {showGrid && (
+          <g className="cad-drafting-grid" pointerEvents="none" aria-hidden>
+            <rect
+              x={ox}
+              y={oy}
+              width={w}
+              height={h}
+              fill={`url(#${gridMinorId})`}
+            />
+            <rect
+              x={ox}
+              y={oy}
+              width={w}
+              height={h}
+              fill={`url(#${gridMajorId})`}
+            />
+          </g>
+        )}
         {underlay && (
           <g
             className="cad-underlay"

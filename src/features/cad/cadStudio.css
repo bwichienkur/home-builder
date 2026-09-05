@@ -852,10 +852,14 @@
   max-width: 100%;
   height: auto;
   margin: 1rem auto;
-  background: #f8fafc;
+  background: #f7f8fa;
   box-shadow: 0 10px 40px rgba(20, 32, 51, 0.08);
   touch-action: none;
   cursor: crosshair;
+}
+
+.cad-drafting-grid {
+  opacity: 1;
 }
 
 .cad-edit-tools {
