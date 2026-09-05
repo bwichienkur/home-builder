@@ -25,7 +25,9 @@ import {
   moveWalls,
   offsetWall,
   placeHostedOpening,
+  previewHostedOpening,
   trimWallTo,
+  type HostedOpeningPreview,
 } from '../../lib/cadStudio/cadWallModify';
 import { stretchSharedNode } from '../../lib/cadStudio/cadWallGraph';
 import {
@@ -234,6 +236,7 @@ export function CadPlateEditor({
   const [draftLine, setDraftLine] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(
     null,
   );
+  const [openingPreview, setOpeningPreview] = useState<HostedOpeningPreview | null>(null);
   const [draftPoly, setDraftPoly] = useState<Array<{ x: number; y: number }>>([]);
   const [cursorPlan, setCursorPlan] = useState<{ x: number; y: number } | null>(null);
   const [shiftHeld, setShiftHeld] = useState(false);
@@ -490,26 +493,35 @@ export function CadPlateEditor({
     }
 
     if (tool === 'opening' && !draftLine) {
-      const host = nearestWallHost(plate, raw.x, raw.y, OPENING_HOST_TOL_FT);
-      if (host) {
-        const width = defaultOpeningWidthFt(openingKind);
+      const width = defaultOpeningWidthFt(openingKind);
+      const preview =
+        openingPreview ??
+        previewHostedOpening(plate, raw.x, raw.y, openingKind, width, OPENING_HOST_TOL_FT);
+      if (preview) {
         onPlateChange(
           placeHostedOpening(
             plate,
-            host.wallIndex,
-            host.t,
-            width,
+            preview.wallIndex,
+            preview.t,
+            preview.widthFt,
             openingKind,
             openingKind === 'window' ? windowSillFt : 0,
+            { swing: preview.swing, face: preview.face },
           ),
         );
         onSelectionChange({ kind: 'opening', index: plate.openingHints.length });
-        onStatus?.(`Placed ${openingKind} (${width}' wide)`);
+        setOpeningPreview(null);
+        onStatus?.(
+          openingKind === 'door'
+            ? `Placed door (${preview.widthFt.toFixed(1)}' · ${preview.swing} swing)`
+            : `Placed ${openingKind} (${preview.widthFt.toFixed(1)}' wide)`,
+        );
         return;
       }
       // Fallback: two-click line when no host nearby
       const plan = snapPlan(raw);
       setDraftLine({ x1: plan.x, y1: plan.y, x2: plan.x, y2: plan.y });
+      setOpeningPreview(null);
       onStatus?.('No wall nearby — click second point for free opening span');
       return;
     }
@@ -640,6 +652,30 @@ export function CadPlateEditor({
       return;
     }
 
+    if (tool === 'opening' && !draftLine) {
+      const width = defaultOpeningWidthFt(openingKind);
+      const preview = previewHostedOpening(
+        plate,
+        raw.x,
+        raw.y,
+        openingKind,
+        width,
+        OPENING_HOST_TOL_FT,
+      );
+      setOpeningPreview(preview);
+      setCursorPlan({ x: raw.x, y: raw.y });
+      if (preview) {
+        onStatus?.(
+          openingKind === 'door'
+            ? `Door on wall · move along wall · flip side for swing (${preview.swing}) · click to place`
+            : `${openingKind[0]!.toUpperCase()}${openingKind.slice(1)} on wall · drag along wall · click to place`,
+        );
+      } else {
+        onStatus?.(`Move near a wall to place a ${openingKind}`);
+      }
+      return;
+    }
+
     if (draftLine) {
       setDraftLine({ ...draftLine, x2: raw.x, y2: raw.y });
       return;
@@ -723,6 +759,11 @@ export function CadPlateEditor({
     }
     lastPreviewRef.current = null;
     dragRef.current = null;
+  };
+
+  const handlePointerLeave = () => {
+    handlePointerUp();
+    setOpeningPreview(null);
   };
 
   const handleDoubleClick = (e: React.MouseEvent<SVGSVGElement>) => {
@@ -925,7 +966,15 @@ export function CadPlateEditor({
     else if (tool === 'extend') onStatus?.('Extend: click boundary wall, then wall to lengthen');
     else if (tool === 'break') onStatus?.('Break: click wall at split point');
     else if (tool === 'offset') onStatus?.('Offset: click wall to copy parallel 1 ft');
-  }, [tool, onStatus]);
+    else if (tool === 'opening') {
+      setOpeningPreview(null);
+      onStatus?.(
+        `${openingKind[0]!.toUpperCase()}${openingKind.slice(1)} mode — move along a wall, then click to place`,
+      );
+    } else {
+      setOpeningPreview(null);
+    }
+  }, [tool, openingKind, onStatus]);
 
   const isSelected = (kind: CadPlateSelection['kind'], index: number) =>
     selection?.kind === kind && selection.index === index;
@@ -953,7 +1002,7 @@ export function CadPlateEditor({
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
-      onPointerLeave={handlePointerUp}
+      onPointerLeave={handlePointerLeave}
       onDoubleClick={handleDoubleClick}
     >
       {/* Drafting paper — cool light field like Plan7 tutorial plan views */}
@@ -1318,6 +1367,75 @@ export function CadPlateEditor({
             strokeLinecap="round"
           />
         )}
+
+        {openingPreview && tool === 'opening' && !draftLine && (() => {
+          const p = openingPreview;
+          const len = Math.hypot(p.x2 - p.x1, p.y2 - p.y1) || 1;
+          const ux = (p.x2 - p.x1) / len;
+          const uy = (p.y2 - p.y1) / len;
+          const nx = -uy;
+          const ny = ux;
+          const swingR = Math.min(len, 3.5);
+          const swingSign = p.swing === 'right' ? -1 : 1;
+          const faceSign = p.face === 'out' ? 1 : -1;
+          const host = plate.wallCenterlines[p.wallIndex];
+          return (
+            <g className="cad-opening-preview" style={{ pointerEvents: 'none' }}>
+              {host && (
+                <line
+                  x1={host.x1}
+                  y1={host.y1}
+                  x2={host.x2}
+                  y2={host.y2}
+                  stroke="#0f766e"
+                  strokeWidth={stroke * 4}
+                  strokeOpacity={0.35}
+                  strokeLinecap="round"
+                />
+              )}
+              <line
+                x1={p.x1}
+                y1={p.y1}
+                x2={p.x2}
+                y2={p.y2}
+                stroke="#ea580c"
+                strokeWidth={stroke * 3}
+                strokeLinecap="round"
+                strokeOpacity={0.95}
+              />
+              <rect
+                x={Math.min(p.x1, p.x2) - Math.abs(nx) * stroke * 2}
+                y={Math.min(p.y1, p.y2) - Math.abs(ny) * stroke * 2}
+                width={Math.abs(p.x2 - p.x1) + Math.abs(nx) * stroke * 4}
+                height={Math.abs(p.y2 - p.y1) + Math.abs(ny) * stroke * 4}
+                fill="#fb923c"
+                fillOpacity={0.2}
+                stroke="none"
+              />
+              {openingKind === 'door' && p.swing !== 'none' && (
+                <path
+                  d={`M ${p.x1} ${p.y1} A ${swingR} ${swingR} 0 0 ${
+                    swingSign * faceSign > 0 ? 1 : 0
+                  } ${p.x1 + nx * swingR * swingSign * faceSign} ${
+                    p.y1 + ny * swingR * swingSign * faceSign
+                  }`}
+                  fill="none"
+                  stroke="#ea580c"
+                  strokeWidth={stroke * 1.3}
+                  strokeDasharray="0.35 0.25"
+                  strokeOpacity={0.9}
+                />
+              )}
+              <circle
+                cx={(p.x1 + p.x2) / 2}
+                cy={(p.y1 + p.y2) / 2}
+                r={stroke * 5}
+                fill="#ea580c"
+                fillOpacity={0.45}
+              />
+            </g>
+          );
+        })()}
 
         {draftPolyPreview.length >= 2 && (
           <polyline

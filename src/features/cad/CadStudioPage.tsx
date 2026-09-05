@@ -659,7 +659,7 @@ export function CadStudioPage() {
                     onClick={() => pickTool('opening', { opening: 'door' })}
                   >
                     <strong>Door</strong>
-                    <span>Hosted on wall</span>
+                    <span>Slide along wall · click</span>
                   </button>
                   <button
                     type="button"
@@ -667,7 +667,7 @@ export function CadStudioPage() {
                     onClick={() => pickTool('opening', { opening: 'window' })}
                   >
                     <strong>Window</strong>
-                    <span>Sill {windowSillFt}' AFF</span>
+                    <span>Slide · sill {windowSillFt}' AFF</span>
                   </button>
                   <button
                     type="button"
@@ -675,7 +675,7 @@ export function CadStudioPage() {
                     onClick={() => pickTool('opening', { opening: 'passage' })}
                   >
                     <strong>Passage</strong>
-                    <span>Opening without leaf</span>
+                    <span>Slide along wall · no leaf</span>
                   </button>
                   <button
                     type="button"
@@ -683,7 +683,7 @@ export function CadStudioPage() {
                     onClick={() => pickTool('opening', { opening: 'garage' })}
                   >
                     <strong>Garage</strong>
-                    <span>~16' sectional</span>
+                    <span>Slide along wall · ~16'</span>
                   </button>
                   <button
                     type="button"
