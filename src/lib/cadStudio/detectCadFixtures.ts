@@ -25,6 +25,8 @@ function heightForKind(kind: CadFixtureKind): number {
       return TUB_HEIGHT_M;
     case 'appliance':
       return APPLIANCE_HEIGHT_M;
+    case 'mirror':
+      return 0.9;
     default:
       return 0.5;
   }

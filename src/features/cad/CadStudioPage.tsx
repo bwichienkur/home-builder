@@ -682,9 +682,10 @@ export function CadStudioPage() {
                       ['sink', 'Sink'],
                       ['toilet', 'Toilet'],
                       ['tub', 'Tub'],
-                      ['appliance', 'Appliance'],
+                      ['appliance', 'Stove'],
                       ['counter', 'Counter'],
                       ['island', 'Island'],
+                      ['mirror', 'Mirror'],
                     ] as const
                   ).map(([id, label]) => (
                     <button

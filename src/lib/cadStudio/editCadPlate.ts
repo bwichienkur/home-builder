@@ -380,10 +380,11 @@ const FIXTURE_DEFAULTS: Record<
 > = {
   counter: { widthFt: 6, depthFt: 2, layer: 'FIXTURE', blockName: 'COUNTER' },
   island: { widthFt: 8, depthFt: 3.5, layer: 'FIXTURE', blockName: 'ISLAND' },
-  sink: { widthFt: 2, depthFt: 2, layer: 'FIXTURE', blockName: 'SINK' },
-  toilet: { widthFt: 2, depthFt: 2.5, layer: 'FIXTURE', blockName: 'TOILET' },
+  sink: { widthFt: 2.5, depthFt: 2, layer: 'FIXTURE', blockName: 'SINK' },
+  toilet: { widthFt: 1.75, depthFt: 2.4, layer: 'FIXTURE', blockName: 'TOILET' },
   tub: { widthFt: 5, depthFt: 2.5, layer: 'FIXTURE', blockName: 'TUB' },
-  appliance: { widthFt: 3, depthFt: 2.5, layer: 'FIXTURE', blockName: 'STOVE' },
+  appliance: { widthFt: 2.5, depthFt: 2.5, layer: 'FIXTURE', blockName: 'STOVE' },
+  mirror: { widthFt: 3, depthFt: 0.35, layer: 'FIXTURE', blockName: 'MIRROR' },
   other: { widthFt: 2, depthFt: 2, layer: 'FIXTURE', blockName: 'FIXTURE' },
 };
 

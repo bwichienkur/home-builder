@@ -61,6 +61,8 @@ function fixtureColor(kind: CadFixtureKind): string {
       return '#e2e8f0';
     case 'appliance':
       return '#475569';
+    case 'mirror':
+      return '#cbd5e1';
     default:
       return '#78716c';
   }
@@ -100,6 +102,19 @@ function FixtureMesh({
         <mesh castShadow receiveShadow position={[0, hM / 2, 0]}>
           <boxGeometry args={[wM, hM, dM]} />
           <meshStandardMaterial color={color} roughness={0.55} />
+        </mesh>
+      </group>
+    );
+  }
+
+  if (fixture.kind === 'mirror') {
+    const glassH = Math.max(0.6, hM);
+    const glassD = Math.max(0.02, dM);
+    return (
+      <group position={[wx, 0, wz]} rotation={[0, yaw, 0]}>
+        <mesh castShadow receiveShadow position={[0, 4.5 * FT_TO_M, 0]}>
+          <boxGeometry args={[wM, glassH, glassD]} />
+          <meshStandardMaterial color={color} metalness={0.55} roughness={0.12} />
         </mesh>
       </group>
     );
