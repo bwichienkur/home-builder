@@ -13,6 +13,11 @@ export type CadExteriorDim = {
   labelY: number;
   locked?: boolean;
   valueFt?: number;
+  /** Measured feature endpoints for witness/extension lines (plan feet). */
+  wx1?: number;
+  wy1?: number;
+  wx2?: number;
+  wy2?: number;
 };
 
 function wallMid(w: CadWallCenterlineFt) {
@@ -102,8 +107,12 @@ function buildAutoExteriorDims(plate: CadPlate, offsetFt: number): CadExteriorDi
     y2: minY - offsetFt,
     label: formatWallLengthFt(width),
     labelX: cx,
-    labelY: minY - offsetFt - 1.1,
+    labelY: minY - offsetFt,
     valueFt: width,
+    wx1: minX,
+    wy1: minY,
+    wx2: maxX,
+    wy2: minY,
   });
 
   dims.push({
@@ -113,12 +122,16 @@ function buildAutoExteriorDims(plate: CadPlate, offsetFt: number): CadExteriorDi
     x2: minX - offsetFt,
     y2: maxY,
     label: formatWallLengthFt(depth),
-    labelX: minX - offsetFt - 1.1,
+    labelX: minX - offsetFt,
     labelY: cy,
     valueFt: depth,
+    wx1: minX,
+    wy1: minY,
+    wx2: minX,
+    wy2: maxY,
   });
 
-  const segOffset = offsetFt + 2.2;
+  const segOffset = offsetFt + 2.8;
   walls.forEach((w, i) => {
     const len = segLengthFt(w);
     if (len < 1.5) return;
@@ -134,9 +147,13 @@ function buildAutoExteriorDims(plate: CadPlate, offsetFt: number): CadExteriorDi
       x2,
       y2,
       label: formatWallLengthFt(len),
-      labelX: (x1 + x2) / 2 + ox * 0.15,
-      labelY: (y1 + y2) / 2 + oy * 0.15,
+      labelX: (x1 + x2) / 2,
+      labelY: (y1 + y2) / 2,
       valueFt: len,
+      wx1: w.x1,
+      wy1: w.y1,
+      wx2: w.x2,
+      wy2: w.y2,
     });
   });
 
@@ -148,7 +165,7 @@ function buildAutoExteriorDims(plate: CadPlate, offsetFt: number): CadExteriorDi
  * Places overall AABB dims plus per exterior-wall segment dims outside the plate.
  * Manual `annotativeDims` are always kept; auto dims that collide with manuals are skipped.
  */
-export function computeExteriorDims(plate: CadPlate, offsetFt = 3.5): CadExteriorDim[] {
+export function computeExteriorDims(plate: CadPlate, offsetFt = 4.25): CadExteriorDim[] {
   const manuals: CadExteriorDim[] = (plate.annotativeDims ?? []).map((d) => ({
     id: d.id,
     x1: d.x1,
@@ -160,6 +177,10 @@ export function computeExteriorDims(plate: CadPlate, offsetFt = 3.5): CadExterio
     labelY: d.labelY,
     locked: d.locked,
     valueFt: d.valueFt,
+    wx1: d.wx1,
+    wy1: d.wy1,
+    wx2: d.wx2,
+    wy2: d.wy2,
   }));
   const auto = buildAutoExteriorDims(plate, offsetFt).filter(
     (d) => !dimCoveredByManual(d, plate.annotativeDims ?? []),
@@ -196,7 +217,7 @@ export function setAnnotativeDimLocked(
 }
 
 /** Interior wall segment dimensions (offset toward building center). */
-export function computeInteriorDims(plate: CadPlate, offsetFt = 1.4): CadExteriorDim[] {
+export function computeInteriorDims(plate: CadPlate, offsetFt = 1.75): CadExteriorDim[] {
   const exterior = plate.wallCenterlines.filter((w) => w.exterior);
   const walls = plate.wallCenterlines.filter((w) => !w.exterior);
   if (!walls.length) return [];
@@ -233,6 +254,10 @@ export function computeInteriorDims(plate: CadPlate, offsetFt = 1.4): CadExterio
       labelX: (x1 + x2) / 2,
       labelY: (y1 + y2) / 2,
       valueFt: len,
+      wx1: w.x1,
+      wy1: w.y1,
+      wx2: w.x2,
+      wy2: w.y2,
     });
   });
 

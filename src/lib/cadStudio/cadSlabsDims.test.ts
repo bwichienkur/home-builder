@@ -67,5 +67,11 @@ describe('cad slabs and exterior dims', () => {
     const overallW = dims.find((d) => d.id === 'overall-w')!;
     expect(overallW.valueFt ?? 0).toBeGreaterThan(10);
     expect(overallW.label.length).toBeGreaterThan(0);
+    expect(overallW.wx1).toBeDefined();
+    expect(overallW.wy1).toBeDefined();
+    expect(overallW.wx2).toBeDefined();
+    expect(overallW.wy2).toBeDefined();
+    const seg = dims.find((d) => d.id.startsWith('ext-'));
+    expect(seg?.wx1).toBeDefined();
   });
 });

@@ -317,6 +317,11 @@ export type CadAnnotativeDim = {
   /** When true, click-to-edit is blocked (Revit-lite lock). */
   locked?: boolean;
   valueFt?: number;
+  /** Optional measured feature endpoints for witness lines. */
+  wx1?: number;
+  wy1?: number;
+  wx2?: number;
+  wy2?: number;
 };
 
 /** Elevation sheet segment — X = width from left, Y = height above grade (feet). */
