@@ -2,6 +2,7 @@ import type { CadPlate, CadTitleBlock } from './types';
 import { buildCadSectionDrawing, defaultSectionCut, renderCadSectionSvg } from './buildCadSection';
 import { renderCadElevationSvg } from './renderCadElevationSvg';
 import { renderCadPlateSvg } from './renderCadPlateSvg';
+import { renderDoorWindowScheduleSvg } from './cadMarks';
 
 export const DEFAULT_TITLE_BLOCK: CadTitleBlock = {
   projectName: 'Olsen Custom Homes',
@@ -62,6 +63,17 @@ export function wrapSheetWithTitleBlock(
     <text x="${drawW * 0.78 + 10}" y="58" font-family="IBM Plex Sans, Segoe UI, sans-serif" font-size="11" fill="#57534e">Drawn ${escapeXml(title.drawnBy)}</text>
     <text x="${drawW * 0.78 + 10}" y="76" font-family="IBM Plex Sans, Segoe UI, sans-serif" font-size="11" fill="#57534e">Checked ${escapeXml(title.checkedBy)}</text>
   </g>
+  <!-- North arrow + scale bar -->
+  <g transform="translate(${margin + 24} ${margin + drawH - 70})">
+    <polygon points="0,-28 6,8 -6,8" fill="#1c1917"/>
+    <text x="0" y="22" text-anchor="middle" font-family="IBM Plex Sans, Segoe UI, sans-serif" font-size="11" font-weight="700" fill="#1c1917">N</text>
+  </g>
+  <g transform="translate(${margin + 70} ${margin + drawH - 36})">
+    <line x1="0" y1="0" x2="96" y2="0" stroke="#1c1917" stroke-width="2"/>
+    <line x1="0" y1="-4" x2="0" y2="4" stroke="#1c1917" stroke-width="1.5"/>
+    <line x1="96" y1="-4" x2="96" y2="4" stroke="#1c1917" stroke-width="1.5"/>
+    <text x="48" y="14" text-anchor="middle" font-family="IBM Plex Sans, Segoe UI, sans-serif" font-size="10" fill="#44403c">${escapeXml(title.scaleLabel)}</text>
+  </g>
 </svg>`;
 }
 
@@ -117,6 +129,15 @@ export function buildCadSheetSet(plate: CadPlate): CadSheetSetPage[] {
     name: cut.label,
     kind: 'section',
     svg: wrapSheetWithTitleBlock(sectionSvg, title, 'A-301', cut.label),
+  });
+
+  const scheduleSvg = renderDoorWindowScheduleSvg(plate);
+  pages.push({
+    id: 'A-601',
+    number: 'A-601',
+    name: 'DOOR / WINDOW SCHEDULE',
+    kind: 'schedule',
+    svg: wrapSheetWithTitleBlock(scheduleSvg, { ...title, sheetTitle: 'Schedules' }, 'A-601', 'DOOR / WINDOW SCHEDULE'),
   });
 
   return pages;

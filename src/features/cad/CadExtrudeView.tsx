@@ -13,7 +13,7 @@ import type {
 } from '../../lib/cadStudio';
 import { buildTerrainMeshData, sunPositionFromHour } from '../../lib/cadStudio';
 import { metalRoofMaterial } from '../../lib/cadStudio/cadSceneMaterials';
-import { CadGroundPlane, CadSceneEnvironment } from './CadSceneEnvironment';
+import { CadSceneEnvironment, CadGroundPlane } from './CadSceneEnvironment';
 import { WallMesh } from './CadRealisticWalls';
 import { CadProfileRoofMesh } from './CadProfileRoofMesh';
 import { world } from '../../components/scene3d/sceneWorld';
@@ -384,6 +384,8 @@ export function CadExtrudeSceneParts({
   centerFt,
   mode = 'extrude',
   onSelectOpening,
+  onPickOpening,
+  onPickWall,
 }: {
   walls: Wall[];
   openings: Opening[];
@@ -394,6 +396,8 @@ export function CadExtrudeSceneParts({
   wallSegmentsFt?: Array<{ x1: number; y1: number; x2: number; y2: number; exterior?: boolean }>;
   mode?: 'extrude' | 'massing';
   onSelectOpening?: (openingId: string) => void;
+  onPickOpening?: (openingIndex: number) => void;
+  onPickWall?: (wallIndex: number) => void;
 }) {
   return (
     <>
@@ -403,9 +407,47 @@ export function CadExtrudeSceneParts({
       {stairs.map((s) => (
         <StairMesh key={s.id} stair={s} centerFt={centerFt} />
       ))}
-      {walls.map((w) => (
-        <WallMesh key={w.id} wall={w} openings={openings} mode={mode} onSelectOpening={onSelectOpening} />
+      {walls.map((w, wi) => (
+        <group
+          key={w.id}
+          onClick={(e) => {
+            if (!onPickWall) return;
+            e.stopPropagation();
+            onPickWall(wi);
+          }}
+        >
+          <WallMesh wall={w} openings={openings} mode={mode} onSelectOpening={onSelectOpening} />
+        </group>
       ))}
+      {openings.map((o) => {
+        const m = /hint-(\d+)$/.exec(o.id);
+        const openingIndex = m ? Number(m[1]) : -1;
+        if (openingIndex < 0 || !onPickOpening) return null;
+        const wall = walls.find((w) => w.id === o.wallId);
+        if (!wall) return null;
+        const [x1, z1] = world(wall.start.x, wall.start.y);
+        const [x2, z2] = world(wall.end.x, wall.end.y);
+        const mx = (x1 + x2) / 2;
+        const mz = (z1 + z2) / 2;
+        const wallLen = Math.hypot(x2 - x1, z2 - z1) || 1;
+        const ang = Math.atan2(z2 - z1, x2 - x1);
+        const localX = (o.offset - 0.5) * wallLen;
+        const y = o.sill + o.height / 2;
+        return (
+          <mesh
+            key={`pick-${o.id}`}
+            position={[mx + Math.cos(ang) * localX, y, mz + Math.sin(ang) * localX]}
+            rotation={[0, -ang, 0]}
+            onClick={(e) => {
+              e.stopPropagation();
+              onPickOpening(openingIndex);
+            }}
+          >
+            <boxGeometry args={[o.width * 1.05, o.height * 1.05, (wall.thickness || 0.15) + 0.08]} />
+            <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+          </mesh>
+        );
+      })}
       {fixtures.map((f) => (
         <FixtureMesh key={f.id} fixture={f} centerFt={centerFt} />
       ))}
@@ -420,6 +462,8 @@ function Scene({
   shadows,
   sectionClip,
   onSelectOpening,
+  onPickOpening,
+  onPickWall,
 }: {
   extrusion: CadExtrusion;
   plate?: CadPlate | null;
@@ -427,10 +471,11 @@ function Scene({
   shadows: boolean;
   sectionClip?: boolean;
   onSelectOpening?: (openingId: string) => void;
+  onPickOpening?: (openingIndex: number) => void;
+  onPickWall?: (wallIndex: number) => void;
 }) {
   const { walls, openings, fixtures, slabs, stairs, centerFt, heightM } = extrusion;
   const floorSize = useMemo(() => {
-    // Prefer plot parcel extent so the ground reads larger than the house.
     const plot = plate?.slabs?.find((s) => s.kind === 'plot');
     if (plot && plot.points.length >= 3) {
       let max = 10;
@@ -467,13 +512,11 @@ function Scene({
         <CadGroundPlane size={floorSize} />
       )}
       <group>
-        {clipPlanes && (
-          // Enable local clipping for children via material side-effect in R3F is limited;
-          // apply planes on a clipping-enabled group via gl later if needed.
-          <primitive object={new THREE.Object3D()} />
-        )}
+        {clipPlanes && <primitive object={new THREE.Object3D()} />}
         <CadExtrudeSceneParts
           onSelectOpening={onSelectOpening}
+          onPickOpening={onPickOpening}
+          onPickWall={onPickWall}
           walls={walls}
           openings={openings}
           fixtures={fixtures}
@@ -488,8 +531,8 @@ function Scene({
             return !info || info.visible;
           })
           .map((d) => (
-          <DormerMesh key={d.id} dormer={d} centerFt={centerFt} storyHeightM={heightM} />
-        ))}
+            <DormerMesh key={d.id} dormer={d} centerFt={centerFt} storyHeightM={heightM} />
+          ))}
       </group>
       <OrbitControls makeDefault target={[0, 1.2, 0]} maxPolarAngle={Math.PI / 2.05} />
     </>
@@ -503,6 +546,8 @@ export function CadExtrudeView({
   shadows = true,
   sectionClip = false,
   onSelectOpening,
+  onPickOpening,
+  onPickWall,
 }: {
   extrusion: CadExtrusion;
   plate?: CadPlate | null;
@@ -510,6 +555,8 @@ export function CadExtrudeView({
   shadows?: boolean;
   sectionClip?: boolean;
   onSelectOpening?: (openingId: string) => void;
+  onPickOpening?: (openingIndex: number) => void;
+  onPickWall?: (wallIndex: number) => void;
 }) {
   if (!extrusion.walls.length) {
     return (
@@ -529,7 +576,9 @@ export function CadExtrudeView({
         }}
       >
         <Scene
-        onSelectOpening={onSelectOpening}
+          onSelectOpening={onSelectOpening}
+          onPickOpening={onPickOpening}
+          onPickWall={onPickWall}
           extrusion={extrusion}
           plate={plate}
           sunHour={sunHour}

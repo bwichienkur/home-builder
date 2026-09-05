@@ -115,6 +115,8 @@ function extrudeOneStory(
       kind: h.kind,
       layer: h.layer,
       sillFt: 'sillFt' in h ? h.sillFt : undefined,
+      heightFt: 'heightFt' in h ? (h as { heightFt?: number }).heightFt : undefined,
+      swing: 'swing' in h ? (h as { swing?: 'left' | 'right' | 'none' }).swing : undefined,
     })),
   ];
 

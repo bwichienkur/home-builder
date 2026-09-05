@@ -179,6 +179,7 @@ export {
   buildTempDimsForSelection,
   buildBetweenWallDim,
   applyTempDimEdit,
+  applyAssociativeExteriorDim,
   promoteTempDimToAnnotative,
   signedCenterlineDistanceFt,
   type CadTempDim,
@@ -196,6 +197,7 @@ export {
   assignOpeningMarks,
   renameRoomLabel,
   exportDoorWindowScheduleCsv,
+  renderDoorWindowScheduleSvg,
 } from './cadMarks';
 export {
   ensureDefaultStories,
@@ -208,6 +210,28 @@ export {
   setUnderlayOpacity,
 } from './cadUnderlay';
 export { flipPlan } from './cadPlanOps';
+export {
+  OLSEN_OPENING_PRESETS,
+  defaultOpeningHeightFt,
+  slideOpeningAlongWall,
+  setOpeningOffsetFromStart,
+  openingOffsetFromStartFt,
+  applyOpeningPreset,
+  convertSegmentToOpening,
+  detectOpeningClashes,
+  listUnhostedOpenings,
+  listConvertibleOpeningSegments,
+  copySelectionToStory,
+  saveDesignSnapshot,
+  restoreDesignSnapshot,
+  buildBetweenOpeningsDim,
+  setDistanceBetweenOpenings,
+  pickOpeningAtPoint,
+  pickWallAtPoint,
+  normalizeOpeningDefaults,
+  openingHeightM,
+} from './cadOpeningEdit';
+export type { CadDesignSnapshot } from './types';
 export {
   addDormer,
   addFixtureHint,

@@ -156,7 +156,7 @@ export function openingsFromCadHints(
         : 0;
     const heightM =
       heightFt != null && Number.isFinite(heightFt)
-        ? Math.max(0.5, heightFt * FT_TO_M)
+        ? Math.min(height * 0.98, Math.max(0.5, heightFt * FT_TO_M))
         : kind === 'window'
           ? Math.min(1.4, height * 0.45)
           : kind === 'garage'

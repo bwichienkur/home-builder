@@ -75,6 +75,8 @@ export type CadOpeningHintFt = {
   swing?: CadOpeningSwing;
   /** Story membership (M3). */
   storyId?: string;
+  /** Which side of the wall the door swings into. */
+  face?: 'in' | 'out';
 };
 
 export type CadWallCenterlineFt = {
@@ -419,6 +421,8 @@ export type CadPlate = {
   underlay?: CadUnderlay;
   /** Hand-placed or promoted dims — auto exterior dims never wipe these. */
   annotativeDims?: CadAnnotativeDim[];
+  /** Named design-option snapshots (Scheme A/B). */
+  designSnapshots?: CadDesignSnapshot[];
   /** Front elevation linework (width × height ft) when DXF has elevation viewports. */
   elevationFront?: CadElevationSheet;
   /** Side/rear elevation linework when available. */
@@ -427,6 +431,15 @@ export type CadPlate = {
   bounds: CadBoundsFt;
   sheetSource: 'dxf_viewport' | 'pdf' | 'static' | 'mixed' | 'synthetic';
   pdfUrl?: string;
+};
+
+/** Lightweight design-option snapshot for Scheme A/B client reviews. */
+export type CadDesignSnapshot = {
+  id: string;
+  name: string;
+  createdAt: string;
+  /** Plate clone without nested snapshots (avoids recursion). */
+  plate: Omit<CadPlate, 'designSnapshots'>;
 };
 
 /** Computed 2D building section from a cut line. */
