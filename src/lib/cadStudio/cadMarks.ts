@@ -41,13 +41,16 @@ export function renameRoomLabel(plate: CadPlate, labelIndex: number, name: strin
   return { ...plate, labels };
 }
 
-/** Door/window schedule CSV: Mark, Kind, WidthFt, SillFt, HostWall. */
+/** Door/window schedule CSV: Mark, Kind, WidthFt, HeightFt, SillFt, HostWall, Swing. */
 export function exportDoorWindowScheduleCsv(plate: CadPlate): string {
   const marked = assignOpeningMarks(plate);
-  const rows = [['Mark', 'Kind', 'WidthFt', 'SillFt', 'HostWall']];
+  const rows = [['Mark', 'Kind', 'WidthFt', 'HeightFt', 'SillFt', 'HostWall', 'Swing']];
   for (const o of marked.openingHints) {
     const width = o.widthFt ?? segLengthFt(o);
     const sill = o.sillFt ?? 0;
+    const height =
+      o.heightFt ??
+      (o.kind === 'window' ? 4 : o.kind === 'garage' ? 7 : 6 + 8 / 12);
     const host =
       o.hostWallIndex != null && marked.wallCenterlines[o.hostWallIndex]
         ? String(o.hostWallIndex)
@@ -56,9 +59,57 @@ export function exportDoorWindowScheduleCsv(plate: CadPlate): string {
       o.mark ?? '',
       o.kind,
       width.toFixed(3),
+      height.toFixed(3),
       sill.toFixed(3),
       host,
+      o.swing ?? '',
     ]);
   }
   return rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+}
+
+/** HTML/SVG table block for sheet-set door/window schedule. */
+export function renderDoorWindowScheduleSvg(plate: CadPlate): string {
+  const marked = assignOpeningMarks(plate);
+  const rows = marked.openingHints.map((o) => {
+    const width = o.widthFt ?? segLengthFt(o);
+    const height =
+      o.heightFt ??
+      (o.kind === 'window' ? 4 : o.kind === 'garage' ? 7 : 6 + 8 / 12);
+    return {
+      mark: o.mark ?? '—',
+      kind: o.kind,
+      width: width.toFixed(2),
+      height: height.toFixed(2),
+      sill: (o.sillFt ?? 0).toFixed(2),
+      swing: o.swing ?? '—',
+    };
+  });
+  const rowH = 22;
+  const headerH = 28;
+  const W = 720;
+  const H = headerH + Math.max(1, rows.length) * rowH + 40;
+  const body = rows
+    .map(
+      (r, i) =>
+        `<text x="16" y="${headerH + 16 + i * rowH}" font-family="IBM Plex Sans, Segoe UI, sans-serif" font-size="12" fill="#1c1917">${r.mark}</text>
+         <text x="80" y="${headerH + 16 + i * rowH}" font-family="IBM Plex Sans, Segoe UI, sans-serif" font-size="12" fill="#44403c">${r.kind}</text>
+         <text x="180" y="${headerH + 16 + i * rowH}" font-family="IBM Plex Sans, Segoe UI, sans-serif" font-size="12" fill="#1c1917">${r.width}</text>
+         <text x="280" y="${headerH + 16 + i * rowH}" font-family="IBM Plex Sans, Segoe UI, sans-serif" font-size="12" fill="#1c1917">${r.height}</text>
+         <text x="380" y="${headerH + 16 + i * rowH}" font-family="IBM Plex Sans, Segoe UI, sans-serif" font-size="12" fill="#1c1917">${r.sill}</text>
+         <text x="480" y="${headerH + 16 + i * rowH}" font-family="IBM Plex Sans, Segoe UI, sans-serif" font-size="12" fill="#1c1917">${r.swing}</text>`,
+    )
+    .join('\n');
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+  <rect width="100%" height="100%" fill="#fff"/>
+  <text x="16" y="22" font-family="IBM Plex Sans, Segoe UI, sans-serif" font-size="14" font-weight="700" fill="#0f172a">DOOR / WINDOW SCHEDULE</text>
+  <text x="16" y="${headerH + 2}" font-family="IBM Plex Sans, Segoe UI, sans-serif" font-size="11" fill="#78716c">MARK</text>
+  <text x="80" y="${headerH + 2}" font-family="IBM Plex Sans, Segoe UI, sans-serif" font-size="11" fill="#78716c">KIND</text>
+  <text x="180" y="${headerH + 2}" font-family="IBM Plex Sans, Segoe UI, sans-serif" font-size="11" fill="#78716c">WIDTH FT</text>
+  <text x="280" y="${headerH + 2}" font-family="IBM Plex Sans, Segoe UI, sans-serif" font-size="11" fill="#78716c">HEIGHT FT</text>
+  <text x="380" y="${headerH + 2}" font-family="IBM Plex Sans, Segoe UI, sans-serif" font-size="11" fill="#78716c">SILL FT</text>
+  <text x="480" y="${headerH + 2}" font-family="IBM Plex Sans, Segoe UI, sans-serif" font-size="11" fill="#78716c">SWING</text>
+  ${body || `<text x="16" y="${headerH + 20}" font-family="IBM Plex Sans, Segoe UI, sans-serif" font-size="12" fill="#a8a29e">No openings</text>`}
+</svg>`;
 }

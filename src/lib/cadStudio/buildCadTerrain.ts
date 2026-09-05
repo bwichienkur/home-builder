@@ -31,10 +31,22 @@ export function buildTerrainMeshData(
   if (!terrain?.enabled) return null;
   const FT_TO_M = 0.3048;
   const pad = terrain.padFt;
-  const minX = plate.bounds.minX - pad;
-  const maxX = plate.bounds.maxX + pad;
-  const minY = plate.bounds.minY - pad;
-  const maxY = plate.bounds.maxY + pad;
+  // Prefer plot parcel extent so graded ground never reads smaller than the lot.
+  const plot = plate.slabs?.find((s) => s.kind === 'plot');
+  let minX = plate.bounds.minX;
+  let maxX = plate.bounds.maxX;
+  let minY = plate.bounds.minY;
+  let maxY = plate.bounds.maxY;
+  if (plot && plot.points.length >= 3) {
+    minX = Math.min(...plot.points.map((p) => p.x));
+    maxX = Math.max(...plot.points.map((p) => p.x));
+    minY = Math.min(...plot.points.map((p) => p.y));
+    maxY = Math.max(...plot.points.map((p) => p.y));
+  }
+  minX -= pad;
+  maxX += pad;
+  minY -= pad;
+  maxY += pad;
   const div = 12;
   const positions: number[] = [];
   const indices: number[] = [];

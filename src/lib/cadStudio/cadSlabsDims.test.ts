@@ -50,11 +50,13 @@ describe('cad slabs and exterior dims', () => {
     expect(next.slabs.length).toBe(plate.slabs.length - 1);
   });
 
-  it('extrudeCadPlate forwards slabs to extrusion', () => {
+  it('extrudeCadPlate forwards slabs to extrusion (plus story floor plate)', () => {
     const plate = demoCadPlate();
     const ext = extrudeCadPlate(plate);
-    expect(ext.slabs.length).toBe(plate.slabs.length);
-    expect(ext.slabs[0]!.id).toBe(plate.slabs[0]!.id);
+    // Kernel adds per-story floor slabs during extrude.
+    expect(ext.slabs.length).toBeGreaterThanOrEqual(plate.slabs.length);
+    expect(ext.slabs.some((s) => s.id === plate.slabs[0]!.id)).toBe(true);
+    expect(ext.slabs.some((s) => s.kind === 'plot')).toBe(true);
   });
 
   it('computeExteriorDims returns overall and segment dims', () => {

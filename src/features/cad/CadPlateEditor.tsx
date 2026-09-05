@@ -8,10 +8,12 @@ import {
 import { computeExteriorDims, computeInteriorDims } from '../../lib/cadStudio/cadExteriorDims';
 import {
   applyTempDimEdit,
+  applyAssociativeExteriorDim,
   buildBetweenWallDim,
   buildTempDimsForSelection,
   type CadTempDim,
 } from '../../lib/cadStudio/cadDimEdit';
+import { buildBetweenOpeningsDim } from '../../lib/cadStudio/cadOpeningEdit';
 import { snapCadDraftPoint, type CadSnapResult } from '../../lib/cadStudio/cadDrawSnap';
 import { parseArchitecturalLength } from '../../lib/cadStudio/cadLengthParse';
 import { isLayerOn } from '../../lib/cadStudio/cadLayerVisibility';
@@ -131,6 +133,9 @@ type Props = {
   /** @deprecated Prefer click-to-edit on temporary dims; kept for Properties focus. */
   onRequestWallLengthEdit?: (index: number) => void;
   onPromoteTempDim?: (dim: CadTempDim) => void;
+  onAssociativeExteriorDimEdit?: (dimId: string, valueFt: number) => void;
+  openingMulti?: number[];
+  onOpeningMultiChange?: (indices: number[]) => void;
 };
 
 function hitWallGrip(
@@ -219,6 +224,9 @@ export function CadPlateEditor({
   onRedo,
   onRequestWallLengthEdit,
   onPromoteTempDim,
+  onAssociativeExteriorDimEdit,
+  openingMulti = [],
+  onOpeningMultiChange,
 }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -242,6 +250,7 @@ export function CadPlateEditor({
     value: string;
     left: number;
     top: number;
+    associativeId?: string;
   } | null>(null);
   const lastPointerClientRef = useRef<{ x: number; y: number } | null>(null);
   const lastPreviewRef = useRef<CadPlate | null>(null);
@@ -302,10 +311,29 @@ export function CadPlateEditor({
       return dims;
     }
     if (selection.kind === 'opening') {
-      return buildTempDimsForSelection(plate, { kind: 'opening', index: selection.index });
+      const dims = buildTempDimsForSelection(plate, { kind: 'opening', index: selection.index });
+      const other = openingMulti.find((i) => i !== selection.index);
+      if (other != null) {
+        const between = buildBetweenOpeningsDim(plate, selection.index, other);
+        if (between) {
+          dims.push({
+            id: between.id,
+            kind: 'between-openings',
+            openingIndexA: between.openingIndexA,
+            openingIndexB: between.openingIndexB,
+            x1: between.x1,
+            y1: between.y1,
+            x2: between.x2,
+            y2: between.y2,
+            valueFt: between.valueFt,
+            label: between.label,
+          });
+        }
+      }
+      return dims;
     }
     return [];
-  }, [plate, selection, wallMulti]);
+  }, [plate, selection, wallMulti, openingMulti]);
   const slabs = plate.slabs ?? [];
   const guidelines = plate.guidelines ?? [];
   const underlay = plate.underlay;
@@ -549,18 +577,36 @@ export function CadPlateEditor({
         selection?.kind === 'wall' && selection.index !== primary ? selection.index : null;
       let others = wallMulti.filter((i) => i !== primary);
       if (wallMulti.includes(primary)) {
-        // Toggle off this wall from the multi set (still becomes primary)
         others = wallMulti.filter((i) => i !== primary);
       } else {
         if (prevPrimary != null && !others.includes(prevPrimary)) others = [...others, prevPrimary];
       }
       onWallMultiChange?.(others);
+      onOpeningMultiChange?.([]);
+      dragRef.current = null;
+      return;
+    }
+
+    if (hit?.kind === 'opening' && (e.shiftKey || shiftHeld)) {
+      const primary = hit.index;
+      onSelectionChange(hit);
+      const prevPrimary =
+        selection?.kind === 'opening' && selection.index !== primary ? selection.index : null;
+      let others = openingMulti.filter((i) => i !== primary);
+      if (openingMulti.includes(primary)) {
+        others = openingMulti.filter((i) => i !== primary);
+      } else if (prevPrimary != null && !others.includes(prevPrimary)) {
+        others = [...others, prevPrimary];
+      }
+      onOpeningMultiChange?.(others);
+      onWallMultiChange?.([]);
       dragRef.current = null;
       return;
     }
 
     onSelectionChange(hit);
     onWallMultiChange?.([]);
+    onOpeningMultiChange?.([]);
     if (hit) {
       dragRef.current = {
         kind: 'selection',
@@ -840,11 +886,17 @@ export function CadPlateEditor({
       onStatus?.('Enter a length like 4\'-0" or 10.5');
       return;
     }
-    const next = applyTempDimEdit(plate, tempDimHud.dim, len);
-    onPlateChange(next);
+    if (tempDimHud.associativeId) {
+      const next = applyAssociativeExteriorDim(plate, tempDimHud.associativeId, len);
+      onPlateChange(next);
+      onAssociativeExteriorDimEdit?.(tempDimHud.associativeId, len);
+    } else {
+      const next = applyTempDimEdit(plate, tempDimHud.dim, len);
+      onPlateChange(next);
+    }
     setTempDimHud(null);
     onStatus?.(`Dim set to ${formatWallLengthFt(len)}`);
-  }, [onPlateChange, onStatus, plate, tempDimHud]);
+  }, [onAssociativeExteriorDimEdit, onPlateChange, onStatus, plate, tempDimHud]);
 
   useEffect(() => {
     if (tool !== 'slab') {
@@ -930,11 +982,11 @@ export function CadPlateEditor({
             <polygon
               key={slab.id}
               points={polyPointsAttr(slab.points)}
-              fill={isPlot ? 'none' : SLAB_FILL[slab.kind]}
-              fillOpacity={isPlot ? 0 : selected ? 0.55 : 0.32}
-              stroke={selected ? '#1f4e46' : SLAB_FILL[slab.kind]}
-              strokeWidth={stroke * (selected ? 2.8 : isPlot ? 2.2 : 1.4)}
-              strokeDasharray={isPlot ? '0.5 0.35' : undefined}
+              fill={isPlot ? '#d8ead8' : SLAB_FILL[slab.kind]}
+              fillOpacity={isPlot ? (selected ? 0.5 : 0.38) : selected ? 0.55 : 0.32}
+              stroke={selected ? '#1f4e46' : isPlot ? '#0f766e' : SLAB_FILL[slab.kind]}
+              strokeWidth={stroke * (selected ? 2.8 : isPlot ? 2.6 : 1.4)}
+              strokeDasharray={isPlot ? '0.55 0.35' : undefined}
               strokeLinejoin="round"
             />
           );
@@ -1023,7 +1075,17 @@ export function CadPlateEditor({
 
         {plate.openingHints.map((o, i) => {
           if (!isLayerOn(plate, o.layer)) return null;
-          const selected = isSelected('opening', i);
+          const selected = isSelected('opening', i) || openingMulti.includes(i);
+          const len = Math.hypot(o.x2 - o.x1, o.y2 - o.y1) || 1;
+          const ux = (o.x2 - o.x1) / len;
+          const uy = (o.y2 - o.y1) / len;
+          const nx = -uy;
+          const ny = ux;
+          const mx = (o.x1 + o.x2) / 2;
+          const my = (o.y1 + o.y2) / 2;
+          const swing = o.swing ?? (o.kind === 'door' ? 'left' : 'none');
+          const swingR = Math.min(len, 3.5);
+          const swingSign = swing === 'right' ? -1 : 1;
           return (
             <g key={`open-${i}`}>
               <line
@@ -1035,15 +1097,34 @@ export function CadPlateEditor({
                 strokeWidth={stroke * (selected ? 3 : 2.2)}
                 strokeLinecap="round"
               />
+              {o.kind === 'door' && swing !== 'none' && (
+                <path
+                  d={`M ${o.x1} ${o.y1} A ${swingR} ${swingR} 0 0 ${swingSign > 0 ? 1 : 0} ${
+                    o.x1 + ux * 0 + nx * swingR * swingSign
+                  } ${o.y1 + uy * 0 + ny * swingR * swingSign}`}
+                  fill="none"
+                  stroke={selected ? '#c2410c' : '#d97706'}
+                  strokeWidth={stroke * 1.1}
+                  strokeDasharray="0.35 0.25"
+                  strokeOpacity={0.85}
+                />
+              )}
               <circle
-                cx={(o.x1 + o.x2) / 2}
-                cy={(o.y1 + o.y2) / 2}
+                cx={mx}
+                cy={my}
                 r={stroke * 6}
                 fill={selected ? '#c2410c' : '#b45309'}
                 fillOpacity={0.35}
               />
+              {selected && (
+                <g className="cad-opening-grips">
+                  <circle cx={o.x1} cy={o.y1} r={stroke * 5} fill="#fff" stroke="#c2410c" strokeWidth={stroke * 1.5} />
+                  <circle cx={o.x2} cy={o.y2} r={stroke * 5} fill="#fff" stroke="#c2410c" strokeWidth={stroke * 1.5} />
+                  <circle cx={mx} cy={my} r={stroke * 5.5} fill="#c2410c" fillOpacity={0.85} />
+                </g>
+              )}
               {o.mark && (
-                <g transform={`translate(${(o.x1 + o.x2) / 2} ${(o.y1 + o.y2) / 2}) scale(1,-1)`}>
+                <g transform={`translate(${mx} ${my}) scale(1,-1)`}>
                   <text
                     y={-stroke * 10}
                     fill="#9a3412"
@@ -1266,8 +1347,42 @@ export function CadPlateEditor({
         const lp = planToSvgFt(dim.labelX, dim.labelY, plate.bounds, PAD);
         const tick = fontSize * 0.45;
         const isManual = (plate.annotativeDims ?? []).some((d) => d.id === dim.id);
+        const associative = dim.id === 'overall-w' || dim.id === 'overall-d';
         return (
-          <g key={dim.id} className={isManual ? 'cad-ext-dim cad-ext-dim-manual' : 'cad-ext-dim'}>
+          <g
+            key={dim.id}
+            className={isManual ? 'cad-ext-dim cad-ext-dim-manual' : 'cad-ext-dim'}
+            style={associative || isManual ? { cursor: dim.locked ? 'not-allowed' : 'pointer' } : undefined}
+            onPointerDown={(ev) => {
+              if (!associative && !isManual) return;
+              if (dim.locked) return;
+              ev.stopPropagation();
+              const host = hostRef.current;
+              const rect = host?.getBoundingClientRect();
+              const left = rect ? ev.clientX - rect.left + 12 : 24;
+              const top = rect ? ev.clientY - rect.top - 40 : 24;
+              setTempDimHud({
+                dim: {
+                  id: dim.id,
+                  kind: 'wall-length',
+                  x1: dim.x1,
+                  y1: dim.y1,
+                  x2: dim.x2,
+                  y2: dim.y2,
+                  valueFt: dim.valueFt ?? 10,
+                  label: dim.label,
+                },
+                value: dim.label,
+                left: Math.max(8, left),
+                top: Math.max(8, top),
+                associativeId: associative ? dim.id : undefined,
+              });
+              queueMicrotask(() => {
+                tempDimInputRef.current?.focus();
+                tempDimInputRef.current?.select();
+              });
+            }}
+          >
             <line
               x1={a.x}
               y1={a.y}
