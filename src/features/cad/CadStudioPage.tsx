@@ -103,6 +103,9 @@ import {
   type CadPlateSelection,
   type CadTempDim,
   type CadWallMaterialId,
+  CAD_DISPLAY_FIDELITY,
+  displayFidelityConfig,
+  type CadDisplayFidelity,
 } from '../../lib/cadStudio';
 import type { CadFixtureKind, CadPlate, CadRoofKind, CadSlabKind } from '../../lib/cadStudio/types';
 import { defaultOpeningHeightFt } from '../../lib/cadStudio/cadOpeningEdit';
@@ -282,6 +285,8 @@ export function CadStudioPage() {
 
   const [unitLabel] = useState<'ft-in' | 'm'>('ft-in');
   const [sunHour, setSunHour] = useState(14);
+  const [displayFidelity, setDisplayFidelity] = useState<CadDisplayFidelity>('sketch');
+  const fidelity = displayFidelityConfig(displayFidelity);
   const [shadowsOn, setShadowsOn] = useState(true);
   const [sectionClip, setSectionClip] = useState(false);
   const [setDistanceInput, setSetDistanceInput] = useState(`4'-0"`);
@@ -1940,6 +1945,30 @@ export function CadStudioPage() {
                 >
                   Grid
                 </button>
+                                <label className="cad-fidelity-control" title="3D display fidelity">
+                  Fidelity
+                  <select
+                    value={displayFidelity}
+                    onChange={(e) => {
+                      const id = e.target.value as CadDisplayFidelity;
+                      setDisplayFidelity(id);
+                      const cfg = displayFidelityConfig(id);
+                      setSunHour(cfg.sunHour);
+                      setShadowsOn(cfg.shadows);
+                      if (cfg.preferMassing) setLayout('massing');
+                      else if (layout === 'massing') setLayout('split');
+                      if (cfg.dollhouseCutaway) setSectionClip(true);
+                      else if (displayFidelity === 'dollhouse') setSectionClip(false);
+                    }}
+                    aria-label="Display fidelity"
+                  >
+                    {CAD_DISPLAY_FIDELITY.map((f) => (
+                      <option key={f.id} value={f.id}>
+                        {f.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
                 <label className="cad-sun-control" title="Sun hour for 3D lighting">
                   Sun
                   <input
@@ -2021,8 +2050,9 @@ export function CadStudioPage() {
                   extrusion={extrusion}
                   plate={plate}
                   sunHour={sunHour}
-                  shadows={shadowsOn}
-                  sectionClip={sectionClip}
+                  shadows={shadowsOn || fidelity.shadows}
+                  sectionClip={sectionClip || fidelity.dollhouseCutaway}
+                  fidelity={fidelity}
                   onSelectOpening={(openingId) => {
                     const bare = openingId.replace(/^z[0-9.]+\|/, '').replace(/-hint-\d+$/, '');
                     const byId = plate.openingHints.findIndex((o) => o.id && openingId.includes(o.id));
@@ -2065,7 +2095,7 @@ export function CadStudioPage() {
 
             {layout === 'massing' && extrusion && (
               <div className="cad-extrude-host">
-                <CadMassingView extrusion={extrusion} />
+                <CadMassingView extrusion={extrusion} fidelity={fidelity} />
               </div>
             )}
 

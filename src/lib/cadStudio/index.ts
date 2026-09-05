@@ -294,3 +294,20 @@ export {
   formatCadAutosaveTime,
   type CadAutosavePayload,
 } from './cadAutosave';
+
+export {
+  CAD_WALL_HATCH_STYLES,
+  wallHatchStyleForWall,
+  wallHatchStyleByTypeId,
+  cadWallHatchPatternDefs,
+  wallHatchLegendForPlate,
+  wallTypeLegendLabel,
+  type CadWallHatchStyle,
+} from './cadWallHatch';
+
+export {
+  CAD_DISPLAY_FIDELITY,
+  displayFidelityConfig,
+  type CadDisplayFidelity,
+  type CadDisplayFidelityConfig,
+} from './cadDisplayFidelity';

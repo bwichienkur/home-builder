@@ -2517,3 +2517,43 @@
   color: #a7f3d0;
   margin-right: 0.75rem;
 }
+
+/* Plan7 fidelity: wall hatch legend + display fidelity control */
+.cad-wall-hatch-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem 0.9rem;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.72rem;
+  color: #334155;
+  background: linear-gradient(180deg, rgba(247, 248, 250, 0.96), rgba(241, 245, 249, 0.92));
+  border-bottom: 1px solid #dbe1ea;
+}
+.cad-wall-hatch-legend-title {
+  font-weight: 650;
+  color: #0f172a;
+  margin-right: 0.25rem;
+}
+.cad-wall-hatch-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.cad-fidelity-control,
+.cad-fidelity-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  color: #334155;
+}
+.cad-fidelity-control select,
+.cad-fidelity-control select {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #0f172a;
+  border-radius: 4px;
+  padding: 0.15rem 0.35rem;
+  font: inherit;
+}

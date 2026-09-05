@@ -11,6 +11,7 @@ import {
   renderCadPlateSvg,
   setLayerClassify,
   withLayerVisibility,
+  visibleWallCenterlines,
 } from './index';
 
 const tinyDxf = `  0
@@ -386,7 +387,9 @@ EOF
     expect(wallsBefore).toBeGreaterThanOrEqual(4);
 
     const hiddenWalls = withLayerVisibility(plate, { 'WALLS EXT': false });
-    expect(hiddenWalls.wallCenterlines.length).toBe(0);
+    // Soft visibility keeps authored centerlines; drawing filters via visibleWallCenterlines.
+    expect(hiddenWalls.wallCenterlines.length).toBe(wallsBefore);
+    expect(visibleWallCenterlines(hiddenWalls).length).toBe(0);
 
     const asIgnore = setLayerClassify(plate, 'WALLS EXT', 'ignore');
     expect(asIgnore.wallCenterlines.length).toBe(0);

@@ -11,6 +11,7 @@ import type {
   CadSlabKind,
   CadStairFt,
 } from '../../lib/cadStudio';
+import type { CadDisplayFidelityConfig } from '../../lib/cadStudio';
 import { buildTerrainMeshData, sunPositionFromHour } from '../../lib/cadStudio';
 import { metalRoofMaterial } from '../../lib/cadStudio/cadSceneMaterials';
 import { CadSceneEnvironment, CadGroundPlane } from './CadSceneEnvironment';
@@ -476,6 +477,7 @@ function Scene({
   sunHour,
   shadows,
   sectionClip,
+  fidelity,
   onSelectOpening,
   onPickOpening,
   onPickWall,
@@ -485,6 +487,7 @@ function Scene({
   sunHour: number;
   shadows: boolean;
   sectionClip?: boolean;
+  fidelity?: CadDisplayFidelityConfig;
   onSelectOpening?: (openingId: string) => void;
   onPickOpening?: (openingIndex: number) => void;
   onPickWall?: (wallIndex: number) => void;
@@ -520,11 +523,16 @@ function Scene({
 
   return (
     <>
-      <CadSceneEnvironment targetY={1.2} sunPosition={sunPosition} shadows={shadows} />
+      <CadSceneEnvironment
+        targetY={1.2}
+        sunPosition={sunPosition}
+        shadows={shadows}
+        richEnvironment={!!fidelity?.richEnvironment}
+      />
       {plate?.terrain?.enabled ? (
         <TerrainMesh plate={plate} centerFt={centerFt} />
       ) : (
-        <CadGroundPlane size={floorSize} />
+        <CadGroundPlane size={floorSize} siteContext={!!fidelity?.siteContext} />
       )}
       <group>
         {clipPlanes && <primitive object={new THREE.Object3D()} />}
@@ -560,6 +568,7 @@ export function CadExtrudeView({
   sunHour = 14,
   shadows = true,
   sectionClip = false,
+  fidelity,
   onSelectOpening,
   onPickOpening,
   onPickWall,
@@ -569,6 +578,7 @@ export function CadExtrudeView({
   sunHour?: number;
   shadows?: boolean;
   sectionClip?: boolean;
+  fidelity?: CadDisplayFidelityConfig;
   onSelectOpening?: (openingId: string) => void;
   onPickOpening?: (openingIndex: number) => void;
   onPickWall?: (wallIndex: number) => void;
@@ -598,7 +608,8 @@ export function CadExtrudeView({
           plate={plate}
           sunHour={sunHour}
           shadows={shadows}
-          sectionClip={sectionClip}
+          sectionClip={sectionClip || !!fidelity?.dollhouseCutaway}
+          fidelity={fidelity}
         />
       </Canvas>
       <div className="cad-view-compass" aria-hidden>
