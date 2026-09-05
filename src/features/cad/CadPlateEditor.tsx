@@ -1587,10 +1587,14 @@ export function CadPlateEditor({
         })()}
 
       {labels.map((label, i) => {
-        // Skip labels that already appear as room stamps (same text near stamp).
-        const covered = roomStamps.some(
-          (r) => r.name === label.text && Math.hypot(r.x - label.x, r.y - label.y) < 6,
-        );
+        // Skip plate labels already consumed by a room stamp (avoids "KITCHENKITCHEN").
+        const covered =
+          roomStamps.some((r) => r.sourceLabelIndex === i) ||
+          roomStamps.some(
+            (r) =>
+              r.name.trim().toLowerCase() === label.text.trim().toLowerCase() &&
+              Math.hypot(r.x - label.x, r.y - label.y) < 16,
+          );
         if (covered) return null;
         const sp = planToSvgFt(label.x, label.y, plate.bounds, PAD);
         const selected = isSelected('label', i);

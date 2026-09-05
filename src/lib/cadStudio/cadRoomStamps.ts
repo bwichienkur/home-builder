@@ -8,6 +8,8 @@ export type CadRoomStamp = {
   name: string;
   areaSqFt: number;
   points: { x: number; y: number }[];
+  /** Plate label consumed for this stamp name — hide that label in the editor. */
+  sourceLabelIndex?: number;
 };
 
 const SNAP_FT = 0.35;
@@ -250,7 +252,8 @@ export function detectCadRoomStamps(plate: CadPlate): CadRoomStamp[] {
     const c = centroid(points);
     const area = polygonAreaSqFt(points);
     let name: string | null = null;
-    let bestD = 8;
+    // Room labels can sit off-centroid (e.g. kitchen name near a wall); keep generous.
+    let bestD = 14;
     let bestIdx = -1;
     labels.forEach((label, i) => {
       if (usedLabels.has(i)) return;
@@ -273,6 +276,7 @@ export function detectCadRoomStamps(plate: CadPlate): CadRoomStamp[] {
       name,
       areaSqFt: Math.round(area),
       points,
+      sourceLabelIndex: bestIdx >= 0 ? bestIdx : undefined,
     });
   }
   return stamps;
