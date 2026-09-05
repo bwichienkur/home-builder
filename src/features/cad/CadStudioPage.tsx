@@ -191,6 +191,7 @@ export function CadStudioPage() {
   const [showExteriorDims, setShowExteriorDims] = useState(true);
   const [showInteriorDims, setShowInteriorDims] = useState(false);
   const [showRoomFills, setShowRoomFills] = useState(true);
+  const [showGrid, setShowGrid] = useState(true);
   const [selection, setSelection] = useState<CadPlateSelection | null>(null);
   const [wallMulti, setWallMulti] = useState<number[]>([]);
   const [openingMulti, setOpeningMulti] = useState<number[]>([]);
@@ -394,6 +395,7 @@ export function CadStudioPage() {
           showExteriorDims={showExteriorDims}
           showInteriorDims={showInteriorDims}
           showRoomFills={showRoomFills}
+          showGrid={showGrid}
           selection={selection}
           onSelectionChange={setSelection}
           wallMulti={wallMulti}
@@ -908,6 +910,14 @@ export function CadStudioPage() {
                     onClick={() => setShowRoomFills((v) => !v)}
                   >
                     Room fills {showRoomFills ? 'on' : 'off'}
+                  </button>
+                  <button
+                    type="button"
+                    className={showGrid ? 'is-active' : ''}
+                    onClick={() => setShowGrid((v) => !v)}
+                    title="Drafting paper grid (1′ minor / 4′ major)"
+                  >
+                    Grid {showGrid ? 'on' : 'off'}
                   </button>
                   <button
                     type="button"
@@ -2248,6 +2258,14 @@ export function CadStudioPage() {
                   title="Room fill polygons"
                 >
                   Fills {showRoomFills ? 'on' : 'off'}
+                </button>
+                <button
+                  type="button"
+                  className={showGrid ? 'is-active' : ''}
+                  onClick={() => setShowGrid((v) => !v)}
+                  title="Drafting paper grid (1′ minor / 4′ major)"
+                >
+                  Grid {showGrid ? 'on' : 'off'}
                 </button>
                 <label className="cad-sun-control" title="Sun hour for 3D lighting">
                   Sun {sunHour}:00
