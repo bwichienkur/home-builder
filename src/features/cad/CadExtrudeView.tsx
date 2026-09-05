@@ -601,6 +601,13 @@ export function CadExtrudeView({
           sectionClip={sectionClip}
         />
       </Canvas>
+      <div className="cad-view-compass" aria-hidden>
+        <span className="cad-compass-n">N</span>
+        <span className="cad-compass-e">E</span>
+        <span className="cad-compass-s">S</span>
+        <span className="cad-compass-w">W</span>
+        <span className="cad-compass-hub" />
+      </div>
     </div>
   );
 }

@@ -435,10 +435,10 @@ export function CadStudioPage() {
 
   return (
     <div className="cad-studio">
-      <header className="cad-studio-top">
-        <div className="cad-studio-brand">
+      <header className="cad-app-bar">
+        <div className="cad-app-brand">
+          <span className="cad-app-mark">Olsen</span>
           <h1>CAD Studio</h1>
-          <p>Olsen Custom Homes</p>
         </div>
 
         <div className="cad-studio-actions">
@@ -559,31 +559,31 @@ export function CadStudioPage() {
           </div>
         </div>
 
-        <div className="cad-status">
-          {error ? <span className="cad-error">{error}</span> : progressLabel(progress) || 'Shift ortho · Esc cancel · Ctrl+Z undo'}
-        </div>
       </header>
 
-      <div className="cad-studio-body cad-studio-body-shell">
-        <aside className="cad-catalog" aria-label="Studio tools">
-          <div className="cad-mode-ribbon" role="tablist" aria-label="Studio modes">
-            {STUDIO_MODES.map((mode) => (
-              <button
-                key={mode.id}
-                type="button"
-                role="tab"
-                aria-selected={studioMode === mode.id}
-                className={studioMode === mode.id ? 'is-active' : ''}
-                onClick={() => {
-                  setStudioMode(mode.id);
-                  if (mode.id === 'sheets') setLayout('sheets');
-                  else if (layout === 'sheets') setLayout('split');
-                }}
-              >
-                {mode.label}
-              </button>
-            ))}
-          </div>
+      <div className="cad-ribbon-row">
+        <div className="cad-mode-ribbon" role="tablist" aria-label="Studio modes">
+          {STUDIO_MODES.map((mode) => (
+            <button
+              key={mode.id}
+              type="button"
+              role="tab"
+              aria-selected={studioMode === mode.id}
+              className={studioMode === mode.id ? 'is-active' : ''}
+              onClick={() => {
+                setStudioMode(mode.id);
+                if (mode.id === 'sheets') setLayout('sheets');
+                else if (layout === 'sheets') setLayout('split');
+              }}
+            >
+              {mode.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="cad-studio-shell">
+        <aside className="cad-tools" aria-label="Studio tools">
 
           {(studioMode === 'draw' || studioMode === 'modify' || studioMode === 'annotate') && (
           <div className="cad-context-strip">
@@ -707,42 +707,52 @@ export function CadStudioPage() {
             {studioMode === 'modify' && (
               <section>
                 <h2>Modify</h2>
-                <div className="cad-modify-bar" role="group" aria-label="Modify tools">
+                <div className="cad-modify-bar cad-modify-primary" role="group" aria-label="Primary modify tools">
                   <button
                     type="button"
-                    className={editTool === 'select' ? 'is-active' : ''}
+                    className={`cad-tool-primary ${editTool === 'select' ? 'is-active' : ''}`}
                     onClick={() => pickTool('select')}
                   >
                     Select
                   </button>
                   <button
                     type="button"
-                    className={editTool === 'trim' ? 'is-active' : ''}
+                    className={`cad-tool-primary ${editTool === 'trim' ? 'is-active' : ''}`}
                     onClick={() => pickTool('trim')}
                   >
                     Trim
                   </button>
                   <button
                     type="button"
-                    className={editTool === 'extend' ? 'is-active' : ''}
+                    className={`cad-tool-primary ${editTool === 'extend' ? 'is-active' : ''}`}
                     onClick={() => pickTool('extend')}
                   >
                     Extend
                   </button>
                   <button
                     type="button"
-                    className={editTool === 'break' ? 'is-active' : ''}
+                    className={`cad-tool-primary ${editTool === 'break' ? 'is-active' : ''}`}
                     onClick={() => pickTool('break')}
                   >
                     Break
                   </button>
                   <button
                     type="button"
-                    className={editTool === 'offset' ? 'is-active' : ''}
+                    className={`cad-tool-primary ${editTool === 'offset' ? 'is-active' : ''}`}
                     onClick={() => pickTool('offset')}
                   >
                     Offset
                   </button>
+                  <button
+                    type="button"
+                    className={`cad-tool-primary ${editTool === 'delete' ? 'is-active' : ''}`}
+                    onClick={() => pickTool('delete')}
+                  >
+                    Delete
+                  </button>
+                </div>
+                <h3 className="cad-tool-subhead">Transform</h3>
+                <div className="cad-modify-bar cad-modify-secondary" role="group" aria-label="Transform tools">
                   <button
                     type="button"
                     disabled={!selection || selection.kind !== 'wall'}
@@ -773,13 +783,6 @@ export function CadStudioPage() {
                     }}
                   >
                     Mirror
-                  </button>
-                  <button
-                    type="button"
-                    className={editTool === 'delete' ? 'is-active' : ''}
-                    onClick={() => pickTool('delete')}
-                  >
-                    Delete
                   </button>
                   <button
                     type="button"
@@ -1606,6 +1609,346 @@ export function CadStudioPage() {
           </div>
           )}
 
+        </aside>
+
+        <div className="cad-workspace">
+          {(show2d || show3d || layout === 'massing') && (
+            <div className="cad-story-bar" aria-label="Stories and aids">
+              <div className="cad-story-list">
+                <span className="cad-story-label">Level</span>
+                {storyLevels.map((story) => (
+                  <button
+                    key={story.id}
+                    type="button"
+                    className={
+                      (plate.activeStoryId ?? storyLevels[0]?.id) === story.id ? 'is-active' : ''
+                    }
+                    onClick={() => {
+                      setPlate(setActiveStory(plate, story.id));
+                      setPlateMode('floor');
+                    }}
+                    title={`${story.name} @ ${story.levelFt.toFixed(1)} ft`}
+                  >
+                    {story.name}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  className="cad-story-add"
+                  title="Add story"
+                  onClick={() => {
+                    const next = addStory(plate, newStoryName || 'Level', newStoryLevel);
+                    const added = next.stories?.[next.stories.length - 1];
+                    setPlate(added ? setActiveStory(next, added.id) : next);
+                    setNewStoryName(`Level ${(next.stories?.length ?? 1) + 1}`);
+                    setNewStoryLevel(newStoryLevel + 10);
+                  }}
+                >
+                  +
+                </button>
+                {storySheets.length > 0 && (
+                  <>
+                    <span className="cad-story-label cad-story-label-gap">Sheets</span>
+                    {storySheets.map((sheet) => (
+                      <button
+                        key={sheet.id}
+                        type="button"
+                        className={activeSheet?.id === sheet.id ? 'is-active' : ''}
+                        onClick={() => {
+                          setSheetId(sheet.id);
+                          if (sheet.kind === 'elevation') {
+                            setPlateMode(/side|left|right/i.test(sheet.name) ? 'side' : 'front');
+                            setLayout(
+                              layout === 'extrude' ? 'split' : layout === 'massing' ? 'split' : layout,
+                            );
+                          } else {
+                            setPlateMode('floor');
+                          }
+                        }}
+                      >
+                        {sheet.name}
+                      </button>
+                    ))}
+                  </>
+                )}
+                <details className="cad-story-options">
+                  <summary>Options</summary>
+                  <div className="cad-story-options-panel">
+                    <button
+                      type="button"
+                      title="Copy selected walls/openings onto the active story"
+                      disabled={
+                        !(
+                          (selection?.kind === 'wall' && selectedWallIndices.length) ||
+                          (selection?.kind === 'opening' && selection)
+                        )
+                      }
+                      onClick={() => {
+                        const storyId = plate.activeStoryId ?? storyLevels[0]?.id;
+                        if (!storyId) return;
+                        const walls =
+                          selection?.kind === 'wall' ? selectedWallIndices : ([] as number[]);
+                        const openings =
+                          selection?.kind === 'opening'
+                            ? [selection.index, ...openingMulti]
+                            : ([] as number[]);
+                        setPlate(copySelectionToStory(plate, storyId, walls, openings));
+                        setStatusAid('Copied selection to active story');
+                      }}
+                    >
+                      Copy to story
+                    </button>
+                    <label className="cad-story-option-field">
+                      Option name
+                      <input
+                        type="text"
+                        value={snapshotName}
+                        onChange={(e) => setSnapshotName(e.target.value)}
+                        aria-label="Snapshot name"
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      title="Save design option snapshot"
+                      onClick={() => {
+                        setPlate(saveDesignSnapshot(plate, snapshotName));
+                        setStatusAid(`Saved snapshot “${snapshotName}”`);
+                      }}
+                    >
+                      Save option
+                    </button>
+                    {(plate.designSnapshots?.length ?? 0) > 0 && (
+                      <label className="cad-story-option-field">
+                        Restore
+                        <select
+                          aria-label="Restore design option"
+                          value=""
+                          onChange={(e) => {
+                            const id = e.target.value;
+                            if (!id) return;
+                            setPlate(restoreDesignSnapshot(plate, id));
+                            setStatusAid('Restored design option');
+                          }}
+                        >
+                          <option value="">Choose…</option>
+                          {plate.designSnapshots!.map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.name}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
+                  </div>
+                </details>
+              </div>
+              <div className="cad-aid-toggles" role="toolbar" aria-label="Display aids">
+                <button
+                  type="button"
+                  className={snapOn ? 'is-active' : ''}
+                  onClick={() => setSnapOn((v) => !v)}
+                  title="Snap preference (endpoint snap in editor follows selection)"
+                  aria-pressed={snapOn}
+                >
+                  Snap
+                </button>
+                <button
+                  type="button"
+                  className={showExteriorDims ? 'is-active' : ''}
+                  onClick={() => setShowExteriorDims((v) => !v)}
+                  title="Automatic exterior measurement chains"
+                  aria-pressed={showExteriorDims}
+                >
+                  Dims
+                </button>
+                <button
+                  type="button"
+                  className={showInteriorDims ? 'is-active' : ''}
+                  onClick={() => setShowInteriorDims((v) => !v)}
+                  title="Interior wall dimensions"
+                  aria-pressed={showInteriorDims}
+                >
+                  Int
+                </button>
+                <button
+                  type="button"
+                  className={showRoomFills ? 'is-active' : ''}
+                  onClick={() => setShowRoomFills((v) => !v)}
+                  title="Room fill polygons"
+                  aria-pressed={showRoomFills}
+                >
+                  Fill
+                </button>
+                <button
+                  type="button"
+                  className={showGrid ? 'is-active' : ''}
+                  onClick={() => setShowGrid((v) => !v)}
+                  title="Drafting paper grid (1′ minor / 4′ major)"
+                  aria-pressed={showGrid}
+                >
+                  Grid
+                </button>
+                <label className="cad-sun-control" title="Sun hour for 3D lighting">
+                  Sun
+                  <input
+                    type="range"
+                    min={6}
+                    max={18}
+                    step={1}
+                    value={sunHour}
+                    onChange={(e) => setSunHour(Number(e.target.value))}
+                    aria-label={`Sun hour ${sunHour}`}
+                  />
+                </label>
+                <button
+                  type="button"
+                  className={shadowsOn ? 'is-active' : ''}
+                  onClick={() => setShadowsOn((v) => !v)}
+                  title="Toggle 3D shadows"
+                  aria-pressed={shadowsOn}
+                >
+                  Shadows
+                </button>
+                <span className="cad-unit-pill">{unitLabel === 'ft-in' ? 'ft-in' : 'm'}</span>
+                {modifyHint ? <span className="cad-aid-hint">{modifyHint}</span> : null}
+              </div>
+            </div>
+          )}
+
+          <main
+            className={`cad-main ${layout === 'split' ? 'cad-main-split' : ''} ${layout === 'sheets' ? 'cad-main-sheets' : ''}`}
+          >
+            {show2d && (
+              <div className="cad-plate-host">
+                {modeBanner && (
+                  <div className="cad-mode-banner" role="status">
+                    {modeBanner}
+                  </div>
+                )}
+                <div className="cad-plate-tabs">
+                  <button
+                    type="button"
+                    className={plateMode === 'floor' ? 'is-active' : ''}
+                    onClick={() => setPlateMode('floor')}
+                  >
+                    Floor plan
+                  </button>
+                  <button
+                    type="button"
+                    className={plateMode === 'front' ? 'is-active' : ''}
+                    onClick={() => setPlateMode('front')}
+                    disabled={!hasFrontElev}
+                  >
+                    Front elevation
+                  </button>
+                  <button
+                    type="button"
+                    className={plateMode === 'side' ? 'is-active' : ''}
+                    onClick={() => setPlateMode('side')}
+                    disabled={!hasSideElev}
+                  >
+                    Side elevation
+                  </button>
+                  <button
+                    type="button"
+                    className={plateMode === 'section' ? 'is-active' : ''}
+                    onClick={() => setPlateMode('section')}
+                    disabled={!plate?.sectionCuts?.length}
+                  >
+                    Section
+                  </button>
+                </div>
+                <div className="cad-pane-scroll">{renderFloorPane()}</div>
+              </div>
+            )}
+
+            {show3d && extrusion && (
+              <div className="cad-extrude-host" aria-label="Live 3D">
+                <div className="cad-pane-label">3D</div>
+                <CadExtrudeView
+                  extrusion={extrusion}
+                  plate={plate}
+                  sunHour={sunHour}
+                  shadows={shadowsOn}
+                  sectionClip={sectionClip}
+                  onSelectOpening={(openingId) => {
+                    const bare = openingId.replace(/^z[0-9.]+\|/, '').replace(/-hint-\d+$/, '');
+                    const byId = plate.openingHints.findIndex((o) => o.id && openingId.includes(o.id));
+                    if (byId >= 0) {
+                      setSelection({ kind: 'opening', index: byId });
+                      setOpeningMulti([]);
+                      setWallMulti([]);
+                      setStudioMode('modify');
+                      return;
+                    }
+                    const m = /-hint-(\d+)$/.exec(openingId);
+                    if (m) {
+                      const idx = Number(m[1]);
+                      if (Number.isFinite(idx) && plate.openingHints[idx]) {
+                        setSelection({ kind: 'opening', index: idx });
+                        setOpeningMulti([]);
+                        setWallMulti([]);
+                        setStudioMode('modify');
+                      }
+                    }
+                    void bare;
+                  }}
+                  onPickOpening={(index) => {
+                    setSelection({ kind: 'opening', index });
+                    setOpeningMulti([]);
+                    setWallMulti([]);
+                    setStudioMode('modify');
+                    setStatusAid(`Selected opening from 3D`);
+                  }}
+                  onPickWall={(index) => {
+                    setSelection({ kind: 'wall', index });
+                    setWallMulti([]);
+                    setOpeningMulti([]);
+                    setStudioMode('modify');
+                    setStatusAid(`Selected wall from 3D`);
+                  }}
+                />
+              </div>
+            )}
+
+            {layout === 'massing' && extrusion && (
+              <div className="cad-extrude-host">
+                <CadMassingView extrusion={extrusion} />
+              </div>
+            )}
+
+            {layout === 'sheets' && plate && (
+              <div className="cad-sheets-host">
+                <div className="cad-sheet-list">
+                  {plate.sheets.map((sheet) => (
+                    <button
+                      key={sheet.id}
+                      type="button"
+                      className={activeSheet?.id === sheet.id ? 'is-active' : ''}
+                      onClick={() => setSheetId(sheet.id)}
+                    >
+                      {sheet.name}
+                      <div className="cad-status">{sheet.kind}</div>
+                    </button>
+                  ))}
+                </div>
+                <div className="cad-sheet-view">
+                  {activeSheet && plate.pdfUrl && activeSheet.pdfPageIndex != null ? (
+                    <iframe title={activeSheet.name} src={pdfViewerSrc(plate.pdfUrl, activeSheet.pdfPageIndex)} />
+                  ) : activeSheet?.imageUrl ? (
+                    <img src={activeSheet.imageUrl} alt={activeSheet.name} />
+                  ) : activeSheet?.svg ? (
+                    <div dangerouslySetInnerHTML={{ __html: activeSheet.svg }} />
+                  ) : (
+                    <div className="cad-empty">No preview for this sheet.</div>
+                  )}
+                </div>
+              </div>
+            )}
+          </main>
+        </div>
+
+        <aside className="cad-props" aria-label="Properties">
             <section className="cad-inspector cad-inspector-sticky">
               <h2>Properties</h2>
               {selection ? (
@@ -2103,329 +2446,26 @@ export function CadStudioPage() {
 
             </section>
         </aside>
-
-        <div className="cad-workspace">
-          {(show2d || show3d || layout === 'massing') && (
-            <div className="cad-story-bar" aria-label="Stories and aids">
-              <div className="cad-story-list">
-                <span className="cad-story-label">Stories</span>
-                {storyLevels.map((story) => (
-                  <button
-                    key={story.id}
-                    type="button"
-                    className={
-                      (plate.activeStoryId ?? storyLevels[0]?.id) === story.id ? 'is-active' : ''
-                    }
-                    onClick={() => {
-                      setPlate(setActiveStory(plate, story.id));
-                      setPlateMode('floor');
-                    }}
-                    title={`${story.name} @ ${story.levelFt.toFixed(1)} ft`}
-                  >
-                    {story.name}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  className="cad-story-add"
-                  title="Add story"
-                  onClick={() => {
-                    const next = addStory(plate, newStoryName || 'Level', newStoryLevel);
-                    const added = next.stories?.[next.stories.length - 1];
-                    setPlate(added ? setActiveStory(next, added.id) : next);
-                    setNewStoryName(`Level ${(next.stories?.length ?? 1) + 1}`);
-                    setNewStoryLevel(newStoryLevel + 10);
-                  }}
-                >
-                  + Story
-                </button>
-                <button
-                  type="button"
-                  title="Copy selected walls/openings onto the active story"
-                  disabled={
-                    !(
-                      (selection?.kind === 'wall' && selectedWallIndices.length) ||
-                      (selection?.kind === 'opening' && selection)
-                    )
-                  }
-                  onClick={() => {
-                    const storyId = plate.activeStoryId ?? storyLevels[0]?.id;
-                    if (!storyId) return;
-                    const walls =
-                      selection?.kind === 'wall' ? selectedWallIndices : ([] as number[]);
-                    const openings =
-                      selection?.kind === 'opening'
-                        ? [selection.index, ...openingMulti]
-                        : ([] as number[]);
-                    setPlate(copySelectionToStory(plate, storyId, walls, openings));
-                    setStatusAid('Copied selection to active story');
-                  }}
-                >
-                  Copy to story
-                </button>
-                <button
-                  type="button"
-                  title="Save design option snapshot"
-                  onClick={() => {
-                    setPlate(saveDesignSnapshot(plate, snapshotName));
-                    setStatusAid(`Saved snapshot “${snapshotName}”`);
-                  }}
-                >
-                  Save option
-                </button>
-                {(plate.designSnapshots?.length ?? 0) > 0 && (
-                  <select
-                    aria-label="Restore design option"
-                    value=""
-                    onChange={(e) => {
-                      const id = e.target.value;
-                      if (!id) return;
-                      setPlate(restoreDesignSnapshot(plate, id));
-                      setStatusAid('Restored design option');
-                    }}
-                  >
-                    <option value="">Restore…</option>
-                    {plate.designSnapshots!.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
-                )}
-                <input
-                  type="text"
-                  value={snapshotName}
-                  onChange={(e) => setSnapshotName(e.target.value)}
-                  aria-label="Snapshot name"
-                  style={{ width: '6.5rem', fontSize: '0.75rem' }}
-                />
-                {storySheets.length > 0 && (
-                  <>
-                    <span className="cad-story-label" style={{ marginLeft: 8 }}>
-                      Sheets
-                    </span>
-                    {storySheets.map((sheet) => (
-                      <button
-                        key={sheet.id}
-                        type="button"
-                        className={activeSheet?.id === sheet.id ? 'is-active' : ''}
-                        onClick={() => {
-                          setSheetId(sheet.id);
-                          if (sheet.kind === 'elevation') {
-                            setPlateMode(/side|left|right/i.test(sheet.name) ? 'side' : 'front');
-                            setLayout(
-                              layout === 'extrude' ? 'split' : layout === 'massing' ? 'split' : layout,
-                            );
-                          } else {
-                            setPlateMode('floor');
-                          }
-                        }}
-                      >
-                        {sheet.name}
-                      </button>
-                    ))}
-                  </>
-                )}
-              </div>
-              <div className="cad-aid-toggles">
-                <button
-                  type="button"
-                  className={snapOn ? 'is-active' : ''}
-                  onClick={() => setSnapOn((v) => !v)}
-                  title="Snap preference (endpoint snap in editor follows selection)"
-                >
-                  Snap {snapOn ? 'on' : 'off'}
-                </button>
-                <button
-                  type="button"
-                  className={showExteriorDims ? 'is-active' : ''}
-                  onClick={() => setShowExteriorDims((v) => !v)}
-                  title="Automatic exterior measurement chains"
-                >
-                  Measurements {showExteriorDims ? 'on' : 'off'}
-                </button>
-                <button
-                  type="button"
-                  className={showInteriorDims ? 'is-active' : ''}
-                  onClick={() => setShowInteriorDims((v) => !v)}
-                  title="Interior wall dimensions"
-                >
-                  Int dims {showInteriorDims ? 'on' : 'off'}
-                </button>
-                <button
-                  type="button"
-                  className={showRoomFills ? 'is-active' : ''}
-                  onClick={() => setShowRoomFills((v) => !v)}
-                  title="Room fill polygons"
-                >
-                  Fills {showRoomFills ? 'on' : 'off'}
-                </button>
-                <button
-                  type="button"
-                  className={showGrid ? 'is-active' : ''}
-                  onClick={() => setShowGrid((v) => !v)}
-                  title="Drafting paper grid (1′ minor / 4′ major)"
-                >
-                  Grid {showGrid ? 'on' : 'off'}
-                </button>
-                <label className="cad-sun-control" title="Sun hour for 3D lighting">
-                  Sun {sunHour}:00
-                  <input
-                    type="range"
-                    min={6}
-                    max={18}
-                    step={1}
-                    value={sunHour}
-                    onChange={(e) => setSunHour(Number(e.target.value))}
-                  />
-                </label>
-                <button
-                  type="button"
-                  className={shadowsOn ? 'is-active' : ''}
-                  onClick={() => setShadowsOn((v) => !v)}
-                  title="Toggle 3D shadows"
-                >
-                  Shadows {shadowsOn ? 'on' : 'off'}
-                </button>
-                <span className="cad-unit-pill">{unitLabel === 'ft-in' ? 'ft / in' : 'm'}</span>
-                <span className="cad-aid-hint">{modifyHint}</span>
-              </div>
-            </div>
-          )}
-
-          <main
-            className={`cad-main ${layout === 'split' ? 'cad-main-split' : ''} ${layout === 'sheets' ? 'cad-main-sheets' : ''}`}
-          >
-            {show2d && (
-              <div className="cad-plate-host">
-                {modeBanner && (
-                  <div className="cad-mode-banner" role="status">
-                    {modeBanner}
-                  </div>
-                )}
-                <div className="cad-plate-tabs">
-                  <button
-                    type="button"
-                    className={plateMode === 'floor' ? 'is-active' : ''}
-                    onClick={() => setPlateMode('floor')}
-                  >
-                    Floor plan
-                  </button>
-                  <button
-                    type="button"
-                    className={plateMode === 'front' ? 'is-active' : ''}
-                    onClick={() => setPlateMode('front')}
-                    disabled={!hasFrontElev}
-                  >
-                    Front elevation
-                  </button>
-                  <button
-                    type="button"
-                    className={plateMode === 'side' ? 'is-active' : ''}
-                    onClick={() => setPlateMode('side')}
-                    disabled={!hasSideElev}
-                  >
-                    Side elevation
-                  </button>
-                  <button
-                    type="button"
-                    className={plateMode === 'section' ? 'is-active' : ''}
-                    onClick={() => setPlateMode('section')}
-                    disabled={!plate?.sectionCuts?.length}
-                  >
-                    Section
-                  </button>
-                </div>
-                <div className="cad-pane-scroll">{renderFloorPane()}</div>
-              </div>
-            )}
-
-            {show3d && extrusion && (
-              <div className="cad-extrude-host" aria-label="Live 3D">
-                <div className="cad-pane-label">3D</div>
-                <CadExtrudeView
-                  extrusion={extrusion}
-                  plate={plate}
-                  sunHour={sunHour}
-                  shadows={shadowsOn}
-                  sectionClip={sectionClip}
-                  onSelectOpening={(openingId) => {
-                    const bare = openingId.replace(/^z[0-9.]+\|/, '').replace(/-hint-\d+$/, '');
-                    const byId = plate.openingHints.findIndex((o) => o.id && openingId.includes(o.id));
-                    if (byId >= 0) {
-                      setSelection({ kind: 'opening', index: byId });
-                      setOpeningMulti([]);
-                      setWallMulti([]);
-                      setStudioMode('modify');
-                      return;
-                    }
-                    const m = /-hint-(\d+)$/.exec(openingId);
-                    if (m) {
-                      const idx = Number(m[1]);
-                      if (Number.isFinite(idx) && plate.openingHints[idx]) {
-                        setSelection({ kind: 'opening', index: idx });
-                        setOpeningMulti([]);
-                        setWallMulti([]);
-                        setStudioMode('modify');
-                      }
-                    }
-                    void bare;
-                  }}
-                  onPickOpening={(index) => {
-                    setSelection({ kind: 'opening', index });
-                    setOpeningMulti([]);
-                    setWallMulti([]);
-                    setStudioMode('modify');
-                    setStatusAid(`Selected opening from 3D`);
-                  }}
-                  onPickWall={(index) => {
-                    setSelection({ kind: 'wall', index });
-                    setWallMulti([]);
-                    setOpeningMulti([]);
-                    setStudioMode('modify');
-                    setStatusAid(`Selected wall from 3D`);
-                  }}
-                />
-              </div>
-            )}
-
-            {layout === 'massing' && extrusion && (
-              <div className="cad-extrude-host">
-                <CadMassingView extrusion={extrusion} />
-              </div>
-            )}
-
-            {layout === 'sheets' && plate && (
-              <div className="cad-sheets-host">
-                <div className="cad-sheet-list">
-                  {plate.sheets.map((sheet) => (
-                    <button
-                      key={sheet.id}
-                      type="button"
-                      className={activeSheet?.id === sheet.id ? 'is-active' : ''}
-                      onClick={() => setSheetId(sheet.id)}
-                    >
-                      {sheet.name}
-                      <div className="cad-status">{sheet.kind}</div>
-                    </button>
-                  ))}
-                </div>
-                <div className="cad-sheet-view">
-                  {activeSheet && plate.pdfUrl && activeSheet.pdfPageIndex != null ? (
-                    <iframe title={activeSheet.name} src={pdfViewerSrc(plate.pdfUrl, activeSheet.pdfPageIndex)} />
-                  ) : activeSheet?.imageUrl ? (
-                    <img src={activeSheet.imageUrl} alt={activeSheet.name} />
-                  ) : activeSheet?.svg ? (
-                    <div dangerouslySetInnerHTML={{ __html: activeSheet.svg }} />
-                  ) : (
-                    <div className="cad-empty">No preview for this sheet.</div>
-                  )}
-                </div>
-              </div>
-            )}
-          </main>
-        </div>
       </div>
+
+      <footer className="cad-status-bar" aria-label="Status">
+        <div className="cad-status-left">
+          {error ? (
+            <span className="cad-error">{error}</span>
+          ) : (
+            <span>{progressLabel(progress) || 'Ready'}</span>
+          )}
+        </div>
+        <div className="cad-status-center">
+          <span>Walls {plate?.wallCenterlines.length ?? 0}</span>
+          <span>Openings {plate?.openingHints.length ?? 0}</span>
+          <span>Tool {editTool}</span>
+          <span>ft / in</span>
+        </div>
+        <div className="cad-status-right">
+          <span>Shift ortho · Esc cancel · Ctrl+Z undo</span>
+        </div>
+      </footer>
     </div>
   );
 }
