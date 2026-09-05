@@ -56,12 +56,9 @@ import {
 import { wallStrokeForMaterial } from '../../lib/cadStudio/cadSceneMaterials';
 import { visibleLabels, visibleSegments } from '../../lib/cadStudio/buildCadPlate';
 import type { CadStairFt } from '../../lib/cadStudio/types';
-<<<<<<< HEAD
 import { CadDimMark } from './cadDimSvg';
-=======
 import { CadFixturePlanSymbol } from './cadFixturePlanSymbol';
 import { wallFootprintPointsAttr, wallFootprintQuad } from '../../lib/cadStudio/cadWallFootprint';
->>>>>>> a946d59 (Improve 2D CAD fixture and wall representation)
 
 const ROLE_STROKE: Record<CadSegmentRole, string> = {
   wall: '#1e293b',
