@@ -169,12 +169,15 @@ export {
   copyWalls,
   mirrorWalls,
   placeHostedOpening,
+  previewHostedOpening,
+  hostedOpeningGeom,
   setOpeningWidth,
   setOpeningSill,
   flipOpeningHand,
   resyncHostedOpenings,
   applyWallLengthDim,
   wallHeadingLabel,
+  type HostedOpeningPreview,
 } from './cadWallModify';
 export {
   buildTempDimsForSelection,

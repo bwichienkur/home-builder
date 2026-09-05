@@ -1,7 +1,7 @@
 import type { CadOpeningHintFt, CadPlate, CadWallCenterlineFt } from './types';
 import { wallAngleDeg } from './cadLengthParse';
 import { defaultWallThicknessFt } from './cadDrawSnap';
-import { segLengthFt, syncWallSegments, updateWallCenterline } from './editCadPlate';
+import { segLengthFt, syncWallSegments, updateWallCenterline, nearestWallHost } from './editCadPlate';
 import {
   ensureModelKernel,
   nextOpeningElementId,
@@ -329,7 +329,7 @@ export function mirrorWalls(
   });
 }
 
-/** Place opening hosted on a wall by centerline parameter t and width. */
+/** Place an opening hosted on a wall by centerline parameter t and width. */
 export function placeHostedOpening(
   plate: CadPlate,
   wallIndex: number,
@@ -337,14 +337,11 @@ export function placeHostedOpening(
   widthFt: number,
   kind: CadOpeningHintFt['kind'],
   sillFt = 0,
+  opts?: { swing?: CadOpeningHintFt['swing']; face?: CadOpeningHintFt['face'] },
 ): CadPlate {
-  const w = plate.wallCenterlines[wallIndex];
-  if (!w) return plate;
-  const { ux, uy, len } = unit(w);
-  const tt = Math.max(0.05, Math.min(0.95, t));
-  const half = Math.min(widthFt / 2, len * 0.45);
-  const cx = w.x1 + ux * len * tt;
-  const cy = w.y1 + uy * len * tt;
+  const preview = hostedOpeningGeom(plate, wallIndex, t, widthFt, kind);
+  if (!preview) return plate;
+  const w = plate.wallCenterlines[wallIndex]!;
   const layer =
     kind === 'window'
       ? 'WINDOWS'
@@ -355,12 +352,15 @@ export function placeHostedOpening(
           : 'DOORS';
   const heightFt = kind === 'window' ? 4 : kind === 'garage' ? 7 : 6.667;
   const sill = kind === 'window' ? sillFt : 0;
+  const swing =
+    opts?.swing ??
+    (kind === 'door' ? 'left' : kind === 'window' || kind === 'garage' ? 'none' : 'none');
   const hint: CadOpeningHintFt = {
     id: nextOpeningElementId(),
-    x1: cx - ux * half,
-    y1: cy - uy * half,
-    x2: cx + ux * half,
-    y2: cy + uy * half,
+    x1: preview.x1,
+    y1: preview.y1,
+    x2: preview.x2,
+    y2: preview.y2,
     kind,
     layer,
     sillFt: sill,
@@ -368,10 +368,11 @@ export function placeHostedOpening(
     headFt: sill + heightFt,
     hostWallIndex: wallIndex,
     hostWallId: w.id,
-    hostT: tt,
-    widthFt: half * 2,
+    hostT: preview.t,
+    widthFt: preview.widthFt,
     storyId: w.storyId,
-    swing: kind === 'door' ? 'left' : 'none',
+    swing,
+    face: opts?.face,
   };
   return syncWallSegments({
     ...plate,
@@ -388,6 +389,105 @@ export function placeHostedOpening(
       },
     ],
   });
+}
+
+export type HostedOpeningPreview = {
+  wallIndex: number;
+  t: number;
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  widthFt: number;
+  kind: CadOpeningHintFt['kind'];
+  swing: NonNullable<CadOpeningHintFt['swing']>;
+  face: NonNullable<CadOpeningHintFt['face']>;
+  /** Outward normal used for swing / face (unit). */
+  nx: number;
+  ny: number;
+};
+
+/** Geometry for a hosted opening without mutating the plate (place-mode ghost). */
+export function hostedOpeningGeom(
+  plate: CadPlate,
+  wallIndex: number,
+  t: number,
+  widthFt: number,
+  kind: CadOpeningHintFt['kind'] = 'door',
+): Omit<HostedOpeningPreview, 'kind' | 'swing' | 'face' | 'nx' | 'ny'> & {
+  ux: number;
+  uy: number;
+  nx: number;
+  ny: number;
+} | null {
+  const w = plate.wallCenterlines[wallIndex];
+  if (!w) return null;
+  const { ux, uy, len } = unit(w);
+  if (len < 0.5) return null;
+  const half = Math.min(Math.max(0.5, widthFt) / 2, len * 0.45);
+  const tMin = half / len + 0.02;
+  const tMax = 1 - half / len - 0.02;
+  const tt = Math.max(tMin, Math.min(tMax, t));
+  const cx = w.x1 + ux * len * tt;
+  const cy = w.y1 + uy * len * tt;
+  return {
+    wallIndex,
+    t: tt,
+    x1: cx - ux * half,
+    y1: cy - uy * half,
+    x2: cx + ux * half,
+    y2: cy + uy * half,
+    widthFt: half * 2,
+    ux,
+    uy,
+    nx: -uy,
+    ny: ux,
+  };
+}
+
+/**
+ * Plan7-style place preview: project cursor onto nearest wall and pick swing/face
+ * from which side of the wall the cursor sits on.
+ */
+export function previewHostedOpening(
+  plate: CadPlate,
+  px: number,
+  py: number,
+  kind: CadOpeningHintFt['kind'],
+  widthFt: number,
+  tolFt = 2.5,
+): HostedOpeningPreview | null {
+  const host = nearestWallHost(plate, px, py, tolFt);
+  if (!host) return null;
+  const geom = hostedOpeningGeom(plate, host.wallIndex, host.t, widthFt, kind);
+  if (!geom) return null;
+  const w = plate.wallCenterlines[host.wallIndex]!;
+  const { ux, uy, len } = unit(w);
+  const cx = w.x1 + ux * len * geom.t;
+  const cy = w.y1 + uy * len * geom.t;
+  // Signed distance to wall centerline → which side the cursor is on.
+  const side = (px - cx) * geom.nx + (py - cy) * geom.ny;
+  const face: NonNullable<CadOpeningHintFt['face']> = side >= 0 ? 'out' : 'in';
+  // Door swing hand follows cursor along the wall relative to opening center.
+  let swing: NonNullable<CadOpeningHintFt['swing']> = 'none';
+  if (kind === 'door') {
+    const along = (px - cx) * ux + (py - cy) * uy;
+    swing = along >= 0 ? 'right' : 'left';
+  }
+  return {
+    wallIndex: geom.wallIndex,
+    t: geom.t,
+    x1: geom.x1,
+    y1: geom.y1,
+    x2: geom.x2,
+    y2: geom.y2,
+    widthFt: geom.widthFt,
+    kind,
+    swing,
+    face,
+    nx: geom.nx,
+    ny: geom.ny,
+  };
 }
 
 export function setOpeningWidth(plate: CadPlate, index: number, widthFt: number): CadPlate {
