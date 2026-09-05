@@ -29,10 +29,10 @@ describe('cad wave3 foundations + plot', () => {
     const minY = Math.min(...ys);
     const maxY = Math.max(...ys);
     // Main house 0–40 × 0–28; garage 52–68 × 4–20 — need clear setback on all sides.
-    expect(minX).toBeLessThanOrEqual(-16);
-    expect(maxX).toBeGreaterThanOrEqual(80);
-    expect(minY).toBeLessThanOrEqual(-20);
-    expect(maxY).toBeGreaterThanOrEqual(44);
+    expect(minX).toBeLessThanOrEqual(-24);
+    expect(maxX).toBeGreaterThanOrEqual(90);
+    expect(minY).toBeLessThanOrEqual(-28);
+    expect(maxY).toBeGreaterThanOrEqual(50);
     expect(plate.bounds.minX).toBeLessThanOrEqual(minX);
     expect(plate.bounds.maxX).toBeGreaterThanOrEqual(maxX);
     for (const w of plate.wallCenterlines) {

@@ -498,37 +498,39 @@ export function CadStudioPage() {
 
           <span className="cad-action-sep" aria-hidden />
 
-          <div className="cad-view-toggle" role="group" aria-label="Layout">
-            <button type="button" className={layout === 'split' ? 'is-active' : ''} onClick={() => setLayout('split')}>
-              Split
-            </button>
-            <button type="button" className={layout === 'plate' ? 'is-active' : ''} onClick={() => setLayout('plate')}>
-              2D
-            </button>
-            <button
-              type="button"
-              className={layout === 'extrude' ? 'is-active' : ''}
-              onClick={() => setLayout('extrude')}
-              disabled={!can3d}
-            >
-              3D
-            </button>
-            <button
-              type="button"
-              className={layout === 'massing' ? 'is-active' : ''}
-              onClick={() => setLayout('massing')}
-              disabled={!can3d}
-            >
-              Mass
-            </button>
-            <button
-              type="button"
-              className={layout === 'sheets' ? 'is-active' : ''}
-              onClick={() => setLayout('sheets')}
-              disabled={!plate?.sheets.length}
-            >
-              Sheets
-            </button>
+          <div className="cad-action-group" aria-label="Layout">
+            <div className="cad-view-toggle" role="group" aria-label="Layout">
+              <button type="button" className={layout === 'split' ? 'is-active' : ''} onClick={() => setLayout('split')}>
+                Split
+              </button>
+              <button type="button" className={layout === 'plate' ? 'is-active' : ''} onClick={() => setLayout('plate')}>
+                2D
+              </button>
+              <button
+                type="button"
+                className={layout === 'extrude' ? 'is-active' : ''}
+                onClick={() => setLayout('extrude')}
+                disabled={!can3d}
+              >
+                3D
+              </button>
+              <button
+                type="button"
+                className={layout === 'massing' ? 'is-active' : ''}
+                onClick={() => setLayout('massing')}
+                disabled={!can3d}
+              >
+                Mass
+              </button>
+              <button
+                type="button"
+                className={layout === 'sheets' ? 'is-active' : ''}
+                onClick={() => setLayout('sheets')}
+                disabled={!plate?.sheets.length}
+              >
+                Sheets
+              </button>
+            </div>
           </div>
         </div>
 

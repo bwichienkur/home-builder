@@ -930,11 +930,11 @@ export function CadPlateEditor({
             <polygon
               key={slab.id}
               points={polyPointsAttr(slab.points)}
-              fill={isPlot ? 'none' : SLAB_FILL[slab.kind]}
-              fillOpacity={isPlot ? 0 : selected ? 0.55 : 0.32}
-              stroke={selected ? '#1f4e46' : SLAB_FILL[slab.kind]}
-              strokeWidth={stroke * (selected ? 2.8 : isPlot ? 2.2 : 1.4)}
-              strokeDasharray={isPlot ? '0.5 0.35' : undefined}
+              fill={isPlot ? '#d8ead8' : SLAB_FILL[slab.kind]}
+              fillOpacity={isPlot ? (selected ? 0.5 : 0.38) : selected ? 0.55 : 0.32}
+              stroke={selected ? '#1f4e46' : isPlot ? '#0f766e' : SLAB_FILL[slab.kind]}
+              strokeWidth={stroke * (selected ? 2.8 : isPlot ? 2.6 : 1.4)}
+              strokeDasharray={isPlot ? '0.55 0.35' : undefined}
               strokeLinejoin="round"
             />
           );

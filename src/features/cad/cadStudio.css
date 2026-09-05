@@ -63,6 +63,18 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
+  padding: 0.2rem;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(213, 219, 227, 0.85);
+}
+
+.cad-action-sep {
+  width: 1px;
+  height: 1.55rem;
+  background: var(--cad-line);
+  margin: 0 0.2rem;
+  flex-shrink: 0;
 }
 
 .cad-studio-actions button,
@@ -189,13 +201,6 @@
 
 .cad-studio-body-shell {
   grid-template-columns: minmax(248px, 300px) minmax(0, 1fr);
-}
-
-.cad-action-sep {
-  width: 1px;
-  height: 1.4rem;
-  background: var(--cad-line);
-  margin: 0 0.15rem;
 }
 
 .cad-catalog {
