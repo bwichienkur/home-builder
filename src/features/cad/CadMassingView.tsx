@@ -1,3 +1,4 @@
+import type { CadDisplayFidelityConfig } from '../../lib/cadStudio';
 import { useMemo } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
@@ -46,7 +47,7 @@ function planBoundsEnvelopeM(
   return { minX, maxX, minZ, maxZ };
 }
 
-function MassingScene({ extrusion }: { extrusion: CadExtrusion }) {
+function MassingScene({ extrusion, fidelity }: { extrusion: CadExtrusion; fidelity?: CadDisplayFidelityConfig }) {
   const { walls, openings, fixtures, slabs, stairs, centerFt, massing } = extrusion;
   const storyHeightM = massing.storyHeightM;
   const envelope = useMemo(
@@ -60,8 +61,8 @@ function MassingScene({ extrusion }: { extrusion: CadExtrusion }) {
 
   return (
     <>
-      <CadSceneEnvironment targetY={storyHeightM * 0.55} sunPosition={[50, 32, 24]} />
-      <CadGroundPlane size={floorSize} />
+      <CadSceneEnvironment targetY={storyHeightM * 0.55} sunPosition={[50, 32, 24]} richEnvironment={!!fidelity?.richEnvironment} shadows={fidelity?.shadows ?? true} />
+      <CadGroundPlane size={floorSize} siteContext={!!fidelity?.siteContext} />
       <CadExtrudeSceneParts
         walls={walls}
         openings={openings}
@@ -84,7 +85,7 @@ function MassingScene({ extrusion }: { extrusion: CadExtrusion }) {
   );
 }
 
-export function CadMassingView({ extrusion }: { extrusion: CadExtrusion }) {
+export function CadMassingView({ extrusion, fidelity }: { extrusion: CadExtrusion; fidelity?: CadDisplayFidelityConfig }) {
   if (!extrusion.walls.length) {
     return <div className="cad-empty">No wall centerlines to mass yet. Import a DXF with wall layers.</div>;
   }
@@ -99,7 +100,7 @@ export function CadMassingView({ extrusion }: { extrusion: CadExtrusion }) {
           gl.shadowMap.enabled = true;
         }}
       >
-        <MassingScene extrusion={extrusion} />
+        <MassingScene extrusion={extrusion} fidelity={fidelity} />
       </Canvas>
     </div>
   );
