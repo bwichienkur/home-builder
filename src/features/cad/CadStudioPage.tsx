@@ -3,6 +3,9 @@ import { Link } from 'react-router-dom';
 import {
   addStory,
   alignWalls,
+  alignFixtureHintToWall,
+  rotateFixtureHint,
+  setFixtureHintRotation,
   applyAutoFoundation,
   applyOpeningPreset,
   assignOpeningMarks,
@@ -15,6 +18,10 @@ import {
   convertSegmentToOpening,
   copySelectionToStory,
   createCadHistory,
+  clearCadAutosave,
+  formatCadAutosaveTime,
+  loadCadAutosave,
+  saveCadAutosave,
   copyWalls,
   demoCadPlate,
   deleteSelection,
@@ -185,6 +192,7 @@ export function CadStudioPage() {
   const [studioMode, setStudioMode] = useState<StudioMode>('draw');
   const [mobileToolsOpen, setMobileToolsOpen] = useState(true);
 
+
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 900px)');
     const onChange = () => {
@@ -228,6 +236,50 @@ export function CadStudioPage() {
   const [snapshotName, setSnapshotName] = useState('Scheme A');
   const [layerFilter, setLayerFilter] = useState('');
   const [snapOn, setSnapOn] = useState(true);
+  const [gridSnap, setGridSnap] = useState(true);
+  const [autosaveNote, setAutosaveNote] = useState<string | null>(null);
+  const [dirty, setDirty] = useState(false);
+  const skipAutosaveRef = useRef(false);
+
+  // Restore last CAD session (if any) once on mount.
+  useEffect(() => {
+    const saved = loadCadAutosave();
+    if (!saved) return;
+    skipAutosaveRef.current = true;
+    loadPlate(saved.plate);
+    setAutosaveNote(`Restored autosave · ${formatCadAutosaveTime(saved.savedAt)}`);
+    setDirty(false);
+    const t = window.setTimeout(() => {
+      skipAutosaveRef.current = false;
+    }, 0);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot hydrate
+  }, []);
+
+  // Debounced autosave whenever the plate changes.
+  useEffect(() => {
+    if (skipAutosaveRef.current) return;
+    setDirty(true);
+    const handle = window.setTimeout(() => {
+      if (saveCadAutosave(plate)) {
+        setAutosaveNote(`Autosaved · ${formatCadAutosaveTime(new Date().toISOString())}`);
+        setDirty(false);
+      }
+    }, 800);
+    return () => window.clearTimeout(handle);
+  }, [plate]);
+
+  // Warn before leaving with unsaved edits (autosave lag / private mode).
+  useEffect(() => {
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (!dirty && !history.past.length) return;
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [dirty, history.past.length]);
+
   const [unitLabel] = useState<'ft-in' | 'm'>('ft-in');
   const [sunHour, setSunHour] = useState(14);
   const [shadowsOn, setShadowsOn] = useState(true);
@@ -421,6 +473,7 @@ export function CadStudioPage() {
           windowSillFt={windowSillFt}
           slabKind={slabKind}
           snapOn={snapOn}
+          gridSnap={gridSnap}
           showExteriorDims={showExteriorDims}
           showInteriorDims={showInteriorDims}
           showRoomFills={showRoomFills}
@@ -522,6 +575,49 @@ export function CadStudioPage() {
                 </button>
               </div>
             </details>
+          </div>
+
+
+          <span className="cad-action-sep" aria-hidden />
+          <div className="cad-action-group" aria-label="Takeoff export">
+            <button
+              type="button"
+              className="cad-btn"
+              disabled={!plate}
+              title="Download room schedule CSV"
+              onClick={() => {
+                if (!plate) return;
+                const base = (plate.sourceFileName || 'cad-plate').replace(/\.(dxf|dwg)$/i, '');
+                downloadTextFile(
+                  `${base}-rooms.csv`,
+                  exportCadRoomScheduleCsv(plate),
+                  'text/csv;charset=utf-8',
+                );
+                setStatusAid('Downloaded room schedule CSV');
+              }}
+            >
+              Rooms CSV
+            </button>
+            <button
+              type="button"
+              className="cad-btn"
+              disabled={!plate}
+              title="Download door/window schedule CSV"
+              onClick={() => {
+                if (!plate) return;
+                const base = (plate.sourceFileName || 'cad-plate').replace(/\.(dxf|dwg)$/i, '');
+                const marked = assignOpeningMarks(plate);
+                setPlate(marked);
+                downloadTextFile(
+                  `${base}-openings.csv`,
+                  exportDoorWindowScheduleCsv(marked),
+                  'text/csv;charset=utf-8',
+                );
+                setStatusAid('Downloaded door/window CSV');
+              }}
+            >
+              Openings CSV
+            </button>
           </div>
 
           <span className="cad-action-sep" aria-hidden />
@@ -1793,10 +1889,20 @@ export function CadStudioPage() {
                   type="button"
                   className={snapOn ? 'is-active' : ''}
                   onClick={() => setSnapOn((v) => !v)}
-                  title="Snap preference (endpoint snap in editor follows selection)"
+                  title="Endpoint / midpoint / guide snap"
                   aria-pressed={snapOn}
                 >
                   Snap
+                </button>
+                <button
+                  type="button"
+                  className={gridSnap ? 'is-active' : ''}
+                  onClick={() => setGridSnap((v) => !v)}
+                  title="1′ grid snap for free draft points"
+                  aria-pressed={gridSnap}
+                  disabled={!snapOn}
+                >
+                  Grid snap
                 </button>
                 <button
                   type="button"
@@ -2139,6 +2245,50 @@ export function CadStudioPage() {
                       )}
                     </div>
                   )}
+
+                  {selection.kind === 'fixture' && plate.fixtureHints[selection.index] && (
+                    <div className="cad-sill-control">
+                      <label>
+                        Rotation (°)
+                        <input
+                          type="number"
+                          step={15}
+                          value={plate.fixtureHints[selection.index]!.rotationDeg ?? 0}
+                          onChange={(e) => {
+                            const v = Number(e.target.value);
+                            if (!Number.isFinite(v)) return;
+                            setPlate(setFixtureHintRotation(plate, selection.index, v));
+                          }}
+                        />
+                      </label>
+                      <div className="cad-modify-bar" role="group" aria-label="Fixture orientation">
+                        <button
+                          type="button"
+                          onClick={() => setPlate(rotateFixtureHint(plate, selection.index, 45))}
+                        >
+                          Rotate +45°
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPlate(rotateFixtureHint(plate, selection.index, -45))}
+                        >
+                          Rotate −45°
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const next = alignFixtureHintToWall(plate, selection.index);
+                            setPlate(next);
+                            setStatusAid('Aligned fixture to nearest wall');
+                          }}
+                        >
+                          Align to wall
+                        </button>
+                      </div>
+                      <p className="cad-edit-hint">Shortcut: R / Shift+R while fixture is selected.</p>
+                    </div>
+                  )}
+
                   {selection.kind === 'opening' && plate.openingHints[selection.index] && (
                     <div className="cad-sill-control">
                       <label>
@@ -2456,7 +2606,24 @@ export function CadStudioPage() {
               )}
               {roomSchedule.length > 0 && (
                 <div className="cad-room-schedule">
-                  <h3>Room schedule</h3>
+                  <div className="cad-room-schedule-head">
+                    <h3>Room schedule</h3>
+                    <button
+                      type="button"
+                      className="cad-btn-mini"
+                      onClick={() => {
+                        if (!plate) return;
+                        const base = (plate.sourceFileName || 'cad-plate').replace(/\.(dxf|dwg)$/i, '');
+                        downloadTextFile(
+                          `${base}-rooms.csv`,
+                          exportCadRoomScheduleCsv(plate),
+                          'text/csv;charset=utf-8',
+                        );
+                      }}
+                    >
+                      Export CSV
+                    </button>
+                  </div>
                   <ul>
                     {roomSchedule.map((r) => (
                       <li key={`${r.name}-${r.areaSqFt}`}>
@@ -2509,7 +2676,8 @@ export function CadStudioPage() {
           <span>ft / in</span>
         </div>
         <div className="cad-status-right">
-          <span>Shift ortho · Esc cancel · Ctrl+Z undo</span>
+          {autosaveNote ? <span className="cad-autosave-note">{autosaveNote}</span> : null}
+          <span>Shift ortho · Esc cancel · Wheel zoom · R rotate</span>
         </div>
       </footer>
     </div>

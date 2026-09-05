@@ -33,6 +33,8 @@ import { stretchSharedNode } from '../../lib/cadStudio/cadWallGraph';
 import {
   addDormer,
   addFixtureHint,
+  alignFixtureHintToWall,
+  rotateFixtureHint,
   addGuideline,
   addOpeningHint,
   addSectionCut,
@@ -113,6 +115,8 @@ type Props = {
   showRoomFills?: boolean;
   /** Drafting paper grid (1' minor / 4' major), Plan7-style. */
   showGrid?: boolean;
+  /** Quantize free draft points to a 1′ grid (endpoint/mid still win). Default on. */
+  gridSnap?: boolean;
   selection: CadPlateSelection | null;
   onSelectionChange: (sel: CadPlateSelection | null) => void;
   /** Discrete edits (draw complete, trim, delete, etc.) — pushes undo history. */
@@ -210,6 +214,7 @@ export function CadPlateEditor({
   showInteriorDims = false,
   showRoomFills = true,
   showGrid = true,
+  gridSnap = true,
   selection,
   onSelectionChange,
   onPlateChange,
@@ -276,19 +281,49 @@ export function CadPlateEditor({
     [onPlateChange, onPlatePreview],
   );
 
-  const { w, h, ox, oy, stroke, fontSize } = useMemo(() => {
-    const { minX, minY, maxX, maxY } = plate.bounds;
-    const width = Math.max(maxX - minX, 1) + PAD * 2;
-    const height = Math.max(maxY - minY, 1) + PAD * 2;
+  const fitFrameFromBounds = useCallback((bounds: CadPlate['bounds']) => {
+    const width = Math.max(bounds.maxX - bounds.minX, 1) + PAD * 2;
+    const height = Math.max(bounds.maxY - bounds.minY, 1) + PAD * 2;
     return {
       w: width,
       h: height,
-      ox: minX - PAD,
-      oy: minY - PAD,
-      stroke: Math.max(width, height) * 0.0012,
-      fontSize: Math.max(0.7, Math.min(1.6, Math.max(width, height) * 0.012)),
+      ox: bounds.minX - PAD,
+      oy: bounds.minY - PAD,
     };
-  }, [plate.bounds]);
+  }, []);
+
+  // Freeze world frame on load / Fit — do not chase plate.bounds while editing (stops view jumps).
+  const [world, setWorld] = useState(() => fitFrameFromBounds(plate.bounds));
+  const [view, setView] = useState(() => {
+    const f = fitFrameFromBounds(plate.bounds);
+    return { x: 0, y: 0, w: f.w, h: f.h };
+  });
+  const panRef = useRef<{
+    pointerId: number;
+    startClientX: number;
+    startClientY: number;
+    originX: number;
+    originY: number;
+  } | null>(null);
+  const spaceHeldRef = useRef(false);
+
+  useEffect(() => {
+    const f = fitFrameFromBounds(plate.bounds);
+    setWorld(f);
+    setView({ x: 0, y: 0, w: f.w, h: f.h });
+  }, [plate.sourceFileName, fitFrameFromBounds]);
+
+  const fitView = useCallback(() => {
+    const f = fitFrameFromBounds(plate.bounds);
+    setWorld(f);
+    setView({ x: 0, y: 0, w: f.w, h: f.h });
+    onStatus?.('View fitted to drawing');
+  }, [fitFrameFromBounds, onStatus, plate.bounds]);
+
+  const { w, h, ox, oy } = world;
+  const stroke = Math.max(view.w, view.h) * 0.0012;
+  const fontSize = Math.max(0.7, Math.min(1.6, Math.max(view.w, view.h) * 0.012));
+
 
   const segs = visibleSegments(plate);
   const labels = visibleLabels(plate);
@@ -340,15 +375,25 @@ export function CadPlateEditor({
   const guidelines = plate.guidelines ?? [];
   const underlay = plate.underlay;
 
+  const worldBounds = useMemo(
+    () => ({
+      minX: ox + PAD,
+      minY: oy + PAD,
+      maxX: ox + w - PAD,
+      maxY: oy + h - PAD,
+    }),
+    [ox, oy, w, h],
+  );
+
   const planFromEvent = useCallback(
     (e: React.PointerEvent<SVGSVGElement>) => {
       const svg = svgRef.current;
       if (!svg) return null;
       const svgPt = clientToSvg(svg, e.clientX, e.clientY);
       if (!svgPt) return null;
-      return svgToPlanFt(svgPt.x, svgPt.y, plate.bounds, PAD);
+      return svgToPlanFt(svgPt.x, svgPt.y, worldBounds, PAD);
     },
-    [plate.bounds],
+    [worldBounds],
   );
 
   const snapPlan = useCallback(
@@ -356,12 +401,13 @@ export function CadPlateEditor({
       const snapped = snapCadDraftPoint(plate, plan.x, plan.y, {
         enabled: snapOn,
         ortho: shiftHeld,
+        grid: snapOn && gridSnap ? 1 : false,
         from: from ?? null,
       });
       setLastSnap(snapped);
       return snapped;
     },
-    [plate, snapOn, shiftHeld],
+    [plate, snapOn, gridSnap, shiftHeld],
   );
 
   const closeDraftPoly = useCallback(() => {
@@ -402,7 +448,49 @@ export function CadPlateEditor({
     [onPlateChange, openingKind, plate, tool, wallLayer, windowSillFt],
   );
 
+
+  const handleWheel = useCallback(
+    (e: React.WheelEvent<SVGSVGElement>) => {
+      e.preventDefault();
+      const svg = svgRef.current;
+      if (!svg) return;
+      const svgPt = clientToSvg(svg, e.clientX, e.clientY);
+      if (!svgPt) return;
+      const factor = e.deltaY < 0 ? 0.9 : 1.1;
+      setView((v) => {
+        const nextW = Math.min(Math.max(v.w * factor, 8), Math.max(w, h) * 20);
+        const nextH = nextW * (v.h / v.w);
+        const rx = (svgPt.x - v.x) / v.w;
+        const ry = (svgPt.y - v.y) / v.h;
+        return {
+          w: nextW,
+          h: nextH,
+          x: svgPt.x - rx * nextW,
+          y: svgPt.y - ry * nextH,
+        };
+      });
+    },
+    [w, h],
+  );
+
+  const beginPan = (e: React.PointerEvent<SVGSVGElement>) => {
+    svgRef.current?.setPointerCapture(e.pointerId);
+    panRef.current = {
+      pointerId: e.pointerId,
+      startClientX: e.clientX,
+      startClientY: e.clientY,
+      originX: view.x,
+      originY: view.y,
+    };
+  };
+
   const handlePointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
+    // Middle mouse, Alt+drag, or Space+drag pans the 2D view without editing.
+    if (e.button === 1 || (e.button === 0 && (e.altKey || spaceHeldRef.current))) {
+      e.preventDefault();
+      beginPan(e);
+      return;
+    }
     if (e.button !== 0) return;
     const raw = planFromEvent(e);
     if (!raw) return;
@@ -541,7 +629,9 @@ export function CadPlateEditor({
     }
 
     if (tool === 'fixture') {
-      onPlateChange(addFixtureHint(plate, fixtureKind, raw.x, raw.y));
+      const plan = snapPlan(raw);
+      onPlateChange(addFixtureHint(plate, fixtureKind, plan.x, plan.y, { alignToWall: true }));
+      onStatus?.(`Placed ${fixtureKind} (R rotates · Align in Properties)`);
       return;
     }
 
@@ -634,6 +724,20 @@ export function CadPlateEditor({
   };
 
   const handlePointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
+    const pan = panRef.current;
+    if (pan && pan.pointerId === e.pointerId) {
+      const svg = svgRef.current;
+      if (!svg) return;
+      const rect = svg.getBoundingClientRect();
+      const sx = view.w / Math.max(rect.width, 1);
+      const sy = view.h / Math.max(rect.height, 1);
+      setView((v) => ({
+        ...v,
+        x: pan.originX - (e.clientX - pan.startClientX) * sx,
+        y: pan.originY - (e.clientY - pan.startClientY) * sy,
+      }));
+      return;
+    }
     lastPointerClientRef.current = { x: e.clientX, y: e.clientY };
     const raw = planFromEvent(e);
     if (!raw) return;
@@ -749,6 +853,7 @@ export function CadPlateEditor({
   };
 
   const handlePointerUp = () => {
+    panRef.current = null;
     const drag = dragRef.current;
     if (drag?.moved) {
       const finalPlate = lastPreviewRef.current;
@@ -778,6 +883,22 @@ export function CadPlateEditor({
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Shift') setShiftHeld(true);
+      if (e.code === 'Space') {
+        spaceHeldRef.current = true;
+        if (e.target === document.body || (e.target as HTMLElement)?.tagName === 'BODY' || (e.target as HTMLElement)?.closest?.('.cad-plate-editor-host')) {
+          e.preventDefault();
+        }
+      }
+      if ((e.key === 'r' || e.key === 'R') && selection?.kind === 'fixture' && !lengthHud && !tempDimHud) {
+        e.preventDefault();
+        const delta = e.shiftKey ? -45 : 45;
+        onPlateChange(rotateFixtureHint(plate, selection.index, delta));
+        onStatus?.(e.shiftKey ? 'Rotated fixture −45°' : 'Rotated fixture +45°');
+      }
+      if ((e.key === 'f' || e.key === 'F') && (e.ctrlKey || e.metaKey) && e.shiftKey) {
+        e.preventDefault();
+        fitView();
+      }
       if (e.key === 'Escape') {
         if (tempDimHud) {
           setTempDimHud(null);
@@ -843,6 +964,7 @@ export function CadPlateEditor({
     };
     const onKeyUp = (e: KeyboardEvent) => {
       if (e.key === 'Shift') setShiftHeld(false);
+      if (e.code === 'Space') spaceHeldRef.current = false;
     };
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
@@ -854,10 +976,15 @@ export function CadPlateEditor({
     closeDraftPoly,
     draftLine,
     draftPoly.length,
+    fitView,
     lengthHud,
-    tempDimHud,
+    onPlateChange,
     onRedo,
+    onStatus,
     onUndo,
+    plate,
+    selection,
+    tempDimHud,
     tool,
   ]);
 
@@ -991,10 +1118,16 @@ export function CadPlateEditor({
 
   return (
     <div className="cad-plate-editor-host" ref={hostRef}>
+    <div className="cad-view-controls" role="toolbar" aria-label="2D view">
+      <button type="button" className="cad-view-fit" onClick={fitView} title="Fit drawing (Ctrl+Shift+F)">
+        Fit
+      </button>
+      <span className="cad-view-hint">Wheel zoom · Space/Alt/Middle pan · R rotate fixture</span>
+    </div>
     <svg
       ref={svgRef}
       className="cad-plate-editor-svg"
-      viewBox={`0 0 ${w.toFixed(3)} ${h.toFixed(3)}`}
+      viewBox={`${view.x.toFixed(3)} ${view.y.toFixed(3)} ${view.w.toFixed(3)} ${view.h.toFixed(3)}`}
       width="1400"
       height={Math.round((1400 * h) / w)}
       role="img"
@@ -1004,6 +1137,8 @@ export function CadPlateEditor({
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerLeave}
       onDoubleClick={handleDoubleClick}
+      onWheel={handleWheel}
+      style={{ cursor: spaceHeldRef.current ? 'grab' : undefined }}
     >
       {/* Drafting paper — cool light field like Plan7 tutorial plan views */}
       <rect width="100%" height="100%" fill="#f7f8fa" />
@@ -1472,9 +1607,9 @@ export function CadPlateEditor({
       </g>
 
       {tempDims.map((dim) => {
-        const a = planToSvgFt(dim.x1, dim.y1, plate.bounds, PAD);
-        const b = planToSvgFt(dim.x2, dim.y2, plate.bounds, PAD);
-        const lp = planToSvgFt((dim.x1 + dim.x2) / 2, (dim.y1 + dim.y2) / 2, plate.bounds, PAD);
+        const a = planToSvgFt(dim.x1, dim.y1, worldBounds, PAD);
+        const b = planToSvgFt(dim.x2, dim.y2, worldBounds, PAD);
+        const lp = planToSvgFt((dim.x1 + dim.x2) / 2, (dim.y1 + dim.y2) / 2, worldBounds, PAD);
         return (
           <CadDimMark
             key={dim.id}
@@ -1501,16 +1636,16 @@ export function CadPlateEditor({
         );
       })}
       {exteriorDims.map((dim) => {
-        const a = planToSvgFt(dim.x1, dim.y1, plate.bounds, PAD);
-        const b = planToSvgFt(dim.x2, dim.y2, plate.bounds, PAD);
-        const lp = planToSvgFt(dim.labelX, dim.labelY, plate.bounds, PAD);
+        const a = planToSvgFt(dim.x1, dim.y1, worldBounds, PAD);
+        const b = planToSvgFt(dim.x2, dim.y2, worldBounds, PAD);
+        const lp = planToSvgFt(dim.labelX, dim.labelY, worldBounds, PAD);
         const w1 =
           dim.wx1 != null && dim.wy1 != null
-            ? planToSvgFt(dim.wx1, dim.wy1, plate.bounds, PAD)
+            ? planToSvgFt(dim.wx1, dim.wy1, worldBounds, PAD)
             : null;
         const w2 =
           dim.wx2 != null && dim.wy2 != null
-            ? planToSvgFt(dim.wx2, dim.wy2, plate.bounds, PAD)
+            ? planToSvgFt(dim.wx2, dim.wy2, worldBounds, PAD)
             : null;
         const isManual = (plate.annotativeDims ?? []).some((d) => d.id === dim.id);
         const associative = dim.id === 'overall-w' || dim.id === 'overall-d';
@@ -1573,16 +1708,16 @@ export function CadPlateEditor({
       })}
 
       {interiorDims.map((dim) => {
-        const a = planToSvgFt(dim.x1, dim.y1, plate.bounds, PAD);
-        const b = planToSvgFt(dim.x2, dim.y2, plate.bounds, PAD);
-        const lp = planToSvgFt(dim.labelX, dim.labelY, plate.bounds, PAD);
+        const a = planToSvgFt(dim.x1, dim.y1, worldBounds, PAD);
+        const b = planToSvgFt(dim.x2, dim.y2, worldBounds, PAD);
+        const lp = planToSvgFt(dim.labelX, dim.labelY, worldBounds, PAD);
         const w1 =
           dim.wx1 != null && dim.wy1 != null
-            ? planToSvgFt(dim.wx1, dim.wy1, plate.bounds, PAD)
+            ? planToSvgFt(dim.wx1, dim.wy1, worldBounds, PAD)
             : null;
         const w2 =
           dim.wx2 != null && dim.wy2 != null
-            ? planToSvgFt(dim.wx2, dim.wy2, plate.bounds, PAD)
+            ? planToSvgFt(dim.wx2, dim.wy2, worldBounds, PAD)
             : null;
         return (
           <CadDimMark
@@ -1606,7 +1741,7 @@ export function CadPlateEditor({
       })}
 
       {roomStamps.map((room) => {
-        const sp = planToSvgFt(room.x, room.y, plate.bounds, PAD);
+        const sp = planToSvgFt(room.x, room.y, worldBounds, PAD);
         const nameSize = fontSize * 0.92;
         const areaSize = fontSize * 0.72;
         const name = room.name;
@@ -1711,7 +1846,7 @@ export function CadPlateEditor({
               Math.hypot(r.x - label.x, r.y - label.y) < 16,
           );
         if (covered) return null;
-        const sp = planToSvgFt(label.x, label.y, plate.bounds, PAD);
+        const sp = planToSvgFt(label.x, label.y, worldBounds, PAD);
         const selected = isSelected('label', i);
         return (
           <text
