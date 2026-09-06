@@ -14,7 +14,11 @@ import {
   type CadTempDim,
 } from '../../lib/cadStudio/cadDimEdit';
 import { buildBetweenOpeningsDim } from '../../lib/cadStudio/cadOpeningEdit';
-import { snapCadDraftPoint, type CadSnapResult } from '../../lib/cadStudio/cadDrawSnap';
+import {
+  defaultWallThicknessFt,
+  snapCadDraftPoint,
+  type CadSnapResult,
+} from '../../lib/cadStudio/cadDrawSnap';
 import { parseArchitecturalLength } from '../../lib/cadStudio/cadLengthParse';
 import { isLayerOn } from '../../lib/cadStudio/cadLayerVisibility';
 import {
@@ -68,8 +72,6 @@ import {
   wallHatchLegendForPlate,
   wallHatchStyleForWall,
 } from '../../lib/cadStudio/cadWallHatch';
-import { defaultWallThicknessFt } from '../../lib/cadStudio/cadDrawSnap';
-import { formatWallLengthFt } from '../../lib/cadStudio/editCadPlate';
 
 const ROLE_STROKE: Record<CadSegmentRole, string> = {
   wall: '#1e293b',
