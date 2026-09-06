@@ -534,7 +534,8 @@ function Scene({
       ) : (
         <CadGroundPlane size={floorSize} siteContext={!!fidelity?.siteContext} />
       )}
-      <group>
+      {/* Negate Z so plan +Y (screen-up after SVG flip) matches 3D north — avoids mirrored plan vs 3D. */}
+      <group scale={[1, 1, -1]}>
         {clipPlanes && <primitive object={new THREE.Object3D()} />}
         <CadExtrudeSceneParts
           onSelectOpening={onSelectOpening}

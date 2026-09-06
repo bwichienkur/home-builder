@@ -6,49 +6,49 @@ export type CadDimMarkTone = 'overall' | 'segment' | 'interior' | 'manual' | 'te
 
 const TONE: Record<
   CadDimMarkTone,
-  { stroke: string; fill: string; text: string; lineW: number; tickW: number }
+  { stroke: string; fill: string; text: string; lineScale: number; tickScale: number }
 > = {
   overall: {
     stroke: '#334155',
     fill: 'rgba(255,255,255,0.96)',
     text: '#0f172a',
-    lineW: 1.25,
-    tickW: 1.35,
+    lineScale: 0.055,
+    tickScale: 0.07,
   },
   segment: {
     stroke: '#64748b',
     fill: 'rgba(255,255,255,0.94)',
     text: '#1e293b',
-    lineW: 1.05,
-    tickW: 1.15,
+    lineScale: 0.05,
+    tickScale: 0.065,
   },
   interior: {
     stroke: '#94a3b8',
     fill: 'rgba(255,255,255,0.9)',
     text: '#475569',
-    lineW: 0.9,
-    tickW: 1,
+    lineScale: 0.045,
+    tickScale: 0.06,
   },
   manual: {
     stroke: '#1f4e46',
     fill: 'rgba(255,255,255,0.96)',
     text: '#1f4e46',
-    lineW: 1.3,
-    tickW: 1.35,
+    lineScale: 0.055,
+    tickScale: 0.07,
   },
   temp: {
     stroke: '#1f4e46',
     fill: 'rgba(255,255,255,0.97)',
     text: '#1f4e46',
-    lineW: 1.35,
-    tickW: 1.4,
+    lineScale: 0.06,
+    tickScale: 0.075,
   },
   locked: {
     stroke: '#9a3412',
     fill: 'rgba(255,247,237,0.96)',
     text: '#9a3412',
-    lineW: 1.25,
-    tickW: 1.3,
+    lineScale: 0.055,
+    tickScale: 0.07,
   },
 };
 
@@ -67,7 +67,6 @@ export function dimLabelChipWidth(label: string, fontSize: number): number {
 export function dimLabelAngleDeg(dx: number, dy: number): number {
   let deg = (Math.atan2(dy, dx) * 180) / Math.PI;
   if (deg > 90 || deg < -90) deg += 180;
-  // Normalize to (-180, 180] then prefer (-90, 90]
   deg = ((deg + 180) % 360) - 180;
   if (deg > 90) deg -= 180;
   if (deg <= -90) deg += 180;
@@ -96,7 +95,8 @@ export type CadDimMarkProps = {
 };
 
 /**
- * Architectural dimension mark: witness lines, 45° ticks, gap for label, white chip.
+ * Architectural dimension mark: witness lines, thin 45° ticks (not bulbous caps),
+ * gap for label, white chip — stroke widths scale with fontSize (plan feet).
  */
 export function CadDimMark({
   x1,
@@ -119,7 +119,9 @@ export function CadDimMark({
 }: CadDimMarkProps) {
   const c = TONE[tone];
   const { ux, uy, len } = unit(x2 - x1, y2 - y1);
-  const tickLen = fontSize * (tone === 'interior' ? 0.42 : 0.52);
+  const lineW = Math.max(0.02, fontSize * c.lineScale);
+  const tickW = Math.max(0.025, fontSize * c.tickScale);
+  const tickLen = fontSize * (tone === 'interior' ? 0.55 : 0.65);
   // 45° oblique tick relative to dim axis (US drafting convention)
   const cos = Math.SQRT1_2;
   const sin = Math.SQRT1_2;
@@ -127,11 +129,16 @@ export function CadDimMark({
   const ty = (ux * sin + uy * cos) * tickLen;
 
   const chipW = dimLabelChipWidth(label, fontSize);
-  const chipH = fontSize * (tone === 'interior' ? 1.05 : 1.25);
-  const textSize = fontSize * (tone === 'overall' || tone === 'temp' || tone === 'manual' ? 0.82 : tone === 'interior' ? 0.62 : 0.74);
+  const chipH = fontSize * (tone === 'interior' ? 1.05 : 1.2);
+  const textSize =
+    fontSize *
+    (tone === 'overall' || tone === 'temp' || tone === 'manual'
+      ? 0.82
+      : tone === 'interior'
+        ? 0.62
+        : 0.74);
   const angle = dimLabelAngleDeg(x2 - x1, y2 - y1);
 
-  // Gap in dim line so the chip sits in the chain (not on top of it)
   const gapHalf = Math.min(len * 0.42, chipW / 2 + fontSize * 0.2);
   const useGap = len > chipW + fontSize * 1.2;
   const mx = (x1 + x2) / 2;
@@ -141,16 +148,14 @@ export function CadDimMark({
   const g2x = mx + ux * gapHalf;
   const g2y = my + uy * gapHalf;
 
-  // Witness overshoot past dim line
-  const over = fontSize * 0.28;
+  const over = fontSize * 0.22;
   const hasW1 = wx1 != null && wy1 != null;
   const hasW2 = wx2 != null && wy2 != null;
 
   function witness(wx: number, wy: number, dx: number, dy: number) {
     const { ux: vx, uy: vy, len: wlen } = unit(dx - wx, dy - wy);
     if (wlen < 0.05) return null;
-    // Small gap from feature so stroke does not collide with wall
-    const gap = Math.min(fontSize * 0.22, wlen * 0.12);
+    const gap = Math.min(fontSize * 0.18, wlen * 0.12);
     const sx = wx + vx * gap;
     const sy = wy + vy * gap;
     const ex = dx + vx * over;
@@ -162,8 +167,8 @@ export function CadDimMark({
         x2={ex}
         y2={ey}
         stroke={c.stroke}
-        strokeWidth={c.lineW * 0.75}
-        strokeOpacity={0.75}
+        strokeWidth={lineW * 0.85}
+        strokeOpacity={0.7}
         strokeLinecap="butt"
       />
     );
@@ -181,21 +186,22 @@ export function CadDimMark({
 
       {useGap ? (
         <>
-          <line x1={x1} y1={y1} x2={g1x} y2={g1y} stroke={c.stroke} strokeWidth={c.lineW} strokeLinecap="butt" />
-          <line x1={g2x} y1={g2y} x2={x2} y2={y2} stroke={c.stroke} strokeWidth={c.lineW} strokeLinecap="butt" />
+          <line x1={x1} y1={y1} x2={g1x} y2={g1y} stroke={c.stroke} strokeWidth={lineW} strokeLinecap="butt" />
+          <line x1={g2x} y1={g2y} x2={x2} y2={y2} stroke={c.stroke} strokeWidth={lineW} strokeLinecap="butt" />
         </>
       ) : (
-        <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={c.stroke} strokeWidth={c.lineW} strokeLinecap="butt" />
+        <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={c.stroke} strokeWidth={lineW} strokeLinecap="butt" />
       )}
 
+      {/* Thin 45° ticks — butt caps so ends stay slash-like, not circular blobs */}
       <line
         x1={x1 - tx}
         y1={y1 - ty}
         x2={x1 + tx}
         y2={y1 + ty}
         stroke={c.stroke}
-        strokeWidth={c.tickW}
-        strokeLinecap="round"
+        strokeWidth={tickW}
+        strokeLinecap="butt"
       />
       <line
         x1={x2 - tx}
@@ -203,8 +209,8 @@ export function CadDimMark({
         x2={x2 + tx}
         y2={y2 + ty}
         stroke={c.stroke}
-        strokeWidth={c.tickW}
-        strokeLinecap="round"
+        strokeWidth={tickW}
+        strokeLinecap="butt"
       />
 
       <g transform={`translate(${labelX} ${labelY}) rotate(${angle})`}>
@@ -213,10 +219,12 @@ export function CadDimMark({
           y={-chipH / 2}
           width={chipW}
           height={chipH}
-          rx={fontSize * 0.12}
+          rx={fontSize * 0.1}
           fill={c.fill}
-          stroke={tone === 'temp' || tone === 'manual' || tone === 'locked' ? c.stroke : 'rgba(15,23,42,0.1)'}
-          strokeWidth={tone === 'temp' || tone === 'manual' || tone === 'locked' ? 1.05 : 0.7}
+          stroke={
+            tone === 'temp' || tone === 'manual' || tone === 'locked' ? c.stroke : 'rgba(15,23,42,0.12)'
+          }
+          strokeWidth={Math.max(0.03, fontSize * 0.045)}
         />
         <text
           x={0}

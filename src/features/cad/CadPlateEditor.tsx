@@ -68,6 +68,8 @@ import {
   wallHatchLegendForPlate,
   wallHatchStyleForWall,
 } from '../../lib/cadStudio/cadWallHatch';
+import { defaultWallThicknessFt } from '../../lib/cadStudio/cadDrawSnap';
+import { formatWallLengthFt } from '../../lib/cadStudio/editCadPlate';
 
 const ROLE_STROKE: Record<CadSegmentRole, string> = {
   wall: '#1e293b',
@@ -1517,18 +1519,57 @@ export function CadPlateEditor({
           );
         })}
 
-        {draftLine && (
-          <line
-            x1={draftLine.x1}
-            y1={draftLine.y1}
-            x2={draftLine.x2}
-            y2={draftLine.y2}
-            stroke={tool === 'guide' ? '#0d9488' : tool === 'section' ? '#dc2626' : '#1f4e46'}
-            strokeWidth={stroke * 2.5}
-            strokeDasharray="0.4 0.3"
-            strokeLinecap="round"
-          />
-        )}
+        {draftLine &&
+          (tool === 'wall' ? (
+            (() => {
+              const exterior = /EXT/i.test(wallLayer);
+              const thicknessFt = defaultWallThicknessFt({
+                exterior,
+                layer: wallLayer,
+              });
+              const foot = wallFootprintQuad({
+                x1: draftLine.x1,
+                y1: draftLine.y1,
+                x2: draftLine.x2,
+                y2: draftLine.y2,
+                thicknessFt,
+                exterior,
+                layer: wallLayer,
+              });
+              return (
+                <g className="cad-draft-wall" style={{ pointerEvents: 'none' }}>
+                  <polygon
+                    points={wallFootprintPointsAttr(foot)}
+                    fill={exterior ? 'rgba(31,78,70,0.35)' : 'rgba(100,116,139,0.4)'}
+                    stroke="#1f4e46"
+                    strokeWidth={stroke * 0.9}
+                    strokeLinejoin="round"
+                  />
+                  <line
+                    x1={draftLine.x1}
+                    y1={draftLine.y1}
+                    x2={draftLine.x2}
+                    y2={draftLine.y2}
+                    stroke="#1f4e46"
+                    strokeWidth={stroke * 0.55}
+                    strokeOpacity={0.55}
+                    strokeLinecap="butt"
+                  />
+                </g>
+              );
+            })()
+          ) : (
+            <line
+              x1={draftLine.x1}
+              y1={draftLine.y1}
+              x2={draftLine.x2}
+              y2={draftLine.y2}
+              stroke={tool === 'guide' ? '#0d9488' : tool === 'section' ? '#dc2626' : '#1f4e46'}
+              strokeWidth={stroke * 2.5}
+              strokeDasharray="0.4 0.3"
+              strokeLinecap="round"
+            />
+          ))}
 
         {openingPreview && tool === 'opening' && !draftLine && (() => {
           const p = openingPreview;
@@ -1541,6 +1582,16 @@ export function CadPlateEditor({
           const swingSign = p.swing === 'right' ? -1 : 1;
           const faceSign = p.face === 'out' ? 1 : -1;
           const host = plate.wallCenterlines[p.wallIndex];
+          const sillFt = openingKind === 'window' ? windowSillFt : 0;
+          const heightFt =
+            openingKind === 'window' ? 4 : openingKind === 'garage' ? 7 : 6.667;
+          const midX = (p.x1 + p.x2) / 2;
+          const midY = (p.y1 + p.y2) / 2;
+          const dimOff = Math.max(host?.thicknessFt ?? 0.5, 0.75) + fontSize * 0.35;
+          const dimX1 = p.x1 + nx * dimOff * faceSign;
+          const dimY1 = p.y1 + ny * dimOff * faceSign;
+          const dimX2 = p.x2 + nx * dimOff * faceSign;
+          const dimY2 = p.y2 + ny * dimOff * faceSign;
           return (
             <g className="cad-opening-preview" style={{ pointerEvents: 'none' }}>
               {host && (
@@ -1562,7 +1613,7 @@ export function CadPlateEditor({
                 y2={p.y2}
                 stroke="#ea580c"
                 strokeWidth={stroke * 3}
-                strokeLinecap="round"
+                strokeLinecap="butt"
                 strokeOpacity={0.95}
               />
               <rect
@@ -1588,13 +1639,75 @@ export function CadPlateEditor({
                   strokeOpacity={0.9}
                 />
               )}
-              <circle
-                cx={(p.x1 + p.x2) / 2}
-                cy={(p.y1 + p.y2) / 2}
-                r={stroke * 5}
-                fill="#ea580c"
-                fillOpacity={0.45}
+              <CadDimMark
+                x1={dimX1}
+                y1={dimY1}
+                x2={dimX2}
+                y2={dimY2}
+                labelX={midX + nx * (dimOff + fontSize * 0.55) * faceSign}
+                labelY={midY + ny * (dimOff + fontSize * 0.55) * faceSign}
+                label={formatWallLengthFt(p.widthFt)}
+                fontSize={fontSize * 0.85}
+                tone="temp"
+                wx1={p.x1}
+                wy1={p.y1}
+                wx2={p.x2}
+                wy2={p.y2}
               />
+              <g
+                transform={`translate(${midX + nx * fontSize * 1.8 * faceSign} ${
+                  midY + ny * fontSize * 1.8 * faceSign
+                }) scale(1,-1)`}
+              >
+                <rect
+                  x={-fontSize * 3.4}
+                  y={-fontSize * 1.55}
+                  width={fontSize * 6.8}
+                  height={fontSize * 3.1}
+                  rx={fontSize * 0.2}
+                  fill="rgba(255,255,255,0.96)"
+                  stroke="#c2410c"
+                  strokeWidth={fontSize * 0.06}
+                />
+                <text
+                  x={0}
+                  y={-fontSize * 0.55}
+                  fill="#9a3412"
+                  fontSize={fontSize * 0.62}
+                  fontFamily="IBM Plex Sans, Segoe UI, sans-serif"
+                  fontWeight={650}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                >
+                  {openingKind.toUpperCase()}
+                </text>
+                <text
+                  x={0}
+                  y={fontSize * 0.35}
+                  fill="#0f172a"
+                  fontSize={fontSize * 0.72}
+                  fontFamily="IBM Plex Sans, Segoe UI, sans-serif"
+                  fontWeight={600}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                >
+                  {`W ${formatWallLengthFt(p.widthFt)}`}
+                </text>
+                <text
+                  x={0}
+                  y={fontSize * 1.15}
+                  fill="#334155"
+                  fontSize={fontSize * 0.62}
+                  fontFamily="IBM Plex Sans, Segoe UI, sans-serif"
+                  fontWeight={500}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                >
+                  {openingKind === 'window'
+                    ? `H ${formatWallLengthFt(heightFt)} · sill ${formatWallLengthFt(sillFt)}`
+                    : `H ${formatWallLengthFt(heightFt)}`}
+                </text>
+              </g>
             </g>
           );
         })()}

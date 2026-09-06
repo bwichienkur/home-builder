@@ -66,6 +66,7 @@ export {
   visibleLabels,
 } from './buildCadPlate';
 export { buildCadElevationSheets, extractRoofProfileFromElevation } from './buildCadElevation';
+export { buildPlanElevation, ensureFourElevations } from './buildPlanElevations';
 export {
   buildCadMassing,
   detectFrontFace,

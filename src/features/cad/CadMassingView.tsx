@@ -6,7 +6,13 @@ import * as THREE from 'three';
 import type { CadExtrusion } from '../../lib/cadStudio';
 import { WORLD_ORIGIN } from '../../lib/geometry/placement';
 import { PIXELS_PER_METER } from '../../lib/geometry/snapping';
-import { world } from '../../components/scene3d/sceneWorld';
+import { world as planWorld } from '../../components/scene3d/sceneWorld';
+
+/** CAD plan→world: negate Z to match SVG plan (Y-up) orientation. */
+function world(x: number, y: number): [number, number] {
+  const [wx, wz] = planWorld(x, y);
+  return [wx, -wz];
+}
 import { CadExtrudeSceneParts } from './CadExtrudeView';
 import { CadElevationFacadeShell } from './CadElevationFacadeShell';
 import { CadProfileRoofMesh } from './CadProfileRoofMesh';

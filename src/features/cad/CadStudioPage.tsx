@@ -29,6 +29,7 @@ import {
   downloadSvgAsPng,
   downloadTextFile,
   ensureDefaultStories,
+  ensureFourElevations,
   exportCadPlateDxf,
   exportCadPlateGltf,
   exportCadRoomScheduleCsv,
@@ -118,7 +119,7 @@ import { pdfViewerSrc, stillwaterCadSheetPlate } from './stillwaterCad';
 import './cadStudio.css';
 
 type LayoutMode = 'split' | 'plate' | 'extrude' | 'massing' | 'sheets';
-type PlateMode = 'floor' | 'front' | 'side' | 'section';
+type PlateMode = 'floor' | 'front' | 'rear' | 'side' | 'right' | 'section';
 type StudioMode = 'draw' | 'modify' | 'annotate' | 'site' | 'roof' | 'layers' | 'sheets';
 type OpeningKind = 'door' | 'window' | 'passage' | 'garage';
 
@@ -180,8 +181,10 @@ export function CadStudioPage() {
   const loadPlate = (p: CadPlate) => {
     gestureBaselineRef.current = null;
     const cleaned = ensureModelKernel(
-      normalizeOpeningDefaults(
-        ensureDefaultStories(autoHostOpenings(assignOpeningMarks(p))),
+      ensureFourElevations(
+        normalizeOpeningDefaults(
+          ensureDefaultStories(autoHostOpenings(assignOpeningMarks(p))),
+        ),
       ),
     );
     setHistory((h) => replaceCadPresent(h, cleaned));
@@ -317,9 +320,23 @@ export function CadStudioPage() {
         richFills: true,
       });
     }
+    if (plateMode === 'rear' && plate.elevationRear) {
+      return renderCadElevationSvg(plate.elevationRear, {
+        title: plate.elevationRear.name,
+        visibleLayers: visibleLayerSet,
+        richFills: true,
+      });
+    }
     if (plateMode === 'side' && plate.elevationSide) {
       return renderCadElevationSvg(plate.elevationSide, {
         title: plate.elevationSide.name,
+        visibleLayers: visibleLayerSet,
+        richFills: true,
+      });
+    }
+    if (plateMode === 'right' && plate.elevationRight) {
+      return renderCadElevationSvg(plate.elevationRight, {
+        title: plate.elevationRight.name,
         visibleLayers: visibleLayerSet,
         richFills: true,
       });
@@ -459,7 +476,9 @@ export function CadStudioPage() {
       : null;
 
   const hasFrontElev = !!plate.elevationFront?.segments.length;
+  const hasRearElev = !!plate.elevationRear?.segments.length;
   const hasSideElev = !!plate.elevationSide?.segments.length;
+  const hasRightElev = !!plate.elevationRight?.segments.length;
   const visibleCount = plate.layers.filter((l) => l.visible).length;
   const layerCount = plate.layers.length;
   const show2d = layout === 'split' || layout === 'plate';
@@ -1894,8 +1913,10 @@ export function CadStudioPage() {
                   type="button"
                   className={snapOn ? 'is-active' : ''}
                   onClick={() => setSnapOn((v) => !v)}
-                  title="Endpoint / midpoint / guide snap"
+                  title="Snap: pull draft points to wall ends, midpoints, and guides"
+                  aria-label="Snap to endpoints, midpoints, and guides"
                   aria-pressed={snapOn}
+                  data-hint="Snap to ends / mids / guides"
                 >
                   Snap
                 </button>
@@ -1903,9 +1924,11 @@ export function CadStudioPage() {
                   type="button"
                   className={gridSnap ? 'is-active' : ''}
                   onClick={() => setGridSnap((v) => !v)}
-                  title="1′ grid snap for free draft points"
+                  title="Grid snap: lock free draft points to the 1′ drafting grid"
+                  aria-label="Snap free points to 1 foot grid"
                   aria-pressed={gridSnap}
                   disabled={!snapOn}
+                  data-hint="1′ grid for free points"
                 >
                   Grid snap
                 </button>
@@ -1913,7 +1936,9 @@ export function CadStudioPage() {
                   type="button"
                   className={showExteriorDims ? 'is-active' : ''}
                   onClick={() => setShowExteriorDims((v) => !v)}
-                  title="Automatic exterior measurement chains"
+                  title="Dims: show automatic exterior measurement chains"
+                  aria-label="Toggle exterior dimensions"
+                  data-hint="Exterior measurement chains"
                   aria-pressed={showExteriorDims}
                 >
                   Dims
@@ -1922,7 +1947,9 @@ export function CadStudioPage() {
                   type="button"
                   className={showInteriorDims ? 'is-active' : ''}
                   onClick={() => setShowInteriorDims((v) => !v)}
-                  title="Interior wall dimensions"
+                  title="Int: show interior wall-to-wall dimensions"
+                  aria-label="Toggle interior dimensions"
+                  data-hint="Interior wall dimensions"
                   aria-pressed={showInteriorDims}
                 >
                   Int
@@ -1931,7 +1958,9 @@ export function CadStudioPage() {
                   type="button"
                   className={showRoomFills ? 'is-active' : ''}
                   onClick={() => setShowRoomFills((v) => !v)}
-                  title="Room fill polygons"
+                  title="Fill: shade detected room areas on the plan"
+                  aria-label="Toggle room fill polygons"
+                  data-hint="Shade room areas"
                   aria-pressed={showRoomFills}
                 >
                   Fill
@@ -1940,7 +1969,9 @@ export function CadStudioPage() {
                   type="button"
                   className={showGrid ? 'is-active' : ''}
                   onClick={() => setShowGrid((v) => !v)}
-                  title="Drafting paper grid (1′ minor / 4′ major)"
+                  title="Grid: show drafting paper grid (1′ minor / 4′ major)"
+                  aria-label="Toggle drafting paper grid"
+                  data-hint="1′ / 4′ drafting grid"
                   aria-pressed={showGrid}
                 >
                   Grid
@@ -2019,16 +2050,36 @@ export function CadStudioPage() {
                     className={plateMode === 'front' ? 'is-active' : ''}
                     onClick={() => setPlateMode('front')}
                     disabled={!hasFrontElev}
+                    title="South / front facade"
                   >
-                    Front elevation
+                    Front
+                  </button>
+                  <button
+                    type="button"
+                    className={plateMode === 'rear' ? 'is-active' : ''}
+                    onClick={() => setPlateMode('rear')}
+                    disabled={!hasRearElev}
+                    title="North / rear facade (for asymmetrical plans)"
+                  >
+                    Rear
                   </button>
                   <button
                     type="button"
                     className={plateMode === 'side' ? 'is-active' : ''}
                     onClick={() => setPlateMode('side')}
                     disabled={!hasSideElev}
+                    title="West / left side facade"
                   >
-                    Side elevation
+                    Left side
+                  </button>
+                  <button
+                    type="button"
+                    className={plateMode === 'right' ? 'is-active' : ''}
+                    onClick={() => setPlateMode('right')}
+                    disabled={!hasRightElev}
+                    title="East / right side facade"
+                  >
+                    Right side
                   </button>
                   <button
                     type="button"
