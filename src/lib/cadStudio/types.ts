@@ -343,7 +343,8 @@ export type CadElevationSegmentFt = {
   linetype?: string;
 };
 
-export type CadElevationFace = 'front' | 'side' | 'rear';
+/** Elevation looking directions. `side` = left; `right` = opposite side for asymmetric plans. */
+export type CadElevationFace = 'front' | 'side' | 'rear' | 'right';
 
 export type CadElevationSheet = {
   face: CadElevationFace;
@@ -438,8 +439,12 @@ export type CadPlate = {
   designSnapshots?: CadDesignSnapshot[];
   /** Front elevation linework (width × height ft) when DXF has elevation viewports. */
   elevationFront?: CadElevationSheet;
-  /** Side/rear elevation linework when available. */
+  /** Left/side elevation linework when available. */
   elevationSide?: CadElevationSheet;
+  /** Rear elevation (opposite front) for asymmetric houses. */
+  elevationRear?: CadElevationSheet;
+  /** Right elevation (opposite left/side). */
+  elevationRight?: CadElevationSheet;
   sheets: DrawingSheet[];
   bounds: CadBoundsFt;
   sheetSource: 'dxf_viewport' | 'pdf' | 'static' | 'mixed' | 'synthetic';

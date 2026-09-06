@@ -121,6 +121,8 @@ export function renderCadElevationSvg(
   parts.push('</g>');
 
   for (const label of sheet.labels) {
+    // Skip title-block / sheet-name noise that dwarfs the elevation
+    if (/^(SHT\.?|SHEET|SH\b)/i.test(label.text.trim()) || label.text.length > 48) continue;
     const x = label.x - ox;
     const y = h - (label.y - oy);
     parts.push(
@@ -174,8 +176,16 @@ export function renderCadElevationSvg(
   );
 
   if (opts?.title) {
+    // Title must use plan-feet font size — absolute "18" fills half the drawing (viewBox is feet).
+    const titleSize = Math.max(0.55, Math.min(1.15, fontSize * 0.95));
+    const titleY = pad * 0.55 + titleSize * 0.35;
+    // Prefer a short face label over raw sheet names like "SHT. 2 FRONT ELEVATION"
+    const titleText = opts.title
+      .replace(/^SHT\.?\s*\d+\s*/i, '')
+      .replace(/^SHEET\s*\d+\s*/i, '')
+      .trim() || opts.title;
     parts.push(
-      `<text x="16" y="24" fill="#0f172a" font-size="18" font-family="IBM Plex Sans, Segoe UI, sans-serif" font-weight="600">${escapeXml(opts.title)}</text>`,
+      `<text x="${(w / 2).toFixed(2)}" y="${titleY.toFixed(2)}" fill="#0f172a" font-size="${titleSize.toFixed(3)}" font-family="IBM Plex Sans, Segoe UI, sans-serif" font-weight="600" text-anchor="middle">${escapeXml(titleText)}</text>`,
     );
   }
   parts.push('</svg>');
