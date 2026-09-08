@@ -216,6 +216,22 @@ export {
 } from './cadUnderlay';
 export { flipPlan } from './cadPlanOps';
 export {
+  consolidateOpeningHints,
+  refineOpeningKinds,
+  shouldDrawOpeningSegment,
+  orientPlanGarageBottom,
+} from './cadOpeningCleanup';
+export {
+  layoutOpeningMarks,
+} from './cadMarkLayout';
+export {
+  openingPlanFrame,
+  doorSwingArcPath,
+  garageDoorLines,
+  windowMullionLines,
+  showsDoorSwing,
+} from './cadOpeningSymbols';
+export {
   OLSEN_OPENING_PRESETS,
   defaultOpeningHeightFt,
   slideOpeningAlongWall,

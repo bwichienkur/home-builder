@@ -16,9 +16,10 @@ import { snapRoomsToWallSegments } from './snapRoomsToWalls';
 
 const MAX_CAD_PLAN_VECTORS = 8000;
 
-function openingKindFromLayer(layer: string): 'door' | 'window' {
+function openingKindFromLayer(layer: string): 'door' | 'window' | 'garage' {
   const u = layer.trim().toUpperCase();
   if (/WINDOW|GLAZ|WIND/.test(u)) return 'window';
+  if (/GARAGE/.test(u)) return 'garage';
   return 'door';
 }
 

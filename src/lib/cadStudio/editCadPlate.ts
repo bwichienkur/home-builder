@@ -892,9 +892,40 @@ export function hitTestOpening(plate: CadPlate, px: number, py: number, tolFt = 
   let best = -1;
   let bestD = tolFt;
   plate.openingHints.forEach((o, i) => {
-    const mx = (o.x1 + o.x2) / 2;
-    const my = (o.y1 + o.y2) / 2;
-    const d = Math.hypot(px - mx, py - my);
+    const dx = o.x2 - o.x1;
+    const dy = o.y2 - o.y1;
+    const len2 = dx * dx + dy * dy;
+    let d: number;
+    if (len2 < 1e-12) {
+      d = Math.hypot(px - o.x1, py - o.y1);
+    } else {
+      let t = ((px - o.x1) * dx + (py - o.y1) * dy) / len2;
+      t = Math.max(0, Math.min(1, t));
+      d = Math.hypot(px - (o.x1 + t * dx), py - (o.y1 + t * dy));
+      // Also accept clicks on Plan7 swing leaf / arc (normal offset from hinge).
+      if ((o.kind === 'door' || o.kind === 'passage') && o.swing !== 'none' && o.swing !== 'slider') {
+        const len = Math.sqrt(len2) || 1;
+        const ux = dx / len;
+        const uy = dy / len;
+        const nx = -uy;
+        const ny = ux;
+        const swing = o.swing ?? 'left';
+        const hingeAtStart = swing !== 'right';
+        const hx = hingeAtStart ? o.x1 : o.x2;
+        const hy = hingeAtStart ? o.y1 : o.y2;
+        const sign = (swing === 'right' ? -1 : 1) * (o.face === 'in' ? -1 : 1);
+        const r = Math.min(len, 3.5);
+        const tipX = hx + nx * r * sign;
+        const tipY = hy + ny * r * sign;
+        // Distance to leaf segment
+        const ldx = tipX - hx;
+        const ldy = tipY - hy;
+        const llen2 = ldx * ldx + ldy * ldy || 1;
+        let lt = ((px - hx) * ldx + (py - hy) * ldy) / llen2;
+        lt = Math.max(0, Math.min(1, lt));
+        d = Math.min(d, Math.hypot(px - (hx + lt * ldx), py - (hy + lt * ldy)));
+      }
+    }
     if (d < bestD) {
       bestD = d;
       best = i;

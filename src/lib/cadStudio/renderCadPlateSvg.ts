@@ -14,6 +14,14 @@ import {
   wallHatchStyleForWall,
 } from './cadWallHatch';
 import { wallStrokeForMaterial } from './cadSceneMaterials';
+import {
+  doorSwingArcPath,
+  garageDoorLines,
+  openingPlanFrame,
+  showsDoorSwing,
+  windowMullionLines,
+} from './cadOpeningSymbols';
+import { layoutOpeningMarks } from './cadMarkLayout';
 
 const ROLE_STROKE: Record<CadSegmentRole, string> = {
   wall: '#1e293b',
@@ -112,29 +120,61 @@ export function renderCadPlateSvg(
     );
   }
 
+  const markLayouts = layoutOpeningMarks(openings, {
+    fontFt: Math.max(0.85, stroke * 9),
+    viewSpanFt: Math.max(w, h),
+    hideWhenWiderThanFt: 120,
+  });
+
   for (const o of openings) {
-    const len = Math.hypot(o.x2 - o.x1, o.y2 - o.y1) || 1;
-    const ux = (o.x2 - o.x1) / len;
-    const uy = (o.y2 - o.y1) / len;
-    const nx = -uy;
-    const ny = ux;
+    const g = openingPlanFrame(o);
     const color = o.kind === 'window' ? '#0284c7' : '#b45309';
-    parts.push(
-      `<line x1="${o.x1.toFixed(3)}" y1="${o.y1.toFixed(3)}" x2="${o.x2.toFixed(3)}" y2="${o.y2.toFixed(3)}" stroke="${color}" stroke-width="${(stroke * 2.2).toFixed(4)}" stroke-linecap="butt"/>`,
-    );
-    const swing = o.swing ?? (o.kind === 'door' ? 'left' : 'none');
-    if ((o.kind === 'door' || o.kind === 'passage') && swing !== 'none' && swing !== 'slider') {
-      const sign = swing === 'right' ? -1 : 1;
-      const r = Math.min(len, 3.2);
-      const endX = o.x1 + nx * r * sign;
-      const endY = o.y1 + ny * r * sign;
-      const cpx = o.x1 + ux * r * 0.15 + nx * r * sign;
-      const cpy = o.y1 + uy * r * 0.15 + ny * r * sign;
+    if (o.kind === 'window') {
+      for (const ln of windowMullionLines(o, g.nx, g.ny)) {
+        parts.push(
+          `<line x1="${ln.x1.toFixed(3)}" y1="${ln.y1.toFixed(3)}" x2="${ln.x2.toFixed(3)}" y2="${ln.y2.toFixed(3)}" stroke="${color}" stroke-width="${(stroke * 1.6).toFixed(4)}" stroke-linecap="butt"/>`,
+        );
+      }
+    } else if (o.kind === 'garage') {
+      for (const ln of garageDoorLines(o, g.nx, g.ny)) {
+        parts.push(
+          `<line x1="${ln.x1.toFixed(3)}" y1="${ln.y1.toFixed(3)}" x2="${ln.x2.toFixed(3)}" y2="${ln.y2.toFixed(3)}" stroke="${color}" stroke-width="${(stroke * 1.8).toFixed(4)}" stroke-linecap="butt"/>`,
+        );
+      }
+    } else {
       parts.push(
-        `<path d="M ${o.x2.toFixed(3)} ${o.y2.toFixed(3)} Q ${cpx.toFixed(3)} ${cpy.toFixed(3)} ${endX.toFixed(3)} ${endY.toFixed(3)}" fill="none" stroke="${color}" stroke-width="${(stroke * 1.1).toFixed(4)}" stroke-dasharray="0.25 0.2"/>`,
+        `<line x1="${o.x1.toFixed(3)}" y1="${o.y1.toFixed(3)}" x2="${o.x2.toFixed(3)}" y2="${o.y2.toFixed(3)}" stroke="${color}" stroke-width="${(stroke * 2.2).toFixed(4)}" stroke-linecap="butt"/>`,
+      );
+    }
+    if (showsDoorSwing(o.kind, g.swing)) {
+      parts.push(
+        `<line x1="${g.hingeX.toFixed(3)}" y1="${g.hingeY.toFixed(3)}" x2="${g.leafTipX.toFixed(3)}" y2="${g.leafTipY.toFixed(3)}" stroke="${color}" stroke-width="${(stroke * 1.6).toFixed(4)}" stroke-linecap="round"/>`,
+      );
+      parts.push(
+        `<path d="${doorSwingArcPath(g)}" fill="none" stroke="${color}" stroke-width="${(stroke * 1.1).toFixed(4)}"/>`,
       );
     }
   }
+
+  // Opening marks (decluttered) — inside flipped group with local text flip
+  openings.forEach((o, i) => {
+    const layout = markLayouts[i];
+    if (!o.mark || !layout?.visible) return;
+    const color = o.kind === 'window' ? '#0c4a6e' : '#9a3412';
+    const fs = Math.max(0.85, stroke * 9);
+    parts.push(
+      `<g transform="translate(${layout.anchorX.toFixed(3)} ${layout.anchorY.toFixed(3)}) scale(1,-1)">`,
+    );
+    if (layout.leader) {
+      parts.push(
+        `<line x1="0" y1="0" x2="${layout.labelLocalX.toFixed(3)}" y2="${(layout.labelLocalY + stroke * 2).toFixed(3)}" stroke="${color}" stroke-width="${(stroke * 0.7).toFixed(4)}" stroke-opacity="0.55"/>`,
+      );
+    }
+    parts.push(
+      `<text x="${layout.labelLocalX.toFixed(3)}" y="${layout.labelLocalY.toFixed(3)}" fill="${color}" font-size="${fs.toFixed(3)}" font-family="IBM Plex Sans, Segoe UI, sans-serif" font-weight="700" text-anchor="middle">${escapeXml(o.mark)}</text>`,
+    );
+    parts.push('</g>');
+  });
 
   for (const f of fixtures) {
     const wf = f.widthFt ?? 2;

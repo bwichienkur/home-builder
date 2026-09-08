@@ -16,6 +16,7 @@ import {
   clearAutoFoundation,
   combineCollinearWalls,
   convertSegmentToOpening,
+  consolidateOpeningHints,
   copySelectionToStory,
   createCadHistory,
   clearCadAutosave,
@@ -46,6 +47,7 @@ import {
   mirrorWalls,
   normalizeOpeningDefaults,
   OLSEN_OPENING_PRESETS,
+  orientPlanGarageBottom,
   parseAngleDeg,
   parseArchitecturalLength,
   promoteTempDimToAnnotative,
@@ -183,7 +185,11 @@ export function CadStudioPage() {
     const cleaned = ensureModelKernel(
       ensureFourElevations(
         normalizeOpeningDefaults(
-          ensureDefaultStories(autoHostOpenings(assignOpeningMarks(p))),
+          ensureDefaultStories(
+            autoHostOpenings(
+              assignOpeningMarks(orientPlanGarageBottom(consolidateOpeningHints(p))),
+            ),
+          ),
         ),
       ),
     );
@@ -1026,6 +1032,16 @@ export function CadStudioPage() {
                     }}
                   >
                     Flip X
+                  </button>
+                  <button
+                    type="button"
+                    title="Mirror whole plan about horizontal center (fixes inverted garage / sheet orientation)"
+                    onClick={() => {
+                      setPlate(flipPlan(plate, 'y'));
+                      setStatusAid('Flipped plan on Y');
+                    }}
+                  >
+                    Flip Y
                   </button>
                 </div>
                 {selectedWallIndices.length === 2 && (
