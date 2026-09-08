@@ -545,21 +545,42 @@ export function pickWallAtPoint(
   return best;
 }
 
-/** Ensure openings have height + swing defaults. */
+/** Ensure openings have height + swing defaults (incl. garage reclass). */
 export function normalizeOpeningDefaults(plate: CadPlate): CadPlate {
+  // Lazy import avoided — refine lives in cleanup and mirrors these defaults.
   let changed = false;
   const openingHints = plate.openingHints.map((o) => {
+    const layer = (o.layer ?? '').toUpperCase();
+    let kind = o.kind;
+    const width = o.widthFt ?? segLengthFt(o);
+    if (/WINDOW|GLAZ|WIND/.test(layer)) kind = 'window';
+    else if (/GARAGE/.test(layer) || (kind !== 'window' && kind !== 'passage' && width >= 8)) {
+      kind = 'garage';
+    }
     const patch: Partial<CadOpeningHintFt> = {};
-    if (o.heightFt == null) {
-      patch.heightFt = defaultOpeningHeightFt(o.kind);
+    if (kind !== o.kind) {
+      patch.kind = kind;
       changed = true;
     }
-    if (o.swing == null && o.kind === 'door') {
+    if (o.heightFt == null) {
+      patch.heightFt = defaultOpeningHeightFt(kind);
+      changed = true;
+    }
+    if (kind === 'garage' || kind === 'window') {
+      if (o.swing !== 'none') {
+        patch.swing = 'none';
+        changed = true;
+      }
+    } else if (o.swing == null && kind === 'door') {
       patch.swing = 'left';
       changed = true;
     }
-    if (o.kind === 'window' && o.sillFt == null) {
+    if (kind === 'window' && o.sillFt == null) {
       patch.sillFt = 3;
+      changed = true;
+    }
+    if (o.widthFt == null) {
+      patch.widthFt = width;
       changed = true;
     }
     return Object.keys(patch).length ? { ...o, ...patch } : o;

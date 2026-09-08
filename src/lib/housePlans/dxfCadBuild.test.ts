@@ -167,5 +167,6 @@ describe('opening layer helpers', () => {
     expect(isOpeningLayer('WALLS INT')).toBe(false);
     expect(openingKindFromLayer('WINDOWS')).toBe('window');
     expect(openingKindFromLayer('DOORS')).toBe('door');
+    expect(openingKindFromLayer('GARAGE DOORS')).toBe('garage');
   });
 });

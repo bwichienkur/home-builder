@@ -76,9 +76,10 @@ export function isOpeningLayer(layer: string): boolean {
   return /DOOR|WINDOW|GLAZ|OPENING|A-GLAZ|A-DOOR|A-WIND/.test(u);
 }
 
-export function openingKindFromLayer(layer: string): 'door' | 'window' {
+export function openingKindFromLayer(layer: string): 'door' | 'window' | 'garage' {
   const u = layer.trim().toUpperCase();
   if (/WINDOW|GLAZ|WIND/.test(u)) return 'window';
+  if (/GARAGE/.test(u)) return 'garage';
   return 'door';
 }
 

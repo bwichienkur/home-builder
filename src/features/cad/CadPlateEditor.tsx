@@ -72,6 +72,15 @@ import {
   wallHatchLegendForPlate,
   wallHatchStyleForWall,
 } from '../../lib/cadStudio/cadWallHatch';
+import { layoutOpeningMarks } from '../../lib/cadStudio/cadMarkLayout';
+import { shouldDrawOpeningSegment } from '../../lib/cadStudio/cadOpeningCleanup';
+import {
+  doorSwingArcPath,
+  garageDoorLines,
+  openingPlanFrame,
+  showsDoorSwing,
+  windowMullionLines,
+} from '../../lib/cadStudio/cadOpeningSymbols';
 
 const ROLE_STROKE: Record<CadSegmentRole, string> = {
   wall: '#1e293b',
@@ -337,6 +346,14 @@ export function CadPlateEditor({
   const segs = visibleSegments(plate);
   const labels = visibleLabels(plate);
   const roomStamps = useMemo(() => detectCadRoomStamps(plate), [plate]);
+  const markLayouts = useMemo(() => {
+    const fontFt = Math.max(0.85, stroke * 9);
+    return layoutOpeningMarks(plate.openingHints, {
+      fontFt,
+      viewSpanFt: Math.max(view.w, view.h),
+      hideWhenWiderThanFt: 100,
+    });
+  }, [plate.openingHints, stroke, view.w, view.h]);
   const exteriorDims = useMemo(
     () => (showExteriorDims ? computeExteriorDims(plate) : []),
     [plate, showExteriorDims],
@@ -463,6 +480,18 @@ export function CadPlateEditor({
       e.preventDefault();
       const svg = svgRef.current;
       if (!svg) return;
+      // Shift+wheel pans vertically/horizontally without changing zoom.
+      if (e.shiftKey) {
+        const rect = svg.getBoundingClientRect();
+        const sx = view.w / Math.max(rect.width, 1);
+        const sy = view.h / Math.max(rect.height, 1);
+        setView((v) => ({
+          ...v,
+          x: v.x + e.deltaX * sx + (Math.abs(e.deltaX) < 0.01 ? e.deltaY * sx : 0),
+          y: v.y + e.deltaY * sy,
+        }));
+        return;
+      }
       const svgPt = clientToSvg(svg, e.clientX, e.clientY);
       if (!svgPt) return;
       const factor = e.deltaY < 0 ? 0.9 : 1.1;
@@ -479,7 +508,7 @@ export function CadPlateEditor({
         };
       });
     },
-    [w, h],
+    [w, h, view.w, view.h],
   );
 
   const beginPan = (e: React.PointerEvent<SVGSVGElement>) => {
@@ -494,7 +523,7 @@ export function CadPlateEditor({
   };
 
   const handlePointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
-    // Middle mouse, Alt+drag, or Space+drag pans the 2D view without editing.
+    // Middle mouse, Alt+drag, Space+drag, or empty-canvas drag (select tool) pans the view.
     if (e.button === 1 || (e.button === 0 && (e.altKey || spaceHeldRef.current))) {
       e.preventDefault();
       beginPan(e);
@@ -503,6 +532,19 @@ export function CadPlateEditor({
     if (e.button !== 0) return;
     const raw = planFromEvent(e);
     if (!raw) return;
+
+    if (tool === 'select') {
+      const earlyHit = pickAtPoint(plate, raw.x, raw.y);
+      if (!earlyHit) {
+        e.preventDefault();
+        beginPan(e);
+        onSelectionChange(null);
+        onWallMultiChange?.([]);
+        onOpeningMultiChange?.([]);
+        return;
+      }
+    }
+
     svgRef.current?.setPointerCapture(e.pointerId);
 
     if (tool === 'delete') {
@@ -727,6 +769,8 @@ export function CadPlateEditor({
         moved: false,
       };
       lastPreviewRef.current = null;
+    } else if (tool === 'select') {
+      beginPan(e);
     } else {
       dragRef.current = null;
     }
@@ -1137,7 +1181,7 @@ export function CadPlateEditor({
       <button type="button" className="cad-view-fit" onClick={fitView} title="Fit drawing (Ctrl+Shift+F)">
         Fit
       </button>
-      <span className="cad-view-hint">Wheel zoom · Space/Alt/Middle pan · R rotate fixture</span>
+      <span className="cad-view-hint">Wheel zoom · drag empty to pan · Shift+wheel pan · Space/Alt/Middle pan · R rotate</span>
     </div>
         {wallHatchLegend.length > 0 && (
       <div className="cad-wall-hatch-legend" aria-label="Wall type legend">
@@ -1268,6 +1312,7 @@ export function CadPlateEditor({
 
         {segs
           .filter((s) => s.role !== 'wall')
+          .filter((s) => shouldDrawOpeningSegment(s, plate.openingHints))
           .map((s, i) => {
             const useDash =
               s.role === 'soft' || /DASH|HIDDEN|PHANTOM|DOT/i.test(s.linetype ?? '');
@@ -1280,7 +1325,7 @@ export function CadPlateEditor({
                 y2={s.y2}
                 stroke={ROLE_STROKE[s.role]}
                 strokeWidth={stroke * (s.role === 'fixture' ? 0.85 : 1)}
-                strokeOpacity={s.role === 'other' ? 0.35 : 0.85}
+                strokeOpacity={s.role === 'other' ? 0.35 : s.role === 'opening' ? 0.45 : 0.85}
                 strokeDasharray={useDash ? '0.35 0.28' : undefined}
                 strokeLinecap="round"
               />
@@ -1338,63 +1383,105 @@ export function CadPlateEditor({
         {plate.openingHints.map((o, i) => {
           if (!isLayerOn(plate, o.layer)) return null;
           const selected = isSelected('opening', i) || openingMulti.includes(i);
-          const len = Math.hypot(o.x2 - o.x1, o.y2 - o.y1) || 1;
-          const ux = (o.x2 - o.x1) / len;
-          const uy = (o.y2 - o.y1) / len;
-          const nx = -uy;
-          const ny = ux;
-          const mx = (o.x1 + o.x2) / 2;
-          const my = (o.y1 + o.y2) / 2;
-          const swing = o.swing ?? (o.kind === 'door' ? 'left' : 'none');
-          const swingR = Math.min(len, 3.5);
-          const swingSign = swing === 'right' ? -1 : 1;
+          const g = openingPlanFrame(o);
+          const color = selected ? '#c2410c' : o.kind === 'window' ? '#0369a1' : '#b45309';
+          const markLayout = markLayouts[i];
           return (
             <g key={`open-${i}`}>
-              <line
-                x1={o.x1}
-                y1={o.y1}
-                x2={o.x2}
-                y2={o.y2}
-                stroke={selected ? '#c2410c' : '#b45309'}
-                strokeWidth={stroke * (selected ? 3 : 2.2)}
-                strokeLinecap="round"
-              />
-              {o.kind === 'door' && swing !== 'none' && (
-                <path
-                  d={`M ${o.x1} ${o.y1} A ${swingR} ${swingR} 0 0 ${swingSign > 0 ? 1 : 0} ${
-                    o.x1 + ux * 0 + nx * swingR * swingSign
-                  } ${o.y1 + uy * 0 + ny * swingR * swingSign}`}
-                  fill="none"
-                  stroke={selected ? '#c2410c' : '#d97706'}
-                  strokeWidth={stroke * 1.1}
-                  strokeDasharray="0.35 0.25"
-                  strokeOpacity={0.85}
+              {o.kind === 'window' ? (
+                windowMullionLines(o, g.nx, g.ny).map((ln, li) => (
+                  <line
+                    key={`w-${li}`}
+                    x1={ln.x1}
+                    y1={ln.y1}
+                    x2={ln.x2}
+                    y2={ln.y2}
+                    stroke={color}
+                    strokeWidth={stroke * (selected ? 2.4 : li === 1 ? 2 : 1.2)}
+                    strokeLinecap="butt"
+                  />
+                ))
+              ) : o.kind === 'garage' ? (
+                garageDoorLines(o, g.nx, g.ny).map((ln, li) => (
+                  <line
+                    key={`g-${li}`}
+                    x1={ln.x1}
+                    y1={ln.y1}
+                    x2={ln.x2}
+                    y2={ln.y2}
+                    stroke={color}
+                    strokeWidth={stroke * (selected ? 2.6 : 1.8)}
+                    strokeLinecap="butt"
+                  />
+                ))
+              ) : (
+                <line
+                  x1={o.x1}
+                  y1={o.y1}
+                  x2={o.x2}
+                  y2={o.y2}
+                  stroke={color}
+                  strokeWidth={stroke * (selected ? 3 : 2.2)}
+                  strokeLinecap="butt"
                 />
               )}
+              {showsDoorSwing(o.kind, g.swing) && (
+                <g className="cad-door-swing">
+                  {/* Plan7 leaf: hinge → open tip */}
+                  <line
+                    x1={g.hingeX}
+                    y1={g.hingeY}
+                    x2={g.leafTipX}
+                    y2={g.leafTipY}
+                    stroke={color}
+                    strokeWidth={stroke * (selected ? 2.2 : 1.6)}
+                    strokeLinecap="round"
+                  />
+                  {/* Solid swing arc jamb → tip (not dashed) */}
+                  <path
+                    d={doorSwingArcPath(g)}
+                    fill="none"
+                    stroke={color}
+                    strokeWidth={stroke * 1.15}
+                    strokeOpacity={0.9}
+                  />
+                </g>
+              )}
               <circle
-                cx={mx}
-                cy={my}
-                r={stroke * 6}
-                fill={selected ? '#c2410c' : '#b45309'}
-                fillOpacity={0.35}
+                cx={g.mx}
+                cy={g.my}
+                r={stroke * 5}
+                fill={color}
+                fillOpacity={selected ? 0.4 : 0.2}
               />
               {selected && (
                 <g className="cad-opening-grips">
                   <circle cx={o.x1} cy={o.y1} r={stroke * 5} fill="#fff" stroke="#c2410c" strokeWidth={stroke * 1.5} />
                   <circle cx={o.x2} cy={o.y2} r={stroke * 5} fill="#fff" stroke="#c2410c" strokeWidth={stroke * 1.5} />
-                  <circle cx={mx} cy={my} r={stroke * 5.5} fill="#c2410c" fillOpacity={0.85} />
+                  <circle cx={g.mx} cy={g.my} r={stroke * 5.5} fill="#c2410c" fillOpacity={0.85} />
                 </g>
               )}
-              {o.mark && (
-                <g transform={`translate(${mx} ${my}) scale(1,-1)`}>
+              {o.mark && markLayout?.visible && (
+                <g transform={`translate(${g.mx} ${g.my}) scale(1,-1)`} style={{ pointerEvents: 'none' }}>
+                  {markLayout.leader && (
+                    <line
+                      x1={0}
+                      y1={0}
+                      x2={markLayout.labelLocalX}
+                      y2={markLayout.labelLocalY + stroke * 2}
+                      stroke={color}
+                      strokeWidth={stroke * 0.7}
+                      strokeOpacity={0.55}
+                    />
+                  )}
                   <text
-                    y={-stroke * 10}
-                    fill="#9a3412"
+                    x={markLayout.labelLocalX}
+                    y={markLayout.labelLocalY}
+                    fill={o.kind === 'window' ? '#0c4a6e' : '#9a3412'}
                     fontSize={Math.max(0.85, stroke * 9)}
                     fontFamily="IBM Plex Sans, Segoe UI, sans-serif"
                     fontWeight={700}
                     textAnchor="middle"
-                    style={{ pointerEvents: 'none' }}
                   >
                     {o.mark}
                   </text>
@@ -1575,20 +1662,24 @@ export function CadPlateEditor({
 
         {openingPreview && tool === 'opening' && !draftLine && (() => {
           const p = openingPreview;
-          const len = Math.hypot(p.x2 - p.x1, p.y2 - p.y1) || 1;
-          const ux = (p.x2 - p.x1) / len;
-          const uy = (p.y2 - p.y1) / len;
-          const nx = -uy;
-          const ny = ux;
-          const swingR = Math.min(len, 3.5);
-          const swingSign = p.swing === 'right' ? -1 : 1;
+          const g = openingPlanFrame({
+            x1: p.x1,
+            y1: p.y1,
+            x2: p.x2,
+            y2: p.y2,
+            kind: openingKind,
+            swing: p.swing,
+            face: p.face,
+          });
+          const nx = g.nx;
+          const ny = g.ny;
           const faceSign = p.face === 'out' ? 1 : -1;
           const host = plate.wallCenterlines[p.wallIndex];
           const sillFt = openingKind === 'window' ? windowSillFt : 0;
           const heightFt =
             openingKind === 'window' ? 4 : openingKind === 'garage' ? 7 : 6.667;
-          const midX = (p.x1 + p.x2) / 2;
-          const midY = (p.y1 + p.y2) / 2;
+          const midX = g.mx;
+          const midY = g.my;
           const dimOff = Math.max(host?.thicknessFt ?? 0.5, 0.75) + fontSize * 0.35;
           const dimX1 = p.x1 + nx * dimOff * faceSign;
           const dimY1 = p.y1 + ny * dimOff * faceSign;
@@ -1627,19 +1718,25 @@ export function CadPlateEditor({
                 fillOpacity={0.2}
                 stroke="none"
               />
-              {openingKind === 'door' && p.swing !== 'none' && (
-                <path
-                  d={`M ${p.x1} ${p.y1} A ${swingR} ${swingR} 0 0 ${
-                    swingSign * faceSign > 0 ? 1 : 0
-                  } ${p.x1 + nx * swingR * swingSign * faceSign} ${
-                    p.y1 + ny * swingR * swingSign * faceSign
-                  }`}
-                  fill="none"
-                  stroke="#ea580c"
-                  strokeWidth={stroke * 1.3}
-                  strokeDasharray="0.35 0.25"
-                  strokeOpacity={0.9}
-                />
+              {showsDoorSwing(openingKind, p.swing) && (
+                <>
+                  <line
+                    x1={g.hingeX}
+                    y1={g.hingeY}
+                    x2={g.leafTipX}
+                    y2={g.leafTipY}
+                    stroke="#ea580c"
+                    strokeWidth={stroke * 2}
+                    strokeLinecap="round"
+                  />
+                  <path
+                    d={doorSwingArcPath(g)}
+                    fill="none"
+                    stroke="#ea580c"
+                    strokeWidth={stroke * 1.3}
+                    strokeOpacity={0.9}
+                  />
+                </>
               )}
               <CadDimMark
                 x1={dimX1}
