@@ -229,6 +229,104 @@
   color: #1f7a4d;
 }
 
+/* Robinhood-style period performance hero */
+.dash-hero-chart {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 18px 18px 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.dash-hero-metric-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.dash-hero-metric-tab {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.dash-hero-metric-tab.is-active {
+  background: var(--soft);
+  color: var(--ink);
+}
+
+.dash-hero-value {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+}
+
+.dash-hero-change {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.dash-hero-change.is-up {
+  color: #00c805;
+}
+
+.dash-hero-change.is-down {
+  color: #ff5000;
+}
+
+.dash-hero-change-period {
+  color: var(--muted);
+  font-weight: 650;
+}
+
+.dash-period-chart {
+  width: 100%;
+  height: 160px;
+  display: block;
+}
+
+.dash-period-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding-top: 4px;
+}
+
+.dash-period-pill {
+  border: 0;
+  background: transparent;
+  color: #00c805;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 6px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+}
+
+.dash-period-pill.is-active {
+  background: #00c805;
+  color: #fff;
+}
+
+.dash-hero-hint {
+  margin: 0;
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
 .dash-spark {
   width: 72px;
   height: 24px;

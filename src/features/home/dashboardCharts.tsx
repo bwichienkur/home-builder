@@ -1,6 +1,11 @@
 import { Link, useNavigate } from 'react-router-dom';
 import type { PhaseSlice, PipelineStage, SalesPerformanceBar } from '../../lib/buildertrend/types';
 import { formatCompactUsd } from '../../lib/buildertrend/format';
+import {
+  CHART_PERIODS,
+  type ChartPeriodId,
+  type PeriodSeries,
+} from '../../lib/dashboard/kpiHistory';
 
 const PHASE_COLOR: Record<string, string> = {
   construction: '#0058a3',
@@ -9,12 +14,24 @@ const PHASE_COLOR: Record<string, string> = {
   closeout: '#6b5ea8',
 };
 
-export function Sparkline({ values, label }: { values: number[]; label: string }) {
+const RH_GREEN = '#00c805';
+const RH_RED = '#ff5000';
+
+export function Sparkline({
+  values,
+  label,
+  tone = 'accent',
+}: {
+  values: number[];
+  label: string;
+  tone?: 'accent' | 'up' | 'down';
+}) {
   const width = 88;
   const height = 28;
   const min = Math.min(...values);
   const max = Math.max(...values);
   const span = max - min || 1;
+  const stroke = tone === 'up' ? RH_GREEN : tone === 'down' ? RH_RED : 'var(--accent)';
   const points = values
     .map((value, index) => {
       const x = values.length === 1 ? width / 2 : (index / (values.length - 1)) * (width - 4) + 2;
@@ -25,7 +42,95 @@ export function Sparkline({ values, label }: { values: number[]; label: string }
   return (
     <svg className="dash-spark" viewBox={`0 0 ${width} ${height}`} aria-hidden="true">
       <title>{label}</title>
-      <polyline fill="none" stroke="var(--accent)" strokeWidth="1.75" strokeLinejoin="round" strokeLinecap="round" points={points} />
+      <polyline
+        fill="none"
+        stroke={stroke}
+        strokeWidth="1.75"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+        points={points}
+      />
+    </svg>
+  );
+}
+
+/** Robinhood-style period pills: 1D 1W 1M 3M YTD 1Y ALL */
+export function PeriodFilter({
+  value,
+  onChange,
+}: {
+  value: ChartPeriodId;
+  onChange: (id: ChartPeriodId) => void;
+}) {
+  return (
+    <div className="dash-period-filter" role="tablist" aria-label="Chart period">
+      {CHART_PERIODS.map((item) => (
+        <button
+          key={item.id}
+          type="button"
+          role="tab"
+          aria-selected={value === item.id}
+          className={`dash-period-pill${value === item.id ? ' is-active' : ''}`}
+          onClick={() => onChange(item.id)}
+        >
+          {item.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** Full-width period line chart (Robinhood-style). */
+export function PeriodLineChart({
+  series,
+  positive,
+}: {
+  series: PeriodSeries;
+  positive: boolean;
+}) {
+  const width = 640;
+  const height = 180;
+  const values = series.values.length ? series.values : [0, 0];
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const span = max - min || 1;
+  const color = positive ? RH_GREEN : RH_RED;
+  const coords = values.map((value, index) => {
+    const x = values.length === 1 ? width / 2 : (index / (values.length - 1)) * (width - 8) + 4;
+    const y = height - 10 - ((value - min) / span) * (height - 20);
+    return { x, y };
+  });
+  const linePoints = coords.map((c) => `${c.x},${c.y}`).join(' ');
+  const areaPath = [
+    `M ${coords[0]!.x} ${height}`,
+    ...coords.map((c) => `L ${c.x} ${c.y}`),
+    `L ${coords.at(-1)!.x} ${height}`,
+    'Z',
+  ].join(' ');
+
+  return (
+    <svg
+      className="dash-period-chart"
+      viewBox={`0 0 ${width} ${height}`}
+      role="img"
+      aria-label={`Trend ${series.label}`}
+      preserveAspectRatio="none"
+    >
+      <defs>
+        <linearGradient id="dashPeriodFill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.28" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={areaPath} fill="url(#dashPeriodFill)" />
+      <polyline
+        fill="none"
+        stroke={color}
+        strokeWidth="2.5"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+        points={linePoints}
+      />
     </svg>
   );
 }
