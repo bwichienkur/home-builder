@@ -190,7 +190,7 @@ export function seedSyntheticHistory(
 
 export async function fetchKpiHistory(signal?: AbortSignal): Promise<KpiHistoryPoint[]> {
   try {
-    const res = await fetch('/api/dashboard/kpi-history?limit=400', { signal });
+    const res = await fetch('/api/dashboard?__history=1&limit=400', { signal });
     if (!res.ok) return [];
     const json = (await res.json()) as { points?: KpiHistoryPoint[] };
     return Array.isArray(json.points) ? json.points : [];
@@ -206,7 +206,7 @@ export async function recordKpiSnapshot(kpis: KpiCard[], source = 'live'): Promi
   }
   if (!Object.keys(metrics).length) return;
   try {
-    await fetch('/api/dashboard/kpi-history', {
+    await fetch('/api/dashboard?__history=1', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ metrics, source }),

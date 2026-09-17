@@ -2,13 +2,16 @@
 
 ## What runs automatically
 
-`vercel.json` schedules **GET/POST `/api/dashboard/daily-pull`** daily at **13:00 UTC** (~8:00 AM US Central).
+`vercel.json` schedules **GET/POST `/api/dashboard`** daily at **13:00 UTC** (~8:00 AM US Central).
+(Compat rewrites: `/api/dashboard/daily-pull`, `/api/dashboard/kpi-history`.)
 
 That endpoint:
 
 1. Pulls **Pipedrive** (`PIPEDRIVE_API_TOKEN`)
 2. Pulls **Buildertrend** when `BUILDERTREND_COOKIE` is set
 3. Upserts a **KPI history** row for period charts
+
+> **Hobby limit:** This is folded into a single `api/dashboard.js` so the project stays at ≤12 serverless functions.
 
 ### Required env (Vercel project)
 
@@ -35,7 +38,7 @@ Prefer **Vercel Cron** for the actual data pull (cheaper, reliable). Use a Curso
 
 ```bash
 # Local / one-off
-curl -X POST "https://YOUR_DOMAIN/api/dashboard/daily-pull" \
+curl -X POST "https://YOUR_DOMAIN/api/dashboard" \
   -H "Authorization: Bearer $CRON_SECRET"
 
 npm run dashboard:pull   # CLI: BT + PD + bake snapshot into the repo

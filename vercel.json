@@ -5,7 +5,7 @@
   "outputDirectory": "dist",
   "crons": [
     {
-      "path": "/api/dashboard/daily-pull",
+      "path": "/api/dashboard",
       "schedule": "0 13 * * *"
     }
   ],
@@ -22,11 +22,8 @@
     "api/buildertrend/dashboard.js": {
       "maxDuration": 30
     },
-    "api/dashboard/daily-pull.js": {
+    "api/dashboard.js": {
       "maxDuration": 300
-    },
-    "api/dashboard/kpi-history.js": {
-      "maxDuration": 30
     },
     "api/ops.js": {
       "maxDuration": 30
@@ -58,6 +55,8 @@
     { "source": "/api/designs/:code", "destination": "/api/designs?__code=:code" },
     { "source": "/api/drawing-packages/:id", "destination": "/api/drawing-packages?__id=:id" },
     { "source": "/api/buildertrend/ping", "destination": "/api/buildertrend/dashboard?__ping=1" },
+    { "source": "/api/dashboard/kpi-history", "destination": "/api/dashboard?__history=1" },
+    { "source": "/api/dashboard/daily-pull", "destination": "/api/dashboard?__daily=1" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }
