@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import {
   formatCloseDate,
   formatCompactUsd,
@@ -14,9 +14,19 @@ import { PM_REVENUE_LAST_30D_GOAL } from '../../lib/buildertrend/types';
 import type { DrilldownKind } from '../../lib/dashboard/drilldownTypes';
 import { drilldownHref } from '../../lib/dashboard/drilldownPath';
 import { sortByKey, sortIndicator, toggleSort, type SortState } from '../../lib/dashboard/sortGrid';
+import {
+  applyHistoryToKpis,
+  fetchKpiHistory,
+  formatPeriodChangePlain,
+  recordKpiSnapshot,
+  seedSyntheticHistory,
+  seriesForMetric,
+  type ChartPeriodId,
+  type KpiHistoryPoint,
+} from '../../lib/dashboard/kpiHistory';
 import { DrillLink } from './DrilldownPanel';
 import { BtCookieDialog } from './BtCookieDialog';
-import { PerformanceBars, PipelineFunnel, Sparkline, StatusDonut } from './dashboardCharts';
+import { PerformanceBars, PeriodFilter, PeriodLineChart, PipelineFunnel, Sparkline, StatusDonut } from './dashboardCharts';
 import { useOwnerDashboardData } from './useOwnerDashboardData';
 import './dashboard.css';
 
@@ -160,6 +170,10 @@ function btRefreshLabel(refreshing: boolean, progress: { done: number; total: nu
 export function OwnerDashboard() {
   const [status, setStatus] = useState<JobStatus>('open');
   const [dateRange, setDateRange] = useState<DateRangeId>('all');
+  const [chartPeriod, setChartPeriod] = useState<ChartPeriodId>('ytd');
+  const [heroMetric, setHeroMetric] = useState('wip');
+  const [historyPoints, setHistoryPoints] = useState<KpiHistoryPoint[]>([]);
+  const [historyReady, setHistoryReady] = useState(false);
   const [sort, setSort] = useState<SortState<SortKey>>({ key: 'name', dir: 'asc' });
   const [pmSort, setPmSort] = useState<SortState<PmSortKey>>({ key: 'pm', dir: 'asc' });
   const {
@@ -180,6 +194,46 @@ export function OwnerDashboard() {
     onRefreshPipedrive,
     onRefreshAll,
   } = useOwnerDashboardData(status, dateRange);
+
+  useEffect(() => {
+    const ac = new AbortController();
+    void (async () => {
+      const points = await fetchKpiHistory(ac.signal);
+      if (!ac.signal.aborted) {
+        setHistoryPoints(points);
+        setHistoryReady(true);
+      }
+    })();
+    return () => ac.abort();
+  }, [livePull?.pulledAt, livePdPull?.pulledAt, dash?.refreshedAt]);
+
+  useEffect(() => {
+    if (!dash?.kpis?.length || !historyReady) return;
+    void recordKpiSnapshot(dash.kpis, livePull ? 'live' : 'snapshot');
+    // Record once per pull timestamp — avoid re-posting every filter change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: refreshedAt is the snapshot key
+  }, [dash?.refreshedAt, historyReady, livePull]);
+
+  const effectiveHistory = useMemo(() => {
+    if (!dash?.kpis?.length) return historyPoints;
+    if (historyPoints.length >= 2) return historyPoints;
+    return seedSyntheticHistory(dash.kpis, chartPeriod === '1d' ? 14 : 120);
+  }, [historyPoints, dash?.kpis, chartPeriod]);
+
+  const periodKpis = useMemo(() => {
+    if (!dash?.kpis) return [];
+    return applyHistoryToKpis(dash.kpis, effectiveHistory, chartPeriod);
+  }, [dash?.kpis, effectiveHistory, chartPeriod]);
+
+  const heroCard = useMemo(() => {
+    const list = periodKpis.length ? periodKpis : dash?.kpis ?? [];
+    return list.find((c) => c.id === heroMetric) ?? list.find((c) => c.id === 'wip') ?? list[0] ?? null;
+  }, [periodKpis, dash?.kpis, heroMetric]);
+
+  const heroSeries = useMemo(() => {
+    if (!heroCard) return null;
+    return seriesForMetric(effectiveHistory, heroCard.id, chartPeriod, heroCard.value);
+  }, [effectiveHistory, heroCard, chartPeriod]);
 
   const filters = useMemo(() => ({ status, dateRange }), [status, dateRange]);
   const href = (kind: DrilldownKind) => drilldownHref(kind, filters);
@@ -314,8 +368,48 @@ export function OwnerDashboard() {
         {pipedriveSourceLine(Boolean(livePdPull), pipedriveRefreshedAt, '')}
       </p>
 
+      {heroCard && heroSeries ? (
+        <article className="dash-hero-chart" aria-label="Period performance">
+          <div className="dash-hero-metric-tabs" role="tablist" aria-label="Hero metric">
+            {periodKpis
+              .filter((c) => ['wip', 'revenue', 'pipeline', 'rolling', 'active'].includes(c.id))
+              .map((card) => (
+                <button
+                  key={card.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={heroCard.id === card.id}
+                  className={`dash-hero-metric-tab${heroCard.id === card.id ? ' is-active' : ''}`}
+                  onClick={() => setHeroMetric(card.id)}
+                >
+                  {card.title}
+                </button>
+              ))}
+          </div>
+          <p className="dash-hero-value">{heroCard.display}</p>
+          <p
+            className={`dash-hero-change${heroSeries.changePct >= 0 ? ' is-up' : ' is-down'}`}
+          >
+            {formatPeriodChangePlain(
+              heroSeries.changePct,
+              heroSeries.change,
+              heroCard.id !== 'active' && heroCard.id !== 'margin',
+            )}{' '}
+            <span className="dash-hero-change-period">{heroSeries.label}</span>
+          </p>
+          <PeriodLineChart series={heroSeries} positive={heroSeries.changePct >= 0} />
+          <PeriodFilter value={chartPeriod} onChange={setChartPeriod} />
+          {historyPoints.length < 2 ? (
+            <p className="dash-hero-hint">
+              Showing projected trend until daily refresh history builds up. Each live pull (or the
+              scheduled daily job) stores a point for real period-over-period change.
+            </p>
+          ) : null}
+        </article>
+      ) : null}
+
       <div className="dash-kpis">
-        {dash.kpis.map((card) => (
+        {periodKpis.map((card) => (
           <article key={card.id} className="dash-kpi">
             <p className="dash-kpi-title">{card.title}</p>
             <p className="dash-kpi-value">
@@ -348,7 +442,11 @@ export function OwnerDashboard() {
                 {formatDelta(card.delta, card.deltaUnit)}
               </span>
               <span className="dash-kpi-vs">{card.deltaLabel}</span>
-              <Sparkline values={card.sparkline} label={`${card.title} trend`} />
+              <Sparkline
+                values={card.sparkline}
+                label={`${card.title} trend`}
+                tone={card.delta > 0 ? 'up' : card.delta < 0 ? 'down' : 'accent'}
+              />
             </div>
           </article>
         ))}
