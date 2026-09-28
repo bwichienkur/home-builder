@@ -74,3 +74,25 @@ describe('Craftsmen guest account (local)', () => {
     if (!result.ok) expect(result.error).toBe(GUEST_ACCOUNT_EXPIRED_MESSAGE);
   });
 });
+
+describe('Olsen staff admins (local)', () => {
+  beforeEach(() => {
+    installMemoryLocalStorage();
+    localStorage.clear();
+  });
+
+  it('logs in Trevor and Eric as system_admin', async () => {
+    const auth = new LocalAuthProvider();
+    for (const account of [
+      { email: 'tragno@olsencustomhomes.com', name: 'Trevor Ragno' },
+      { email: 'eolsen@olsencustomhomes.com', name: 'Eric Olsen' },
+    ]) {
+      const result = await auth.login(account.email, 'Password123!');
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.user.role).toBe('system_admin');
+        expect(result.user.name).toBe(account.name);
+      }
+    }
+  });
+});

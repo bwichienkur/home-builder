@@ -76,6 +76,23 @@ describe('handleAuthRequest', () => {
     expect(result.body.token).toBeTruthy();
   });
 
+  it('logs in Olsen staff system admins', async () => {
+    for (const account of [
+      { email: 'tragno@olsencustomhomes.com', name: 'Trevor Ragno' },
+      { email: 'eolsen@olsencustomhomes.com', name: 'Eric Olsen' },
+    ]) {
+      const result = await handleAuthRequest({
+        method: 'POST',
+        path: '/api/auth/login',
+        body: { email: account.email, password: 'Password123!' },
+      });
+      expect(result.status).toBe(200);
+      expect(result.body.user.email).toBe(account.email);
+      expect(result.body.user.name).toBe(account.name);
+      expect(result.body.user.role).toBe('system_admin');
+    }
+  });
+
   it('rejects login after expiresAt', async () => {
     const { __patchUserForTests } = await import('./authRoutes.js');
     const registered = await handleAuthRequest({
