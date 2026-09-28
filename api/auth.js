@@ -78,12 +78,27 @@ function hash(value) {
 }
 
 function normalizeLoginId(raw) {
+  const candidates = loginIdCandidates(raw);
+  return candidates[0] || '';
+}
+
+function loginIdCandidates(raw) {
   const value = String(raw ?? '')
     .trim()
     .toLowerCase();
-  if (!value) return '';
-  if (value.includes('@')) return value;
-  return `${value}@mahnikka.local`;
+  if (!value) return [];
+  if (value.includes('@')) return [value];
+  return [`${value}@olsencustomhomes.com`, `${value}@mahnikka.local`];
+}
+
+function resolveLoginId(raw, users) {
+  const candidates = loginIdCandidates(raw);
+  if (!candidates.length) return '';
+  if (!users) return candidates[0];
+  for (const id of candidates) {
+    if (users[id]) return id;
+  }
+  return candidates[0];
 }
 
 function isAccountExpired(row, now = Date.now()) {
@@ -214,9 +229,9 @@ export default async function authHandler(req, res) {
     const body = req.body || {};
 
     if (method === 'POST' && path === '/api/auth/login') {
-      const email = normalizeLoginId(body.email);
       const password = String(body.password ?? '');
       const store = await loadStore();
+      const email = resolveLoginId(body.email, store.users);
       const row = store.users[email];
       if (!row || row.passwordHash !== hash(password)) {
         return res.status(401).json({ error: 'Incorrect email or password.' });

@@ -18,13 +18,10 @@ export function LoginPage() {
   const sessionReady = useAuthStore((s) => s.sessionReady);
   const markSessionReady = useAuthStore((s) => s.markSessionReady);
   const login = useAuthStore((s) => s.login);
-  const register = useAuthStore((s) => s.register);
   const navigate = useNavigate();
   const location = useLocation();
-  const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -46,8 +43,7 @@ export function LoginPage() {
     e.preventDefault();
     setBusy(true);
     setError('');
-    const result =
-      mode === 'login' ? await login(email, password) : await register(email, password, name);
+    const result = await login(email, password);
     setBusy(false);
     if (!result.ok) {
       setError(result.error);
@@ -60,21 +56,15 @@ export function LoginPage() {
     <div className="auth-screen">
       <div className="auth-card">
         <p className="eyebrow">Olsen Custom Homes</p>
-        <h1>{mode === 'login' ? 'Sign in' : 'Create account'}</h1>
+        <h1>Sign in</h1>
         <p className="auth-lede">
           Plan studio, clients, vendors, inventory, and house-plan imports in one workspace.
         </p>
         <form onSubmit={onSubmit} className="auth-form">
-          {mode === 'register' && (
-            <label>
-              Name
-              <input value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" />
-            </label>
-          )}
           <label>
-            {mode === 'login' ? 'Email or username' : 'Email'}
+            Email or username
             <input
-              type={mode === 'login' ? 'text' : 'email'}
+              type="text"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               autoComplete="username"
@@ -87,32 +77,15 @@ export function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+              autoComplete="current-password"
               required
             />
           </label>
           {error && <p className="auth-error">{error}</p>}
           <button type="submit" className="primary" disabled={busy}>
-            {busy ? 'Please wait…' : mode === 'login' ? 'Sign in' : 'Register'}
+            {busy ? 'Please wait…' : 'Sign in'}
           </button>
         </form>
-        <p className="auth-switch">
-          {mode === 'login' ? (
-            <>
-              Need an account?{' '}
-              <button type="button" className="auth-link" onClick={() => setMode('register')}>
-                Register
-              </button>
-            </>
-          ) : (
-            <>
-              Already registered?{' '}
-              <button type="button" className="auth-link" onClick={() => setMode('login')}>
-                Sign in
-              </button>
-            </>
-          )}
-        </p>
       </div>
     </div>
   );

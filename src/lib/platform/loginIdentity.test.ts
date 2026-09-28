@@ -3,7 +3,9 @@ import {
   CRAFTSMEN_GUEST,
   GUEST_ACCOUNT_EXPIRED_MESSAGE,
   isAccountExpired,
+  loginIdCandidates,
   normalizeLoginId,
+  resolveLoginId,
 } from './loginIdentity';
 import { LocalAuthProvider } from './localAuthProvider';
 
@@ -27,9 +29,25 @@ function installMemoryLocalStorage() {
 }
 
 describe('loginIdentity', () => {
-  it('maps bare usernames to @mahnikka.local emails', () => {
-    expect(normalizeLoginId('Craftsmen')).toBe('craftsmen@mahnikka.local');
+  it('prefers Olsen domain for bare usernames, then local demo domain', () => {
+    expect(loginIdCandidates('tragno')).toEqual([
+      'tragno@olsencustomhomes.com',
+      'tragno@mahnikka.local',
+    ]);
+    expect(normalizeLoginId('Craftsmen')).toBe('craftsmen@olsencustomhomes.com');
     expect(normalizeLoginId('craftsmen@mahnikka.local')).toBe('craftsmen@mahnikka.local');
+  });
+
+  it('resolves bare usernames to the matching stored account', () => {
+    expect(resolveLoginId('Craftsmen', { 'craftsmen@mahnikka.local': {} })).toBe(
+      'craftsmen@mahnikka.local',
+    );
+    expect(resolveLoginId('tragno', { 'tragno@olsencustomhomes.com': {} })).toBe(
+      'tragno@olsencustomhomes.com',
+    );
+    expect(resolveLoginId('eolsen', { 'eolsen@olsencustomhomes.com': {} })).toBe(
+      'eolsen@olsencustomhomes.com',
+    );
   });
 
   it('detects expired accounts', () => {
@@ -81,15 +99,16 @@ describe('Olsen staff admins (local)', () => {
     localStorage.clear();
   });
 
-  it('logs in Trevor and Eric as system_admin', async () => {
+  it('logs in Trevor and Eric as system_admin with short usernames', async () => {
     const auth = new LocalAuthProvider();
     for (const account of [
-      { email: 'tragno@olsencustomhomes.com', name: 'Trevor Ragno' },
-      { email: 'eolsen@olsencustomhomes.com', name: 'Eric Olsen' },
+      { login: 'tragno', email: 'tragno@olsencustomhomes.com', name: 'Trevor Ragno' },
+      { login: 'eolsen', email: 'eolsen@olsencustomhomes.com', name: 'Eric Olsen' },
     ]) {
-      const result = await auth.login(account.email, 'Password123!');
+      const result = await auth.login(account.login, 'Password123!');
       expect(result.ok).toBe(true);
       if (result.ok) {
+        expect(result.user.email).toBe(account.email);
         expect(result.user.role).toBe('system_admin');
         expect(result.user.name).toBe(account.name);
       }

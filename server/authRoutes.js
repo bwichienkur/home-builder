@@ -107,14 +107,28 @@ function normalizeRole(value) {
   return ROLES.has(value) ? value : 'designer';
 }
 
-/** Accept email or bare username (Craftsmen → craftsmen@mahnikka.local). */
-function normalizeLoginId(raw) {
+/** Accept email or bare username (tragno → tragno@olsencustomhomes.com, Craftsmen → craftsmen@mahnikka.local). */
+function loginIdCandidates(raw) {
   const value = String(raw ?? '')
     .trim()
     .toLowerCase();
-  if (!value) return '';
-  if (value.includes('@')) return value;
-  return `${value}@mahnikka.local`;
+  if (!value) return [];
+  if (value.includes('@')) return [value];
+  return [`${value}@olsencustomhomes.com`, `${value}@mahnikka.local`];
+}
+
+function normalizeLoginId(raw) {
+  return loginIdCandidates(raw)[0] || '';
+}
+
+function resolveLoginId(raw, users) {
+  const candidates = loginIdCandidates(raw);
+  if (!candidates.length) return '';
+  if (!users) return candidates[0];
+  for (const id of candidates) {
+    if (users[id]) return id;
+  }
+  return candidates[0];
 }
 
 function isAccountExpired(row, now = Date.now()) {
@@ -436,9 +450,9 @@ export async function handleAuthRequest({ method, path, query = {}, body = {}, h
   }
 
   if (m === 'POST' && p === '/api/auth/login') {
-    const email = normalizeLoginId(body?.email);
     const password = String(body?.password ?? '');
     const store = await loadAuthStore();
+    const email = resolveLoginId(body?.email, store.users);
     const row = store.users[email];
     if (!row || row.passwordHash !== hash(password)) {
       return { status: 401, body: { error: 'Incorrect email or password.' } };
