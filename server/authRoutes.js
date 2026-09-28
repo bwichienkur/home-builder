@@ -12,6 +12,11 @@ import { ensureSnapshotTable, loadSnapshot, saveSnapshot } from './snapshotStore
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const AUTH_FILE = path.join(__dirname, '../data/auth-store.json');
 const DEMO_EMAIL = 'admin@mahnikka.local';
+/** Builder20 guest — username "Craftsmen"; access ends end of 2026. */
+const CRAFTSMEN_EMAIL = 'craftsmen@mahnikka.local';
+const CRAFTSMEN_EXPIRES_AT = '2026-12-31T23:59:59.999Z';
+const GUEST_EXPIRED_MESSAGE =
+  'This guest account has expired. Access ended on December 31, 2026.';
 
 /** Align with src/lib/platform/roles.ts (+ legacy `user`). */
 const ROLES = new Set([
@@ -60,6 +65,14 @@ const SEED_USERS = [
     password: 'pm123',
     role: 'pm',
   },
+  {
+    email: CRAFTSMEN_EMAIL,
+    id: '00000000-0000-4000-8000-000000000006',
+    name: 'Craftsmen',
+    password: 'Ericsthebest',
+    role: 'client_viewer',
+    expiresAt: CRAFTSMEN_EXPIRES_AT,
+  },
 ];
 
 let memoryStore = null;
@@ -73,6 +86,22 @@ function normalizeRole(value) {
   return ROLES.has(value) ? value : 'designer';
 }
 
+/** Accept email or bare username (Craftsmen → craftsmen@mahnikka.local). */
+function normalizeLoginId(raw) {
+  const value = String(raw ?? '')
+    .trim()
+    .toLowerCase();
+  if (!value) return '';
+  if (value.includes('@')) return value;
+  return `${value}@mahnikka.local`;
+}
+
+function isAccountExpired(row, now = Date.now()) {
+  if (!row?.expiresAt) return false;
+  const t = Date.parse(row.expiresAt);
+  return Number.isFinite(t) && t < now;
+}
+
 function migrateUser(email, row) {
   const seed = SEED_USERS.find((s) => s.email === email);
   return {
@@ -82,6 +111,7 @@ function migrateUser(email, row) {
     role: email === DEMO_EMAIL ? 'system_admin' : normalizeRole(row.role ?? seed?.role),
     createdAt: row.createdAt ?? new Date().toISOString(),
     apiKeys: Array.isArray(row.apiKeys) ? row.apiKeys : [],
+    expiresAt: row.expiresAt ?? seed?.expiresAt ?? null,
   };
 }
 
@@ -108,15 +138,28 @@ function seedDemo(users) {
         role: seed.role,
         createdAt: new Date().toISOString(),
         apiKeys: [],
+        expiresAt: seed.expiresAt ?? null,
       };
     } else {
       const row = users[seed.email];
       const id = /^[0-9a-f-]{36}$/i.test(String(row.id)) ? row.id : seed.id;
-      users[seed.email] = {
-        ...row,
-        id,
-        role: seed.email === DEMO_EMAIL ? 'system_admin' : normalizeRole(row.role || seed.role),
-      };
+      if (seed.email === CRAFTSMEN_EMAIL) {
+        users[seed.email] = {
+          ...row,
+          id,
+          name: seed.name,
+          passwordHash: hash(seed.password),
+          role: seed.role,
+          expiresAt: seed.expiresAt ?? null,
+        };
+      } else {
+        users[seed.email] = {
+          ...row,
+          id,
+          role: seed.email === DEMO_EMAIL ? 'system_admin' : normalizeRole(row.role || seed.role),
+          expiresAt: row.expiresAt ?? seed.expiresAt ?? null,
+        };
+      }
     }
   }
   return users;
@@ -171,8 +214,14 @@ async function loadAuthStore() {
       if (payload?.users) {
         memoryStore = normalizeStore(payload);
         const before = Object.keys(payload.users).length;
+        const craftsmenBefore = payload.users[CRAFTSMEN_EMAIL];
         seedDemo(memoryStore.users);
-        if (Object.keys(memoryStore.users).length > before) {
+        const craftsmenAfter = memoryStore.users[CRAFTSMEN_EMAIL];
+        const craftsmenChanged =
+          !craftsmenBefore ||
+          craftsmenBefore.passwordHash !== craftsmenAfter?.passwordHash ||
+          craftsmenBefore.expiresAt !== craftsmenAfter?.expiresAt;
+        if (Object.keys(memoryStore.users).length > before || craftsmenChanged) {
           void persistAuthStore(memoryStore).catch(() => {});
         }
         return memoryStore;
@@ -240,6 +289,9 @@ async function requireSystemAdminCtx(authorization) {
   const email = bearerEmailFromAuth(authorization, store);
   if (!email) return { error: { status: 401, body: { error: 'Not signed in' } } };
   const row = store.users[email];
+  if (isAccountExpired(row)) {
+    return { error: { status: 401, body: { error: GUEST_EXPIRED_MESSAGE } } };
+  }
   if (row.role !== 'system_admin') {
     return { error: { status: 403, body: { error: 'System admin role required.' } } };
   }
@@ -250,7 +302,11 @@ async function requireSignedInCtx(authorization) {
   const store = await loadAuthStore();
   const email = bearerEmailFromAuth(authorization, store);
   if (!email) return { error: { status: 401, body: { error: 'Not signed in' } } };
-  return { store, email, user: store.users[email] };
+  const row = store.users[email];
+  if (isAccountExpired(row)) {
+    return { error: { status: 401, body: { error: GUEST_EXPIRED_MESSAGE } } };
+  }
+  return { store, email, user: row };
 }
 
 function findUserById(store, userId) {
@@ -322,9 +378,7 @@ export async function handleAuthRequest({ method, path, query = {}, body = {}, h
   const authorization = readHeader(headers, 'authorization');
 
   if (m === 'POST' && p === '/api/auth/register') {
-    const email = String(body?.email ?? '')
-      .trim()
-      .toLowerCase();
+    const email = normalizeLoginId(body?.email);
     const password = String(body?.password ?? '');
     const name = String(body?.name ?? '').trim() || email;
     if (!email || password.length < 6) {
@@ -340,6 +394,7 @@ export async function handleAuthRequest({ method, path, query = {}, body = {}, h
       role: 'designer',
       createdAt: new Date().toISOString(),
       apiKeys: [],
+      expiresAt: null,
     };
     const token = crypto.randomUUID();
     store.tokens[token] = email;
@@ -348,14 +403,15 @@ export async function handleAuthRequest({ method, path, query = {}, body = {}, h
   }
 
   if (m === 'POST' && p === '/api/auth/login') {
-    const email = String(body?.email ?? '')
-      .trim()
-      .toLowerCase();
+    const email = normalizeLoginId(body?.email);
     const password = String(body?.password ?? '');
     const store = await loadAuthStore();
     const row = store.users[email];
     if (!row || row.passwordHash !== hash(password)) {
       return { status: 401, body: { error: 'Incorrect email or password.' } };
+    }
+    if (isAccountExpired(row)) {
+      return { status: 401, body: { error: GUEST_EXPIRED_MESSAGE } };
     }
     const token = crypto.randomUUID();
     store.tokens[token] = email;
@@ -375,9 +431,18 @@ export async function handleAuthRequest({ method, path, query = {}, body = {}, h
 
   if (m === 'GET' && p === '/api/auth/me') {
     const store = await loadAuthStore();
+    const token = authorization.startsWith('Bearer ') ? authorization.slice(7) : '';
     const email = bearerEmailFromAuth(authorization, store);
     if (!email) return { status: 401, body: { error: 'Not signed in' } };
-    return { status: 200, body: { user: publicUser(email, store.users[email]) } };
+    const row = store.users[email];
+    if (isAccountExpired(row)) {
+      if (token) {
+        delete store.tokens[token];
+        await persistAuthStore(store);
+      }
+      return { status: 401, body: { error: GUEST_EXPIRED_MESSAGE } };
+    }
+    return { status: 200, body: { user: publicUser(email, row) } };
   }
 
   /** Staff directory for team assignment — any signed-in user. */
@@ -489,3 +554,19 @@ export function mountAuthRoutes(app) {
 }
 
 export { SEED_USERS, DEMO_EMAIL };
+
+/** Test-only: clear in-memory auth cache so the next call reloads. */
+export function __resetAuthStoreForTests() {
+  memoryStore = null;
+}
+
+/** Test-only: patch a user row in the loaded store (e.g. force expiresAt). */
+export async function __patchUserForTests(email, patch) {
+  const store = await loadAuthStore();
+  const key = normalizeLoginId(email);
+  if (!store.users[key]) throw new Error(`No user ${key}`);
+  store.users[key] = { ...store.users[key], ...patch };
+  memoryStore = store;
+  return store.users[key];
+}
+

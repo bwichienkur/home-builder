@@ -60,4 +60,43 @@ describe('handleAuthRequest', () => {
     });
     expect(result.status).toBe(401);
   });
+
+  it('logs in Builder20 Craftsmen guest by username', async () => {
+    const result = await handleAuthRequest({
+      method: 'POST',
+      path: '/api/auth/login',
+      body: { email: 'Craftsmen', password: 'Ericsthebest' },
+      headers: {},
+      query: {},
+    });
+    expect(result.status).toBe(200);
+    expect(result.body.user.email).toBe('craftsmen@mahnikka.local');
+    expect(result.body.user.role).toBe('client_viewer');
+    expect(result.body.user.name).toBe('Craftsmen');
+    expect(result.body.token).toBeTruthy();
+  });
+
+  it('rejects login after expiresAt', async () => {
+    const { __patchUserForTests } = await import('./authRoutes.js');
+    const registered = await handleAuthRequest({
+      method: 'POST',
+      path: '/api/auth/register',
+      body: {
+        email: 'expired-guest@mahnikka.local',
+        password: 'expired1',
+        name: 'Expired Guest',
+      },
+    });
+    expect([201, 409]).toContain(registered.status);
+    await __patchUserForTests('expired-guest@mahnikka.local', {
+      expiresAt: '2020-01-01T00:00:00.000Z',
+    });
+    const result = await handleAuthRequest({
+      method: 'POST',
+      path: '/api/auth/login',
+      body: { email: 'expired-guest@mahnikka.local', password: 'expired1' },
+    });
+    expect(result.status).toBe(401);
+    expect(String(result.body.error)).toMatch(/expired/i);
+  });
 });

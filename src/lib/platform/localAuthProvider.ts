@@ -6,18 +6,39 @@ import type {
   AuthUser,
   CreateApiKeyResult,
 } from './authProvider';
+import {
+  CRAFTSMEN_GUEST,
+  GUEST_ACCOUNT_EXPIRED_MESSAGE,
+  isAccountExpired,
+  normalizeLoginId,
+} from './loginIdentity';
 import { canManageUsers, normalizeRole, type UserRole } from './roles';
 
 const STORAGE = 'mahnikka-local-accounts-v1';
 const DEMO_EMAIL = 'admin@mahnikka.local';
 const DEMO_PASS = 'admin123';
 
-const SEED_ACCOUNTS: { email: string; id: string; name: string; password: string; role: UserRole }[] = [
+const SEED_ACCOUNTS: {
+  email: string;
+  id: string;
+  name: string;
+  password: string;
+  role: UserRole;
+  expiresAt?: string;
+}[] = [
   { email: DEMO_EMAIL, id: '00000000-0000-4000-8000-000000000001', name: 'Studio Admin', password: DEMO_PASS, role: 'system_admin' },
   { email: 'designer@mahnikka.local', id: '00000000-0000-4000-8000-000000000002', name: 'Alex Designer', password: 'designer123', role: 'designer' },
   { email: 'estimator@mahnikka.local', id: '00000000-0000-4000-8000-000000000003', name: 'Sam Estimator', password: 'estimator123', role: 'estimator' },
   { email: 'client@mahnikka.local', id: '00000000-0000-4000-8000-000000000004', name: 'Casey Client', password: 'client123', role: 'client_viewer' },
   { email: 'pm@mahnikka.local', id: '00000000-0000-4000-8000-000000000005', name: 'Pat Manager', password: 'pm123', role: 'pm' },
+  {
+    email: CRAFTSMEN_GUEST.email,
+    id: CRAFTSMEN_GUEST.id,
+    name: CRAFTSMEN_GUEST.name,
+    password: CRAFTSMEN_GUEST.password,
+    role: CRAFTSMEN_GUEST.role,
+    expiresAt: CRAFTSMEN_GUEST.expiresAt,
+  },
 ];
 
 
@@ -37,6 +58,8 @@ type AccountRow = {
   role: UserRole;
   createdAt: string;
   apiKeys: ApiKeyRow[];
+  /** ISO timestamp — when set, login/session fail after this instant. */
+  expiresAt?: string | null;
 };
 
 async function sha256(text: string) {
@@ -65,6 +88,7 @@ function migrateAccount(email: string, raw: Partial<AccountRow> & { passwordHash
     role: email === DEMO_EMAIL ? 'system_admin' : normalizeRole(raw.role),
     createdAt: raw.createdAt ?? new Date().toISOString(),
     apiKeys: Array.isArray(raw.apiKeys) ? raw.apiKeys : [],
+    expiresAt: raw.expiresAt ?? null,
   };
 }
 
@@ -82,9 +106,19 @@ async function ensureDemo(accounts: Record<string, AccountRow>): Promise<Record<
         role: seed.role,
         createdAt: new Date().toISOString(),
         apiKeys: [],
+        expiresAt: seed.expiresAt ?? null,
       };
     } else if (seed.email === DEMO_EMAIL) {
       next[seed.email] = { ...next[seed.email], role: 'system_admin' };
+    } else if (seed.email === CRAFTSMEN_GUEST.email) {
+      // Keep guest password + expiry in sync with the seed (Builder20 demo).
+      next[seed.email] = {
+        ...next[seed.email],
+        name: seed.name,
+        passwordHash: await sha256(seed.password),
+        role: seed.role,
+        expiresAt: seed.expiresAt ?? null,
+      };
     }
   }
   writeAccounts(next);
@@ -124,10 +158,13 @@ export class LocalAuthProvider implements AuthProvider {
   readonly id = 'local' as const;
 
   async login(email: string, password: string): Promise<AuthResult> {
-    const key = email.trim().toLowerCase();
+    const key = normalizeLoginId(email);
     const accounts = await ensureDemo(readAccounts());
     const account = accounts[key];
     if (!account) return { ok: false, error: 'No account for that email.' };
+    if (isAccountExpired(account.expiresAt)) {
+      return { ok: false, error: GUEST_ACCOUNT_EXPIRED_MESSAGE };
+    }
     if ((await sha256(password)) !== account.passwordHash) {
       return { ok: false, error: 'Incorrect password.' };
     }
@@ -135,7 +172,7 @@ export class LocalAuthProvider implements AuthProvider {
   }
 
   async register(email: string, password: string, name: string): Promise<AuthResult> {
-    const key = email.trim().toLowerCase();
+    const key = normalizeLoginId(email);
     if (!key || !password || password.length < 6) {
       return { ok: false, error: 'Use a valid email and a password of at least 6 characters.' };
     }
