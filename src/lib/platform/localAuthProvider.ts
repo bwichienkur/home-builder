@@ -11,6 +11,7 @@ import {
   GUEST_ACCOUNT_EXPIRED_MESSAGE,
   isAccountExpired,
   normalizeLoginId,
+  resolveLoginId,
 } from './loginIdentity';
 import { canManageUsers, normalizeRole, type UserRole } from './roles';
 import { STAFF_ADMIN_EMAILS, STAFF_ADMINS } from './staffAdmins';
@@ -160,8 +161,8 @@ export class LocalAuthProvider implements AuthProvider {
   readonly id = 'local' as const;
 
   async login(email: string, password: string): Promise<AuthResult> {
-    const key = normalizeLoginId(email);
     const accounts = await ensureDemo(readAccounts());
+    const key = resolveLoginId(email, accounts);
     const account = accounts[key];
     if (!account) return { ok: false, error: 'No account for that email.' };
     if (isAccountExpired(account.expiresAt)) {

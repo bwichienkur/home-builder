@@ -78,18 +78,26 @@ describe('handleAuthRequest', () => {
 
   it('logs in Olsen staff system admins', async () => {
     for (const account of [
-      { email: 'tragno@olsencustomhomes.com', name: 'Trevor Ragno' },
-      { email: 'eolsen@olsencustomhomes.com', name: 'Eric Olsen' },
+      { login: 'tragno', email: 'tragno@olsencustomhomes.com', name: 'Trevor Ragno' },
+      { login: 'eolsen', email: 'eolsen@olsencustomhomes.com', name: 'Eric Olsen' },
     ]) {
-      const result = await handleAuthRequest({
+      const byShort = await handleAuthRequest({
+        method: 'POST',
+        path: '/api/auth/login',
+        body: { email: account.login, password: 'Password123!' },
+      });
+      expect(byShort.status).toBe(200);
+      expect(byShort.body.user.email).toBe(account.email);
+      expect(byShort.body.user.name).toBe(account.name);
+      expect(byShort.body.user.role).toBe('system_admin');
+
+      const byEmail = await handleAuthRequest({
         method: 'POST',
         path: '/api/auth/login',
         body: { email: account.email, password: 'Password123!' },
       });
-      expect(result.status).toBe(200);
-      expect(result.body.user.email).toBe(account.email);
-      expect(result.body.user.name).toBe(account.name);
-      expect(result.body.user.role).toBe('system_admin');
+      expect(byEmail.status).toBe(200);
+      expect(byEmail.body.user.email).toBe(account.email);
     }
   });
 

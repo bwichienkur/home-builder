@@ -1,15 +1,39 @@
 /** Shared login id helpers — username "Craftsmen" → craftsmen@mahnikka.local */
 
 const LOCAL_DOMAIN = 'mahnikka.local';
+const OLSEN_DOMAIN = 'olsencustomhomes.com';
 
-/** Normalize email or bare username to a stored account key. */
+/** Normalize email or bare username to a preferred stored account key. */
 export function normalizeLoginId(raw: string): string {
+  const candidates = loginIdCandidates(raw);
+  return candidates[0] ?? '';
+}
+
+/**
+ * Bare usernames try Olsen email first, then local demo domain.
+ * e.g. tragno → tragno@olsencustomhomes.com, then tragno@mahnikka.local
+ */
+export function loginIdCandidates(raw: string): string[] {
   const value = String(raw ?? '')
     .trim()
     .toLowerCase();
-  if (!value) return '';
-  if (value.includes('@')) return value;
-  return `${value}@${LOCAL_DOMAIN}`;
+  if (!value) return [];
+  if (value.includes('@')) return [value];
+  return [`${value}@${OLSEN_DOMAIN}`, `${value}@${LOCAL_DOMAIN}`];
+}
+
+/** Pick the first candidate that exists in the account map. */
+export function resolveLoginId(
+  raw: string,
+  users: Record<string, unknown> | null | undefined,
+): string {
+  const candidates = loginIdCandidates(raw);
+  if (!candidates.length) return '';
+  if (!users) return candidates[0]!;
+  for (const id of candidates) {
+    if (users[id]) return id;
+  }
+  return candidates[0]!;
 }
 
 /** True when account.expiresAt is set and is in the past. */
