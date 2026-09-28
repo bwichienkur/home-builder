@@ -26,7 +26,7 @@ import {
 } from '../../lib/dashboard/kpiHistory';
 import { DrillLink } from './DrilldownPanel';
 import { BtCookieDialog } from './BtCookieDialog';
-import { PerformanceBars, PeriodFilter, PeriodLineChart, PipelineFunnel, Sparkline, StatusDonut } from './dashboardCharts';
+import { PerformanceBars, PeriodDailyPoints, PeriodFilter, PeriodLineChart, PipelineFunnel, Sparkline, StatusDonut } from './dashboardCharts';
 import { useOwnerDashboardData } from './useOwnerDashboardData';
 import './dashboard.css';
 
@@ -174,6 +174,8 @@ export function OwnerDashboard() {
   const [heroMetric, setHeroMetric] = useState('wip');
   const [historyPoints, setHistoryPoints] = useState<KpiHistoryPoint[]>([]);
   const [historyReady, setHistoryReady] = useState(false);
+  const [showDailyPoints, setShowDailyPoints] = useState(false);
+  const [activePointIndex, setActivePointIndex] = useState<number | null>(null);
   const [sort, setSort] = useState<SortState<SortKey>>({ key: 'name', dir: 'asc' });
   const [pmSort, setPmSort] = useState<SortState<PmSortKey>>({ key: 'pm', dir: 'asc' });
   const {
@@ -234,6 +236,14 @@ export function OwnerDashboard() {
     if (!heroCard) return null;
     return seriesForMetric(effectiveHistory, heroCard.id, chartPeriod, heroCard.value);
   }, [effectiveHistory, heroCard, chartPeriod]);
+
+  const heroIsMoney = heroCard != null && heroCard.id !== 'active' && heroCard.id !== 'margin';
+  const activePointDay =
+    activePointIndex != null && heroSeries ? (heroSeries.days[activePointIndex] ?? null) : null;
+
+  useEffect(() => {
+    setActivePointIndex(null);
+  }, [chartPeriod, heroMetric]);
 
   const filters = useMemo(() => ({ status, dateRange }), [status, dateRange]);
   const href = (kind: DrilldownKind) => drilldownHref(kind, filters);
@@ -393,12 +403,41 @@ export function OwnerDashboard() {
             {formatPeriodChangePlain(
               heroSeries.changePct,
               heroSeries.change,
-              heroCard.id !== 'active' && heroCard.id !== 'margin',
+              heroIsMoney,
             )}{' '}
             <span className="dash-hero-change-period">{heroSeries.label}</span>
           </p>
-          <PeriodLineChart series={heroSeries} positive={heroSeries.changePct >= 0} />
-          <PeriodFilter value={chartPeriod} onChange={setChartPeriod} />
+          <PeriodLineChart
+            series={heroSeries}
+            positive={heroSeries.changePct >= 0}
+            isMoney={heroIsMoney}
+            activeIndex={activePointIndex}
+            onActiveIndexChange={setActivePointIndex}
+            onToggleDetails={() => setShowDailyPoints(true)}
+          />
+          <PeriodFilter
+            value={chartPeriod}
+            onChange={(id) => {
+              setChartPeriod(id);
+              setShowDailyPoints(false);
+            }}
+          />
+          <PeriodDailyPoints
+            series={heroSeries}
+            metricTitle={heroCard.title}
+            isMoney={heroIsMoney}
+            open={showDailyPoints}
+            onToggle={() => setShowDailyPoints((open) => !open)}
+            highlightedDay={activePointDay}
+            onHighlightDay={(day) => {
+              if (!day || !heroSeries) {
+                setActivePointIndex(null);
+                return;
+              }
+              const index = heroSeries.days.indexOf(day);
+              setActivePointIndex(index >= 0 ? index : null);
+            }}
+          />
           {historyPoints.length < 2 ? (
             <p className="dash-hero-hint">
               Showing projected trend until daily refresh history builds up. Each live pull (or the

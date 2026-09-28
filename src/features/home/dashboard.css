@@ -292,6 +292,112 @@
   width: 100%;
   height: 160px;
   display: block;
+  cursor: crosshair;
+}
+
+.dash-period-chart-wrap {
+  position: relative;
+}
+
+.dash-period-tooltip {
+  position: absolute;
+  top: 8px;
+  transform: translateX(-50%);
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(20, 24, 28, 0.92);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.25;
+  pointer-events: none;
+  z-index: 2;
+  min-width: 7rem;
+  text-align: center;
+}
+
+.dash-period-tooltip strong {
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.dash-period-tooltip span {
+  color: rgba(255, 255, 255, 0.78);
+  font-weight: 550;
+}
+
+.dash-period-daily {
+  display: grid;
+  gap: 8px;
+}
+
+.dash-period-daily-toggle {
+  justify-self: start;
+  border: 0;
+  background: transparent;
+  color: var(--accent, #0058a3);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 2px 0;
+  cursor: pointer;
+}
+
+.dash-period-daily-toggle:hover {
+  text-decoration: underline;
+}
+
+.dash-period-daily-panel {
+  display: grid;
+  gap: 8px;
+  padding: 10px 0 4px;
+  border-top: 1px solid var(--line);
+}
+
+.dash-period-daily-lede {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.dash-period-daily-scroll {
+  overflow: auto;
+  max-height: 240px;
+}
+
+.dash-period-daily-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.dash-period-daily-table th,
+.dash-period-daily-table td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.dash-period-daily-table th {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  position: sticky;
+  top: 0;
+  background: #fff;
+}
+
+.dash-period-daily-table tbody tr {
+  cursor: pointer;
+}
+
+.dash-period-daily-table tbody tr:hover,
+.dash-period-daily-table tbody tr.is-active {
+  background: var(--soft);
 }
 
 .dash-period-filter {

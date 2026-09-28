@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   applyHistoryToKpis,
+  formatHistoryDay,
+  formatHistorySource,
   periodStartDate,
   seriesForMetric,
   sliceHistoryForPeriod,
@@ -31,6 +33,27 @@ describe('kpiHistory period helpers', () => {
     expect(series.start).toBe(100);
     expect(series.end).toBe(180);
     expect(series.changePct).toBeCloseTo(80, 5);
+    expect(series.sources).toHaveLength(series.days.length);
+  });
+
+  it('keeps sources on sliced series for daily pull table', () => {
+    const now = new Date('2026-03-01T12:00:00Z');
+    const points: KpiHistoryPoint[] = [
+      { day: '2026-02-23', metrics: { wip: 160 }, source: 'cron' },
+      { day: '2026-02-25', metrics: { wip: 170 }, source: 'live' },
+      { day: '2026-03-01', metrics: { wip: 180 }, source: 'live' },
+    ];
+    const series = seriesForMetric(points, 'wip', '1w', undefined, now);
+    expect(series.days).toEqual(['2026-02-23', '2026-02-25', '2026-03-01']);
+    expect(series.values).toEqual([160, 170, 180]);
+    expect(series.sources).toEqual(['cron', 'live', 'live']);
+  });
+
+  it('formats history day and source labels', () => {
+    expect(formatHistorySource('cron')).toBe('Scheduled pull');
+    expect(formatHistorySource('live')).toBe('Live pull');
+    expect(formatHistorySource('synthetic')).toBe('Projected');
+    expect(formatHistoryDay('2026-09-28')).toMatch(/Sep/);
   });
 
   it('ytd starts Jan 1', () => {
