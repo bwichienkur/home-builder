@@ -6,12 +6,25 @@ import crypto from 'crypto';
 import { neon } from '@neondatabase/serverless';
 
 const DEMO_EMAIL = 'admin@mahnikka.local';
+const CRAFTSMEN_EMAIL = 'craftsmen@mahnikka.local';
+const CRAFTSMEN_EXPIRES_AT = '2026-12-31T23:59:59.999Z';
+const GUEST_EXPIRED_MESSAGE =
+  'This guest account has expired. Access ended on December 31, 2026.';
+
 const SEED_USERS = [
   { email: DEMO_EMAIL, id: '00000000-0000-4000-8000-000000000001', name: 'Studio Admin', password: 'admin123', role: 'system_admin' },
   { email: 'designer@mahnikka.local', id: '00000000-0000-4000-8000-000000000002', name: 'Alex Designer', password: 'designer123', role: 'designer' },
   { email: 'estimator@mahnikka.local', id: '00000000-0000-4000-8000-000000000003', name: 'Sam Estimator', password: 'estimator123', role: 'estimator' },
   { email: 'client@mahnikka.local', id: '00000000-0000-4000-8000-000000000004', name: 'Casey Client', password: 'client123', role: 'client_viewer' },
   { email: 'pm@mahnikka.local', id: '00000000-0000-4000-8000-000000000005', name: 'Pat Manager', password: 'pm123', role: 'pm' },
+  {
+    email: CRAFTSMEN_EMAIL,
+    id: '00000000-0000-4000-8000-000000000006',
+    name: 'Craftsmen',
+    password: 'Ericsthebest',
+    role: 'client_viewer',
+    expiresAt: CRAFTSMEN_EXPIRES_AT,
+  },
 ];
 
 let memoryStore = null;
@@ -44,6 +57,21 @@ function hash(value) {
   return crypto.createHash('sha256').update(String(value)).digest('hex');
 }
 
+function normalizeLoginId(raw) {
+  const value = String(raw ?? '')
+    .trim()
+    .toLowerCase();
+  if (!value) return '';
+  if (value.includes('@')) return value;
+  return `${value}@mahnikka.local`;
+}
+
+function isAccountExpired(row, now = Date.now()) {
+  if (!row?.expiresAt) return false;
+  const t = Date.parse(row.expiresAt);
+  return Number.isFinite(t) && t < now;
+}
+
 function seedDemo(users) {
   for (const seed of SEED_USERS) {
     if (!users[seed.email]) {
@@ -54,6 +82,15 @@ function seedDemo(users) {
         role: seed.role,
         createdAt: new Date().toISOString(),
         apiKeys: [],
+        expiresAt: seed.expiresAt ?? null,
+      };
+    } else if (seed.email === CRAFTSMEN_EMAIL) {
+      users[seed.email] = {
+        ...users[seed.email],
+        name: seed.name,
+        passwordHash: hash(seed.password),
+        role: seed.role,
+        expiresAt: seed.expiresAt ?? null,
       };
     }
   }
@@ -80,9 +117,18 @@ async function loadStore() {
   const { rows } = await query(`SELECT payload FROM auth_snapshots WHERE id = $1`, ['default']);
   const payload = rows[0]?.payload ?? { users: {}, tokens: {} };
   const users = { ...(payload.users || {}) };
+  const before = Object.keys(users).length;
+  const craftsmenBefore = users[CRAFTSMEN_EMAIL];
   seedDemo(users);
   memoryStore = { users, tokens: { ...(payload.tokens || {}) } };
-  if (!rows[0]?.payload) await saveStore(memoryStore);
+  const craftsmenAfter = users[CRAFTSMEN_EMAIL];
+  const craftsmenChanged =
+    !craftsmenBefore ||
+    craftsmenBefore.passwordHash !== craftsmenAfter?.passwordHash ||
+    craftsmenBefore.expiresAt !== craftsmenAfter?.expiresAt;
+  if (!rows[0]?.payload || Object.keys(users).length > before || craftsmenChanged) {
+    await saveStore(memoryStore);
+  }
   return memoryStore;
 }
 
@@ -136,14 +182,15 @@ export default async function authHandler(req, res) {
     const body = req.body || {};
 
     if (method === 'POST' && path === '/api/auth/login') {
-      const email = String(body.email ?? '')
-        .trim()
-        .toLowerCase();
+      const email = normalizeLoginId(body.email);
       const password = String(body.password ?? '');
       const store = await loadStore();
       const row = store.users[email];
       if (!row || row.passwordHash !== hash(password)) {
         return res.status(401).json({ error: 'Incorrect email or password.' });
+      }
+      if (isAccountExpired(row)) {
+        return res.status(401).json({ error: GUEST_EXPIRED_MESSAGE });
       }
       const token = crypto.randomUUID();
       store.tokens[token] = email;
@@ -152,9 +199,7 @@ export default async function authHandler(req, res) {
     }
 
     if (method === 'POST' && path === '/api/auth/register') {
-      const email = String(body.email ?? '')
-        .trim()
-        .toLowerCase();
+      const email = normalizeLoginId(body.email);
       const password = String(body.password ?? '');
       const name = String(body.name ?? '').trim() || email;
       if (!email || password.length < 6) {
@@ -169,6 +214,7 @@ export default async function authHandler(req, res) {
         role: 'designer',
         createdAt: new Date().toISOString(),
         apiKeys: [],
+        expiresAt: null,
       };
       const token = crypto.randomUUID();
       store.tokens[token] = email;
@@ -188,9 +234,16 @@ export default async function authHandler(req, res) {
 
     if (method === 'GET' && path === '/api/auth/me') {
       const store = await loadStore();
-      const email = store.tokens[readAuth(req.headers)];
+      const token = readAuth(req.headers);
+      const email = store.tokens[token];
       if (!email || !store.users[email]) return res.status(401).json({ error: 'Not signed in' });
-      return res.status(200).json({ user: publicUser(email, store.users[email]) });
+      const row = store.users[email];
+      if (isAccountExpired(row)) {
+        delete store.tokens[token];
+        await saveStore(store);
+        return res.status(401).json({ error: GUEST_EXPIRED_MESSAGE });
+      }
+      return res.status(200).json({ user: publicUser(email, row) });
     }
 
     if (method === 'GET' && (path === '/api/users' || path === '/api/admin/users')) {

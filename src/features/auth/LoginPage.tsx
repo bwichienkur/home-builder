@@ -72,9 +72,9 @@ export function LoginPage() {
             </label>
           )}
           <label>
-            Email
+            {mode === 'login' ? 'Email or username' : 'Email'}
             <input
-              type="email"
+              type={mode === 'login' ? 'text' : 'email'}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               autoComplete="username"
