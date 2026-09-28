@@ -13,6 +13,7 @@ import {
   normalizeLoginId,
 } from './loginIdentity';
 import { canManageUsers, normalizeRole, type UserRole } from './roles';
+import { STAFF_ADMIN_EMAILS, STAFF_ADMINS } from './staffAdmins';
 
 const STORAGE = 'mahnikka-local-accounts-v1';
 const DEMO_EMAIL = 'admin@mahnikka.local';
@@ -39,6 +40,7 @@ const SEED_ACCOUNTS: {
     role: CRAFTSMEN_GUEST.role,
     expiresAt: CRAFTSMEN_GUEST.expiresAt,
   },
+  ...STAFF_ADMINS,
 ];
 
 
@@ -110,8 +112,8 @@ async function ensureDemo(accounts: Record<string, AccountRow>): Promise<Record<
       };
     } else if (seed.email === DEMO_EMAIL) {
       next[seed.email] = { ...next[seed.email], role: 'system_admin' };
-    } else if (seed.email === CRAFTSMEN_GUEST.email) {
-      // Keep guest password + expiry in sync with the seed (Builder20 demo).
+    } else if (seed.email === CRAFTSMEN_GUEST.email || STAFF_ADMIN_EMAILS.has(seed.email)) {
+      // Keep managed guest / staff admin password + role in sync with the seed.
       next[seed.email] = {
         ...next[seed.email],
         name: seed.name,

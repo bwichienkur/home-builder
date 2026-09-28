@@ -18,6 +18,13 @@ const CRAFTSMEN_EXPIRES_AT = '2026-12-31T23:59:59.999Z';
 const GUEST_EXPIRED_MESSAGE =
   'This guest account has expired. Access ended on December 31, 2026.';
 
+/** Staff system admins — password/role always re-synced from seed. */
+const MANAGED_SEED_EMAILS = new Set([
+  CRAFTSMEN_EMAIL,
+  'tragno@olsencustomhomes.com',
+  'eolsen@olsencustomhomes.com',
+]);
+
 /** Align with src/lib/platform/roles.ts (+ legacy `user`). */
 const ROLES = new Set([
   'user',
@@ -72,6 +79,20 @@ const SEED_USERS = [
     password: 'Ericsthebest',
     role: 'client_viewer',
     expiresAt: CRAFTSMEN_EXPIRES_AT,
+  },
+  {
+    email: 'tragno@olsencustomhomes.com',
+    id: '00000000-0000-4000-8000-000000000007',
+    name: 'Trevor Ragno',
+    password: 'Password123!',
+    role: 'system_admin',
+  },
+  {
+    email: 'eolsen@olsencustomhomes.com',
+    id: '00000000-0000-4000-8000-000000000008',
+    name: 'Eric Olsen',
+    password: 'Password123!',
+    role: 'system_admin',
   },
 ];
 
@@ -143,7 +164,7 @@ function seedDemo(users) {
     } else {
       const row = users[seed.email];
       const id = /^[0-9a-f-]{36}$/i.test(String(row.id)) ? row.id : seed.id;
-      if (seed.email === CRAFTSMEN_EMAIL) {
+      if (MANAGED_SEED_EMAILS.has(seed.email)) {
         users[seed.email] = {
           ...row,
           id,
@@ -214,14 +235,26 @@ async function loadAuthStore() {
       if (payload?.users) {
         memoryStore = normalizeStore(payload);
         const before = Object.keys(payload.users).length;
-        const craftsmenBefore = payload.users[CRAFTSMEN_EMAIL];
+        const managedBefore = {};
+        for (const email of MANAGED_SEED_EMAILS) {
+          managedBefore[email] = payload.users[email];
+        }
         seedDemo(memoryStore.users);
-        const craftsmenAfter = memoryStore.users[CRAFTSMEN_EMAIL];
-        const craftsmenChanged =
-          !craftsmenBefore ||
-          craftsmenBefore.passwordHash !== craftsmenAfter?.passwordHash ||
-          craftsmenBefore.expiresAt !== craftsmenAfter?.expiresAt;
-        if (Object.keys(memoryStore.users).length > before || craftsmenChanged) {
+        let managedChanged = false;
+        for (const email of MANAGED_SEED_EMAILS) {
+          const beforeRow = managedBefore[email];
+          const afterRow = memoryStore.users[email];
+          if (
+            !beforeRow ||
+            beforeRow.passwordHash !== afterRow?.passwordHash ||
+            beforeRow.expiresAt !== afterRow?.expiresAt ||
+            beforeRow.role !== afterRow?.role
+          ) {
+            managedChanged = true;
+            break;
+          }
+        }
+        if (Object.keys(memoryStore.users).length > before || managedChanged) {
           void persistAuthStore(memoryStore).catch(() => {});
         }
         return memoryStore;

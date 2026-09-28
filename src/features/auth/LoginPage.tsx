@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { DEMO_LOGIN, useAuthStore } from '../../store/authStore';
+import { useAuthStore } from '../../store/authStore';
 import './auth.css';
 
 function postLoginPath(state: unknown): string {
@@ -22,8 +22,8 @@ export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [mode, setMode] = useState<'login' | 'register'>('login');
-  const [email, setEmail] = useState(DEMO_LOGIN.email);
-  const [password, setPassword] = useState(DEMO_LOGIN.password);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -112,16 +112,6 @@ export function LoginPage() {
               </button>
             </>
           )}
-        </p>
-        <p className="auth-demo muted">
-          Demo admin: {DEMO_LOGIN.email} / {DEMO_LOGIN.password}
-          <br />
-          Also: designer@ / designer123 · estimator@ / estimator123 · client@ / client123 · pm@ / pm123
-          <span className="muted"> (@mahnikka.local)</span>
-        </p>
-        <p className="muted">
-          Production signs in via Neon <code>/api/auth</code>. Local Vite uses browser accounts unless{' '}
-          <code>VITE_AUTH_PROVIDER=remote</code>.
         </p>
       </div>
     </div>

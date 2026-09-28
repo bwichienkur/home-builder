@@ -4,11 +4,12 @@ import type { AuthUser } from '../lib/platform/authProvider';
 import { getAuthProvider } from '../lib/platform/getAuthProvider';
 import { DEMO_LOGIN } from '../lib/platform/localAuthProvider';
 import { normalizeRole } from '../lib/platform/roles';
+import { STAFF_ADMIN_EMAILS } from '../lib/platform/staffAdmins';
 
 function withRole(user: AuthUser | null): AuthUser | null {
   if (!user) return null;
-  // Demo operator is always system admin, including older sessions without a role field.
-  if (user.email === 'admin@mahnikka.local') {
+  // Demo operator + Olsen staff admins stay system_admin even on older sessions.
+  if (user.email === 'admin@mahnikka.local' || STAFF_ADMIN_EMAILS.has(user.email)) {
     return { ...user, role: 'system_admin' };
   }
   return { ...user, role: normalizeRole(user.role) };
