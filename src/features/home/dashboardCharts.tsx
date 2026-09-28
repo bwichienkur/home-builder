@@ -1,8 +1,11 @@
+import { useCallback, useId, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import type { PhaseSlice, PipelineStage, SalesPerformanceBar } from '../../lib/buildertrend/types';
-import { formatCompactUsd } from '../../lib/buildertrend/format';
+import { formatCompactUsd, formatUsd } from '../../lib/buildertrend/format';
 import {
   CHART_PERIODS,
+  formatHistoryDay,
+  formatHistorySource,
   type ChartPeriodId,
   type PeriodSeries,
 } from '../../lib/dashboard/kpiHistory';
@@ -80,17 +83,33 @@ export function PeriodFilter({
   );
 }
 
-/** Full-width period line chart (Robinhood-style). */
+function formatSeriesValue(value: number, isMoney: boolean): string {
+  if (isMoney) return formatUsd(value);
+  if (Number.isInteger(value)) return String(value);
+  return value.toFixed(1);
+}
+
+/** Full-width period line chart with hover tooltip + click to focus a day. */
 export function PeriodLineChart({
   series,
   positive,
+  isMoney = true,
+  activeIndex = null,
+  onActiveIndexChange,
+  onToggleDetails,
 }: {
   series: PeriodSeries;
   positive: boolean;
+  isMoney?: boolean;
+  activeIndex?: number | null;
+  onActiveIndexChange?: (index: number | null) => void;
+  onToggleDetails?: () => void;
 }) {
+  const gradId = useId().replace(/:/g, '');
   const width = 640;
   const height = 180;
   const values = series.values.length ? series.values : [0, 0];
+  const days = series.days.length ? series.days : [''];
   const min = Math.min(...values);
   const max = Math.max(...values);
   const span = max - min || 1;
@@ -98,7 +117,7 @@ export function PeriodLineChart({
   const coords = values.map((value, index) => {
     const x = values.length === 1 ? width / 2 : (index / (values.length - 1)) * (width - 8) + 4;
     const y = height - 10 - ((value - min) / span) * (height - 20);
-    return { x, y };
+    return { x, y, value, day: days[index] ?? '' };
   });
   const linePoints = coords.map((c) => `${c.x},${c.y}`).join(' ');
   const areaPath = [
@@ -108,30 +127,150 @@ export function PeriodLineChart({
     'Z',
   ].join(' ');
 
+  const pickIndex = useCallback(
+    (clientX: number, target: Element) => {
+      const rect = target.getBoundingClientRect();
+      if (!rect.width || coords.length === 0) return 0;
+      const t = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+      return Math.round(t * (coords.length - 1));
+    },
+    [coords.length],
+  );
+
+  const tip = activeIndex != null ? coords[activeIndex] : null;
+
   return (
-    <svg
-      className="dash-period-chart"
-      viewBox={`0 0 ${width} ${height}`}
-      role="img"
-      aria-label={`Trend ${series.label}`}
-      preserveAspectRatio="none"
-    >
-      <defs>
-        <linearGradient id="dashPeriodFill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity="0.28" />
-          <stop offset="100%" stopColor={color} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <path d={areaPath} fill="url(#dashPeriodFill)" />
-      <polyline
-        fill="none"
-        stroke={color}
-        strokeWidth="2.5"
-        strokeLinejoin="round"
-        strokeLinecap="round"
-        points={linePoints}
-      />
-    </svg>
+    <div className="dash-period-chart-wrap">
+      <svg
+        className="dash-period-chart"
+        viewBox={`0 0 ${width} ${height}`}
+        role="img"
+        aria-label={`Trend ${series.label}. Hover or click a point to see daily pull values.`}
+        preserveAspectRatio="none"
+        onMouseMove={(event) => {
+          const index = pickIndex(event.clientX, event.currentTarget);
+          onActiveIndexChange?.(index);
+        }}
+        onMouseLeave={() => onActiveIndexChange?.(null)}
+        onClick={(event) => {
+          const index = pickIndex(event.clientX, event.currentTarget);
+          onActiveIndexChange?.(index);
+          onToggleDetails?.();
+        }}
+      >
+        <defs>
+          <linearGradient id={`dashPeriodFill-${gradId}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.28" />
+            <stop offset="100%" stopColor={color} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <path d={areaPath} fill={`url(#dashPeriodFill-${gradId})`} />
+        <polyline
+          fill="none"
+          stroke={color}
+          strokeWidth="2.5"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+          points={linePoints}
+        />
+        {tip ? (
+          <>
+            <line
+              x1={tip.x}
+              x2={tip.x}
+              y1={0}
+              y2={height}
+              stroke={color}
+              strokeOpacity="0.35"
+              strokeWidth="1.25"
+            />
+            <circle cx={tip.x} cy={tip.y} r="5" fill="#fff" stroke={color} strokeWidth="2.5" />
+          </>
+        ) : null}
+      </svg>
+      {tip ? (
+        <div
+          className="dash-period-tooltip"
+          style={{ left: `${(tip.x / width) * 100}%` }}
+          role="status"
+        >
+          <strong>{formatSeriesValue(tip.value, isMoney)}</strong>
+          <span>{tip.day ? formatHistoryDay(tip.day) : '—'}</span>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/** Expandable day-by-day table for the selected period series. */
+export function PeriodDailyPoints({
+  series,
+  metricTitle,
+  isMoney,
+  open,
+  onToggle,
+  highlightedDay,
+  onHighlightDay,
+}: {
+  series: PeriodSeries;
+  metricTitle: string;
+  isMoney: boolean;
+  open: boolean;
+  onToggle: () => void;
+  highlightedDay?: string | null;
+  onHighlightDay?: (day: string | null) => void;
+}) {
+  const rows = useMemo(
+    () =>
+      series.days.map((day, index) => ({
+        day,
+        value: series.values[index] ?? 0,
+        source: series.sources[index] ?? '',
+      })),
+    [series],
+  );
+
+  return (
+    <div className="dash-period-daily">
+      <button type="button" className="dash-period-daily-toggle" onClick={onToggle} aria-expanded={open}>
+        {open ? 'Hide' : 'View'} daily pulls · {rows.length} point{rows.length === 1 ? '' : 's'} ·{' '}
+        {series.label}
+      </button>
+      {open ? (
+        <div className="dash-period-daily-panel">
+          <p className="dash-period-daily-lede">
+            Each row is a stored {metricTitle} value for that calendar day (from a live refresh or the
+            scheduled daily job).
+          </p>
+          <div className="dash-period-daily-scroll">
+            <table className="dash-period-daily-table">
+              <thead>
+                <tr>
+                  <th scope="col">Day</th>
+                  <th scope="col">Value</th>
+                  <th scope="col">Source</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...rows].reverse().map((row) => (
+                  <tr
+                    key={row.day}
+                    className={highlightedDay === row.day ? 'is-active' : undefined}
+                    onMouseEnter={() => onHighlightDay?.(row.day)}
+                    onMouseLeave={() => onHighlightDay?.(null)}
+                    onClick={() => onHighlightDay?.(row.day)}
+                  >
+                    <td>{formatHistoryDay(row.day)}</td>
+                    <td>{formatSeriesValue(row.value, isMoney)}</td>
+                    <td>{formatHistorySource(row.source)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : null}
+    </div>
   );
 }
 

@@ -22,6 +22,8 @@ export type KpiHistoryPoint = {
 export type PeriodSeries = {
   days: string[];
   values: number[];
+  /** Parallel to days/values — live | cron | snapshot | synthetic when known. */
+  sources: string[];
   /** Absolute change end − start. */
   change: number;
   /** Percent change vs period start. */
@@ -101,25 +103,23 @@ export function seriesForMetric(
   now = new Date(),
 ): PeriodSeries {
   const sliced = sliceHistoryForPeriod(points, period, now);
-  let days = sliced.map((p) => p.day);
-  let values = sliced.map((p) => Number(p.metrics[metricId])).filter((v, i) => {
-    if (!Number.isFinite(v)) {
-      days[i] = '';
-      return false;
-    }
-    return true;
-  });
-  // Re-align after filter — rebuild cleanly
   const pairs = sliced
-    .map((p) => ({ day: p.day, value: Number(p.metrics[metricId]) }))
+    .map((p) => ({
+      day: p.day,
+      value: Number(p.metrics[metricId]),
+      source: p.source ?? '',
+    }))
     .filter((p) => Number.isFinite(p.value));
-  days = pairs.map((p) => p.day);
-  values = pairs.map((p) => p.value);
+
+  let days = pairs.map((p) => p.day);
+  let values = pairs.map((p) => p.value);
+  let sources = pairs.map((p) => p.source);
 
   if (!values.length && fallbackValue != null && Number.isFinite(fallbackValue)) {
     const today = toDay(now);
     days = [today];
     values = [fallbackValue];
+    sources = ['live'];
   }
 
   const start = values[0] ?? 0;
@@ -130,6 +130,7 @@ export function seriesForMetric(
   return {
     days,
     values,
+    sources,
     change,
     changePct,
     start,
@@ -232,4 +233,26 @@ export function formatPeriodChangePlain(changePct: number, absoluteChange: numbe
   if (isMoney) return formatPeriodChangeUsd(absoluteChange, changePct);
   const arrow = changePct >= 0 ? '▲' : '▼';
   return `${arrow} ${Math.abs(absoluteChange).toFixed(1)} (${Math.abs(changePct).toFixed(2)}%)`;
+}
+
+/** Display a history day key (YYYY-MM-DD) for the daily pulls table. */
+export function formatHistoryDay(day: string): string {
+  const d = new Date(`${day}T12:00:00`);
+  if (Number.isNaN(d.getTime())) return day;
+  return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+export function formatHistorySource(source: string | undefined): string {
+  switch (source) {
+    case 'cron':
+      return 'Scheduled pull';
+    case 'live':
+      return 'Live pull';
+    case 'snapshot':
+      return 'Snapshot';
+    case 'synthetic':
+      return 'Projected';
+    default:
+      return source?.trim() ? source : '—';
+  }
 }
