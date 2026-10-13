@@ -68,6 +68,7 @@ describe('mergeCorePullWithPrior', () => {
         tasks: { tasks: [{ taskId: 1, title: 'Old past due' }] },
         selectionsByJob: { '10': [{ id: 1, title: { title: 'Pending' } }] },
         baselineSlipByJob: { '10': { permit: 5, selections: 2, construction: 1 } },
+        jobInfoContractByJob: { '10': 1_204_751, '11': 914_222 },
       },
     };
     const next: BuildertrendLivePull = {
@@ -78,6 +79,7 @@ describe('mergeCorePullWithPrior', () => {
         wip: [{ jobID: 10 }],
         tasks: { tasks: [] },
         selectionsByJob: {},
+        jobInfoContractByJob: {},
       },
     };
     const merged = mergeCorePullWithPrior(next, prior);
@@ -86,6 +88,7 @@ describe('mergeCorePullWithPrior', () => {
     expect(merged.reports.tasks).toEqual(prior.reports.tasks);
     expect(merged.reports.selectionsByJob).toEqual(prior.reports.selectionsByJob);
     expect(merged.reports.baselineSlipByJob).toEqual(prior.reports.baselineSlipByJob);
+    expect(merged.reports.jobInfoContractByJob).toEqual(prior.reports.jobInfoContractByJob);
   });
 
   it('does not merge when enrichment is full', () => {

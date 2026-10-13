@@ -876,6 +876,57 @@ export function contractPriceFromJobInfo(payload) {
   return 0;
 }
 
+function reportRows(payload) {
+  if (Array.isArray(payload)) return payload;
+  if (payload && typeof payload === 'object') {
+    if (Array.isArray(payload.rowData)) return payload.rowData;
+    if (Array.isArray(payload.data)) return payload.data;
+    const nested = payload.data && typeof payload.data === 'object' ? payload.data : null;
+    if (nested) {
+      if (Array.isArray(nested.rowData)) return nested.rowData;
+      if (Array.isArray(nested.data)) return nested.data;
+    }
+  }
+  return [];
+}
+
+function positiveMoney(value) {
+  if (typeof value === 'number' && Number.isFinite(value) && value > 0) return value;
+  if (typeof value === 'string' && value.trim()) {
+    const parsed = Number(value.replace(/[$,]/g, ''));
+    if (Number.isFinite(parsed) && parsed > 0) return parsed;
+  }
+  return 0;
+}
+
+/** Job IDs that already have a positive revised/contract price on WIP or Profitability. */
+function jobIdsWithReportContract(wipPayload, profitabilityPayload) {
+  const ids = new Set();
+  for (const row of [...reportRows(wipPayload), ...reportRows(profitabilityPayload)]) {
+    if (!row || typeof row !== 'object') continue;
+    const jobId = Number(row.jobID ?? row.jobId);
+    if (!jobId) continue;
+    const price = positiveMoney(
+      row.totalRevisedPrice ??
+        row.revisedClientPrice ??
+        row.revisedPrice ??
+        row.contractPrice ??
+        row.revisedContractPrice,
+    );
+    if (price > 0) ids.add(jobId);
+  }
+  return ids;
+}
+
+/**
+ * Open jobs missing WIP/profitability prices need Jobs → Job Info contract fallback
+ * (pre-budget signed jobs like Graham / Olmstead / Peters).
+ */
+function jobIdsNeedingJobInfo(openJobIds, wipPayload, profitabilityPayload) {
+  const havePrice = jobIdsWithReportContract(wipPayload, profitabilityPayload);
+  return openJobIds.filter((id) => !havePrice.has(Number(id)));
+}
+
 /**
  * Jobs → Job Info contract price for open jobs not yet "sent to budget"
  * (absent from Profitability / WIP with a revised price).
@@ -1003,13 +1054,21 @@ export async function fetchReportsServerless(session) {
     });
   }
 
+  // Pre-budget jobs are absent from WIP/Profitability — pull Job Info contracts in-core
+  // so Total WIP does not drop to $0 before staged enrichment finishes.
+  const openIds = openJobIdsFromPicker(jobs.data);
+  const needJobInfo = jobIdsNeedingJobInfo(openIds, wip.data, profitability.data);
+  const jobInfoContractByJob = needJobInfo.length
+    ? await run('job-info-contracts', () => fetchJobInfoContractByJob(session, needJobInfo, { concurrency: 4 }))
+    : {};
+
   return {
     reports: {
       wip: wip.data,
       profitability: profitability.data,
       changeOrderProfit: changeOrderProfit.data,
       cashflow: null,
-      jobInfoContractByJob: {},
+      jobInfoContractByJob,
       dailyLogs: dailyLogs.data,
       userDailyLogsRecent: null,
       schedulePercentComplete: schedulePercentComplete.data,
@@ -1145,6 +1204,13 @@ export async function fetchReportsCore(session) {
   }
 
   const perJob = emptyPerJobReports();
+  const needJobInfo = jobIdsNeedingJobInfo(jobIds, wip.data, profitability.data);
+  if (needJobInfo.length) {
+    perJob.jobInfoContractByJob = await fetchJobInfoContractByJob(session, needJobInfo, {
+      concurrency: 5,
+    });
+  }
+
   const reports = {
     wip: wip.data,
     profitability: profitability.data,
