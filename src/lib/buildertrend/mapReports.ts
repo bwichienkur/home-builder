@@ -960,11 +960,19 @@ export function mapBuildertrendReports(
   const unique = [...new Map([...jobs.values()].map((job) => [job.name.toLowerCase(), job])).values()];
   const schedulePulled =
     Object.keys(reports.scheduleByJob ?? {}).length > 0 || Object.keys(reports.siteWorkByJob ?? {}).length > 0;
-  // When Site Work schedule data is present, omit open jobs that have no Site Work item
-  // (e.g. scratch jobs) so status overview matches owner active-job counts.
-  const forDashboard = schedulePulled
-    ? unique.filter((job) => job.status !== 'open' || job.siteWorkStarted != null)
-    : unique;
+  // Only apply the Site Work filter once open jobs have been schedule-enriched.
+  // Core pulls often load closed/warranty schedules first — that must not wipe open jobs
+  // (Graham, Olmstead, etc.) before Job Info / open-job schedule enrichment runs.
+  const openJobIds = new Set(
+    unique.filter((job) => job.status === 'open' && job.jobId).map((job) => String(job.jobId)),
+  );
+  const openScheduleEnriched = [...openJobIds].some(
+    (id) => Boolean(reports.scheduleByJob?.[id]) || Boolean(reports.siteWorkByJob?.[id]),
+  );
+  const forDashboard =
+    schedulePulled && openScheduleEnriched
+      ? unique.filter((job) => job.status !== 'open' || job.siteWorkStarted != null)
+      : unique;
   const ownerJobs = forDashboard.map((job) => toOwnerJob(job, now)).sort((a, b) => a.name.localeCompare(b.name));
 
   const wipJobs = forDashboard.filter((job) => job.onWip);

@@ -127,6 +127,12 @@ export function mergeCorePullWithPrior(
   ) {
     reports.baselineItemsByJob = prior.reports.baselineItemsByJob;
   }
+  if (
+    (!reports.jobInfoContractByJob || Object.keys(reports.jobInfoContractByJob).length === 0) &&
+    prior.reports.jobInfoContractByJob
+  ) {
+    reports.jobInfoContractByJob = prior.reports.jobInfoContractByJob;
+  }
   return { ...next, reports };
 }
 

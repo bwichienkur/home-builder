@@ -138,16 +138,22 @@ export function slimCoreReportRows(kind, payload) {
       return rows.map((row) => {
         const rec = asRecord(row);
         if (!rec) return null;
+        const totalRevised =
+          rec.totalRevisedPrice ?? rec.revisedClientPrice ?? rec.revisedPrice ?? null;
+        const contract =
+          totalRevised ?? rec.contractPrice ?? rec.revisedContractPrice ?? undefined;
         return {
           jobID: rec.jobID ?? rec.jobId,
           jobName: rec.jobName ?? rec.name,
           jobStatus: rec.jobStatus,
           projectManagers: rec.projectManagers ?? rec.projectManager,
-          contractPrice: rec.contractPrice ?? rec.revisedContractPrice,
+          totalRevisedPrice: totalRevised ?? undefined,
+          contractPrice: contract,
           amountInvoiced: rec.amountInvoiced,
-          percentComplete: rec.percentComplete,
+          percentComplete: rec.percentComplete ?? rec.jobCompletionPercentage,
           earnedRevenue: rec.earnedRevenue,
           projectedMargin: rec.projectedMargin,
+          projectedProfit: rec.projectedProfit,
           amountRemaining: rec.amountRemaining,
         };
       }).filter(Boolean);

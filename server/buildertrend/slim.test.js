@@ -71,6 +71,26 @@ describe('slimCoreReportRows', () => {
     expect(slim[0].giantUnusedBlob).toBeUndefined();
   });
 
+  it('preserves WIP totalRevisedPrice for contract resolution', () => {
+    const slim = slimCoreReportRows('wip', [
+      {
+        jobID: 2,
+        jobName: 'Graham',
+        totalRevisedPrice: 1_204_751,
+        jobCompletionPercentage: 12,
+        giantUnusedBlob: true,
+      },
+    ]);
+    expect(slim[0]).toMatchObject({
+      jobID: 2,
+      jobName: 'Graham',
+      totalRevisedPrice: 1_204_751,
+      contractPrice: 1_204_751,
+      percentComplete: 12,
+    });
+    expect(slim[0].giantUnusedBlob).toBeUndefined();
+  });
+
   it('normalizes job picker shape', () => {
     const slim = slimCoreReportRows('jobs', {
       data: { jobs: [{ jobID: 9, jobName: 'Beta', jobStatus: 1, extra: true }] },

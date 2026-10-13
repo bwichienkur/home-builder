@@ -475,6 +475,55 @@ describe('Buildertrend report mapper', () => {
     expect(mapped.salesPerformance[0]?.value).toBe(1_402_571.9 + 1_204_751);
   });
 
+  it('keeps pre-budget open jobs when only closed schedules are present (core pull)', () => {
+    // Staged core pulls load closed/warranty schedules first. That must not zero-out
+    // Graham/Olmstead-style jobs that only have Job Info contracts yet.
+    const mapped = mapBuildertrendReports(
+      {
+        jobs: [
+          { jobID: 101, jobName: 'Graham', jobStatus: 'Open' },
+          { jobID: 102, jobName: 'Olmstead', jobStatus: 'Open' },
+          { jobID: 200, jobName: 'Closed Warranty', jobStatus: 'Closed' },
+        ],
+        jobInfoContractByJob: {
+          '101': 1_204_751,
+          '102': 914_222,
+        },
+        scheduleByJob: {
+          '200': { siteWorkStarted: true, foundationStarted: true },
+        },
+      },
+      { now },
+    );
+    expect(mapped.jobs.find((j) => j.name === 'Graham')).toMatchObject({
+      wip: 1_204_751,
+      contractPrice: 1_204_751,
+    });
+    expect(mapped.jobs.find((j) => j.name === 'Olmstead')).toMatchObject({
+      wip: 914_222,
+    });
+    const totalWip = mapped.jobs.filter((j) => j.status === 'open').reduce((s, j) => s + j.wip, 0);
+    expect(totalWip).toBe(1_204_751 + 914_222);
+  });
+
+  it('uses WIP totalRevisedPrice when profitability and Job Info are empty', () => {
+    const mapped = mapBuildertrendReports(
+      {
+        jobs: [{ jobID: 7, jobName: 'On Wip Only', jobStatus: 'Open' }],
+        wip: {
+          data: {
+            rowData: [{ jobID: 7, jobName: 'On Wip Only', totalRevisedPrice: 1_555_553, jobStatus: 'Open' }],
+          },
+        },
+      },
+      { now },
+    );
+    expect(mapped.jobs.find((j) => j.name === 'On Wip Only')).toMatchObject({
+      wip: 1_555_553,
+      contractPrice: 1_555_553,
+    });
+  });
+
   it('maps change order revenue and profit from the change-order-profit report', () => {
     const mapped = mapBuildertrendReports(
       {
