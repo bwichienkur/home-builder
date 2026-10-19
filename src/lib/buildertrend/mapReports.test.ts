@@ -278,12 +278,18 @@ describe('Buildertrend report mapper', () => {
   });
 
   it('phases open jobs by Site Work schedule start and drops jobs without that item', () => {
+    // Full enrichment: every open job has a schedule stub/entry. Scratch has no Site Work.
     const mapped = mapBuildertrendReports({
       jobs: [
         { jobID: 1, jobName: 'Design Job', jobStatus: 'Open', projectManagers: 'Adam Horseman' },
         { jobID: 2, jobName: 'Build Job', jobStatus: 'Open', projectManagers: 'James Manford' },
         { jobID: 3, jobName: 'Scratch Job', jobStatus: 'Open', projectManagers: '' },
       ],
+      scheduleByJob: {
+        '1': { siteWorkStarted: false, siteWork: { started: false, title: 'Site Work' } },
+        '2': { siteWorkStarted: true, siteWork: { started: true, title: 'Site Work' } },
+        '3': { siteWorkStarted: null, siteWork: null },
+      },
       siteWorkByJob: {
         '1': { started: false, title: 'Site Work', percentComplete: 0, isComplete: false },
         '2': { started: true, title: 'Site Work', percentComplete: 100, isComplete: true },
@@ -504,6 +510,34 @@ describe('Buildertrend report mapper', () => {
     });
     const totalWip = mapped.jobs.filter((j) => j.status === 'open').reduce((s, j) => s + j.wip, 0);
     expect(totalWip).toBe(1_204_751 + 914_222);
+  });
+
+  it('keeps unenriched open jobs during partial staged schedule enrichment', () => {
+    // After the first open-job batch, Neon has schedule for some opens only.
+    // Remaining Job Info–priced jobs must stay in Total WIP until enrichment finishes.
+    const mapped = mapBuildertrendReports(
+      {
+        jobs: [
+          { jobID: 101, jobName: 'Graham', jobStatus: 'Open' },
+          { jobID: 102, jobName: 'Olmstead', jobStatus: 'Open' },
+          { jobID: 103, jobName: 'Peters', jobStatus: 'Open' },
+        ],
+        jobInfoContractByJob: {
+          '101': 1_204_751,
+          '102': 914_222,
+          '103': 1_236_930,
+        },
+        scheduleByJob: {
+          '101': { siteWorkStarted: false, siteWork: { started: false, title: 'Site Work' } },
+        },
+      },
+      { now },
+    );
+    expect(mapped.jobs.map((j) => j.name).sort()).toEqual(['Graham', 'Olmstead', 'Peters']);
+    expect(mapped.jobs.find((j) => j.name === 'Olmstead')?.wip).toBe(914_222);
+    expect(mapped.jobs.find((j) => j.name === 'Peters')?.wip).toBe(1_236_930);
+    const totalWip = mapped.jobs.filter((j) => j.status === 'open').reduce((s, j) => s + j.wip, 0);
+    expect(totalWip).toBe(1_204_751 + 914_222 + 1_236_930);
   });
 
   it('uses WIP totalRevisedPrice when profitability and Job Info are empty', () => {
