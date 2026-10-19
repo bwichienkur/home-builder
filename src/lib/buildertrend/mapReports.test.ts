@@ -540,6 +540,36 @@ describe('Buildertrend report mapper', () => {
     expect(totalWip).toBe(1_204_751 + 914_222 + 1_236_930);
   });
 
+  it('keeps Job Info–priced opens after complete schedule enrichment even without Site Work', () => {
+    // Full enrich stubs every open job. Without a Site Work item, siteWorkStarted stays null —
+    // those jobs must still count in Total WIP when Job Info (or WIP) has a price.
+    const mapped = mapBuildertrendReports(
+      {
+        jobs: [
+          { jobID: 101, jobName: 'Graham', jobStatus: 'Open' },
+          { jobID: 102, jobName: 'Olmstead', jobStatus: 'Open' },
+          { jobID: 103, jobName: 'Peters', jobStatus: 'Open' },
+          { jobID: 999, jobName: 'Scratch Job', jobStatus: 'Open' },
+        ],
+        jobInfoContractByJob: {
+          '101': 1_204_751,
+          '102': 914_222,
+          '103': 1_236_930,
+        },
+        scheduleByJob: {
+          '101': { siteWorkStarted: null, siteWork: null },
+          '102': { siteWorkStarted: null, siteWork: null },
+          '103': { siteWorkStarted: null, siteWork: null },
+          '999': { siteWorkStarted: null, siteWork: null },
+        },
+      },
+      { now },
+    );
+    expect(mapped.jobs.map((j) => j.name).sort()).toEqual(['Graham', 'Olmstead', 'Peters']);
+    const totalWip = mapped.jobs.filter((j) => j.status === 'open').reduce((s, j) => s + j.wip, 0);
+    expect(totalWip).toBe(1_204_751 + 914_222 + 1_236_930);
+  });
+
   it('uses WIP totalRevisedPrice when profitability and Job Info are empty', () => {
     const mapped = mapBuildertrendReports(
       {

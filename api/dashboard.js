@@ -13,6 +13,7 @@ import {
   metricsFromKpis,
   upsertKpiHistoryDay,
 } from '../server/dashboardKpiHistoryStore.js';
+import { roughMetricsFromPull } from '../server/dashboardRoughMetrics.js';
 
 export const config = { maxDuration: 300 };
 
@@ -53,50 +54,6 @@ function authorizedCron(req) {
   const bearer = header.startsWith('Bearer ') ? header.slice(7).trim() : '';
   const query = typeof req.query?.secret === 'string' ? req.query.secret : '';
   return bearer === secret || query === secret;
-}
-
-function roughMetricsFromPull(btPayload, pdPayload) {
-  const metrics = {};
-  try {
-    const wipRows = Array.isArray(btPayload?.reports?.wip)
-      ? btPayload.reports.wip
-      : Array.isArray(btPayload?.reports?.wip?.rowData)
-        ? btPayload.reports.wip.rowData
-        : [];
-    let wip = 0;
-    let revenue = 0;
-    let active = 0;
-    for (const row of wipRows) {
-      const status = String(row?.jobStatus ?? row?.status ?? '').toLowerCase();
-      const contract = Number(row?.revisedClientPrice ?? row?.contractPrice ?? row?.wip ?? 0) || 0;
-      const invoiced = Number(row?.amountInvoiced ?? row?.revenueToDate ?? 0) || 0;
-      if (!status || status.includes('open') || status === '0') {
-        active += 1;
-        wip += contract;
-      }
-      revenue += invoiced;
-    }
-    if (active) metrics.active = active;
-    if (wip) metrics.wip = wip;
-    if (revenue) metrics.revenue = revenue;
-  } catch {
-    /* ignore */
-  }
-  try {
-    const stages = pdPayload?.reports?.pipelineStages || pdPayload?.reports?.stages;
-    if (Array.isArray(stages)) {
-      let weighted = 0;
-      for (const stage of stages) {
-        const value = Number(stage?.value ?? stage?.weightedValue ?? 0) || 0;
-        const weight = Number(stage?.weight ?? stage?.probability ?? 1) || 1;
-        weighted += value * (weight > 1 ? weight / 100 : weight);
-      }
-      if (weighted) metrics.pipeline = weighted;
-    }
-  } catch {
-    /* ignore */
-  }
-  return metrics;
 }
 
 async function handleHistory(req, res) {
