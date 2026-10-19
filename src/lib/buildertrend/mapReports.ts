@@ -960,15 +960,17 @@ export function mapBuildertrendReports(
   const unique = [...new Map([...jobs.values()].map((job) => [job.name.toLowerCase(), job])).values()];
   const schedulePulled =
     Object.keys(reports.scheduleByJob ?? {}).length > 0 || Object.keys(reports.siteWorkByJob ?? {}).length > 0;
-  // Only apply the Site Work filter once open jobs have been schedule-enriched.
-  // Core pulls often load closed/warranty schedules first — that must not wipe open jobs
-  // (Graham, Olmstead, etc.) before Job Info / open-job schedule enrichment runs.
-  const openJobIds = new Set(
-    unique.filter((job) => job.status === 'open' && job.jobId).map((job) => String(job.jobId)),
-  );
-  const openScheduleEnriched = [...openJobIds].some(
-    (id) => Boolean(reports.scheduleByJob?.[id]) || Boolean(reports.siteWorkByJob?.[id]),
-  );
+  // Only apply the Site Work filter once EVERY open job has been schedule-enriched.
+  // Staged Vercel refresh saves Neon after each 3-job batch — using `.some()` here
+  // dropped Graham/Olmstead/etc. as soon as the first open batch finished.
+  const openWithIds = unique.filter((job) => job.status === 'open' && job.jobId);
+  const openScheduleEnriched =
+    openWithIds.length > 0 &&
+    openWithIds.every(
+      (job) =>
+        Boolean(reports.scheduleByJob?.[String(job.jobId)]) ||
+        Boolean(reports.siteWorkByJob?.[String(job.jobId)]),
+    );
   const forDashboard =
     schedulePulled && openScheduleEnriched
       ? unique.filter((job) => job.status !== 'open' || job.siteWorkStarted != null)

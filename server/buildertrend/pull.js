@@ -252,7 +252,10 @@ function rollingLogWindow(now = new Date()) {
 
 function openJobIdsFromPicker(jobsPayload) {
   const list = jobsPayload?.data?.jobs ?? jobsPayload?.jobs ?? [];
-  return list.filter((job) => job.jobStatus === 1 || String(job.jobStatus).toLowerCase() === 'open').map((job) => job.jobID);
+  return list
+    .filter((job) => job.jobStatus === 1 || String(job.jobStatus).toLowerCase() === 'open')
+    .map((job) => job.jobID ?? job.jobId)
+    .filter(Boolean);
 }
 
 /** BT caps Tasks/list responses at 4,000 rows; per-job pulls avoid cross-job truncation. */
@@ -685,7 +688,23 @@ async function fetchScheduleMilestonesByJob(session, jobIds) {
     anyOk = true;
     Object.assign(merged, scheduleMilestonesFromGantt(result.data));
   }
-  return { ok: anyOk, status: lastStatus, data: merged };
+  // Stub every requested job. Partial staged batches only stub finished IDs, so the
+  // mapper can wait until ALL opens are enriched before dropping scratch jobs.
+  for (const jobId of unique) {
+    const key = String(jobId);
+    if (merged[key]) continue;
+    merged[key] = {
+      firstItemStartDate: '',
+      siteWork: null,
+      permitting: null,
+      foundation: null,
+      closing: null,
+      siteWorkStarted: null,
+      foundationStarted: null,
+      currentItem: null,
+    };
+  }
+  return { ok: anyOk || unique.length > 0, status: lastStatus, data: merged };
 }
 
 async function fetchBaselineGridForJob(session, jobId) {
@@ -940,9 +959,21 @@ async function fetchJobInfoContractByJob(session, jobIds, { concurrency = 5 } = 
   });
   const byJob = {};
   for (const part of parts) {
-    if (part.ok) byJob[String(part.jobId)] = part.contractPrice;
+    // Never store $0 — a later batch must not wipe a positive price from core / earlier enrich.
+    if (part.ok && part.contractPrice > 0) byJob[String(part.jobId)] = part.contractPrice;
   }
   return byJob;
+}
+
+/** Prefer existing positive Job Info prices when merging enrichment batches. */
+function mergeJobInfoContractByJob(prior = {}, next = {}) {
+  const merged = { ...prior };
+  for (const [jobId, price] of Object.entries(next ?? {})) {
+    const value = Number(price);
+    if (!Number.isFinite(value) || value <= 0) continue;
+    merged[jobId] = value;
+  }
+  return merged;
 }
 
 function leadsGridBody() {
@@ -1297,7 +1328,7 @@ export async function enrichReportsBatch(
     siteWorkByJob: siteWorkByJobFromSchedule(scheduleData),
     baselineSlipByJob: { ...(reports.baselineSlipByJob ?? {}), ...(baselineSlipByJob.data ?? {}) },
     baselineItemsByJob: { ...(reports.baselineItemsByJob ?? {}), ...(baselineSlipByJob.itemsByJob ?? {}) },
-    jobInfoContractByJob: { ...(reports.jobInfoContractByJob ?? {}), ...jobInfoContractByJob },
+    jobInfoContractByJob: mergeJobInfoContractByJob(reports.jobInfoContractByJob, jobInfoContractByJob),
   };
 
   return {
