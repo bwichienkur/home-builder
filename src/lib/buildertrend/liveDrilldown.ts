@@ -8,29 +8,9 @@ import type { LiveDrilldown } from '../dashboard/drilldownTypes';
  * Daily logs = user×job rows from the rolling 4-week window.
  */
 export const LIVE_DRILLDOWN: LiveDrilldown = {
-  "generatedAt": "2026-09-01T20:19:53.727Z",
+  "generatedAt": "2026-10-13T21:13:42.681Z",
   "dealsByStage": {
     "pd-1": [
-      {
-        "id": 12,
-        "title": "Michael and Gabrielle Sergent | 5806 Spruce Creek Road",
-        "value": 750000,
-        "stageName": "First Contact",
-        "probabilityPct": 10,
-        "weightedValue": 75000,
-        "expectedCloseDate": "",
-        "status": "open"
-      },
-      {
-        "id": 13,
-        "title": "Trivett Sam",
-        "value": 500000,
-        "stageName": "First Contact",
-        "probabilityPct": 10,
-        "weightedValue": 50000,
-        "expectedCloseDate": "",
-        "status": "open"
-      },
       {
         "id": 19,
         "title": "Yanet Garay | 1707 Destino Court",
@@ -52,32 +32,12 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "status": "open"
       },
       {
-        "id": 57,
-        "title": "Durwood Goings | 390 Windsor Court",
-        "value": 1000000,
-        "stageName": "First Contact",
-        "probabilityPct": 10,
-        "weightedValue": 100000,
-        "expectedCloseDate": "",
-        "status": "open"
-      },
-      {
         "id": 58,
         "title": "Ed & Daisy Soto | 95 Coronado Road",
         "value": 900000,
         "stageName": "First Contact",
         "probabilityPct": 10,
         "weightedValue": 90000,
-        "expectedCloseDate": "",
-        "status": "open"
-      },
-      {
-        "id": 59,
-        "title": "Tom Kohberger | 559 Beach Bum Boulevard",
-        "value": 1600000,
-        "stageName": "First Contact",
-        "probabilityPct": 10,
-        "weightedValue": 160000,
         "expectedCloseDate": "",
         "status": "open"
       },
@@ -92,22 +52,12 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "status": "open"
       },
       {
-        "id": 77,
-        "title": "Mike and Cassie Dorceus | 549 Antila Way",
-        "value": 1500000,
-        "stageName": "First Contact",
-        "probabilityPct": 10,
-        "weightedValue": 150000,
-        "expectedCloseDate": "",
-        "status": "open"
-      },
-      {
         "id": 81,
-        "title": "Klioze Jackie",
-        "value": 950000,
+        "title": "Klioze Jackie VB Lot 138",
+        "value": 1200000,
         "stageName": "First Contact",
         "probabilityPct": 10,
-        "weightedValue": 95000,
+        "weightedValue": 120000,
         "expectedCloseDate": "",
         "status": "open"
       },
@@ -123,21 +73,11 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
       },
       {
         "id": 83,
-        "title": "Allen Kim and Mike LISA GARDENER CUSTOMER",
+        "title": "Mike and Kim Allen | 4550 North Oceanshore Boulevard 813-601-3029",
         "value": 1800000,
         "stageName": "First Contact",
         "probabilityPct": 10,
         "weightedValue": 180000,
-        "expectedCloseDate": "",
-        "status": "open"
-      },
-      {
-        "id": 87,
-        "title": "Allen & Susan Tutt | 148 Inlet Drive",
-        "value": 1300000,
-        "stageName": "First Contact",
-        "probabilityPct": 10,
-        "weightedValue": 130000,
         "expectedCloseDate": "",
         "status": "open"
       },
@@ -148,16 +88,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "stageName": "First Contact",
         "probabilityPct": 10,
         "weightedValue": 137962.80000000002,
-        "expectedCloseDate": "",
-        "status": "open"
-      },
-      {
-        "id": 105,
-        "title": "Larry Meador | 233 Quay Assisi Court",
-        "value": 1900000,
-        "stageName": "First Contact",
-        "probabilityPct": 10,
-        "weightedValue": 190000,
         "expectedCloseDate": "",
         "status": "open"
       },
@@ -174,10 +104,10 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
       {
         "id": 758,
         "title": "David Torres | (305)308-5475",
-        "value": 0,
+        "value": 900000,
         "stageName": "First Contact",
         "probabilityPct": 10,
-        "weightedValue": 0,
+        "weightedValue": 90000,
         "expectedCloseDate": "",
         "status": "open"
       },
@@ -188,26 +118,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "stageName": "First Contact",
         "probabilityPct": 10,
         "weightedValue": 100000,
-        "expectedCloseDate": "",
-        "status": "open"
-      },
-      {
-        "id": 904,
-        "title": "Ian & Leah Robinson",
-        "value": 1000000,
-        "stageName": "First Contact",
-        "probabilityPct": 10,
-        "weightedValue": 100000,
-        "expectedCloseDate": "",
-        "status": "open"
-      },
-      {
-        "id": 905,
-        "title": "Tasha Sallowen REALTOR",
-        "value": 800000,
-        "stageName": "First Contact",
-        "probabilityPct": 10,
-        "weightedValue": 80000,
         "expectedCloseDate": "",
         "status": "open"
       },
@@ -232,27 +142,57 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "status": "open"
       },
       {
-        "id": 932,
-        "title": "Nicole Nagrani | 2420 Dodge Drive",
-        "value": 1000000,
+        "id": 933,
+        "title": "Harsh Patel",
+        "value": 1500000,
         "stageName": "First Contact",
         "probabilityPct": 10,
-        "weightedValue": 100000,
+        "weightedValue": 150000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 937,
+        "title": "Brenda Miller REALTOR",
+        "value": 900000,
+        "stageName": "First Contact",
+        "probabilityPct": 10,
+        "weightedValue": 90000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 938,
+        "title": "Eric and Trish Smith - REALTOR TIM RICCI",
+        "value": 2000000,
+        "stageName": "First Contact",
+        "probabilityPct": 10,
+        "weightedValue": 200000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 942,
+        "title": "Alex Sarmiento | 140 Harbor Village Point North",
+        "value": 1200000,
+        "stageName": "First Contact",
+        "probabilityPct": 10,
+        "weightedValue": 120000,
+        "expectedCloseDate": "",
+        "status": "open"
+      },
+      {
+        "id": 944,
+        "title": "David Tente",
+        "value": 0,
+        "stageName": "First Contact",
+        "probabilityPct": 10,
+        "weightedValue": 0,
         "expectedCloseDate": "",
         "status": "open"
       }
     ],
     "pd-2": [
-      {
-        "id": 9,
-        "title": "Tim and Lori Antolovic | 288 Yacht Harbor Drive",
-        "value": 1000000,
-        "stageName": "Qualified",
-        "probabilityPct": 25,
-        "weightedValue": 250000,
-        "expectedCloseDate": "",
-        "status": "open"
-      },
       {
         "id": 10,
         "title": "Todd Blanks | 275 South Riverwalk Drive",
@@ -260,26 +200,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "stageName": "Qualified",
         "probabilityPct": 25,
         "weightedValue": 210500,
-        "expectedCloseDate": "",
-        "status": "open"
-      },
-      {
-        "id": 11,
-        "title": "Indrani Manbahal | 729 Strihal Loop",
-        "value": 1200000,
-        "stageName": "Qualified",
-        "probabilityPct": 25,
-        "weightedValue": 300000,
-        "expectedCloseDate": "",
-        "status": "open"
-      },
-      {
-        "id": 15,
-        "title": "Kovacs Mark",
-        "value": 0,
-        "stageName": "Qualified",
-        "probabilityPct": 25,
-        "weightedValue": 0,
         "expectedCloseDate": "",
         "status": "open"
       },
@@ -314,32 +234,12 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "status": "open"
       },
       {
-        "id": 54,
-        "title": "John and Tina Gray | 5350 Southwest 26th Court",
-        "value": 1100000,
-        "stageName": "Qualified",
-        "probabilityPct": 25,
-        "weightedValue": 275000,
-        "expectedCloseDate": "",
-        "status": "open"
-      },
-      {
-        "id": 62,
-        "title": "Jane & Tim Veschio | 4 Turkey Oak Lane",
-        "value": 1300000,
-        "stageName": "Qualified",
-        "probabilityPct": 25,
-        "weightedValue": 325000,
-        "expectedCloseDate": "",
-        "status": "open"
-      },
-      {
         "id": 71,
         "title": "Shackelford Mike (Has Realtor)",
-        "value": 2000000,
+        "value": 850000,
         "stageName": "Qualified",
         "probabilityPct": 25,
-        "weightedValue": 500000,
+        "weightedValue": 212500,
         "expectedCloseDate": "",
         "status": "open"
       },
@@ -350,16 +250,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "stageName": "Qualified",
         "probabilityPct": 2,
         "weightedValue": 50000,
-        "expectedCloseDate": "",
-        "status": "open"
-      },
-      {
-        "id": 911,
-        "title": "Carmen & Robert Gonzalez | 114 Hernandez Avenue",
-        "value": 1139018,
-        "stageName": "Qualified",
-        "probabilityPct": 25,
-        "weightedValue": 284754.5,
         "expectedCloseDate": "",
         "status": "open"
       }
@@ -394,6 +284,16 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "weightedValue": 427201.50000000006,
         "expectedCloseDate": "",
         "status": "open"
+      },
+      {
+        "id": 105,
+        "title": "Larry Meador | 233 Quay Assisi Court",
+        "value": 1900000,
+        "stageName": "Meet with Eric",
+        "probabilityPct": 55,
+        "weightedValue": 1045000.0000000001,
+        "expectedCloseDate": "",
+        "status": "open"
       }
     ],
     "pd-4": [
@@ -404,16 +304,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "stageName": "Homesite Secured",
         "probabilityPct": 10,
         "weightedValue": 105530,
-        "expectedCloseDate": "",
-        "status": "open"
-      },
-      {
-        "id": 67,
-        "title": "Kimberly and Michael Inglis | 50 Cool Water Court",
-        "value": 1000000,
-        "stageName": "Homesite Secured",
-        "probabilityPct": 40,
-        "weightedValue": 400000,
         "expectedCloseDate": "",
         "status": "open"
       },
@@ -453,12 +343,12 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
     "pd-6": [],
     "pd-17": [
       {
-        "id": 106,
-        "title": "Anne & Brent Lister | 122 Coronado Road",
-        "value": 965037,
+        "id": 932,
+        "title": "Nicole Nagrani | 2420 Dodge Drive",
+        "value": 1570700,
         "stageName": "Under Negotiation",
         "probabilityPct": 85,
-        "weightedValue": 820281.45,
+        "weightedValue": 1335095,
         "expectedCloseDate": "",
         "status": "open"
       }
@@ -493,7 +383,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Shutters",
         "category": "Phase 1",
         "location": "ARB",
-        "statusLabel": "Expired: Available",
+        "statusLabel": "Pending: No Choices",
         "deadline": "2025-04-01"
       },
       {
@@ -503,7 +393,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Propane/Gas",
         "category": "Phase 1",
         "location": "ARB",
-        "statusLabel": "Expired: Available",
+        "statusLabel": "Pending: No Choices",
         "deadline": "2025-04-01"
       },
       {
@@ -513,7 +403,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Bathroom Accessories",
         "category": "Phase 3",
         "location": "Interior",
-        "statusLabel": "Expired: Available",
+        "statusLabel": "Pending: No Choices",
         "deadline": "2025-04-01"
       },
       {
@@ -523,7 +413,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Railing - Interior",
         "category": "Phase 2",
         "location": "Interior",
-        "statusLabel": "Partially Complete AND Expired",
+        "statusLabel": "Partially Completed",
         "deadline": "2025-04-01"
       },
       {
@@ -533,7 +423,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Stair Carpentry",
         "category": "Phase 1",
         "location": "Interior",
-        "statusLabel": "Expired: Available",
+        "statusLabel": "Pending: No Choices",
         "deadline": "2025-04-01"
       },
       {
@@ -543,7 +433,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Specialties - Ventilated Shelving",
         "category": "Phase 3",
         "location": "Interior",
-        "statusLabel": "Partially Complete AND Expired",
+        "statusLabel": "Partially Completed",
         "deadline": "2025-04-01"
       },
       {
@@ -553,7 +443,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Sills",
         "category": "Phase 4",
         "location": "Interior",
-        "statusLabel": "Expired: Available",
+        "statusLabel": "Pending: No Choices",
         "deadline": "2025-04-01"
       },
       {
@@ -633,7 +523,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Doors - Interior",
         "category": "Phase 1",
         "location": "Interior",
-        "statusLabel": "Expired: Available",
+        "statusLabel": "Pending: No Choices",
         "deadline": "2025-04-01"
       },
       {
@@ -643,7 +533,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Doors - Hardware",
         "category": "Phase 2",
         "location": "Interior",
-        "statusLabel": "Expired: Available",
+        "statusLabel": "Pending: No Choices",
         "deadline": "2025-04-01"
       },
       {
@@ -683,7 +573,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Plumbing Fixtures - Tubs",
         "category": "Phase 1",
         "location": "Interior",
-        "statusLabel": "Partially Complete AND Expired",
+        "statusLabel": "Partially Completed",
         "deadline": "2025-04-01"
       },
       {
@@ -693,7 +583,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Plumbing Fixtures - Toilets",
         "category": "Phase 2",
         "location": "Interior",
-        "statusLabel": "Partially Complete AND Expired",
+        "statusLabel": "Partially Completed",
         "deadline": "2025-04-01"
       },
       {
@@ -703,7 +593,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Plumbing Fixtures - Sinks",
         "category": "Phase 2",
         "location": "Interior",
-        "statusLabel": "Partially Complete AND Expired",
+        "statusLabel": "Partially Completed",
         "deadline": "2025-04-01"
       },
       {
@@ -723,7 +613,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Trim Carpentry",
         "category": "Phase 2",
         "location": "Interior",
-        "statusLabel": "Partially Complete AND Expired",
+        "statusLabel": "Partially Completed",
         "deadline": "2025-04-01"
       },
       {
@@ -753,7 +643,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Gutters",
         "category": "Phase 1",
         "location": "ARB",
-        "statusLabel": "Expired: Available",
+        "statusLabel": "Pending: No Choices",
         "deadline": "2025-04-01"
       },
       {
@@ -763,7 +653,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Pool (Collins)",
         "category": "Phase 2",
         "location": "ARB",
-        "statusLabel": "Expired: Available",
+        "statusLabel": "Pending: No Choices",
         "deadline": "2025-04-01"
       },
       {
@@ -773,7 +663,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Windows - Sliders",
         "category": "Phase 1",
         "location": "ARB",
-        "statusLabel": "Expired: Available",
+        "statusLabel": "Pending: No Choices",
         "deadline": "2025-04-01"
       },
       {
@@ -783,7 +673,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Well/Water Supply",
         "category": "Phase 1",
         "location": "ARB",
-        "statusLabel": "Expired: Available",
+        "statusLabel": "Pending: No Choices",
         "deadline": "2025-04-01"
       },
       {
@@ -793,7 +683,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Stone - Exterior",
         "category": "Phase 1",
         "location": "ARB",
-        "statusLabel": "Expired: Available",
+        "statusLabel": "Pending: No Choices",
         "deadline": "2025-04-01"
       },
       {
@@ -803,7 +693,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Roofing",
         "category": "Phase 1",
         "location": "ARB",
-        "statusLabel": "Expired: Available",
+        "statusLabel": "Pending: No Choices",
         "deadline": "2025-04-01"
       },
       {
@@ -813,7 +703,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Railing - Exterior",
         "category": "Phase 1",
         "location": "ARB",
-        "statusLabel": "Partially Complete AND Expired",
+        "statusLabel": "Partially Completed",
         "deadline": "2025-04-01"
       },
       {
@@ -823,7 +713,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Pavers",
         "category": "Phase 1",
         "location": "ARB",
-        "statusLabel": "Expired: Available",
+        "statusLabel": "Pending: No Choices",
         "deadline": "2025-04-01"
       },
       {
@@ -833,7 +723,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Paint - Garage Floor Coating",
         "category": "Phase 1",
         "location": "ARB",
-        "statusLabel": "Expired: Available",
+        "statusLabel": "Pending: No Choices",
         "deadline": "2025-04-01"
       },
       {
@@ -843,7 +733,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Doors - Garage",
         "category": "Phase 1",
         "location": "ARB",
-        "statusLabel": "Partially Complete AND Expired",
+        "statusLabel": "Partially Completed",
         "deadline": "2025-04-01"
       },
       {
@@ -853,7 +743,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Corbels - N/A",
         "category": "Phase 1",
         "location": "ARB",
-        "statusLabel": "Expired: No Choices",
+        "statusLabel": "Pending: No Choices",
         "deadline": "2025-04-01"
       },
       {
@@ -863,7 +753,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Generator",
         "category": "Phase 1",
         "location": "ARB",
-        "statusLabel": "Expired: Available",
+        "statusLabel": "Pending: No Choices",
         "deadline": "2025-04-01"
       },
       {
@@ -893,7 +783,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Specialties - Glass",
         "category": "Phase 2",
         "location": "Interior",
-        "statusLabel": "Partially Complete AND Expired",
+        "statusLabel": "Partially Completed",
         "deadline": "2025-04-01"
       },
       {
@@ -913,7 +803,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "A/C Walls",
         "category": "Phase 1",
         "location": "",
-        "statusLabel": "Partially Complete AND Expired",
+        "statusLabel": "Partially Completed",
         "deadline": "2025-04-01"
       },
       {
@@ -1003,42 +893,8 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Exterior Ceiling - WoodTone",
         "category": "",
         "location": "",
-        "statusLabel": "Pending: Available",
+        "statusLabel": "Pending: No Choices",
         "deadline": ""
-      }
-    ],
-    "35918575": [
-      {
-        "id": 51079706,
-        "jobId": 35918575,
-        "jobName": "Nagle",
-        "title": "Tile - Sills",
-        "category": "Phase 4",
-        "location": "Interior",
-        "statusLabel": "Partially Complete AND Expired",
-        "deadline": "2025-12-03"
-      }
-    ],
-    "38215830": [
-      {
-        "id": 53577597,
-        "jobId": 38215830,
-        "jobName": "Kinney",
-        "title": "Paint - Interior",
-        "category": "Phase 3",
-        "location": "Interior",
-        "statusLabel": "Partially Complete AND Expired",
-        "deadline": "2025-09-30"
-      },
-      {
-        "id": 53577584,
-        "jobId": 38215830,
-        "jobName": "Kinney",
-        "title": "Electrical",
-        "category": "Phase 3",
-        "location": "Interior",
-        "statusLabel": "Partially Complete AND Expired",
-        "deadline": "2025-09-30"
       }
     ],
     "38319441": [
@@ -1049,28 +905,8 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Summer Kitchen",
         "category": "Phase 2",
         "location": "ARB",
-        "statusLabel": "Partially Complete AND Expired",
+        "statusLabel": "Partially Completed",
         "deadline": "2025-02-11"
-      },
-      {
-        "id": 53692494,
-        "jobId": 38319441,
-        "jobName": "Moura",
-        "title": "Generator",
-        "category": "Phase 2",
-        "location": "ARB",
-        "statusLabel": "Expired: Available",
-        "deadline": "2025-03-06"
-      },
-      {
-        "id": 53692490,
-        "jobId": 38319441,
-        "jobName": "Moura",
-        "title": "Framing",
-        "category": "Phase 1",
-        "location": "Interior",
-        "statusLabel": "Partially Complete AND Expired",
-        "deadline": "2025-04-12"
       },
       {
         "id": 53692513,
@@ -1083,14 +919,14 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "deadline": "2025-04-24"
       },
       {
-        "id": 53692515,
+        "id": 53692519,
         "jobId": 38319441,
         "jobName": "Moura",
-        "title": "Electrical - Home Automation",
-        "category": "Phase 3",
+        "title": "Plumbing Fixtures - Sinks",
+        "category": "Phase 2",
         "location": "Interior",
-        "statusLabel": "Expired: Available",
-        "deadline": "2025-04-30"
+        "statusLabel": "Partially Completed",
+        "deadline": "2025-04-25"
       },
       {
         "id": 53692538,
@@ -1099,7 +935,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Landscaping",
         "category": "Phase 4",
         "location": "Landscaping",
-        "statusLabel": "Expired: Available",
+        "statusLabel": "Pending: No Choices",
         "deadline": "2025-05-13"
       },
       {
@@ -1109,27 +945,17 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Stair Carpentry",
         "category": "Phase 3",
         "location": "Interior",
-        "statusLabel": "Expired: Available",
+        "statusLabel": "Pending: No Choices",
         "deadline": "2025-05-13"
       },
       {
-        "id": 53692536,
+        "id": 53692532,
         "jobId": 38319441,
         "jobName": "Moura",
-        "title": "Specialties - Ventilated Shelving",
-        "category": "Phase 4",
+        "title": "Cabinetry",
+        "category": "Phase 2",
         "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2025-05-13"
-      },
-      {
-        "id": 53692529,
-        "jobId": 38319441,
-        "jobName": "Moura",
-        "title": "Appliances",
-        "category": "Phase 1",
-        "location": "Interior",
-        "statusLabel": "Partially Complete AND Expired",
+        "statusLabel": "Partially Completed",
         "deadline": "2025-05-13"
       },
       {
@@ -1143,24 +969,44 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "deadline": "2025-05-13"
       },
       {
-        "id": 53692526,
+        "id": 53692525,
         "jobId": 38319441,
         "jobName": "Moura",
-        "title": "Paint - Interior",
+        "title": "Insulation",
         "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Expired: Available",
+        "location": "Whole House",
+        "statusLabel": "Partially Completed",
         "deadline": "2025-05-13"
       },
       {
-        "id": 53692543,
+        "id": 53692541,
         "jobId": 38319441,
         "jobName": "Moura",
-        "title": "Countertops - Material Selections",
-        "category": "Phase 2",
+        "title": "Railing - Interior",
+        "category": "Phase 3",
         "location": "Interior",
-        "statusLabel": "Partially Complete AND Expired",
-        "deadline": "2025-06-18"
+        "statusLabel": "Partially Completed",
+        "deadline": "2025-05-18"
+      },
+      {
+        "id": 64625213,
+        "jobId": 38319441,
+        "jobName": "Moura",
+        "title": "Trim Carpentry - Floating Shelves",
+        "category": "Phase 3",
+        "location": "",
+        "statusLabel": "Unreleased",
+        "deadline": ""
+      },
+      {
+        "id": 64624285,
+        "jobId": 38319441,
+        "jobName": "Moura",
+        "title": "Trim Carpentry - T&G",
+        "category": "Phase 3",
+        "location": "",
+        "statusLabel": "Pending: No Choices",
+        "deadline": ""
       },
       {
         "id": 64113576,
@@ -1179,76 +1025,40 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Tile Selections",
         "category": "Phase 2",
         "location": "Interior",
-        "statusLabel": "Pending: Available",
-        "deadline": ""
-      }
-    ],
-    "40214880": [
-      {
-        "id": 55872719,
-        "jobId": 40214880,
-        "jobName": "Emerson",
-        "title": "Tile -  Carpet, LVP, or Wood Flooring",
-        "category": "Phase 4",
-        "location": "Interior",
-        "statusLabel": "Expired: Available",
-        "deadline": "2025-12-30"
-      }
-    ],
-    "40228562": [
-      {
-        "id": 58676065,
-        "jobId": 40228562,
-        "jobName": "Blandford",
-        "title": "Plumbing Fixtures - Steam Shower",
-        "category": "Phase 2",
-        "location": "",
-        "statusLabel": "Partially Completed",
+        "statusLabel": "Pending: No Choices",
         "deadline": ""
       },
       {
-        "id": 58059960,
-        "jobId": 40228562,
-        "jobName": "Blandford",
-        "title": "Electrical - Power Screens",
-        "category": "Phase 2",
-        "location": "",
-        "statusLabel": "Pending: Available",
+        "id": 53692545,
+        "jobId": 38319441,
+        "jobName": "Moura",
+        "title": "Specialties - Glass",
+        "category": "Phase 4",
+        "location": "Interior",
+        "statusLabel": "Pending: No Choices",
         "deadline": ""
-      }
-    ],
-    "40351917": [
-      {
-        "id": 56036186,
-        "jobId": 40351917,
-        "jobName": "Bennett",
-        "title": "Landscaping - Outdoor Xscapes",
-        "category": "Phase 3",
-        "location": "Landscaping",
-        "statusLabel": "Expired: Available",
-        "deadline": "2025-12-24"
       }
     ],
     "40497055": [
       {
-        "id": 56173435,
+        "id": 56173483,
         "jobId": 40497055,
         "jobName": "Ahigian - Habashi",
-        "title": "Doors - Exterior",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Partially Complete AND Expired",
-        "deadline": "2025-08-29"
+        "title": "Specialties - Glass",
+        "category": "Phase 2",
+        "location": "Interior",
+        "statusLabel": "Partially Completed",
+        "deadline": "2025-10-08"
       },
       {
-        "id": 56173474,
+        "id": 56173481,
         "jobId": 40497055,
         "jobName": "Ahigian - Habashi",
-        "title": "Specialties - Custom Closets",
-        "category": "Phase 3",
+        "title": "Countertops - Material Selections",
+        "category": "Phase 4",
         "location": "Interior",
-        "statusLabel": "Expired: Available",
-        "deadline": "2025-10-20"
+        "statusLabel": "Partially Completed",
+        "deadline": "2026-10-13"
       }
     ],
     "40596161": [
@@ -1893,28 +1703,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "deadline": ""
       }
     ],
-    "41118068": [
-      {
-        "id": 56930592,
-        "jobId": 41118068,
-        "jobName": "Lois",
-        "title": "Electrical - Lighting (Interior / Exterior)",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Expired: Available",
-        "deadline": "2025-12-01"
-      },
-      {
-        "id": 60067337,
-        "jobId": 41118068,
-        "jobName": "Lois",
-        "title": "Cabinet - Hardware",
-        "category": "Phase 4",
-        "location": "",
-        "statusLabel": "Pending: Available",
-        "deadline": ""
-      }
-    ],
     "42083349": [
       {
         "id": 58189745,
@@ -1923,21 +1711,11 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Landscaping",
         "category": "Phase 3",
         "location": "Landscaping",
-        "statusLabel": "Expired: Available",
+        "statusLabel": "Pending: No Choices",
         "deadline": "2026-02-17"
       }
     ],
     "42615310": [
-      {
-        "id": 61658764,
-        "jobId": 42615310,
-        "jobName": "Chahlavi",
-        "title": "Exterior Finishes & Ceiling",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Partially Complete AND Expired",
-        "deadline": "2026-05-22"
-      },
       {
         "id": 61658760,
         "jobId": 42615310,
@@ -1945,7 +1723,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Pavers",
         "category": "Phase 1",
         "location": "ARB",
-        "statusLabel": "Partially Complete AND Expired",
+        "statusLabel": "Partially Completed",
         "deadline": "2026-05-22"
       },
       {
@@ -1959,33 +1737,13 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "deadline": "2026-05-22"
       },
       {
-        "id": 61658786,
-        "jobId": 42615310,
-        "jobName": "Chahlavi",
-        "title": "Summer Kitchen",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Expired: Available",
-        "deadline": "2026-05-22"
-      },
-      {
         "id": 61658783,
         "jobId": 42615310,
         "jobName": "Chahlavi",
-        "title": "Pool / Spa / Fire Pit",
+        "title": "Fire Pit / Jacuzzi",
         "category": "Phase 1",
         "location": "ARB",
-        "statusLabel": "Partially Complete AND Expired",
-        "deadline": "2026-05-22"
-      },
-      {
-        "id": 61658781,
-        "jobId": 42615310,
-        "jobName": "Chahlavi",
-        "title": "HVAC",
-        "category": "Phase 1",
-        "location": "Whole House",
-        "statusLabel": "Expired: Available",
+        "statusLabel": "Partially Completed",
         "deadline": "2026-05-22"
       },
       {
@@ -1997,171 +1755,9 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "location": "ARB",
         "statusLabel": "Unreleased",
         "deadline": "2026-05-22"
-      },
-      {
-        "id": 61658778,
-        "jobId": 42615310,
-        "jobName": "Chahlavi",
-        "title": "Gas/Propane (N/A)",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Partially Complete AND Expired",
-        "deadline": "2026-05-22"
-      },
-      {
-        "id": 61658775,
-        "jobId": 42615310,
-        "jobName": "Chahlavi",
-        "title": "Plumbing - Hose Bibs",
-        "category": "Phase 1",
-        "location": "Exterior",
-        "statusLabel": "Partially Complete AND Expired",
-        "deadline": "2026-05-22"
-      },
-      {
-        "id": 61658774,
-        "jobId": 42615310,
-        "jobName": "Chahlavi",
-        "title": "Gutters",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Expired: Available",
-        "deadline": "2026-05-22"
-      },
-      {
-        "id": 61658822,
-        "jobId": 42615310,
-        "jobName": "Chahlavi",
-        "title": "Doors - Interior",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Pending: Available",
-        "deadline": "2026-09-01"
-      },
-      {
-        "id": 61658817,
-        "jobId": 42615310,
-        "jobName": "Chahlavi",
-        "title": "Electrical - Lighting Interior / Exterior",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Partially Completed",
-        "deadline": "2026-09-01"
-      },
-      {
-        "id": 61658812,
-        "jobId": 42615310,
-        "jobName": "Chahlavi",
-        "title": "Plumbing - Packet",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Partially Completed",
-        "deadline": "2026-09-01"
-      },
-      {
-        "id": 61658806,
-        "jobId": 42615310,
-        "jobName": "Chahlavi",
-        "title": "Railing - Interior",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Partially Completed",
-        "deadline": "2026-09-01"
-      },
-      {
-        "id": 61658804,
-        "jobId": 42615310,
-        "jobName": "Chahlavi",
-        "title": "Plumbing - Bathroom Accessories",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Pending: Available",
-        "deadline": "2026-09-01"
-      },
-      {
-        "id": 61658797,
-        "jobId": 42615310,
-        "jobName": "Chahlavi",
-        "title": "Cabinet - Color/Style/Hardware/Layout",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Partially Completed",
-        "deadline": "2026-09-01"
-      },
-      {
-        "id": 61658796,
-        "jobId": 42615310,
-        "jobName": "Chahlavi",
-        "title": "Appliances",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Partially Completed",
-        "deadline": "2026-09-01"
-      }
-    ],
-    "42673665": [
-      {
-        "id": 59046781,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Countertops - Material Selections",
-        "category": "Phase 4",
-        "location": "Interior",
-        "statusLabel": "Partially Complete AND Expired",
-        "deadline": "2026-06-30"
       }
     ],
     "42790290": [
-      {
-        "id": 59366563,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Windows & Sliders",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Expired: Available",
-        "deadline": "2026-02-19"
-      },
-      {
-        "id": 59366562,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Water Supply",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-02-19"
-      },
-      {
-        "id": 59366560,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Roofing",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-02-19"
-      },
-      {
-        "id": 59366557,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Doors - Garage",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-02-19"
-      },
-      {
-        "id": 59366556,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Exterior Finishes",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-02-19"
-      },
       {
         "id": 59366555,
         "jobId": 42790290,
@@ -2173,170 +1769,10 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "deadline": "2026-02-19"
       },
       {
-        "id": 59366554,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Doors - Exterior",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Expired: Available",
-        "deadline": "2026-02-19"
-      },
-      {
-        "id": 59366564,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Mailbox",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-02-19"
-      },
-      {
-        "id": 59366581,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Plumbing - Locations",
-        "category": "Phase 1",
-        "location": "",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-02-19"
-      },
-      {
-        "id": 59366580,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "A/C Walls",
-        "category": "Phase 1",
-        "location": "",
-        "statusLabel": "Expired: Available",
-        "deadline": "2026-02-19"
-      },
-      {
-        "id": 59366579,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Trim Carpentry - Stairs",
-        "category": "Phase 1",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-02-19"
-      },
-      {
         "id": 59366578,
         "jobId": 42790290,
         "jobName": "Bucciarelli",
-        "title": "Shutters",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-02-19"
-      },
-      {
-        "id": 59366577,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Plumbing - Tubs",
-        "category": "Phase 1",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-02-19"
-      },
-      {
-        "id": 59366576,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Plumbing - Showers",
-        "category": "Phase 1",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-02-19"
-      },
-      {
-        "id": 59366575,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Insulation",
-        "category": "Phase 1",
-        "location": "Whole House",
-        "statusLabel": "Expired: Available",
-        "deadline": "2026-02-19"
-      },
-      {
-        "id": 59366574,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "HVAC",
-        "category": "Phase 1",
-        "location": "Whole House",
-        "statusLabel": "Expired: Available",
-        "deadline": "2026-02-19"
-      },
-      {
-        "id": 59366573,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Exterior Ceiling",
-        "category": "Phase 2",
-        "location": "",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-02-19"
-      },
-      {
-        "id": 59366572,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Septic (N/A)",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-02-19"
-      },
-      {
-        "id": 59366571,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Propane/Gas",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-02-19"
-      },
-      {
-        "id": 59366570,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Doors - Interior",
-        "category": "Phase 1",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-02-19"
-      },
-      {
-        "id": 59366568,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Plumbing - Hose Bibs",
-        "category": "Phase 1",
-        "location": "",
-        "statusLabel": "Expired: Available",
-        "deadline": "2026-02-19"
-      },
-      {
-        "id": 59366567,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Gutters",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Expired: Available",
-        "deadline": "2026-02-19"
-      },
-      {
-        "id": 59366566,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Plumbing - Water Heater",
+        "title": "Awning",
         "category": "Phase 1",
         "location": "ARB",
         "statusLabel": "Unreleased",
@@ -2353,150 +1789,10 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "deadline": "2026-02-19"
       },
       {
-        "id": 59366597,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Railing - Interior",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-05-13"
-      },
-      {
-        "id": 59366596,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Fireplace - Exterior",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-05-13"
-      },
-      {
-        "id": 59366595,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Elevator",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-05-13"
-      },
-      {
-        "id": 59366594,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Doors - Hardware",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-05-13"
-      },
-      {
         "id": 59366593,
         "jobId": 42790290,
         "jobName": "Bucciarelli",
         "title": "Trim Carpentry - Moulding",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-05-13"
-      },
-      {
-        "id": 59366591,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Trim Carpentry - Tongue & Groove",
-        "category": "Phase 2",
-        "location": "",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-05-13"
-      },
-      {
-        "id": 59366590,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Slab Pour",
-        "category": "Phase 2",
-        "location": "",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-05-13"
-      },
-      {
-        "id": 59366589,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Pool (Razzel)",
-        "category": "Phase 2",
-        "location": "ARB",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-05-13"
-      },
-      {
-        "id": 59366588,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Specialties - Glass Shower Enclosures",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-05-13"
-      },
-      {
-        "id": 59366587,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Framing",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-05-13"
-      },
-      {
-        "id": 59366586,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Plumbing - Faucets",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-05-13"
-      },
-      {
-        "id": 59366585,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Plumbing - Disposal",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-05-13"
-      },
-      {
-        "id": 59366584,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Electrical - Lighting",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-05-13"
-      },
-      {
-        "id": 59366583,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Plumbing - Toilets",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-05-13"
-      },
-      {
-        "id": 59366582,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Plumbing - Sinks",
         "category": "Phase 2",
         "location": "Interior",
         "statusLabel": "Unreleased",
@@ -2513,60 +1809,10 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "deadline": "2026-05-29"
       },
       {
-        "id": 59366613,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Countertops - Interior",
-        "category": "Phase 4",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-05-29"
-      },
-      {
         "id": 59366612,
         "jobId": 42790290,
         "jobName": "Bucciarelli",
-        "title": "Cabinet - Color/Style/Hardware",
-        "category": "Phase 4",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-05-29"
-      },
-      {
-        "id": 59366611,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Appliances",
-        "category": "Phase 4",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-05-29"
-      },
-      {
-        "id": 59366610,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Drywall",
-        "category": "Phase 4",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-05-29"
-      },
-      {
-        "id": 59366609,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Countertops - Summer Kitchen",
-        "category": "Phase 4",
-        "location": "",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-05-29"
-      },
-      {
-        "id": 59366608,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Carpet",
+        "title": "Cabinet - Color/Style",
         "category": "Phase 4",
         "location": "Interior",
         "statusLabel": "Unreleased",
@@ -2576,31 +1822,11 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "id": 59366607,
         "jobId": 42790290,
         "jobName": "Bucciarelli",
-        "title": "Cabinet - Layout",
+        "title": "Cabinet - Layout & Hardware",
         "category": "Phase 4",
         "location": "",
         "statusLabel": "Unreleased",
         "deadline": "2026-05-29"
-      },
-      {
-        "id": 59366606,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Sills",
-        "category": "Phase 4",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-05-29"
-      },
-      {
-        "id": 59366605,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Landscaping",
-        "category": "Phase 3",
-        "location": "Landscaping",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-06-15"
       },
       {
         "id": 59366604,
@@ -2609,7 +1835,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Paint - Stain",
         "category": "Phase 3",
         "location": "Interior",
-        "statusLabel": "Unreleased",
+        "statusLabel": "Pending: No Choices",
         "deadline": "2026-06-15"
       },
       {
@@ -2617,16 +1843,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 42790290,
         "jobName": "Bucciarelli",
         "title": "Electrical - Home Automation",
-        "category": "Phase 3",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-06-15"
-      },
-      {
-        "id": 59366602,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Trim Carpentry - Mantel",
         "category": "Phase 3",
         "location": "Interior",
         "statusLabel": "Unreleased",
@@ -2653,126 +1869,104 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "deadline": "2026-06-15"
       },
       {
-        "id": 59366599,
+        "id": 64484055,
         "jobId": 42790290,
         "jobName": "Bucciarelli",
-        "title": "Summer Kitchen",
-        "category": "Phase 3",
-        "location": "ARB",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-06-15"
-      },
-      {
-        "id": 59366598,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Specialties - Mirrors",
-        "category": "Phase 3",
-        "location": "All Baths",
-        "statusLabel": "Partially Complete AND Expired",
-        "deadline": "2026-06-15"
-      },
-      {
-        "id": 59366552,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Pavers - Driveway",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Expired: Available",
-        "deadline": "2026-08-17"
-      },
-      {
-        "id": 63903158,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Rendering",
-        "category": "",
-        "location": "",
-        "statusLabel": "Unreleased",
-        "deadline": ""
-      },
-      {
-        "id": 63812842,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Pavers - Lanai & Cabana",
-        "category": "",
-        "location": "",
-        "statusLabel": "Unreleased",
-        "deadline": ""
-      },
-      {
-        "id": 63232330,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Specialties - Closets",
-        "category": "Phase 2",
-        "location": "",
-        "statusLabel": "Unreleased",
-        "deadline": ""
-      },
-      {
-        "id": 63231335,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Trim Carpentry - Beams Interior",
-        "category": "Phase 2",
-        "location": "",
-        "statusLabel": "Unreleased",
-        "deadline": ""
-      },
-      {
-        "id": 59366618,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Paint - Interior",
-        "category": "Phase 3",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": ""
-      },
-      {
-        "id": 59366617,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Specialties - Glass Shelving",
-        "category": "Phase 3",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": ""
-      },
-      {
-        "id": 59366616,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Fireplace - Interior",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": ""
-      },
-      {
-        "id": 59366615,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Trim Carpentry - Wood Shelving",
-        "category": "Phase 3",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": ""
-      }
-    ],
-    "42969582": [
-      {
-        "id": 59614058,
-        "jobId": 42969582,
-        "jobName": "Etienne",
-        "title": "HVAC",
+        "title": "HVAC - Wine Room",
         "category": "Phase 1",
         "location": "Whole House",
-        "statusLabel": "Partially Complete AND Expired",
-        "deadline": "2025-12-16"
+        "statusLabel": "Unreleased",
+        "deadline": "2026-09-25"
+      },
+      {
+        "id": 59366566,
+        "jobId": 42790290,
+        "jobName": "Bucciarelli",
+        "title": "Plumbing - Water Heater",
+        "category": "Phase 1",
+        "location": "ARB",
+        "statusLabel": "Partially Completed",
+        "deadline": "2026-09-25"
+      },
+      {
+        "id": 59366611,
+        "jobId": 42790290,
+        "jobName": "Bucciarelli",
+        "title": "Appliances",
+        "category": "Phase 4",
+        "location": "Interior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-10-09"
+      },
+      {
+        "id": 64598027,
+        "jobId": 42790290,
+        "jobName": "Bucciarelli",
+        "title": "Exterior Finishes",
+        "category": "Phase 1",
+        "location": "ARB",
+        "statusLabel": "Pending: No Choices",
+        "deadline": "2026-10-13"
+      },
+      {
+        "id": 64669212,
+        "jobId": 42790290,
+        "jobName": "Bucciarelli",
+        "title": "Plumbing - Drain",
+        "category": "Phase 1",
+        "location": "Interior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-10-14"
+      },
+      {
+        "id": 59366605,
+        "jobId": 42790290,
+        "jobName": "Bucciarelli",
+        "title": "Landscaping",
+        "category": "Phase 3",
+        "location": "Landscaping",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-10-30"
+      },
+      {
+        "id": 59366584,
+        "jobId": 42790290,
+        "jobName": "Bucciarelli",
+        "title": "Electrical - Lighting",
+        "category": "Phase 2",
+        "location": "Interior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-10-30"
+      },
+      {
+        "id": 59366576,
+        "jobId": 42790290,
+        "jobName": "Bucciarelli",
+        "title": "Plumbing - Shower & Tub Fixtures",
+        "category": "Phase 1",
+        "location": "Interior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-10-30"
+      },
+      {
+        "id": 64678063,
+        "jobId": 42790290,
+        "jobName": "Bucciarelli",
+        "title": "Plumbing - Faucets",
+        "category": "",
+        "location": "",
+        "statusLabel": "Unreleased",
+        "deadline": ""
+      },
+      {
+        "id": 64655221,
+        "jobId": 42790290,
+        "jobName": "Bucciarelli",
+        "title": "Doors - Interior (Swing)",
+        "category": "Phase 1",
+        "location": "",
+        "statusLabel": "Unreleased",
+        "deadline": ""
       }
     ],
     "43331519": [
@@ -2781,26 +1975,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 43331519,
         "jobName": "Shagnea",
         "title": "Windows & Sliders",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-08-17"
-      },
-      {
-        "id": 63137042,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Well/Water Supply",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-08-17"
-      },
-      {
-        "id": 63137041,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Stone - Exterior (N/A)",
         "category": "Phase 1",
         "location": "ARB",
         "statusLabel": "Unreleased",
@@ -2827,43 +2001,13 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "deadline": "2026-08-17"
       },
       {
-        "id": 63137038,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Paint - Garage Floor Coating",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-08-17"
-      },
-      {
         "id": 63137037,
         "jobId": 43331519,
         "jobName": "Shagnea",
         "title": "Doors - Garage",
         "category": "Phase 1",
         "location": "ARB",
-        "statusLabel": "Expired: Available",
-        "deadline": "2026-08-17"
-      },
-      {
-        "id": 63137036,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Exterior Finishes",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-08-17"
-      },
-      {
-        "id": 63137035,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Paint - Exterior",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Unreleased",
+        "statusLabel": "Pending: No Choices",
         "deadline": "2026-08-17"
       },
       {
@@ -2873,7 +2017,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Doors - Exterior",
         "category": "Phase 1",
         "location": "ARB",
-        "statusLabel": "Expired: Available",
+        "statusLabel": "Pending: No Choices",
         "deadline": "2026-08-17"
       },
       {
@@ -2943,7 +2087,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Pool",
         "category": "Phase 1",
         "location": "ARB",
-        "statusLabel": "Unreleased",
+        "statusLabel": "Partially Completed",
         "deadline": "2026-08-17"
       },
       {
@@ -2957,43 +2101,13 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "deadline": "2026-08-17"
       },
       {
-        "id": 63137053,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "HVAC",
-        "category": "Phase 1",
-        "location": "Whole House",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-08-17"
-      },
-      {
-        "id": 63137052,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Exterior Ceiling",
-        "category": "Phase 1",
-        "location": "Exterior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-08-17"
-      },
-      {
-        "id": 63137051,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Septic",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-08-17"
-      },
-      {
         "id": 63137050,
         "jobId": 43331519,
         "jobName": "Shagnea",
         "title": "Gas/Propane",
         "category": "Phase 1",
         "location": "ARB",
-        "statusLabel": "Unreleased",
+        "statusLabel": "Pending: No Choices",
         "deadline": "2026-08-17"
       },
       {
@@ -3003,7 +2117,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Generator",
         "category": "Phase 1",
         "location": "ARB",
-        "statusLabel": "Unreleased",
+        "statusLabel": "Pending: No Choices",
         "deadline": "2026-08-17"
       },
       {
@@ -3027,16 +2141,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "deadline": "2026-08-17"
       },
       {
-        "id": 63137045,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Plumbing - Water Heater",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-08-17"
-      },
-      {
         "id": 63137044,
         "jobId": 43331519,
         "jobName": "Shagnea",
@@ -3047,284 +2151,14 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "deadline": "2026-08-17"
       },
       {
-        "id": 63137063,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Cabinet - Layout",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-08-18"
-      },
-      {
-        "id": 63137093,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Doors - Interior",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-08-26"
-      },
-      {
-        "id": 63137092,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Specialties - Glass",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-08-26"
-      },
-      {
-        "id": 63137091,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Framing",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-08-26"
-      },
-      {
-        "id": 63137090,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Plumbing - Faucets",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-08-26"
-      },
-      {
-        "id": 63137089,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Plumbing - Disposal",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-08-26"
-      },
-      {
-        "id": 63137088,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Electrical - Lighting Interior",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-08-26"
-      },
-      {
-        "id": 63137087,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Plumbing - Toilets",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-08-26"
-      },
-      {
-        "id": 63137086,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Plumbing - Sinks",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-08-26"
-      },
-      {
-        "id": 63137085,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Plumbing - Locations",
-        "category": "Phase 2",
-        "location": "Whole House",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-08-26"
-      },
-      {
-        "id": 63137084,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Plumbing - Tubs",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-08-26"
-      },
-      {
-        "id": 63137083,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Plumbing - Showers",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-08-26"
-      },
-      {
-        "id": 63137082,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Trim Carpentry - Moulding",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-08-26"
-      },
-      {
-        "id": 63137081,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Stone - Interior",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-08-26"
-      },
-      {
-        "id": 63137080,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Trim Carpentry - Tongue & Groove",
-        "category": "Phase 2",
-        "location": "Whole House",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-08-26"
-      },
-      {
-        "id": 63137079,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Slab Pour",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-08-26"
-      },
-      {
-        "id": 63137078,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Paint - Stain",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-08-26"
-      },
-      {
-        "id": 63137077,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Elevator",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-08-26"
-      },
-      {
-        "id": 63137076,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Trim Carpentry - Stairs",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-08-26"
-      },
-      {
-        "id": 63137075,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Railing - Interior",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-08-26"
-      },
-      {
-        "id": 63137074,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Trim Carpentry - Mantel",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-08-26"
-      },
-      {
-        "id": 63137073,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Plumbing - Bathroom Accessories",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-08-26"
-      },
-      {
-        "id": 63137072,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Paint - Interior",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-08-26"
-      },
-      {
-        "id": 63137071,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Fireplace - Interior",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-08-26"
-      },
-      {
-        "id": 63137070,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Trim Carpentry - Wood Shelving",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-08-26"
-      },
-      {
-        "id": 63137069,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Tile & Flooring & Carpet & Sills",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-08-26"
-      },
-      {
-        "id": 63137068,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Countertops - Interior",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-08-26"
-      },
-      {
         "id": 63137067,
         "jobId": 43331519,
         "jobName": "Shagnea",
         "title": "Cabinet - Color/Style/Hardware",
         "category": "Phase 2",
         "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-08-26"
+        "statusLabel": "Pending: No Choices",
+        "deadline": "2026-09-25"
       },
       {
         "id": 63137066,
@@ -3334,27 +2168,157 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 2",
         "location": "Interior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-08-26"
+        "deadline": "2026-09-30"
       },
       {
-        "id": 63137065,
+        "id": 63137093,
         "jobId": 43331519,
         "jobName": "Shagnea",
-        "title": "Drywall",
+        "title": "Doors - Interior",
+        "category": "Phase 2",
+        "location": "Interior",
+        "statusLabel": "Partially Completed",
+        "deadline": "2026-10-21"
+      },
+      {
+        "id": 63137092,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Specialties - Glass",
+        "category": "Phase 2",
+        "location": "Interior",
+        "statusLabel": "Pending: No Choices",
+        "deadline": "2026-10-21"
+      },
+      {
+        "id": 63137091,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Framing",
         "category": "Phase 2",
         "location": "Interior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-08-26"
+        "deadline": "2026-10-21"
       },
       {
-        "id": 63137064,
+        "id": 63137090,
         "jobId": 43331519,
         "jobName": "Shagnea",
-        "title": "Countertops - Summer Kitchen",
+        "title": "Plumbing - Faucets",
         "category": "Phase 2",
-        "location": "Exterior",
+        "location": "Interior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-08-26"
+        "deadline": "2026-10-21"
+      },
+      {
+        "id": 63137088,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Electrical - Lighting Interior",
+        "category": "Phase 2",
+        "location": "Interior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-10-21"
+      },
+      {
+        "id": 63137086,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Plumbing - Sinks",
+        "category": "Phase 2",
+        "location": "Interior",
+        "statusLabel": "Partially Completed",
+        "deadline": "2026-10-21"
+      },
+      {
+        "id": 63137085,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Plumbing - Locations",
+        "category": "Phase 2",
+        "location": "Whole House",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-10-21"
+      },
+      {
+        "id": 63137083,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Plumbing - Showers",
+        "category": "Phase 2",
+        "location": "Interior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-10-21"
+      },
+      {
+        "id": 63137082,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Trim Carpentry - Moulding",
+        "category": "Phase 2",
+        "location": "Interior",
+        "statusLabel": "Partially Completed",
+        "deadline": "2026-10-21"
+      },
+      {
+        "id": 63137079,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Slab Pour",
+        "category": "Phase 2",
+        "location": "Interior",
+        "statusLabel": "Partially Completed",
+        "deadline": "2026-10-21"
+      },
+      {
+        "id": 63137075,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Railing - Interior",
+        "category": "Phase 2",
+        "location": "Interior",
+        "statusLabel": "Partially Completed",
+        "deadline": "2026-10-21"
+      },
+      {
+        "id": 63137073,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Plumbing - Bathroom Accessories",
+        "category": "Phase 2",
+        "location": "Interior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-10-21"
+      },
+      {
+        "id": 63137072,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Paint - Interior",
+        "category": "Phase 2",
+        "location": "Interior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-10-21"
+      },
+      {
+        "id": 63137069,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Tile & Flooring & Sills",
+        "category": "Phase 2",
+        "location": "Interior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-10-21"
+      },
+      {
+        "id": 63137068,
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "title": "Countertops - Interior",
+        "category": "Phase 2",
+        "location": "Interior",
+        "statusLabel": "Pending: No Choices",
+        "deadline": "2026-10-21"
       },
       {
         "id": 63137062,
@@ -3364,7 +2328,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 2",
         "location": "Interior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-08-26"
+        "deadline": "2026-10-21"
       },
       {
         "id": 63137097,
@@ -3374,7 +2338,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 3",
         "location": "Interior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-09-10"
+        "deadline": "2026-10-30"
       },
       {
         "id": 63137096,
@@ -3384,7 +2348,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 3",
         "location": "Interior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-09-10"
+        "deadline": "2026-10-30"
       },
       {
         "id": 63137095,
@@ -3393,24 +2357,14 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Specialties - Mirrors",
         "category": "Phase 3",
         "location": "All Baths",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-10"
+        "statusLabel": "Pending: No Choices",
+        "deadline": "2026-10-30"
       },
       {
-        "id": 63137094,
+        "id": 64449846,
         "jobId": 43331519,
         "jobName": "Shagnea",
-        "title": "Doors - Hardware",
-        "category": "Phase 3",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-10"
-      },
-      {
-        "id": 63708962,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Garage - Epoxy",
+        "title": "Plans",
         "category": "",
         "location": "",
         "statusLabel": "Unreleased",
@@ -3421,9 +2375,9 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 43331519,
         "jobName": "Shagnea",
         "title": "Specialties - Ventilated Shelving",
-        "category": "",
+        "category": "Phase 4",
         "location": "",
-        "statusLabel": "Unreleased",
+        "statusLabel": "Pending: No Choices",
         "deadline": ""
       },
       {
@@ -3433,17 +2387,17 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Exterior Stair Case",
         "category": "Phase 1",
         "location": "",
-        "statusLabel": "Pending: Available",
+        "statusLabel": "Pending: No Choices",
         "deadline": ""
       },
       {
         "id": 63137098,
         "jobId": 43331519,
         "jobName": "Shagnea",
-        "title": "ARB Rendering",
+        "title": "Rendering",
         "category": "Phase 1",
         "location": "",
-        "statusLabel": "Unreleased",
+        "statusLabel": "Pending: No Choices",
         "deadline": ""
       }
     ],
@@ -4121,113 +3075,13 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
     ],
     "45118977": [
       {
-        "id": 62624953,
-        "jobId": 45118977,
-        "jobName": "Peters",
-        "title": "Windows & Sliders",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-14"
-      },
-      {
-        "id": 62624952,
-        "jobId": 45118977,
-        "jobName": "Peters",
-        "title": "Well/Water Supply",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-14"
-      },
-      {
-        "id": 62624951,
-        "jobId": 45118977,
-        "jobName": "Peters",
-        "title": "Stone - Exterior",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-14"
-      },
-      {
-        "id": 62624950,
-        "jobId": 45118977,
-        "jobName": "Peters",
-        "title": "Roofing",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-14"
-      },
-      {
         "id": 62624949,
         "jobId": 45118977,
         "jobName": "Peters",
         "title": "Railing - Exterior",
         "category": "Phase 1",
         "location": "ARB",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-14"
-      },
-      {
-        "id": 62624948,
-        "jobId": 45118977,
-        "jobName": "Peters",
-        "title": "Paint - Garage Floor Coating",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-14"
-      },
-      {
-        "id": 62624947,
-        "jobId": 45118977,
-        "jobName": "Peters",
-        "title": "Doors - Garage",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-14"
-      },
-      {
-        "id": 62624946,
-        "jobId": 45118977,
-        "jobName": "Peters",
-        "title": "Exterior Finishes",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-14"
-      },
-      {
-        "id": 62624945,
-        "jobId": 45118977,
-        "jobName": "Peters",
-        "title": "Paint - Exterior",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-14"
-      },
-      {
-        "id": 62624944,
-        "jobId": 45118977,
-        "jobName": "Peters",
-        "title": "Doors - Exterior",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-14"
-      },
-      {
-        "id": 62624943,
-        "jobId": 45118977,
-        "jobName": "Peters",
-        "title": "Corbels - Exterior",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Unreleased",
+        "statusLabel": "Pending: No Choices",
         "deadline": "2026-09-14"
       },
       {
@@ -4237,17 +3091,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Pavers",
         "category": "Phase 1",
         "location": "ARB",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-14"
-      },
-      {
-        "id": 62624971,
-        "jobId": 45118977,
-        "jobName": "Peters",
-        "title": "Electrical - Lighting Exterior",
-        "category": "Phase 1",
-        "location": "Exterior",
-        "statusLabel": "Unreleased",
+        "statusLabel": "Partially Completed",
         "deadline": "2026-09-14"
       },
       {
@@ -4271,52 +3115,12 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "deadline": "2026-09-14"
       },
       {
-        "id": 62624968,
-        "jobId": 45118977,
-        "jobName": "Peters",
-        "title": "Summer Kitchen",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-14"
-      },
-      {
-        "id": 62624967,
-        "jobId": 45118977,
-        "jobName": "Peters",
-        "title": "Fireplace - Exterior",
-        "category": "Phase 1",
-        "location": "Exterior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-14"
-      },
-      {
-        "id": 62624966,
-        "jobId": 45118977,
-        "jobName": "Peters",
-        "title": "Shutters",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-14"
-      },
-      {
         "id": 62624965,
         "jobId": 45118977,
         "jobName": "Peters",
-        "title": "Pool",
+        "title": "Pool (Collins)",
         "category": "Phase 1",
         "location": "ARB",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-14"
-      },
-      {
-        "id": 62624964,
-        "jobId": 45118977,
-        "jobName": "Peters",
-        "title": "Insulation",
-        "category": "Phase 1",
-        "location": "Whole House",
         "statusLabel": "Unreleased",
         "deadline": "2026-09-14"
       },
@@ -4327,108 +3131,8 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "HVAC",
         "category": "Phase 1",
         "location": "Whole House",
-        "statusLabel": "Unreleased",
+        "statusLabel": "Pending: No Choices",
         "deadline": "2026-09-14"
-      },
-      {
-        "id": 62624962,
-        "jobId": 45118977,
-        "jobName": "Peters",
-        "title": "Exterior Ceiling",
-        "category": "Phase 1",
-        "location": "Exterior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-14"
-      },
-      {
-        "id": 62624961,
-        "jobId": 45118977,
-        "jobName": "Peters",
-        "title": "Septic",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-14"
-      },
-      {
-        "id": 62624960,
-        "jobId": 45118977,
-        "jobName": "Peters",
-        "title": "Gas/Propane",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-14"
-      },
-      {
-        "id": 62624959,
-        "jobId": 45118977,
-        "jobName": "Peters",
-        "title": "A/C Walls",
-        "category": "Phase 1",
-        "location": "Exterior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-14"
-      },
-      {
-        "id": 62624958,
-        "jobId": 45118977,
-        "jobName": "Peters",
-        "title": "Generator",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-14"
-      },
-      {
-        "id": 62624957,
-        "jobId": 45118977,
-        "jobName": "Peters",
-        "title": "Plumbing - Hose Bibs",
-        "category": "Phase 1",
-        "location": "Exterior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-14"
-      },
-      {
-        "id": 62624956,
-        "jobId": 45118977,
-        "jobName": "Peters",
-        "title": "Gutters",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-14"
-      },
-      {
-        "id": 62624955,
-        "jobId": 45118977,
-        "jobName": "Peters",
-        "title": "Plumbing - Water Heater",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-14"
-      },
-      {
-        "id": 62624954,
-        "jobId": 45118977,
-        "jobName": "Peters",
-        "title": "Mailbox",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-14"
-      },
-      {
-        "id": 62625003,
-        "jobId": 45118977,
-        "jobName": "Peters",
-        "title": "Doors - Interior",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-23"
       },
       {
         "id": 62625002,
@@ -4461,30 +3165,10 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "deadline": "2026-09-23"
       },
       {
-        "id": 62624999,
-        "jobId": 45118977,
-        "jobName": "Peters",
-        "title": "Plumbing - Disposal",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-23"
-      },
-      {
         "id": 62624998,
         "jobId": 45118977,
         "jobName": "Peters",
-        "title": "Electrical - Lighting Interior",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-23"
-      },
-      {
-        "id": 62624997,
-        "jobId": 45118977,
-        "jobName": "Peters",
-        "title": "Plumbing - Toilets",
+        "title": "Electrical - Lighting",
         "category": "Phase 2",
         "location": "Interior",
         "statusLabel": "Unreleased",
@@ -4497,7 +3181,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Plumbing - Sinks",
         "category": "Phase 2",
         "location": "Interior",
-        "statusLabel": "Unreleased",
+        "statusLabel": "Pending: No Choices",
         "deadline": "2026-09-23"
       },
       {
@@ -4517,7 +3201,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Plumbing - Tubs",
         "category": "Phase 2",
         "location": "Interior",
-        "statusLabel": "Unreleased",
+        "statusLabel": "Partially Completed",
         "deadline": "2026-09-23"
       },
       {
@@ -4541,32 +3225,12 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "deadline": "2026-09-23"
       },
       {
-        "id": 62624991,
-        "jobId": 45118977,
-        "jobName": "Peters",
-        "title": "Stone - Interior",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-23"
-      },
-      {
         "id": 62624990,
         "jobId": 45118977,
         "jobName": "Peters",
         "title": "Trim Carpentry - Tongue & Groove",
         "category": "Phase 2",
         "location": "Whole House",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-23"
-      },
-      {
-        "id": 62624989,
-        "jobId": 45118977,
-        "jobName": "Peters",
-        "title": "Slab Pour",
-        "category": "Phase 2",
-        "location": "Interior",
         "statusLabel": "Unreleased",
         "deadline": "2026-09-23"
       },
@@ -4587,7 +3251,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Railing - Interior",
         "category": "Phase 2",
         "location": "Interior",
-        "statusLabel": "Unreleased",
+        "statusLabel": "Pending: No Choices",
         "deadline": "2026-09-23"
       },
       {
@@ -4614,7 +3278,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "id": 62624984,
         "jobId": 45118977,
         "jobName": "Peters",
-        "title": "Paint - Interior",
+        "title": "Paint & Stain - Interior",
         "category": "Phase 2",
         "location": "Interior",
         "statusLabel": "Unreleased",
@@ -4627,7 +3291,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Fireplace - Interior",
         "category": "Phase 2",
         "location": "Interior",
-        "statusLabel": "Unreleased",
+        "statusLabel": "Pending: No Choices",
         "deadline": "2026-09-23"
       },
       {
@@ -4664,7 +3328,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "id": 62624979,
         "jobId": 45118977,
         "jobName": "Peters",
-        "title": "Cabinet - Color/Style/Hardware",
+        "title": "Cabinet - Color/Style/Hardware/Layout",
         "category": "Phase 2",
         "location": "Interior",
         "statusLabel": "Unreleased",
@@ -4681,64 +3345,14 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "deadline": "2026-09-23"
       },
       {
-        "id": 62624977,
+        "id": 62625004,
         "jobId": 45118977,
         "jobName": "Peters",
-        "title": "Drywall",
-        "category": "Phase 2",
+        "title": "Doors - Hardware",
+        "category": "Phase 3",
         "location": "Interior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-09-23"
-      },
-      {
-        "id": 62624976,
-        "jobId": 45118977,
-        "jobName": "Peters",
-        "title": "Countertops - Summer Kitchen",
-        "category": "Phase 2",
-        "location": "Exterior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-23"
-      },
-      {
-        "id": 62624975,
-        "jobId": 45118977,
-        "jobName": "Peters",
-        "title": "Cabinet - Layout",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-23"
-      },
-      {
-        "id": 62624974,
-        "jobId": 45118977,
-        "jobName": "Peters",
-        "title": "Sills",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-23"
-      },
-      {
-        "id": 62624973,
-        "jobId": 45118977,
-        "jobName": "Peters",
-        "title": "Paint - Stain",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-23"
-      },
-      {
-        "id": 62624972,
-        "jobId": 45118977,
-        "jobName": "Peters",
-        "title": "Elevator",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-23"
+        "deadline": "2026-09-25"
       },
       {
         "id": 62625007,
@@ -4767,18 +3381,38 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Specialties - Mirrors",
         "category": "Phase 3",
         "location": "All Baths",
-        "statusLabel": "Unreleased",
+        "statusLabel": "Pending: No Choices",
         "deadline": "2026-10-02"
       },
       {
-        "id": 62625004,
+        "id": 64740951,
         "jobId": 45118977,
         "jobName": "Peters",
-        "title": "Doors - Hardware",
-        "category": "Phase 3",
-        "location": "Interior",
+        "title": "Plans / Elavations",
+        "category": "",
+        "location": "",
         "statusLabel": "Unreleased",
-        "deadline": "2026-10-02"
+        "deadline": ""
+      },
+      {
+        "id": 64392580,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Screens",
+        "category": "Phase 3",
+        "location": "",
+        "statusLabel": "Unreleased",
+        "deadline": ""
+      },
+      {
+        "id": 64389803,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Framing - Entertainment Center",
+        "category": "Phase 2",
+        "location": "",
+        "statusLabel": "Pending: No Choices",
+        "deadline": ""
       }
     ],
     "45275922": [
@@ -4787,26 +3421,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 45275922,
         "jobName": "Olmstead",
         "title": "Windows & Sliders",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-10"
-      },
-      {
-        "id": 63136939,
-        "jobId": 45275922,
-        "jobName": "Olmstead",
-        "title": "Well/Water Supply",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-10"
-      },
-      {
-        "id": 63136938,
-        "jobId": 45275922,
-        "jobName": "Olmstead",
-        "title": "Stone - Exterior",
         "category": "Phase 1",
         "location": "ARB",
         "statusLabel": "Unreleased",
@@ -4833,16 +3447,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "deadline": "2026-09-10"
       },
       {
-        "id": 63136935,
-        "jobId": 45275922,
-        "jobName": "Olmstead",
-        "title": "Paint - Garage Floor Coating",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-10"
-      },
-      {
         "id": 63136934,
         "jobId": 45275922,
         "jobName": "Olmstead",
@@ -4856,10 +3460,10 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "id": 63136933,
         "jobId": 45275922,
         "jobName": "Olmstead",
-        "title": "Exterior Finishes",
+        "title": "Exterior Finishes& Cieling",
         "category": "Phase 1",
         "location": "ARB",
-        "statusLabel": "Unreleased",
+        "statusLabel": "Partially Completed",
         "deadline": "2026-09-10"
       },
       {
@@ -4873,23 +3477,13 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "deadline": "2026-09-10"
       },
       {
-        "id": 63136931,
-        "jobId": 45275922,
-        "jobName": "Olmstead",
-        "title": "Doors - Exterior",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-10"
-      },
-      {
         "id": 63136930,
         "jobId": 45275922,
         "jobName": "Olmstead",
         "title": "Corbels - Exterior",
         "category": "Phase 1",
         "location": "ARB",
-        "statusLabel": "Unreleased",
+        "statusLabel": "Pending: No Choices",
         "deadline": "2026-09-10"
       },
       {
@@ -4917,26 +3511,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 45275922,
         "jobName": "Olmstead",
         "title": "Summer Kitchen",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-10"
-      },
-      {
-        "id": 63136956,
-        "jobId": 45275922,
-        "jobName": "Olmstead",
-        "title": "Fireplace - Exterior",
-        "category": "Phase 1",
-        "location": "Exterior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-10"
-      },
-      {
-        "id": 63136955,
-        "jobId": 45275922,
-        "jobName": "Olmstead",
-        "title": "Shutters",
         "category": "Phase 1",
         "location": "ARB",
         "statusLabel": "Unreleased",
@@ -4979,7 +3553,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Insulation",
         "category": "Phase 1",
         "location": "Whole House",
-        "statusLabel": "Unreleased",
+        "statusLabel": "Pending: No Choices",
         "deadline": "2026-09-10"
       },
       {
@@ -4989,26 +3563,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "HVAC",
         "category": "Phase 1",
         "location": "Whole House",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-10"
-      },
-      {
-        "id": 63136949,
-        "jobId": 45275922,
-        "jobName": "Olmstead",
-        "title": "Exterior Ceiling",
-        "category": "Phase 1",
-        "location": "Exterior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-10"
-      },
-      {
-        "id": 63136948,
-        "jobId": 45275922,
-        "jobName": "Olmstead",
-        "title": "Septic",
-        "category": "Phase 1",
-        "location": "ARB",
         "statusLabel": "Unreleased",
         "deadline": "2026-09-10"
       },
@@ -5029,27 +3583,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "A/C Walls",
         "category": "Phase 1",
         "location": "Exterior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-10"
-      },
-      {
-        "id": 63136945,
-        "jobId": 45275922,
-        "jobName": "Olmstead",
-        "title": "Generator",
-        "category": "Phase 1",
-        "location": "ARB",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-10"
-      },
-      {
-        "id": 63136944,
-        "jobId": 45275922,
-        "jobName": "Olmstead",
-        "title": "Plumbing - Hose Bibs",
-        "category": "Phase 1",
-        "location": "Exterior",
-        "statusLabel": "Unreleased",
+        "statusLabel": "Pending: No Choices",
         "deadline": "2026-09-10"
       },
       {
@@ -5079,7 +3613,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Mailbox",
         "category": "Phase 1",
         "location": "ARB",
-        "statusLabel": "Unreleased",
+        "statusLabel": "Pending: No Choices",
         "deadline": "2026-09-10"
       },
       {
@@ -5087,16 +3621,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 45275922,
         "jobName": "Olmstead",
         "title": "Doors - Interior",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-22"
-      },
-      {
-        "id": 63136989,
-        "jobId": 45275922,
-        "jobName": "Olmstead",
-        "title": "Specialties - Glass",
         "category": "Phase 2",
         "location": "Interior",
         "statusLabel": "Unreleased",
@@ -5143,23 +3667,13 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "deadline": "2026-09-22"
       },
       {
-        "id": 63136984,
-        "jobId": 45275922,
-        "jobName": "Olmstead",
-        "title": "Plumbing - Toilets",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-22"
-      },
-      {
         "id": 63136983,
         "jobId": 45275922,
         "jobName": "Olmstead",
         "title": "Plumbing - Sinks",
         "category": "Phase 2",
         "location": "Interior",
-        "statusLabel": "Unreleased",
+        "statusLabel": "Partially Completed",
         "deadline": "2026-09-22"
       },
       {
@@ -5169,16 +3683,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Plumbing - Locations",
         "category": "Phase 2",
         "location": "Whole House",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-22"
-      },
-      {
-        "id": 63136981,
-        "jobId": 45275922,
-        "jobName": "Olmstead",
-        "title": "Plumbing - Tubs",
-        "category": "Phase 2",
-        "location": "Interior",
         "statusLabel": "Unreleased",
         "deadline": "2026-09-22"
       },
@@ -5203,53 +3707,13 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "deadline": "2026-09-22"
       },
       {
-        "id": 63136978,
-        "jobId": 45275922,
-        "jobName": "Olmstead",
-        "title": "Stone - Interior",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-22"
-      },
-      {
-        "id": 63136977,
-        "jobId": 45275922,
-        "jobName": "Olmstead",
-        "title": "Trim Carpentry - Tongue & Groove",
-        "category": "Phase 2",
-        "location": "Whole House",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-22"
-      },
-      {
         "id": 63136976,
         "jobId": 45275922,
         "jobName": "Olmstead",
         "title": "Slab Pour",
         "category": "Phase 2",
         "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-22"
-      },
-      {
-        "id": 63136975,
-        "jobId": 45275922,
-        "jobName": "Olmstead",
-        "title": "Paint - Stain",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-22"
-      },
-      {
-        "id": 63136974,
-        "jobId": 45275922,
-        "jobName": "Olmstead",
-        "title": "Elevator",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
+        "statusLabel": "Partially Completed",
         "deadline": "2026-09-22"
       },
       {
@@ -5267,16 +3731,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 45275922,
         "jobName": "Olmstead",
         "title": "Railing - Interior",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-22"
-      },
-      {
-        "id": 63136971,
-        "jobId": 45275922,
-        "jobName": "Olmstead",
-        "title": "Trim Carpentry - Mantel",
         "category": "Phase 2",
         "location": "Interior",
         "statusLabel": "Unreleased",
@@ -5307,16 +3761,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 45275922,
         "jobName": "Olmstead",
         "title": "Fireplace - Interior",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-22"
-      },
-      {
-        "id": 63136967,
-        "jobId": 45275922,
-        "jobName": "Olmstead",
-        "title": "Trim Carpentry - Wood Shelving",
         "category": "Phase 2",
         "location": "Interior",
         "statusLabel": "Unreleased",
@@ -5363,46 +3807,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "deadline": "2026-09-22"
       },
       {
-        "id": 63136962,
-        "jobId": 45275922,
-        "jobName": "Olmstead",
-        "title": "Drywall",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-22"
-      },
-      {
-        "id": 63136961,
-        "jobId": 45275922,
-        "jobName": "Olmstead",
-        "title": "Countertops - Summer Kitchen",
-        "category": "Phase 2",
-        "location": "Exterior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-22"
-      },
-      {
-        "id": 63136960,
-        "jobId": 45275922,
-        "jobName": "Olmstead",
-        "title": "Cabinet - Layout",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-22"
-      },
-      {
-        "id": 63136959,
-        "jobId": 45275922,
-        "jobName": "Olmstead",
-        "title": "Sills",
-        "category": "Phase 2",
-        "location": "Interior",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-09-22"
-      },
-      {
         "id": 63136994,
         "jobId": 45275922,
         "jobName": "Olmstead",
@@ -5423,16 +3827,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "deadline": "2026-10-01"
       },
       {
-        "id": 63136992,
-        "jobId": 45275922,
-        "jobName": "Olmstead",
-        "title": "Specialties - Mirrors",
-        "category": "Phase 3",
-        "location": "All Baths",
-        "statusLabel": "Unreleased",
-        "deadline": "2026-10-01"
-      },
-      {
         "id": 63136991,
         "jobId": 45275922,
         "jobName": "Olmstead",
@@ -5441,6 +3835,16 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "location": "Interior",
         "statusLabel": "Unreleased",
         "deadline": "2026-10-01"
+      },
+      {
+        "id": 64410718,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Fence",
+        "category": "Phase 1",
+        "location": "",
+        "statusLabel": "Pending: No Choices",
+        "deadline": ""
       },
       {
         "id": 63136995,
@@ -5462,7 +3866,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 1",
         "location": "ARB",
         "statusLabel": "Unreleased",
-        "deadline": "2026-08-27"
+        "deadline": "2026-10-16"
       },
       {
         "id": 63904542,
@@ -5472,7 +3876,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 1",
         "location": "ARB",
         "statusLabel": "Unreleased",
-        "deadline": "2026-08-27"
+        "deadline": "2026-10-16"
       },
       {
         "id": 63904541,
@@ -5482,7 +3886,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 1",
         "location": "ARB",
         "statusLabel": "Unreleased",
-        "deadline": "2026-08-27"
+        "deadline": "2026-10-16"
       },
       {
         "id": 63904540,
@@ -5492,7 +3896,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 1",
         "location": "ARB",
         "statusLabel": "Unreleased",
-        "deadline": "2026-08-27"
+        "deadline": "2026-10-16"
       },
       {
         "id": 63904539,
@@ -5502,7 +3906,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 1",
         "location": "ARB",
         "statusLabel": "Unreleased",
-        "deadline": "2026-08-27"
+        "deadline": "2026-10-16"
       },
       {
         "id": 63904538,
@@ -5512,7 +3916,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 1",
         "location": "ARB",
         "statusLabel": "Unreleased",
-        "deadline": "2026-08-27"
+        "deadline": "2026-10-16"
       },
       {
         "id": 63904537,
@@ -5522,7 +3926,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 1",
         "location": "ARB",
         "statusLabel": "Unreleased",
-        "deadline": "2026-08-27"
+        "deadline": "2026-10-16"
       },
       {
         "id": 63904536,
@@ -5532,7 +3936,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 1",
         "location": "ARB",
         "statusLabel": "Unreleased",
-        "deadline": "2026-08-27"
+        "deadline": "2026-10-16"
       },
       {
         "id": 63904535,
@@ -5542,7 +3946,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 1",
         "location": "ARB",
         "statusLabel": "Unreleased",
-        "deadline": "2026-08-27"
+        "deadline": "2026-10-16"
       },
       {
         "id": 63904534,
@@ -5552,7 +3956,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 1",
         "location": "ARB",
         "statusLabel": "Unreleased",
-        "deadline": "2026-08-27"
+        "deadline": "2026-10-16"
       },
       {
         "id": 63904533,
@@ -5562,7 +3966,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 1",
         "location": "ARB",
         "statusLabel": "Unreleased",
-        "deadline": "2026-08-27"
+        "deadline": "2026-10-16"
       },
       {
         "id": 63904532,
@@ -5572,7 +3976,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 1",
         "location": "ARB",
         "statusLabel": "Unreleased",
-        "deadline": "2026-08-27"
+        "deadline": "2026-10-16"
       },
       {
         "id": 63904561,
@@ -5582,7 +3986,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 1",
         "location": "Landscaping",
         "statusLabel": "Unreleased",
-        "deadline": "2026-08-27"
+        "deadline": "2026-10-16"
       },
       {
         "id": 63904560,
@@ -5592,7 +3996,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 1",
         "location": "ARB",
         "statusLabel": "Unreleased",
-        "deadline": "2026-08-27"
+        "deadline": "2026-10-16"
       },
       {
         "id": 63904559,
@@ -5602,7 +4006,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 1",
         "location": "Exterior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-08-27"
+        "deadline": "2026-10-16"
       },
       {
         "id": 63904558,
@@ -5612,7 +4016,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 1",
         "location": "ARB",
         "statusLabel": "Unreleased",
-        "deadline": "2026-08-27"
+        "deadline": "2026-10-16"
       },
       {
         "id": 63904557,
@@ -5622,7 +4026,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 1",
         "location": "Exterior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-08-27"
+        "deadline": "2026-10-16"
       },
       {
         "id": 63904556,
@@ -5632,7 +4036,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 1",
         "location": "ARB",
         "statusLabel": "Unreleased",
-        "deadline": "2026-08-27"
+        "deadline": "2026-10-16"
       },
       {
         "id": 63904555,
@@ -5642,7 +4046,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 1",
         "location": "ARB",
         "statusLabel": "Unreleased",
-        "deadline": "2026-08-27"
+        "deadline": "2026-10-16"
       },
       {
         "id": 63904554,
@@ -5652,7 +4056,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 1",
         "location": "Whole House",
         "statusLabel": "Unreleased",
-        "deadline": "2026-08-27"
+        "deadline": "2026-10-16"
       },
       {
         "id": 63904553,
@@ -5662,7 +4066,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 1",
         "location": "Whole House",
         "statusLabel": "Unreleased",
-        "deadline": "2026-08-27"
+        "deadline": "2026-10-16"
       },
       {
         "id": 63904552,
@@ -5672,7 +4076,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 1",
         "location": "Exterior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-08-27"
+        "deadline": "2026-10-16"
       },
       {
         "id": 63904551,
@@ -5682,7 +4086,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 1",
         "location": "ARB",
         "statusLabel": "Unreleased",
-        "deadline": "2026-08-27"
+        "deadline": "2026-10-16"
       },
       {
         "id": 63904550,
@@ -5692,7 +4096,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 1",
         "location": "ARB",
         "statusLabel": "Unreleased",
-        "deadline": "2026-08-27"
+        "deadline": "2026-10-16"
       },
       {
         "id": 63904549,
@@ -5702,7 +4106,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 1",
         "location": "Exterior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-08-27"
+        "deadline": "2026-10-16"
       },
       {
         "id": 63904548,
@@ -5712,7 +4116,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 1",
         "location": "ARB",
         "statusLabel": "Unreleased",
-        "deadline": "2026-08-27"
+        "deadline": "2026-10-16"
       },
       {
         "id": 63904547,
@@ -5722,7 +4126,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 1",
         "location": "Exterior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-08-27"
+        "deadline": "2026-10-16"
       },
       {
         "id": 63904546,
@@ -5732,7 +4136,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 1",
         "location": "ARB",
         "statusLabel": "Unreleased",
-        "deadline": "2026-08-27"
+        "deadline": "2026-10-16"
       },
       {
         "id": 63904545,
@@ -5742,7 +4146,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 1",
         "location": "ARB",
         "statusLabel": "Unreleased",
-        "deadline": "2026-08-27"
+        "deadline": "2026-10-16"
       },
       {
         "id": 63904544,
@@ -5752,7 +4156,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 1",
         "location": "ARB",
         "statusLabel": "Unreleased",
-        "deadline": "2026-08-27"
+        "deadline": "2026-10-16"
       },
       {
         "id": 63904594,
@@ -5762,7 +4166,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 2",
         "location": "Interior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-09-08"
+        "deadline": "2026-10-26"
       },
       {
         "id": 63904593,
@@ -5772,7 +4176,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 2",
         "location": "Interior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-09-08"
+        "deadline": "2026-10-26"
       },
       {
         "id": 63904592,
@@ -5782,7 +4186,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 2",
         "location": "Interior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-09-08"
+        "deadline": "2026-10-26"
       },
       {
         "id": 63904591,
@@ -5792,7 +4196,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 2",
         "location": "Interior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-09-08"
+        "deadline": "2026-10-26"
       },
       {
         "id": 63904590,
@@ -5802,7 +4206,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 2",
         "location": "Interior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-09-08"
+        "deadline": "2026-10-26"
       },
       {
         "id": 63904589,
@@ -5812,7 +4216,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 2",
         "location": "Interior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-09-08"
+        "deadline": "2026-10-26"
       },
       {
         "id": 63904588,
@@ -5822,7 +4226,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 2",
         "location": "Interior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-09-08"
+        "deadline": "2026-10-26"
       },
       {
         "id": 63904587,
@@ -5832,7 +4236,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 2",
         "location": "Interior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-09-08"
+        "deadline": "2026-10-26"
       },
       {
         "id": 63904586,
@@ -5842,7 +4246,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 2",
         "location": "Whole House",
         "statusLabel": "Unreleased",
-        "deadline": "2026-09-08"
+        "deadline": "2026-10-26"
       },
       {
         "id": 63904585,
@@ -5852,7 +4256,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 2",
         "location": "Interior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-09-08"
+        "deadline": "2026-10-26"
       },
       {
         "id": 63904584,
@@ -5862,7 +4266,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 2",
         "location": "Interior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-09-08"
+        "deadline": "2026-10-26"
       },
       {
         "id": 63904583,
@@ -5872,7 +4276,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 2",
         "location": "Interior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-09-08"
+        "deadline": "2026-10-26"
       },
       {
         "id": 63904582,
@@ -5882,7 +4286,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 2",
         "location": "Interior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-09-08"
+        "deadline": "2026-10-26"
       },
       {
         "id": 63904581,
@@ -5892,7 +4296,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 2",
         "location": "Whole House",
         "statusLabel": "Unreleased",
-        "deadline": "2026-09-08"
+        "deadline": "2026-10-26"
       },
       {
         "id": 63904580,
@@ -5902,7 +4306,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 2",
         "location": "Interior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-09-08"
+        "deadline": "2026-10-26"
       },
       {
         "id": 63904579,
@@ -5912,7 +4316,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 2",
         "location": "Interior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-09-08"
+        "deadline": "2026-10-26"
       },
       {
         "id": 63904578,
@@ -5922,7 +4326,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 2",
         "location": "Interior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-09-08"
+        "deadline": "2026-10-26"
       },
       {
         "id": 63904577,
@@ -5932,7 +4336,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 2",
         "location": "Interior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-09-08"
+        "deadline": "2026-10-26"
       },
       {
         "id": 63904576,
@@ -5942,7 +4346,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 2",
         "location": "Interior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-09-08"
+        "deadline": "2026-10-26"
       },
       {
         "id": 63904575,
@@ -5952,7 +4356,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 2",
         "location": "Interior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-09-08"
+        "deadline": "2026-10-26"
       },
       {
         "id": 63904574,
@@ -5962,7 +4366,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 2",
         "location": "Interior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-09-08"
+        "deadline": "2026-10-26"
       },
       {
         "id": 63904573,
@@ -5972,7 +4376,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 2",
         "location": "Interior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-09-08"
+        "deadline": "2026-10-26"
       },
       {
         "id": 63904572,
@@ -5982,7 +4386,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 2",
         "location": "Interior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-09-08"
+        "deadline": "2026-10-26"
       },
       {
         "id": 63904571,
@@ -5992,7 +4396,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 2",
         "location": "Interior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-09-08"
+        "deadline": "2026-10-26"
       },
       {
         "id": 63904569,
@@ -6002,7 +4406,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 2",
         "location": "Interior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-09-08"
+        "deadline": "2026-10-26"
       },
       {
         "id": 63904568,
@@ -6012,7 +4416,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 2",
         "location": "Interior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-09-08"
+        "deadline": "2026-10-26"
       },
       {
         "id": 63904567,
@@ -6022,7 +4426,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 2",
         "location": "Interior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-09-08"
+        "deadline": "2026-10-26"
       },
       {
         "id": 63904566,
@@ -6032,7 +4436,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 2",
         "location": "Interior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-09-08"
+        "deadline": "2026-10-26"
       },
       {
         "id": 63904565,
@@ -6042,7 +4446,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 2",
         "location": "Interior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-09-08"
+        "deadline": "2026-10-26"
       },
       {
         "id": 63904564,
@@ -6052,7 +4456,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 2",
         "location": "Exterior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-09-08"
+        "deadline": "2026-10-26"
       },
       {
         "id": 63904563,
@@ -6062,7 +4466,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 2",
         "location": "Interior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-09-08"
+        "deadline": "2026-10-26"
       },
       {
         "id": 63904562,
@@ -6072,7 +4476,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 2",
         "location": "Interior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-09-08"
+        "deadline": "2026-10-26"
       },
       {
         "id": 63904598,
@@ -6082,7 +4486,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 3",
         "location": "Interior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-09-22"
+        "deadline": "2026-11-04"
       },
       {
         "id": 63904597,
@@ -6092,7 +4496,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 3",
         "location": "Interior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-09-22"
+        "deadline": "2026-11-04"
       },
       {
         "id": 63904596,
@@ -6102,7 +4506,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 3",
         "location": "All Baths",
         "statusLabel": "Unreleased",
-        "deadline": "2026-09-22"
+        "deadline": "2026-11-04"
       },
       {
         "id": 63904595,
@@ -6112,7 +4516,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "category": "Phase 3",
         "location": "Interior",
         "statusLabel": "Unreleased",
-        "deadline": "2026-09-22"
+        "deadline": "2026-11-04"
       },
       {
         "id": 63904599,
@@ -6796,6 +5200,678 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "statusLabel": "Unreleased",
         "deadline": ""
       }
+    ],
+    "46336283": [
+      {
+        "id": 64736740,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Windows & Sliders",
+        "category": "Phase 1",
+        "location": "ARB",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-10-29"
+      },
+      {
+        "id": 64736739,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Well/Water Supply",
+        "category": "Phase 1",
+        "location": "ARB",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-10-29"
+      },
+      {
+        "id": 64736738,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Stone - Exterior",
+        "category": "Phase 1",
+        "location": "ARB",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-10-29"
+      },
+      {
+        "id": 64736737,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Roofing",
+        "category": "Phase 1",
+        "location": "ARB",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-10-29"
+      },
+      {
+        "id": 64736736,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Railing - Exterior",
+        "category": "Phase 1",
+        "location": "ARB",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-10-29"
+      },
+      {
+        "id": 64736735,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Paint - Garage Floor Coating",
+        "category": "Phase 1",
+        "location": "ARB",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-10-29"
+      },
+      {
+        "id": 64736734,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Doors - Garage",
+        "category": "Phase 1",
+        "location": "ARB",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-10-29"
+      },
+      {
+        "id": 64736733,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Exterior Finishes",
+        "category": "Phase 1",
+        "location": "ARB",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-10-29"
+      },
+      {
+        "id": 64736732,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Paint - Exterior",
+        "category": "Phase 1",
+        "location": "ARB",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-10-29"
+      },
+      {
+        "id": 64736731,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Doors - Exterior",
+        "category": "Phase 1",
+        "location": "ARB",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-10-29"
+      },
+      {
+        "id": 64736730,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Corbels - Exterior",
+        "category": "Phase 1",
+        "location": "ARB",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-10-29"
+      },
+      {
+        "id": 64736729,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Pavers",
+        "category": "Phase 1",
+        "location": "ARB",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-10-29"
+      },
+      {
+        "id": 64736758,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Landscaping",
+        "category": "Phase 1",
+        "location": "Landscaping",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-10-29"
+      },
+      {
+        "id": 64736757,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Summer Kitchen",
+        "category": "Phase 1",
+        "location": "ARB",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-10-29"
+      },
+      {
+        "id": 64736756,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Fireplace - Exterior",
+        "category": "Phase 1",
+        "location": "Exterior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-10-29"
+      },
+      {
+        "id": 64736755,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Shutters",
+        "category": "Phase 1",
+        "location": "ARB",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-10-29"
+      },
+      {
+        "id": 64736754,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Electrical - Lighting Exterior",
+        "category": "Phase 1",
+        "location": "Exterior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-10-29"
+      },
+      {
+        "id": 64736753,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Survey",
+        "category": "Phase 1",
+        "location": "ARB",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-10-29"
+      },
+      {
+        "id": 64736752,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Pool",
+        "category": "Phase 1",
+        "location": "ARB",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-10-29"
+      },
+      {
+        "id": 64736751,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Insulation",
+        "category": "Phase 1",
+        "location": "Whole House",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-10-29"
+      },
+      {
+        "id": 64736750,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "HVAC",
+        "category": "Phase 1",
+        "location": "Whole House",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-10-29"
+      },
+      {
+        "id": 64736749,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Exterior Ceiling",
+        "category": "Phase 1",
+        "location": "Exterior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-10-29"
+      },
+      {
+        "id": 64736748,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Septic",
+        "category": "Phase 1",
+        "location": "ARB",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-10-29"
+      },
+      {
+        "id": 64736747,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Gas/Propane",
+        "category": "Phase 1",
+        "location": "ARB",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-10-29"
+      },
+      {
+        "id": 64736746,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "A/C Walls",
+        "category": "Phase 1",
+        "location": "Exterior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-10-29"
+      },
+      {
+        "id": 64736745,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Generator",
+        "category": "Phase 1",
+        "location": "ARB",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-10-29"
+      },
+      {
+        "id": 64736744,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Plumbing - Hose Bibs",
+        "category": "Phase 1",
+        "location": "Exterior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-10-29"
+      },
+      {
+        "id": 64736743,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Gutters",
+        "category": "Phase 1",
+        "location": "ARB",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-10-29"
+      },
+      {
+        "id": 64736742,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Plumbing - Water Heater",
+        "category": "Phase 1",
+        "location": "ARB",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-10-29"
+      },
+      {
+        "id": 64736741,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Mailbox",
+        "category": "Phase 1",
+        "location": "ARB",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-10-29"
+      },
+      {
+        "id": 64736790,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Doors - Interior",
+        "category": "Phase 2",
+        "location": "Interior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-11-09"
+      },
+      {
+        "id": 64736789,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Specialties - Glass",
+        "category": "Phase 2",
+        "location": "Interior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-11-09"
+      },
+      {
+        "id": 64736788,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Framing",
+        "category": "Phase 2",
+        "location": "Interior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-11-09"
+      },
+      {
+        "id": 64736787,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Plumbing - Faucets",
+        "category": "Phase 2",
+        "location": "Interior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-11-09"
+      },
+      {
+        "id": 64736786,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Plumbing - Disposal",
+        "category": "Phase 2",
+        "location": "Interior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-11-09"
+      },
+      {
+        "id": 64736785,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Electrical - Lighting Interior",
+        "category": "Phase 2",
+        "location": "Interior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-11-09"
+      },
+      {
+        "id": 64736784,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Plumbing - Toilets",
+        "category": "Phase 2",
+        "location": "Interior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-11-09"
+      },
+      {
+        "id": 64736783,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Plumbing - Sinks",
+        "category": "Phase 2",
+        "location": "Interior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-11-09"
+      },
+      {
+        "id": 64736782,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Plumbing - Locations",
+        "category": "Phase 2",
+        "location": "Whole House",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-11-09"
+      },
+      {
+        "id": 64736781,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Plumbing - Tubs",
+        "category": "Phase 2",
+        "location": "Interior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-11-09"
+      },
+      {
+        "id": 64736780,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Plumbing - Showers",
+        "category": "Phase 2",
+        "location": "Interior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-11-09"
+      },
+      {
+        "id": 64736779,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Trim Carpentry - Moulding",
+        "category": "Phase 2",
+        "location": "Interior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-11-09"
+      },
+      {
+        "id": 64736778,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Stone - Interior",
+        "category": "Phase 2",
+        "location": "Interior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-11-09"
+      },
+      {
+        "id": 64736777,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Trim Carpentry - Tongue & Groove",
+        "category": "Phase 2",
+        "location": "Whole House",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-11-09"
+      },
+      {
+        "id": 64736776,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Slab Pour",
+        "category": "Phase 2",
+        "location": "Interior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-11-09"
+      },
+      {
+        "id": 64736775,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Paint - Stain",
+        "category": "Phase 2",
+        "location": "Interior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-11-09"
+      },
+      {
+        "id": 64736774,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Elevator",
+        "category": "Phase 2",
+        "location": "Interior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-11-09"
+      },
+      {
+        "id": 64736773,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Trim Carpentry - Stairs",
+        "category": "Phase 2",
+        "location": "Interior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-11-09"
+      },
+      {
+        "id": 64736772,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Railing - Interior",
+        "category": "Phase 2",
+        "location": "Interior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-11-09"
+      },
+      {
+        "id": 64736771,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Trim Carpentry - Mantel",
+        "category": "Phase 2",
+        "location": "Interior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-11-09"
+      },
+      {
+        "id": 64736770,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Plumbing - Bathroom Accessories",
+        "category": "Phase 2",
+        "location": "Interior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-11-09"
+      },
+      {
+        "id": 64736769,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Paint - Interior",
+        "category": "Phase 2",
+        "location": "Interior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-11-09"
+      },
+      {
+        "id": 64736768,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Fireplace - Interior",
+        "category": "Phase 2",
+        "location": "Interior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-11-09"
+      },
+      {
+        "id": 64736767,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Trim Carpentry - Wood Shelving",
+        "category": "Phase 2",
+        "location": "Interior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-11-09"
+      },
+      {
+        "id": 64736766,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Tile & Flooring & Carpet & Sills",
+        "category": "Phase 2",
+        "location": "Interior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-11-09"
+      },
+      {
+        "id": 64736765,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Countertops - Interior",
+        "category": "Phase 2",
+        "location": "Interior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-11-09"
+      },
+      {
+        "id": 64736764,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Cabinet - Color/Style/Hardware",
+        "category": "Phase 2",
+        "location": "Interior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-11-09"
+      },
+      {
+        "id": 64736763,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Appliances",
+        "category": "Phase 2",
+        "location": "Interior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-11-09"
+      },
+      {
+        "id": 64736762,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Drywall",
+        "category": "Phase 2",
+        "location": "Interior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-11-09"
+      },
+      {
+        "id": 64736761,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Countertops - Summer Kitchen",
+        "category": "Phase 2",
+        "location": "Exterior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-11-09"
+      },
+      {
+        "id": 64736760,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Cabinet - Layout",
+        "category": "Phase 2",
+        "location": "Interior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-11-09"
+      },
+      {
+        "id": 64736759,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Sills",
+        "category": "Phase 2",
+        "location": "Interior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-11-09"
+      },
+      {
+        "id": 64736794,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Electrical",
+        "category": "Phase 3",
+        "location": "Interior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-11-23"
+      },
+      {
+        "id": 64736793,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Electrical - Low Voltage Automation",
+        "category": "Phase 3",
+        "location": "Interior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-11-23"
+      },
+      {
+        "id": 64736792,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Specialties - Mirrors",
+        "category": "Phase 3",
+        "location": "All Baths",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-11-23"
+      },
+      {
+        "id": 64736791,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Doors - Hardware",
+        "category": "Phase 3",
+        "location": "Interior",
+        "statusLabel": "Unreleased",
+        "deadline": "2026-11-23"
+      },
+      {
+        "id": 64736795,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "ARB Rendering",
+        "category": "Phase 1",
+        "location": "",
+        "statusLabel": "Unreleased",
+        "deadline": ""
+      }
     ]
   },
   "pastDueByJobId": {
@@ -6909,330 +5985,13 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "assignedTo": ""
       }
     ],
-    "35918575": [
-      {
-        "taskId": 49895041,
-        "jobId": 35918575,
-        "jobName": "Nagle",
-        "title": "Final Inspection",
-        "endDate": "2026-07-24",
-        "status": 0,
-        "assignedTo": "Adam Horseman"
-      },
-      {
-        "taskId": 49895078,
-        "jobId": 35918575,
-        "jobName": "Nagle",
-        "title": "Install Bath Accessories",
-        "endDate": "2026-07-31",
-        "status": 0,
-        "assignedTo": "Adam Horseman"
-      },
-      {
-        "taskId": 49895589,
-        "jobId": 35918575,
-        "jobName": "Nagle",
-        "title": "Install Mailbox",
-        "endDate": "2026-07-31",
-        "status": 0,
-        "assignedTo": "Adam Horseman"
-      },
-      {
-        "taskId": 49895600,
-        "jobId": 35918575,
-        "jobName": "Nagle",
-        "title": "Utility Inspection",
-        "endDate": "2026-06-30",
-        "status": 0,
-        "assignedTo": "Adam Horseman"
-      },
-      {
-        "taskId": 49895601,
-        "jobId": 35918575,
-        "jobName": "Nagle",
-        "title": "Final Building Inspection",
-        "endDate": "2026-06-30",
-        "status": 0,
-        "assignedTo": "Adam Horseman"
-      },
-      {
-        "taskId": 49895602,
-        "jobId": 35918575,
-        "jobName": "Nagle",
-        "title": "Final Touchup Builder",
-        "endDate": "2026-06-30",
-        "status": 0,
-        "assignedTo": "Adam Horseman"
-      },
-      {
-        "taskId": 49895606,
-        "jobId": 35918575,
-        "jobName": "Nagle",
-        "title": "20 Certificate of Occupancy (Checklist)",
-        "endDate": "2026-07-24",
-        "status": 0,
-        "assignedTo": "Adam Horseman"
-      },
-      {
-        "taskId": 49895607,
-        "jobId": 35918575,
-        "jobName": "Nagle",
-        "title": "21 Superintendent Checklist for Final Walk (Checklist)",
-        "endDate": "2026-06-30",
-        "status": 0,
-        "assignedTo": "Adam Horseman"
-      },
-      {
-        "taskId": 49895610,
-        "jobId": 35918575,
-        "jobName": "Nagle",
-        "title": "26 Final Walk Form (Checklist)",
-        "endDate": "2026-07-24",
-        "status": 0,
-        "assignedTo": "Adam Horseman"
-      },
-      {
-        "taskId": 170035575,
-        "jobId": 35918575,
-        "jobName": "Nagle",
-        "title": "Give Nagle a Landscaper and get them signed off ASAP.",
-        "endDate": "2026-05-14",
-        "status": 0,
-        "assignedTo": "Jennifer Simoneaux"
-      }
-    ],
     "38215830": [
-      {
-        "taskId": 49920480,
-        "jobId": 38215830,
-        "jobName": "Kinney",
-        "title": "Pour Apron",
-        "endDate": "2026-04-30",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49920482,
-        "jobId": 38215830,
-        "jobName": "Kinney",
-        "title": "Install Pavers",
-        "endDate": "2026-05-15",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49920486,
-        "jobId": 38215830,
-        "jobName": "Kinney",
-        "title": "Install Stair System",
-        "endDate": "2026-07-23",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49920487,
-        "jobId": 38215830,
-        "jobName": "Kinney",
-        "title": "Measure Mirrors, Shelving, Glass",
-        "endDate": "2026-06-02",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49920490,
-        "jobId": 38215830,
-        "jobName": "Kinney",
-        "title": "Plumbing Trim-Out",
-        "endDate": "2026-06-04",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49920493,
-        "jobId": 38215830,
-        "jobName": "Kinney",
-        "title": "Electrical Trim-Out",
-        "endDate": "2026-06-04",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49920494,
-        "jobId": 38215830,
-        "jobName": "Kinney",
-        "title": "Low Voltage Trim-Out",
-        "endDate": "2026-06-04",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49920495,
-        "jobId": 38215830,
-        "jobName": "Kinney",
-        "title": "Gas Trim-Out",
-        "endDate": "2026-06-04",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49920498,
-        "jobId": 38215830,
-        "jobName": "Kinney",
-        "title": "Paint Doors & Trim",
-        "endDate": "2026-07-23",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49920518,
-        "jobId": 38215830,
-        "jobName": "Kinney",
-        "title": "Preclean Windows",
-        "endDate": "2026-08-13",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49920519,
-        "jobId": 38215830,
-        "jobName": "Kinney",
-        "title": "Drywall Bump",
-        "endDate": "2026-08-13",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49920520,
-        "jobId": 38215830,
-        "jobName": "Kinney",
-        "title": "Blown Insulation Install",
-        "endDate": "2026-08-13",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49920521,
-        "jobId": 38215830,
-        "jobName": "Kinney",
-        "title": "Final Paint Interior Walls",
-        "endDate": "2026-08-13",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49920522,
-        "jobId": 38215830,
-        "jobName": "Kinney",
-        "title": "Install Exterior Door Handles",
-        "endDate": "2026-08-13",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49920523,
-        "jobId": 38215830,
-        "jobName": "Kinney",
-        "title": "Garage Epoxy Floor",
-        "endDate": "2026-06-04",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
       {
         "taskId": 49920524,
         "jobId": 38215830,
         "jobName": "Kinney",
         "title": "Install Interior and Exterior Railing",
-        "endDate": "2026-08-13",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49920525,
-        "jobId": 38215830,
-        "jobName": "Kinney",
-        "title": "Deliver Appliances",
-        "endDate": "2026-08-13",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49920526,
-        "jobId": 38215830,
-        "jobName": "Kinney",
-        "title": "Install Appliances",
-        "endDate": "2026-08-13",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49920972,
-        "jobId": 38215830,
-        "jobName": "Kinney",
-        "title": "Final Exterior Grade",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49920977,
-        "jobId": 38215830,
-        "jobName": "Kinney",
-        "title": "Final Survey",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49920979,
-        "jobId": 38215830,
-        "jobName": "Kinney",
-        "title": "Final Termite Treatment",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49920981,
-        "jobId": 38215830,
-        "jobName": "Kinney",
-        "title": "Irrigation Install",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49920982,
-        "jobId": 38215830,
-        "jobName": "Kinney",
-        "title": "Shrub and Tree Install",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49920983,
-        "jobId": 38215830,
-        "jobName": "Kinney",
-        "title": "Sod Install",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49920984,
-        "jobId": 38215830,
-        "jobName": "Kinney",
-        "title": "Landscape Final Inspection",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49920985,
-        "jobId": 38215830,
-        "jobName": "Kinney",
-        "title": "Install Mailbox",
-        "endDate": "2026-08-17",
+        "endDate": "2026-09-02",
         "status": 0,
         "assignedTo": "James Manford"
       },
@@ -7241,16 +6000,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 38215830,
         "jobName": "Kinney",
         "title": "Final Paint Touch Up Exterior",
-        "endDate": "2026-08-13",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49920989,
-        "jobId": 38215830,
-        "jobName": "Kinney",
-        "title": "Deliver & Install Hot Water Heater",
-        "endDate": "2026-06-04",
+        "endDate": "2026-09-02",
         "status": 0,
         "assignedTo": "James Manford"
       },
@@ -7259,25 +6009,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 38215830,
         "jobName": "Kinney",
         "title": "Engineering Final Inspection",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49920991,
-        "jobId": 38215830,
-        "jobName": "Kinney",
-        "title": "Corporate Inspection",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49920992,
-        "jobId": 38215830,
-        "jobName": "Kinney",
-        "title": "Utility Inspection",
-        "endDate": "2026-08-24",
+        "endDate": "2026-09-14",
         "status": 0,
         "assignedTo": "James Manford"
       },
@@ -7286,7 +6018,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 38215830,
         "jobName": "Kinney",
         "title": "Final Building Inspection",
-        "endDate": "2026-08-24",
+        "endDate": "2026-09-14",
         "status": 0,
         "assignedTo": "James Manford"
       },
@@ -7295,7 +6027,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 38215830,
         "jobName": "Kinney",
         "title": "Final Touchup Builder",
-        "endDate": "2026-08-24",
+        "endDate": "2026-09-14",
         "status": 0,
         "assignedTo": "James Manford"
       },
@@ -7304,16 +6036,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 38215830,
         "jobName": "Kinney",
         "title": "Final House Clean",
-        "endDate": "2026-08-31",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49920997,
-        "jobId": 38215830,
-        "jobName": "Kinney",
-        "title": "19 Corporate Inspection Form (Checklist)",
-        "endDate": "2026-06-30",
+        "endDate": "2026-10-02",
         "status": 0,
         "assignedTo": "James Manford"
       },
@@ -7331,7 +6054,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 38215830,
         "jobName": "Kinney",
         "title": "21 Superintendent Checklist for Final Walk (Checklist)",
-        "endDate": "2026-08-24",
+        "endDate": "2026-09-14",
         "status": 0,
         "assignedTo": "James Manford"
       },
@@ -7348,19 +6071,10 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "taskId": 49921003,
         "jobId": 38215830,
         "jobName": "Kinney",
-        "title": "16 Trim Carpentry (Checklist)",
-        "endDate": "2026-08-13",
+        "title": ".",
+        "endDate": "2026-09-02",
         "status": 0,
         "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49921035,
-        "jobId": 38215830,
-        "jobName": "Kinney",
-        "title": "Fix the stain Issue",
-        "endDate": "2026-03-31",
-        "status": 0,
-        "assignedTo": ""
       }
     ],
     "38319441": [
@@ -7480,279 +6194,9 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "endDate": "2025-10-30",
         "status": 0,
         "assignedTo": "Collin Olsen"
-      },
-      {
-        "taskId": 49925798,
-        "jobId": 38319441,
-        "jobName": "Moura",
-        "title": "Corbels - Exterior Selection",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
-      },
-      {
-        "taskId": 49925799,
-        "jobId": 38319441,
-        "jobName": "Moura",
-        "title": "Doors - Exterior Selection",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
-      },
-      {
-        "taskId": 49925800,
-        "jobId": 38319441,
-        "jobName": "Moura",
-        "title": "Doors - Garage Selection",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
-      },
-      {
-        "taskId": 49925801,
-        "jobId": 38319441,
-        "jobName": "Moura",
-        "title": "Exterior Finishes Selection",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
-      },
-      {
-        "taskId": 49925802,
-        "jobId": 38319441,
-        "jobName": "Moura",
-        "title": "Paint - Exterior Selection",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
-      },
-      {
-        "taskId": 49925803,
-        "jobId": 38319441,
-        "jobName": "Moura",
-        "title": "Paint - Garage Floor Coating selection",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
-      },
-      {
-        "taskId": 49925804,
-        "jobId": 38319441,
-        "jobName": "Moura",
-        "title": "Pavers Selection",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
-      },
-      {
-        "taskId": 49925805,
-        "jobId": 38319441,
-        "jobName": "Moura",
-        "title": "Railing - Exterior Selection",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
-      },
-      {
-        "taskId": 49925806,
-        "jobId": 38319441,
-        "jobName": "Moura",
-        "title": "Roofing Selection",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
-      },
-      {
-        "taskId": 49925807,
-        "jobId": 38319441,
-        "jobName": "Moura",
-        "title": "Stone - Exterior Selection",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
-      },
-      {
-        "taskId": 49925808,
-        "jobId": 38319441,
-        "jobName": "Moura",
-        "title": "Well/ Water Supply Selection",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
-      },
-      {
-        "taskId": 49925809,
-        "jobId": 38319441,
-        "jobName": "Moura",
-        "title": "Windows & Sliders Selection",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
-      },
-      {
-        "taskId": 49925810,
-        "jobId": 38319441,
-        "jobName": "Moura",
-        "title": "A/C Walls Selection",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
-      },
-      {
-        "taskId": 49925811,
-        "jobId": 38319441,
-        "jobName": "Moura",
-        "title": "Electrical - Lighting Exterior Selection",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
-      },
-      {
-        "taskId": 49925812,
-        "jobId": 38319441,
-        "jobName": "Moura",
-        "title": "Exterior Ceiling Selection",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
-      },
-      {
-        "taskId": 49925813,
-        "jobId": 38319441,
-        "jobName": "Moura",
-        "title": "Fireplace - Exterior Selection",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
-      },
-      {
-        "taskId": 49925814,
-        "jobId": 38319441,
-        "jobName": "Moura",
-        "title": "Gas/Propane Selection",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
-      },
-      {
-        "taskId": 49926161,
-        "jobId": 38319441,
-        "jobName": "Moura",
-        "title": "Generator Selection",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
-      },
-      {
-        "taskId": 49926162,
-        "jobId": 38319441,
-        "jobName": "Moura",
-        "title": "Gutters Selction",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
-      },
-      {
-        "taskId": 49926163,
-        "jobId": 38319441,
-        "jobName": "Moura",
-        "title": "HVAC Selection",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
-      },
-      {
-        "taskId": 49926164,
-        "jobId": 38319441,
-        "jobName": "Moura",
-        "title": "Insulation Selection",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
-      },
-      {
-        "taskId": 49926165,
-        "jobId": 38319441,
-        "jobName": "Moura",
-        "title": "Landscaping Selection",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
-      },
-      {
-        "taskId": 49926166,
-        "jobId": 38319441,
-        "jobName": "Moura",
-        "title": "Mailbox Selection",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
-      },
-      {
-        "taskId": 49926167,
-        "jobId": 38319441,
-        "jobName": "Moura",
-        "title": "Plumbing - Hose Bibs Selection",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
-      },
-      {
-        "taskId": 49926168,
-        "jobId": 38319441,
-        "jobName": "Moura",
-        "title": "Plumbing - Water Heater Selection",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
-      },
-      {
-        "taskId": 49926169,
-        "jobId": 38319441,
-        "jobName": "Moura",
-        "title": "Pool Selection",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
-      },
-      {
-        "taskId": 49926170,
-        "jobId": 38319441,
-        "jobName": "Moura",
-        "title": "Septic selection",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
-      },
-      {
-        "taskId": 49926171,
-        "jobId": 38319441,
-        "jobName": "Moura",
-        "title": "Shutter Selection",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
-      },
-      {
-        "taskId": 49926172,
-        "jobId": 38319441,
-        "jobName": "Moura",
-        "title": "Summer Kitchen Selection",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "Monique (Designer) Lumley, Allie (M) Epling"
       }
     ],
     "38397739": [
-      {
-        "taskId": 49930396,
-        "jobId": 38397739,
-        "jobName": "Whipple",
-        "title": "Engineering Final Inspection",
-        "endDate": "2026-05-13",
-        "status": 0,
-        "assignedTo": "Adam Horseman"
-      },
       {
         "taskId": 49930400,
         "jobId": 38397739,
@@ -7760,7 +6204,16 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Final Touchup Builder",
         "endDate": "2026-05-13",
         "status": 0,
-        "assignedTo": "Adam Horseman"
+        "assignedTo": ""
+      },
+      {
+        "taskId": 49930401,
+        "jobId": 38397739,
+        "jobName": "Whipple",
+        "title": "Complete - Pickup C/O",
+        "endDate": "2026-10-07",
+        "status": 0,
+        "assignedTo": ""
       },
       {
         "taskId": 49930404,
@@ -7769,7 +6222,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "20 Certificate of Occupancy (Checklist)",
         "endDate": "2026-05-26",
         "status": 0,
-        "assignedTo": "Adam Horseman"
+        "assignedTo": ""
       },
       {
         "taskId": 49930405,
@@ -7778,7 +6231,16 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "21 Superintendent Checklist for Final Walk (Checklist)",
         "endDate": "2026-05-13",
         "status": 0,
-        "assignedTo": "Adam Horseman"
+        "assignedTo": ""
+      },
+      {
+        "taskId": 49930406,
+        "jobId": 38397739,
+        "jobName": "Whipple",
+        "title": "Fluff and Buff",
+        "endDate": "2026-10-07",
+        "status": 0,
+        "assignedTo": ""
       },
       {
         "taskId": 49930408,
@@ -7787,7 +6249,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "26 Final Walk Form (Checklist)",
         "endDate": "2026-05-26",
         "status": 0,
-        "assignedTo": "Adam Horseman"
+        "assignedTo": ""
       },
       {
         "taskId": 49930409,
@@ -7796,28 +6258,10 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "16 Trim Carpentry (Checklist)",
         "endDate": "2026-04-23",
         "status": 0,
-        "assignedTo": "Adam Horseman"
+        "assignedTo": ""
       }
     ],
     "38901121": [
-      {
-        "taskId": 49940334,
-        "jobId": 38901121,
-        "jobName": "Jimenez",
-        "title": "Final Termite Treatment",
-        "endDate": "2026-07-09",
-        "status": 0,
-        "assignedTo": "Adam Horseman"
-      },
-      {
-        "taskId": 49940346,
-        "jobId": 38901121,
-        "jobName": "Jimenez",
-        "title": "Utility Inspection",
-        "endDate": "2026-07-08",
-        "status": 0,
-        "assignedTo": "Adam Horseman"
-      },
       {
         "taskId": 49940347,
         "jobId": 38901121,
@@ -7825,7 +6269,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Final Building Inspection",
         "endDate": "2026-07-08",
         "status": 0,
-        "assignedTo": "Adam Horseman"
+        "assignedTo": ""
       },
       {
         "taskId": 49940348,
@@ -7834,7 +6278,16 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Final Touchup Builder",
         "endDate": "2026-07-08",
         "status": 0,
-        "assignedTo": "Adam Horseman"
+        "assignedTo": ""
+      },
+      {
+        "taskId": 49940352,
+        "jobId": 38901121,
+        "jobName": "Jimenez",
+        "title": "20 Certificate of Occupancy (Checklist)",
+        "endDate": "2026-09-14",
+        "status": 0,
+        "assignedTo": ""
       },
       {
         "taskId": 49940353,
@@ -7843,19 +6296,37 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "21 Superintendent Checklist for Final Walk (Checklist)",
         "endDate": "2026-07-08",
         "status": 0,
-        "assignedTo": "Adam Horseman"
+        "assignedTo": ""
+      },
+      {
+        "taskId": 49940354,
+        "jobId": 38901121,
+        "jobName": "Jimenez",
+        "title": "Fluff and Buff",
+        "endDate": "2026-10-12",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 49940355,
+        "jobId": 38901121,
+        "jobName": "Jimenez",
+        "title": "Homeowner Walk Through/Orientation & Signoff",
+        "endDate": "2026-10-12",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 49940356,
+        "jobId": 38901121,
+        "jobName": "Jimenez",
+        "title": "26 Final Walk Form (Checklist)",
+        "endDate": "2026-09-21",
+        "status": 0,
+        "assignedTo": ""
       }
     ],
     "40214880": [
-      {
-        "taskId": 49966975,
-        "jobId": 40214880,
-        "jobName": "Emerson",
-        "title": "Energize TUG Service",
-        "endDate": "2026-06-11",
-        "status": 0,
-        "assignedTo": "Paul Dimeglio"
-      },
       {
         "taskId": 49966979,
         "jobId": 40214880,
@@ -7875,65 +6346,38 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "assignedTo": "Paul Dimeglio"
       },
       {
-        "taskId": 49966992,
+        "taskId": 49967019,
         "jobId": 40214880,
         "jobName": "Emerson",
-        "title": "Aboveground Plumbing Rough-In",
-        "endDate": "2026-08-04",
+        "title": "Drywall Screw Inspection",
+        "endDate": "2026-09-11",
         "status": 0,
         "assignedTo": "Paul Dimeglio"
       },
       {
-        "taskId": 49966994,
+        "taskId": 49967021,
         "jobId": 40214880,
         "jobName": "Emerson",
-        "title": "11 Electrical Walk (Checklist)",
-        "endDate": "2026-08-04",
+        "title": "Tape, Mud & Texture Drywall",
+        "endDate": "2026-10-06",
         "status": 0,
         "assignedTo": "Paul Dimeglio"
       },
       {
-        "taskId": 49967001,
+        "taskId": 49967023,
         "jobId": 40214880,
         "jobName": "Emerson",
-        "title": "Install Lath",
-        "endDate": "2026-08-17",
+        "title": "14 Drywall Work Order (Checklist)",
+        "endDate": "2026-10-06",
         "status": 0,
         "assignedTo": "Paul Dimeglio"
       },
       {
-        "taskId": 49967003,
+        "taskId": 49967024,
         "jobId": 40214880,
         "jobName": "Emerson",
-        "title": "Lath Inspection",
-        "endDate": "2026-08-19",
-        "status": 0,
-        "assignedTo": "Paul Dimeglio"
-      },
-      {
-        "taskId": 49967005,
-        "jobId": 40214880,
-        "jobName": "Emerson",
-        "title": "Stucco",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": "Paul Dimeglio"
-      },
-      {
-        "taskId": 49967007,
-        "jobId": 40214880,
-        "jobName": "Emerson",
-        "title": "Install Siding",
-        "endDate": "2026-08-28",
-        "status": 0,
-        "assignedTo": "Paul Dimeglio"
-      },
-      {
-        "taskId": 49967014,
-        "jobId": 40214880,
-        "jobName": "Emerson",
-        "title": "Deliver Drywall",
-        "endDate": "2026-08-31",
+        "title": "15 Drywall Checklist (Checklist)",
+        "endDate": "2026-10-06",
         "status": 0,
         "assignedTo": "Paul Dimeglio"
       },
@@ -7965,38 +6409,11 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "assignedTo": "Kati Bengelsdorf"
       },
       {
-        "taskId": 49967757,
-        "jobId": 40214880,
-        "jobName": "Emerson",
-        "title": "Rough Grade",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": "Paul Dimeglio"
-      },
-      {
         "taskId": 49967786,
         "jobId": 40214880,
         "jobName": "Emerson",
         "title": "08 Window Qualification (Checklist)",
         "endDate": "2026-06-17",
-        "status": 0,
-        "assignedTo": "Paul Dimeglio"
-      },
-      {
-        "taskId": 49967787,
-        "jobId": 40214880,
-        "jobName": "Emerson",
-        "title": "Install Soffit/Fascia",
-        "endDate": "2026-08-27",
-        "status": 0,
-        "assignedTo": "Paul Dimeglio"
-      },
-      {
-        "taskId": 49967788,
-        "jobId": 40214880,
-        "jobName": "Emerson",
-        "title": "Soffit In-Progress Inspection",
-        "endDate": "2026-08-27",
         "status": 0,
         "assignedTo": "Paul Dimeglio"
       },
@@ -8028,20 +6445,74 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "assignedTo": "Paul Dimeglio"
       },
       {
-        "taskId": 49968257,
+        "taskId": 49967793,
         "jobId": 40214880,
         "jobName": "Emerson",
-        "title": "FMEP Inspection",
-        "endDate": "2026-08-27",
+        "title": "Deliver & Install Summer Kitchen Unit/Appliances",
+        "endDate": "2026-09-24",
         "status": 0,
         "assignedTo": "Paul Dimeglio"
       },
       {
-        "taskId": 49968258,
+        "taskId": 49967794,
         "jobId": 40214880,
         "jobName": "Emerson",
-        "title": "Matterport 3D Scan",
-        "endDate": "2026-08-28",
+        "title": "Template Summer Kitchen Granite",
+        "endDate": "2026-09-24",
+        "status": 0,
+        "assignedTo": "Paul Dimeglio"
+      },
+      {
+        "taskId": 49967795,
+        "jobId": 40214880,
+        "jobName": "Emerson",
+        "title": "Install Summer Kitchen Granite",
+        "endDate": "2026-09-24",
+        "status": 0,
+        "assignedTo": "Paul Dimeglio"
+      },
+      {
+        "taskId": 49967796,
+        "jobId": 40214880,
+        "jobName": "Emerson",
+        "title": "Install Summer Kitchen Appliances",
+        "endDate": "2026-09-24",
+        "status": 0,
+        "assignedTo": "Paul Dimeglio"
+      },
+      {
+        "taskId": 49967797,
+        "jobId": 40214880,
+        "jobName": "Emerson",
+        "title": "Plumbing Trim Summer Kitchen",
+        "endDate": "2026-09-24",
+        "status": 0,
+        "assignedTo": "Paul Dimeglio"
+      },
+      {
+        "taskId": 49967798,
+        "jobId": 40214880,
+        "jobName": "Emerson",
+        "title": "Electrical Trim Summer Kitchen",
+        "endDate": "2026-09-24",
+        "status": 0,
+        "assignedTo": "Paul Dimeglio"
+      },
+      {
+        "taskId": 49967800,
+        "jobId": 40214880,
+        "jobName": "Emerson",
+        "title": "Send Measurements for Summer Kitchen",
+        "endDate": "2026-09-24",
+        "status": 0,
+        "assignedTo": "Paul Dimeglio"
+      },
+      {
+        "taskId": 49968278,
+        "jobId": 40214880,
+        "jobName": "Emerson",
+        "title": "Deliver and Install Stone",
+        "endDate": "2026-09-08",
         "status": 0,
         "assignedTo": "Paul Dimeglio"
       },
@@ -8056,60 +6527,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
       }
     ],
     "40228562": [
-      {
-        "taskId": 49971968,
-        "jobId": 40228562,
-        "jobName": "Blandford",
-        "title": "Measure Mirrors, Shelving, Glass",
-        "endDate": "2026-07-20",
-        "status": 0,
-        "assignedTo": "Paul Dimeglio"
-      },
-      {
-        "taskId": 49971978,
-        "jobId": 40228562,
-        "jobName": "Blandford",
-        "title": "Gas Trim-Out",
-        "endDate": "2026-08-06",
-        "status": 0,
-        "assignedTo": "Paul Dimeglio"
-      },
-      {
-        "taskId": 49971979,
-        "jobId": 40228562,
-        "jobName": "Blandford",
-        "title": "Early Power Inspection",
-        "endDate": "2026-08-06",
-        "status": 0,
-        "assignedTo": "Paul Dimeglio"
-      },
-      {
-        "taskId": 49971981,
-        "jobId": 40228562,
-        "jobName": "Blandford",
-        "title": "Paint Doors & Trim",
-        "endDate": "2026-05-22",
-        "status": 0,
-        "assignedTo": "Paul Dimeglio"
-      },
-      {
-        "taskId": 49972683,
-        "jobId": 40228562,
-        "jobName": "Blandford",
-        "title": "Preclean Windows",
-        "endDate": "2026-08-10",
-        "status": 0,
-        "assignedTo": "Paul Dimeglio"
-      },
-      {
-        "taskId": 49972684,
-        "jobId": 40228562,
-        "jobName": "Blandford",
-        "title": "Drywall Bump",
-        "endDate": "2026-08-10",
-        "status": 0,
-        "assignedTo": "Paul Dimeglio"
-      },
       {
         "taskId": 49972686,
         "jobId": 40228562,
@@ -8129,29 +6546,11 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "assignedTo": "Paul Dimeglio"
       },
       {
-        "taskId": 49972688,
+        "taskId": 49972700,
         "jobId": 40228562,
         "jobName": "Blandford",
-        "title": "Garage Epoxy Floor",
-        "endDate": "2026-06-24",
-        "status": 0,
-        "assignedTo": "Paul Dimeglio"
-      },
-      {
-        "taskId": 49972689,
-        "jobId": 40228562,
-        "jobName": "Blandford",
-        "title": "Install Interior and Exterior Railing",
-        "endDate": "2026-08-10",
-        "status": 0,
-        "assignedTo": "Paul Dimeglio"
-      },
-      {
-        "taskId": 49972693,
-        "jobId": 40228562,
-        "jobName": "Blandford",
-        "title": "Install Generator",
-        "endDate": "2026-05-18",
+        "title": "Landscape Final Inspection",
+        "endDate": "2026-09-15",
         "status": 0,
         "assignedTo": "Paul Dimeglio"
       },
@@ -8169,25 +6568,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 40228562,
         "jobName": "Blandford",
         "title": "Install Screens and Window Trim",
-        "endDate": "2026-08-31",
-        "status": 0,
-        "assignedTo": "Paul Dimeglio"
-      },
-      {
-        "taskId": 49972706,
-        "jobId": 40228562,
-        "jobName": "Blandford",
-        "title": "Engineering Final Inspection",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": "Paul Dimeglio"
-      },
-      {
-        "taskId": 49972707,
-        "jobId": 40228562,
-        "jobName": "Blandford",
-        "title": "Corporate Inspection",
-        "endDate": "2026-08-17",
+        "endDate": "2026-10-02",
         "status": 0,
         "assignedTo": "Paul Dimeglio"
       },
@@ -8196,7 +6577,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 40228562,
         "jobName": "Blandford",
         "title": "Utility Inspection",
-        "endDate": "2026-08-17",
+        "endDate": "2026-09-08",
         "status": 0,
         "assignedTo": "Paul Dimeglio"
       },
@@ -8205,7 +6586,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 40228562,
         "jobName": "Blandford",
         "title": "Final Building Inspection",
-        "endDate": "2026-08-17",
+        "endDate": "2026-09-08",
         "status": 0,
         "assignedTo": "Paul Dimeglio"
       },
@@ -8214,7 +6595,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 40228562,
         "jobName": "Blandford",
         "title": "Final Touchup Builder",
-        "endDate": "2026-08-17",
+        "endDate": "2026-09-08",
         "status": 0,
         "assignedTo": "Paul Dimeglio"
       },
@@ -8223,7 +6604,25 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 40228562,
         "jobName": "Blandford",
         "title": "Final House Clean",
-        "endDate": "2026-08-31",
+        "endDate": "2026-10-06",
+        "status": 0,
+        "assignedTo": "Paul Dimeglio"
+      },
+      {
+        "taskId": 49972713,
+        "jobId": 40228562,
+        "jobName": "Blandford",
+        "title": "19 Corporate Inspection Form (Checklist)",
+        "endDate": "2026-09-24",
+        "status": 0,
+        "assignedTo": "Paul Dimeglio"
+      },
+      {
+        "taskId": 49972714,
+        "jobId": 40228562,
+        "jobName": "Blandford",
+        "title": "20 Certificate of Occupancy (Checklist)",
+        "endDate": "2026-10-06",
         "status": 0,
         "assignedTo": "Paul Dimeglio"
       },
@@ -8232,7 +6631,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 40228562,
         "jobName": "Blandford",
         "title": "21 Superintendent Checklist for Final Walk (Checklist)",
-        "endDate": "2026-08-17",
+        "endDate": "2026-09-08",
         "status": 0,
         "assignedTo": "Paul Dimeglio"
       },
@@ -8248,146 +6647,119 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
     ],
     "40351917": [
       {
-        "taskId": 49978845,
+        "taskId": 49978848,
         "jobId": 40351917,
         "jobName": "Bennett",
-        "title": "Install Tile Floors",
-        "endDate": "2026-08-31",
+        "title": "Install Window Sills",
+        "endDate": "2026-09-25",
         "status": 0,
         "assignedTo": "James Manford"
       },
       {
-        "taskId": 49978847,
+        "taskId": 49978866,
         "jobId": 40351917,
         "jobName": "Bennett",
-        "title": "Install Tile Shower(s)",
-        "endDate": "2026-08-31",
+        "title": "Install Interior Finish",
+        "endDate": "2026-10-09",
         "status": 0,
         "assignedTo": "James Manford"
       },
       {
-        "taskId": 49978861,
+        "taskId": 49978880,
         "jobId": 40351917,
         "jobName": "Bennett",
-        "title": "Install Tile",
-        "endDate": "2026-08-31",
+        "title": "Install Stair System",
+        "endDate": "2026-09-25",
         "status": 0,
         "assignedTo": "James Manford"
       },
       {
-        "taskId": 49978863,
+        "taskId": 49978882,
         "jobId": 40351917,
         "jobName": "Bennett",
-        "title": "Install Decking",
-        "endDate": "2026-08-28",
+        "title": "Install Mirrors, Shelving, Glass",
+        "endDate": "2026-10-05",
         "status": 0,
         "assignedTo": "James Manford"
       },
       {
-        "taskId": 49978876,
+        "taskId": 49978885,
         "jobId": 40351917,
         "jobName": "Bennett",
-        "title": "Install Pavers",
-        "endDate": "2026-08-28",
+        "title": "Install Bath Accessories",
+        "endDate": "2026-10-09",
         "status": 0,
         "assignedTo": "James Manford"
       },
       {
-        "taskId": 49978877,
+        "taskId": 49978886,
         "jobId": 40351917,
         "jobName": "Bennett",
-        "title": "Deliver Doors/Trim",
-        "endDate": "2026-08-31",
+        "title": "Plumbing Trim-Out",
+        "endDate": "2026-10-06",
         "status": 0,
         "assignedTo": "James Manford"
       },
       {
-        "taskId": 49979426,
+        "taskId": 49978891,
         "jobId": 40351917,
         "jobName": "Bennett",
-        "title": "Install Gutters",
-        "endDate": "2026-04-06",
+        "title": "Gas Trim-Out",
+        "endDate": "2026-10-06",
         "status": 0,
         "assignedTo": "James Manford"
       },
       {
-        "taskId": 49979429,
+        "taskId": 49979421,
         "jobId": 40351917,
         "jobName": "Bennett",
-        "title": "Measure Bahama Shutters",
-        "endDate": "2026-06-24",
+        "title": "Interior Lockout",
+        "endDate": "2026-10-09",
         "status": 0,
         "assignedTo": "James Manford"
       },
       {
-        "taskId": 49979430,
+        "taskId": 49979438,
         "jobId": 40351917,
         "jobName": "Bennett",
-        "title": "Deliver & Install Summer Kitchen Unit/Appliances",
-        "endDate": "2026-06-03",
+        "title": "Preclean Windows",
+        "endDate": "2026-10-05",
         "status": 0,
         "assignedTo": "James Manford"
       },
       {
-        "taskId": 49979431,
+        "taskId": 49979439,
         "jobId": 40351917,
         "jobName": "Bennett",
-        "title": "Template Summer Kitchen Granite",
-        "endDate": "2026-06-03",
+        "title": "Drywall Bump",
+        "endDate": "2026-10-05",
         "status": 0,
         "assignedTo": "James Manford"
       },
       {
-        "taskId": 49979432,
+        "taskId": 49979440,
         "jobId": 40351917,
         "jobName": "Bennett",
-        "title": "Install Summer Kitchen Granite",
-        "endDate": "2026-06-03",
+        "title": "Blown Insulation Install",
+        "endDate": "2026-10-05",
         "status": 0,
         "assignedTo": "James Manford"
       },
       {
-        "taskId": 49979433,
+        "taskId": 49979441,
         "jobId": 40351917,
         "jobName": "Bennett",
-        "title": "Install Summer Kitchen Appliances",
-        "endDate": "2026-06-03",
+        "title": "Final Paint Interior Walls",
+        "endDate": "2026-10-05",
         "status": 0,
         "assignedTo": "James Manford"
       },
       {
-        "taskId": 49979434,
+        "taskId": 49979442,
         "jobId": 40351917,
         "jobName": "Bennett",
-        "title": "Plumbing Trim Summer Kitchen",
-        "endDate": "2026-06-03",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49979435,
-        "jobId": 40351917,
-        "jobName": "Bennett",
-        "title": "Electrical Trim Summer Kitchen",
-        "endDate": "2026-06-03",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49979436,
-        "jobId": 40351917,
-        "jobName": "Bennett",
-        "title": "Gas Trim Summer Kitchen",
-        "endDate": "2026-06-03",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49979437,
-        "jobId": 40351917,
-        "jobName": "Bennett",
-        "title": "Send Measurements for Summer Kitchen",
-        "endDate": "2026-06-03",
+        "title": "Install Exterior Door Handles",
+        "endDate": "2026-10-05",
         "status": 0,
         "assignedTo": "James Manford"
       },
@@ -8401,29 +6773,38 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "assignedTo": "James Manford"
       },
       {
+        "taskId": 49979444,
+        "jobId": 40351917,
+        "jobName": "Bennett",
+        "title": "Install Interior and Exterior Railing",
+        "endDate": "2026-10-05",
+        "status": 0,
+        "assignedTo": "James Manford"
+      },
+      {
+        "taskId": 49979445,
+        "jobId": 40351917,
+        "jobName": "Bennett",
+        "title": "Deliver Appliances",
+        "endDate": "2026-10-05",
+        "status": 0,
+        "assignedTo": "James Manford"
+      },
+      {
+        "taskId": 49979446,
+        "jobId": 40351917,
+        "jobName": "Bennett",
+        "title": "Install Appliances",
+        "endDate": "2026-10-05",
+        "status": 0,
+        "assignedTo": "James Manford"
+      },
+      {
         "taskId": 49979447,
         "jobId": 40351917,
         "jobName": "Bennett",
         "title": "Secure Delivery - Generator",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49979449,
-        "jobId": 40351917,
-        "jobName": "Bennett",
-        "title": "Final Exterior Grade",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49979450,
-        "jobId": 40351917,
-        "jobName": "Bennett",
-        "title": "Final Survey",
-        "endDate": "2026-08-24",
+        "endDate": "2026-09-17",
         "status": 0,
         "assignedTo": "James Manford"
       },
@@ -8432,16 +6813,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 40351917,
         "jobName": "Bennett",
         "title": "Final Termite Treatment",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 49979452,
-        "jobId": 40351917,
-        "jobName": "Bennett",
-        "title": "Irrigation Install",
-        "endDate": "2026-08-24",
+        "endDate": "2026-09-17",
         "status": 0,
         "assignedTo": "James Manford"
       },
@@ -8450,7 +6822,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 40351917,
         "jobName": "Bennett",
         "title": "Shrub and Tree Install",
-        "endDate": "2026-08-24",
+        "endDate": "2026-09-17",
         "status": 0,
         "assignedTo": "James Manford"
       },
@@ -8459,7 +6831,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 40351917,
         "jobName": "Bennett",
         "title": "Sod Install",
-        "endDate": "2026-08-24",
+        "endDate": "2026-09-17",
         "status": 0,
         "assignedTo": "James Manford"
       },
@@ -8468,7 +6840,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 40351917,
         "jobName": "Bennett",
         "title": "Landscape Final Inspection",
-        "endDate": "2026-08-24",
+        "endDate": "2026-09-17",
         "status": 0,
         "assignedTo": "James Manford"
       },
@@ -8477,25 +6849,88 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 40351917,
         "jobName": "Bennett",
         "title": "Install Mailbox",
-        "endDate": "2026-08-24",
+        "endDate": "2026-09-17",
         "status": 0,
         "assignedTo": "James Manford"
       },
       {
-        "taskId": 49979460,
+        "taskId": 49979467,
         "jobId": 40351917,
         "jobName": "Bennett",
-        "title": "Measure Interior and Exterior Railing",
-        "endDate": "2026-06-16",
+        "title": "Final Paint Touch Up Exterior",
+        "endDate": "2026-10-05",
         "status": 0,
         "assignedTo": "James Manford"
       },
       {
-        "taskId": 49979761,
+        "taskId": 49979469,
         "jobId": 40351917,
         "jobName": "Bennett",
-        "title": "Deliver and Install Stone",
-        "endDate": "2026-07-06",
+        "title": "Install Screens and Window Trim",
+        "endDate": "2026-10-09",
+        "status": 0,
+        "assignedTo": "James Manford"
+      },
+      {
+        "taskId": 49979471,
+        "jobId": 40351917,
+        "jobName": "Bennett",
+        "title": "Deliver & Install Hot Water Heater",
+        "endDate": "2026-10-06",
+        "status": 0,
+        "assignedTo": "James Manford"
+      },
+      {
+        "taskId": 49979473,
+        "jobId": 40351917,
+        "jobName": "Bennett",
+        "title": "Engineering Final Inspection",
+        "endDate": "2026-10-12",
+        "status": 0,
+        "assignedTo": "James Manford"
+      },
+      {
+        "taskId": 49979475,
+        "jobId": 40351917,
+        "jobName": "Bennett",
+        "title": "Corporate Inspection",
+        "endDate": "2026-10-12",
+        "status": 0,
+        "assignedTo": "James Manford"
+      },
+      {
+        "taskId": 49979477,
+        "jobId": 40351917,
+        "jobName": "Bennett",
+        "title": "Utility Inspection",
+        "endDate": "2026-10-12",
+        "status": 0,
+        "assignedTo": "James Manford"
+      },
+      {
+        "taskId": 49979479,
+        "jobId": 40351917,
+        "jobName": "Bennett",
+        "title": "Final Building Inspection",
+        "endDate": "2026-10-12",
+        "status": 0,
+        "assignedTo": "James Manford"
+      },
+      {
+        "taskId": 49979481,
+        "jobId": 40351917,
+        "jobName": "Bennett",
+        "title": "Final Touchup Builder",
+        "endDate": "2026-10-12",
+        "status": 0,
+        "assignedTo": "James Manford"
+      },
+      {
+        "taskId": 49979493,
+        "jobId": 40351917,
+        "jobName": "Bennett",
+        "title": "21 Superintendent Checklist for Final Walk (Checklist)",
+        "endDate": "2026-10-12",
         "status": 0,
         "assignedTo": "James Manford"
       }
@@ -8619,49 +7054,121 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "assignedTo": "Kati Bengelsdorf"
       },
       {
-        "taskId": 49989700,
+        "taskId": 49989708,
         "jobId": 40497055,
         "jobName": "Ahigian - Habashi",
-        "title": "Stucco",
-        "endDate": "2026-05-19",
+        "title": "Deliver/Install Fireplace",
+        "endDate": "2026-09-18",
         "status": 0,
         "assignedTo": "Richard Linck"
       },
       {
-        "taskId": 49990485,
+        "taskId": 49989723,
         "jobId": 40497055,
         "jobName": "Ahigian - Habashi",
-        "title": "Measure Interior and Exterior Railing",
-        "endDate": "2026-08-14",
+        "title": "Install Cabinets",
+        "endDate": "2026-10-09",
+        "status": 0,
+        "assignedTo": "Richard Linck"
+      },
+      {
+        "taskId": 49989737,
+        "jobId": 40497055,
+        "jobName": "Ahigian - Habashi",
+        "title": "Install Mirrors, Shelving, Glass",
+        "endDate": "2026-09-18",
+        "status": 0,
+        "assignedTo": "Richard Linck"
+      },
+      {
+        "taskId": 49989739,
+        "jobId": 40497055,
+        "jobName": "Ahigian - Habashi",
+        "title": "Install Countertops",
+        "endDate": "2026-10-09",
+        "status": 0,
+        "assignedTo": "Richard Linck"
+      },
+      {
+        "taskId": 49990471,
+        "jobId": 40497055,
+        "jobName": "Ahigian - Habashi",
+        "title": "Garage Epoxy Floor",
+        "endDate": "2026-10-05",
         "status": 0,
         "assignedTo": "Richard Linck"
       }
     ],
     "41118068": [
       {
-        "taskId": 50004135,
-        "jobId": 41118068,
-        "jobName": "Lois",
-        "title": "Deliver Tile",
-        "endDate": "2026-04-24",
-        "status": 0,
-        "assignedTo": "Paul Dimeglio"
-      },
-      {
-        "taskId": 50004140,
-        "jobId": 41118068,
-        "jobName": "Lois",
-        "title": "Install Roof",
-        "endDate": "2026-08-13",
-        "status": 0,
-        "assignedTo": "Paul Dimeglio"
-      },
-      {
         "taskId": 50004142,
         "jobId": 41118068,
         "jobName": "Lois",
         "title": "12 Progress Walk Form (Checklist)",
         "endDate": "2026-05-29",
+        "status": 0,
+        "assignedTo": "Paul Dimeglio"
+      },
+      {
+        "taskId": 50004154,
+        "jobId": 41118068,
+        "jobName": "Lois",
+        "title": "Install Pavers",
+        "endDate": "2026-10-02",
+        "status": 0,
+        "assignedTo": "Paul Dimeglio"
+      },
+      {
+        "taskId": 50004155,
+        "jobId": 41118068,
+        "jobName": "Lois",
+        "title": "Install Stair System",
+        "endDate": "2026-09-17",
+        "status": 0,
+        "assignedTo": "Paul Dimeglio"
+      },
+      {
+        "taskId": 50004156,
+        "jobId": 41118068,
+        "jobName": "Lois",
+        "title": "Measure Mirrors, Shelving, Glass",
+        "endDate": "2026-09-15",
+        "status": 0,
+        "assignedTo": "Paul Dimeglio"
+      },
+      {
+        "taskId": 50004157,
+        "jobId": 41118068,
+        "jobName": "Lois",
+        "title": "Plumbing Trim-Out",
+        "endDate": "2026-10-02",
+        "status": 0,
+        "assignedTo": "Paul Dimeglio"
+      },
+      {
+        "taskId": 50004165,
+        "jobId": 41118068,
+        "jobName": "Lois",
+        "title": "Low Voltage Trim-Out",
+        "endDate": "2026-10-02",
+        "status": 0,
+        "assignedTo": "Paul Dimeglio"
+      },
+      {
+        "taskId": 50004169,
+        "jobId": 41118068,
+        "jobName": "Lois",
+        "title": "Early Power Inspection",
+        "endDate": "2026-10-02",
+        "status": 0,
+        "assignedTo": "Paul Dimeglio"
+      },
+      {
+        "taskId": 50004171,
+        "jobId": 41118068,
+        "jobName": "Lois",
+        "title": "AC Start Up",
+        "endDate": "2026-10-02",
         "status": 0,
         "assignedTo": "Paul Dimeglio"
       },
@@ -8693,11 +7200,83 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "assignedTo": "Paul Dimeglio"
       },
       {
-        "taskId": 50004214,
+        "taskId": 50004204,
         "jobId": 41118068,
         "jobName": "Lois",
-        "title": "Install Generator",
-        "endDate": "2026-07-22",
+        "title": "Preclean Windows",
+        "endDate": "2026-10-12",
+        "status": 0,
+        "assignedTo": "Paul Dimeglio"
+      },
+      {
+        "taskId": 50004205,
+        "jobId": 41118068,
+        "jobName": "Lois",
+        "title": "Drywall Bump",
+        "endDate": "2026-10-12",
+        "status": 0,
+        "assignedTo": "Paul Dimeglio"
+      },
+      {
+        "taskId": 50004206,
+        "jobId": 41118068,
+        "jobName": "Lois",
+        "title": "Blown Insulation Install",
+        "endDate": "2026-10-12",
+        "status": 0,
+        "assignedTo": "Paul Dimeglio"
+      },
+      {
+        "taskId": 50004207,
+        "jobId": 41118068,
+        "jobName": "Lois",
+        "title": "Final Paint Interior Walls",
+        "endDate": "2026-10-12",
+        "status": 0,
+        "assignedTo": "Paul Dimeglio"
+      },
+      {
+        "taskId": 50004208,
+        "jobId": 41118068,
+        "jobName": "Lois",
+        "title": "Install Exterior Door Handles",
+        "endDate": "2026-10-12",
+        "status": 0,
+        "assignedTo": "Paul Dimeglio"
+      },
+      {
+        "taskId": 50004209,
+        "jobId": 41118068,
+        "jobName": "Lois",
+        "title": "Garage Epoxy Floor",
+        "endDate": "2026-09-24",
+        "status": 0,
+        "assignedTo": "Paul Dimeglio"
+      },
+      {
+        "taskId": 50004210,
+        "jobId": 41118068,
+        "jobName": "Lois",
+        "title": "Install Interior and Exterior Railing",
+        "endDate": "2026-10-12",
+        "status": 0,
+        "assignedTo": "Paul Dimeglio"
+      },
+      {
+        "taskId": 50004211,
+        "jobId": 41118068,
+        "jobName": "Lois",
+        "title": "Deliver Appliances",
+        "endDate": "2026-10-12",
+        "status": 0,
+        "assignedTo": "Paul Dimeglio"
+      },
+      {
+        "taskId": 50004212,
+        "jobId": 41118068,
+        "jobName": "Lois",
+        "title": "Install Appliances",
+        "endDate": "2026-10-12",
         "status": 0,
         "assignedTo": "Paul Dimeglio"
       },
@@ -8711,6 +7290,33 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "assignedTo": "Paul Dimeglio"
       },
       {
+        "taskId": 50004224,
+        "jobId": 41118068,
+        "jobName": "Lois",
+        "title": "Final Paint Touch Up Exterior",
+        "endDate": "2026-10-12",
+        "status": 0,
+        "assignedTo": "Paul Dimeglio"
+      },
+      {
+        "taskId": 50004226,
+        "jobId": 41118068,
+        "jobName": "Lois",
+        "title": "Deliver & Install Hot Water Heater",
+        "endDate": "2026-10-02",
+        "status": 0,
+        "assignedTo": "Paul Dimeglio"
+      },
+      {
+        "taskId": 50004788,
+        "jobId": 41118068,
+        "jobName": "Lois",
+        "title": "16 Trim Carpentry (Checklist)",
+        "endDate": "2026-10-12",
+        "status": 0,
+        "assignedTo": "Paul Dimeglio"
+      },
+      {
         "taskId": 50004813,
         "jobId": 41118068,
         "jobName": "Lois",
@@ -8720,224 +7326,49 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "assignedTo": "Paul Dimeglio"
       }
     ],
-    "41200140": [
-      {
-        "taskId": 50010882,
-        "jobId": 41200140,
-        "jobName": "Youngs/Wolfe",
-        "title": "Preclean Windows",
-        "endDate": "2026-07-01",
-        "status": 0,
-        "assignedTo": "Paul Dimeglio"
-      },
-      {
-        "taskId": 50010883,
-        "jobId": 41200140,
-        "jobName": "Youngs/Wolfe",
-        "title": "Drywall Bump",
-        "endDate": "2026-07-01",
-        "status": 0,
-        "assignedTo": "Paul Dimeglio"
-      },
-      {
-        "taskId": 50010903,
-        "jobId": 41200140,
-        "jobName": "Youngs/Wolfe",
-        "title": "Install Screens and Window Trim",
-        "endDate": "2026-07-21",
-        "status": 0,
-        "assignedTo": "Paul Dimeglio"
-      },
-      {
-        "taskId": 50010907,
-        "jobId": 41200140,
-        "jobName": "Youngs/Wolfe",
-        "title": "Utility Inspection",
-        "endDate": "2026-07-31",
-        "status": 0,
-        "assignedTo": "Paul Dimeglio"
-      },
-      {
-        "taskId": 50010908,
-        "jobId": 41200140,
-        "jobName": "Youngs/Wolfe",
-        "title": "Final Building Inspection",
-        "endDate": "2026-07-31",
-        "status": 0,
-        "assignedTo": "Paul Dimeglio"
-      },
-      {
-        "taskId": 50010909,
-        "jobId": 41200140,
-        "jobName": "Youngs/Wolfe",
-        "title": "Final Touchup Builder",
-        "endDate": "2026-07-31",
-        "status": 0,
-        "assignedTo": "Paul Dimeglio"
-      },
-      {
-        "taskId": 50010911,
-        "jobId": 41200140,
-        "jobName": "Youngs/Wolfe",
-        "title": "Final House Clean",
-        "endDate": "2026-08-18",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 50010914,
-        "jobId": 41200140,
-        "jobName": "Youngs/Wolfe",
-        "title": "21 Superintendent Checklist for Final Walk (Checklist)",
-        "endDate": "2026-07-31",
-        "status": 0,
-        "assignedTo": "Paul Dimeglio"
-      },
-      {
-        "taskId": 50010918,
-        "jobId": 41200140,
-        "jobName": "Youngs/Wolfe",
-        "title": "16 Trim Carpentry (Checklist)",
-        "endDate": "2026-07-01",
-        "status": 0,
-        "assignedTo": "Paul Dimeglio"
-      }
-    ],
-    "41776958": [
-      {
-        "taskId": 50017559,
-        "jobId": 41776958,
-        "jobName": "Pierami",
-        "title": "Install Interior Finish",
-        "endDate": "2026-08-12",
-        "status": 0,
-        "assignedTo": "Richard Linck"
-      },
-      {
-        "taskId": 50017578,
-        "jobId": 41776958,
-        "jobName": "Pierami",
-        "title": "Install Bath Accessories",
-        "endDate": "2026-08-12",
-        "status": 0,
-        "assignedTo": "Richard Linck"
-      },
-      {
-        "taskId": 50017602,
-        "jobId": 41776958,
-        "jobName": "Pierami",
-        "title": "Install Summer Kitchen Appliances",
-        "endDate": "2026-07-09",
-        "status": 0,
-        "assignedTo": "Richard Linck"
-      },
-      {
-        "taskId": 50017610,
-        "jobId": 41776958,
-        "jobName": "Pierami",
-        "title": "Final Paint Interior Walls",
-        "endDate": "2026-08-03",
-        "status": 0,
-        "assignedTo": "Richard Linck"
-      },
-      {
-        "taskId": 50017613,
-        "jobId": 41776958,
-        "jobName": "Pierami",
-        "title": "Install Interior and Exterior Railing",
-        "endDate": "2026-08-03",
-        "status": 0,
-        "assignedTo": "Richard Linck"
-      },
-      {
-        "taskId": 50017619,
-        "jobId": 41776958,
-        "jobName": "Pierami",
-        "title": "Final Survey",
-        "endDate": "2026-08-18",
-        "status": 0,
-        "assignedTo": "Richard Linck"
-      },
-      {
-        "taskId": 50017620,
-        "jobId": 41776958,
-        "jobName": "Pierami",
-        "title": "Final Termite Treatment",
-        "endDate": "2026-08-18",
-        "status": 0,
-        "assignedTo": "Richard Linck"
-      },
-      {
-        "taskId": 50018221,
-        "jobId": 41776958,
-        "jobName": "Pierami",
-        "title": "Final Paint Touch Up Exterior",
-        "endDate": "2026-08-03",
-        "status": 0,
-        "assignedTo": "Richard Linck"
-      },
-      {
-        "taskId": 50018227,
-        "jobId": 41776958,
-        "jobName": "Pierami",
-        "title": "Engineering Final Inspection",
-        "endDate": "2026-07-31",
-        "status": 0,
-        "assignedTo": "Richard Linck"
-      },
-      {
-        "taskId": 50018233,
-        "jobId": 41776958,
-        "jobName": "Pierami",
-        "title": "Final Building Inspection",
-        "endDate": "2026-07-31",
-        "status": 0,
-        "assignedTo": "Richard Linck"
-      },
-      {
-        "taskId": 50018235,
-        "jobId": 41776958,
-        "jobName": "Pierami",
-        "title": "Final Touchup Builder",
-        "endDate": "2026-07-31",
-        "status": 0,
-        "assignedTo": "Richard Linck"
-      },
-      {
-        "taskId": 50018240,
-        "jobId": 41776958,
-        "jobName": "Pierami",
-        "title": "20 Certificate of Occupancy (Checklist)",
-        "endDate": "2026-08-07",
-        "status": 0,
-        "assignedTo": "Richard Linck"
-      },
-      {
-        "taskId": 50018242,
-        "jobId": 41776958,
-        "jobName": "Pierami",
-        "title": "21 Superintendent Checklist for Final Walk (Checklist)",
-        "endDate": "2026-07-31",
-        "status": 0,
-        "assignedTo": "Richard Linck"
-      },
-      {
-        "taskId": 50018247,
-        "jobId": 41776958,
-        "jobName": "Pierami",
-        "title": "26 Final Walk Form (Checklist)",
-        "endDate": "2026-08-07",
-        "status": 0,
-        "assignedTo": "Richard Linck"
-      }
-    ],
     "42083349": [
       {
-        "taskId": 50022151,
+        "taskId": 50022175,
         "jobId": 42083349,
         "jobName": "Norris",
-        "title": "Rough Grade",
-        "endDate": "2026-08-14",
+        "title": "Gravity Sewer Inspection",
+        "endDate": "2026-09-28",
+        "status": 0,
+        "assignedTo": "Richard Linck"
+      },
+      {
+        "taskId": 50022178,
+        "jobId": 42083349,
+        "jobName": "Norris",
+        "title": "Stucco",
+        "endDate": "2026-09-30",
+        "status": 0,
+        "assignedTo": "Richard Linck"
+      },
+      {
+        "taskId": 50022646,
+        "jobId": 42083349,
+        "jobName": "Norris",
+        "title": "Hang Drywall",
+        "endDate": "2026-10-08",
+        "status": 0,
+        "assignedTo": "Richard Linck"
+      },
+      {
+        "taskId": 50022647,
+        "jobId": 42083349,
+        "jobName": "Norris",
+        "title": "Drywall Screw Inspection",
+        "endDate": "2026-10-09",
+        "status": 0,
+        "assignedTo": "Richard Linck"
+      },
+      {
+        "taskId": 50022653,
+        "jobId": 42083349,
+        "jobName": "Norris",
+        "title": "Deliver Tile",
+        "endDate": "2026-09-11",
         "status": 0,
         "assignedTo": "Richard Linck"
       },
@@ -8962,13 +7393,130 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
     ],
     "42615310": [
       {
-        "taskId": 50032935,
+        "taskId": 50030970,
         "jobId": 42615310,
         "jobName": "Chahlavi",
-        "title": "Finalize Footprint",
-        "endDate": "2026-05-07",
+        "title": "Set Permit Box",
+        "endDate": "2026-09-25",
         "status": 0,
-        "assignedTo": "Collin Olsen"
+        "assignedTo": ""
+      },
+      {
+        "taskId": 50030971,
+        "jobId": 42615310,
+        "jobName": "Chahlavi",
+        "title": "01 Clearing Meeting - Site Inspections (Checklist)",
+        "endDate": "2026-09-25",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 50030973,
+        "jobId": 42615310,
+        "jobName": "Chahlavi",
+        "title": "02 Pre-Construction Meeting (Checklist)",
+        "endDate": "2026-09-25",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 50030978,
+        "jobId": 42615310,
+        "jobName": "Chahlavi",
+        "title": "Deliver Dumpster",
+        "endDate": "2026-09-25",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 50030979,
+        "jobId": 42615310,
+        "jobName": "Chahlavi",
+        "title": "Final Stake Out",
+        "endDate": "2026-09-25",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 50030980,
+        "jobId": 42615310,
+        "jobName": "Chahlavi",
+        "title": "Form Slab",
+        "endDate": "2026-09-28",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 50030982,
+        "jobId": 42615310,
+        "jobName": "Chahlavi",
+        "title": "Order Form Board Survey",
+        "endDate": "2026-09-28",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 50030985,
+        "jobId": 42615310,
+        "jobName": "Chahlavi",
+        "title": "Order Slab Package",
+        "endDate": "2026-09-28",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 50030986,
+        "jobId": 42615310,
+        "jobName": "Chahlavi",
+        "title": "Underground Plumbing Inspection",
+        "endDate": "2026-10-12",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 50030987,
+        "jobId": 42615310,
+        "jobName": "Chahlavi",
+        "title": "Measure/Verify Underground Plumbing",
+        "endDate": "2026-10-12",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 50030988,
+        "jobId": 42615310,
+        "jobName": "Chahlavi",
+        "title": "Slab Prep",
+        "endDate": "2026-09-28",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 50032901,
+        "jobId": 42615310,
+        "jobName": "Chahlavi",
+        "title": "Deliver Steel Package",
+        "endDate": "2026-09-28",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 50032902,
+        "jobId": 42615310,
+        "jobName": "Chahlavi",
+        "title": "Order Concrete",
+        "endDate": "2026-09-28",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 50032903,
+        "jobId": 42615310,
+        "jobName": "Chahlavi",
+        "title": "Schedule Concrete Pump",
+        "endDate": "2026-09-28",
+        "status": 0,
+        "assignedTo": ""
       }
     ],
     "42673665": [
@@ -8986,25 +7534,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 42673665,
         "jobName": "Veranda Bay Model 2",
         "title": "Final Inspection",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 50037707,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Install Specialty Trim",
-        "endDate": "2026-04-10",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 50037712,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Install Countertops",
-        "endDate": "2026-08-12",
+        "endDate": "2026-09-23",
         "status": 0,
         "assignedTo": "James Manford"
       },
@@ -9013,70 +7543,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 42673665,
         "jobName": "Veranda Bay Model 2",
         "title": "Install Bath Accessories",
-        "endDate": "2026-08-18",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 50037719,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Gas Trim-Out",
-        "endDate": "2026-07-09",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 50037725,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Interior Lockout",
-        "endDate": "2026-08-18",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 50037738,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Install Summer Kitchen Appliances",
-        "endDate": "2026-06-15",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 50038247,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Gas Trim Summer Kitchen",
-        "endDate": "2026-06-15",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 50038252,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Preclean Windows",
-        "endDate": "2026-08-14",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 50038254,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Drywall Bump",
-        "endDate": "2026-08-14",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 50038260,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Final Paint Interior Walls",
-        "endDate": "2026-08-14",
+        "endDate": "2026-09-25",
         "status": 0,
         "assignedTo": "James Manford"
       },
@@ -9085,106 +7552,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 42673665,
         "jobName": "Veranda Bay Model 2",
         "title": "Install Exterior Door Handles",
-        "endDate": "2026-08-14",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 50038264,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Garage Epoxy Floor",
-        "endDate": "2026-07-09",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 50038266,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Install Interior and Exterior Railing",
-        "endDate": "2026-08-14",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 50038268,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Deliver Appliances",
-        "endDate": "2026-08-14",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 50038270,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Install Appliances",
-        "endDate": "2026-08-14",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 50038295,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Install Mailbox",
-        "endDate": "2026-08-11",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 50038299,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Final Paint Touch Up Exterior",
-        "endDate": "2026-08-14",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 50038302,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Install Screens and Window Trim",
-        "endDate": "2026-08-18",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 50038306,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Engineering Final Inspection",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 50038308,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Corporate Inspection",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 50038310,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Utility Inspection",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": "James Manford"
-      },
-      {
-        "taskId": 50038313,
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "title": "Final Building Inspection",
-        "endDate": "2026-08-17",
+        "endDate": "2026-09-23",
         "status": 0,
         "assignedTo": "James Manford"
       },
@@ -9193,7 +7561,16 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 42673665,
         "jobName": "Veranda Bay Model 2",
         "title": "Final Touchup Builder",
-        "endDate": "2026-08-17",
+        "endDate": "2026-09-16",
+        "status": 0,
+        "assignedTo": "James Manford"
+      },
+      {
+        "taskId": 50038315,
+        "jobId": 42673665,
+        "jobName": "Veranda Bay Model 2",
+        "title": "Complete - Pickup C/O",
+        "endDate": "2026-10-08",
         "status": 0,
         "assignedTo": "James Manford"
       },
@@ -9202,16 +7579,16 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 42673665,
         "jobName": "Veranda Bay Model 2",
         "title": "Final House Clean",
-        "endDate": "2026-08-24",
+        "endDate": "2026-09-23",
         "status": 0,
         "assignedTo": "James Manford"
       },
       {
-        "taskId": 50038317,
+        "taskId": 50038318,
         "jobId": 42673665,
         "jobName": "Veranda Bay Model 2",
-        "title": "19 Corporate Inspection Form (Checklist)",
-        "endDate": "2026-08-24",
+        "title": "20 Certificate of Occupancy (Checklist)",
+        "endDate": "2026-10-08",
         "status": 0,
         "assignedTo": "James Manford"
       },
@@ -9220,167 +7597,39 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 42673665,
         "jobName": "Veranda Bay Model 2",
         "title": "21 Superintendent Checklist for Final Walk (Checklist)",
-        "endDate": "2026-08-17",
+        "endDate": "2026-09-16",
         "status": 0,
         "assignedTo": "James Manford"
       },
       {
-        "taskId": 50038323,
+        "taskId": 50038320,
         "jobId": 42673665,
         "jobName": "Veranda Bay Model 2",
-        "title": "16 Trim Carpentry (Checklist)",
-        "endDate": "2026-08-14",
+        "title": "Fluff and Buff",
+        "endDate": "2026-10-08",
         "status": 0,
         "assignedTo": "James Manford"
-      }
-    ],
-    "42790290": [
-      {
-        "taskId": 176484732,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Client Onboarding",
-        "endDate": "2026-06-04",
-        "status": 0,
-        "assignedTo": ""
       },
       {
-        "taskId": 176484914,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Draft Plans -Tommy",
-        "endDate": "2026-06-15",
+        "taskId": 50038321,
+        "jobId": 42673665,
+        "jobName": "Veranda Bay Model 2",
+        "title": "Homeowner Walk Through/Orientation & Signoff",
+        "endDate": "2026-10-08",
         "status": 0,
-        "assignedTo": ""
+        "assignedTo": "James Manford"
       },
       {
-        "taskId": 176484915,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Submit to Truss Design",
-        "endDate": "2026-06-15",
+        "taskId": 50038322,
+        "jobId": 42673665,
+        "jobName": "Veranda Bay Model 2",
+        "title": "26 Final Walk Form (Checklist)",
+        "endDate": "2026-10-08",
         "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176484916,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Receive Truss Design Approval",
-        "endDate": "2026-06-25",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176484917,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Submit Plans to Engineer",
-        "endDate": "2026-06-25",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176484918,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Submit Plans to Universal",
-        "endDate": "2026-06-30",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176484919,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Sealed Plans Received",
-        "endDate": "2026-06-30",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176484920,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Soil Boring Test",
-        "endDate": "2026-07-17",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176484921,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Final Design Approval",
-        "endDate": "2026-07-17",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176484922,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Energy Calcs from HVAC",
-        "endDate": "2026-07-17",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176484923,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Finalize Footprint",
-        "endDate": "2026-07-17",
-        "status": 0,
-        "assignedTo": "Collin Olsen"
-      },
-      {
-        "taskId": 176484989,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Homeowner Approves Plans",
-        "endDate": "2026-07-17",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 179164704,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Pricing Sheet Transfer to Buildertrend",
-        "endDate": "2026-07-27",
-        "status": 0,
-        "assignedTo": "Monique (Designer) Lumley"
-      },
-      {
-        "taskId": 179164790,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Sent Intro Call Request Email",
-        "endDate": "2026-07-29",
-        "status": 0,
-        "assignedTo": "Monique (Designer) Lumley"
-      },
-      {
-        "taskId": 179165424,
-        "jobId": 42790290,
-        "jobName": "Bucciarelli",
-        "title": "Cross Referance Plans with Pricing Sheet",
-        "endDate": "2026-07-28",
-        "status": 0,
-        "assignedTo": "Monique (Designer) Lumley"
+        "assignedTo": "James Manford"
       }
     ],
     "42969582": [
-      {
-        "taskId": 50048709,
-        "jobId": 42969582,
-        "jobName": "Etienne",
-        "title": "05 Truss Checklist (Checklist)",
-        "endDate": "2026-08-11",
-        "status": 0,
-        "assignedTo": "Adam Horseman"
-      },
       {
         "taskId": 50048721,
         "jobId": 42969582,
@@ -9388,16 +7637,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "09 Framing Checklist (Checklist)",
         "endDate": "2026-08-11",
         "status": 0,
-        "assignedTo": "Adam Horseman"
-      },
-      {
-        "taskId": 50048729,
-        "jobId": 42969582,
-        "jobName": "Etienne",
-        "title": "Install Sewer/Water Lines",
-        "endDate": "2026-08-24",
-        "status": 0,
-        "assignedTo": "Adam Horseman"
+        "assignedTo": ""
       },
       {
         "taskId": 50048730,
@@ -9406,52 +7646,70 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "Gravity Sewer Inspection",
         "endDate": "2026-08-24",
         "status": 0,
-        "assignedTo": "Adam Horseman"
+        "assignedTo": ""
       },
       {
-        "taskId": 50048733,
+        "taskId": 50048739,
         "jobId": 42969582,
         "jobName": "Etienne",
-        "title": "Stucco",
-        "endDate": "2026-08-25",
+        "title": "14 Drywall Work Order (Checklist)",
+        "endDate": "2026-09-08",
         "status": 0,
-        "assignedTo": "Adam Horseman"
+        "assignedTo": ""
       },
       {
-        "taskId": 50048736,
+        "taskId": 50048740,
         "jobId": 42969582,
         "jobName": "Etienne",
-        "title": "Hang Drywall",
-        "endDate": "2026-08-28",
+        "title": "15 Drywall Checklist (Checklist)",
+        "endDate": "2026-09-08",
         "status": 0,
-        "assignedTo": "Adam Horseman"
+        "assignedTo": ""
       },
       {
-        "taskId": 50048737,
+        "taskId": 50048743,
         "jobId": 42969582,
         "jobName": "Etienne",
-        "title": "Drywall Screw Inspection",
-        "endDate": "2026-08-28",
+        "title": "Install Tile Floors",
+        "endDate": "2026-10-09",
         "status": 0,
-        "assignedTo": "Adam Horseman"
+        "assignedTo": ""
       },
       {
-        "taskId": 50048742,
+        "taskId": 50048744,
         "jobId": 42969582,
         "jobName": "Etienne",
-        "title": "Deliver Tile",
-        "endDate": "2026-08-11",
+        "title": "Install Tile Shower(s)",
+        "endDate": "2026-10-09",
         "status": 0,
-        "assignedTo": "Adam Horseman"
+        "assignedTo": ""
       },
       {
-        "taskId": 50049208,
+        "taskId": 50049207,
         "jobId": 42969582,
         "jobName": "Etienne",
-        "title": "12 Progress Walk Form (Checklist)",
-        "endDate": "2026-08-24",
+        "title": "Install Roof",
+        "endDate": "2026-09-25",
         "status": 0,
-        "assignedTo": "Adam Horseman"
+        "assignedTo": ""
+      },
+      {
+        "taskId": 50049209,
+        "jobId": 42969582,
+        "jobName": "Etienne",
+        "title": "Install Tile",
+        "endDate": "2026-10-09",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 50049215,
+        "jobId": 42969582,
+        "jobName": "Etienne",
+        "title": "Deliver Cabinets",
+        "endDate": "2026-10-06",
+        "status": 0,
+        "assignedTo": ""
       },
       {
         "taskId": 50049218,
@@ -9463,13 +7721,13 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "assignedTo": "Kati Bengelsdorf"
       },
       {
-        "taskId": 50049220,
+        "taskId": 50049230,
         "jobId": 42969582,
         "jobName": "Etienne",
-        "title": "Rough Grade",
-        "endDate": "2026-08-25",
+        "title": "Deliver Base/Pavers",
+        "endDate": "2026-10-09",
         "status": 0,
-        "assignedTo": "Adam Horseman"
+        "assignedTo": ""
       },
       {
         "taskId": 50049277,
@@ -9478,7 +7736,16 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "title": "07 Window Installations (Checklist)",
         "endDate": "2026-08-18",
         "status": 0,
-        "assignedTo": "Adam Horseman"
+        "assignedTo": ""
+      },
+      {
+        "taskId": 50049286,
+        "jobId": 42969582,
+        "jobName": "Etienne",
+        "title": "Install Foam Banding/Corbels",
+        "endDate": "2026-09-18",
+        "status": 0,
+        "assignedTo": ""
       },
       {
         "taskId": 50050039,
@@ -9596,665 +7863,15 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "endDate": "2026-04-24",
         "status": 0,
         "assignedTo": "Kati Bengelsdorf"
-      }
-    ],
-    "43331519": [
-      {
-        "taskId": 176494771,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Client Onboarding",
-        "endDate": "2026-06-24",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494954,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Draft Plans -Tommy",
-        "endDate": "2026-07-02",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494955,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Submit to Truss Design",
-        "endDate": "2026-07-02",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494956,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Receive Truss Design Approval",
-        "endDate": "2026-07-15",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494957,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Submit Plans to Engineer",
-        "endDate": "2026-07-15",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494958,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Submit Plans to Universal",
-        "endDate": "2026-07-20",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494959,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Sealed Plans Received",
-        "endDate": "2026-07-20",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494960,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Soil Boring Test",
-        "endDate": "2026-08-06",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494961,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Final Design Approval",
-        "endDate": "2026-08-06",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494962,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Energy Calcs from HVAC",
-        "endDate": "2026-08-06",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494963,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Finalize Footprint",
-        "endDate": "2026-08-06",
-        "status": 0,
-        "assignedTo": "Collin Olsen"
-      },
-      {
-        "taskId": 176494964,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Corbels - Exterior Selection",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494965,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Doors - Exterior Selection",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494966,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Doors - Garage Selection",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494967,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Exterior Finishes Selection",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494968,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Paint - Exterior Selection",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494969,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Paint - Garage Floor Coating selection",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494970,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Pavers Selection",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494971,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Railing - Exterior Selection",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494972,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Roofing Selection",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494973,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Stone - Exterior Selection",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494974,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Well/ Water Supply Selection",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494975,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Windows & Sliders Selection",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494976,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "A/C Walls Selection",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494977,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Electrical - Lighting Exterior Selection",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494978,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Exterior Ceiling Selection",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494979,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Fireplace - Exterior Selection",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494980,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Gas/Propane Selection",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494981,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Generator Selection",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494982,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Gutters Selction",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494983,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "HVAC Selection",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494984,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Insulation Selection",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494985,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Landscaping Selection",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494986,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Mailbox Selection",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494987,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Plumbing - Hose Bibs Selection",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494988,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Plumbing - Water Heater Selection",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494989,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Pool Selection",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494990,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Septic selection",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494991,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Shutter Selection",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494992,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Summer Kitchen Selection",
-        "endDate": "2026-08-17",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494993,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Appliance Selection",
-        "endDate": "2026-08-26",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494994,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Cabinet Selection",
-        "endDate": "2026-08-26",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494995,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Countertop - Interior Selection",
-        "endDate": "2026-08-26",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494996,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Countertop - Summer Kitchen Selection",
-        "endDate": "2026-08-26",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494997,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Doors - Interior Selection",
-        "endDate": "2026-08-26",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494998,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Drywall Selection",
-        "endDate": "2026-08-26",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176494999,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Electrical - Lighting Interior selection",
-        "endDate": "2026-08-26",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176495000,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Elevator Selection",
-        "endDate": "2026-08-26",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176495001,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Fireplace - Interior Selection",
-        "endDate": "2026-08-26",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176495002,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Framing Selection",
-        "endDate": "2026-08-26",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176495003,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Paint - Interior Selection",
-        "endDate": "2026-08-26",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176495004,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Paint - Stain Selection",
-        "endDate": "2026-08-26",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176495005,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Plumbing - Bathroom Accessories Selection",
-        "endDate": "2026-08-26",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176495006,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Plumbing - Disposal Selection",
-        "endDate": "2026-08-26",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176495007,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Plumbing - Faucet Selection",
-        "endDate": "2026-08-26",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176495008,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Plumbing - Locations Selection",
-        "endDate": "2026-08-26",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176495009,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Plumbing - Showers Selection",
-        "endDate": "2026-08-26",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176495010,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Plumbing - Sinks Selction",
-        "endDate": "2026-08-26",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176495011,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Plumbing - Toilets Selection",
-        "endDate": "2026-08-26",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176495012,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Plumbing - Tubs Selection",
-        "endDate": "2026-08-26",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176495013,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Railing - Interior Selection",
-        "endDate": "2026-08-26",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176495014,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Sills Selection",
-        "endDate": "2026-08-26",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176495015,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Slab Pour Selection",
-        "endDate": "2026-08-26",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176495016,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Specialties - Glass Shelving Selection",
-        "endDate": "2026-08-26",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176495017,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Specialties - Glass Shower Enclosure Selection",
-        "endDate": "2026-08-26",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176495018,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Stone - Interior Selection",
-        "endDate": "2026-08-26",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176495019,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Tile & Flooring Selection",
-        "endDate": "2026-08-26",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176495020,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Trim Carpentry - Mantel Selection",
-        "endDate": "2026-08-26",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176495021,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Trim Carpentry - Moulding Selection",
-        "endDate": "2026-08-26",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176495022,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Trim Carpentry - Stairs Selection",
-        "endDate": "2026-08-26",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176495023,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Trim Carpentry - T&G Selection",
-        "endDate": "2026-08-26",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 176495024,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Trim Carpentry - Wood Shelving Selection",
-        "endDate": "2026-08-26",
-        "status": 0,
-        "assignedTo": ""
       },
       {
-        "taskId": 176495029,
-        "jobId": 43331519,
-        "jobName": "Shagnea",
-        "title": "Homeowner Approves Plans",
-        "endDate": "2026-08-06",
+        "taskId": 185396506,
+        "jobId": 42969582,
+        "jobName": "Etienne",
+        "title": "Order Free Standing Tub (6 weeks before)",
+        "endDate": "2026-09-22",
         "status": 0,
-        "assignedTo": ""
+        "assignedTo": "Stephanie Throop, Tate Johansson"
       }
     ],
     "44516256": [
@@ -10486,6 +8103,591 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "assignedTo": "Collin Olsen"
       },
       {
+        "taskId": 172721340,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Corbels - Exterior Selection",
+        "endDate": "2026-09-14",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721341,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Doors - Exterior Selection",
+        "endDate": "2026-09-14",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721342,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Doors - Garage Selection",
+        "endDate": "2026-09-14",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721343,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Exterior Finishes Selection",
+        "endDate": "2026-09-14",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721344,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Paint - Exterior Selection",
+        "endDate": "2026-09-14",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721345,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Paint - Garage Floor Coating selection",
+        "endDate": "2026-09-14",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721346,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Pavers Selection",
+        "endDate": "2026-09-14",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721347,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Railing - Exterior Selection",
+        "endDate": "2026-09-14",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721348,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Roofing Selection",
+        "endDate": "2026-09-14",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721349,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Stone - Exterior Selection",
+        "endDate": "2026-09-14",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721350,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Well/ Water Supply Selection",
+        "endDate": "2026-09-14",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721351,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Windows & Sliders Selection",
+        "endDate": "2026-09-14",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721352,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "A/C Walls Selection",
+        "endDate": "2026-09-14",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721353,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Electrical - Lighting Exterior Selection",
+        "endDate": "2026-09-14",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721354,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Exterior Ceiling Selection",
+        "endDate": "2026-09-14",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721355,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Fireplace - Exterior Selection",
+        "endDate": "2026-09-14",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721356,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Gas/Propane Selection",
+        "endDate": "2026-09-14",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721357,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Generator Selection",
+        "endDate": "2026-09-14",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721358,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Gutters Selction",
+        "endDate": "2026-09-14",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721359,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "HVAC Selection",
+        "endDate": "2026-09-14",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721360,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Insulation Selection",
+        "endDate": "2026-09-14",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721361,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Landscaping Selection",
+        "endDate": "2026-09-14",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721362,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Mailbox Selection",
+        "endDate": "2026-09-14",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721363,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Plumbing - Hose Bibs Selection",
+        "endDate": "2026-09-14",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721364,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Plumbing - Water Heater Selection",
+        "endDate": "2026-09-14",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721365,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Pool Selection",
+        "endDate": "2026-09-14",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721366,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Septic selection",
+        "endDate": "2026-09-14",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721367,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Shutter Selection",
+        "endDate": "2026-09-14",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721368,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Summer Kitchen Selection",
+        "endDate": "2026-09-14",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721369,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Appliance Selection",
+        "endDate": "2026-09-23",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721370,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Cabinet Selection",
+        "endDate": "2026-09-23",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721371,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Countertop - Interior Selection",
+        "endDate": "2026-09-23",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721372,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Countertop - Summer Kitchen Selection",
+        "endDate": "2026-09-23",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721373,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Doors - Interior Selection",
+        "endDate": "2026-09-23",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721374,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Drywall Selection",
+        "endDate": "2026-09-23",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721375,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Electrical - Lighting Interior selection",
+        "endDate": "2026-09-23",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721376,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Elevator Selection",
+        "endDate": "2026-09-23",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721377,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Fireplace - Interior Selection",
+        "endDate": "2026-09-23",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721378,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Framing Selection",
+        "endDate": "2026-09-23",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721379,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Paint - Interior Selection",
+        "endDate": "2026-09-23",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721380,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Paint - Stain Selection",
+        "endDate": "2026-09-23",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721381,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Plumbing - Bathroom Accessories Selection",
+        "endDate": "2026-09-23",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721382,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Plumbing - Disposal Selection",
+        "endDate": "2026-09-23",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721383,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Plumbing - Faucet Selection",
+        "endDate": "2026-09-23",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721384,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Plumbing - Locations Selection",
+        "endDate": "2026-09-23",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721385,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Plumbing - Showers Selection",
+        "endDate": "2026-09-23",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721386,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Plumbing - Sinks Selction",
+        "endDate": "2026-09-23",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721387,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Plumbing - Toilets Selection",
+        "endDate": "2026-09-23",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721388,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Plumbing - Tubs Selection",
+        "endDate": "2026-09-23",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721389,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Railing - Interior Selection",
+        "endDate": "2026-09-23",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721390,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Sills Selection",
+        "endDate": "2026-09-23",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721391,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Slab Pour Selection",
+        "endDate": "2026-09-23",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721392,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Specialties - Glass Shelving Selection",
+        "endDate": "2026-09-23",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721393,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Specialties - Glass Shower Enclosure Selection",
+        "endDate": "2026-09-23",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721394,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Stone - Interior Selection",
+        "endDate": "2026-09-23",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721395,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Tile & Flooring Selection",
+        "endDate": "2026-09-23",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721396,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Trim Carpentry - Mantel Selection",
+        "endDate": "2026-09-23",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721397,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Trim Carpentry - Moulding Selection",
+        "endDate": "2026-09-23",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721398,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Trim Carpentry - Stairs Selection",
+        "endDate": "2026-09-23",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721399,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Trim Carpentry - T&G Selection",
+        "endDate": "2026-09-23",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721400,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Trim Carpentry - Wood Shelving Selection",
+        "endDate": "2026-09-23",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721401,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Doors - Hardware selection",
+        "endDate": "2026-10-02",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721402,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Electrical Selection",
+        "endDate": "2026-10-02",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721403,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Electrical - Low Voltage Automation Selection",
+        "endDate": "2026-10-02",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 172721404,
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "title": "Specialties - Mirrors Selection",
+        "endDate": "2026-10-02",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
         "taskId": 172721405,
         "jobId": 45118977,
         "jobName": "Peters",
@@ -10594,6 +8796,591 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "endDate": "2026-07-20",
         "status": 0,
         "assignedTo": "Collin Olsen"
+      },
+      {
+        "taskId": 176493535,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Corbels - Exterior Selection",
+        "endDate": "2026-09-10",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493536,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Doors - Exterior Selection",
+        "endDate": "2026-09-10",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493537,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Doors - Garage Selection",
+        "endDate": "2026-09-10",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493538,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Exterior Finishes Selection",
+        "endDate": "2026-09-10",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493539,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Paint - Exterior Selection",
+        "endDate": "2026-09-10",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493540,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Paint - Garage Floor Coating selection",
+        "endDate": "2026-09-10",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493541,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Pavers Selection",
+        "endDate": "2026-09-10",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493542,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Railing - Exterior Selection",
+        "endDate": "2026-09-10",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493543,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Roofing Selection",
+        "endDate": "2026-09-10",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493544,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Stone - Exterior Selection",
+        "endDate": "2026-09-10",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493545,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Well/ Water Supply Selection",
+        "endDate": "2026-09-10",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493546,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Windows & Sliders Selection",
+        "endDate": "2026-09-10",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493547,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "A/C Walls Selection",
+        "endDate": "2026-09-10",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493548,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Electrical - Lighting Exterior Selection",
+        "endDate": "2026-09-10",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493549,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Exterior Ceiling Selection",
+        "endDate": "2026-09-10",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493550,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Fireplace - Exterior Selection",
+        "endDate": "2026-09-10",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493551,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Gas/Propane Selection",
+        "endDate": "2026-09-10",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493552,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Generator Selection",
+        "endDate": "2026-09-10",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493553,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Gutters Selction",
+        "endDate": "2026-09-10",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493554,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "HVAC Selection",
+        "endDate": "2026-09-10",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493555,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Insulation Selection",
+        "endDate": "2026-09-10",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493556,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Landscaping Selection",
+        "endDate": "2026-09-10",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493557,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Mailbox Selection",
+        "endDate": "2026-09-10",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493558,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Plumbing - Hose Bibs Selection",
+        "endDate": "2026-09-10",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493559,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Plumbing - Water Heater Selection",
+        "endDate": "2026-09-10",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493560,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Pool Selection",
+        "endDate": "2026-09-10",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493561,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Septic selection",
+        "endDate": "2026-09-10",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493562,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Shutter Selection",
+        "endDate": "2026-09-10",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493563,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Summer Kitchen Selection",
+        "endDate": "2026-09-10",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493564,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Appliance Selection",
+        "endDate": "2026-09-22",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493565,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Cabinet Selection",
+        "endDate": "2026-09-22",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493566,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Countertop - Interior Selection",
+        "endDate": "2026-09-22",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493567,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Countertop - Summer Kitchen Selection",
+        "endDate": "2026-09-22",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493568,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Doors - Interior Selection",
+        "endDate": "2026-09-22",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493569,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Drywall Selection",
+        "endDate": "2026-09-22",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493570,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Electrical - Lighting Interior selection",
+        "endDate": "2026-09-22",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493571,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Elevator Selection",
+        "endDate": "2026-09-22",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493572,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Fireplace - Interior Selection",
+        "endDate": "2026-09-22",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493573,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Framing Selection",
+        "endDate": "2026-09-22",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493574,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Paint - Interior Selection",
+        "endDate": "2026-09-22",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493575,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Paint - Stain Selection",
+        "endDate": "2026-09-22",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493576,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Plumbing - Bathroom Accessories Selection",
+        "endDate": "2026-09-22",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493577,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Plumbing - Disposal Selection",
+        "endDate": "2026-09-22",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493578,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Plumbing - Faucet Selection",
+        "endDate": "2026-09-22",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493579,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Plumbing - Locations Selection",
+        "endDate": "2026-09-22",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493580,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Plumbing - Showers Selection",
+        "endDate": "2026-09-22",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493581,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Plumbing - Sinks Selction",
+        "endDate": "2026-09-22",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493582,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Plumbing - Toilets Selection",
+        "endDate": "2026-09-22",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493583,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Plumbing - Tubs Selection",
+        "endDate": "2026-09-22",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493584,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Railing - Interior Selection",
+        "endDate": "2026-09-22",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493585,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Sills Selection",
+        "endDate": "2026-09-22",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493586,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Slab Pour Selection",
+        "endDate": "2026-09-22",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493587,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Specialties - Glass Shelving Selection",
+        "endDate": "2026-09-22",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493588,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Specialties - Glass Shower Enclosure Selection",
+        "endDate": "2026-09-22",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493589,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Stone - Interior Selection",
+        "endDate": "2026-09-22",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493590,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Tile & Flooring Selection",
+        "endDate": "2026-09-22",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493591,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Trim Carpentry - Mantel Selection",
+        "endDate": "2026-09-22",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493592,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Trim Carpentry - Moulding Selection",
+        "endDate": "2026-09-22",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493593,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Trim Carpentry - Stairs Selection",
+        "endDate": "2026-09-22",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493594,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Trim Carpentry - T&G Selection",
+        "endDate": "2026-09-22",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493595,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Trim Carpentry - Wood Shelving Selection",
+        "endDate": "2026-09-22",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493596,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Doors - Hardware selection",
+        "endDate": "2026-10-01",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493597,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Electrical Selection",
+        "endDate": "2026-10-01",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493598,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Electrical - Low Voltage Automation Selection",
+        "endDate": "2026-10-01",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 176493599,
+        "jobId": 45275922,
+        "jobName": "Olmstead",
+        "title": "Specialties - Mirrors Selection",
+        "endDate": "2026-10-01",
+        "status": 0,
+        "assignedTo": ""
       },
       {
         "taskId": 176493600,
@@ -10706,267 +9493,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "assignedTo": "Collin Olsen"
       },
       {
-        "taskId": 181885367,
-        "jobId": 45667667,
-        "jobName": "Morris",
-        "title": "Corbels - Exterior Selection",
-        "endDate": "2026-08-27",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 181885368,
-        "jobId": 45667667,
-        "jobName": "Morris",
-        "title": "Doors - Exterior Selection",
-        "endDate": "2026-08-27",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 181885369,
-        "jobId": 45667667,
-        "jobName": "Morris",
-        "title": "Doors - Garage Selection",
-        "endDate": "2026-08-27",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 181885370,
-        "jobId": 45667667,
-        "jobName": "Morris",
-        "title": "Exterior Finishes Selection",
-        "endDate": "2026-08-27",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 181885371,
-        "jobId": 45667667,
-        "jobName": "Morris",
-        "title": "Paint - Exterior Selection",
-        "endDate": "2026-08-27",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 181885372,
-        "jobId": 45667667,
-        "jobName": "Morris",
-        "title": "Paint - Garage Floor Coating selection",
-        "endDate": "2026-08-27",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 181885373,
-        "jobId": 45667667,
-        "jobName": "Morris",
-        "title": "Pavers Selection",
-        "endDate": "2026-08-27",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 181885374,
-        "jobId": 45667667,
-        "jobName": "Morris",
-        "title": "Railing - Exterior Selection",
-        "endDate": "2026-08-27",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 181885375,
-        "jobId": 45667667,
-        "jobName": "Morris",
-        "title": "Roofing Selection",
-        "endDate": "2026-08-27",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 181885376,
-        "jobId": 45667667,
-        "jobName": "Morris",
-        "title": "Stone - Exterior Selection",
-        "endDate": "2026-08-27",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 181885377,
-        "jobId": 45667667,
-        "jobName": "Morris",
-        "title": "Well/ Water Supply Selection",
-        "endDate": "2026-08-27",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 181885378,
-        "jobId": 45667667,
-        "jobName": "Morris",
-        "title": "Windows & Sliders Selection",
-        "endDate": "2026-08-27",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 181885379,
-        "jobId": 45667667,
-        "jobName": "Morris",
-        "title": "A/C Walls Selection",
-        "endDate": "2026-08-27",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 181885380,
-        "jobId": 45667667,
-        "jobName": "Morris",
-        "title": "Electrical - Lighting Exterior Selection",
-        "endDate": "2026-08-27",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 181885381,
-        "jobId": 45667667,
-        "jobName": "Morris",
-        "title": "Exterior Ceiling Selection",
-        "endDate": "2026-08-27",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 181885382,
-        "jobId": 45667667,
-        "jobName": "Morris",
-        "title": "Fireplace - Exterior Selection",
-        "endDate": "2026-08-27",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 181885383,
-        "jobId": 45667667,
-        "jobName": "Morris",
-        "title": "Gas/Propane Selection",
-        "endDate": "2026-08-27",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 181885384,
-        "jobId": 45667667,
-        "jobName": "Morris",
-        "title": "Generator Selection",
-        "endDate": "2026-08-27",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 181885385,
-        "jobId": 45667667,
-        "jobName": "Morris",
-        "title": "Gutters Selction",
-        "endDate": "2026-08-27",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 181885386,
-        "jobId": 45667667,
-        "jobName": "Morris",
-        "title": "HVAC Selection",
-        "endDate": "2026-08-27",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 181885387,
-        "jobId": 45667667,
-        "jobName": "Morris",
-        "title": "Insulation Selection",
-        "endDate": "2026-08-27",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 181885388,
-        "jobId": 45667667,
-        "jobName": "Morris",
-        "title": "Landscaping Selection",
-        "endDate": "2026-08-27",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 181885389,
-        "jobId": 45667667,
-        "jobName": "Morris",
-        "title": "Mailbox Selection",
-        "endDate": "2026-08-27",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 181885390,
-        "jobId": 45667667,
-        "jobName": "Morris",
-        "title": "Plumbing - Hose Bibs Selection",
-        "endDate": "2026-08-27",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 181885391,
-        "jobId": 45667667,
-        "jobName": "Morris",
-        "title": "Plumbing - Water Heater Selection",
-        "endDate": "2026-08-27",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 181885392,
-        "jobId": 45667667,
-        "jobName": "Morris",
-        "title": "Pool Selection",
-        "endDate": "2026-08-27",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 181885393,
-        "jobId": 45667667,
-        "jobName": "Morris",
-        "title": "Septic selection",
-        "endDate": "2026-08-27",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 181885394,
-        "jobId": 45667667,
-        "jobName": "Morris",
-        "title": "Shutter Selection",
-        "endDate": "2026-08-27",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
-        "taskId": 181885395,
-        "jobId": 45667667,
-        "jobName": "Morris",
-        "title": "Summer Kitchen Selection",
-        "endDate": "2026-08-27",
-        "status": 0,
-        "assignedTo": ""
-      },
-      {
         "taskId": 181885432,
         "jobId": 45667667,
         "jobName": "Morris",
@@ -11003,74 +9529,181 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "endDate": "2026-08-28",
         "status": 0,
         "assignedTo": ""
+      },
+      {
+        "taskId": 183107813,
+        "jobId": 46189691,
+        "jobName": "Muehlenbeck",
+        "title": "Receive Truss Design Approval",
+        "endDate": "2026-09-08",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 183107814,
+        "jobId": 46189691,
+        "jobName": "Muehlenbeck",
+        "title": "Submit Plans to Engineer",
+        "endDate": "2026-09-08",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 183107815,
+        "jobId": 46189691,
+        "jobName": "Muehlenbeck",
+        "title": "Submit Plans to Universal",
+        "endDate": "2026-09-11",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 183107816,
+        "jobId": 46189691,
+        "jobName": "Muehlenbeck",
+        "title": "Sealed Plans Received",
+        "endDate": "2026-09-11",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 183107817,
+        "jobId": 46189691,
+        "jobName": "Muehlenbeck",
+        "title": "Soil Boring Test",
+        "endDate": "2026-09-30",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 183107818,
+        "jobId": 46189691,
+        "jobName": "Muehlenbeck",
+        "title": "Final Design Approval",
+        "endDate": "2026-09-30",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 183107819,
+        "jobId": 46189691,
+        "jobName": "Muehlenbeck",
+        "title": "Energy Calcs from HVAC",
+        "endDate": "2026-09-30",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 183107820,
+        "jobId": 46189691,
+        "jobName": "Muehlenbeck",
+        "title": "Finalize Footprint",
+        "endDate": "2026-09-30",
+        "status": 0,
+        "assignedTo": "Collin Olsen"
+      },
+      {
+        "taskId": 183107886,
+        "jobId": 46189691,
+        "jobName": "Muehlenbeck",
+        "title": "Homeowner Approves Plans",
+        "endDate": "2026-09-30",
+        "status": 0,
+        "assignedTo": ""
+      }
+    ],
+    "46336283": [
+      {
+        "taskId": 188548736,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Client Onboarding",
+        "endDate": "2026-09-08",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 188548908,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Draft Plans -Tommy",
+        "endDate": "2026-09-18",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 188548909,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Submit to Truss Design",
+        "endDate": "2026-09-18",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 188548910,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Receive Truss Design Approval",
+        "endDate": "2026-09-29",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 188548911,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Submit Plans to Engineer",
+        "endDate": "2026-09-29",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 188548912,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Submit Plans to Universal",
+        "endDate": "2026-10-02",
+        "status": 0,
+        "assignedTo": ""
+      },
+      {
+        "taskId": 188548913,
+        "jobId": 46336283,
+        "jobName": "Lister Anne & Brent",
+        "title": "Sealed Plans Received",
+        "endDate": "2026-10-02",
+        "status": 0,
+        "assignedTo": ""
       }
     ]
   },
   "logsByJobId": {
-    "11653487": [
+    "11653672": [
       {
-        "jobId": 11653487,
-        "jobName": "Hoffman (Completed)",
-        "userName": "Rob Dougherty",
-        "dailyLogCount": 2,
-        "lastLogDate": "2026-08-31"
-      }
-    ],
-    "34576416": [
-      {
-        "jobId": 34576416,
-        "jobName": "Marcello (Completed)",
-        "userName": "Paul Dimeglio",
+        "jobId": 11653672,
+        "jobName": "Spears (Completed)",
+        "userName": "Richard Linck",
         "dailyLogCount": 1,
-        "lastLogDate": "2026-08-17"
-      },
-      {
-        "jobId": 34576416,
-        "jobName": "Marcello (Completed)",
-        "userName": "Rob Dougherty",
-        "dailyLogCount": 1,
-        "lastLogDate": "2026-08-14"
+        "lastLogDate": "2026-09-30"
       }
     ],
     "35918575": [
       {
         "jobId": 35918575,
         "jobName": "Nagle",
-        "userName": "Adam Horseman",
-        "dailyLogCount": 14,
-        "lastLogDate": "2026-08-31"
-      },
-      {
-        "jobId": 35918575,
-        "jobName": "Nagle",
-        "userName": "Brian Dye",
+        "userName": "Trevor Ragno",
         "dailyLogCount": 1,
-        "lastLogDate": "2026-08-26"
-      },
-      {
-        "jobId": 35918575,
-        "jobName": "Nagle",
-        "userName": "Rob Dougherty",
-        "dailyLogCount": 4,
-        "lastLogDate": "2026-08-30"
+        "lastLogDate": "2026-09-25"
       }
     ],
-    "36216468": [
+    "38008270": [
       {
-        "jobId": 36216468,
-        "jobName": "Livermore (Closed)",
-        "userName": "Paul Dimeglio",
-        "dailyLogCount": 2,
-        "lastLogDate": "2026-08-17"
-      }
-    ],
-    "37096220": [
-      {
-        "jobId": 37096220,
-        "jobName": "Esteves (Tracy)",
-        "userName": "Rob Dougherty",
+        "jobId": 38008270,
+        "jobName": "Gombatz",
+        "userName": "Richard Linck",
         "dailyLogCount": 1,
-        "lastLogDate": "2026-08-11"
+        "lastLogDate": "2026-09-22"
       }
     ],
     "38215830": [
@@ -11079,28 +9712,21 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobName": "Kinney",
         "userName": "Brian Dye",
         "dailyLogCount": 1,
-        "lastLogDate": "2026-08-28"
+        "lastLogDate": "2026-10-01"
       },
       {
         "jobId": 38215830,
         "jobName": "Kinney",
         "userName": "James Manford",
         "dailyLogCount": 16,
-        "lastLogDate": "2026-08-31"
-      },
-      {
-        "jobId": 38215830,
-        "jobName": "Kinney",
-        "userName": "Rob Dougherty",
-        "dailyLogCount": 5,
-        "lastLogDate": "2026-08-25"
+        "lastLogDate": "2026-10-09"
       },
       {
         "jobId": 38215830,
         "jobName": "Kinney",
         "userName": "Trevor Ragno",
-        "dailyLogCount": 3,
-        "lastLogDate": "2026-08-31"
+        "dailyLogCount": 1,
+        "lastLogDate": "2026-09-24"
       }
     ],
     "38319441": [
@@ -11108,63 +9734,40 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 38319441,
         "jobName": "Moura",
         "userName": "Richard Linck",
-        "dailyLogCount": 3,
-        "lastLogDate": "2026-08-28"
-      },
-      {
-        "jobId": 38319441,
-        "jobName": "Moura",
-        "userName": "Rob Dougherty",
-        "dailyLogCount": 5,
-        "lastLogDate": "2026-08-31"
+        "dailyLogCount": 17,
+        "lastLogDate": "2026-10-12"
       }
     ],
     "38397739": [
       {
         "jobId": 38397739,
         "jobName": "Whipple",
-        "userName": "Adam Horseman",
-        "dailyLogCount": 15,
-        "lastLogDate": "2026-08-31"
+        "userName": "Brian Dye",
+        "dailyLogCount": 1,
+        "lastLogDate": "2026-10-12"
       },
       {
         "jobId": 38397739,
         "jobName": "Whipple",
-        "userName": "Rob Dougherty",
-        "dailyLogCount": 2,
-        "lastLogDate": "2026-08-17"
+        "userName": "Collin Olsen",
+        "dailyLogCount": 1,
+        "lastLogDate": "2026-09-30"
       },
       {
         "jobId": 38397739,
         "jobName": "Whipple",
         "userName": "Trevor Ragno",
         "dailyLogCount": 1,
-        "lastLogDate": "2026-08-17"
-      }
-    ],
-    "38690567": [
-      {
-        "jobId": 38690567,
-        "jobName": "DuRant",
-        "userName": "Paul Dimeglio",
-        "dailyLogCount": 4,
-        "lastLogDate": "2026-08-26"
+        "lastLogDate": "2026-10-02"
       }
     ],
     "38901121": [
       {
         "jobId": 38901121,
         "jobName": "Jimenez",
-        "userName": "Adam Horseman",
-        "dailyLogCount": 14,
-        "lastLogDate": "2026-08-31"
-      },
-      {
-        "jobId": 38901121,
-        "jobName": "Jimenez",
-        "userName": "Rob Dougherty",
-        "dailyLogCount": 5,
-        "lastLogDate": "2026-08-30"
+        "userName": "Trevor Ragno",
+        "dailyLogCount": 1,
+        "lastLogDate": "2026-10-12"
       }
     ],
     "39142734": [
@@ -11172,79 +9775,40 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 39142734,
         "jobName": "Karas",
         "userName": "Paul Dimeglio",
-        "dailyLogCount": 7,
-        "lastLogDate": "2026-08-26"
-      }
-    ],
-    "39819357": [
-      {
-        "jobId": 39819357,
-        "jobName": "Henry",
-        "userName": "Richard Linck",
-        "dailyLogCount": 3,
-        "lastLogDate": "2026-08-04"
-      }
-    ],
-    "40214778": [
-      {
-        "jobId": 40214778,
-        "jobName": "Ferguson",
-        "userName": "James Manford",
         "dailyLogCount": 2,
-        "lastLogDate": "2026-08-11"
+        "lastLogDate": "2026-09-30"
       }
     ],
     "40214880": [
       {
         "jobId": 40214880,
         "jobName": "Emerson",
-        "userName": "Brian Dye",
-        "dailyLogCount": 2,
-        "lastLogDate": "2026-08-28"
-      },
-      {
-        "jobId": 40214880,
-        "jobName": "Emerson",
         "userName": "Paul Dimeglio",
-        "dailyLogCount": 15,
-        "lastLogDate": "2026-08-26"
+        "dailyLogCount": 16,
+        "lastLogDate": "2026-10-12"
       },
       {
         "jobId": 40214880,
         "jobName": "Emerson",
-        "userName": "Rob Dougherty",
-        "dailyLogCount": 8,
-        "lastLogDate": "2026-08-30"
+        "userName": "Trevor Ragno",
+        "dailyLogCount": 1,
+        "lastLogDate": "2026-09-22"
       }
     ],
     "40228562": [
       {
         "jobId": 40228562,
         "jobName": "Blandford",
-        "userName": "Brian Dye",
-        "dailyLogCount": 1,
-        "lastLogDate": "2026-08-27"
-      },
-      {
-        "jobId": 40228562,
-        "jobName": "Blandford",
         "userName": "Paul Dimeglio",
-        "dailyLogCount": 14,
-        "lastLogDate": "2026-08-27"
-      },
-      {
-        "jobId": 40228562,
-        "jobName": "Blandford",
-        "userName": "Rob Dougherty",
-        "dailyLogCount": 3,
-        "lastLogDate": "2026-08-30"
+        "dailyLogCount": 17,
+        "lastLogDate": "2026-10-12"
       },
       {
         "jobId": 40228562,
         "jobName": "Blandford",
         "userName": "Trevor Ragno",
         "dailyLogCount": 1,
-        "lastLogDate": "2026-08-31"
+        "lastLogDate": "2026-09-22"
       }
     ],
     "40351917": [
@@ -11252,29 +9816,15 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 40351917,
         "jobName": "Bennett",
         "userName": "Brian Dye",
-        "dailyLogCount": 2,
-        "lastLogDate": "2026-08-28"
+        "dailyLogCount": 1,
+        "lastLogDate": "2026-10-12"
       },
       {
         "jobId": 40351917,
         "jobName": "Bennett",
         "userName": "James Manford",
-        "dailyLogCount": 16,
-        "lastLogDate": "2026-08-31"
-      },
-      {
-        "jobId": 40351917,
-        "jobName": "Bennett",
-        "userName": "Rob Dougherty",
-        "dailyLogCount": 4,
-        "lastLogDate": "2026-08-30"
-      },
-      {
-        "jobId": 40351917,
-        "jobName": "Bennett",
-        "userName": "Trevor Ragno",
-        "dailyLogCount": 1,
-        "lastLogDate": "2026-08-31"
+        "dailyLogCount": 14,
+        "lastLogDate": "2026-10-12"
       }
     ],
     "40497055": [
@@ -11283,60 +9833,23 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobName": "Ahigian - Habashi",
         "userName": "Brian Dye",
         "dailyLogCount": 1,
-        "lastLogDate": "2026-08-06"
+        "lastLogDate": "2026-10-09"
       },
       {
         "jobId": 40497055,
         "jobName": "Ahigian - Habashi",
         "userName": "Richard Linck",
-        "dailyLogCount": 12,
-        "lastLogDate": "2026-08-25"
-      },
-      {
-        "jobId": 40497055,
-        "jobName": "Ahigian - Habashi",
-        "userName": "Rob Dougherty",
-        "dailyLogCount": 7,
-        "lastLogDate": "2026-08-30"
+        "dailyLogCount": 14,
+        "lastLogDate": "2026-10-07"
       }
     ],
     "41118068": [
       {
         "jobId": 41118068,
         "jobName": "Lois",
-        "userName": "Brian Dye",
-        "dailyLogCount": 1,
-        "lastLogDate": "2026-08-27"
-      },
-      {
-        "jobId": 41118068,
-        "jobName": "Lois",
         "userName": "Paul Dimeglio",
-        "dailyLogCount": 12,
-        "lastLogDate": "2026-08-26"
-      },
-      {
-        "jobId": 41118068,
-        "jobName": "Lois",
-        "userName": "Rob Dougherty",
-        "dailyLogCount": 6,
-        "lastLogDate": "2026-08-30"
-      }
-    ],
-    "41200140": [
-      {
-        "jobId": 41200140,
-        "jobName": "Youngs/Wolfe",
-        "userName": "Paul Dimeglio",
-        "dailyLogCount": 14,
-        "lastLogDate": "2026-08-26"
-      },
-      {
-        "jobId": 41200140,
-        "jobName": "Youngs/Wolfe",
-        "userName": "Rob Dougherty",
-        "dailyLogCount": 4,
-        "lastLogDate": "2026-08-26"
+        "dailyLogCount": 16,
+        "lastLogDate": "2026-10-12"
       }
     ],
     "41776958": [
@@ -11344,22 +9857,8 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 41776958,
         "jobName": "Pierami",
         "userName": "Richard Linck",
-        "dailyLogCount": 12,
-        "lastLogDate": "2026-08-26"
-      },
-      {
-        "jobId": 41776958,
-        "jobName": "Pierami",
-        "userName": "Rob Dougherty",
-        "dailyLogCount": 6,
-        "lastLogDate": "2026-08-30"
-      },
-      {
-        "jobId": 41776958,
-        "jobName": "Pierami",
-        "userName": "Trevor Ragno",
-        "dailyLogCount": 1,
-        "lastLogDate": "2026-08-05"
+        "dailyLogCount": 2,
+        "lastLogDate": "2026-09-23"
       }
     ],
     "42083349": [
@@ -11367,24 +9866,24 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobId": 42083349,
         "jobName": "Norris",
         "userName": "Richard Linck",
-        "dailyLogCount": 10,
-        "lastLogDate": "2026-08-26"
-      },
-      {
-        "jobId": 42083349,
-        "jobName": "Norris",
-        "userName": "Rob Dougherty",
-        "dailyLogCount": 6,
-        "lastLogDate": "2026-08-30"
+        "dailyLogCount": 17,
+        "lastLogDate": "2026-10-06"
       }
     ],
     "42615310": [
       {
         "jobId": 42615310,
         "jobName": "Chahlavi",
-        "userName": "Adam Horseman",
-        "dailyLogCount": 4,
-        "lastLogDate": "2026-08-31"
+        "userName": "James Manford",
+        "dailyLogCount": 5,
+        "lastLogDate": "2026-10-12"
+      },
+      {
+        "jobId": 42615310,
+        "jobName": "Chahlavi",
+        "userName": "Trevor Ragno",
+        "dailyLogCount": 2,
+        "lastLogDate": "2026-10-06"
       }
     ],
     "42673665": [
@@ -11393,67 +9892,57 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "jobName": "Veranda Bay Model 2",
         "userName": "Brian Dye",
         "dailyLogCount": 1,
-        "lastLogDate": "2026-08-27"
+        "lastLogDate": "2026-10-01"
       },
       {
         "jobId": 42673665,
         "jobName": "Veranda Bay Model 2",
         "userName": "James Manford",
-        "dailyLogCount": 17,
-        "lastLogDate": "2026-08-31"
-      },
+        "dailyLogCount": 15,
+        "lastLogDate": "2026-10-12"
+      }
+    ],
+    "42790290": [
       {
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "userName": "Rob Dougherty",
-        "dailyLogCount": 6,
-        "lastLogDate": "2026-08-27"
-      },
-      {
-        "jobId": 42673665,
-        "jobName": "Veranda Bay Model 2",
-        "userName": "Trevor Ragno",
+        "jobId": 42790290,
+        "jobName": "Bucciarelli",
+        "userName": "Richard Linck",
         "dailyLogCount": 1,
-        "lastLogDate": "2026-08-25"
+        "lastLogDate": "2026-10-07"
       }
     ],
     "42969582": [
       {
         "jobId": 42969582,
         "jobName": "Etienne",
-        "userName": "Adam Horseman",
-        "dailyLogCount": 15,
-        "lastLogDate": "2026-08-31"
+        "userName": "James Manford",
+        "dailyLogCount": 4,
+        "lastLogDate": "2026-10-12"
       },
       {
         "jobId": 42969582,
         "jobName": "Etienne",
-        "userName": "Brian Dye",
-        "dailyLogCount": 2,
-        "lastLogDate": "2026-08-28"
-      },
-      {
-        "jobId": 42969582,
-        "jobName": "Etienne",
-        "userName": "Rob Dougherty",
+        "userName": "Trevor Ragno",
         "dailyLogCount": 5,
-        "lastLogDate": "2026-08-30"
+        "lastLogDate": "2026-10-02"
       }
     ],
-    "45275922": [
+    "43331519": [
       {
-        "jobId": 45275922,
-        "jobName": "Olmstead",
-        "userName": "Brian Dye",
+        "jobId": 43331519,
+        "jobName": "Shagnea",
+        "userName": "Richard Linck",
         "dailyLogCount": 1,
-        "lastLogDate": "2026-08-21"
-      },
+        "lastLogDate": "2026-10-07"
+      }
+    ],
+    "45118977": [
       {
-        "jobId": 45275922,
-        "jobName": "Olmstead",
-        "userName": "Rob Dougherty",
+        "jobId": 45118977,
+        "jobName": "Peters",
+        "userName": "Monique (Designer) Lumley",
         "dailyLogCount": 1,
-        "lastLogDate": "2026-08-31"
+        "lastLogDate": "2026-09-15"
       }
     ]
   },
@@ -11790,288 +10279,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "completed": false
       }
     ],
-    "35918575": [
-      {
-        "title": "Sale/Contract Deposit",
-        "endDateSlip": 0,
-        "durationSlip": 0,
-        "expectedStartDate": "2025-04-09",
-        "actualStartDate": "2025-04-09",
-        "expectedEndDate": "2025-04-09",
-        "actualEndDate": "2025-04-09",
-        "completed": true
-      },
-      {
-        "title": "Selection Phase 1 Due",
-        "endDateSlip": 0,
-        "durationSlip": 0,
-        "expectedStartDate": "2025-04-10",
-        "actualStartDate": "2025-04-10",
-        "expectedEndDate": "2026-01-23",
-        "actualEndDate": "2026-01-23",
-        "completed": true
-      },
-      {
-        "title": "Selection Phase 2 Due",
-        "endDateSlip": 0,
-        "durationSlip": 0,
-        "expectedStartDate": "2025-04-21",
-        "actualStartDate": "2025-04-21",
-        "expectedEndDate": "2026-01-23",
-        "actualEndDate": "2026-01-23",
-        "completed": true
-      },
-      {
-        "title": "Selection Phase 3 Due",
-        "endDateSlip": 0,
-        "durationSlip": 0,
-        "expectedStartDate": "2025-04-30",
-        "actualStartDate": "2025-04-30",
-        "expectedEndDate": "2026-02-13",
-        "actualEndDate": "2026-02-13",
-        "completed": true
-      },
-      {
-        "title": "Permitting",
-        "endDateSlip": 0,
-        "durationSlip": 0,
-        "expectedStartDate": "2025-05-23",
-        "actualStartDate": "2025-05-23",
-        "expectedEndDate": "2025-06-19",
-        "actualEndDate": "2025-06-19",
-        "completed": true
-      },
-      {
-        "title": "Site Work",
-        "endDateSlip": 0,
-        "durationSlip": 0,
-        "expectedStartDate": "2025-06-04",
-        "actualStartDate": "2025-06-04",
-        "expectedEndDate": "2025-06-17",
-        "actualEndDate": "2025-06-17",
-        "completed": true
-      },
-      {
-        "title": "Foundation",
-        "endDateSlip": 0,
-        "durationSlip": 0,
-        "expectedStartDate": "2025-06-18",
-        "actualStartDate": "2025-06-18",
-        "expectedEndDate": "2025-10-16",
-        "actualEndDate": "2025-10-16",
-        "completed": true
-      },
-      {
-        "title": "Pool",
-        "endDateSlip": 43,
-        "durationSlip": 43,
-        "expectedStartDate": "2025-08-28",
-        "actualStartDate": "2025-08-28",
-        "expectedEndDate": "2026-04-17",
-        "actualEndDate": "2026-06-18",
-        "completed": true
-      },
-      {
-        "title": "Block Walls",
-        "endDateSlip": 0,
-        "durationSlip": 0,
-        "expectedStartDate": "2025-10-17",
-        "actualStartDate": "2025-10-17",
-        "expectedEndDate": "2025-10-23",
-        "actualEndDate": "2025-10-23",
-        "completed": true
-      },
-      {
-        "title": "Framing",
-        "endDateSlip": 0,
-        "durationSlip": 0,
-        "expectedStartDate": "2025-10-24",
-        "actualStartDate": "2025-10-24",
-        "expectedEndDate": "2025-12-08",
-        "actualEndDate": "2025-12-08",
-        "completed": true
-      },
-      {
-        "title": "Doors & Windows",
-        "endDateSlip": 0,
-        "durationSlip": 0,
-        "expectedStartDate": "2025-12-09",
-        "actualStartDate": "2025-12-09",
-        "expectedEndDate": "2026-02-12",
-        "actualEndDate": "2026-02-12",
-        "completed": true
-      },
-      {
-        "title": "MEP Rough-Ins",
-        "endDateSlip": 0,
-        "durationSlip": 0,
-        "expectedStartDate": "2025-12-09",
-        "actualStartDate": "2025-12-09",
-        "expectedEndDate": "2026-01-30",
-        "actualEndDate": "2026-01-30",
-        "completed": true
-      },
-      {
-        "title": "FMEP Inspection",
-        "endDateSlip": 0,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-02-03",
-        "actualStartDate": "2026-02-03",
-        "expectedEndDate": "2026-02-04",
-        "actualEndDate": "2026-02-04",
-        "completed": true
-      },
-      {
-        "title": "Drywall & Insulation",
-        "endDateSlip": 5,
-        "durationSlip": 5,
-        "expectedStartDate": "2026-02-24",
-        "actualStartDate": "2026-02-24",
-        "expectedEndDate": "2026-03-11",
-        "actualEndDate": "2026-03-18",
-        "completed": true
-      },
-      {
-        "title": "Roofing",
-        "endDateSlip": 15,
-        "durationSlip": 15,
-        "expectedStartDate": "2026-03-02",
-        "actualStartDate": "2026-03-02",
-        "expectedEndDate": "2026-03-06",
-        "actualEndDate": "2026-03-27",
-        "completed": true
-      },
-      {
-        "title": "Stucco & Siding",
-        "endDateSlip": 8,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-02-23",
-        "actualStartDate": "2026-03-05",
-        "expectedEndDate": "2026-03-05",
-        "actualEndDate": "2026-03-17",
-        "completed": true
-      },
-      {
-        "title": "Tile & Flooring",
-        "endDateSlip": 23,
-        "durationSlip": 28,
-        "expectedStartDate": "2026-03-19",
-        "actualStartDate": "2026-03-12",
-        "expectedEndDate": "2026-03-30",
-        "actualEndDate": "2026-05-01",
-        "completed": true
-      },
-      {
-        "title": "Exterior Paint",
-        "endDateSlip": 1,
-        "durationSlip": 2,
-        "expectedStartDate": "2026-03-20",
-        "actualStartDate": "2026-03-19",
-        "expectedEndDate": "2026-03-26",
-        "actualEndDate": "2026-03-27",
-        "completed": true
-      },
-      {
-        "title": "Interior Paint",
-        "endDateSlip": 2,
-        "durationSlip": -3,
-        "expectedStartDate": "2026-03-12",
-        "actualStartDate": "2026-03-19",
-        "expectedEndDate": "2026-03-18",
-        "actualEndDate": "2026-03-20",
-        "completed": true
-      },
-      {
-        "title": "Driveway",
-        "endDateSlip": 19,
-        "durationSlip": 24,
-        "expectedStartDate": "2026-04-10",
-        "actualStartDate": "2026-04-02",
-        "expectedEndDate": "2026-04-15",
-        "actualEndDate": "2026-05-12",
-        "completed": true
-      },
-      {
-        "title": "Interior Doors/Trim",
-        "endDateSlip": 11,
-        "durationSlip": 1,
-        "expectedStartDate": "2026-04-01",
-        "actualStartDate": "2026-04-16",
-        "expectedEndDate": "2026-04-08",
-        "actualEndDate": "2026-04-23",
-        "completed": true
-      },
-      {
-        "title": "Interior Specialties",
-        "endDateSlip": 2,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-04-24",
-        "actualStartDate": "2026-04-28",
-        "expectedEndDate": "2026-05-07",
-        "actualEndDate": "2026-05-11",
-        "completed": true
-      },
-      {
-        "title": "MEP Trim-Outs",
-        "endDateSlip": 26,
-        "durationSlip": 9,
-        "expectedStartDate": "2026-04-15",
-        "actualStartDate": "2026-05-08",
-        "expectedEndDate": "2026-04-23",
-        "actualEndDate": "2026-06-01",
-        "completed": true
-      },
-      {
-        "title": "Garage Door",
-        "endDateSlip": 31,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-04-01",
-        "actualStartDate": "2026-05-15",
-        "expectedEndDate": "2026-04-02",
-        "actualEndDate": "2026-05-18",
-        "completed": true
-      },
-      {
-        "title": "Final Trim Out",
-        "endDateSlip": 53,
-        "durationSlip": 44,
-        "expectedStartDate": "2026-05-13",
-        "actualStartDate": "2026-05-27",
-        "expectedEndDate": "2026-05-15",
-        "actualEndDate": "2026-07-31",
-        "completed": true
-      },
-      {
-        "title": "Final Inspections",
-        "endDateSlip": 42,
-        "durationSlip": 12,
-        "expectedStartDate": "2026-05-18",
-        "actualStartDate": "2026-06-30",
-        "expectedEndDate": "2026-05-26",
-        "actualEndDate": "2026-07-24",
-        "completed": true
-      },
-      {
-        "title": "Landscaping",
-        "endDateSlip": 62,
-        "durationSlip": 3,
-        "expectedStartDate": "2026-05-07",
-        "actualStartDate": "2026-07-31",
-        "expectedEndDate": "2026-05-13",
-        "actualEndDate": "2026-08-11",
-        "completed": true
-      },
-      {
-        "title": "Closing",
-        "endDateSlip": 72,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-05-27",
-        "actualStartDate": "2026-09-08",
-        "expectedEndDate": "2026-05-29",
-        "actualEndDate": "2026-09-10",
-        "completed": false
-      }
-    ],
     "38215830": [
       {
         "title": "Sale/Contract Deposit",
@@ -12284,24 +10491,14 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "completed": true
       },
       {
-        "title": "Final Trim Out",
-        "endDateSlip": 83,
-        "durationSlip": 17,
-        "expectedStartDate": "2026-05-11",
-        "actualStartDate": "2026-08-13",
-        "expectedEndDate": "2026-05-13",
-        "actualEndDate": "2026-09-10",
-        "completed": false
-      },
-      {
         "title": "Interior Specialties",
-        "endDateSlip": 102,
-        "durationSlip": 6,
+        "endDateSlip": 112,
+        "durationSlip": 16,
         "expectedStartDate": "2026-03-27",
         "actualStartDate": "2026-08-13",
         "expectedEndDate": "2026-04-10",
-        "actualEndDate": "2026-09-03",
-        "completed": false
+        "actualEndDate": "2026-09-18",
+        "completed": true
       },
       {
         "title": "Landscaping",
@@ -12314,23 +10511,33 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "completed": true
       },
       {
+        "title": "Final Trim Out",
+        "endDateSlip": 102,
+        "durationSlip": 22,
+        "expectedStartDate": "2026-05-11",
+        "actualStartDate": "2026-09-02",
+        "expectedEndDate": "2026-05-13",
+        "actualEndDate": "2026-10-07",
+        "completed": true
+      },
+      {
         "title": "Final Inspections",
-        "endDateSlip": 49,
-        "durationSlip": 0,
+        "endDateSlip": 72,
+        "durationSlip": 9,
         "expectedStartDate": "2026-06-15",
-        "actualStartDate": "2026-08-24",
+        "actualStartDate": "2026-09-14",
         "expectedEndDate": "2026-06-22",
-        "actualEndDate": "2026-08-31",
+        "actualEndDate": "2026-10-02",
         "completed": true
       },
       {
         "title": "Closing",
-        "endDateSlip": 60,
-        "durationSlip": 0,
+        "endDateSlip": 75,
+        "durationSlip": -2,
         "expectedStartDate": "2026-06-26",
-        "actualStartDate": "2026-09-22",
+        "actualStartDate": "2026-10-15",
         "expectedEndDate": "2026-06-30",
-        "actualEndDate": "2026-09-24",
+        "actualEndDate": "2026-10-15",
         "completed": false
       }
     ],
@@ -12363,7 +10570,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "actualStartDate": "2025-09-30",
         "expectedEndDate": "2025-12-18",
         "actualEndDate": "2026-09-11",
-        "completed": false
+        "completed": true
       },
       {
         "title": "Permitting",
@@ -12393,7 +10600,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "actualStartDate": "2026-08-24",
         "expectedEndDate": "2025-11-19",
         "actualEndDate": "2026-09-01",
-        "completed": false
+        "completed": true
       },
       {
         "title": "Site Work",
@@ -12403,7 +10610,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "actualStartDate": "2026-08-24",
         "expectedEndDate": "2025-12-23",
         "actualEndDate": "2026-09-01",
-        "completed": false
+        "completed": true
       },
       {
         "title": "Selection Phase 3 Due",
@@ -12413,7 +10620,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "actualStartDate": "2026-08-31",
         "expectedEndDate": "2025-12-03",
         "actualEndDate": "2026-09-09",
-        "completed": false
+        "completed": true
       },
       {
         "title": "Foundation",
@@ -12423,246 +10630,246 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "actualStartDate": "2026-09-02",
         "expectedEndDate": "2025-12-29",
         "actualEndDate": "2026-09-11",
-        "completed": false
+        "completed": true
       },
       {
         "title": "Block Walls",
-        "endDateSlip": 179,
-        "durationSlip": 0,
+        "endDateSlip": 181,
+        "durationSlip": 2,
         "expectedStartDate": "2025-12-30",
         "actualStartDate": "2026-09-14",
         "expectedEndDate": "2026-01-06",
-        "actualEndDate": "2026-09-18",
-        "completed": false
+        "actualEndDate": "2026-09-22",
+        "completed": true
       },
       {
         "title": "Framing",
-        "endDateSlip": 179,
-        "durationSlip": 0,
+        "endDateSlip": 187,
+        "durationSlip": 6,
         "expectedStartDate": "2026-01-07",
-        "actualStartDate": "2026-09-21",
+        "actualStartDate": "2026-09-23",
         "expectedEndDate": "2026-01-22",
-        "actualEndDate": "2026-10-06",
+        "actualEndDate": "2026-10-16",
         "completed": false
       },
       {
         "title": "Doors & Windows",
-        "endDateSlip": 179,
+        "endDateSlip": 187,
         "durationSlip": 0,
         "expectedStartDate": "2026-01-23",
-        "actualStartDate": "2026-10-07",
+        "actualStartDate": "2026-10-19",
         "expectedEndDate": "2026-01-29",
-        "actualEndDate": "2026-10-13",
-        "completed": false
-      },
-      {
-        "title": "MEP Rough-Ins",
-        "endDateSlip": 179,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-01-23",
-        "actualStartDate": "2026-10-07",
-        "expectedEndDate": "2026-02-10",
         "actualEndDate": "2026-10-23",
         "completed": false
       },
       {
+        "title": "MEP Rough-Ins",
+        "endDateSlip": 187,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-01-23",
+        "actualStartDate": "2026-10-19",
+        "expectedEndDate": "2026-02-10",
+        "actualEndDate": "2026-11-04",
+        "completed": false
+      },
+      {
         "title": "FMEP Inspection",
-        "endDateSlip": 179,
+        "endDateSlip": 180,
         "durationSlip": 0,
         "expectedStartDate": "2026-02-11",
-        "actualStartDate": "2026-10-26",
+        "actualStartDate": "2026-10-27",
         "expectedEndDate": "2026-02-12",
-        "actualEndDate": "2026-10-27",
+        "actualEndDate": "2026-10-28",
         "completed": false
       },
       {
         "title": "Drywall & Insulation",
-        "endDateSlip": 179,
-        "durationSlip": 0,
+        "endDateSlip": 182,
+        "durationSlip": 2,
         "expectedStartDate": "2026-02-13",
-        "actualStartDate": "2026-10-28",
+        "actualStartDate": "2026-10-29",
         "expectedEndDate": "2026-02-26",
-        "actualEndDate": "2026-11-10",
+        "actualEndDate": "2026-11-13",
         "completed": false
       },
       {
         "title": "Pool",
-        "endDateSlip": 179,
+        "endDateSlip": 182,
         "durationSlip": 0,
         "expectedStartDate": "2026-02-16",
-        "actualStartDate": "2026-10-29",
+        "actualStartDate": "2026-11-03",
         "expectedEndDate": "2026-05-20",
-        "actualEndDate": "2027-02-04",
-        "completed": false
-      },
-      {
-        "title": "Roofing",
-        "endDateSlip": 179,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-02-20",
-        "actualStartDate": "2026-11-04",
-        "expectedEndDate": "2026-02-26",
-        "actualEndDate": "2026-11-10",
-        "completed": false
-      },
-      {
-        "title": "Stucco & Siding",
-        "endDateSlip": 179,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-02-20",
-        "actualStartDate": "2026-11-04",
-        "expectedEndDate": "2026-02-26",
-        "actualEndDate": "2026-11-10",
-        "completed": false
-      },
-      {
-        "title": "Exterior Paint",
-        "endDateSlip": 179,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-02-27",
-        "actualStartDate": "2026-11-11",
-        "expectedEndDate": "2026-03-05",
-        "actualEndDate": "2026-11-17",
+        "actualEndDate": "2027-02-09",
         "completed": false
       },
       {
         "title": "Interior Paint",
-        "endDateSlip": 179,
+        "endDateSlip": 182,
         "durationSlip": 0,
         "expectedStartDate": "2026-02-27",
-        "actualStartDate": "2026-11-11",
+        "actualStartDate": "2026-11-16",
         "expectedEndDate": "2026-03-05",
-        "actualEndDate": "2026-11-17",
+        "actualEndDate": "2026-11-20",
         "completed": false
       },
       {
-        "title": "Tile & Flooring",
-        "endDateSlip": 179,
+        "title": "Roofing",
+        "endDateSlip": 187,
         "durationSlip": 0,
-        "expectedStartDate": "2026-03-06",
-        "actualStartDate": "2026-11-18",
-        "expectedEndDate": "2026-03-17",
+        "expectedStartDate": "2026-02-20",
+        "actualStartDate": "2026-11-16",
+        "expectedEndDate": "2026-02-26",
+        "actualEndDate": "2026-11-20",
+        "completed": false
+      },
+      {
+        "title": "Stucco & Siding",
+        "endDateSlip": 187,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-02-20",
+        "actualStartDate": "2026-11-16",
+        "expectedEndDate": "2026-02-26",
+        "actualEndDate": "2026-11-20",
+        "completed": false
+      },
+      {
+        "title": "Exterior Paint",
+        "endDateSlip": 187,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-02-27",
+        "actualStartDate": "2026-11-23",
+        "expectedEndDate": "2026-03-05",
         "actualEndDate": "2026-12-01",
         "completed": false
       },
       {
-        "title": "Garage Door",
-        "endDateSlip": 179,
+        "title": "Tile & Flooring",
+        "endDateSlip": 182,
         "durationSlip": 0,
-        "expectedStartDate": "2026-03-11",
+        "expectedStartDate": "2026-03-06",
         "actualStartDate": "2026-11-23",
-        "expectedEndDate": "2026-03-12",
-        "actualEndDate": "2026-11-24",
+        "expectedEndDate": "2026-03-17",
+        "actualEndDate": "2026-12-04",
         "completed": false
       },
       {
-        "title": "Driveway",
-        "endDateSlip": 179,
+        "title": "Garage Door",
+        "endDateSlip": 187,
         "durationSlip": 0,
-        "expectedStartDate": "2026-03-19",
-        "actualStartDate": "2026-12-03",
-        "expectedEndDate": "2026-03-24",
+        "expectedStartDate": "2026-03-11",
+        "actualStartDate": "2026-12-07",
+        "expectedEndDate": "2026-03-12",
         "actualEndDate": "2026-12-08",
         "completed": false
       },
       {
         "title": "Interior Doors/Trim",
-        "endDateSlip": 179,
+        "endDateSlip": 182,
         "durationSlip": 0,
         "expectedStartDate": "2026-03-19",
-        "actualStartDate": "2026-12-03",
+        "actualStartDate": "2026-12-08",
         "expectedEndDate": "2026-03-25",
-        "actualEndDate": "2026-12-09",
+        "actualEndDate": "2026-12-14",
+        "completed": false
+      },
+      {
+        "title": "Driveway",
+        "endDateSlip": 187,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-03-19",
+        "actualStartDate": "2026-12-15",
+        "expectedEndDate": "2026-03-24",
+        "actualEndDate": "2026-12-18",
         "completed": false
       },
       {
         "title": "MEP Trim-Outs",
-        "endDateSlip": 179,
+        "endDateSlip": 182,
         "durationSlip": 0,
         "expectedStartDate": "2026-04-01",
-        "actualStartDate": "2026-12-16",
+        "actualStartDate": "2026-12-21",
         "expectedEndDate": "2026-04-10",
-        "actualEndDate": "2026-12-24",
+        "actualEndDate": "2026-12-30",
         "completed": false
       },
       {
         "title": "Interior Specialties",
-        "endDateSlip": 179,
+        "endDateSlip": 182,
         "durationSlip": 0,
         "expectedStartDate": "2026-04-13",
-        "actualStartDate": "2026-12-28",
+        "actualStartDate": "2026-12-31",
         "expectedEndDate": "2026-04-24",
-        "actualEndDate": "2027-01-11",
-        "completed": false
-      },
-      {
-        "title": "Summer Kitchen",
-        "endDateSlip": 179,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-04-21",
-        "actualStartDate": "2027-01-06",
-        "expectedEndDate": "2026-05-06",
-        "actualEndDate": "2027-01-21",
-        "completed": false
-      },
-      {
-        "title": "Appliances",
-        "endDateSlip": 179,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-04-23",
-        "actualStartDate": "2027-01-08",
-        "expectedEndDate": "2026-04-28",
-        "actualEndDate": "2027-01-13",
-        "completed": false
-      },
-      {
-        "title": "Generator",
-        "endDateSlip": 179,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-04-23",
-        "actualStartDate": "2027-01-08",
-        "expectedEndDate": "2026-05-06",
-        "actualEndDate": "2027-01-21",
-        "completed": false
-      },
-      {
-        "title": "Final Trim Out",
-        "endDateSlip": 179,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-04-27",
-        "actualStartDate": "2027-01-12",
-        "expectedEndDate": "2026-04-29",
         "actualEndDate": "2027-01-14",
         "completed": false
       },
       {
+        "title": "Summer Kitchen",
+        "endDateSlip": 182,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-04-21",
+        "actualStartDate": "2027-01-11",
+        "expectedEndDate": "2026-05-06",
+        "actualEndDate": "2027-01-26",
+        "completed": false
+      },
+      {
+        "title": "Appliances",
+        "endDateSlip": 182,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-04-23",
+        "actualStartDate": "2027-01-13",
+        "expectedEndDate": "2026-04-28",
+        "actualEndDate": "2027-01-18",
+        "completed": false
+      },
+      {
+        "title": "Generator",
+        "endDateSlip": 182,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-04-23",
+        "actualStartDate": "2027-01-13",
+        "expectedEndDate": "2026-05-06",
+        "actualEndDate": "2027-01-26",
+        "completed": false
+      },
+      {
+        "title": "Final Trim Out",
+        "endDateSlip": 182,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-04-27",
+        "actualStartDate": "2027-01-15",
+        "expectedEndDate": "2026-04-29",
+        "actualEndDate": "2027-01-19",
+        "completed": false
+      },
+      {
         "title": "Landscaping",
-        "endDateSlip": 179,
+        "endDateSlip": 182,
         "durationSlip": 0,
         "expectedStartDate": "2026-04-30",
-        "actualStartDate": "2027-01-15",
+        "actualStartDate": "2027-01-20",
         "expectedEndDate": "2026-05-06",
-        "actualEndDate": "2027-01-21",
+        "actualEndDate": "2027-01-26",
         "completed": false
       },
       {
         "title": "Final Inspections",
-        "endDateSlip": 179,
+        "endDateSlip": 182,
         "durationSlip": 0,
         "expectedStartDate": "2026-05-06",
-        "actualStartDate": "2027-01-21",
+        "actualStartDate": "2027-01-26",
         "expectedEndDate": "2026-05-13",
-        "actualEndDate": "2027-01-28",
+        "actualEndDate": "2027-02-02",
         "completed": false
       },
       {
         "title": "Closing",
-        "endDateSlip": 179,
+        "endDateSlip": 182,
         "durationSlip": 0,
         "expectedStartDate": "2026-05-18",
-        "actualStartDate": "2027-02-02",
+        "actualStartDate": "2027-02-05",
         "expectedEndDate": "2026-05-20",
-        "actualEndDate": "2027-02-04",
+        "actualEndDate": "2027-02-09",
         "completed": false
       }
     ],
@@ -12939,13 +11146,13 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
       },
       {
         "title": "Closing",
-        "endDateSlip": 87,
+        "endDateSlip": 102,
         "durationSlip": -1,
         "expectedStartDate": "2026-05-12",
-        "actualStartDate": "2026-09-16",
+        "actualStartDate": "2026-10-07",
         "expectedEndDate": "2026-05-14",
-        "actualEndDate": "2026-09-17",
-        "completed": false
+        "actualEndDate": "2026-10-08",
+        "completed": true
       }
     ],
     "38901121": [
@@ -13221,13 +11428,13 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
       },
       {
         "title": "Closing",
-        "endDateSlip": 70,
-        "durationSlip": 0,
+        "endDateSlip": 93,
+        "durationSlip": -2,
         "expectedStartDate": "2026-05-28",
-        "actualStartDate": "2026-09-04",
+        "actualStartDate": "2026-10-12",
         "expectedEndDate": "2026-06-01",
-        "actualEndDate": "2026-09-09",
-        "completed": false
+        "actualEndDate": "2026-10-12",
+        "completed": true
       }
     ],
     "40214880": [
@@ -13363,103 +11570,23 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
       },
       {
         "title": "FMEP Inspection",
-        "endDateSlip": 83,
+        "endDateSlip": 88,
         "durationSlip": 0,
         "expectedStartDate": "2026-04-30",
-        "actualStartDate": "2026-08-27",
+        "actualStartDate": "2026-09-03",
         "expectedEndDate": "2026-05-01",
-        "actualEndDate": "2026-08-28",
+        "actualEndDate": "2026-09-04",
         "completed": true
       },
       {
         "title": "Drywall & Insulation",
-        "endDateSlip": 85,
-        "durationSlip": 2,
+        "endDateSlip": 99,
+        "durationSlip": 11,
         "expectedStartDate": "2026-05-04",
-        "actualStartDate": "2026-08-31",
-        "expectedEndDate": "2026-05-15",
-        "actualEndDate": "2026-09-16",
-        "completed": false
-      },
-      {
-        "title": "Exterior Paint",
-        "endDateSlip": 73,
-        "durationSlip": -1,
-        "expectedStartDate": "2026-05-18",
-        "actualStartDate": "2026-09-01",
-        "expectedEndDate": "2026-05-22",
-        "actualEndDate": "2026-09-04",
-        "completed": false
-      },
-      {
-        "title": "Roofing",
-        "endDateSlip": 83,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-05-11",
         "actualStartDate": "2026-09-08",
         "expectedEndDate": "2026-05-15",
-        "actualEndDate": "2026-09-14",
-        "completed": false
-      },
-      {
-        "title": "Garage Door",
-        "endDateSlip": 73,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-05-29",
-        "actualStartDate": "2026-09-11",
-        "expectedEndDate": "2026-06-01",
-        "actualEndDate": "2026-09-14",
-        "completed": false
-      },
-      {
-        "title": "Interior Paint",
-        "endDateSlip": 82,
-        "durationSlip": -3,
-        "expectedStartDate": "2026-05-18",
-        "actualStartDate": "2026-09-17",
-        "expectedEndDate": "2026-05-22",
-        "actualEndDate": "2026-09-18",
-        "completed": false
-      },
-      {
-        "title": "Driveway",
-        "endDateSlip": 73,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-06-08",
-        "actualStartDate": "2026-09-21",
-        "expectedEndDate": "2026-06-11",
-        "actualEndDate": "2026-09-24",
-        "completed": false
-      },
-      {
-        "title": "Tile & Flooring",
-        "endDateSlip": 82,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-05-26",
-        "actualStartDate": "2026-09-21",
-        "expectedEndDate": "2026-06-04",
-        "actualEndDate": "2026-09-30",
-        "completed": false
-      },
-      {
-        "title": "Summer Kitchen",
-        "endDateSlip": 47,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-07-20",
-        "actualStartDate": "2026-09-24",
-        "expectedEndDate": "2026-08-04",
-        "actualEndDate": "2026-10-09",
-        "completed": false
-      },
-      {
-        "title": "Landscaping",
-        "endDateSlip": 41,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-07-29",
-        "actualStartDate": "2026-09-25",
-        "expectedEndDate": "2026-08-04",
-        "actualEndDate": "2026-10-01",
-        "completed": false
+        "actualEndDate": "2026-10-06",
+        "completed": true
       },
       {
         "title": "Generator",
@@ -13469,66 +11596,136 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "actualStartDate": "2026-09-28",
         "expectedEndDate": "2026-08-04",
         "actualEndDate": "2026-10-09",
-        "completed": false
+        "completed": true
       },
       {
-        "title": "Interior Doors/Trim",
-        "endDateSlip": 87,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-06-08",
-        "actualStartDate": "2026-10-09",
-        "expectedEndDate": "2026-06-12",
+        "title": "Exterior Paint",
+        "endDateSlip": 101,
+        "durationSlip": -3,
+        "expectedStartDate": "2026-05-18",
+        "actualStartDate": "2026-10-14",
+        "expectedEndDate": "2026-05-22",
         "actualEndDate": "2026-10-15",
         "completed": false
       },
       {
-        "title": "MEP Trim-Outs",
-        "endDateSlip": 85,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-06-19",
-        "actualStartDate": "2026-10-20",
-        "expectedEndDate": "2026-06-29",
+        "title": "Interior Paint",
+        "endDateSlip": 101,
+        "durationSlip": -3,
+        "expectedStartDate": "2026-05-18",
+        "actualStartDate": "2026-10-14",
+        "expectedEndDate": "2026-05-22",
+        "actualEndDate": "2026-10-15",
+        "completed": false
+      },
+      {
+        "title": "Garage Door",
+        "endDateSlip": 97,
+        "durationSlip": -1,
+        "expectedStartDate": "2026-05-29",
+        "actualStartDate": "2026-10-16",
+        "expectedEndDate": "2026-06-01",
+        "actualEndDate": "2026-10-16",
+        "completed": false
+      },
+      {
+        "title": "Roofing",
+        "endDateSlip": 109,
+        "durationSlip": -2,
+        "expectedStartDate": "2026-05-11",
+        "actualStartDate": "2026-10-16",
+        "expectedEndDate": "2026-05-15",
+        "actualEndDate": "2026-10-20",
+        "completed": false
+      },
+      {
+        "title": "Tile & Flooring",
+        "endDateSlip": 102,
+        "durationSlip": 1,
+        "expectedStartDate": "2026-05-26",
+        "actualStartDate": "2026-10-16",
+        "expectedEndDate": "2026-06-04",
         "actualEndDate": "2026-10-28",
         "completed": false
       },
       {
+        "title": "Driveway",
+        "endDateSlip": 94,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-06-08",
+        "actualStartDate": "2026-10-20",
+        "expectedEndDate": "2026-06-11",
+        "actualEndDate": "2026-10-23",
+        "completed": false
+      },
+      {
+        "title": "Landscaping",
+        "endDateSlip": 62,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-07-29",
+        "actualStartDate": "2026-10-26",
+        "expectedEndDate": "2026-08-04",
+        "actualEndDate": "2026-10-30",
+        "completed": false
+      },
+      {
+        "title": "Interior Doors/Trim",
+        "endDateSlip": 101,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-06-08",
+        "actualStartDate": "2026-10-29",
+        "expectedEndDate": "2026-06-12",
+        "actualEndDate": "2026-11-04",
+        "completed": false
+      },
+      {
         "title": "Interior Specialties",
-        "endDateSlip": 81,
+        "endDateSlip": 90,
         "durationSlip": 0,
         "expectedStartDate": "2026-06-30",
-        "actualStartDate": "2026-10-23",
+        "actualStartDate": "2026-11-05",
         "expectedEndDate": "2026-07-14",
-        "actualEndDate": "2026-11-05",
+        "actualEndDate": "2026-11-18",
+        "completed": false
+      },
+      {
+        "title": "MEP Trim-Outs",
+        "endDateSlip": 103,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-06-19",
+        "actualStartDate": "2026-11-13",
+        "expectedEndDate": "2026-06-29",
+        "actualEndDate": "2026-11-23",
         "completed": false
       },
       {
         "title": "Final Trim Out",
-        "endDateSlip": 79,
+        "endDateSlip": 92,
         "durationSlip": 2,
         "expectedStartDate": "2026-07-15",
-        "actualStartDate": "2026-11-02",
+        "actualStartDate": "2026-11-19",
         "expectedEndDate": "2026-07-17",
-        "actualEndDate": "2026-11-06",
+        "actualEndDate": "2026-11-25",
         "completed": false
       },
       {
         "title": "Final Inspections",
-        "endDateSlip": 75,
+        "endDateSlip": 87,
         "durationSlip": 0,
         "expectedStartDate": "2026-07-24",
-        "actualStartDate": "2026-11-09",
+        "actualStartDate": "2026-11-25",
         "expectedEndDate": "2026-07-31",
-        "actualEndDate": "2026-11-16",
+        "actualEndDate": "2026-12-04",
         "completed": false
       },
       {
         "title": "Closing",
-        "endDateSlip": 66,
+        "endDateSlip": 78,
         "durationSlip": 0,
         "expectedStartDate": "2026-08-14",
-        "actualStartDate": "2026-11-17",
+        "actualStartDate": "2026-12-07",
         "expectedEndDate": "2026-08-18",
-        "actualEndDate": "2026-11-19",
+        "actualEndDate": "2026-12-09",
         "completed": false
       }
     ],
@@ -13715,12 +11912,12 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
       },
       {
         "title": "Pool",
-        "endDateSlip": -6,
-        "durationSlip": -26,
+        "endDateSlip": 58,
+        "durationSlip": 38,
         "expectedStartDate": "2026-03-31",
         "actualStartDate": "2026-04-29",
         "expectedEndDate": "2026-07-06",
-        "actualEndDate": "2026-06-25",
+        "actualEndDate": "2026-09-25",
         "completed": true
       },
       {
@@ -13755,22 +11952,12 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
       },
       {
         "title": "MEP Trim-Outs",
-        "endDateSlip": 66,
-        "durationSlip": 24,
+        "endDateSlip": 103,
+        "durationSlip": 61,
         "expectedStartDate": "2026-04-24",
         "actualStartDate": "2026-06-24",
         "expectedEndDate": "2026-05-04",
-        "actualEndDate": "2026-08-06",
-        "completed": true
-      },
-      {
-        "title": "Interior Specialties",
-        "endDateSlip": 57,
-        "durationSlip": 6,
-        "expectedStartDate": "2026-05-05",
-        "actualStartDate": "2026-07-17",
-        "expectedEndDate": "2026-05-18",
-        "actualEndDate": "2026-08-07",
+        "actualEndDate": "2026-09-29",
         "completed": true
       },
       {
@@ -13785,42 +11972,52 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
       },
       {
         "title": "Final Trim Out",
-        "endDateSlip": 70,
-        "durationSlip": 13,
+        "endDateSlip": 93,
+        "durationSlip": 36,
         "expectedStartDate": "2026-05-19",
         "actualStartDate": "2026-08-10",
         "expectedEndDate": "2026-05-21",
-        "actualEndDate": "2026-08-31",
+        "actualEndDate": "2026-10-02",
+        "completed": true
+      },
+      {
+        "title": "Interior Specialties",
+        "endDateSlip": 89,
+        "durationSlip": 10,
+        "expectedStartDate": "2026-05-05",
+        "actualStartDate": "2026-08-26",
+        "expectedEndDate": "2026-05-18",
+        "actualEndDate": "2026-09-23",
         "completed": true
       },
       {
         "title": "Final Inspections",
-        "endDateSlip": 55,
-        "durationSlip": 5,
+        "endDateSlip": 80,
+        "durationSlip": 15,
         "expectedStartDate": "2026-06-05",
-        "actualStartDate": "2026-08-17",
+        "actualStartDate": "2026-09-08",
         "expectedEndDate": "2026-06-12",
-        "actualEndDate": "2026-08-31",
+        "actualEndDate": "2026-10-06",
         "completed": true
       },
       {
         "title": "Landscaping",
-        "endDateSlip": 52,
-        "durationSlip": 0,
+        "endDateSlip": 61,
+        "durationSlip": 2,
         "expectedStartDate": "2026-06-22",
-        "actualStartDate": "2026-09-03",
+        "actualStartDate": "2026-09-15",
         "expectedEndDate": "2026-06-26",
-        "actualEndDate": "2026-09-10",
-        "completed": false
+        "actualEndDate": "2026-09-23",
+        "completed": true
       },
       {
         "title": "Closing",
-        "endDateSlip": 60,
+        "endDateSlip": 77,
         "durationSlip": -2,
         "expectedStartDate": "2026-07-01",
-        "actualStartDate": "2026-09-29",
+        "actualStartDate": "2026-10-22",
         "expectedEndDate": "2026-07-06",
-        "actualEndDate": "2026-09-29",
+        "actualEndDate": "2026-10-22",
         "completed": false
       }
     ],
@@ -14007,12 +12204,12 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
       },
       {
         "title": "Tile & Flooring",
-        "endDateSlip": 95,
-        "durationSlip": 42,
+        "endDateSlip": 99,
+        "durationSlip": 46,
         "expectedStartDate": "2026-04-07",
         "actualStartDate": "2026-06-22",
         "expectedEndDate": "2026-04-16",
-        "actualEndDate": "2026-08-31",
+        "actualEndDate": "2026-09-04",
         "completed": true
       },
       {
@@ -14027,82 +12224,82 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
       },
       {
         "title": "MEP Trim-Outs",
-        "endDateSlip": 89,
-        "durationSlip": 32,
+        "endDateSlip": 101,
+        "durationSlip": 44,
         "expectedStartDate": "2026-05-05",
         "actualStartDate": "2026-07-27",
         "expectedEndDate": "2026-05-13",
-        "actualEndDate": "2026-09-18",
-        "completed": false
-      },
-      {
-        "title": "Driveway",
-        "endDateSlip": 73,
-        "durationSlip": 6,
-        "expectedStartDate": "2026-05-12",
-        "actualStartDate": "2026-08-17",
-        "expectedEndDate": "2026-05-15",
-        "actualEndDate": "2026-08-28",
+        "actualEndDate": "2026-10-06",
         "completed": true
       },
       {
-        "title": "Landscaping",
-        "endDateSlip": 48,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-06-16",
-        "actualStartDate": "2026-08-24",
-        "expectedEndDate": "2026-06-22",
-        "actualEndDate": "2026-08-28",
+        "title": "Driveway",
+        "endDateSlip": 77,
+        "durationSlip": 10,
+        "expectedStartDate": "2026-05-12",
+        "actualStartDate": "2026-08-17",
+        "expectedEndDate": "2026-05-15",
+        "actualEndDate": "2026-09-03",
         "completed": true
       },
       {
         "title": "Interior Doors/Trim",
-        "endDateSlip": 97,
-        "durationSlip": 4,
+        "endDateSlip": 107,
+        "durationSlip": 10,
         "expectedStartDate": "2026-04-20",
-        "actualStartDate": "2026-08-31",
+        "actualStartDate": "2026-09-04",
         "expectedEndDate": "2026-04-24",
-        "actualEndDate": "2026-09-11",
-        "completed": false
+        "actualEndDate": "2026-09-25",
+        "completed": true
+      },
+      {
+        "title": "Landscaping",
+        "endDateSlip": 72,
+        "durationSlip": 7,
+        "expectedStartDate": "2026-06-16",
+        "actualStartDate": "2026-09-17",
+        "expectedEndDate": "2026-06-22",
+        "actualEndDate": "2026-10-02",
+        "completed": true
       },
       {
         "title": "Interior Specialties",
-        "endDateSlip": 74,
+        "endDateSlip": 87,
         "durationSlip": 0,
         "expectedStartDate": "2026-05-19",
-        "actualStartDate": "2026-09-02",
+        "actualStartDate": "2026-09-22",
         "expectedEndDate": "2026-06-02",
-        "actualEndDate": "2026-09-16",
-        "completed": false
-      },
-      {
-        "title": "Final Inspections",
-        "endDateSlip": 67,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-06-09",
-        "actualStartDate": "2026-09-14",
-        "expectedEndDate": "2026-06-16",
-        "actualEndDate": "2026-09-21",
-        "completed": false
+        "actualEndDate": "2026-10-05",
+        "completed": true
       },
       {
         "title": "Final Trim Out",
-        "endDateSlip": 71,
-        "durationSlip": 0,
+        "endDateSlip": 88,
+        "durationSlip": 2,
         "expectedStartDate": "2026-06-03",
-        "actualStartDate": "2026-09-14",
+        "actualStartDate": "2026-10-05",
         "expectedEndDate": "2026-06-05",
-        "actualEndDate": "2026-09-16",
+        "actualEndDate": "2026-10-09",
+        "completed": true
+      },
+      {
+        "title": "Final Inspections",
+        "endDateSlip": 87,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-06-09",
+        "actualStartDate": "2026-10-12",
+        "expectedEndDate": "2026-06-16",
+        "actualEndDate": "2026-10-19",
         "completed": false
       },
       {
         "title": "Closing",
-        "endDateSlip": 63,
-        "durationSlip": 0,
+        "endDateSlip": 83,
+        "durationSlip": -2,
         "expectedStartDate": "2026-06-30",
-        "actualStartDate": "2026-09-29",
+        "actualStartDate": "2026-10-29",
         "expectedEndDate": "2026-07-02",
-        "actualEndDate": "2026-10-01",
+        "actualEndDate": "2026-10-29",
         "completed": false
       }
     ],
@@ -14289,13 +12486,13 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
       },
       {
         "title": "Tile & Flooring",
-        "endDateSlip": 205,
-        "durationSlip": 12,
+        "endDateSlip": 209,
+        "durationSlip": 16,
         "expectedStartDate": "2025-11-06",
         "actualStartDate": "2026-08-10",
         "expectedEndDate": "2025-11-17",
-        "actualEndDate": "2026-09-04",
-        "completed": false
+        "actualEndDate": "2026-09-11",
+        "completed": true
       },
       {
         "title": "Garage Door",
@@ -14308,16 +12505,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "completed": true
       },
       {
-        "title": "Pool",
-        "endDateSlip": 212,
-        "durationSlip": -10,
-        "expectedStartDate": "2025-10-17",
-        "actualStartDate": "2026-08-31",
-        "expectedEndDate": "2026-01-20",
-        "actualEndDate": "2026-11-18",
-        "completed": false
-      },
-      {
         "title": "Interior Specialties",
         "endDateSlip": 187,
         "durationSlip": 0,
@@ -14325,109 +12512,87 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "actualStartDate": "2026-09-04",
         "expectedEndDate": "2025-12-24",
         "actualEndDate": "2026-09-18",
+        "completed": true
+      },
+      {
+        "title": "Pool",
+        "endDateSlip": 217,
+        "durationSlip": -10,
+        "expectedStartDate": "2025-10-17",
+        "actualStartDate": "2026-09-08",
+        "expectedEndDate": "2026-01-20",
+        "actualEndDate": "2026-11-25",
         "completed": false
       },
       {
         "title": "Interior Doors/Trim",
-        "endDateSlip": 204,
-        "durationSlip": 0,
+        "endDateSlip": 228,
+        "durationSlip": 10,
         "expectedStartDate": "2025-11-19",
-        "actualStartDate": "2026-09-08",
+        "actualStartDate": "2026-09-28",
         "expectedEndDate": "2025-11-25",
-        "actualEndDate": "2026-09-14",
-        "completed": false
-      },
-      {
-        "title": "Generator",
-        "endDateSlip": 183,
-        "durationSlip": 0,
-        "expectedStartDate": "2025-12-23",
-        "actualStartDate": "2026-09-11",
-        "expectedEndDate": "2026-01-06",
-        "actualEndDate": "2026-09-24",
-        "completed": false
-      },
-      {
-        "title": "Driveway",
-        "endDateSlip": 208,
-        "durationSlip": 0,
-        "expectedStartDate": "2025-11-19",
-        "actualStartDate": "2026-09-14",
-        "expectedEndDate": "2025-11-24",
-        "actualEndDate": "2026-09-17",
+        "actualEndDate": "2026-10-16",
         "completed": false
       },
       {
         "title": "MEP Trim-Outs",
-        "endDateSlip": 204,
-        "durationSlip": 0,
+        "endDateSlip": 217,
+        "durationSlip": 3,
         "expectedStartDate": "2025-12-02",
-        "actualStartDate": "2026-09-21",
-        "expectedEndDate": "2025-12-10",
-        "actualEndDate": "2026-09-29",
-        "completed": false
-      },
-      {
-        "title": "Final Inspections",
-        "endDateSlip": 185,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-01-06",
-        "actualStartDate": "2026-09-28",
-        "expectedEndDate": "2026-01-13",
-        "actualEndDate": "2026-10-05",
-        "completed": false
-      },
-      {
-        "title": "Final Trim Out",
-        "endDateSlip": 197,
-        "durationSlip": 0,
-        "expectedStartDate": "2025-12-25",
         "actualStartDate": "2026-10-05",
-        "expectedEndDate": "2025-12-29",
-        "actualEndDate": "2026-10-07",
+        "expectedEndDate": "2025-12-10",
+        "actualEndDate": "2026-10-16",
+        "completed": false
+      },
+      {
+        "title": "Driveway",
+        "endDateSlip": 237,
+        "durationSlip": 4,
+        "expectedStartDate": "2025-11-19",
+        "actualStartDate": "2026-10-19",
+        "expectedEndDate": "2025-11-24",
+        "actualEndDate": "2026-10-28",
         "completed": false
       },
       {
         "title": "Landscaping",
-        "endDateSlip": 194,
+        "endDateSlip": 212,
         "durationSlip": 0,
         "expectedStartDate": "2025-12-30",
-        "actualStartDate": "2026-10-05",
+        "actualStartDate": "2026-10-29",
         "expectedEndDate": "2026-01-06",
-        "actualEndDate": "2026-10-09",
+        "actualEndDate": "2026-11-04",
+        "completed": false
+      },
+      {
+        "title": "Final Inspections",
+        "endDateSlip": 210,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-01-06",
+        "actualStartDate": "2026-11-02",
+        "expectedEndDate": "2026-01-13",
+        "actualEndDate": "2026-11-09",
+        "completed": false
+      },
+      {
+        "title": "Final Trim Out",
+        "endDateSlip": 217,
+        "durationSlip": 0,
+        "expectedStartDate": "2025-12-25",
+        "actualStartDate": "2026-11-02",
+        "expectedEndDate": "2025-12-29",
+        "actualEndDate": "2026-11-04",
         "completed": false
       },
       {
         "title": "Closing",
-        "endDateSlip": 184,
+        "endDateSlip": 208,
         "durationSlip": 0,
         "expectedStartDate": "2026-01-16",
-        "actualStartDate": "2026-10-07",
+        "actualStartDate": "2026-11-10",
         "expectedEndDate": "2026-01-20",
-        "actualEndDate": "2026-10-09",
+        "actualEndDate": "2026-11-12",
         "completed": false
-      }
-    ],
-    "40596161": [
-      {
-        "title": "Framing",
-        "endDateSlip": -13,
-        "durationSlip": -13,
-        "expectedStartDate": "2025-05-05",
-        "actualStartDate": "2025-05-05",
-        "expectedEndDate": "2025-06-05",
-        "actualEndDate": "2025-05-19",
-        "completed": true
-      },
-      {
-        "title": "Closing",
-        "endDateSlip": 0,
-        "durationSlip": 0,
-        "expectedStartDate": "2025-11-03",
-        "actualStartDate": "2025-11-03",
-        "expectedEndDate": "2025-11-03",
-        "actualEndDate": "2025-11-03",
-        "completed": true
       }
     ],
     "41118068": [
@@ -14633,626 +12798,82 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
       },
       {
         "title": "Interior Doors/Trim",
-        "endDateSlip": 74,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-05-21",
-        "actualStartDate": "2026-09-04",
-        "expectedEndDate": "2026-05-28",
-        "actualEndDate": "2026-09-11",
-        "completed": false
-      },
-      {
-        "title": "Driveway",
-        "endDateSlip": 80,
-        "durationSlip": 5,
+        "endDateSlip": 78,
+        "durationSlip": 3,
         "expectedStartDate": "2026-05-21",
         "actualStartDate": "2026-09-08",
-        "expectedEndDate": "2026-05-27",
-        "actualEndDate": "2026-09-18",
-        "completed": false
+        "expectedEndDate": "2026-05-28",
+        "actualEndDate": "2026-09-17",
+        "completed": true
       },
       {
-        "title": "Interior Specialties",
-        "endDateSlip": 64,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-06-15",
-        "actualStartDate": "2026-09-15",
-        "expectedEndDate": "2026-06-26",
-        "actualEndDate": "2026-09-28",
-        "completed": false
+        "title": "Driveway",
+        "endDateSlip": 90,
+        "durationSlip": 4,
+        "expectedStartDate": "2026-05-21",
+        "actualStartDate": "2026-09-23",
+        "expectedEndDate": "2026-05-27",
+        "actualEndDate": "2026-10-02",
+        "completed": true
       },
       {
         "title": "MEP Trim-Outs",
-        "endDateSlip": 74,
+        "endDateSlip": 78,
         "durationSlip": 0,
         "expectedStartDate": "2026-06-04",
-        "actualStartDate": "2026-09-18",
+        "actualStartDate": "2026-09-24",
         "expectedEndDate": "2026-06-12",
-        "actualEndDate": "2026-09-28",
+        "actualEndDate": "2026-10-02",
+        "completed": true
+      },
+      {
+        "title": "Interior Specialties",
+        "endDateSlip": 97,
+        "durationSlip": 23,
+        "expectedStartDate": "2026-06-15",
+        "actualStartDate": "2026-09-29",
+        "expectedEndDate": "2026-06-26",
+        "actualEndDate": "2026-11-12",
+        "completed": false
+      },
+      {
+        "title": "Final Trim Out",
+        "endDateSlip": 75,
+        "durationSlip": 2,
+        "expectedStartDate": "2026-06-29",
+        "actualStartDate": "2026-10-12",
+        "expectedEndDate": "2026-07-01",
+        "actualEndDate": "2026-10-16",
         "completed": false
       },
       {
         "title": "Landscaping",
-        "endDateSlip": 53,
+        "endDateSlip": 70,
         "durationSlip": 0,
         "expectedStartDate": "2026-07-10",
-        "actualStartDate": "2026-09-24",
+        "actualStartDate": "2026-10-19",
         "expectedEndDate": "2026-07-16",
-        "actualEndDate": "2026-09-30",
-        "completed": false
-      },
-      {
-        "title": "Final Trim Out",
-        "endDateSlip": 64,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-06-29",
-        "actualStartDate": "2026-09-29",
-        "expectedEndDate": "2026-07-01",
-        "actualEndDate": "2026-10-01",
+        "actualEndDate": "2026-10-23",
         "completed": false
       },
       {
         "title": "Final Inspections",
-        "endDateSlip": 62,
+        "endDateSlip": 76,
         "durationSlip": 0,
         "expectedStartDate": "2026-07-09",
-        "actualStartDate": "2026-10-06",
+        "actualStartDate": "2026-10-26",
         "expectedEndDate": "2026-07-16",
-        "actualEndDate": "2026-10-13",
+        "actualEndDate": "2026-11-02",
         "completed": false
       },
       {
         "title": "Closing",
-        "endDateSlip": 51,
+        "endDateSlip": 76,
         "durationSlip": 0,
         "expectedStartDate": "2026-07-31",
-        "actualStartDate": "2026-10-13",
+        "actualStartDate": "2026-11-17",
         "expectedEndDate": "2026-08-04",
-        "actualEndDate": "2026-10-15",
-        "completed": false
-      }
-    ],
-    "41200140": [
-      {
-        "title": "Sale/Contract Deposit",
-        "endDateSlip": 0,
-        "durationSlip": 0,
-        "expectedStartDate": "2025-07-15",
-        "actualStartDate": "2025-07-15",
-        "expectedEndDate": "2025-07-15",
-        "actualEndDate": "2025-07-15",
-        "completed": true
-      },
-      {
-        "title": "Selection Phase 1 Due",
-        "endDateSlip": 0,
-        "durationSlip": 0,
-        "expectedStartDate": "2025-07-16",
-        "actualStartDate": "2025-07-16",
-        "expectedEndDate": "2025-10-17",
-        "actualEndDate": "2025-10-17",
-        "completed": true
-      },
-      {
-        "title": "Selection Phase 2 Due",
-        "endDateSlip": 0,
-        "durationSlip": 0,
-        "expectedStartDate": "2025-07-25",
-        "actualStartDate": "2025-07-25",
-        "expectedEndDate": "2026-02-23",
-        "actualEndDate": "2026-02-23",
-        "completed": true
-      },
-      {
-        "title": "Selection Phase 3 Due",
-        "endDateSlip": 0,
-        "durationSlip": 0,
-        "expectedStartDate": "2025-08-05",
-        "actualStartDate": "2025-08-05",
-        "expectedEndDate": "2026-01-15",
-        "actualEndDate": "2026-01-15",
-        "completed": true
-      },
-      {
-        "title": "Permitting",
-        "endDateSlip": 0,
-        "durationSlip": 0,
-        "expectedStartDate": "2025-09-30",
-        "actualStartDate": "2025-09-30",
-        "expectedEndDate": "2025-11-26",
-        "actualEndDate": "2025-11-26",
-        "completed": true
-      },
-      {
-        "title": "Site Work",
-        "endDateSlip": 0,
-        "durationSlip": 0,
-        "expectedStartDate": "2025-11-27",
-        "actualStartDate": "2025-11-27",
-        "expectedEndDate": "2025-12-12",
-        "actualEndDate": "2025-12-12",
-        "completed": true
-      },
-      {
-        "title": "Foundation",
-        "endDateSlip": 0,
-        "durationSlip": 0,
-        "expectedStartDate": "2025-12-15",
-        "actualStartDate": "2025-12-15",
-        "expectedEndDate": "2025-12-18",
-        "actualEndDate": "2025-12-18",
-        "completed": true
-      },
-      {
-        "title": "Block Walls",
-        "endDateSlip": 0,
-        "durationSlip": 0,
-        "expectedStartDate": "2025-12-29",
-        "actualStartDate": "2025-12-29",
-        "expectedEndDate": "2026-01-05",
-        "actualEndDate": "2026-01-05",
-        "completed": true
-      },
-      {
-        "title": "Framing",
-        "endDateSlip": 0,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-01-06",
-        "actualStartDate": "2026-01-06",
-        "expectedEndDate": "2026-02-10",
-        "actualEndDate": "2026-02-10",
-        "completed": true
-      },
-      {
-        "title": "Doors & Windows",
-        "endDateSlip": 0,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-01-30",
-        "actualStartDate": "2026-01-30",
-        "expectedEndDate": "2026-02-05",
-        "actualEndDate": "2026-02-05",
-        "completed": true
-      },
-      {
-        "title": "MEP Rough-Ins",
-        "endDateSlip": 0,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-01-30",
-        "actualStartDate": "2026-01-30",
-        "expectedEndDate": "2026-02-17",
-        "actualEndDate": "2026-02-17",
-        "completed": true
-      },
-      {
-        "title": "FMEP Inspection",
-        "endDateSlip": 0,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-02-17",
-        "actualStartDate": "2026-02-17",
-        "expectedEndDate": "2026-02-18",
-        "actualEndDate": "2026-02-18",
-        "completed": true
-      },
-      {
-        "title": "Roofing",
-        "endDateSlip": 27,
-        "durationSlip": 27,
-        "expectedStartDate": "2026-02-24",
-        "actualStartDate": "2026-02-24",
-        "expectedEndDate": "2026-03-17",
-        "actualEndDate": "2026-04-24",
-        "completed": true
-      },
-      {
-        "title": "Driveway",
-        "endDateSlip": 53,
-        "durationSlip": 44,
-        "expectedStartDate": "2026-03-18",
-        "actualStartDate": "2026-03-31",
-        "expectedEndDate": "2026-03-23",
-        "actualEndDate": "2026-06-08",
-        "completed": true
-      },
-      {
-        "title": "Interior Paint",
-        "endDateSlip": 18,
-        "durationSlip": -2,
-        "expectedStartDate": "2026-03-11",
-        "actualStartDate": "2026-04-09",
-        "expectedEndDate": "2026-03-17",
-        "actualEndDate": "2026-04-13",
-        "completed": true
-      },
-      {
-        "title": "Exterior Paint",
-        "endDateSlip": 21,
-        "durationSlip": -3,
-        "expectedStartDate": "2026-03-06",
-        "actualStartDate": "2026-04-10",
-        "expectedEndDate": "2026-03-13",
-        "actualEndDate": "2026-04-14",
-        "completed": true
-      },
-      {
-        "title": "Tile & Flooring",
-        "endDateSlip": 66,
-        "durationSlip": 25,
-        "expectedStartDate": "2026-02-26",
-        "actualStartDate": "2026-04-27",
-        "expectedEndDate": "2026-03-24",
-        "actualEndDate": "2026-06-26",
-        "completed": true
-      },
-      {
-        "title": "Garage Door",
-        "endDateSlip": 10,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-04-23",
-        "actualStartDate": "2026-05-07",
-        "expectedEndDate": "2026-04-24",
-        "actualEndDate": "2026-05-08",
-        "completed": true
-      },
-      {
-        "title": "MEP Trim-Outs",
-        "endDateSlip": 56,
-        "durationSlip": 19,
-        "expectedStartDate": "2026-03-17",
-        "actualStartDate": "2026-05-08",
-        "expectedEndDate": "2026-03-25",
-        "actualEndDate": "2026-06-15",
-        "completed": true
-      },
-      {
-        "title": "Interior Specialties",
-        "endDateSlip": 82,
-        "durationSlip": 44,
-        "expectedStartDate": "2026-04-07",
-        "actualStartDate": "2026-06-01",
-        "expectedEndDate": "2026-04-20",
-        "actualEndDate": "2026-08-14",
-        "completed": true
-      },
-      {
-        "title": "Interior Doors/Trim",
-        "endDateSlip": 47,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-03-30",
-        "actualStartDate": "2026-06-05",
-        "expectedEndDate": "2026-04-06",
-        "actualEndDate": "2026-06-11",
-        "completed": true
-      },
-      {
-        "title": "Final Trim Out",
-        "endDateSlip": 72,
-        "durationSlip": 11,
-        "expectedStartDate": "2026-04-06",
-        "actualStartDate": "2026-07-01",
-        "expectedEndDate": "2026-04-08",
-        "actualEndDate": "2026-07-21",
-        "completed": true
-      },
-      {
-        "title": "Landscaping",
-        "endDateSlip": 77,
-        "durationSlip": 1,
-        "expectedStartDate": "2026-03-20",
-        "actualStartDate": "2026-07-09",
-        "expectedEndDate": "2026-03-26",
-        "actualEndDate": "2026-07-16",
-        "completed": true
-      },
-      {
-        "title": "Final Inspections",
-        "endDateSlip": 89,
-        "durationSlip": 7,
-        "expectedStartDate": "2026-04-06",
-        "actualStartDate": "2026-07-31",
-        "expectedEndDate": "2026-04-13",
-        "actualEndDate": "2026-08-18",
-        "completed": true
-      },
-      {
-        "title": "Closing",
-        "endDateSlip": 96,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-04-16",
-        "actualStartDate": "2026-09-01",
-        "expectedEndDate": "2026-04-20",
-        "actualEndDate": "2026-09-03",
-        "completed": false
-      }
-    ],
-    "41776958": [
-      {
-        "title": "Sale/Contract Deposit",
-        "endDateSlip": 0,
-        "durationSlip": 0,
-        "expectedStartDate": "2025-08-21",
-        "actualStartDate": "2025-08-21",
-        "expectedEndDate": "2025-08-21",
-        "actualEndDate": "2025-08-21",
-        "completed": true
-      },
-      {
-        "title": "Selection Phase 1 Due",
-        "endDateSlip": 0,
-        "durationSlip": 0,
-        "expectedStartDate": "2025-08-22",
-        "actualStartDate": "2025-08-22",
-        "expectedEndDate": "2026-02-24",
-        "actualEndDate": "2026-02-24",
-        "completed": true
-      },
-      {
-        "title": "Selection Phase 2 Due",
-        "endDateSlip": 0,
-        "durationSlip": 0,
-        "expectedStartDate": "2025-09-02",
-        "actualStartDate": "2025-09-02",
-        "expectedEndDate": "2026-02-24",
-        "actualEndDate": "2026-02-24",
-        "completed": true
-      },
-      {
-        "title": "Selection Phase 3 Due",
-        "endDateSlip": 0,
-        "durationSlip": 0,
-        "expectedStartDate": "2025-09-11",
-        "actualStartDate": "2025-09-11",
-        "expectedEndDate": "2026-03-10",
-        "actualEndDate": "2026-03-10",
-        "completed": true
-      },
-      {
-        "title": "Permitting",
-        "endDateSlip": 0,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-01-30",
-        "actualStartDate": "2026-01-30",
-        "expectedEndDate": "2026-02-26",
-        "actualEndDate": "2026-02-26",
-        "completed": true
-      },
-      {
-        "title": "Site Work",
-        "endDateSlip": 0,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-02-27",
-        "actualStartDate": "2026-02-27",
-        "expectedEndDate": "2026-03-03",
-        "actualEndDate": "2026-03-03",
-        "completed": true
-      },
-      {
-        "title": "Foundation",
-        "endDateSlip": 0,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-03-04",
-        "actualStartDate": "2026-03-04",
-        "expectedEndDate": "2026-03-11",
-        "actualEndDate": "2026-03-11",
-        "completed": true
-      },
-      {
-        "title": "Block Walls",
-        "endDateSlip": 0,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-03-12",
-        "actualStartDate": "2026-03-12",
-        "expectedEndDate": "2026-03-25",
-        "actualEndDate": "2026-03-25",
-        "completed": true
-      },
-      {
-        "title": "Framing",
-        "endDateSlip": -1,
-        "durationSlip": -1,
-        "expectedStartDate": "2026-03-30",
-        "actualStartDate": "2026-03-30",
-        "expectedEndDate": "2026-04-20",
-        "actualEndDate": "2026-04-17",
-        "completed": true
-      },
-      {
-        "title": "Doors & Windows",
-        "endDateSlip": -1,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-04-21",
-        "actualStartDate": "2026-04-20",
-        "expectedEndDate": "2026-04-27",
-        "actualEndDate": "2026-04-24",
-        "completed": true
-      },
-      {
-        "title": "MEP Rough-Ins",
-        "endDateSlip": -7,
-        "durationSlip": -6,
-        "expectedStartDate": "2026-04-21",
-        "actualStartDate": "2026-04-20",
-        "expectedEndDate": "2026-05-07",
-        "actualEndDate": "2026-04-28",
-        "completed": true
-      },
-      {
-        "title": "FMEP Inspection",
-        "endDateSlip": -7,
-        "durationSlip": -1,
-        "expectedStartDate": "2026-05-08",
-        "actualStartDate": "2026-04-30",
-        "expectedEndDate": "2026-05-11",
-        "actualEndDate": "2026-04-30",
-        "completed": true
-      },
-      {
-        "title": "Drywall & Insulation",
-        "endDateSlip": 0,
-        "durationSlip": 3,
-        "expectedStartDate": "2026-05-12",
-        "actualStartDate": "2026-05-07",
-        "expectedEndDate": "2026-05-26",
-        "actualEndDate": "2026-05-26",
-        "completed": true
-      },
-      {
-        "title": "Stucco & Siding",
-        "endDateSlip": 2,
-        "durationSlip": 8,
-        "expectedStartDate": "2026-05-19",
-        "actualStartDate": "2026-05-11",
-        "expectedEndDate": "2026-05-26",
-        "actualEndDate": "2026-05-28",
-        "completed": true
-      },
-      {
-        "title": "Exterior Paint",
-        "endDateSlip": -2,
-        "durationSlip": -3,
-        "expectedStartDate": "2026-05-27",
-        "actualStartDate": "2026-05-28",
-        "expectedEndDate": "2026-06-02",
-        "actualEndDate": "2026-05-29",
-        "completed": true
-      },
-      {
-        "title": "Interior Paint",
-        "endDateSlip": -2,
-        "durationSlip": -4,
-        "expectedStartDate": "2026-05-27",
-        "actualStartDate": "2026-05-29",
-        "expectedEndDate": "2026-06-02",
-        "actualEndDate": "2026-05-29",
-        "completed": true
-      },
-      {
-        "title": "Garage Door",
-        "endDateSlip": -6,
-        "durationSlip": -1,
-        "expectedStartDate": "2026-06-08",
-        "actualStartDate": "2026-06-01",
-        "expectedEndDate": "2026-06-09",
-        "actualEndDate": "2026-06-01",
-        "completed": true
-      },
-      {
-        "title": "Roofing",
-        "endDateSlip": 8,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-05-19",
-        "actualStartDate": "2026-06-01",
-        "expectedEndDate": "2026-05-26",
-        "actualEndDate": "2026-06-05",
-        "completed": true
-      },
-      {
-        "title": "Tile & Flooring",
-        "endDateSlip": 0,
-        "durationSlip": 1,
-        "expectedStartDate": "2026-06-03",
-        "actualStartDate": "2026-06-02",
-        "expectedEndDate": "2026-06-12",
-        "actualEndDate": "2026-06-12",
-        "completed": true
-      },
-      {
-        "title": "Interior Doors/Trim",
-        "endDateSlip": -3,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-06-16",
-        "actualStartDate": "2026-06-11",
-        "expectedEndDate": "2026-06-22",
-        "actualEndDate": "2026-06-17",
-        "completed": true
-      },
-      {
-        "title": "MEP Trim-Outs",
-        "endDateSlip": 3,
-        "durationSlip": 4,
-        "expectedStartDate": "2026-06-29",
-        "actualStartDate": "2026-06-26",
-        "expectedEndDate": "2026-07-08",
-        "actualEndDate": "2026-07-13",
-        "completed": true
-      },
-      {
-        "title": "Pool",
-        "endDateSlip": 9,
-        "durationSlip": -22,
-        "expectedStartDate": "2026-05-13",
-        "actualStartDate": "2026-06-26",
-        "expectedEndDate": "2026-08-17",
-        "actualEndDate": "2026-08-28",
-        "completed": true
-      },
-      {
-        "title": "Driveway",
-        "endDateSlip": 12,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-06-16",
-        "actualStartDate": "2026-07-02",
-        "expectedEndDate": "2026-06-19",
-        "actualEndDate": "2026-07-08",
-        "completed": true
-      },
-      {
-        "title": "Interior Specialties",
-        "endDateSlip": -1,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-07-09",
-        "actualStartDate": "2026-07-08",
-        "expectedEndDate": "2026-07-22",
-        "actualEndDate": "2026-07-21",
-        "completed": true
-      },
-      {
-        "title": "Summer Kitchen",
-        "endDateSlip": -6,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-07-17",
-        "actualStartDate": "2026-07-09",
-        "expectedEndDate": "2026-08-03",
-        "actualEndDate": "2026-07-24",
-        "completed": true
-      },
-      {
-        "title": "Final Inspections",
-        "endDateSlip": -1,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-08-03",
-        "actualStartDate": "2026-07-31",
-        "expectedEndDate": "2026-08-10",
-        "actualEndDate": "2026-08-07",
-        "completed": true
-      },
-      {
-        "title": "Final Trim Out",
-        "endDateSlip": 12,
-        "durationSlip": 5,
-        "expectedStartDate": "2026-07-23",
-        "actualStartDate": "2026-08-03",
-        "expectedEndDate": "2026-07-27",
-        "actualEndDate": "2026-08-12",
-        "completed": true
-      },
-      {
-        "title": "Landscaping",
-        "endDateSlip": 11,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-07-28",
-        "actualStartDate": "2026-08-12",
-        "expectedEndDate": "2026-08-03",
-        "actualEndDate": "2026-08-18",
-        "completed": true
-      },
-      {
-        "title": "Closing",
-        "endDateSlip": 13,
-        "durationSlip": -2,
-        "expectedStartDate": "2026-08-13",
-        "actualStartDate": "2026-09-03",
-        "expectedEndDate": "2026-08-17",
-        "actualEndDate": "2026-09-03",
+        "actualEndDate": "2026-11-19",
         "completed": false
       }
     ],
@@ -15365,7 +12986,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "actualStartDate": "2026-08-14",
         "expectedEndDate": "2026-02-02",
         "actualEndDate": "2026-09-11",
-        "completed": false
+        "completed": true
       },
       {
         "title": "Doors & Windows",
@@ -15375,116 +12996,116 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "actualStartDate": "2026-09-09",
         "expectedEndDate": "2026-02-09",
         "actualEndDate": "2026-09-15",
-        "completed": false
+        "completed": true
       },
       {
         "title": "MEP Rough-Ins",
-        "endDateSlip": 147,
-        "durationSlip": -8,
+        "endDateSlip": 153,
+        "durationSlip": -2,
         "expectedStartDate": "2026-02-03",
         "actualStartDate": "2026-09-14",
         "expectedEndDate": "2026-02-19",
-        "actualEndDate": "2026-09-18",
-        "completed": false
+        "actualEndDate": "2026-09-28",
+        "completed": true
       },
       {
         "title": "FMEP Inspection",
-        "endDateSlip": 147,
+        "endDateSlip": 152,
         "durationSlip": 0,
         "expectedStartDate": "2026-02-20",
-        "actualStartDate": "2026-09-21",
+        "actualStartDate": "2026-09-28",
         "expectedEndDate": "2026-02-23",
-        "actualEndDate": "2026-09-22",
-        "completed": false
-      },
-      {
-        "title": "Drywall & Insulation",
-        "endDateSlip": 150,
-        "durationSlip": 3,
-        "expectedStartDate": "2026-02-24",
-        "actualStartDate": "2026-09-23",
-        "expectedEndDate": "2026-03-09",
-        "actualEndDate": "2026-10-09",
-        "completed": false
-      },
-      {
-        "title": "Interior Paint",
-        "endDateSlip": 150,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-03-10",
-        "actualStartDate": "2026-10-12",
-        "expectedEndDate": "2026-03-16",
-        "actualEndDate": "2026-10-16",
-        "completed": false
+        "actualEndDate": "2026-09-29",
+        "completed": true
       },
       {
         "title": "Roofing",
-        "endDateSlip": 155,
-        "durationSlip": 0,
+        "endDateSlip": 160,
+        "durationSlip": 14,
         "expectedStartDate": "2026-03-03",
-        "actualStartDate": "2026-10-12",
+        "actualStartDate": "2026-09-29",
         "expectedEndDate": "2026-03-09",
-        "actualEndDate": "2026-10-16",
-        "completed": false
-      },
-      {
-        "title": "Stucco & Siding",
-        "endDateSlip": 155,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-03-03",
-        "actualStartDate": "2026-10-12",
-        "expectedEndDate": "2026-03-09",
-        "actualEndDate": "2026-10-16",
-        "completed": false
-      },
-      {
-        "title": "Exterior Paint",
-        "endDateSlip": 155,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-03-10",
-        "actualStartDate": "2026-10-19",
-        "expectedEndDate": "2026-03-16",
         "actualEndDate": "2026-10-23",
         "completed": false
       },
       {
-        "title": "Tile & Flooring",
-        "endDateSlip": 150,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-03-17",
-        "actualStartDate": "2026-10-19",
-        "expectedEndDate": "2026-03-26",
-        "actualEndDate": "2026-10-28",
+        "title": "Stucco & Siding",
+        "endDateSlip": 152,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-03-03",
+        "actualStartDate": "2026-09-30",
+        "expectedEndDate": "2026-03-09",
+        "actualEndDate": "2026-10-13",
         "completed": false
       },
       {
-        "title": "Garage Door",
+        "title": "Drywall & Insulation",
+        "endDateSlip": 161,
+        "durationSlip": 6,
+        "expectedStartDate": "2026-02-24",
+        "actualStartDate": "2026-10-05",
+        "expectedEndDate": "2026-03-09",
+        "actualEndDate": "2026-10-26",
+        "completed": false
+      },
+      {
+        "title": "Tile & Flooring",
         "endDateSlip": 155,
         "durationSlip": 0,
-        "expectedStartDate": "2026-03-20",
-        "actualStartDate": "2026-10-29",
-        "expectedEndDate": "2026-03-23",
+        "expectedStartDate": "2026-03-17",
+        "actualStartDate": "2026-10-26",
+        "expectedEndDate": "2026-03-26",
+        "actualEndDate": "2026-11-04",
+        "completed": false
+      },
+      {
+        "title": "Exterior Paint",
+        "endDateSlip": 160,
+        "durationSlip": -1,
+        "expectedStartDate": "2026-03-10",
+        "actualStartDate": "2026-10-27",
+        "expectedEndDate": "2026-03-16",
         "actualEndDate": "2026-10-30",
         "completed": false
       },
       {
-        "title": "Interior Doors/Trim",
-        "endDateSlip": 150,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-03-30",
-        "actualStartDate": "2026-10-30",
-        "expectedEndDate": "2026-04-06",
-        "actualEndDate": "2026-11-05",
+        "title": "Interior Paint",
+        "endDateSlip": 160,
+        "durationSlip": -1,
+        "expectedStartDate": "2026-03-10",
+        "actualStartDate": "2026-10-27",
+        "expectedEndDate": "2026-03-16",
+        "actualEndDate": "2026-10-30",
+        "completed": false
+      },
+      {
+        "title": "Garage Door",
+        "endDateSlip": 156,
+        "durationSlip": -1,
+        "expectedStartDate": "2026-03-20",
+        "actualStartDate": "2026-11-02",
+        "expectedEndDate": "2026-03-23",
+        "actualEndDate": "2026-11-02",
         "completed": false
       },
       {
         "title": "Driveway",
+        "endDateSlip": 154,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-03-30",
+        "actualStartDate": "2026-11-05",
+        "expectedEndDate": "2026-04-02",
+        "actualEndDate": "2026-11-10",
+        "completed": false
+      },
+      {
+        "title": "Interior Doors/Trim",
         "endDateSlip": 155,
         "durationSlip": 0,
         "expectedStartDate": "2026-03-30",
         "actualStartDate": "2026-11-06",
-        "expectedEndDate": "2026-04-02",
-        "actualEndDate": "2026-11-11",
+        "expectedEndDate": "2026-04-06",
+        "actualEndDate": "2026-11-12",
         "completed": false
       },
       {
@@ -15498,63 +13119,63 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "completed": false
       },
       {
-        "title": "MEP Trim-Outs",
-        "endDateSlip": 150,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-04-13",
-        "actualStartDate": "2026-11-12",
-        "expectedEndDate": "2026-04-21",
-        "actualEndDate": "2026-11-20",
-        "completed": false
-      },
-      {
         "title": "Interior Specialties",
-        "endDateSlip": 150,
+        "endDateSlip": 146,
         "durationSlip": 0,
         "expectedStartDate": "2026-04-22",
-        "actualStartDate": "2026-11-23",
+        "actualStartDate": "2026-11-17",
         "expectedEndDate": "2026-05-05",
-        "actualEndDate": "2026-12-08",
+        "actualEndDate": "2026-12-02",
         "completed": false
       },
       {
-        "title": "Closing",
-        "endDateSlip": 127,
+        "title": "MEP Trim-Outs",
+        "endDateSlip": 153,
         "durationSlip": 0,
-        "expectedStartDate": "2026-05-28",
-        "actualStartDate": "2026-11-25",
-        "expectedEndDate": "2026-06-01",
-        "actualEndDate": "2026-12-01",
+        "expectedStartDate": "2026-04-13",
+        "actualStartDate": "2026-11-17",
+        "expectedEndDate": "2026-04-21",
+        "actualEndDate": "2026-11-25",
         "completed": false
       },
       {
         "title": "Appliances",
-        "endDateSlip": 150,
-        "durationSlip": 0,
+        "endDateSlip": 142,
+        "durationSlip": -2,
         "expectedStartDate": "2026-05-04",
-        "actualStartDate": "2026-12-07",
+        "actualStartDate": "2026-11-25",
         "expectedEndDate": "2026-05-07",
-        "actualEndDate": "2026-12-10",
+        "actualEndDate": "2026-11-30",
         "completed": false
       },
       {
         "title": "Final Trim Out",
-        "endDateSlip": 150,
+        "endDateSlip": 148,
         "durationSlip": 0,
         "expectedStartDate": "2026-05-06",
-        "actualStartDate": "2026-12-09",
+        "actualStartDate": "2026-12-07",
         "expectedEndDate": "2026-05-08",
-        "actualEndDate": "2026-12-11",
+        "actualEndDate": "2026-12-09",
         "completed": false
       },
       {
         "title": "Final Inspections",
-        "endDateSlip": 150,
+        "endDateSlip": 144,
         "durationSlip": 0,
         "expectedStartDate": "2026-05-15",
-        "actualStartDate": "2026-12-18",
+        "actualStartDate": "2026-12-10",
         "expectedEndDate": "2026-05-22",
-        "actualEndDate": "2026-12-28",
+        "actualEndDate": "2026-12-17",
+        "completed": false
+      },
+      {
+        "title": "Closing",
+        "endDateSlip": 142,
+        "durationSlip": -2,
+        "expectedStartDate": "2026-05-28",
+        "actualStartDate": "2026-12-22",
+        "expectedEndDate": "2026-06-01",
+        "actualEndDate": "2026-12-22",
         "completed": false
       }
     ],
@@ -15562,7 +13183,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
       {
         "title": "Sale/Contract Deposit",
         "endDateSlip": 0,
-        "durationSlip": 1,
+        "durationSlip": 0,
         "expectedStartDate": "2026-03-25",
         "actualStartDate": "2026-03-25",
         "expectedEndDate": "2026-03-25",
@@ -15572,7 +13193,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
       {
         "title": "Draft Plans",
         "endDateSlip": 0,
-        "durationSlip": 30,
+        "durationSlip": 0,
         "expectedStartDate": "2026-03-26",
         "actualStartDate": "2026-03-26",
         "expectedEndDate": "2026-05-07",
@@ -15582,17 +13203,17 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
       {
         "title": "Bid Period",
         "endDateSlip": 0,
-        "durationSlip": 116,
+        "durationSlip": 0,
         "expectedStartDate": "2026-04-07",
         "actualStartDate": "2026-04-07",
         "expectedEndDate": "2026-09-18",
         "actualEndDate": "2026-09-18",
-        "completed": false
+        "completed": true
       },
       {
         "title": "Selection Phase 1 Due",
         "endDateSlip": 0,
-        "durationSlip": 7,
+        "durationSlip": 0,
         "expectedStartDate": "2026-05-14",
         "actualStartDate": "2026-05-14",
         "expectedEndDate": "2026-05-22",
@@ -15602,291 +13223,281 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
       {
         "title": "Permitting",
         "endDateSlip": 0,
-        "durationSlip": 83,
+        "durationSlip": 0,
         "expectedStartDate": "2026-05-15",
         "actualStartDate": "2026-05-15",
         "expectedEndDate": "2026-09-11",
         "actualEndDate": "2026-09-11",
-        "completed": false
+        "completed": true
       },
       {
         "title": "Selection Phase 2 Due",
         "endDateSlip": 0,
-        "durationSlip": 7,
+        "durationSlip": 0,
         "expectedStartDate": "2026-08-24",
         "actualStartDate": "2026-08-24",
         "expectedEndDate": "2026-09-01",
         "actualEndDate": "2026-09-01",
-        "completed": false
+        "completed": true
       },
       {
         "title": "Selection Phase 3 Due",
         "endDateSlip": 0,
-        "durationSlip": 7,
+        "durationSlip": 0,
         "expectedStartDate": "2026-09-02",
         "actualStartDate": "2026-09-02",
         "expectedEndDate": "2026-09-11",
         "actualEndDate": "2026-09-11",
-        "completed": false
+        "completed": true
       },
       {
         "title": "Site Work",
         "endDateSlip": 0,
-        "durationSlip": 3,
-        "expectedStartDate": "2026-09-21",
-        "actualStartDate": "2026-09-21",
-        "expectedEndDate": "2026-09-23",
-        "actualEndDate": "2026-09-23",
-        "completed": false
+        "durationSlip": 0,
+        "expectedStartDate": "2026-09-17",
+        "actualStartDate": "2026-09-17",
+        "expectedEndDate": "2026-09-25",
+        "actualEndDate": "2026-09-25",
+        "completed": true
       },
       {
         "title": "Foundation",
-        "endDateSlip": 0,
-        "durationSlip": 4,
-        "expectedStartDate": "2026-09-24",
-        "actualStartDate": "2026-09-24",
-        "expectedEndDate": "2026-09-29",
-        "actualEndDate": "2026-09-29",
+        "endDateSlip": 8,
+        "durationSlip": 8,
+        "expectedStartDate": "2026-09-28",
+        "actualStartDate": "2026-09-28",
+        "expectedEndDate": "2026-10-02",
+        "actualEndDate": "2026-10-14",
         "completed": false
       },
       {
         "title": "Block Walls",
-        "endDateSlip": 0,
-        "durationSlip": 5,
-        "expectedStartDate": "2026-09-30",
-        "actualStartDate": "2026-09-30",
-        "expectedEndDate": "2026-10-06",
-        "actualEndDate": "2026-10-06",
+        "endDateSlip": 10,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-10-05",
+        "actualStartDate": "2026-10-19",
+        "expectedEndDate": "2026-10-09",
+        "actualEndDate": "2026-10-23",
         "completed": false
       },
       {
         "title": "Framing",
-        "endDateSlip": 0,
-        "durationSlip": 12,
-        "expectedStartDate": "2026-10-07",
-        "actualStartDate": "2026-10-07",
-        "expectedEndDate": "2026-10-22",
-        "actualEndDate": "2026-10-22",
-        "completed": false
-      },
-      {
-        "title": "Doors & Windows",
-        "endDateSlip": 0,
-        "durationSlip": 5,
-        "expectedStartDate": "2026-10-23",
-        "actualStartDate": "2026-10-23",
-        "expectedEndDate": "2026-10-29",
-        "actualEndDate": "2026-10-29",
-        "completed": false
-      },
-      {
-        "title": "MEP Rough-Ins",
-        "endDateSlip": 0,
-        "durationSlip": 13,
-        "expectedStartDate": "2026-10-23",
-        "actualStartDate": "2026-10-23",
-        "expectedEndDate": "2026-11-10",
+        "endDateSlip": 10,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-10-12",
+        "actualStartDate": "2026-10-26",
+        "expectedEndDate": "2026-10-27",
         "actualEndDate": "2026-11-10",
         "completed": false
       },
       {
-        "title": "FMEP Inspection",
-        "endDateSlip": 0,
-        "durationSlip": 2,
-        "expectedStartDate": "2026-11-11",
+        "title": "Doors & Windows",
+        "endDateSlip": 10,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-10-28",
         "actualStartDate": "2026-11-11",
-        "expectedEndDate": "2026-11-12",
-        "actualEndDate": "2026-11-12",
+        "expectedEndDate": "2026-11-03",
+        "actualEndDate": "2026-11-17",
+        "completed": false
+      },
+      {
+        "title": "MEP Rough-Ins",
+        "endDateSlip": 10,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-10-28",
+        "actualStartDate": "2026-11-11",
+        "expectedEndDate": "2026-11-13",
+        "actualEndDate": "2026-12-01",
+        "completed": false
+      },
+      {
+        "title": "FMEP Inspection",
+        "endDateSlip": 10,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-11-16",
+        "actualStartDate": "2026-12-02",
+        "expectedEndDate": "2026-11-16",
+        "actualEndDate": "2026-12-02",
         "completed": false
       },
       {
         "title": "Drywall & Insulation",
-        "endDateSlip": 0,
-        "durationSlip": 10,
-        "expectedStartDate": "2026-11-13",
-        "actualStartDate": "2026-11-13",
-        "expectedEndDate": "2026-11-30",
-        "actualEndDate": "2026-11-30",
-        "completed": false
-      },
-      {
-        "title": "Pool",
-        "endDateSlip": 0,
-        "durationSlip": 67,
-        "expectedStartDate": "2026-11-16",
-        "actualStartDate": "2026-11-16",
-        "expectedEndDate": "2027-02-22",
-        "actualEndDate": "2027-02-22",
-        "completed": false
-      },
-      {
-        "title": "Roofing",
-        "endDateSlip": 0,
-        "durationSlip": 5,
-        "expectedStartDate": "2026-11-20",
-        "actualStartDate": "2026-11-20",
-        "expectedEndDate": "2026-11-30",
-        "actualEndDate": "2026-11-30",
+        "endDateSlip": 10,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-11-17",
+        "actualStartDate": "2026-12-03",
+        "expectedEndDate": "2026-12-02",
+        "actualEndDate": "2026-12-16",
         "completed": false
       },
       {
         "title": "Stucco & Siding",
-        "endDateSlip": 0,
-        "durationSlip": 5,
-        "expectedStartDate": "2026-11-20",
-        "actualStartDate": "2026-11-20",
-        "expectedEndDate": "2026-11-30",
-        "actualEndDate": "2026-11-30",
+        "endDateSlip": 10,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-11-19",
+        "actualStartDate": "2026-12-07",
+        "expectedEndDate": "2026-11-25",
+        "actualEndDate": "2026-12-11",
         "completed": false
       },
       {
         "title": "Exterior Paint",
-        "endDateSlip": 0,
-        "durationSlip": 5,
-        "expectedStartDate": "2026-12-01",
-        "actualStartDate": "2026-12-01",
-        "expectedEndDate": "2026-12-07",
-        "actualEndDate": "2026-12-07",
+        "endDateSlip": 10,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-11-30",
+        "actualStartDate": "2026-12-14",
+        "expectedEndDate": "2026-12-04",
+        "actualEndDate": "2026-12-18",
         "completed": false
       },
       {
         "title": "Interior Paint",
-        "endDateSlip": 0,
-        "durationSlip": 5,
-        "expectedStartDate": "2026-12-01",
-        "actualStartDate": "2026-12-01",
-        "expectedEndDate": "2026-12-07",
-        "actualEndDate": "2026-12-07",
+        "endDateSlip": 10,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-12-03",
+        "actualStartDate": "2026-12-17",
+        "expectedEndDate": "2026-12-04",
+        "actualEndDate": "2026-12-18",
         "completed": false
       },
       {
-        "title": "Tile & Flooring",
-        "endDateSlip": 0,
-        "durationSlip": 8,
-        "expectedStartDate": "2026-12-08",
-        "actualStartDate": "2026-12-08",
-        "expectedEndDate": "2026-12-17",
-        "actualEndDate": "2026-12-17",
-        "completed": false
-      },
-      {
-        "title": "Garage Door",
-        "endDateSlip": 0,
-        "durationSlip": 2,
-        "expectedStartDate": "2026-12-11",
-        "actualStartDate": "2026-12-11",
-        "expectedEndDate": "2026-12-14",
-        "actualEndDate": "2026-12-14",
-        "completed": false
-      },
-      {
-        "title": "Driveway",
-        "endDateSlip": 0,
-        "durationSlip": 4,
-        "expectedStartDate": "2026-12-21",
+        "title": "Roofing",
+        "endDateSlip": 10,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-12-07",
         "actualStartDate": "2026-12-21",
-        "expectedEndDate": "2026-12-24",
-        "actualEndDate": "2026-12-24",
-        "completed": false
-      },
-      {
-        "title": "Interior Doors/Trim",
-        "endDateSlip": 0,
-        "durationSlip": 5,
-        "expectedStartDate": "2026-12-21",
-        "actualStartDate": "2026-12-21",
-        "expectedEndDate": "2026-12-28",
+        "expectedEndDate": "2026-12-11",
         "actualEndDate": "2026-12-28",
         "completed": false
       },
       {
-        "title": "MEP Trim-Outs",
-        "endDateSlip": 0,
-        "durationSlip": 7,
-        "expectedStartDate": "2027-01-05",
+        "title": "Tile & Flooring",
+        "endDateSlip": 10,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-12-07",
+        "actualStartDate": "2026-12-21",
+        "expectedEndDate": "2026-12-16",
+        "actualEndDate": "2026-12-31",
+        "completed": false
+      },
+      {
+        "title": "Garage Door",
+        "endDateSlip": 10,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-12-10",
+        "actualStartDate": "2026-12-24",
+        "expectedEndDate": "2026-12-11",
+        "actualEndDate": "2026-12-28",
+        "completed": false
+      },
+      {
+        "title": "Driveway",
+        "endDateSlip": 10,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-12-18",
         "actualStartDate": "2027-01-05",
-        "expectedEndDate": "2027-01-13",
-        "actualEndDate": "2027-01-13",
+        "expectedEndDate": "2026-12-23",
+        "actualEndDate": "2027-01-08",
         "completed": false
       },
       {
-        "title": "Interior Specialties",
-        "endDateSlip": 0,
-        "durationSlip": 10,
-        "expectedStartDate": "2027-01-14",
-        "actualStartDate": "2027-01-14",
-        "expectedEndDate": "2027-01-27",
-        "actualEndDate": "2027-01-27",
+        "title": "Interior Doors/Trim",
+        "endDateSlip": 10,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-12-23",
+        "actualStartDate": "2027-01-08",
+        "expectedEndDate": "2026-12-30",
+        "actualEndDate": "2027-01-14",
         "completed": false
       },
       {
-        "title": "Summer Kitchen",
-        "endDateSlip": 0,
-        "durationSlip": 12,
-        "expectedStartDate": "2027-01-22",
-        "actualStartDate": "2027-01-22",
-        "expectedEndDate": "2027-02-08",
-        "actualEndDate": "2027-02-08",
-        "completed": false
-      },
-      {
-        "title": "Appliances",
-        "endDateSlip": 0,
-        "durationSlip": 4,
-        "expectedStartDate": "2027-01-26",
-        "actualStartDate": "2027-01-26",
-        "expectedEndDate": "2027-01-29",
+        "title": "MEP Trim-Outs",
+        "endDateSlip": 10,
+        "durationSlip": 0,
+        "expectedStartDate": "2027-01-07",
+        "actualStartDate": "2027-01-21",
+        "expectedEndDate": "2027-01-15",
         "actualEndDate": "2027-01-29",
         "completed": false
       },
       {
-        "title": "Generator",
-        "endDateSlip": 0,
-        "durationSlip": 10,
+        "title": "Interior Specialties",
+        "endDateSlip": 10,
+        "durationSlip": 0,
+        "expectedStartDate": "2027-01-18",
+        "actualStartDate": "2027-02-01",
+        "expectedEndDate": "2027-01-29",
+        "actualEndDate": "2027-02-12",
+        "completed": false
+      },
+      {
+        "title": "Summer Kitchen",
+        "endDateSlip": 10,
+        "durationSlip": 0,
         "expectedStartDate": "2027-01-26",
-        "actualStartDate": "2027-01-26",
-        "expectedEndDate": "2027-02-08",
-        "actualEndDate": "2027-02-08",
+        "actualStartDate": "2027-02-09",
+        "expectedEndDate": "2027-02-10",
+        "actualEndDate": "2027-02-24",
+        "completed": false
+      },
+      {
+        "title": "Appliances",
+        "endDateSlip": 10,
+        "durationSlip": 0,
+        "expectedStartDate": "2027-01-28",
+        "actualStartDate": "2027-02-11",
+        "expectedEndDate": "2027-02-02",
+        "actualEndDate": "2027-02-16",
+        "completed": false
+      },
+      {
+        "title": "Generator",
+        "endDateSlip": 10,
+        "durationSlip": 0,
+        "expectedStartDate": "2027-01-28",
+        "actualStartDate": "2027-02-11",
+        "expectedEndDate": "2027-02-10",
+        "actualEndDate": "2027-02-24",
         "completed": false
       },
       {
         "title": "Final Trim Out",
-        "endDateSlip": 0,
-        "durationSlip": 3,
-        "expectedStartDate": "2027-01-28",
-        "actualStartDate": "2027-01-28",
-        "expectedEndDate": "2027-02-01",
-        "actualEndDate": "2027-02-01",
+        "endDateSlip": 10,
+        "durationSlip": 0,
+        "expectedStartDate": "2027-02-01",
+        "actualStartDate": "2027-02-15",
+        "expectedEndDate": "2027-02-03",
+        "actualEndDate": "2027-02-17",
         "completed": false
       },
       {
         "title": "Landscaping",
-        "endDateSlip": 0,
-        "durationSlip": 5,
-        "expectedStartDate": "2027-02-02",
-        "actualStartDate": "2027-02-02",
-        "expectedEndDate": "2027-02-08",
-        "actualEndDate": "2027-02-08",
+        "endDateSlip": 10,
+        "durationSlip": 0,
+        "expectedStartDate": "2027-02-04",
+        "actualStartDate": "2027-02-18",
+        "expectedEndDate": "2027-02-10",
+        "actualEndDate": "2027-02-24",
         "completed": false
       },
       {
         "title": "Final Inspections",
-        "endDateSlip": 0,
-        "durationSlip": 6,
-        "expectedStartDate": "2027-02-08",
-        "actualStartDate": "2027-02-08",
-        "expectedEndDate": "2027-02-15",
-        "actualEndDate": "2027-02-15",
+        "endDateSlip": 10,
+        "durationSlip": 0,
+        "expectedStartDate": "2027-02-10",
+        "actualStartDate": "2027-02-24",
+        "expectedEndDate": "2027-02-17",
+        "actualEndDate": "2027-03-03",
         "completed": false
       },
       {
         "title": "Closing",
-        "endDateSlip": 0,
-        "durationSlip": 3,
-        "expectedStartDate": "2027-02-18",
-        "actualStartDate": "2027-02-18",
-        "expectedEndDate": "2027-02-22",
-        "actualEndDate": "2027-02-22",
+        "endDateSlip": 10,
+        "durationSlip": 0,
+        "expectedStartDate": "2027-02-22",
+        "actualStartDate": "2027-03-08",
+        "expectedEndDate": "2027-02-24",
+        "actualEndDate": "2027-03-10",
         "completed": false
       }
     ],
@@ -16122,26 +13733,6 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "completed": true
       },
       {
-        "title": "Final Trim Out",
-        "endDateSlip": 63,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-05-15",
-        "actualStartDate": "2026-08-14",
-        "expectedEndDate": "2026-05-19",
-        "actualEndDate": "2026-08-18",
-        "completed": true
-      },
-      {
-        "title": "Final Inspections",
-        "endDateSlip": 64,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-05-15",
-        "actualStartDate": "2026-08-17",
-        "expectedEndDate": "2026-05-22",
-        "actualEndDate": "2026-08-24",
-        "completed": true
-      },
-      {
         "title": "Interior Specialties",
         "endDateSlip": 67,
         "durationSlip": 0,
@@ -16149,17 +13740,37 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "actualStartDate": "2026-08-21",
         "expectedEndDate": "2026-06-01",
         "actualEndDate": "2026-09-03",
-        "completed": false
+        "completed": true
+      },
+      {
+        "title": "Final Inspections",
+        "endDateSlip": 85,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-05-15",
+        "actualStartDate": "2026-09-16",
+        "expectedEndDate": "2026-05-22",
+        "actualEndDate": "2026-09-23",
+        "completed": true
+      },
+      {
+        "title": "Final Trim Out",
+        "endDateSlip": 90,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-05-15",
+        "actualStartDate": "2026-09-23",
+        "expectedEndDate": "2026-05-19",
+        "actualEndDate": "2026-09-25",
+        "completed": true
       },
       {
         "title": "Closing",
-        "endDateSlip": 76,
-        "durationSlip": 0,
+        "endDateSlip": 91,
+        "durationSlip": -2,
         "expectedStartDate": "2026-05-28",
-        "actualStartDate": "2026-09-15",
+        "actualStartDate": "2026-10-08",
         "expectedEndDate": "2026-06-01",
-        "actualEndDate": "2026-09-17",
-        "completed": false
+        "actualEndDate": "2026-10-08",
+        "completed": true
       }
     ],
     "42790290": [
@@ -16191,7 +13802,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "actualStartDate": "2026-06-16",
         "expectedEndDate": "2026-10-02",
         "actualEndDate": "2026-10-02",
-        "completed": false
+        "completed": true
       },
       {
         "title": "Permitting",
@@ -16201,7 +13812,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "actualStartDate": "2026-07-27",
         "expectedEndDate": "2026-10-02",
         "actualEndDate": "2026-10-02",
-        "completed": false
+        "completed": true
       },
       {
         "title": "Selection Phase 1 Due",
@@ -16211,7 +13822,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "actualStartDate": "2026-08-31",
         "expectedEndDate": "2026-09-09",
         "actualEndDate": "2026-09-09",
-        "completed": false
+        "completed": true
       },
       {
         "title": "Selection Phase 2 Due",
@@ -16221,7 +13832,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "actualStartDate": "2026-09-14",
         "expectedEndDate": "2026-09-22",
         "actualEndDate": "2026-09-22",
-        "completed": false
+        "completed": true
       },
       {
         "title": "Selection Phase 3 Due",
@@ -16231,170 +13842,120 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "actualStartDate": "2026-09-24",
         "expectedEndDate": "2026-10-02",
         "actualEndDate": "2026-10-02",
-        "completed": false
+        "completed": true
       },
       {
         "title": "Site Work",
         "endDateSlip": 0,
-        "durationSlip": 3,
-        "expectedStartDate": "2026-10-19",
-        "actualStartDate": "2026-10-19",
-        "expectedEndDate": "2026-10-21",
-        "actualEndDate": "2026-10-21",
+        "durationSlip": 5,
+        "expectedStartDate": "2026-10-12",
+        "actualStartDate": "2026-10-12",
+        "expectedEndDate": "2026-10-16",
+        "actualEndDate": "2026-10-16",
         "completed": false
       },
       {
         "title": "Foundation",
         "endDateSlip": 0,
-        "durationSlip": 4,
-        "expectedStartDate": "2026-10-22",
-        "actualStartDate": "2026-10-22",
-        "expectedEndDate": "2026-10-27",
-        "actualEndDate": "2026-10-27",
+        "durationSlip": 10,
+        "expectedStartDate": "2026-10-19",
+        "actualStartDate": "2026-10-19",
+        "expectedEndDate": "2026-10-30",
+        "actualEndDate": "2026-10-30",
         "completed": false
       },
       {
         "title": "Block Walls",
         "endDateSlip": 0,
-        "durationSlip": 5,
-        "expectedStartDate": "2026-10-28",
-        "actualStartDate": "2026-10-28",
-        "expectedEndDate": "2026-11-03",
-        "actualEndDate": "2026-11-03",
+        "durationSlip": 10,
+        "expectedStartDate": "2026-11-02",
+        "actualStartDate": "2026-11-02",
+        "expectedEndDate": "2026-11-13",
+        "actualEndDate": "2026-11-13",
         "completed": false
       },
       {
         "title": "Framing",
         "endDateSlip": 0,
-        "durationSlip": 12,
-        "expectedStartDate": "2026-11-04",
-        "actualStartDate": "2026-11-04",
-        "expectedEndDate": "2026-11-19",
-        "actualEndDate": "2026-11-19",
+        "durationSlip": 18,
+        "expectedStartDate": "2026-11-16",
+        "actualStartDate": "2026-11-16",
+        "expectedEndDate": "2026-12-11",
+        "actualEndDate": "2026-12-11",
         "completed": false
       },
       {
         "title": "Doors & Windows",
         "endDateSlip": 0,
-        "durationSlip": 5,
-        "expectedStartDate": "2026-11-20",
-        "actualStartDate": "2026-11-20",
-        "expectedEndDate": "2026-11-30",
-        "actualEndDate": "2026-11-30",
+        "durationSlip": 10,
+        "expectedStartDate": "2026-11-30",
+        "actualStartDate": "2026-11-30",
+        "expectedEndDate": "2026-12-11",
+        "actualEndDate": "2026-12-11",
         "completed": false
       },
       {
         "title": "MEP Rough-Ins",
         "endDateSlip": 0,
-        "durationSlip": 13,
-        "expectedStartDate": "2026-11-20",
-        "actualStartDate": "2026-11-20",
-        "expectedEndDate": "2026-12-10",
-        "actualEndDate": "2026-12-10",
+        "durationSlip": 18,
+        "expectedStartDate": "2026-12-14",
+        "actualStartDate": "2026-12-14",
+        "expectedEndDate": "2027-01-08",
+        "actualEndDate": "2027-01-08",
         "completed": false
       },
       {
         "title": "FMEP Inspection",
         "endDateSlip": 0,
         "durationSlip": 2,
-        "expectedStartDate": "2026-12-11",
-        "actualStartDate": "2026-12-11",
-        "expectedEndDate": "2026-12-14",
-        "actualEndDate": "2026-12-14",
+        "expectedStartDate": "2027-01-04",
+        "actualStartDate": "2027-01-04",
+        "expectedEndDate": "2027-01-05",
+        "actualEndDate": "2027-01-05",
         "completed": false
       },
       {
         "title": "Drywall & Insulation",
         "endDateSlip": 0,
         "durationSlip": 10,
-        "expectedStartDate": "2026-12-15",
-        "actualStartDate": "2026-12-15",
-        "expectedEndDate": "2026-12-29",
-        "actualEndDate": "2026-12-29",
+        "expectedStartDate": "2027-01-06",
+        "actualStartDate": "2027-01-06",
+        "expectedEndDate": "2027-01-19",
+        "actualEndDate": "2027-01-19",
         "completed": false
       },
       {
         "title": "Pool",
         "endDateSlip": 0,
         "durationSlip": 67,
-        "expectedStartDate": "2026-12-16",
-        "actualStartDate": "2026-12-16",
-        "expectedEndDate": "2027-03-22",
-        "actualEndDate": "2027-03-22",
+        "expectedStartDate": "2027-01-07",
+        "actualStartDate": "2027-01-07",
+        "expectedEndDate": "2027-04-09",
+        "actualEndDate": "2027-04-09",
         "completed": false
       },
       {
         "title": "Roofing",
         "endDateSlip": 0,
         "durationSlip": 5,
-        "expectedStartDate": "2026-12-22",
-        "actualStartDate": "2026-12-22",
-        "expectedEndDate": "2026-12-29",
-        "actualEndDate": "2026-12-29",
+        "expectedStartDate": "2027-01-13",
+        "actualStartDate": "2027-01-13",
+        "expectedEndDate": "2027-01-19",
+        "actualEndDate": "2027-01-19",
         "completed": false
       },
       {
         "title": "Stucco & Siding",
         "endDateSlip": 0,
         "durationSlip": 5,
-        "expectedStartDate": "2026-12-22",
-        "actualStartDate": "2026-12-22",
-        "expectedEndDate": "2026-12-29",
-        "actualEndDate": "2026-12-29",
+        "expectedStartDate": "2027-01-13",
+        "actualStartDate": "2027-01-13",
+        "expectedEndDate": "2027-01-19",
+        "actualEndDate": "2027-01-19",
         "completed": false
       },
       {
         "title": "Exterior Paint",
-        "endDateSlip": 0,
-        "durationSlip": 5,
-        "expectedStartDate": "2026-12-30",
-        "actualStartDate": "2026-12-30",
-        "expectedEndDate": "2027-01-06",
-        "actualEndDate": "2027-01-06",
-        "completed": false
-      },
-      {
-        "title": "Interior Paint",
-        "endDateSlip": 0,
-        "durationSlip": 5,
-        "expectedStartDate": "2026-12-30",
-        "actualStartDate": "2026-12-30",
-        "expectedEndDate": "2027-01-06",
-        "actualEndDate": "2027-01-06",
-        "completed": false
-      },
-      {
-        "title": "Tile & Flooring",
-        "endDateSlip": 0,
-        "durationSlip": 8,
-        "expectedStartDate": "2027-01-07",
-        "actualStartDate": "2027-01-07",
-        "expectedEndDate": "2027-01-18",
-        "actualEndDate": "2027-01-18",
-        "completed": false
-      },
-      {
-        "title": "Garage Door",
-        "endDateSlip": 0,
-        "durationSlip": 2,
-        "expectedStartDate": "2027-01-12",
-        "actualStartDate": "2027-01-12",
-        "expectedEndDate": "2027-01-13",
-        "actualEndDate": "2027-01-13",
-        "completed": false
-      },
-      {
-        "title": "Driveway",
-        "endDateSlip": 0,
-        "durationSlip": 4,
-        "expectedStartDate": "2027-01-20",
-        "actualStartDate": "2027-01-20",
-        "expectedEndDate": "2027-01-25",
-        "actualEndDate": "2027-01-25",
-        "completed": false
-      },
-      {
-        "title": "Interior Doors/Trim",
         "endDateSlip": 0,
         "durationSlip": 5,
         "expectedStartDate": "2027-01-20",
@@ -16404,93 +13965,143 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "completed": false
       },
       {
+        "title": "Interior Paint",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2027-01-20",
+        "actualStartDate": "2027-01-20",
+        "expectedEndDate": "2027-01-26",
+        "actualEndDate": "2027-01-26",
+        "completed": false
+      },
+      {
+        "title": "Tile & Flooring",
+        "endDateSlip": 0,
+        "durationSlip": 8,
+        "expectedStartDate": "2027-01-27",
+        "actualStartDate": "2027-01-27",
+        "expectedEndDate": "2027-02-05",
+        "actualEndDate": "2027-02-05",
+        "completed": false
+      },
+      {
+        "title": "Garage Door",
+        "endDateSlip": 0,
+        "durationSlip": 2,
+        "expectedStartDate": "2027-02-01",
+        "actualStartDate": "2027-02-01",
+        "expectedEndDate": "2027-02-02",
+        "actualEndDate": "2027-02-02",
+        "completed": false
+      },
+      {
+        "title": "Driveway",
+        "endDateSlip": 0,
+        "durationSlip": 4,
+        "expectedStartDate": "2027-02-09",
+        "actualStartDate": "2027-02-09",
+        "expectedEndDate": "2027-02-12",
+        "actualEndDate": "2027-02-12",
+        "completed": false
+      },
+      {
+        "title": "Interior Doors/Trim",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2027-02-09",
+        "actualStartDate": "2027-02-09",
+        "expectedEndDate": "2027-02-15",
+        "actualEndDate": "2027-02-15",
+        "completed": false
+      },
+      {
         "title": "MEP Trim-Outs",
         "endDateSlip": 0,
         "durationSlip": 7,
-        "expectedStartDate": "2027-02-02",
-        "actualStartDate": "2027-02-02",
-        "expectedEndDate": "2027-02-10",
-        "actualEndDate": "2027-02-10",
+        "expectedStartDate": "2027-02-22",
+        "actualStartDate": "2027-02-22",
+        "expectedEndDate": "2027-03-02",
+        "actualEndDate": "2027-03-02",
         "completed": false
       },
       {
         "title": "Interior Specialties",
         "endDateSlip": 0,
         "durationSlip": 10,
-        "expectedStartDate": "2027-02-11",
-        "actualStartDate": "2027-02-11",
-        "expectedEndDate": "2027-02-24",
-        "actualEndDate": "2027-02-24",
+        "expectedStartDate": "2027-03-03",
+        "actualStartDate": "2027-03-03",
+        "expectedEndDate": "2027-03-16",
+        "actualEndDate": "2027-03-16",
         "completed": false
       },
       {
         "title": "Summer Kitchen",
         "endDateSlip": 0,
         "durationSlip": 12,
-        "expectedStartDate": "2027-02-19",
-        "actualStartDate": "2027-02-19",
-        "expectedEndDate": "2027-03-08",
-        "actualEndDate": "2027-03-08",
+        "expectedStartDate": "2027-03-11",
+        "actualStartDate": "2027-03-11",
+        "expectedEndDate": "2027-03-26",
+        "actualEndDate": "2027-03-26",
         "completed": false
       },
       {
         "title": "Appliances",
         "endDateSlip": 0,
         "durationSlip": 4,
-        "expectedStartDate": "2027-02-23",
-        "actualStartDate": "2027-02-23",
-        "expectedEndDate": "2027-02-26",
-        "actualEndDate": "2027-02-26",
+        "expectedStartDate": "2027-03-15",
+        "actualStartDate": "2027-03-15",
+        "expectedEndDate": "2027-03-18",
+        "actualEndDate": "2027-03-18",
         "completed": false
       },
       {
         "title": "Generator",
         "endDateSlip": 0,
         "durationSlip": 10,
-        "expectedStartDate": "2027-02-23",
-        "actualStartDate": "2027-02-23",
-        "expectedEndDate": "2027-03-08",
-        "actualEndDate": "2027-03-08",
+        "expectedStartDate": "2027-03-15",
+        "actualStartDate": "2027-03-15",
+        "expectedEndDate": "2027-03-26",
+        "actualEndDate": "2027-03-26",
         "completed": false
       },
       {
         "title": "Final Trim Out",
         "endDateSlip": 0,
         "durationSlip": 3,
-        "expectedStartDate": "2027-02-25",
-        "actualStartDate": "2027-02-25",
-        "expectedEndDate": "2027-03-01",
-        "actualEndDate": "2027-03-01",
+        "expectedStartDate": "2027-03-17",
+        "actualStartDate": "2027-03-17",
+        "expectedEndDate": "2027-03-19",
+        "actualEndDate": "2027-03-19",
         "completed": false
       },
       {
         "title": "Landscaping",
         "endDateSlip": 0,
         "durationSlip": 5,
-        "expectedStartDate": "2027-03-02",
-        "actualStartDate": "2027-03-02",
-        "expectedEndDate": "2027-03-08",
-        "actualEndDate": "2027-03-08",
+        "expectedStartDate": "2027-03-22",
+        "actualStartDate": "2027-03-22",
+        "expectedEndDate": "2027-03-26",
+        "actualEndDate": "2027-03-26",
         "completed": false
       },
       {
         "title": "Final Inspections",
         "endDateSlip": 0,
         "durationSlip": 6,
-        "expectedStartDate": "2027-03-08",
-        "actualStartDate": "2027-03-08",
-        "expectedEndDate": "2027-03-15",
-        "actualEndDate": "2027-03-15",
+        "expectedStartDate": "2027-03-26",
+        "actualStartDate": "2027-03-26",
+        "expectedEndDate": "2027-04-02",
+        "actualEndDate": "2027-04-02",
         "completed": false
       },
       {
         "title": "Closing",
         "endDateSlip": 0,
         "durationSlip": 3,
-        "expectedStartDate": "2027-03-18",
-        "actualStartDate": "2027-03-18",
-        "expectedEndDate": "2027-03-22",
-        "actualEndDate": "2027-03-22",
+        "expectedStartDate": "2027-04-07",
+        "actualStartDate": "2027-04-07",
+        "expectedEndDate": "2027-04-09",
+        "actualEndDate": "2027-04-09",
         "completed": false
       }
     ],
@@ -16653,27 +14264,17 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "actualStartDate": "2026-08-25",
         "expectedEndDate": "2026-09-02",
         "actualEndDate": "2026-09-08",
-        "completed": false
+        "completed": true
       },
       {
         "title": "Stucco & Siding",
-        "endDateSlip": 1,
-        "durationSlip": 1,
+        "endDateSlip": 4,
+        "durationSlip": 4,
         "expectedStartDate": "2026-08-25",
         "actualStartDate": "2026-08-25",
         "expectedEndDate": "2026-08-31",
-        "actualEndDate": "2026-09-01",
-        "completed": false
-      },
-      {
-        "title": "Interior Paint",
-        "endDateSlip": -1,
-        "durationSlip": -4,
-        "expectedStartDate": "2026-09-03",
-        "actualStartDate": "2026-09-09",
-        "expectedEndDate": "2026-09-10",
-        "actualEndDate": "2026-09-09",
-        "completed": false
+        "actualEndDate": "2026-09-04",
+        "completed": true
       },
       {
         "title": "Exterior Paint",
@@ -16683,56 +14284,66 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "actualStartDate": "2026-09-10",
         "expectedEndDate": "2026-09-08",
         "actualEndDate": "2026-09-11",
-        "completed": false
+        "completed": true
       },
       {
-        "title": "Tile & Flooring",
-        "endDateSlip": 0,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-09-11",
-        "actualStartDate": "2026-09-11",
-        "expectedEndDate": "2026-09-22",
-        "actualEndDate": "2026-09-22",
-        "completed": false
+        "title": "Interior Paint",
+        "endDateSlip": 4,
+        "durationSlip": -4,
+        "expectedStartDate": "2026-09-03",
+        "actualStartDate": "2026-09-16",
+        "expectedEndDate": "2026-09-10",
+        "actualEndDate": "2026-09-16",
+        "completed": true
       },
       {
         "title": "Roofing",
-        "endDateSlip": -5,
-        "durationSlip": 0,
+        "endDateSlip": -3,
+        "durationSlip": 2,
         "expectedStartDate": "2026-09-24",
         "actualStartDate": "2026-09-17",
         "expectedEndDate": "2026-09-30",
-        "actualEndDate": "2026-09-23",
-        "completed": false
+        "actualEndDate": "2026-09-25",
+        "completed": true
       },
       {
         "title": "Garage Door",
-        "endDateSlip": 5,
-        "durationSlip": 0,
+        "endDateSlip": 4,
+        "durationSlip": -1,
         "expectedStartDate": "2026-09-14",
         "actualStartDate": "2026-09-21",
         "expectedEndDate": "2026-09-15",
-        "actualEndDate": "2026-09-22",
+        "actualEndDate": "2026-09-21",
+        "completed": true
+      },
+      {
+        "title": "Tile & Flooring",
+        "endDateSlip": 13,
+        "durationSlip": 6,
+        "expectedStartDate": "2026-09-11",
+        "actualStartDate": "2026-09-22",
+        "expectedEndDate": "2026-09-22",
+        "actualEndDate": "2026-10-09",
+        "completed": true
+      },
+      {
+        "title": "Driveway",
+        "endDateSlip": 5,
+        "durationSlip": 2,
+        "expectedStartDate": "2026-10-08",
+        "actualStartDate": "2026-10-13",
+        "expectedEndDate": "2026-10-13",
+        "actualEndDate": "2026-10-20",
         "completed": false
       },
       {
         "title": "Interior Doors/Trim",
-        "endDateSlip": -20,
+        "endDateSlip": -3,
         "durationSlip": 0,
         "expectedStartDate": "2026-10-19",
-        "actualStartDate": "2026-09-21",
+        "actualStartDate": "2026-10-14",
         "expectedEndDate": "2026-10-23",
-        "actualEndDate": "2026-09-25",
-        "completed": false
-      },
-      {
-        "title": "Driveway",
-        "endDateSlip": -11,
-        "durationSlip": 0,
-        "expectedStartDate": "2026-10-08",
-        "actualStartDate": "2026-09-23",
-        "expectedEndDate": "2026-10-13",
-        "actualEndDate": "2026-09-28",
+        "actualEndDate": "2026-10-20",
         "completed": false
       },
       {
@@ -16830,11 +14441,11 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
       {
         "title": "Bid Period",
         "endDateSlip": 0,
-        "durationSlip": 63,
+        "durationSlip": 83,
         "expectedStartDate": "2026-07-07",
         "actualStartDate": "2026-07-07",
-        "expectedEndDate": "2026-10-02",
-        "actualEndDate": "2026-10-02",
+        "expectedEndDate": "2026-10-30",
+        "actualEndDate": "2026-10-30",
         "completed": false
       },
       {
@@ -16850,39 +14461,29 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
       {
         "title": "Permitting",
         "endDateSlip": 0,
-        "durationSlip": 35,
+        "durationSlip": 32,
         "expectedStartDate": "2026-08-14",
         "actualStartDate": "2026-08-14",
-        "expectedEndDate": "2026-10-02",
-        "actualEndDate": "2026-10-02",
+        "expectedEndDate": "2026-09-29",
+        "actualEndDate": "2026-09-29",
+        "completed": true
+      },
+      {
+        "title": "Site Work",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-10-12",
+        "actualStartDate": "2026-10-12",
+        "expectedEndDate": "2026-10-16",
+        "actualEndDate": "2026-10-16",
         "completed": false
       },
       {
         "title": "Selection Phase 2 Due",
         "endDateSlip": 0,
         "durationSlip": 7,
-        "expectedStartDate": "2026-08-18",
-        "actualStartDate": "2026-08-18",
-        "expectedEndDate": "2026-08-26",
-        "actualEndDate": "2026-08-26",
-        "completed": true
-      },
-      {
-        "title": "Selection Phase 3 Due",
-        "endDateSlip": 0,
-        "durationSlip": 7,
-        "expectedStartDate": "2026-09-01",
-        "actualStartDate": "2026-09-01",
-        "expectedEndDate": "2026-09-10",
-        "actualEndDate": "2026-09-10",
-        "completed": false
-      },
-      {
-        "title": "Site Work",
-        "endDateSlip": 0,
-        "durationSlip": 3,
-        "expectedStartDate": "2026-10-19",
-        "actualStartDate": "2026-10-19",
+        "expectedStartDate": "2026-10-13",
+        "actualStartDate": "2026-10-13",
         "expectedEndDate": "2026-10-21",
         "actualEndDate": "2026-10-21",
         "completed": false
@@ -16890,251 +14491,261 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
       {
         "title": "Foundation",
         "endDateSlip": 0,
-        "durationSlip": 4,
+        "durationSlip": 8,
+        "expectedStartDate": "2026-10-19",
+        "actualStartDate": "2026-10-19",
+        "expectedEndDate": "2026-10-28",
+        "actualEndDate": "2026-10-28",
+        "completed": false
+      },
+      {
+        "title": "Selection Phase 3 Due",
+        "endDateSlip": 0,
+        "durationSlip": 7,
         "expectedStartDate": "2026-10-22",
         "actualStartDate": "2026-10-22",
-        "expectedEndDate": "2026-10-27",
-        "actualEndDate": "2026-10-27",
+        "expectedEndDate": "2026-10-30",
+        "actualEndDate": "2026-10-30",
         "completed": false
       },
       {
         "title": "Block Walls",
         "endDateSlip": 0,
-        "durationSlip": 5,
-        "expectedStartDate": "2026-10-28",
-        "actualStartDate": "2026-10-28",
-        "expectedEndDate": "2026-11-03",
-        "actualEndDate": "2026-11-03",
+        "durationSlip": 28,
+        "expectedStartDate": "2026-10-29",
+        "actualStartDate": "2026-10-29",
+        "expectedEndDate": "2026-12-09",
+        "actualEndDate": "2026-12-09",
         "completed": false
       },
       {
         "title": "Framing",
         "endDateSlip": 0,
-        "durationSlip": 12,
-        "expectedStartDate": "2026-11-04",
-        "actualStartDate": "2026-11-04",
-        "expectedEndDate": "2026-11-19",
-        "actualEndDate": "2026-11-19",
+        "durationSlip": 28,
+        "expectedStartDate": "2026-11-05",
+        "actualStartDate": "2026-11-05",
+        "expectedEndDate": "2026-12-16",
+        "actualEndDate": "2026-12-16",
         "completed": false
       },
       {
         "title": "Doors & Windows",
         "endDateSlip": 0,
-        "durationSlip": 5,
-        "expectedStartDate": "2026-11-20",
-        "actualStartDate": "2026-11-20",
-        "expectedEndDate": "2026-11-30",
-        "actualEndDate": "2026-11-30",
+        "durationSlip": 10,
+        "expectedStartDate": "2026-12-16",
+        "actualStartDate": "2026-12-16",
+        "expectedEndDate": "2026-12-30",
+        "actualEndDate": "2026-12-30",
         "completed": false
       },
       {
         "title": "MEP Rough-Ins",
         "endDateSlip": 0,
-        "durationSlip": 13,
-        "expectedStartDate": "2026-11-20",
-        "actualStartDate": "2026-11-20",
-        "expectedEndDate": "2026-12-10",
-        "actualEndDate": "2026-12-10",
+        "durationSlip": 18,
+        "expectedStartDate": "2026-12-21",
+        "actualStartDate": "2026-12-21",
+        "expectedEndDate": "2027-01-15",
+        "actualEndDate": "2027-01-15",
+        "completed": false
+      },
+      {
+        "title": "Stucco & Siding",
+        "endDateSlip": 0,
+        "durationSlip": 38,
+        "expectedStartDate": "2026-12-31",
+        "actualStartDate": "2026-12-31",
+        "expectedEndDate": "2027-02-23",
+        "actualEndDate": "2027-02-23",
         "completed": false
       },
       {
         "title": "FMEP Inspection",
         "endDateSlip": 0,
         "durationSlip": 2,
-        "expectedStartDate": "2026-12-11",
-        "actualStartDate": "2026-12-11",
-        "expectedEndDate": "2026-12-14",
-        "actualEndDate": "2026-12-14",
+        "expectedStartDate": "2027-01-18",
+        "actualStartDate": "2027-01-18",
+        "expectedEndDate": "2027-01-19",
+        "actualEndDate": "2027-01-19",
         "completed": false
       },
       {
         "title": "Drywall & Insulation",
         "endDateSlip": 0,
-        "durationSlip": 10,
-        "expectedStartDate": "2026-12-15",
-        "actualStartDate": "2026-12-15",
-        "expectedEndDate": "2026-12-29",
-        "actualEndDate": "2026-12-29",
-        "completed": false
-      },
-      {
-        "title": "Pool",
-        "endDateSlip": 0,
-        "durationSlip": 67,
-        "expectedStartDate": "2026-12-16",
-        "actualStartDate": "2026-12-16",
-        "expectedEndDate": "2027-03-22",
-        "actualEndDate": "2027-03-22",
-        "completed": false
-      },
-      {
-        "title": "Roofing",
-        "endDateSlip": 0,
-        "durationSlip": 5,
-        "expectedStartDate": "2026-12-22",
-        "actualStartDate": "2026-12-22",
-        "expectedEndDate": "2026-12-29",
-        "actualEndDate": "2026-12-29",
-        "completed": false
-      },
-      {
-        "title": "Stucco & Siding",
-        "endDateSlip": 0,
-        "durationSlip": 5,
-        "expectedStartDate": "2026-12-22",
-        "actualStartDate": "2026-12-22",
-        "expectedEndDate": "2026-12-29",
-        "actualEndDate": "2026-12-29",
+        "durationSlip": 15,
+        "expectedStartDate": "2027-01-20",
+        "actualStartDate": "2027-01-20",
+        "expectedEndDate": "2027-02-09",
+        "actualEndDate": "2027-02-09",
         "completed": false
       },
       {
         "title": "Exterior Paint",
         "endDateSlip": 0,
-        "durationSlip": 5,
-        "expectedStartDate": "2026-12-30",
-        "actualStartDate": "2026-12-30",
-        "expectedEndDate": "2027-01-06",
-        "actualEndDate": "2027-01-06",
+        "durationSlip": 36,
+        "expectedStartDate": "2027-02-05",
+        "actualStartDate": "2027-02-05",
+        "expectedEndDate": "2027-03-26",
+        "actualEndDate": "2027-03-26",
         "completed": false
       },
       {
         "title": "Interior Paint",
         "endDateSlip": 0,
         "durationSlip": 5,
-        "expectedStartDate": "2026-12-30",
-        "actualStartDate": "2026-12-30",
-        "expectedEndDate": "2027-01-06",
-        "actualEndDate": "2027-01-06",
+        "expectedStartDate": "2027-02-10",
+        "actualStartDate": "2027-02-10",
+        "expectedEndDate": "2027-02-16",
+        "actualEndDate": "2027-02-16",
         "completed": false
       },
       {
         "title": "Tile & Flooring",
         "endDateSlip": 0,
         "durationSlip": 8,
-        "expectedStartDate": "2027-01-07",
-        "actualStartDate": "2027-01-07",
-        "expectedEndDate": "2027-01-18",
-        "actualEndDate": "2027-01-18",
+        "expectedStartDate": "2027-02-17",
+        "actualStartDate": "2027-02-17",
+        "expectedEndDate": "2027-02-26",
+        "actualEndDate": "2027-02-26",
+        "completed": false
+      },
+      {
+        "title": "Roofing",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2027-02-18",
+        "actualStartDate": "2027-02-18",
+        "expectedEndDate": "2027-02-24",
+        "actualEndDate": "2027-02-24",
+        "completed": false
+      },
+      {
+        "title": "Interior Doors/Trim",
+        "endDateSlip": 0,
+        "durationSlip": 9,
+        "expectedStartDate": "2027-03-09",
+        "actualStartDate": "2027-03-09",
+        "expectedEndDate": "2027-03-19",
+        "actualEndDate": "2027-03-19",
+        "completed": false
+      },
+      {
+        "title": "Pool",
+        "endDateSlip": 0,
+        "durationSlip": 42,
+        "expectedStartDate": "2027-03-09",
+        "actualStartDate": "2027-03-09",
+        "expectedEndDate": "2027-05-05",
+        "actualEndDate": "2027-05-05",
+        "completed": false
+      },
+      {
+        "title": "MEP Trim-Outs",
+        "endDateSlip": 0,
+        "durationSlip": 12,
+        "expectedStartDate": "2027-03-18",
+        "actualStartDate": "2027-03-18",
+        "expectedEndDate": "2027-04-02",
+        "actualEndDate": "2027-04-02",
+        "completed": false
+      },
+      {
+        "title": "Interior Specialties",
+        "endDateSlip": 0,
+        "durationSlip": 17,
+        "expectedStartDate": "2027-03-22",
+        "actualStartDate": "2027-03-22",
+        "expectedEndDate": "2027-04-13",
+        "actualEndDate": "2027-04-13",
         "completed": false
       },
       {
         "title": "Garage Door",
         "endDateSlip": 0,
         "durationSlip": 2,
-        "expectedStartDate": "2027-01-12",
-        "actualStartDate": "2027-01-12",
-        "expectedEndDate": "2027-01-13",
-        "actualEndDate": "2027-01-13",
-        "completed": false
-      },
-      {
-        "title": "Driveway",
-        "endDateSlip": 0,
-        "durationSlip": 4,
-        "expectedStartDate": "2027-01-20",
-        "actualStartDate": "2027-01-20",
-        "expectedEndDate": "2027-01-25",
-        "actualEndDate": "2027-01-25",
-        "completed": false
-      },
-      {
-        "title": "Interior Doors/Trim",
-        "endDateSlip": 0,
-        "durationSlip": 5,
-        "expectedStartDate": "2027-01-20",
-        "actualStartDate": "2027-01-20",
-        "expectedEndDate": "2027-01-26",
-        "actualEndDate": "2027-01-26",
-        "completed": false
-      },
-      {
-        "title": "MEP Trim-Outs",
-        "endDateSlip": 0,
-        "durationSlip": 7,
-        "expectedStartDate": "2027-02-02",
-        "actualStartDate": "2027-02-02",
-        "expectedEndDate": "2027-02-10",
-        "actualEndDate": "2027-02-10",
-        "completed": false
-      },
-      {
-        "title": "Interior Specialties",
-        "endDateSlip": 0,
-        "durationSlip": 10,
-        "expectedStartDate": "2027-02-11",
-        "actualStartDate": "2027-02-11",
-        "expectedEndDate": "2027-02-24",
-        "actualEndDate": "2027-02-24",
-        "completed": false
-      },
-      {
-        "title": "Summer Kitchen",
-        "endDateSlip": 0,
-        "durationSlip": 12,
-        "expectedStartDate": "2027-02-19",
-        "actualStartDate": "2027-02-19",
-        "expectedEndDate": "2027-03-08",
-        "actualEndDate": "2027-03-08",
+        "expectedStartDate": "2027-04-01",
+        "actualStartDate": "2027-04-01",
+        "expectedEndDate": "2027-04-02",
+        "actualEndDate": "2027-04-02",
         "completed": false
       },
       {
         "title": "Appliances",
         "endDateSlip": 0,
-        "durationSlip": 4,
-        "expectedStartDate": "2027-02-23",
-        "actualStartDate": "2027-02-23",
-        "expectedEndDate": "2027-02-26",
-        "actualEndDate": "2027-02-26",
-        "completed": false
-      },
-      {
-        "title": "Generator",
-        "endDateSlip": 0,
-        "durationSlip": 10,
-        "expectedStartDate": "2027-02-23",
-        "actualStartDate": "2027-02-23",
-        "expectedEndDate": "2027-03-08",
-        "actualEndDate": "2027-03-08",
-        "completed": false
-      },
-      {
-        "title": "Final Trim Out",
-        "endDateSlip": 0,
-        "durationSlip": 3,
-        "expectedStartDate": "2027-02-25",
-        "actualStartDate": "2027-02-25",
-        "expectedEndDate": "2027-03-01",
-        "actualEndDate": "2027-03-01",
+        "durationSlip": 2,
+        "expectedStartDate": "2027-04-05",
+        "actualStartDate": "2027-04-05",
+        "expectedEndDate": "2027-04-06",
+        "actualEndDate": "2027-04-06",
         "completed": false
       },
       {
         "title": "Landscaping",
         "endDateSlip": 0,
         "durationSlip": 5,
-        "expectedStartDate": "2027-03-02",
-        "actualStartDate": "2027-03-02",
-        "expectedEndDate": "2027-03-08",
-        "actualEndDate": "2027-03-08",
+        "expectedStartDate": "2027-04-05",
+        "actualStartDate": "2027-04-05",
+        "expectedEndDate": "2027-04-09",
+        "actualEndDate": "2027-04-09",
+        "completed": false
+      },
+      {
+        "title": "Summer Kitchen",
+        "endDateSlip": 0,
+        "durationSlip": 12,
+        "expectedStartDate": "2027-04-06",
+        "actualStartDate": "2027-04-06",
+        "expectedEndDate": "2027-04-21",
+        "actualEndDate": "2027-04-21",
+        "completed": false
+      },
+      {
+        "title": "Generator",
+        "endDateSlip": 0,
+        "durationSlip": 10,
+        "expectedStartDate": "2027-04-08",
+        "actualStartDate": "2027-04-08",
+        "expectedEndDate": "2027-04-21",
+        "actualEndDate": "2027-04-21",
+        "completed": false
+      },
+      {
+        "title": "Driveway",
+        "endDateSlip": 0,
+        "durationSlip": 4,
+        "expectedStartDate": "2027-04-09",
+        "actualStartDate": "2027-04-09",
+        "expectedEndDate": "2027-04-14",
+        "actualEndDate": "2027-04-14",
+        "completed": false
+      },
+      {
+        "title": "Final Trim Out",
+        "endDateSlip": 0,
+        "durationSlip": 10,
+        "expectedStartDate": "2027-04-12",
+        "actualStartDate": "2027-04-12",
+        "expectedEndDate": "2027-04-23",
+        "actualEndDate": "2027-04-23",
         "completed": false
       },
       {
         "title": "Final Inspections",
         "endDateSlip": 0,
         "durationSlip": 6,
-        "expectedStartDate": "2027-03-08",
-        "actualStartDate": "2027-03-08",
-        "expectedEndDate": "2027-03-15",
-        "actualEndDate": "2027-03-15",
+        "expectedStartDate": "2027-04-21",
+        "actualStartDate": "2027-04-21",
+        "expectedEndDate": "2027-04-28",
+        "actualEndDate": "2027-04-28",
         "completed": false
       },
       {
         "title": "Closing",
         "endDateSlip": 0,
         "durationSlip": 3,
-        "expectedStartDate": "2027-03-18",
-        "actualStartDate": "2027-03-18",
-        "expectedEndDate": "2027-03-22",
-        "actualEndDate": "2027-03-22",
+        "expectedStartDate": "2027-05-03",
+        "actualStartDate": "2027-05-03",
+        "expectedEndDate": "2027-05-05",
+        "actualEndDate": "2027-05-05",
         "completed": false
       }
     ],
@@ -17494,21 +15105,21 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
       {
         "title": "Bid Period",
         "endDateSlip": 0,
-        "durationSlip": 78,
+        "durationSlip": 103,
         "expectedStartDate": "2026-06-15",
         "actualStartDate": "2026-06-15",
-        "expectedEndDate": "2026-10-02",
-        "actualEndDate": "2026-10-02",
+        "expectedEndDate": "2026-11-06",
+        "actualEndDate": "2026-11-06",
         "completed": false
       },
       {
         "title": "Permitting",
         "endDateSlip": 0,
-        "durationSlip": 50,
+        "durationSlip": 75,
         "expectedStartDate": "2026-07-24",
         "actualStartDate": "2026-07-24",
-        "expectedEndDate": "2026-10-02",
-        "actualEndDate": "2026-10-02",
+        "expectedEndDate": "2026-11-06",
+        "actualEndDate": "2026-11-06",
         "completed": false
       },
       {
@@ -17519,7 +15130,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "actualStartDate": "2026-09-03",
         "expectedEndDate": "2026-09-14",
         "actualEndDate": "2026-09-14",
-        "completed": false
+        "completed": true
       },
       {
         "title": "Selection Phase 2 Due",
@@ -17529,7 +15140,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "actualStartDate": "2026-09-15",
         "expectedEndDate": "2026-09-23",
         "actualEndDate": "2026-09-23",
-        "completed": false
+        "completed": true
       },
       {
         "title": "Selection Phase 3 Due",
@@ -17539,266 +15150,266 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "actualStartDate": "2026-09-24",
         "expectedEndDate": "2026-10-02",
         "actualEndDate": "2026-10-02",
-        "completed": false
+        "completed": true
       },
       {
         "title": "Site Work",
         "endDateSlip": 0,
         "durationSlip": 3,
-        "expectedStartDate": "2026-10-19",
-        "actualStartDate": "2026-10-19",
-        "expectedEndDate": "2026-10-21",
-        "actualEndDate": "2026-10-21",
+        "expectedStartDate": "2026-11-23",
+        "actualStartDate": "2026-11-23",
+        "expectedEndDate": "2026-11-25",
+        "actualEndDate": "2026-11-25",
         "completed": false
       },
       {
         "title": "Foundation",
         "endDateSlip": 0,
         "durationSlip": 4,
-        "expectedStartDate": "2026-10-22",
-        "actualStartDate": "2026-10-22",
-        "expectedEndDate": "2026-10-27",
-        "actualEndDate": "2026-10-27",
+        "expectedStartDate": "2026-11-30",
+        "actualStartDate": "2026-11-30",
+        "expectedEndDate": "2026-12-03",
+        "actualEndDate": "2026-12-03",
         "completed": false
       },
       {
         "title": "Block Walls",
         "endDateSlip": 0,
         "durationSlip": 5,
-        "expectedStartDate": "2026-10-28",
-        "actualStartDate": "2026-10-28",
-        "expectedEndDate": "2026-11-03",
-        "actualEndDate": "2026-11-03",
+        "expectedStartDate": "2026-12-04",
+        "actualStartDate": "2026-12-04",
+        "expectedEndDate": "2026-12-10",
+        "actualEndDate": "2026-12-10",
         "completed": false
       },
       {
         "title": "Framing",
         "endDateSlip": 0,
         "durationSlip": 12,
-        "expectedStartDate": "2026-11-04",
-        "actualStartDate": "2026-11-04",
-        "expectedEndDate": "2026-11-19",
-        "actualEndDate": "2026-11-19",
+        "expectedStartDate": "2026-12-11",
+        "actualStartDate": "2026-12-11",
+        "expectedEndDate": "2026-12-29",
+        "actualEndDate": "2026-12-29",
         "completed": false
       },
       {
         "title": "Doors & Windows",
         "endDateSlip": 0,
         "durationSlip": 5,
-        "expectedStartDate": "2026-11-20",
-        "actualStartDate": "2026-11-20",
-        "expectedEndDate": "2026-11-30",
-        "actualEndDate": "2026-11-30",
+        "expectedStartDate": "2026-12-30",
+        "actualStartDate": "2026-12-30",
+        "expectedEndDate": "2027-01-06",
+        "actualEndDate": "2027-01-06",
         "completed": false
       },
       {
         "title": "MEP Rough-Ins",
         "endDateSlip": 0,
         "durationSlip": 13,
-        "expectedStartDate": "2026-11-20",
-        "actualStartDate": "2026-11-20",
-        "expectedEndDate": "2026-12-10",
-        "actualEndDate": "2026-12-10",
+        "expectedStartDate": "2026-12-30",
+        "actualStartDate": "2026-12-30",
+        "expectedEndDate": "2027-01-18",
+        "actualEndDate": "2027-01-18",
         "completed": false
       },
       {
         "title": "FMEP Inspection",
         "endDateSlip": 0,
         "durationSlip": 2,
-        "expectedStartDate": "2026-12-11",
-        "actualStartDate": "2026-12-11",
-        "expectedEndDate": "2026-12-14",
-        "actualEndDate": "2026-12-14",
+        "expectedStartDate": "2027-01-19",
+        "actualStartDate": "2027-01-19",
+        "expectedEndDate": "2027-01-20",
+        "actualEndDate": "2027-01-20",
         "completed": false
       },
       {
         "title": "Drywall & Insulation",
         "endDateSlip": 0,
         "durationSlip": 10,
-        "expectedStartDate": "2026-12-15",
-        "actualStartDate": "2026-12-15",
-        "expectedEndDate": "2026-12-29",
-        "actualEndDate": "2026-12-29",
+        "expectedStartDate": "2027-01-21",
+        "actualStartDate": "2027-01-21",
+        "expectedEndDate": "2027-02-03",
+        "actualEndDate": "2027-02-03",
         "completed": false
       },
       {
         "title": "Pool",
         "endDateSlip": 0,
         "durationSlip": 67,
-        "expectedStartDate": "2026-12-16",
-        "actualStartDate": "2026-12-16",
-        "expectedEndDate": "2027-03-22",
-        "actualEndDate": "2027-03-22",
+        "expectedStartDate": "2027-01-22",
+        "actualStartDate": "2027-01-22",
+        "expectedEndDate": "2027-04-26",
+        "actualEndDate": "2027-04-26",
         "completed": false
       },
       {
         "title": "Roofing",
         "endDateSlip": 0,
         "durationSlip": 5,
-        "expectedStartDate": "2026-12-22",
-        "actualStartDate": "2026-12-22",
-        "expectedEndDate": "2026-12-29",
-        "actualEndDate": "2026-12-29",
+        "expectedStartDate": "2027-01-28",
+        "actualStartDate": "2027-01-28",
+        "expectedEndDate": "2027-02-03",
+        "actualEndDate": "2027-02-03",
         "completed": false
       },
       {
         "title": "Stucco & Siding",
         "endDateSlip": 0,
         "durationSlip": 5,
-        "expectedStartDate": "2026-12-22",
-        "actualStartDate": "2026-12-22",
-        "expectedEndDate": "2026-12-29",
-        "actualEndDate": "2026-12-29",
+        "expectedStartDate": "2027-01-28",
+        "actualStartDate": "2027-01-28",
+        "expectedEndDate": "2027-02-03",
+        "actualEndDate": "2027-02-03",
         "completed": false
       },
       {
         "title": "Exterior Paint",
         "endDateSlip": 0,
         "durationSlip": 5,
-        "expectedStartDate": "2026-12-30",
-        "actualStartDate": "2026-12-30",
-        "expectedEndDate": "2027-01-06",
-        "actualEndDate": "2027-01-06",
+        "expectedStartDate": "2027-02-04",
+        "actualStartDate": "2027-02-04",
+        "expectedEndDate": "2027-02-10",
+        "actualEndDate": "2027-02-10",
         "completed": false
       },
       {
         "title": "Interior Paint",
         "endDateSlip": 0,
         "durationSlip": 5,
-        "expectedStartDate": "2026-12-30",
-        "actualStartDate": "2026-12-30",
-        "expectedEndDate": "2027-01-06",
-        "actualEndDate": "2027-01-06",
+        "expectedStartDate": "2027-02-04",
+        "actualStartDate": "2027-02-04",
+        "expectedEndDate": "2027-02-10",
+        "actualEndDate": "2027-02-10",
         "completed": false
       },
       {
         "title": "Tile & Flooring",
         "endDateSlip": 0,
         "durationSlip": 8,
-        "expectedStartDate": "2027-01-07",
-        "actualStartDate": "2027-01-07",
-        "expectedEndDate": "2027-01-18",
-        "actualEndDate": "2027-01-18",
+        "expectedStartDate": "2027-02-11",
+        "actualStartDate": "2027-02-11",
+        "expectedEndDate": "2027-02-22",
+        "actualEndDate": "2027-02-22",
         "completed": false
       },
       {
         "title": "Garage Door",
         "endDateSlip": 0,
         "durationSlip": 2,
-        "expectedStartDate": "2027-01-12",
-        "actualStartDate": "2027-01-12",
-        "expectedEndDate": "2027-01-13",
-        "actualEndDate": "2027-01-13",
+        "expectedStartDate": "2027-02-16",
+        "actualStartDate": "2027-02-16",
+        "expectedEndDate": "2027-02-17",
+        "actualEndDate": "2027-02-17",
         "completed": false
       },
       {
         "title": "Driveway",
         "endDateSlip": 0,
         "durationSlip": 4,
-        "expectedStartDate": "2027-01-20",
-        "actualStartDate": "2027-01-20",
-        "expectedEndDate": "2027-01-25",
-        "actualEndDate": "2027-01-25",
+        "expectedStartDate": "2027-02-24",
+        "actualStartDate": "2027-02-24",
+        "expectedEndDate": "2027-03-01",
+        "actualEndDate": "2027-03-01",
         "completed": false
       },
       {
         "title": "Interior Doors/Trim",
         "endDateSlip": 0,
         "durationSlip": 5,
-        "expectedStartDate": "2027-01-20",
-        "actualStartDate": "2027-01-20",
-        "expectedEndDate": "2027-01-26",
-        "actualEndDate": "2027-01-26",
+        "expectedStartDate": "2027-02-24",
+        "actualStartDate": "2027-02-24",
+        "expectedEndDate": "2027-03-02",
+        "actualEndDate": "2027-03-02",
         "completed": false
       },
       {
         "title": "MEP Trim-Outs",
         "endDateSlip": 0,
         "durationSlip": 7,
-        "expectedStartDate": "2027-02-02",
-        "actualStartDate": "2027-02-02",
-        "expectedEndDate": "2027-02-10",
-        "actualEndDate": "2027-02-10",
+        "expectedStartDate": "2027-03-09",
+        "actualStartDate": "2027-03-09",
+        "expectedEndDate": "2027-03-17",
+        "actualEndDate": "2027-03-17",
         "completed": false
       },
       {
         "title": "Interior Specialties",
         "endDateSlip": 0,
         "durationSlip": 10,
-        "expectedStartDate": "2027-02-11",
-        "actualStartDate": "2027-02-11",
-        "expectedEndDate": "2027-02-24",
-        "actualEndDate": "2027-02-24",
+        "expectedStartDate": "2027-03-18",
+        "actualStartDate": "2027-03-18",
+        "expectedEndDate": "2027-03-31",
+        "actualEndDate": "2027-03-31",
         "completed": false
       },
       {
         "title": "Summer Kitchen",
         "endDateSlip": 0,
         "durationSlip": 12,
-        "expectedStartDate": "2027-02-19",
-        "actualStartDate": "2027-02-19",
-        "expectedEndDate": "2027-03-08",
-        "actualEndDate": "2027-03-08",
+        "expectedStartDate": "2027-03-26",
+        "actualStartDate": "2027-03-26",
+        "expectedEndDate": "2027-04-12",
+        "actualEndDate": "2027-04-12",
         "completed": false
       },
       {
         "title": "Appliances",
         "endDateSlip": 0,
         "durationSlip": 4,
-        "expectedStartDate": "2027-02-23",
-        "actualStartDate": "2027-02-23",
-        "expectedEndDate": "2027-02-26",
-        "actualEndDate": "2027-02-26",
+        "expectedStartDate": "2027-03-30",
+        "actualStartDate": "2027-03-30",
+        "expectedEndDate": "2027-04-02",
+        "actualEndDate": "2027-04-02",
         "completed": false
       },
       {
         "title": "Generator",
         "endDateSlip": 0,
         "durationSlip": 10,
-        "expectedStartDate": "2027-02-23",
-        "actualStartDate": "2027-02-23",
-        "expectedEndDate": "2027-03-08",
-        "actualEndDate": "2027-03-08",
+        "expectedStartDate": "2027-03-30",
+        "actualStartDate": "2027-03-30",
+        "expectedEndDate": "2027-04-12",
+        "actualEndDate": "2027-04-12",
         "completed": false
       },
       {
         "title": "Final Trim Out",
         "endDateSlip": 0,
         "durationSlip": 3,
-        "expectedStartDate": "2027-02-25",
-        "actualStartDate": "2027-02-25",
-        "expectedEndDate": "2027-03-01",
-        "actualEndDate": "2027-03-01",
+        "expectedStartDate": "2027-04-01",
+        "actualStartDate": "2027-04-01",
+        "expectedEndDate": "2027-04-05",
+        "actualEndDate": "2027-04-05",
         "completed": false
       },
       {
         "title": "Landscaping",
         "endDateSlip": 0,
         "durationSlip": 5,
-        "expectedStartDate": "2027-03-02",
-        "actualStartDate": "2027-03-02",
-        "expectedEndDate": "2027-03-08",
-        "actualEndDate": "2027-03-08",
+        "expectedStartDate": "2027-04-06",
+        "actualStartDate": "2027-04-06",
+        "expectedEndDate": "2027-04-12",
+        "actualEndDate": "2027-04-12",
         "completed": false
       },
       {
         "title": "Final Inspections",
         "endDateSlip": 0,
         "durationSlip": 6,
-        "expectedStartDate": "2027-03-08",
-        "actualStartDate": "2027-03-08",
-        "expectedEndDate": "2027-03-15",
-        "actualEndDate": "2027-03-15",
+        "expectedStartDate": "2027-04-12",
+        "actualStartDate": "2027-04-12",
+        "expectedEndDate": "2027-04-19",
+        "actualEndDate": "2027-04-19",
         "completed": false
       },
       {
         "title": "Closing",
         "endDateSlip": 0,
         "durationSlip": 3,
-        "expectedStartDate": "2027-03-18",
-        "actualStartDate": "2027-03-18",
-        "expectedEndDate": "2027-03-22",
-        "actualEndDate": "2027-03-22",
+        "expectedStartDate": "2027-04-22",
+        "actualStartDate": "2027-04-22",
+        "expectedEndDate": "2027-04-26",
+        "actualEndDate": "2027-04-26",
         "completed": false
       }
     ],
@@ -17806,7 +15417,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
       {
         "title": "Sale/Contract Deposit",
         "endDateSlip": 0,
-        "durationSlip": 1,
+        "durationSlip": 0,
         "expectedStartDate": "2026-06-05",
         "actualStartDate": "2026-06-05",
         "expectedEndDate": "2026-06-05",
@@ -17816,7 +15427,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
       {
         "title": "Draft Plans",
         "endDateSlip": 0,
-        "durationSlip": 30,
+        "durationSlip": 0,
         "expectedStartDate": "2026-06-08",
         "actualStartDate": "2026-06-08",
         "expectedEndDate": "2026-07-20",
@@ -17825,312 +15436,312 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
       },
       {
         "title": "Bid Period",
-        "endDateSlip": 0,
-        "durationSlip": 75,
+        "endDateSlip": 34,
+        "durationSlip": 34,
         "expectedStartDate": "2026-06-17",
         "actualStartDate": "2026-06-17",
         "expectedEndDate": "2026-10-01",
-        "actualEndDate": "2026-10-01",
+        "actualEndDate": "2026-11-18",
         "completed": false
       },
       {
         "title": "Permitting",
-        "endDateSlip": 0,
-        "durationSlip": 47,
+        "endDateSlip": 21,
+        "durationSlip": 21,
         "expectedStartDate": "2026-07-28",
         "actualStartDate": "2026-07-28",
         "expectedEndDate": "2026-10-01",
-        "actualEndDate": "2026-10-01",
+        "actualEndDate": "2026-10-30",
         "completed": false
       },
       {
         "title": "Selection Phase 1 Due",
         "endDateSlip": 0,
-        "durationSlip": 7,
+        "durationSlip": 0,
         "expectedStartDate": "2026-09-01",
         "actualStartDate": "2026-09-01",
         "expectedEndDate": "2026-09-10",
         "actualEndDate": "2026-09-10",
-        "completed": false
+        "completed": true
       },
       {
         "title": "Selection Phase 2 Due",
         "endDateSlip": 0,
-        "durationSlip": 7,
+        "durationSlip": 0,
         "expectedStartDate": "2026-09-14",
         "actualStartDate": "2026-09-14",
         "expectedEndDate": "2026-09-22",
         "actualEndDate": "2026-09-22",
-        "completed": false
+        "completed": true
       },
       {
         "title": "Selection Phase 3 Due",
         "endDateSlip": 0,
-        "durationSlip": 7,
+        "durationSlip": 0,
         "expectedStartDate": "2026-09-23",
         "actualStartDate": "2026-09-23",
         "expectedEndDate": "2026-10-01",
         "actualEndDate": "2026-10-01",
-        "completed": false
+        "completed": true
       },
       {
         "title": "Site Work",
-        "endDateSlip": 0,
-        "durationSlip": 3,
+        "endDateSlip": 21,
+        "durationSlip": 0,
         "expectedStartDate": "2026-10-16",
-        "actualStartDate": "2026-10-16",
+        "actualStartDate": "2026-11-16",
         "expectedEndDate": "2026-10-20",
-        "actualEndDate": "2026-10-20",
-        "completed": false
-      },
-      {
-        "title": "Foundation",
-        "endDateSlip": 0,
-        "durationSlip": 4,
-        "expectedStartDate": "2026-10-21",
-        "actualStartDate": "2026-10-21",
-        "expectedEndDate": "2026-10-26",
-        "actualEndDate": "2026-10-26",
-        "completed": false
-      },
-      {
-        "title": "Block Walls",
-        "endDateSlip": 0,
-        "durationSlip": 5,
-        "expectedStartDate": "2026-10-27",
-        "actualStartDate": "2026-10-27",
-        "expectedEndDate": "2026-11-02",
-        "actualEndDate": "2026-11-02",
-        "completed": false
-      },
-      {
-        "title": "Framing",
-        "endDateSlip": 0,
-        "durationSlip": 12,
-        "expectedStartDate": "2026-11-03",
-        "actualStartDate": "2026-11-03",
-        "expectedEndDate": "2026-11-18",
         "actualEndDate": "2026-11-18",
         "completed": false
       },
       {
-        "title": "Doors & Windows",
-        "endDateSlip": 0,
-        "durationSlip": 5,
-        "expectedStartDate": "2026-11-19",
+        "title": "Foundation",
+        "endDateSlip": 21,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-10-21",
         "actualStartDate": "2026-11-19",
-        "expectedEndDate": "2026-11-25",
-        "actualEndDate": "2026-11-25",
+        "expectedEndDate": "2026-10-26",
+        "actualEndDate": "2026-11-24",
+        "completed": false
+      },
+      {
+        "title": "Block Walls",
+        "endDateSlip": 21,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-10-27",
+        "actualStartDate": "2026-11-25",
+        "expectedEndDate": "2026-11-02",
+        "actualEndDate": "2026-12-03",
+        "completed": false
+      },
+      {
+        "title": "Framing",
+        "endDateSlip": 17,
+        "durationSlip": -4,
+        "expectedStartDate": "2026-11-03",
+        "actualStartDate": "2026-12-04",
+        "expectedEndDate": "2026-11-30",
+        "actualEndDate": "2026-12-23",
+        "completed": false
+      },
+      {
+        "title": "Doors & Windows",
+        "endDateSlip": 17,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-12-01",
+        "actualStartDate": "2026-12-24",
+        "expectedEndDate": "2026-12-07",
+        "actualEndDate": "2026-12-31",
         "completed": false
       },
       {
         "title": "MEP Rough-Ins",
-        "endDateSlip": 0,
-        "durationSlip": 13,
-        "expectedStartDate": "2026-11-19",
-        "actualStartDate": "2026-11-19",
-        "expectedEndDate": "2026-12-09",
-        "actualEndDate": "2026-12-09",
+        "endDateSlip": 17,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-12-01",
+        "actualStartDate": "2026-12-24",
+        "expectedEndDate": "2026-12-17",
+        "actualEndDate": "2027-01-13",
         "completed": false
       },
       {
         "title": "FMEP Inspection",
-        "endDateSlip": 0,
-        "durationSlip": 2,
-        "expectedStartDate": "2026-12-10",
-        "actualStartDate": "2026-12-10",
-        "expectedEndDate": "2026-12-11",
-        "actualEndDate": "2026-12-11",
-        "completed": false
-      },
-      {
-        "title": "Drywall & Insulation",
-        "endDateSlip": 0,
-        "durationSlip": 10,
-        "expectedStartDate": "2026-12-14",
-        "actualStartDate": "2026-12-14",
-        "expectedEndDate": "2026-12-28",
-        "actualEndDate": "2026-12-28",
-        "completed": false
-      },
-      {
-        "title": "Pool",
-        "endDateSlip": 0,
-        "durationSlip": 67,
-        "expectedStartDate": "2026-12-15",
-        "actualStartDate": "2026-12-15",
-        "expectedEndDate": "2027-03-19",
-        "actualEndDate": "2027-03-19",
-        "completed": false
-      },
-      {
-        "title": "Roofing",
-        "endDateSlip": 0,
-        "durationSlip": 5,
-        "expectedStartDate": "2026-12-21",
-        "actualStartDate": "2026-12-21",
-        "expectedEndDate": "2026-12-28",
-        "actualEndDate": "2026-12-28",
-        "completed": false
-      },
-      {
-        "title": "Stucco & Siding",
-        "endDateSlip": 0,
-        "durationSlip": 5,
-        "expectedStartDate": "2026-12-21",
-        "actualStartDate": "2026-12-21",
-        "expectedEndDate": "2026-12-28",
-        "actualEndDate": "2026-12-28",
-        "completed": false
-      },
-      {
-        "title": "Exterior Paint",
-        "endDateSlip": 0,
-        "durationSlip": 5,
-        "expectedStartDate": "2026-12-29",
-        "actualStartDate": "2026-12-29",
-        "expectedEndDate": "2027-01-05",
-        "actualEndDate": "2027-01-05",
-        "completed": false
-      },
-      {
-        "title": "Interior Paint",
-        "endDateSlip": 0,
-        "durationSlip": 5,
-        "expectedStartDate": "2026-12-29",
-        "actualStartDate": "2026-12-29",
-        "expectedEndDate": "2027-01-05",
-        "actualEndDate": "2027-01-05",
-        "completed": false
-      },
-      {
-        "title": "Tile & Flooring",
-        "endDateSlip": 0,
-        "durationSlip": 8,
-        "expectedStartDate": "2027-01-06",
-        "actualStartDate": "2027-01-06",
-        "expectedEndDate": "2027-01-15",
+        "endDateSlip": 17,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-12-18",
+        "actualStartDate": "2027-01-14",
+        "expectedEndDate": "2026-12-21",
         "actualEndDate": "2027-01-15",
         "completed": false
       },
       {
+        "title": "Drywall & Insulation",
+        "endDateSlip": 17,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-12-22",
+        "actualStartDate": "2027-01-18",
+        "expectedEndDate": "2027-01-06",
+        "actualEndDate": "2027-01-29",
+        "completed": false
+      },
+      {
+        "title": "Pool",
+        "endDateSlip": 17,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-12-23",
+        "actualStartDate": "2027-01-19",
+        "expectedEndDate": "2027-03-29",
+        "actualEndDate": "2027-04-21",
+        "completed": false
+      },
+      {
+        "title": "Roofing",
+        "endDateSlip": 17,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-12-30",
+        "actualStartDate": "2027-01-25",
+        "expectedEndDate": "2027-01-06",
+        "actualEndDate": "2027-01-29",
+        "completed": false
+      },
+      {
+        "title": "Stucco & Siding",
+        "endDateSlip": 17,
+        "durationSlip": 0,
+        "expectedStartDate": "2026-12-30",
+        "actualStartDate": "2027-01-25",
+        "expectedEndDate": "2027-01-06",
+        "actualEndDate": "2027-01-29",
+        "completed": false
+      },
+      {
+        "title": "Exterior Paint",
+        "endDateSlip": 17,
+        "durationSlip": 0,
+        "expectedStartDate": "2027-01-07",
+        "actualStartDate": "2027-02-01",
+        "expectedEndDate": "2027-01-13",
+        "actualEndDate": "2027-02-05",
+        "completed": false
+      },
+      {
+        "title": "Interior Paint",
+        "endDateSlip": 17,
+        "durationSlip": 0,
+        "expectedStartDate": "2027-01-07",
+        "actualStartDate": "2027-02-01",
+        "expectedEndDate": "2027-01-13",
+        "actualEndDate": "2027-02-05",
+        "completed": false
+      },
+      {
+        "title": "Tile & Flooring",
+        "endDateSlip": 17,
+        "durationSlip": 0,
+        "expectedStartDate": "2027-01-14",
+        "actualStartDate": "2027-02-08",
+        "expectedEndDate": "2027-01-25",
+        "actualEndDate": "2027-02-17",
+        "completed": false
+      },
+      {
         "title": "Garage Door",
-        "endDateSlip": 0,
-        "durationSlip": 2,
-        "expectedStartDate": "2027-01-11",
-        "actualStartDate": "2027-01-11",
-        "expectedEndDate": "2027-01-12",
-        "actualEndDate": "2027-01-12",
+        "endDateSlip": 17,
+        "durationSlip": 0,
+        "expectedStartDate": "2027-01-19",
+        "actualStartDate": "2027-02-11",
+        "expectedEndDate": "2027-01-20",
+        "actualEndDate": "2027-02-12",
         "completed": false
       },
       {
         "title": "Driveway",
-        "endDateSlip": 0,
-        "durationSlip": 4,
-        "expectedStartDate": "2027-01-19",
-        "actualStartDate": "2027-01-19",
-        "expectedEndDate": "2027-01-22",
-        "actualEndDate": "2027-01-22",
+        "endDateSlip": 17,
+        "durationSlip": 0,
+        "expectedStartDate": "2027-01-27",
+        "actualStartDate": "2027-02-19",
+        "expectedEndDate": "2027-02-01",
+        "actualEndDate": "2027-02-24",
         "completed": false
       },
       {
         "title": "Interior Doors/Trim",
-        "endDateSlip": 0,
-        "durationSlip": 5,
-        "expectedStartDate": "2027-01-19",
-        "actualStartDate": "2027-01-19",
-        "expectedEndDate": "2027-01-25",
-        "actualEndDate": "2027-01-25",
-        "completed": false
-      },
-      {
-        "title": "MEP Trim-Outs",
-        "endDateSlip": 0,
-        "durationSlip": 7,
-        "expectedStartDate": "2027-02-01",
-        "actualStartDate": "2027-02-01",
-        "expectedEndDate": "2027-02-09",
-        "actualEndDate": "2027-02-09",
-        "completed": false
-      },
-      {
-        "title": "Interior Specialties",
-        "endDateSlip": 0,
-        "durationSlip": 10,
-        "expectedStartDate": "2027-02-10",
-        "actualStartDate": "2027-02-10",
-        "expectedEndDate": "2027-02-23",
-        "actualEndDate": "2027-02-23",
-        "completed": false
-      },
-      {
-        "title": "Summer Kitchen",
-        "endDateSlip": 0,
-        "durationSlip": 12,
-        "expectedStartDate": "2027-02-18",
-        "actualStartDate": "2027-02-18",
-        "expectedEndDate": "2027-03-05",
-        "actualEndDate": "2027-03-05",
-        "completed": false
-      },
-      {
-        "title": "Appliances",
-        "endDateSlip": 0,
-        "durationSlip": 4,
-        "expectedStartDate": "2027-02-22",
-        "actualStartDate": "2027-02-22",
-        "expectedEndDate": "2027-02-25",
+        "endDateSlip": 17,
+        "durationSlip": 0,
+        "expectedStartDate": "2027-01-27",
+        "actualStartDate": "2027-02-19",
+        "expectedEndDate": "2027-02-02",
         "actualEndDate": "2027-02-25",
         "completed": false
       },
       {
-        "title": "Generator",
-        "endDateSlip": 0,
-        "durationSlip": 10,
-        "expectedStartDate": "2027-02-22",
-        "actualStartDate": "2027-02-22",
-        "expectedEndDate": "2027-03-05",
-        "actualEndDate": "2027-03-05",
-        "completed": false
-      },
-      {
-        "title": "Final Trim Out",
-        "endDateSlip": 0,
-        "durationSlip": 3,
-        "expectedStartDate": "2027-02-24",
-        "actualStartDate": "2027-02-24",
-        "expectedEndDate": "2027-02-26",
-        "actualEndDate": "2027-02-26",
-        "completed": false
-      },
-      {
-        "title": "Landscaping",
-        "endDateSlip": 0,
-        "durationSlip": 5,
-        "expectedStartDate": "2027-03-01",
-        "actualStartDate": "2027-03-01",
-        "expectedEndDate": "2027-03-05",
-        "actualEndDate": "2027-03-05",
-        "completed": false
-      },
-      {
-        "title": "Final Inspections",
-        "endDateSlip": 0,
-        "durationSlip": 6,
-        "expectedStartDate": "2027-03-05",
-        "actualStartDate": "2027-03-05",
-        "expectedEndDate": "2027-03-12",
+        "title": "MEP Trim-Outs",
+        "endDateSlip": 17,
+        "durationSlip": 0,
+        "expectedStartDate": "2027-02-09",
+        "actualStartDate": "2027-03-04",
+        "expectedEndDate": "2027-02-17",
         "actualEndDate": "2027-03-12",
         "completed": false
       },
       {
+        "title": "Interior Specialties",
+        "endDateSlip": 17,
+        "durationSlip": 0,
+        "expectedStartDate": "2027-02-18",
+        "actualStartDate": "2027-03-15",
+        "expectedEndDate": "2027-03-03",
+        "actualEndDate": "2027-03-26",
+        "completed": false
+      },
+      {
+        "title": "Summer Kitchen",
+        "endDateSlip": 17,
+        "durationSlip": 0,
+        "expectedStartDate": "2027-02-26",
+        "actualStartDate": "2027-03-23",
+        "expectedEndDate": "2027-03-15",
+        "actualEndDate": "2027-04-07",
+        "completed": false
+      },
+      {
+        "title": "Appliances",
+        "endDateSlip": 17,
+        "durationSlip": 0,
+        "expectedStartDate": "2027-03-02",
+        "actualStartDate": "2027-03-25",
+        "expectedEndDate": "2027-03-05",
+        "actualEndDate": "2027-03-30",
+        "completed": false
+      },
+      {
+        "title": "Generator",
+        "endDateSlip": 17,
+        "durationSlip": 0,
+        "expectedStartDate": "2027-03-02",
+        "actualStartDate": "2027-03-25",
+        "expectedEndDate": "2027-03-15",
+        "actualEndDate": "2027-04-07",
+        "completed": false
+      },
+      {
+        "title": "Final Trim Out",
+        "endDateSlip": 17,
+        "durationSlip": 0,
+        "expectedStartDate": "2027-03-04",
+        "actualStartDate": "2027-03-29",
+        "expectedEndDate": "2027-03-08",
+        "actualEndDate": "2027-03-31",
+        "completed": false
+      },
+      {
+        "title": "Landscaping",
+        "endDateSlip": 17,
+        "durationSlip": 0,
+        "expectedStartDate": "2027-03-09",
+        "actualStartDate": "2027-04-01",
+        "expectedEndDate": "2027-03-15",
+        "actualEndDate": "2027-04-07",
+        "completed": false
+      },
+      {
+        "title": "Final Inspections",
+        "endDateSlip": 17,
+        "durationSlip": 0,
+        "expectedStartDate": "2027-03-15",
+        "actualStartDate": "2027-04-07",
+        "expectedEndDate": "2027-03-22",
+        "actualEndDate": "2027-04-14",
+        "completed": false
+      },
+      {
         "title": "Closing",
-        "endDateSlip": 0,
-        "durationSlip": 3,
-        "expectedStartDate": "2027-03-17",
-        "actualStartDate": "2027-03-17",
-        "expectedEndDate": "2027-03-19",
-        "actualEndDate": "2027-03-19",
+        "endDateSlip": 17,
+        "durationSlip": 0,
+        "expectedStartDate": "2027-03-25",
+        "actualStartDate": "2027-04-19",
+        "expectedEndDate": "2027-03-29",
+        "actualEndDate": "2027-04-21",
         "completed": false
       }
     ],
@@ -18158,411 +15769,241 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
       {
         "title": "Bid Period",
         "endDateSlip": 0,
-        "durationSlip": 58,
+        "durationSlip": 85,
         "expectedStartDate": "2026-07-17",
         "actualStartDate": "2026-07-17",
-        "expectedEndDate": "2026-10-07",
-        "actualEndDate": "2026-10-07",
+        "expectedEndDate": "2026-11-13",
+        "actualEndDate": "2026-11-13",
+        "completed": false
+      },
+      {
+        "title": "Permitting",
+        "endDateSlip": 0,
+        "durationSlip": 57,
+        "expectedStartDate": "2026-08-26",
+        "actualStartDate": "2026-08-26",
+        "expectedEndDate": "2026-11-13",
+        "actualEndDate": "2026-11-13",
         "completed": false
       },
       {
         "title": "Selection Phase 1 Due",
         "endDateSlip": 0,
         "durationSlip": 7,
-        "expectedStartDate": "2026-08-19",
-        "actualStartDate": "2026-08-19",
-        "expectedEndDate": "2026-08-27",
-        "actualEndDate": "2026-08-27",
-        "completed": true
-      },
-      {
-        "title": "Permitting",
-        "endDateSlip": 0,
-        "durationSlip": 20,
-        "expectedStartDate": "2026-08-26",
-        "actualStartDate": "2026-08-26",
-        "expectedEndDate": "2026-09-23",
-        "actualEndDate": "2026-09-23",
+        "expectedStartDate": "2026-10-08",
+        "actualStartDate": "2026-10-08",
+        "expectedEndDate": "2026-10-16",
+        "actualEndDate": "2026-10-16",
         "completed": false
       },
       {
         "title": "Selection Phase 2 Due",
         "endDateSlip": 0,
         "durationSlip": 7,
-        "expectedStartDate": "2026-08-28",
-        "actualStartDate": "2026-08-28",
-        "expectedEndDate": "2026-09-08",
-        "actualEndDate": "2026-09-08",
+        "expectedStartDate": "2026-10-16",
+        "actualStartDate": "2026-10-16",
+        "expectedEndDate": "2026-10-26",
+        "actualEndDate": "2026-10-26",
         "completed": false
       },
       {
         "title": "Selection Phase 3 Due",
         "endDateSlip": 0,
         "durationSlip": 7,
-        "expectedStartDate": "2026-09-14",
-        "actualStartDate": "2026-09-14",
-        "expectedEndDate": "2026-09-22",
-        "actualEndDate": "2026-09-22",
+        "expectedStartDate": "2026-10-27",
+        "actualStartDate": "2026-10-27",
+        "expectedEndDate": "2026-11-04",
+        "actualEndDate": "2026-11-04",
         "completed": false
       },
       {
         "title": "Site Work",
         "endDateSlip": 0,
         "durationSlip": 5,
-        "expectedStartDate": "2026-10-05",
-        "actualStartDate": "2026-10-05",
-        "expectedEndDate": "2026-10-09",
-        "actualEndDate": "2026-10-09",
+        "expectedStartDate": "2026-11-23",
+        "actualStartDate": "2026-11-23",
+        "expectedEndDate": "2026-12-01",
+        "actualEndDate": "2026-12-01",
         "completed": false
       },
       {
         "title": "Foundation",
         "endDateSlip": 0,
         "durationSlip": 5,
-        "expectedStartDate": "2026-10-12",
-        "actualStartDate": "2026-10-12",
-        "expectedEndDate": "2026-10-16",
-        "actualEndDate": "2026-10-16",
+        "expectedStartDate": "2026-12-02",
+        "actualStartDate": "2026-12-02",
+        "expectedEndDate": "2026-12-08",
+        "actualEndDate": "2026-12-08",
         "completed": false
       },
       {
         "title": "Block Walls",
         "endDateSlip": 0,
         "durationSlip": 5,
-        "expectedStartDate": "2026-10-19",
-        "actualStartDate": "2026-10-19",
-        "expectedEndDate": "2026-10-23",
-        "actualEndDate": "2026-10-23",
+        "expectedStartDate": "2026-12-09",
+        "actualStartDate": "2026-12-09",
+        "expectedEndDate": "2026-12-15",
+        "actualEndDate": "2026-12-15",
         "completed": false
       },
       {
         "title": "Framing",
         "endDateSlip": 0,
         "durationSlip": 12,
-        "expectedStartDate": "2026-10-26",
-        "actualStartDate": "2026-10-26",
-        "expectedEndDate": "2026-11-10",
-        "actualEndDate": "2026-11-10",
+        "expectedStartDate": "2026-12-16",
+        "actualStartDate": "2026-12-16",
+        "expectedEndDate": "2027-01-04",
+        "actualEndDate": "2027-01-04",
         "completed": false
       },
       {
         "title": "Doors & Windows",
         "endDateSlip": 0,
         "durationSlip": 5,
-        "expectedStartDate": "2026-11-09",
-        "actualStartDate": "2026-11-09",
-        "expectedEndDate": "2026-11-13",
-        "actualEndDate": "2026-11-13",
+        "expectedStartDate": "2026-12-31",
+        "actualStartDate": "2026-12-31",
+        "expectedEndDate": "2027-01-07",
+        "actualEndDate": "2027-01-07",
         "completed": false
       },
       {
         "title": "MEP Rough-Ins",
         "endDateSlip": 0,
         "durationSlip": 13,
-        "expectedStartDate": "2026-11-11",
-        "actualStartDate": "2026-11-11",
-        "expectedEndDate": "2026-12-01",
-        "actualEndDate": "2026-12-01",
+        "expectedStartDate": "2027-01-05",
+        "actualStartDate": "2027-01-05",
+        "expectedEndDate": "2027-01-21",
+        "actualEndDate": "2027-01-21",
         "completed": false
       },
       {
         "title": "Electrical Walk",
         "endDateSlip": 0,
         "durationSlip": 1,
-        "expectedStartDate": "2026-11-24",
-        "actualStartDate": "2026-11-24",
-        "expectedEndDate": "2026-11-24",
-        "actualEndDate": "2026-11-24",
+        "expectedStartDate": "2027-01-18",
+        "actualStartDate": "2027-01-18",
+        "expectedEndDate": "2027-01-18",
+        "actualEndDate": "2027-01-18",
         "completed": false
       },
       {
         "title": "FMEP Inspection",
         "endDateSlip": 0,
         "durationSlip": 1,
-        "expectedStartDate": "2026-12-02",
-        "actualStartDate": "2026-12-02",
-        "expectedEndDate": "2026-12-02",
-        "actualEndDate": "2026-12-02",
+        "expectedStartDate": "2027-01-22",
+        "actualStartDate": "2027-01-22",
+        "expectedEndDate": "2027-01-22",
+        "actualEndDate": "2027-01-22",
         "completed": false
       },
       {
         "title": "Drywall & Insulation",
         "endDateSlip": 0,
         "durationSlip": 10,
-        "expectedStartDate": "2026-12-03",
-        "actualStartDate": "2026-12-03",
-        "expectedEndDate": "2026-12-16",
-        "actualEndDate": "2026-12-16",
+        "expectedStartDate": "2027-01-25",
+        "actualStartDate": "2027-01-25",
+        "expectedEndDate": "2027-02-05",
+        "actualEndDate": "2027-02-05",
         "completed": false
       },
       {
         "title": "Pool",
         "endDateSlip": 0,
         "durationSlip": 67,
-        "expectedStartDate": "2026-12-04",
-        "actualStartDate": "2026-12-04",
-        "expectedEndDate": "2027-03-10",
-        "actualEndDate": "2027-03-10",
+        "expectedStartDate": "2027-01-26",
+        "actualStartDate": "2027-01-26",
+        "expectedEndDate": "2027-04-28",
+        "actualEndDate": "2027-04-28",
         "completed": false
       },
       {
         "title": "Stucco & Siding",
         "endDateSlip": 0,
         "durationSlip": 5,
-        "expectedStartDate": "2026-12-04",
-        "actualStartDate": "2026-12-04",
-        "expectedEndDate": "2026-12-10",
-        "actualEndDate": "2026-12-10",
+        "expectedStartDate": "2027-01-26",
+        "actualStartDate": "2027-01-26",
+        "expectedEndDate": "2027-02-01",
+        "actualEndDate": "2027-02-01",
         "completed": false
       },
       {
         "title": "Soffit & Corbels",
         "endDateSlip": 0,
         "durationSlip": 4,
-        "expectedStartDate": "2026-12-11",
-        "actualStartDate": "2026-12-11",
-        "expectedEndDate": "2026-12-16",
-        "actualEndDate": "2026-12-16",
+        "expectedStartDate": "2027-02-02",
+        "actualStartDate": "2027-02-02",
+        "expectedEndDate": "2027-02-05",
+        "actualEndDate": "2027-02-05",
         "completed": false
       },
       {
         "title": "Interior Paint",
         "endDateSlip": 0,
         "durationSlip": 3,
-        "expectedStartDate": "2026-12-17",
-        "actualStartDate": "2026-12-17",
-        "expectedEndDate": "2026-12-21",
-        "actualEndDate": "2026-12-21",
+        "expectedStartDate": "2027-02-08",
+        "actualStartDate": "2027-02-08",
+        "expectedEndDate": "2027-02-10",
+        "actualEndDate": "2027-02-10",
         "completed": false
       },
       {
         "title": "Exterior Paint",
         "endDateSlip": 0,
         "durationSlip": 3,
-        "expectedStartDate": "2026-12-18",
-        "actualStartDate": "2026-12-18",
-        "expectedEndDate": "2026-12-22",
-        "actualEndDate": "2026-12-22",
+        "expectedStartDate": "2027-02-09",
+        "actualStartDate": "2027-02-09",
+        "expectedEndDate": "2027-02-11",
+        "actualEndDate": "2027-02-11",
         "completed": false
       },
       {
         "title": "HVAC Trim-Out",
         "endDateSlip": 0,
         "durationSlip": 2,
-        "expectedStartDate": "2026-12-22",
-        "actualStartDate": "2026-12-22",
-        "expectedEndDate": "2026-12-23",
-        "actualEndDate": "2026-12-23",
+        "expectedStartDate": "2027-02-11",
+        "actualStartDate": "2027-02-11",
+        "expectedEndDate": "2027-02-12",
+        "actualEndDate": "2027-02-12",
         "completed": false
       },
       {
         "title": "Garage Door",
         "endDateSlip": 0,
         "durationSlip": 1,
-        "expectedStartDate": "2026-12-23",
-        "actualStartDate": "2026-12-23",
-        "expectedEndDate": "2026-12-23",
-        "actualEndDate": "2026-12-23",
+        "expectedStartDate": "2027-02-12",
+        "actualStartDate": "2027-02-12",
+        "expectedEndDate": "2027-02-12",
+        "actualEndDate": "2027-02-12",
         "completed": false
       },
       {
         "title": "Tile & Flooring",
         "endDateSlip": 0,
         "durationSlip": 8,
-        "expectedStartDate": "2026-12-23",
-        "actualStartDate": "2026-12-23",
-        "expectedEndDate": "2027-01-05",
-        "actualEndDate": "2027-01-05",
+        "expectedStartDate": "2027-02-12",
+        "actualStartDate": "2027-02-12",
+        "expectedEndDate": "2027-02-23",
+        "actualEndDate": "2027-02-23",
         "completed": false
       },
       {
         "title": "Roofing",
         "endDateSlip": 0,
         "durationSlip": 5,
-        "expectedStartDate": "2026-12-24",
-        "actualStartDate": "2026-12-24",
-        "expectedEndDate": "2026-12-31",
-        "actualEndDate": "2026-12-31",
+        "expectedStartDate": "2027-02-15",
+        "actualStartDate": "2027-02-15",
+        "expectedEndDate": "2027-02-19",
+        "actualEndDate": "2027-02-19",
         "completed": false
       },
       {
         "title": "Gutters",
         "endDateSlip": 0,
         "durationSlip": 2,
-        "expectedStartDate": "2027-01-04",
-        "actualStartDate": "2027-01-04",
-        "expectedEndDate": "2027-01-05",
-        "actualEndDate": "2027-01-05",
-        "completed": false
-      },
-      {
-        "title": "Cabinets",
-        "endDateSlip": 0,
-        "durationSlip": 4,
-        "expectedStartDate": "2027-01-06",
-        "actualStartDate": "2027-01-06",
-        "expectedEndDate": "2027-01-11",
-        "actualEndDate": "2027-01-11",
-        "completed": false
-      },
-      {
-        "title": "Driveway",
-        "endDateSlip": 0,
-        "durationSlip": 4,
-        "expectedStartDate": "2027-01-07",
-        "actualStartDate": "2027-01-07",
-        "expectedEndDate": "2027-01-12",
-        "actualEndDate": "2027-01-12",
-        "completed": false
-      },
-      {
-        "title": "Interior Doors/Trim",
-        "endDateSlip": 0,
-        "durationSlip": 5,
-        "expectedStartDate": "2027-01-07",
-        "actualStartDate": "2027-01-07",
-        "expectedEndDate": "2027-01-13",
-        "actualEndDate": "2027-01-13",
-        "completed": false
-      },
-      {
-        "title": "Countertop Template & Install",
-        "endDateSlip": 0,
-        "durationSlip": 8,
-        "expectedStartDate": "2027-01-12",
-        "actualStartDate": "2027-01-12",
-        "expectedEndDate": "2027-01-21",
-        "actualEndDate": "2027-01-21",
-        "completed": false
-      },
-      {
-        "title": "Backsplash Template & Install",
-        "endDateSlip": 0,
-        "durationSlip": 7,
-        "expectedStartDate": "2027-01-21",
-        "actualStartDate": "2027-01-21",
-        "expectedEndDate": "2027-01-29",
-        "actualEndDate": "2027-01-29",
-        "completed": false
-      },
-      {
-        "title": "MEP Trim-Outs",
-        "endDateSlip": 0,
-        "durationSlip": 7,
-        "expectedStartDate": "2027-01-21",
-        "actualStartDate": "2027-01-21",
-        "expectedEndDate": "2027-01-29",
-        "actualEndDate": "2027-01-29",
-        "completed": false
-      },
-      {
-        "title": "Appliances",
-        "endDateSlip": 0,
-        "durationSlip": 2,
-        "expectedStartDate": "2027-01-22",
-        "actualStartDate": "2027-01-22",
-        "expectedEndDate": "2027-01-25",
-        "actualEndDate": "2027-01-25",
-        "completed": false
-      },
-      {
-        "title": "Interior Specialties",
-        "endDateSlip": 0,
-        "durationSlip": 10,
-        "expectedStartDate": "2027-01-22",
-        "actualStartDate": "2027-01-22",
-        "expectedEndDate": "2027-02-04",
-        "actualEndDate": "2027-02-04",
-        "completed": false
-      },
-      {
-        "title": "Plumbing Trim-Out",
-        "endDateSlip": 0,
-        "durationSlip": 3,
-        "expectedStartDate": "2027-01-25",
-        "actualStartDate": "2027-01-25",
-        "expectedEndDate": "2027-01-27",
-        "actualEndDate": "2027-01-27",
-        "completed": false
-      },
-      {
-        "title": "Corporate Inspection",
-        "endDateSlip": 0,
-        "durationSlip": 1,
-        "expectedStartDate": "2027-01-26",
-        "actualStartDate": "2027-01-26",
-        "expectedEndDate": "2027-01-26",
-        "actualEndDate": "2027-01-26",
-        "completed": false
-      },
-      {
-        "title": "Gas Trim-Out",
-        "endDateSlip": 0,
-        "durationSlip": 1,
-        "expectedStartDate": "2027-01-26",
-        "actualStartDate": "2027-01-26",
-        "expectedEndDate": "2027-01-26",
-        "actualEndDate": "2027-01-26",
-        "completed": false
-      },
-      {
-        "title": "Electrical Trim-Out",
-        "endDateSlip": 0,
-        "durationSlip": 2,
-        "expectedStartDate": "2027-01-27",
-        "actualStartDate": "2027-01-27",
-        "expectedEndDate": "2027-01-28",
-        "actualEndDate": "2027-01-28",
-        "completed": false
-      },
-      {
-        "title": "Summer Kitchen",
-        "endDateSlip": 0,
-        "durationSlip": 12,
-        "expectedStartDate": "2027-02-09",
-        "actualStartDate": "2027-02-09",
-        "expectedEndDate": "2027-02-24",
-        "actualEndDate": "2027-02-24",
-        "completed": false
-      },
-      {
-        "title": "Final Drywall & Paint Bump",
-        "endDateSlip": 0,
-        "durationSlip": 1,
-        "expectedStartDate": "2027-02-10",
-        "actualStartDate": "2027-02-10",
-        "expectedEndDate": "2027-02-10",
-        "actualEndDate": "2027-02-10",
-        "completed": false
-      },
-      {
-        "title": "Generator",
-        "endDateSlip": 0,
-        "durationSlip": 10,
-        "expectedStartDate": "2027-02-11",
-        "actualStartDate": "2027-02-11",
-        "expectedEndDate": "2027-02-24",
-        "actualEndDate": "2027-02-24",
-        "completed": false
-      },
-      {
-        "title": "Final Trim Out",
-        "endDateSlip": 0,
-        "durationSlip": 3,
-        "expectedStartDate": "2027-02-15",
-        "actualStartDate": "2027-02-15",
-        "expectedEndDate": "2027-02-17",
-        "actualEndDate": "2027-02-17",
-        "completed": false
-      },
-      {
-        "title": "Landscaping",
-        "endDateSlip": 0,
-        "durationSlip": 5,
-        "expectedStartDate": "2027-02-18",
-        "actualStartDate": "2027-02-18",
-        "expectedEndDate": "2027-02-24",
-        "actualEndDate": "2027-02-24",
+        "expectedStartDate": "2027-02-22",
+        "actualStartDate": "2027-02-22",
+        "expectedEndDate": "2027-02-23",
+        "actualEndDate": "2027-02-23",
         "completed": false
       },
       {
@@ -18576,23 +16017,193 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "completed": false
       },
       {
+        "title": "Cabinets",
+        "endDateSlip": 0,
+        "durationSlip": 4,
+        "expectedStartDate": "2027-02-24",
+        "actualStartDate": "2027-02-24",
+        "expectedEndDate": "2027-03-01",
+        "actualEndDate": "2027-03-01",
+        "completed": false
+      },
+      {
+        "title": "Driveway",
+        "endDateSlip": 0,
+        "durationSlip": 4,
+        "expectedStartDate": "2027-02-25",
+        "actualStartDate": "2027-02-25",
+        "expectedEndDate": "2027-03-02",
+        "actualEndDate": "2027-03-02",
+        "completed": false
+      },
+      {
+        "title": "Interior Doors/Trim",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2027-02-25",
+        "actualStartDate": "2027-02-25",
+        "expectedEndDate": "2027-03-03",
+        "actualEndDate": "2027-03-03",
+        "completed": false
+      },
+      {
+        "title": "Countertop Template & Install",
+        "endDateSlip": 0,
+        "durationSlip": 8,
+        "expectedStartDate": "2027-03-02",
+        "actualStartDate": "2027-03-02",
+        "expectedEndDate": "2027-03-11",
+        "actualEndDate": "2027-03-11",
+        "completed": false
+      },
+      {
+        "title": "Backsplash Template & Install",
+        "endDateSlip": 0,
+        "durationSlip": 7,
+        "expectedStartDate": "2027-03-11",
+        "actualStartDate": "2027-03-11",
+        "expectedEndDate": "2027-03-19",
+        "actualEndDate": "2027-03-19",
+        "completed": false
+      },
+      {
+        "title": "MEP Trim-Outs",
+        "endDateSlip": 0,
+        "durationSlip": 7,
+        "expectedStartDate": "2027-03-11",
+        "actualStartDate": "2027-03-11",
+        "expectedEndDate": "2027-03-19",
+        "actualEndDate": "2027-03-19",
+        "completed": false
+      },
+      {
+        "title": "Appliances",
+        "endDateSlip": 0,
+        "durationSlip": 2,
+        "expectedStartDate": "2027-03-12",
+        "actualStartDate": "2027-03-12",
+        "expectedEndDate": "2027-03-15",
+        "actualEndDate": "2027-03-15",
+        "completed": false
+      },
+      {
+        "title": "Interior Specialties",
+        "endDateSlip": 0,
+        "durationSlip": 10,
+        "expectedStartDate": "2027-03-12",
+        "actualStartDate": "2027-03-12",
+        "expectedEndDate": "2027-03-25",
+        "actualEndDate": "2027-03-25",
+        "completed": false
+      },
+      {
+        "title": "Plumbing Trim-Out",
+        "endDateSlip": 0,
+        "durationSlip": 3,
+        "expectedStartDate": "2027-03-15",
+        "actualStartDate": "2027-03-15",
+        "expectedEndDate": "2027-03-17",
+        "actualEndDate": "2027-03-17",
+        "completed": false
+      },
+      {
+        "title": "Corporate Inspection",
+        "endDateSlip": 0,
+        "durationSlip": 1,
+        "expectedStartDate": "2027-03-16",
+        "actualStartDate": "2027-03-16",
+        "expectedEndDate": "2027-03-16",
+        "actualEndDate": "2027-03-16",
+        "completed": false
+      },
+      {
+        "title": "Gas Trim-Out",
+        "endDateSlip": 0,
+        "durationSlip": 1,
+        "expectedStartDate": "2027-03-16",
+        "actualStartDate": "2027-03-16",
+        "expectedEndDate": "2027-03-16",
+        "actualEndDate": "2027-03-16",
+        "completed": false
+      },
+      {
+        "title": "Electrical Trim-Out",
+        "endDateSlip": 0,
+        "durationSlip": 2,
+        "expectedStartDate": "2027-03-17",
+        "actualStartDate": "2027-03-17",
+        "expectedEndDate": "2027-03-18",
+        "actualEndDate": "2027-03-18",
+        "completed": false
+      },
+      {
+        "title": "Summer Kitchen",
+        "endDateSlip": 0,
+        "durationSlip": 12,
+        "expectedStartDate": "2027-03-30",
+        "actualStartDate": "2027-03-30",
+        "expectedEndDate": "2027-04-14",
+        "actualEndDate": "2027-04-14",
+        "completed": false
+      },
+      {
+        "title": "Final Drywall & Paint Bump",
+        "endDateSlip": 0,
+        "durationSlip": 1,
+        "expectedStartDate": "2027-03-31",
+        "actualStartDate": "2027-03-31",
+        "expectedEndDate": "2027-03-31",
+        "actualEndDate": "2027-03-31",
+        "completed": false
+      },
+      {
+        "title": "Generator",
+        "endDateSlip": 0,
+        "durationSlip": 10,
+        "expectedStartDate": "2027-04-01",
+        "actualStartDate": "2027-04-01",
+        "expectedEndDate": "2027-04-14",
+        "actualEndDate": "2027-04-14",
+        "completed": false
+      },
+      {
+        "title": "Final Trim Out",
+        "endDateSlip": 0,
+        "durationSlip": 3,
+        "expectedStartDate": "2027-04-05",
+        "actualStartDate": "2027-04-05",
+        "expectedEndDate": "2027-04-07",
+        "actualEndDate": "2027-04-07",
+        "completed": false
+      },
+      {
+        "title": "Landscaping",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2027-04-08",
+        "actualStartDate": "2027-04-08",
+        "expectedEndDate": "2027-04-14",
+        "actualEndDate": "2027-04-14",
+        "completed": false
+      },
+      {
         "title": "Final Inspections",
         "endDateSlip": 0,
         "durationSlip": 6,
-        "expectedStartDate": "2027-02-24",
-        "actualStartDate": "2027-02-24",
-        "expectedEndDate": "2027-03-03",
-        "actualEndDate": "2027-03-03",
+        "expectedStartDate": "2027-04-14",
+        "actualStartDate": "2027-04-14",
+        "expectedEndDate": "2027-04-21",
+        "actualEndDate": "2027-04-21",
         "completed": false
       },
       {
         "title": "Closing",
         "endDateSlip": 0,
         "durationSlip": 3,
-        "expectedStartDate": "2027-03-08",
-        "actualStartDate": "2027-03-08",
-        "expectedEndDate": "2027-03-10",
-        "actualEndDate": "2027-03-10",
+        "expectedStartDate": "2027-04-26",
+        "actualStartDate": "2027-04-26",
+        "expectedEndDate": "2027-04-28",
+        "actualEndDate": "2027-04-28",
         "completed": false
       }
     ],
@@ -18615,7 +16226,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "actualStartDate": "2026-08-19",
         "expectedEndDate": "2026-09-30",
         "actualEndDate": "2026-09-30",
-        "completed": false
+        "completed": true
       },
       {
         "title": "Bid Period",
@@ -18635,7 +16246,7 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "actualStartDate": "2026-10-01",
         "expectedEndDate": "2026-10-09",
         "actualEndDate": "2026-10-09",
-        "completed": false
+        "completed": true
       },
       {
         "title": "Permitting",
@@ -19055,6 +16666,468 @@ export const LIVE_DRILLDOWN: LiveDrilldown = {
         "actualStartDate": "2027-04-19",
         "expectedEndDate": "2027-04-21",
         "actualEndDate": "2027-04-21",
+        "completed": false
+      }
+    ],
+    "46336283": [
+      {
+        "title": "Sale/Contract Deposit",
+        "endDateSlip": 0,
+        "durationSlip": 1,
+        "expectedStartDate": "2026-09-08",
+        "actualStartDate": "2026-09-08",
+        "expectedEndDate": "2026-09-08",
+        "actualEndDate": "2026-09-08",
+        "completed": true
+      },
+      {
+        "title": "Draft Plans",
+        "endDateSlip": 0,
+        "durationSlip": 30,
+        "expectedStartDate": "2026-09-09",
+        "actualStartDate": "2026-09-09",
+        "expectedEndDate": "2026-10-20",
+        "actualEndDate": "2026-10-20",
+        "completed": false
+      },
+      {
+        "title": "Bid Period",
+        "endDateSlip": 0,
+        "durationSlip": 58,
+        "expectedStartDate": "2026-09-18",
+        "actualStartDate": "2026-09-18",
+        "expectedEndDate": "2026-12-10",
+        "actualEndDate": "2026-12-10",
+        "completed": false
+      },
+      {
+        "title": "Selection Phase 1 Due",
+        "endDateSlip": 0,
+        "durationSlip": 7,
+        "expectedStartDate": "2026-10-21",
+        "actualStartDate": "2026-10-21",
+        "expectedEndDate": "2026-10-29",
+        "actualEndDate": "2026-10-29",
+        "completed": false
+      },
+      {
+        "title": "Permitting",
+        "endDateSlip": 0,
+        "durationSlip": 20,
+        "expectedStartDate": "2026-10-28",
+        "actualStartDate": "2026-10-28",
+        "expectedEndDate": "2026-11-24",
+        "actualEndDate": "2026-11-24",
+        "completed": false
+      },
+      {
+        "title": "Selection Phase 2 Due",
+        "endDateSlip": 0,
+        "durationSlip": 7,
+        "expectedStartDate": "2026-10-30",
+        "actualStartDate": "2026-10-30",
+        "expectedEndDate": "2026-11-09",
+        "actualEndDate": "2026-11-09",
+        "completed": false
+      },
+      {
+        "title": "Selection Phase 3 Due",
+        "endDateSlip": 0,
+        "durationSlip": 7,
+        "expectedStartDate": "2026-11-13",
+        "actualStartDate": "2026-11-13",
+        "expectedEndDate": "2026-11-23",
+        "actualEndDate": "2026-11-23",
+        "completed": false
+      },
+      {
+        "title": "Site Work",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-12-08",
+        "actualStartDate": "2026-12-08",
+        "expectedEndDate": "2026-12-14",
+        "actualEndDate": "2026-12-14",
+        "completed": false
+      },
+      {
+        "title": "Foundation",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-12-15",
+        "actualStartDate": "2026-12-15",
+        "expectedEndDate": "2026-12-21",
+        "actualEndDate": "2026-12-21",
+        "completed": false
+      },
+      {
+        "title": "Block Walls",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2026-12-22",
+        "actualStartDate": "2026-12-22",
+        "expectedEndDate": "2026-12-29",
+        "actualEndDate": "2026-12-29",
+        "completed": false
+      },
+      {
+        "title": "Framing",
+        "endDateSlip": 0,
+        "durationSlip": 12,
+        "expectedStartDate": "2026-12-30",
+        "actualStartDate": "2026-12-30",
+        "expectedEndDate": "2027-01-15",
+        "actualEndDate": "2027-01-15",
+        "completed": false
+      },
+      {
+        "title": "Doors & Windows",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2027-01-14",
+        "actualStartDate": "2027-01-14",
+        "expectedEndDate": "2027-01-20",
+        "actualEndDate": "2027-01-20",
+        "completed": false
+      },
+      {
+        "title": "MEP Rough-Ins",
+        "endDateSlip": 0,
+        "durationSlip": 13,
+        "expectedStartDate": "2027-01-18",
+        "actualStartDate": "2027-01-18",
+        "expectedEndDate": "2027-02-03",
+        "actualEndDate": "2027-02-03",
+        "completed": false
+      },
+      {
+        "title": "Electrical Walk",
+        "endDateSlip": 0,
+        "durationSlip": 1,
+        "expectedStartDate": "2027-01-29",
+        "actualStartDate": "2027-01-29",
+        "expectedEndDate": "2027-01-29",
+        "actualEndDate": "2027-01-29",
+        "completed": false
+      },
+      {
+        "title": "FMEP Inspection",
+        "endDateSlip": 0,
+        "durationSlip": 1,
+        "expectedStartDate": "2027-02-04",
+        "actualStartDate": "2027-02-04",
+        "expectedEndDate": "2027-02-04",
+        "actualEndDate": "2027-02-04",
+        "completed": false
+      },
+      {
+        "title": "Drywall & Insulation",
+        "endDateSlip": 0,
+        "durationSlip": 10,
+        "expectedStartDate": "2027-02-05",
+        "actualStartDate": "2027-02-05",
+        "expectedEndDate": "2027-02-18",
+        "actualEndDate": "2027-02-18",
+        "completed": false
+      },
+      {
+        "title": "Pool",
+        "endDateSlip": 0,
+        "durationSlip": 67,
+        "expectedStartDate": "2027-02-08",
+        "actualStartDate": "2027-02-08",
+        "expectedEndDate": "2027-05-11",
+        "actualEndDate": "2027-05-11",
+        "completed": false
+      },
+      {
+        "title": "Stucco & Siding",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2027-02-08",
+        "actualStartDate": "2027-02-08",
+        "expectedEndDate": "2027-02-12",
+        "actualEndDate": "2027-02-12",
+        "completed": false
+      },
+      {
+        "title": "Soffit & Corbels",
+        "endDateSlip": 0,
+        "durationSlip": 4,
+        "expectedStartDate": "2027-02-15",
+        "actualStartDate": "2027-02-15",
+        "expectedEndDate": "2027-02-18",
+        "actualEndDate": "2027-02-18",
+        "completed": false
+      },
+      {
+        "title": "Interior Paint",
+        "endDateSlip": 0,
+        "durationSlip": 3,
+        "expectedStartDate": "2027-02-19",
+        "actualStartDate": "2027-02-19",
+        "expectedEndDate": "2027-02-23",
+        "actualEndDate": "2027-02-23",
+        "completed": false
+      },
+      {
+        "title": "Exterior Paint",
+        "endDateSlip": 0,
+        "durationSlip": 3,
+        "expectedStartDate": "2027-02-22",
+        "actualStartDate": "2027-02-22",
+        "expectedEndDate": "2027-02-24",
+        "actualEndDate": "2027-02-24",
+        "completed": false
+      },
+      {
+        "title": "HVAC Trim-Out",
+        "endDateSlip": 0,
+        "durationSlip": 2,
+        "expectedStartDate": "2027-02-24",
+        "actualStartDate": "2027-02-24",
+        "expectedEndDate": "2027-02-25",
+        "actualEndDate": "2027-02-25",
+        "completed": false
+      },
+      {
+        "title": "Garage Door",
+        "endDateSlip": 0,
+        "durationSlip": 1,
+        "expectedStartDate": "2027-02-25",
+        "actualStartDate": "2027-02-25",
+        "expectedEndDate": "2027-02-25",
+        "actualEndDate": "2027-02-25",
+        "completed": false
+      },
+      {
+        "title": "Tile & Flooring",
+        "endDateSlip": 0,
+        "durationSlip": 8,
+        "expectedStartDate": "2027-02-25",
+        "actualStartDate": "2027-02-25",
+        "expectedEndDate": "2027-03-08",
+        "actualEndDate": "2027-03-08",
+        "completed": false
+      },
+      {
+        "title": "Roofing",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2027-02-26",
+        "actualStartDate": "2027-02-26",
+        "expectedEndDate": "2027-03-04",
+        "actualEndDate": "2027-03-04",
+        "completed": false
+      },
+      {
+        "title": "Gutters",
+        "endDateSlip": 0,
+        "durationSlip": 2,
+        "expectedStartDate": "2027-03-05",
+        "actualStartDate": "2027-03-05",
+        "expectedEndDate": "2027-03-08",
+        "actualEndDate": "2027-03-08",
+        "completed": false
+      },
+      {
+        "title": "Cabinets",
+        "endDateSlip": 0,
+        "durationSlip": 4,
+        "expectedStartDate": "2027-03-09",
+        "actualStartDate": "2027-03-09",
+        "expectedEndDate": "2027-03-12",
+        "actualEndDate": "2027-03-12",
+        "completed": false
+      },
+      {
+        "title": "Driveway",
+        "endDateSlip": 0,
+        "durationSlip": 4,
+        "expectedStartDate": "2027-03-10",
+        "actualStartDate": "2027-03-10",
+        "expectedEndDate": "2027-03-15",
+        "actualEndDate": "2027-03-15",
+        "completed": false
+      },
+      {
+        "title": "Interior Doors/Trim",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2027-03-10",
+        "actualStartDate": "2027-03-10",
+        "expectedEndDate": "2027-03-16",
+        "actualEndDate": "2027-03-16",
+        "completed": false
+      },
+      {
+        "title": "Countertop Template & Install",
+        "endDateSlip": 0,
+        "durationSlip": 8,
+        "expectedStartDate": "2027-03-15",
+        "actualStartDate": "2027-03-15",
+        "expectedEndDate": "2027-03-24",
+        "actualEndDate": "2027-03-24",
+        "completed": false
+      },
+      {
+        "title": "Backsplash Template & Install",
+        "endDateSlip": 0,
+        "durationSlip": 7,
+        "expectedStartDate": "2027-03-24",
+        "actualStartDate": "2027-03-24",
+        "expectedEndDate": "2027-04-01",
+        "actualEndDate": "2027-04-01",
+        "completed": false
+      },
+      {
+        "title": "MEP Trim-Outs",
+        "endDateSlip": 0,
+        "durationSlip": 7,
+        "expectedStartDate": "2027-03-24",
+        "actualStartDate": "2027-03-24",
+        "expectedEndDate": "2027-04-01",
+        "actualEndDate": "2027-04-01",
+        "completed": false
+      },
+      {
+        "title": "Appliances",
+        "endDateSlip": 0,
+        "durationSlip": 2,
+        "expectedStartDate": "2027-03-25",
+        "actualStartDate": "2027-03-25",
+        "expectedEndDate": "2027-03-26",
+        "actualEndDate": "2027-03-26",
+        "completed": false
+      },
+      {
+        "title": "Interior Specialties",
+        "endDateSlip": 0,
+        "durationSlip": 10,
+        "expectedStartDate": "2027-03-25",
+        "actualStartDate": "2027-03-25",
+        "expectedEndDate": "2027-04-07",
+        "actualEndDate": "2027-04-07",
+        "completed": false
+      },
+      {
+        "title": "Plumbing Trim-Out",
+        "endDateSlip": 0,
+        "durationSlip": 3,
+        "expectedStartDate": "2027-03-26",
+        "actualStartDate": "2027-03-26",
+        "expectedEndDate": "2027-03-30",
+        "actualEndDate": "2027-03-30",
+        "completed": false
+      },
+      {
+        "title": "Gas Trim-Out",
+        "endDateSlip": 0,
+        "durationSlip": 1,
+        "expectedStartDate": "2027-03-29",
+        "actualStartDate": "2027-03-29",
+        "expectedEndDate": "2027-03-29",
+        "actualEndDate": "2027-03-29",
+        "completed": false
+      },
+      {
+        "title": "Electrical Trim-Out",
+        "endDateSlip": 0,
+        "durationSlip": 2,
+        "expectedStartDate": "2027-03-30",
+        "actualStartDate": "2027-03-30",
+        "expectedEndDate": "2027-03-31",
+        "actualEndDate": "2027-03-31",
+        "completed": false
+      },
+      {
+        "title": "Corporate Inspection",
+        "endDateSlip": 0,
+        "durationSlip": 1,
+        "expectedStartDate": "2027-04-01",
+        "actualStartDate": "2027-04-01",
+        "expectedEndDate": "2027-04-01",
+        "actualEndDate": "2027-04-01",
+        "completed": false
+      },
+      {
+        "title": "Final Trim Out",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2027-04-08",
+        "actualStartDate": "2027-04-08",
+        "expectedEndDate": "2027-04-14",
+        "actualEndDate": "2027-04-14",
+        "completed": false
+      },
+      {
+        "title": "Summer Kitchen",
+        "endDateSlip": 0,
+        "durationSlip": 12,
+        "expectedStartDate": "2027-04-12",
+        "actualStartDate": "2027-04-12",
+        "expectedEndDate": "2027-04-27",
+        "actualEndDate": "2027-04-27",
+        "completed": false
+      },
+      {
+        "title": "Generator",
+        "endDateSlip": 0,
+        "durationSlip": 10,
+        "expectedStartDate": "2027-04-14",
+        "actualStartDate": "2027-04-14",
+        "expectedEndDate": "2027-04-27",
+        "actualEndDate": "2027-04-27",
+        "completed": false
+      },
+      {
+        "title": "Final Drywall & Paint Bump",
+        "endDateSlip": 0,
+        "durationSlip": 4,
+        "expectedStartDate": "2027-04-15",
+        "actualStartDate": "2027-04-15",
+        "expectedEndDate": "2027-04-20",
+        "actualEndDate": "2027-04-20",
+        "completed": false
+      },
+      {
+        "title": "Final Inspections",
+        "endDateSlip": 0,
+        "durationSlip": 10,
+        "expectedStartDate": "2027-04-21",
+        "actualStartDate": "2027-04-21",
+        "expectedEndDate": "2027-05-04",
+        "actualEndDate": "2027-05-04",
+        "completed": false
+      },
+      {
+        "title": "Landscaping",
+        "endDateSlip": 0,
+        "durationSlip": 5,
+        "expectedStartDate": "2027-04-21",
+        "actualStartDate": "2027-04-21",
+        "expectedEndDate": "2027-04-27",
+        "actualEndDate": "2027-04-27",
+        "completed": false
+      },
+      {
+        "title": "Low Voltage Trim-Out",
+        "endDateSlip": 0,
+        "durationSlip": 1,
+        "expectedStartDate": "2027-04-26",
+        "actualStartDate": "2027-04-26",
+        "expectedEndDate": "2027-04-26",
+        "actualEndDate": "2027-04-26",
+        "completed": false
+      },
+      {
+        "title": "Closing",
+        "endDateSlip": 0,
+        "durationSlip": 3,
+        "expectedStartDate": "2027-05-07",
+        "actualStartDate": "2027-05-07",
+        "expectedEndDate": "2027-05-11",
+        "actualEndDate": "2027-05-11",
         "completed": false
       }
     ]
