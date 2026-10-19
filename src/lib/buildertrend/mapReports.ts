@@ -971,9 +971,18 @@ export function mapBuildertrendReports(
         Boolean(reports.scheduleByJob?.[String(job.jobId)]) ||
         Boolean(reports.siteWorkByJob?.[String(job.jobId)]),
     );
+  // Drop true scratch only: no Site Work phase AND no positive contract/WIP.
+  // Pre-budget signed jobs (Graham / Olmstead / Peters) often lack a Site Work
+  // schedule item but still have Job Info / WIP prices — keep them in Total WIP.
   const forDashboard =
     schedulePulled && openScheduleEnriched
-      ? unique.filter((job) => job.status !== 'open' || job.siteWorkStarted != null)
+      ? unique.filter(
+          (job) =>
+            job.status !== 'open' ||
+            job.siteWorkStarted != null ||
+            job.contractPrice > 0 ||
+            job.wip > 0,
+        )
       : unique;
   const ownerJobs = forDashboard.map((job) => toOwnerJob(job, now)).sort((a, b) => a.name.localeCompare(b.name));
 
