@@ -1,24 +1,32 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import {
+  BT_COOKIE_FIELD_NAMES,
+  OPTIONAL_BT_COOKIE_NAMES,
   REQUIRED_BT_COOKIE_NAMES,
   buildCookieHeader,
-  type RequiredBtCookieName,
+  type BtCookieFieldName,
 } from '../../lib/buildertrend/cookieSession';
 import './dashboard.css';
 
-const COOKIE_HINTS: Record<RequiredBtCookieName, string> = {
-  '.AspNet.Auth0': 'Login session token',
-  'ASP.NET_SessionId': 'ASP.NET session id',
-  GAESA: 'Buildertrend session token',
+const COOKIE_HINTS: Record<BtCookieFieldName, string> = {
+  '.AspNetCore.Auth0Cookie': 'Auth0 login cookie (required)',
+  'ASP.NET_SessionId': 'ASP.NET session id (required)',
+  GAESA: 'Buildertrend session token (required)',
+  '.AspNetCore.Auth0CookieC1': 'Auth0 chunk 1 (paste if listed)',
+  '.AspNetCore.Auth0CookieC2': 'Auth0 chunk 2 (paste if listed)',
 };
 
-type Values = Record<RequiredBtCookieName, string>;
+const OPTIONAL = new Set<string>(OPTIONAL_BT_COOKIE_NAMES);
+
+type Values = Record<BtCookieFieldName, string>;
 
 function emptyValues(): Values {
   return {
-    '.AspNet.Auth0': '',
+    '.AspNetCore.Auth0Cookie': '',
     'ASP.NET_SessionId': '',
     GAESA: '',
+    '.AspNetCore.Auth0CookieC1': '',
+    '.AspNetCore.Auth0CookieC2': '',
   };
 }
 
@@ -38,7 +46,7 @@ export function BtCookieDialog({
   const titleId = useId();
   const firstFieldRef = useRef<HTMLInputElement>(null);
   const [values, setValues] = useState<Values>(emptyValues);
-  const [missing, setMissing] = useState<Partial<Record<RequiredBtCookieName, boolean>>>({});
+  const [missing, setMissing] = useState<Partial<Record<BtCookieFieldName, boolean>>>({});
 
   useEffect(() => {
     firstFieldRef.current?.focus();
@@ -52,7 +60,7 @@ export function BtCookieDialog({
     return () => window.removeEventListener('keydown', onKey);
   }, [onCancel, busy]);
 
-  const setValue = (name: RequiredBtCookieName, value: string) => {
+  const setValue = (name: BtCookieFieldName, value: string) => {
     setValues((prev) => ({ ...prev, [name]: value }));
     if (value.trim()) setMissing((prev) => ({ ...prev, [name]: false }));
   };
@@ -60,7 +68,7 @@ export function BtCookieDialog({
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
     if (busy) return;
-    const nextMissing: Partial<Record<RequiredBtCookieName, boolean>> = {};
+    const nextMissing: Partial<Record<BtCookieFieldName, boolean>> = {};
     let ok = true;
     for (const name of REQUIRED_BT_COOKIE_NAMES) {
       if (!values[name].trim()) {
@@ -124,18 +132,24 @@ export function BtCookieDialog({
             <code>https://buildertrend.net</code>
           </li>
           <li>
-            Click each cookie name below and copy only the <strong>Value</strong> column (not the name)
+            Copy only the <strong>Value</strong> column for each name below. Buildertrend replaced{' '}
+            <code>.AspNet.Auth0</code> with <code>.AspNetCore.Auth0Cookie</code> (plus C1/C2 chunks when
+            present).
           </li>
         </ol>
 
         <form className="dash-cookie-form" onSubmit={handleSubmit}>
-          {REQUIRED_BT_COOKIE_NAMES.map((name, index) => {
+          {BT_COOKIE_FIELD_NAMES.map((name, index) => {
             const fieldId = `bt-cookie-${index}`;
+            const optional = OPTIONAL.has(name);
             return (
               <label key={name} className="dash-cookie-field" htmlFor={fieldId}>
                 <span className="dash-cookie-field-label">
                   <code>{name}</code>
-                  <em>{COOKIE_HINTS[name]}</em>
+                  <em>
+                    {COOKIE_HINTS[name]}
+                    {optional ? ' · optional' : ''}
+                  </em>
                 </span>
                 <input
                   ref={index === 0 ? firstFieldRef : undefined}
@@ -143,7 +157,7 @@ export function BtCookieDialog({
                   type="text"
                   autoComplete="off"
                   spellCheck={false}
-                  placeholder="Paste value only"
+                  placeholder={optional ? 'Paste if this cookie exists' : 'Paste value only'}
                   value={values[name]}
                   disabled={busy}
                   aria-invalid={missing[name] ? true : undefined}

@@ -324,7 +324,11 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
     const collectAndPull = async (reason?: string, initialError?: string) => {
       const ok = await openCookieDialog(reason, initialError);
       if (!ok) {
-        setError(initialError || reason || 'Refresh cancelled — paste the three Buildertrend cookie values to continue.');
+        setError(
+          initialError ||
+            reason ||
+            'Refresh cancelled — paste Buildertrend cookie values (.AspNetCore.Auth0Cookie, ASP.NET_SessionId, GAESA) to continue.',
+        );
       }
       return ok;
     };

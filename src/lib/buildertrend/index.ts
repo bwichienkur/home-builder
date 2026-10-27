@@ -59,6 +59,9 @@ export {
 export {
   BT_COOKIE_STORAGE_KEY,
   REQUIRED_BT_COOKIE_NAMES,
+  OPTIONAL_BT_COOKIE_NAMES,
+  BT_COOKIE_FIELD_NAMES,
+  BT_COOKIE_NAMES_HINT,
   loadStoredBtCookie,
   storeBtCookie,
   clearStoredBtCookie,
@@ -66,7 +69,7 @@ export {
   sanitizeCookieValue,
   isAuthRefreshFailure,
 } from './cookieSession';
-export type { RequiredBtCookieName } from './cookieSession';
+export type { RequiredBtCookieName, OptionalBtCookieName, BtCookieFieldName } from './cookieSession';
 export { formatCompactUsd, formatUsd, formatPct, formatDelta, formatRefreshedAt, formatRefreshAgo, formatCloseDate, formatDays, formatMonthsDays, splitMonthsDays, totalSlipDays, phaseLabel } from './format';
 export { PM_REVENUE_LAST_30D_GOAL } from './types';
 export type * from './types';

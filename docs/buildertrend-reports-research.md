@@ -26,7 +26,7 @@ General research on **where Owner Dashboard metrics come from in Buildertrend**,
 
 Buildertrend does **not** publish an OpenAPI spec for internal endpoints. Discovery is done by watching network traffic while logged in, same as any browser session.
 
-**Auth note:** Unattended login is blocked by Auth0/reCAPTCHA. Production refresh uses a pasted browser cookie (include `.AspNet.Auth0`, `ASP.NET_SessionId`, `GAESA`). Never commit cookies.
+**Auth note:** Unattended login is blocked by Auth0/reCAPTCHA. Production refresh uses a pasted browser cookie (include `.AspNetCore.Auth0Cookie` plus `C1`/`C2` chunks when present, `ASP.NET_SessionId`, `GAESA`). The old `.AspNet.Auth0` cookie was removed. Never commit cookies.
 
 ---
 

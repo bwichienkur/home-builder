@@ -309,7 +309,7 @@ export async function handleVercelRefresh(req, res) {
     if (!probe.ok) {
       return res.status(401).json({
         ok: false,
-        error: `Buildertrend rejected the cookies (HTTP ${probe.status}, source=${cookieSource || 'body'}). Re-copy .AspNet.Auth0, ASP.NET_SessionId, and GAESA from a logged-in buildertrend.net tab.`,
+        error: `Buildertrend rejected the cookies (HTTP ${probe.status}, source=${cookieSource || 'body'}). Re-copy .AspNetCore.Auth0Cookie (plus C1/C2 if listed), ASP.NET_SessionId, and GAESA from a logged-in buildertrend.net tab.`,
         code: 'cookie_rejected',
         stage: 'auth_probe',
       });
