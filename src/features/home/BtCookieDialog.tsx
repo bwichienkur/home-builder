@@ -11,7 +11,7 @@ import './dashboard.css';
 const COOKIE_HINTS: Record<BtCookieFieldName, string> = {
   '.AspNetCore.Auth0Cookie': 'Auth0 login cookie (required)',
   'ASP.NET_SessionId': 'ASP.NET session id (required)',
-  GAESA: 'Buildertrend session token (required)',
+  GAESA: 'Buildertrend session token (paste if listed)',
   '.AspNetCore.Auth0CookieC1': 'Auth0 chunk 1 (paste if listed)',
   '.AspNetCore.Auth0CookieC2': 'Auth0 chunk 2 (paste if listed)',
 };
@@ -132,9 +132,10 @@ export function BtCookieDialog({
             <code>https://buildertrend.net</code>
           </li>
           <li>
-            Copy only the <strong>Value</strong> column for each name below. Buildertrend replaced{' '}
-            <code>.AspNet.Auth0</code> with <code>.AspNetCore.Auth0Cookie</code> (plus C1/C2 chunks when
-            present).
+            Copy only the <strong>Value</strong> column for each name below. Required:{' '}
+            <code>.AspNetCore.Auth0Cookie</code> and <code>ASP.NET_SessionId</code>. Paste{' '}
+            <code>GAESA</code> and Auth0 C1/C2 only when they appear — Buildertrend does not always
+            set them.
           </li>
         </ol>
 

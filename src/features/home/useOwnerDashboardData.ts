@@ -327,7 +327,7 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
         setError(
           initialError ||
             reason ||
-            'Refresh cancelled — paste Buildertrend cookie values (.AspNetCore.Auth0Cookie, ASP.NET_SessionId, GAESA) to continue.',
+            'Refresh cancelled — paste Buildertrend cookie values (.AspNetCore.Auth0Cookie and ASP.NET_SessionId; GAESA if listed) to continue.',
         );
       }
       return ok;

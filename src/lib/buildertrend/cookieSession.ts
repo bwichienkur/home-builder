@@ -5,15 +5,16 @@ export const BT_COOKIE_STORAGE_KEY = 'mahnikka-bt-cookie';
 /**
  * Auth cookies required after Buildertrend’s Auth0 → ASP.NET Core migration.
  * `.AspNet.Auth0` was replaced by chunked `.AspNetCore.Auth0Cookie*` cookies.
+ * `GAESA` is no longer always issued on login — treat it as optional.
  */
 export const REQUIRED_BT_COOKIE_NAMES = [
   '.AspNetCore.Auth0Cookie',
   'ASP.NET_SessionId',
-  'GAESA',
 ] as const;
 
-/** Present when the Auth0 cookie is large enough to split across browser limits. */
+/** Paste when listed in DevTools — not every login issues all of these. */
 export const OPTIONAL_BT_COOKIE_NAMES = [
+  'GAESA',
   '.AspNetCore.Auth0CookieC1',
   '.AspNetCore.Auth0CookieC2',
 ] as const;
@@ -86,4 +87,4 @@ export function isAuthRefreshFailure(code: string | undefined) {
 
 /** Human-readable label for cookie paste errors / cron docs. */
 export const BT_COOKIE_NAMES_HINT =
-  '.AspNetCore.Auth0Cookie (+ C1/C2 if present), ASP.NET_SessionId, and GAESA';
+  '.AspNetCore.Auth0Cookie (+ C1/C2 if present), ASP.NET_SessionId, and GAESA when listed';
