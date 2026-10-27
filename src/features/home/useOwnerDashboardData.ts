@@ -210,24 +210,42 @@ export function useOwnerDashboardData(status: JobStatus, dateRange: DateRangeId)
   useEffect(() => {
     if (native) return;
     let cancelled = false;
-    void fetchCachedBuildertrendPull().then((cached) => {
+
+    const adoptBt = (cached: BuildertrendLivePull | null) => {
       if (cancelled || !cached) return;
       setLivePull((prev) => {
         if (prev && prev.pulledAt >= cached.pulledAt) return prev;
         storeLivePull(cached);
         return cached;
       });
-    });
-    void fetchCachedPipedrivePull().then((cached) => {
+    };
+    const adoptPd = (cached: PipedriveLivePull | null) => {
       if (cancelled || !cached) return;
       setLivePdPull((prev) => {
         if (prev && prev.pulledAt >= cached.pulledAt) return prev;
         storePipedrivePull(cached);
         return cached;
       });
-    });
+    };
+
+    const reloadCached = () => {
+      void fetchCachedBuildertrendPull().then(adoptBt);
+      void fetchCachedPipedrivePull().then(adoptPd);
+    };
+
+    reloadCached();
+
+    // Automated daily pull writes Neon but does not push to open tabs — poll + refetch on focus.
+    const interval = window.setInterval(reloadCached, 45_000);
+    const onFocus = () => reloadCached();
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onFocus);
+
     return () => {
       cancelled = true;
+      window.clearInterval(interval);
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onFocus);
     };
   }, [native]);
 
