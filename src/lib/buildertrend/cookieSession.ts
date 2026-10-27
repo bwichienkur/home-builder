@@ -2,10 +2,30 @@
 
 export const BT_COOKIE_STORAGE_KEY = 'mahnikka-bt-cookie';
 
-/** Auth cookies required for the read-only Buildertrend pull. */
-export const REQUIRED_BT_COOKIE_NAMES = ['.AspNet.Auth0', 'ASP.NET_SessionId', 'GAESA'] as const;
+/**
+ * Auth cookies required after Buildertrend’s Auth0 → ASP.NET Core migration.
+ * `.AspNet.Auth0` was replaced by chunked `.AspNetCore.Auth0Cookie*` cookies.
+ */
+export const REQUIRED_BT_COOKIE_NAMES = [
+  '.AspNetCore.Auth0Cookie',
+  'ASP.NET_SessionId',
+  'GAESA',
+] as const;
+
+/** Present when the Auth0 cookie is large enough to split across browser limits. */
+export const OPTIONAL_BT_COOKIE_NAMES = [
+  '.AspNetCore.Auth0CookieC1',
+  '.AspNetCore.Auth0CookieC2',
+] as const;
+
+export const BT_COOKIE_FIELD_NAMES = [
+  ...REQUIRED_BT_COOKIE_NAMES,
+  ...OPTIONAL_BT_COOKIE_NAMES,
+] as const;
 
 export type RequiredBtCookieName = (typeof REQUIRED_BT_COOKIE_NAMES)[number];
+export type OptionalBtCookieName = (typeof OPTIONAL_BT_COOKIE_NAMES)[number];
+export type BtCookieFieldName = (typeof BT_COOKIE_FIELD_NAMES)[number];
 
 export function loadStoredBtCookie(): string | null {
   if (typeof localStorage === 'undefined') return null;
@@ -30,8 +50,10 @@ export function clearStoredBtCookie() {
 }
 
 /** Build `name=value; name=value` from a name→value map (skips empty values). */
-export function buildCookieHeader(values: Partial<Record<RequiredBtCookieName, string>>): string {
-  return REQUIRED_BT_COOKIE_NAMES.map((name) => {
+export function buildCookieHeader(
+  values: Partial<Record<BtCookieFieldName, string>>,
+): string {
+  return BT_COOKIE_FIELD_NAMES.map((name) => {
     const value = sanitizeCookieValue(name, values[name]);
     return value ? `${name}=${value}` : '';
   })
@@ -43,7 +65,7 @@ export function buildCookieHeader(values: Partial<Record<RequiredBtCookieName, s
  * Normalize a pasted cookie value: trim, strip wrapping quotes, and drop a
  * duplicated `Name=` prefix if the user pasted name+value together.
  */
-export function sanitizeCookieValue(name: RequiredBtCookieName, raw: string | undefined): string {
+export function sanitizeCookieValue(name: BtCookieFieldName, raw: string | undefined): string {
   let value = String(raw ?? '').trim();
   if (
     (value.startsWith('"') && value.endsWith('"')) ||
@@ -61,3 +83,7 @@ export function sanitizeCookieValue(name: RequiredBtCookieName, raw: string | un
 export function isAuthRefreshFailure(code: string | undefined) {
   return code === 'credentials_missing' || code === 'login_failed' || code === 'cookie_rejected';
 }
+
+/** Human-readable label for cookie paste errors / cron docs. */
+export const BT_COOKIE_NAMES_HINT =
+  '.AspNetCore.Auth0Cookie (+ C1/C2 if present), ASP.NET_SessionId, and GAESA';

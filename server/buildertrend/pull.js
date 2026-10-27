@@ -144,7 +144,7 @@ async function loginWithCookie(cookieOverride) {
   if (provided) {
     throw Object.assign(
       new Error(
-        `Buildertrend rejected the pasted cookies (HTTP ${probe.status}). Re-copy .AspNet.Auth0, ASP.NET_SessionId, and GAESA from a logged-in buildertrend.net tab (Value column only).`,
+        `Buildertrend rejected the pasted cookies (HTTP ${probe.status}). Re-copy .AspNetCore.Auth0Cookie (plus C1/C2 if listed), ASP.NET_SessionId, and GAESA from a logged-in buildertrend.net tab (Value column only).`,
       ),
       { status: 401, code: 'cookie_rejected' },
     );
