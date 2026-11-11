@@ -4,10 +4,12 @@ import {
   LIVE_TIME_METRICS,
 } from './liveSnapshot';
 import { calendarDaysBetween } from './estimatedTimeMetrics';
+import { isExcludedDashboardJobName } from './excludedDashboardJobs.js';
 import type { OwnerJob, OwnerPhase, PipelineStage, SalesPerformanceBar, TimeMetric } from './types';
 
+export { isExcludedDashboardJobName } from './excludedDashboardJobs.js';
+
 const DESIGNER = /monique\s+lumley/i;
-const TEST_JOB = /tate\s+test\s+job/i;
 
 export type BuildertrendReports = {
   wip?: unknown;
@@ -351,7 +353,7 @@ function jobKey(name: string, jobId: unknown) {
 
 function ingest(jobs: Map<string, JobDraft>, row: Record<string, unknown>, kind: 'picker' | 'wip' | 'log' | 'job') {
   const name = str(pick(row, 'jobName', 'name', 'title', 'NewJobName', 'job'));
-  if (!name || TEST_JOB.test(name) || /template/i.test(name)) return;
+  if (!name || isExcludedDashboardJobName(name)) return;
   const jobId = pick(row, 'jobID', 'jobId', 'id', 'jobsiteId');
   const key = jobKey(name, jobId);
   const existing = jobs.get(key) ?? jobs.get(`name:${name.toLowerCase()}`);
@@ -644,7 +646,7 @@ function changeOrderByJob(reports: BuildertrendReports) {
     const rec = asRecord(row);
     if (!rec) continue;
     const name = str(pick(rec, 'jobName', 'name'));
-    if (TEST_JOB.test(name) || /template/i.test(name)) continue;
+    if (isExcludedDashboardJobName(name)) continue;
     const jobId = num(pick(rec, 'jobID', 'jobId'));
     if (!jobId) continue;
     byJob.set(jobId, {
@@ -665,7 +667,7 @@ function cashflowMoneyInLast30dByJob(reports: BuildertrendReports) {
     // 1 = Money In (owner draws / receivables); 2 = Money Out (payables).
     if (cashflowType !== 1) continue;
     const name = str(pick(rec, 'jobName', 'name'));
-    if (TEST_JOB.test(name) || /template/i.test(name)) continue;
+    if (isExcludedDashboardJobName(name)) continue;
     const jobId = num(pick(rec, 'jobID', 'jobId'));
     if (!jobId) continue;
     const cumulative = pick(rec, 'trailing30Cumulative', 'trailingThirtyCumulative');
@@ -753,7 +755,7 @@ function applyJobEnrichment(jobs: Map<string, JobDraft>, reports: BuildertrendRe
 
 function ingestSchedule(jobs: Map<string, JobDraft>, row: Record<string, unknown>) {
   const name = str(pick(row, 'jobName', 'name', 'title', 'NewJobName', 'job'));
-  if (!name || TEST_JOB.test(name) || /template/i.test(name)) return;
+  if (!name || isExcludedDashboardJobName(name)) return;
   const jobId = pick(row, 'jobID', 'jobId', 'id', 'jobsiteId');
   const key = jobKey(name, jobId);
   const existing = jobs.get(key) ?? jobs.get(`name:${name.toLowerCase()}`);

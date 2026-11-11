@@ -277,6 +277,39 @@ describe('Buildertrend report mapper', () => {
     expect(mapped.jobs.filter((job) => job.status === 'open')).toHaveLength(1);
   });
 
+  it('excludes internal Buildertrend / OCH master jobs from every dashboard list and WIP total', () => {
+    const mapped = mapBuildertrendReports(
+      {
+        jobs: [
+          { jobID: 1, jobName: 'Bennett', jobStatus: 'Open' },
+          { jobID: 2, jobName: 'Buildertrend Provided New Home', jobStatus: 'Open' },
+          { jobID: 3, jobName: 'Buildertrend Provided Onboarding Job', jobStatus: 'Open' },
+          { jobID: 4, jobName: 'Buildertrend Provided Production Schedule', jobStatus: 'Open' },
+          { jobID: 5, jobName: 'Digital Showroom', jobStatus: 'Open' },
+          { jobID: 6, jobName: 'General', jobStatus: 'Open' },
+          { jobID: 7, jobName: 'OCH Master 2026', jobStatus: 'Open' },
+          { jobID: 8, jobName: 'och master 2026', jobStatus: 'Open' },
+        ],
+        jobInfoContractByJob: {
+          '1': 100_000,
+          '2': 999_999,
+          '6': 50_000,
+          '7': 1_000_000,
+        },
+        scheduleByJob: {
+          '1': { siteWorkStarted: true, siteWork: { started: true, title: 'Site Work' } },
+        },
+      },
+      { now },
+    );
+
+    expect(mapped.jobs.map((job) => job.name)).toEqual(['Bennett']);
+    expect(mapped.jobs.filter((job) => job.status === 'open')).toHaveLength(1);
+    const totalWip = mapped.jobs.filter((j) => j.status === 'open').reduce((s, j) => s + j.wip, 0);
+    expect(totalWip).toBe(100_000);
+    expect(mapped.salesPerformance[0]?.value).toBe(100_000);
+  });
+
   it('phases open jobs by Site Work schedule start and drops jobs without that item', () => {
     // Full enrichment: every open job has a schedule stub/entry. Scratch has no Site Work.
     const mapped = mapBuildertrendReports({
