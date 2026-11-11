@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   BT_COOKIE_STORAGE_KEY,
+  REQUIRED_BT_COOKIE_NAMES,
   buildCookieHeader,
   clearStoredBtCookie,
   isAuthRefreshFailure,
@@ -35,7 +36,26 @@ afterEach(() => {
 });
 
 describe('cookieSession', () => {
-  it('builds a cookie header from required + optional Auth0 chunks', () => {
+  it('requires Auth0 + session only — GAESA is optional', () => {
+    expect([...REQUIRED_BT_COOKIE_NAMES]).toEqual([
+      '.AspNetCore.Auth0Cookie',
+      'ASP.NET_SessionId',
+    ]);
+  });
+
+  it('builds a cookie header without GAESA when omitted', () => {
+    expect(
+      buildCookieHeader({
+        '.AspNetCore.Auth0Cookie': 'auth-token',
+        'ASP.NET_SessionId': 'session',
+        '.AspNetCore.Auth0CookieC1': 'chunk1',
+      }),
+    ).toBe(
+      '.AspNetCore.Auth0Cookie=auth-token; ASP.NET_SessionId=session; .AspNetCore.Auth0CookieC1=chunk1',
+    );
+  });
+
+  it('includes GAESA when pasted', () => {
     expect(
       buildCookieHeader({
         '.AspNetCore.Auth0Cookie': 'auth-token',
@@ -49,24 +69,12 @@ describe('cookieSession', () => {
     );
   });
 
-  it('omits empty optional Auth0 chunks', () => {
-    expect(
-      buildCookieHeader({
-        '.AspNetCore.Auth0Cookie': 'auth-token',
-        'ASP.NET_SessionId': 'session',
-        GAESA: 'gaesa',
-      }),
-    ).toBe('.AspNetCore.Auth0Cookie=auth-token; ASP.NET_SessionId=session; GAESA=gaesa');
-  });
-
   it('stores and loads the cookie header', () => {
-    storeBtCookie(
-      '  .AspNetCore.Auth0Cookie=a; ASP.NET_SessionId=b; GAESA=c; .AspNetCore.Auth0CookieC1=d  ',
-    );
+    storeBtCookie('  .AspNetCore.Auth0Cookie=a; ASP.NET_SessionId=b; .AspNetCore.Auth0CookieC1=d  ');
     expect(loadStoredBtCookie()).toBe(
-      '.AspNetCore.Auth0Cookie=a; ASP.NET_SessionId=b; GAESA=c; .AspNetCore.Auth0CookieC1=d',
+      '.AspNetCore.Auth0Cookie=a; ASP.NET_SessionId=b; .AspNetCore.Auth0CookieC1=d',
     );
-    expect(localStorage.getItem(BT_COOKIE_STORAGE_KEY)).toContain('GAESA=c');
+    expect(localStorage.getItem(BT_COOKIE_STORAGE_KEY)).toContain('ASP.NET_SessionId=b');
     clearStoredBtCookie();
     expect(loadStoredBtCookie()).toBeNull();
   });
@@ -81,8 +89,5 @@ describe('cookieSession', () => {
     expect(
       sanitizeCookieValue('.AspNetCore.Auth0Cookie', '.AspNetCore.Auth0Cookie=token-value'),
     ).toBe('token-value');
-    expect(
-      sanitizeCookieValue('.AspNetCore.Auth0CookieC1', '.AspNetCore.Auth0CookieC1=chunk'),
-    ).toBe('chunk');
   });
 });
