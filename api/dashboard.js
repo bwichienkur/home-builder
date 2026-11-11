@@ -7,13 +7,14 @@
  */
 import { pullPipedrive } from '../server/pipedrive/pull.js';
 import { pullBuildertrend } from '../server/buildertrend/pull.js';
-import { loadDashboardLivePull, DASHBOARD_PULL_IDS } from '../server/dashboardLivePullStore.js';
+import { loadDashboardLivePull, saveDashboardLivePull, DASHBOARD_PULL_IDS } from '../server/dashboardLivePullStore.js';
 import {
   listKpiHistory,
   metricsFromKpis,
   upsertKpiHistoryDay,
 } from '../server/dashboardKpiHistoryStore.js';
 import { roughMetricsFromPull } from '../server/dashboardRoughMetrics.js';
+import { buildCronStatusPayload } from '../server/dashboardCronStatus.js';
 
 export const config = { maxDuration: 300 };
 
@@ -37,6 +38,10 @@ function queryFlag(req, name) {
 
 function isHistoryRequest(req) {
   return queryFlag(req, '__history');
+}
+
+function isCronStatusRequest(req) {
+  return queryFlag(req, '__cronStatus');
 }
 
 function isVercelCron(req) {
@@ -91,6 +96,15 @@ async function handleHistory(req, res) {
   return res.status(405).json({ ok: false, error: 'Use GET or POST.' });
 }
 
+async function handleCronStatus(req, res) {
+  if (req.method !== 'GET') {
+    res.setHeader('Allow', 'GET');
+    return res.status(405).json({ ok: false, error: 'Use GET.' });
+  }
+  const stored = await loadDashboardLivePull(DASHBOARD_PULL_IDS.cronStatus);
+  return res.json({ ok: true, status: stored.payload ?? null, backend: stored.backend });
+}
+
 async function handleDailyPull(req, res) {
   if (req.method !== 'GET' && req.method !== 'POST') {
     res.setHeader('Allow', 'GET, POST');
@@ -103,7 +117,11 @@ async function handleDailyPull(req, res) {
   const results = { pipedrive: null, buildertrend: null, history: null };
 
   try {
-    results.pipedrive = await pullPipedrive({});
+    const pd = await pullPipedrive({});
+    results.pipedrive = {
+      ok: true,
+      pulledAt: pd?.pulledAt ?? null,
+    };
   } catch (err) {
     results.pipedrive = {
       ok: false,
@@ -114,11 +132,18 @@ async function handleDailyPull(req, res) {
   const cookie = process.env.BUILDERTREND_COOKIE || process.env.BT_COOKIE;
   if (cookie) {
     try {
-      results.buildertrend = await pullBuildertrend({ cookie });
+      const bt = await pullBuildertrend({ cookie });
+      results.buildertrend = {
+        ok: true,
+        pulledAt: bt?.pulledAt ?? null,
+        enrichment: bt?.enrichment ?? null,
+        authMethod: bt?.authMethod ?? null,
+      };
     } catch (err) {
       results.buildertrend = {
         ok: false,
         error: err instanceof Error ? err.message : 'Buildertrend pull failed',
+        code: err?.code,
       };
     }
   } else {
@@ -134,9 +159,12 @@ async function handleDailyPull(req, res) {
     results.history = { saved: false, reason: 'no metrics extracted' };
   }
 
+  const cronStatus = buildCronStatusPayload(results);
+  await saveDashboardLivePull(DASHBOARD_PULL_IDS.cronStatus, cronStatus);
+
   return res.json({
-    ok: true,
-    pulledAt: new Date().toISOString(),
+    ok: cronStatus.ok,
+    pulledAt: cronStatus.pulledAt,
     results,
   });
 }
@@ -145,6 +173,9 @@ export default async function handler(req, res) {
   try {
     if (isHistoryRequest(req)) {
       return await handleHistory(req, res);
+    }
+    if (isCronStatusRequest(req)) {
+      return await handleCronStatus(req, res);
     }
     // Default route (and ?__daily=1) runs the scheduled pull.
     return await handleDailyPull(req, res);

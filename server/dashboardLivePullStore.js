@@ -10,6 +10,8 @@ const TABLE = 'dashboard_live_pulls';
 export const DASHBOARD_PULL_IDS = {
   buildertrend: 'buildertrend',
   pipedrive: 'pipedrive',
+  /** Last automated daily-pull outcome (not a full report bag). */
+  cronStatus: 'cron-status',
 };
 
 function slimBuildertrendPull(pull) {
@@ -51,8 +53,10 @@ export async function loadDashboardLivePull(id) {
  */
 export async function saveDashboardLivePull(id, pull) {
   if (!pull?.pulledAt) return { backend: 'none', saved: false };
-  const payload =
-    id === DASHBOARD_PULL_IDS.buildertrend ? slimBuildertrendPull(pull) : slimPipedrivePull(pull);
+  let payload = pull;
+  if (id === DASHBOARD_PULL_IDS.buildertrend) payload = slimBuildertrendPull(pull);
+  else if (id === DASHBOARD_PULL_IDS.pipedrive) payload = slimPipedrivePull(pull);
+  // cron-status and other meta ids are stored as-is
   try {
     const result = await saveSnapshot(TABLE, payload, id);
     return { ...result, saved: true };

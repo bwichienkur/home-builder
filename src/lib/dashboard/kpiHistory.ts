@@ -200,6 +200,35 @@ export async function fetchKpiHistory(signal?: AbortSignal): Promise<KpiHistoryP
   }
 }
 
+export type DashboardCronStatus = {
+  pulledAt: string;
+  ok: boolean;
+  buildertrend?: {
+    ok: boolean;
+    skipped?: boolean;
+    reason?: string;
+    error?: string;
+    pulledAt?: string | null;
+  };
+  pipedrive?: {
+    ok: boolean;
+    error?: string;
+    pulledAt?: string | null;
+  };
+};
+
+/** Last automated daily-pull outcome (read-only; no cron secret required). */
+export async function fetchCronStatus(signal?: AbortSignal): Promise<DashboardCronStatus | null> {
+  try {
+    const res = await fetch('/api/dashboard?__cronStatus=1', { signal, headers: { accept: 'application/json' } });
+    if (!res.ok) return null;
+    const json = (await res.json()) as { status?: DashboardCronStatus | null };
+    return json.status?.pulledAt ? json.status : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function recordKpiSnapshot(kpis: KpiCard[], source = 'live'): Promise<void> {
   const metrics: Record<string, number> = {};
   for (const card of kpis) {

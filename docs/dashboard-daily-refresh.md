@@ -10,6 +10,9 @@ That endpoint:
 1. Pulls **Pipedrive** (`PIPEDRIVE_API_TOKEN`)
 2. Pulls **Buildertrend** when `BUILDERTREND_COOKIE` is set
 3. Upserts a **KPI history** row for period charts
+4. Saves a slim **cron status** row (`GET /api/dashboard?__cronStatus=1`) so the Owner Dashboard can show when BT was skipped/failed
+
+If `BUILDERTREND_COOKIE` is missing or expired, Pipedrive (and history) can still update while the Buildertrend “Updated …” timestamp stays stuck on the last successful manual refresh. Set a fresh cookie on the Vercel project (Production) or use **Refresh from Buildertrend** in the UI.
 
 > **Hobby limit:** This is folded into a single `api/dashboard.js` so the project stays at ≤12 serverless functions.
 

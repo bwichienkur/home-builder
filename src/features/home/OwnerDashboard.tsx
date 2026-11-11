@@ -16,12 +16,14 @@ import { drilldownHref } from '../../lib/dashboard/drilldownPath';
 import { sortByKey, sortIndicator, toggleSort, type SortState } from '../../lib/dashboard/sortGrid';
 import {
   applyHistoryToKpis,
+  fetchCronStatus,
   fetchKpiHistory,
   formatPeriodChangePlain,
   recordKpiSnapshot,
   seedSyntheticHistory,
   seriesForMetric,
   type ChartPeriodId,
+  type DashboardCronStatus,
   type KpiHistoryPoint,
 } from '../../lib/dashboard/kpiHistory';
 import { DrillLink } from './DrilldownPanel';
@@ -178,6 +180,8 @@ export function OwnerDashboard() {
   const [activePointIndex, setActivePointIndex] = useState<number | null>(null);
   const [sort, setSort] = useState<SortState<SortKey>>({ key: 'name', dir: 'asc' });
   const [pmSort, setPmSort] = useState<SortState<PmSortKey>>({ key: 'pm', dir: 'asc' });
+  const [now, setNow] = useState(() => new Date());
+  const [cronStatus, setCronStatus] = useState<DashboardCronStatus | null>(null);
   const {
     dash,
     error,
@@ -198,6 +202,11 @@ export function OwnerDashboard() {
   } = useOwnerDashboardData(status, dateRange);
 
   useEffect(() => {
+    const tick = window.setInterval(() => setNow(new Date()), 30_000);
+    return () => window.clearInterval(tick);
+  }, []);
+
+  useEffect(() => {
     const ac = new AbortController();
     void (async () => {
       const points = await fetchKpiHistory(ac.signal);
@@ -208,6 +217,23 @@ export function OwnerDashboard() {
     })();
     return () => ac.abort();
   }, [livePull?.pulledAt, livePdPull?.pulledAt, dash?.refreshedAt]);
+
+  useEffect(() => {
+    const ac = new AbortController();
+    const load = () => {
+      void fetchCronStatus(ac.signal).then((status) => {
+        if (!ac.signal.aborted) setCronStatus(status);
+      });
+    };
+    load();
+    const interval = window.setInterval(load, 45_000);
+    window.addEventListener('focus', load);
+    return () => {
+      ac.abort();
+      window.clearInterval(interval);
+      window.removeEventListener('focus', load);
+    };
+  }, [livePull?.pulledAt, livePdPull?.pulledAt]);
 
   useEffect(() => {
     if (!dash?.kpis?.length || !historyReady) return;
@@ -270,7 +296,13 @@ export function OwnerDashboard() {
     return <p className="dash-status">Loading overview…</p>;
   }
 
-  const now = new Date();
+  const cronBt = cronStatus?.buildertrend;
+  const cronBtIssue =
+    cronBt && !cronBt.ok
+      ? cronBt.skipped
+        ? cronBt.reason || 'BUILDERTREND_COOKIE not set on Vercel'
+        : cronBt.error || 'Buildertrend scheduled pull failed'
+      : '';
 
   return (
     <section className="owner-dash" aria-label="Owner dashboard">
@@ -360,6 +392,13 @@ export function OwnerDashboard() {
           onSubmit={(cookie) => void submitCookiePrompt(cookie)}
           onCancel={cancelCookiePrompt}
         />
+      ) : null}
+
+      {cronBtIssue ? (
+        <p className="dash-error" role="status">
+          Scheduled daily pull did not refresh Buildertrend: {cronBtIssue}. Pipedrive may still have
+          updated — use Refresh from Buildertrend (paste cookie) or set BUILDERTREND_COOKIE on Vercel.
+        </p>
       ) : null}
 
       {error ? (
