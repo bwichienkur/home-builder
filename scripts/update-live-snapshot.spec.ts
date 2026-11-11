@@ -143,7 +143,8 @@ export const LIVE_DRILLDOWN: LiveDrilldown = ${JSON.stringify(drilldown, null, 2
       path.join(process.cwd(), 'src/lib/operations/liveOpsImport.json'),
       `${JSON.stringify(opsImport)}\n`,
     );
-    expect(opsImport.meta.incompleteTaskCount).toBeGreaterThan(opsImport.meta.pastDueTaskCount);
+    // Past-due is a subset of incomplete; equal is valid when every incomplete task is overdue.
+    expect(opsImport.meta.incompleteTaskCount).toBeGreaterThanOrEqual(opsImport.meta.pastDueTaskCount);
     expect(opsImport.meta.logBodiesUnavailable).toBe(true);
 
     expect(mapped.jobs.some((j) => j.pastDueTasks > 0 || j.pendingSelections > 0)).toBe(true);
