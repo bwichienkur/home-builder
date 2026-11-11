@@ -49,4 +49,35 @@ describe('roughMetricsFromPull', () => {
     );
     expect(metrics.wip).toBe(1_402_571.9);
   });
+
+  it('excludes internal Buildertrend / OCH master jobs from active and WIP totals', () => {
+    const metrics = roughMetricsFromPull(
+      {
+        reports: {
+          jobs: {
+            data: {
+              jobs: [
+                { jobID: 1, jobName: 'Bennett', jobStatus: 'Open' },
+                { jobID: 2, jobName: 'General', jobStatus: 'Open' },
+                { jobID: 3, jobName: 'OCH Master 2026', jobStatus: 'Open' },
+                { jobID: 4, jobName: 'Digital Showroom', jobStatus: 'Open' },
+              ],
+            },
+          },
+          wip: {
+            data: {
+              rowData: [
+                { jobID: 1, jobName: 'Bennett', totalRevisedPrice: 500_000, jobStatus: 'Open' },
+                { jobID: 2, jobName: 'General', totalRevisedPrice: 50_000, jobStatus: 'Open' },
+                { jobID: 3, jobName: 'OCH Master 2026', totalRevisedPrice: 1_000_000, jobStatus: 'Open' },
+              ],
+            },
+          },
+        },
+      },
+      null,
+    );
+    expect(metrics.active).toBe(1);
+    expect(metrics.wip).toBe(500_000);
+  });
 });

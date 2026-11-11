@@ -3,6 +3,7 @@
  * Mirrors mapReports contract resolution enough that Job Info–priced opens
  * (Graham / Olmstead / Peters) count toward Total WIP — not only WIP-report rows.
  */
+import { isExcludedDashboardJobName } from '../src/lib/buildertrend/excludedDashboardJobs.js';
 
 function asRows(payload) {
   if (Array.isArray(payload)) return payload;
@@ -25,6 +26,10 @@ function isOpenStatus(status) {
 
 function jobIdOf(row) {
   return num(row?.jobID ?? row?.jobId ?? row?.id);
+}
+
+function jobNameOf(row) {
+  return String(row?.jobName ?? row?.name ?? row?.NewJobName ?? row?.title ?? '').trim();
 }
 
 function revisedPriceOf(row) {
@@ -55,53 +60,67 @@ export function roughMetricsFromPull(btPayload, pdPayload) {
     /** @type {Map<number, number>} */
     const priceByJob = new Map();
 
+    /** @type {Set<number>} */
+    const excludedIds = new Set();
+    for (const row of [...wipRows, ...profRows, ...pickerRows]) {
+      const id = jobIdOf(row);
+      if (id && isExcludedDashboardJobName(jobNameOf(row))) excludedIds.add(id);
+    }
+
     for (const row of wipRows) {
       const id = jobIdOf(row);
+      if (!id || excludedIds.has(id) || isExcludedDashboardJobName(jobNameOf(row))) continue;
       const price = revisedPriceOf(row);
-      if (id && price > 0) priceByJob.set(id, price);
+      if (price > 0) priceByJob.set(id, price);
     }
     for (const row of profRows) {
       const id = jobIdOf(row);
+      if (!id || excludedIds.has(id) || isExcludedDashboardJobName(jobNameOf(row))) continue;
       const price = revisedPriceOf(row);
-      if (id && price > 0) priceByJob.set(id, price);
+      if (price > 0) priceByJob.set(id, price);
     }
     for (const [idStr, price] of Object.entries(jobInfo)) {
       const id = num(idStr);
       const value = num(price);
-      if (id && value > 0 && !priceByJob.has(id)) priceByJob.set(id, value);
+      if (!id || excludedIds.has(id) || value <= 0 || priceByJob.has(id)) continue;
+      priceByJob.set(id, value);
     }
 
     const openIds = new Set();
     for (const row of pickerRows) {
       if (!isOpenStatus(row?.jobStatus ?? row?.status)) continue;
+      if (isExcludedDashboardJobName(jobNameOf(row))) continue;
       const id = jobIdOf(row);
-      if (id) openIds.add(id);
+      if (id && !excludedIds.has(id)) openIds.add(id);
     }
     // Fall back to WIP open rows when picker is absent.
     if (!openIds.size) {
       for (const row of wipRows) {
         if (!isOpenStatus(row?.jobStatus ?? row?.status)) continue;
+        if (isExcludedDashboardJobName(jobNameOf(row))) continue;
         const id = jobIdOf(row);
-        if (id) openIds.add(id);
+        if (id && !excludedIds.has(id)) openIds.add(id);
       }
     }
     // Include Job Info keys that look like open pre-budget jobs when picker omitted them.
     if (!openIds.size) {
       for (const idStr of Object.keys(jobInfo)) {
         const id = num(idStr);
-        if (id && num(jobInfo[idStr]) > 0) openIds.add(id);
+        if (id && !excludedIds.has(id) && num(jobInfo[idStr]) > 0) openIds.add(id);
       }
     }
 
     let wip = 0;
     let active = 0;
     for (const id of openIds) {
+      if (excludedIds.has(id)) continue;
       active += 1;
       wip += priceByJob.get(id) ?? 0;
     }
     // If we still have no open ids, sum positive prices (legacy WIP-only path).
     if (!active && priceByJob.size) {
-      for (const price of priceByJob.values()) {
+      for (const [id, price] of priceByJob.entries()) {
+        if (excludedIds.has(id)) continue;
         active += 1;
         wip += price;
       }
@@ -109,6 +128,9 @@ export function roughMetricsFromPull(btPayload, pdPayload) {
 
     let revenue = 0;
     for (const row of wipRows) {
+      if (isExcludedDashboardJobName(jobNameOf(row))) continue;
+      const id = jobIdOf(row);
+      if (id && excludedIds.has(id)) continue;
       revenue += num(row?.amountInvoiced ?? row?.revenueToDate);
     }
 
